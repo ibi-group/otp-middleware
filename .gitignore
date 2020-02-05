@@ -1,0 +1,25 @@
+node_modules/
+data/
+.DS_Store
+dist
+*.iml
+*.log
+coverage
+.idea
+target/
+.java-version
+datatools.iml
+datatools-manager.iml
+tmp/
+deploy/
+
+# Configurations
+configurations/*
+!configurations/default
+!configurations/test
+
+# Secret config files
+.env
+env.yml
+env.yml-original
+server.yml
