@@ -1,5 +1,11 @@
 package org.opentripplanner.middleware;
 
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -9,27 +15,42 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class BasicOtpAsyncDispatcher {
+@WebSocket
+public class BasicOtpAsyncWebSocketDispatcher {
+    private static void messageToSession(Session session, String message) {
+        try {
+            session.getRemote().sendString(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @OnWebSocketConnect
+    public void onConnect(Session session) throws Exception {
+        String message = "Established web socket connection with " + session.getRemoteAddress();
+
+        System.out.println(message);
+        messageToSession(session, message);
+
+        // For Middleware we want to forward the requests right away.
+        executeRequestsAsyncWebSocket(session);
+    }
+
+    @OnWebSocketClose
+    public void onClose(Session session, int statusCode, String reason) {
+        System.out.println("Closed web socket with " + session.getRemoteAddress() + " reason: " + reason + " (" + statusCode + ")");
+    }
+
+    @OnWebSocketMessage
+    public void onMessage(Session session, String message) {
+        System.out.println("Received from " + session.getRemoteAddress() + ": " + message);
+    }
 
     /**
      *
-     * @return Example response:
-     * [Response 7 received in 1242 ms.
-     * Response 6 received in 1259 ms.
-     * Response 8 received in 1264 ms.
-     * Response 0 received in 1381 ms.
-     * Response 1 received in 1724 ms.
-     * Response 2 received in 1903 ms.
-     * Response 5 received in 2007 ms.
-     * Response 3 received in 2732 ms.
-     * ]
-     * Completed in 3082 ms.
      */
-    public static String executeRequestsAsync() {
+    public static void executeRequestsAsyncWebSocket(Session session) {
         long startTime = System.currentTimeMillis();
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("[");
 
         Map<Integer, String> urls = IntStream.range(0, Const.urls.length)
                 .boxed()
@@ -47,7 +68,8 @@ public class BasicOtpAsyncDispatcher {
 
                         String log = "Response " + e.getKey() + " received in " + time + " ms.<br/>\n";
                         System.out.println(log);
-                        sb.append(log);
+
+                        messageToSession(session, log);
                         return log;
                     });
                     return result;
@@ -64,13 +86,6 @@ public class BasicOtpAsyncDispatcher {
             e.printStackTrace();
         }
 
-        sb
-                .append("]")
-                .append("<br/>")
-                .append("Completed in ")
-                .append(totalTime)
-                .append(" ms.");
-
-        return sb.toString();
+        messageToSession(session, "Completed in " + totalTime + " ms.");
     }
 }
