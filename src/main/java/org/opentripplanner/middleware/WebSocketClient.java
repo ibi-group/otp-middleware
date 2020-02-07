@@ -28,7 +28,6 @@ package org.opentripplanner.middleware;
  *  OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft;
 import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
@@ -41,7 +40,7 @@ import java.awt.event.WindowEvent;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-public class ChatClient extends JFrame implements ActionListener {
+public class WebSocketClient extends JFrame implements ActionListener {
     private static final long serialVersionUID = -6056260699202978657L;
 
     private final JTextField uriField;
@@ -50,9 +49,9 @@ public class ChatClient extends JFrame implements ActionListener {
     private final JTextArea ta;
     private final JTextField chatField;
     private final JComboBox draft;
-    private WebSocketClient cc;
+    private org.java_websocket.client.WebSocketClient cc;
 
-    public ChatClient(String defaultlocation ) {
+    public WebSocketClient(String defaultlocation ) {
         super( "WebSocket Chat Client" );
         Container c = getContentPane();
         GridLayout layout = new GridLayout();
@@ -117,7 +116,7 @@ public class ChatClient extends JFrame implements ActionListener {
         } else if( e.getSource() == connect ) {
             try {
                 // cc = new ChatClient(new URI(uriField.getText()), area, ( Draft ) draft.getSelectedItem() );
-                cc = new WebSocketClient( new URI( uriField.getText() ), (Draft) draft.getSelectedItem() ) {
+                cc = new org.java_websocket.client.WebSocketClient( new URI( uriField.getText() ), (Draft) draft.getSelectedItem() ) {
 
                     @Override
                     public void onMessage( String message ) {
@@ -175,7 +174,7 @@ public class ChatClient extends JFrame implements ActionListener {
             location = "ws://localhost:4567/async-websocket";
             System.out.println( "Default server url not specified: defaulting to \'" + location + "\'" );
         }
-        new ChatClient( location );
+        new WebSocketClient( location );
     }
 
 }
