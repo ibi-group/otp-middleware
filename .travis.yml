@@ -29,7 +29,7 @@ before_deploy:
 - mkdir deploy
 - ls target/*.jar
 - cp target/otp-middleware-*.jar deploy/
-- cp target/otp-middleware-*.jar "deploy/otp-middleware-latest-BRANCH_CLEAN.jar"
+- cp target/otp-middleware-*.jar "deploy/otp-middleware-latest-$BRANCH_CLEAN.jar"
 deploy:
   provider: s3
   skip_cleanup: true
