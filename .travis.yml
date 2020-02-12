@@ -1,68 +1,44 @@
 dist: xenial
 language: java
 java:
-  - openjdk11
+- openjdk11
 sudo: false
 cache:
   directories:
-    - $HOME/.m2
-    - $HOME/.cache/yarn
+  - "$HOME/.m2"
+  - "$HOME/.cache/yarn"
 before_install:
-  # install node v12 here in order to run the e2e tests (and for maven-semantic-release).
-  - nvm install '12'
-# Skip the install step (mvn install).
+- nvm install '12'
 install: true
-# Install semantic-release
 before_script:
-  - yarn global add @conveyal/maven-semantic-release semantic-release@15
+- yarn global add @conveyal/maven-semantic-release semantic-release@15
 script:
-  # run mvn package to make sure unit tests and packaging can work
-  - mvn package
+- mvn package
 after_success:
-  # these first codecov runs will upload a report associated with the commit set through Travis CI environment variables
-  # use codecov script flags to upload the coverage report for the unit tests
-  - bash <(curl -s https://codecov.io/bash) -s target-unit-test-results -F unit_tests
-
-  # run maven-semantic-release to potentially create a new release of otp-middleware. The flag --skip-maven-deploy is
-  # used to avoid deploying to maven central. So essentially, this just creates a release with a changelog on github.
-  #
-  # If maven-semantic-release finishes successfully and the current branch is master, upload coverage reports for the
-  # commits that maven-semantic-release generated. Since the above codecov run is associated with the commit that
-  # initiated the Travis build, the report will not be associated with the commits that maven-semantic-release performed
-  # (if it ended up creating a release and the two commits that were a part of that workflow). Therefore, if on master,
-  # codecov needs to be ran two more times to create codecov reports for the commits made by maven-semantic-release.
-  # See https://github.com/conveyal/gtfs-lib/issues/193. In order to create reports for both the unit and e2e tests,
-  # the codecov scripts must be ran twice.
-  #
-  # The git commands get the commit hash of the HEAD commit and the commit just before HEAD.
-  - |
-    semantic-release --prepare @conveyal/maven-semantic-release --publish @semantic-release/github,@conveyal/maven-semantic-release --verify-conditions @semantic-release/github,@conveyal/maven-semantic-release --verify-release @conveyal/maven-semantic-release --use-conveyal-workflow --dev-branch=dev --skip-maven-deploy
-    if [[ "$TRAVIS_BRANCH" = "master" ]]; then
-      bash <(curl -s https://codecov.io/bash) -C "$(git rev-parse HEAD)" -s target-unit-test-results -F unit_tests
-      bash <(curl -s https://codecov.io/bash) -C "$(git rev-parse HEAD^)" -s target-unit-test-results -F unit_tests
-    fi
+- bash <(curl -s https://codecov.io/bash) -s target-unit-test-results -F unit_tests
+- |
+  semantic-release --prepare @conveyal/maven-semantic-release --publish @semantic-release/github,@conveyal/maven-semantic-release --verify-conditions @semantic-release/github,@conveyal/maven-semantic-release --verify-release @conveyal/maven-semantic-release --use-conveyal-workflow --dev-branch=dev --skip-maven-deploy
+  if [[ "$TRAVIS_BRANCH" = "master" ]]; then
+    bash <(curl -s https://codecov.io/bash) -C "$(git rev-parse HEAD)" -s target-unit-test-results -F unit_tests
+    bash <(curl -s https://codecov.io/bash) -C "$(git rev-parse HEAD^)" -s target-unit-test-results -F unit_tests
+  fi
 before_deploy:
-  # get branch name of current branch for use in jar name: https://graysonkoonce.com/getting-the-current-branch-name-during-a-pull-request-in-travis-ci/
-  - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
-  # Replace forward slashes with underscores in branch name.
-  - export BRANCH_CLEAN=${BRANCH//\//_}
-  # Create directory that will contain artifacts to deploy to s3.
-  - mkdir deploy
-  # Display contents of target directory (for logging purposes only).
-  - ls target/*.jar
-  # Copy packaged jar over to deploy dir.
-  - cp target/otp-middleware-*.jar deploy/
-  - cp target/otp-middleware-*.jar "deploy/otp-middleware-latest-BRANCH_CLEAN.jar"
+- export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH;
+  else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+- export BRANCH_CLEAN=${BRANCH//\//_}
+- mkdir deploy
+- ls target/*.jar
+- cp target/otp-middleware-*.jar deploy/
+- cp target/otp-middleware-*.jar "deploy/otp-middleware-latest-BRANCH_CLEAN.jar"
 deploy:
   provider: s3
   skip_cleanup: true
   access_key_id: AKIA2YG5XQ2YJDTPRQ7Z
   secret_access_key:
-    secure: "k8vMNkr+u2yYm4srDKZi0xjKSIaKnoqs/0DTSsZHM4lPPrHfX4BiVNTLtl7ovfW55vYDyLCCwjzm96kxyZySleGF9y6jjNS+meNJ3SyvjwZ8J4wA/lOrkQJW3Mh6tYelpAjkT3GXrEGnHHV/eAmOTiw/t4tKLihDmqwS9bgMH/F1smIPkShwtCdHQJXuX51Qh/lFjmrXwHS3DXbXIGSH8FqT7G73TnxXjty2AriZ9gAD52SdpJJYBFOY4q/DdxzXRunnrfkkMx336X43iEFgQIw6eMqfDcn69TNabki0VSPRf/bsC1J60gCjXDFtIE6AryODI6j0hHw1xchjB9U91bYx7T36l6Wta6EuU/5AsNI5qwA13mLZW5/lTX8e16zdR7l0wq3MQDx6YsL6pcu+aTnHf8XxhRuzWO6vJ+GxJhtxV8t31Z3sdesvGiLhnvAcsWGylkEn+99zJ96OIC3Zqw6MWmnge2io44FSauKGvpxvdidCgwvAHLGAmHdU9WdMuUTKBghvJ6pt8oICS945E0EhoojRMA7YypHj6HPeb1Bq+hrmrMJTwao9cgC/oy0KoRxgry4SGRKrjjK/P35/4Oa3IhUNFoXCIFqFVK2wHd1hGzjyKQ1TyT00wUj1x2u9j7DDK88llQY92BInZf3V4rWNY7VblUy2Cqd31SVqXrU="
+    secure: PCGi5btTWXmvhABKbpbccDG95wNGhsmmBpOJuGNOCCdIT2xMNQnrOUDIe4yfIO493sOUns85TVz9wL4w5uX8YAYARB7shS1+PRQy+V0qZQKx1D2hrAraA6Z2e3wmyxYeweHb/wwasYs1GwTyMIvUGclsyPQ5md4P5dKCYs07hFdJU6DOugrtAGYfnBObotjyIU9vyEDLM9pRm0v4vlO8fOxFvyevx6uJH2T+nYUdu/UqirnWMUSY6caQ79Y7xIbsxbnE13KaFkBBRDzQF/jXkcI4DXjmQXMb1TIx1Fb6mjZm6eISERoZBxn5EVWbcgcGN2gg42skXOAuoXvPekLTWqHM6Zr9dTQfPLB7kpZxkbEBr1DK4LUwhp/p7xSalf9axN20GzmobXz/rsAeL46t9BCM4jbl0Ryi/y04FfoQ4qMyLoUfHoMqkcdLl/W4g2wxaxXHvUk9Wyfeyt6btk0zL8ffIlngl3Rwt6GmFljn3w9ux/cZrNtzcKPWqqWccsT61/nhlezaCHkcso9HZzbG9fEfyb1buQX+GeHCOl+BgbkTpSWwu8qqYMVgmjgcviBUDYELK089QW1xj2BN+ZPvJDfLBadSxNOHH6yudtfrJYZnwx+dw2AUMBWkrv0C+aIUI0NChige2a9WKycoeiAv4sRZvczZwZrTSzsWI+Kz248=
   bucket: otp-middleware-builds
   local-dir: deploy
   acl: public_read
   on:
     repo: ibi-group/otp-middleware
     all_branches: true
-
