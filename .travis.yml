@@ -1,8 +1,8 @@
+os: linux
 dist: xenial
 language: java
-java:
+jdk:
 - openjdk11
-sudo: false
 cache:
   directories:
   - "$HOME/.m2"
@@ -37,7 +37,7 @@ deploy:
   secret_access_key:
     secure: LCD8DBvwPCkKXH+YWk0oZaQLvGSXbHb2/QcvEGnb4q6eaNASuesCWVc5t/KwzdA1SLcM4RNs3xH3o4oo3AYy/ARX+Ouf0yHal6p7WDXYceuo/yrsxt1NxrVDDRxgRCCmkVp8TpKV3tTH7lFAGipFT1XT+a1GkLfgji2OnJYsgercSS7WJHg7nU3c4PSNSXWbh3cp78qWcmKmSNN+D5JqZfNOM2hgldibcr+wspNk4eirgxvZpgcUfNbit/Si+Lz74lMLla75AFXs5HoD/kObrNgaycIFcUpO0+SWJ1loDW5T2KWZAAbbKl7OTh6npX93Gz82naDNH0g3vHqtPwlQa/j4lNpBlo/ArmfMSbpmc15BnEKdt+w1BOLZnZmJPRJhRW5qGmQDStRR6axJiBmYuIqj1lan5L38fG5XM/M4sAKJo9rs2uAm578NS4e6rT8zrY1bYQw9+0P+5CP70VgACZg+ibMjW2f6jNCp9Dg4G4W38+n0wwwbIJzYPieap2sAgqRLNHWod8WMXFUNEOJyNRE2kXc8ZOq7JnhOkBdGgz4JgPGz6xV55HwXjOso13V1q4us85YIZA+AG1CI6JGjoNm3zQNnlzETztd7589y8N6IFQ22U+XkFLEQZuZTo43+UTgAUFf9bKoYWAMwwvGquCeS/2xurXLyKhteGH6aEBw=
   bucket: otp-middleware-builds
-  local-dir: deploy
+  local_dir: deploy
   acl: public_read
   on:
     repo: ibi-group/otp-middleware
