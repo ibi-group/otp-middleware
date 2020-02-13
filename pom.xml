@@ -24,7 +24,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>org.opentripplanner.middleware.Main</mainClass>
+                            <mainClass>org.opentripplanner.middleware.spark.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -97,7 +97,7 @@
 <!--            <artifactId>jackson-core</artifactId>-->
 <!--            <version>2.9.8</version>-->
 <!--        </dependency>-->
-        
+
         <!--  Turn Java objects into JSON responses -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
