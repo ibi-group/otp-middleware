@@ -25,42 +25,22 @@ public class Persistence {
 
     private static MongoClient mongo;
     private static MongoDatabase mongoDatabase;
-    private static CodecRegistry pojoCodecRegistry;
-
     // One abstracted Mongo collection for each class of persisted objects
     public static TypedPersistence<User> users;
 
     public static void initialize () {
-
-//        PojoCodecProvider pojoCodecProvider = PojoCodecProvider.builder()
-//            .register("com.conveyal.datatools.manager.jobs")
-//            .register("com.conveyal.datatools.manager.models")
-//            .register("com.conveyal.gtfs.loader")
-//            .register("com.conveyal.gtfs.validator")
-//            .automatic(true)
-//            .build();
-
-        // Register our custom codecs which cannot be properly auto-built by reflection
-//        CodecRegistry customRegistry = CodecRegistries.fromCodecs(
-//            new IntArrayCodec(),
-//            new URLCodec(),
-//            new LocalDateCodec()
-//        );
-
         // TODO Add custom codec libraries
-//        pojoCodecRegistry = fromRegistries(MongoClient.getDefaultCodecRegistry(),
-////            customRegistry,
-//            fromProviders(pojoCodecProvider)
-//        );
-
         CodecProvider pojoCodecProvider = PojoCodecProvider.builder()
             .register("org.opentripplanner.middleware.models")
             .automatic(true)
             .build();
-        CodecRegistry pojoCodecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(), fromProviders(pojoCodecProvider));
-//        MongoClientOptions.Builder builder = MongoClientOptions.builder()
-////                .sslEnabled(true)
-//            .codecRegistry(pojoCodecRegistry);
+        CodecRegistry pojoCodecRegistry = fromRegistries(
+            MongoClientSettings.getDefaultCodecRegistry(),
+            fromProviders(pojoCodecProvider)
+            // Additional custom codecs can be supplied here in a custom
+            // registry using CodecRegistry#fromCodecs.
+        );
+
         MongoClientSettings settings = MongoClientSettings.builder()
             .codecRegistry(pojoCodecRegistry)
             .build();
@@ -71,12 +51,7 @@ public class Persistence {
         // TODO Add configurable db name
         mongoDatabase = mongo.getDatabase("otp_middleware");
         users = new TypedPersistence(mongoDatabase, User.class);
-
-        // TODO: Set up indexes on feed versions by feedSourceId, version #? deployments, feedSources by projectId.
-//        deployments.getMongoCollection().createIndex(Indexes.descending("projectId"));
-//        feedSources.getMongoCollection().createIndex(Indexes.descending("projectId"));
-//        feedVersions.getMongoCollection().createIndex(Indexes.descending("feedSourceId", "version"));
-//        snapshots.getMongoCollection().createIndex(Indexes.descending("feedSourceId", "version"));
+        // TODO Add other models...
     }
 
 }

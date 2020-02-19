@@ -1,14 +1,15 @@
 package org.opentripplanner.middleware.spark;
 
-import com.google.gson.Gson;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
+import org.opentripplanner.middleware.controllers.api.ApiControllerImpl;
 import org.opentripplanner.middleware.persistence.Persistence;
 
 import static spark.Spark.*;
 
 public class Main {
+    private static final String API_PREFIX = "api/";
+
     public static void main(String[] args) {
-        Gson gson = new Gson();
         // Connect to the MongoDB
         Persistence.initialize();
         // Define some endpoints,
@@ -28,9 +29,20 @@ public class Main {
         // available at http://localhost:4567/async
         get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
 
-        get("/users", (req, res) -> Persistence.users.getAll(), v -> gson.toJson(v));
-//        delete("/users", (req, res) -> Persistence.users.getAll(), v -> gson.toJson(v));
-        post("/users", (req, res) -> Persistence.users.create(req.body()), v -> gson.toJson(v));
-//        put("/users", (req, res) -> Persistence.users.create(req.body()), v -> gson.toJson(v));
+        // Register API routes.
+        new ApiControllerImpl(API_PREFIX, Persistence.users);
+        // TODO Add other models.
+
+        before(API_PREFIX + "secure/*", ((request, response) -> {
+            // TODO Add Auth0 authentication to requests.
+//            Auth0Connection.checkUser(request);
+//            Auth0Connection.checkEditPrivileges(request);
+        }));
+
+        // Return "application/json" and set gzip header for all API routes.
+        before(API_PREFIX + "*", (request, response) -> {
+            response.type("application/json");
+            response.header("Content-Encoding", "gzip");
+        });
     }
 }

@@ -46,6 +46,7 @@ import static com.mongodb.client.model.Updates.set;
 public class TypedPersistence<T extends Model> {
 
     private static final Logger LOG = LoggerFactory.getLogger(TypedPersistence.class);
+    public final Class<T> clazz;
 
     private MongoCollection<T> mongoCollection;
     private Constructor<T> noArgConstructor;
@@ -53,6 +54,7 @@ public class TypedPersistence<T extends Model> {
     private final FindOneAndUpdateOptions findOneAndUpdateOptions = new FindOneAndUpdateOptions();
 
     public TypedPersistence(MongoDatabase mongoDatabase, Class<T> clazz) {
+        this.clazz = clazz;
         mongoCollection = mongoDatabase.getCollection(clazz.getSimpleName(), clazz);
         collectionName = clazz.getSimpleName();
         try {
@@ -172,7 +174,7 @@ public class TypedPersistence<T extends Model> {
         } else if (result.getDeletedCount() > 1) {
             LOG.error("Deleted more than one {} for ID {}",collectionName, id);
         } else {
-            LOG.error("Could not delete {}: {}", collectionName, id);
+            LOG.error("Could not delete {}: {} ({})", collectionName, id, result.toString());
         }
         return false;
     }
