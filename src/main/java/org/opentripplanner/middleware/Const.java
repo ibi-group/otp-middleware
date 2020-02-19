@@ -1,5 +1,8 @@
 package org.opentripplanner.middleware;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Const {
     // Play with some HTTP requests
     public static final int numItineraries = 3;
@@ -17,4 +20,38 @@ public class Const {
             "https://maps.trimet.org/otp_mod/plan?fromPlace=1610%20SW%20Clifton%20St%2C%20Portland%2C%20OR%2C%20USA%2097201%3A%3A45.51091832390635%2C-122.69433801297359&toPlace=3335%20SE%2010th%20Ave%2C%20Portland%2C%20OR%2C%20USA%2097202%3A%3A45.49912810913339%2C-122.656202229323&mode=BICYCLE&showIntermediateStops=true&optimize=SAFE&bikeSpeed=3.58&ignoreRealtimeUpdates=true&companies=UBER&numItineraries=" + numItineraries,
             "https://maps.trimet.org/otp_mod/plan?fromPlace=1610%20SW%20Clifton%20St%2C%20Portland%2C%20OR%2C%20USA%2097201%3A%3A45.51091832390635%2C-122.69433801297359&toPlace=3335%20SE%2010th%20Ave%2C%20Portland%2C%20OR%2C%20USA%2097202%3A%3A45.49912810913339%2C-122.656202229323&mode=BICYCLE_RENT&showIntermediateStops=true&optimize=SAFE&bikeSpeed=3.58&ignoreRealtimeUpdates=true&companies=UBER&numItineraries=" + numItineraries,
     };
+
+    // Orlando points of interest
+    // Taken from https://vacationidea.com/florida/best-things-to-do-in-orlando.html
+
+    // Arrays are in [lon, lat].
+    public static final Map<String, Double[]> locations = new HashMap<>() {{
+        // https://www.orlando.gov/Our-Government/History/Find-Historic-Landmarks
+        put("AMTRAK-Orlando", new Double[]{-81.3816, 28.52504});
+        put("The Beachham Theater", new Double[]{-81.379418, 28.543004});
+        put("Bumby Hardware Building", new Double[]{-81.381086, 28.539738});
+        put("Dickson-Azalea Park", new Double[]{-81.358345, 28.544297});
+        put("Ebenezer United Methodist Church", new Double[]{ -81.396418, 28.515499});
+        put("Baldwin Fairchild Funeral Home", new Double[]{-81.36496, 28.587161});
+        put("Old Firestone Tire Factory", new Double[]{-81.3794, 28.5507});
+        put("Dubsdread Golf Course", new Double[]{-81.38743, 28.58205});
+        put("Kaley Elementary School", new Double[] { -81.358521, 28.520319});
+        put("Marks Street Senior Rec Center", new Double[] {-81.3773731, 28.557355});
+        put("Mount Zion Missionary Baptist Church", new Double[] { -81.79806, 28.86278});
+        put("Church Street Station", new Double[] {28.54, -81.380556});
+        put("Orwin Manor", new Double[]{-81.363782, 28.578752});
+
+        // Other popular places?
+        put("Disney World", new Double[]{-81.516802, 28.365246});
+        put("Universal's Islands of Adventure", new Double[]{-81.463638, 28.474903});
+        put("Legoland Florida", new Double[]{-81.690511, 27.986779}); // Might not be able to plan.
+        put("SeaWorld", new Double[]{-81.461563, 28.415277});
+        put("MCO Airport", new Double[]{-81.3077038,28.4322279});
+        put("University of Central Florida", new Double[] {-81.208169, 28.593648});
+        put("Downtown Sanford", new Double[] {-81.2666431, 28.8109338});
+        put("Mall at Millenia", new Double[] {-81.431498, 28.485635});
+    }};
+
+
+
 }
