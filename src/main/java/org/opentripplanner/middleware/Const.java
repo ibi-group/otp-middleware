@@ -1,7 +1,9 @@
 package org.opentripplanner.middleware;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Const {
     // Play with some HTTP requests
@@ -21,11 +23,21 @@ public class Const {
             "https://maps.trimet.org/otp_mod/plan?fromPlace=1610%20SW%20Clifton%20St%2C%20Portland%2C%20OR%2C%20USA%2097201%3A%3A45.51091832390635%2C-122.69433801297359&toPlace=3335%20SE%2010th%20Ave%2C%20Portland%2C%20OR%2C%20USA%2097202%3A%3A45.49912810913339%2C-122.656202229323&mode=BICYCLE_RENT&showIntermediateStops=true&optimize=SAFE&bikeSpeed=3.58&ignoreRealtimeUpdates=true&companies=UBER&numItineraries=" + numItineraries,
     };
 
+    public static final String OTP_PLAN_URL = "https://fdot-otp-server.ibi-transit.com/otp/routers/default/plan";
+    public static final String OTP_UI_URL = "https://fdot-otp.ibi-transit.com/#/";
+
     // Orlando points of interest
     // Taken from https://vacationidea.com/florida/best-things-to-do-in-orlando.html
 
     // Arrays are in [lon, lat].
-    public static final Map<String, Double[]> locations = new HashMap<>() {{
+    public static final Map<String, Double[]> locationsMap0 = new HashMap<>() {{
+        put("Disney World", new Double[]{-81.579179,28.40572});
+        put("MCO Airport", new Double[]{-81.306479,28.432306});
+    }};
+    public static final List<Map.Entry<String, Double[]>> locations = locationsMap0.entrySet().stream().collect(Collectors.toList());
+
+        // Arrays are in [lon, lat].
+    public static final Map<String, Double[]> locationsMap = new HashMap<>() {{
         // https://www.orlando.gov/Our-Government/History/Find-Historic-Landmarks
         put("AMTRAK-Orlando", new Double[]{-81.3816, 28.52504});
         put("The Beachham Theater", new Double[]{-81.379418, 28.543004});
@@ -37,21 +49,28 @@ public class Const {
         put("Dubsdread Golf Course", new Double[]{-81.38743, 28.58205});
         put("Kaley Elementary School", new Double[] { -81.358521, 28.520319});
         put("Marks Street Senior Rec Center", new Double[] {-81.3773731, 28.557355});
-        put("Mount Zion Missionary Baptist Church", new Double[] { -81.79806, 28.86278});
-        put("Church Street Station", new Double[] {28.54, -81.380556});
+        put("Mount Zion Missionary Baptist Church", new Double[] {-81.386102, 28.54386});
+        put("Church Street Station", new Double[] {-81.380556,28.54});
         put("Orwin Manor", new Double[]{-81.363782, 28.578752});
 
         // Other popular places?
-        put("Disney World", new Double[]{-81.516802, 28.365246});
+        put("Disney World", new Double[]{-81.579179,28.40572});
         put("Universal's Islands of Adventure", new Double[]{-81.463638, 28.474903});
         put("Legoland Florida", new Double[]{-81.690511, 27.986779}); // Might not be able to plan.
         put("SeaWorld", new Double[]{-81.461563, 28.415277});
-        put("MCO Airport", new Double[]{-81.3077038,28.4322279});
+        put("MCO Airport", new Double[]{-81.306479,28.432306});
         put("University of Central Florida", new Double[] {-81.208169, 28.593648});
         put("Downtown Sanford", new Double[] {-81.2666431, 28.8109338});
         put("Mall at Millenia", new Double[] {-81.431498, 28.485635});
     }};
+    public static final List<Map.Entry<String, Double[]>> locations11 = locationsMap.entrySet().stream().collect(Collectors.toList());
 
-
+    public static final Map<String, String> modeParamsMap = new HashMap<>() {{
+        put("Transit", "WALK%2CBUS%2CRAIL"); // Walk, Bus, Rail
+        put("+Bike", "BICYCLE%2CBUS%2CRAIL"); // Own bicycle, Bus, Rail
+        put("+BkSh", "BICYCLE_RENT%2CBUS%2CRAIL"); // Bikeshare, Bus, Rail
+        put("+Hail", "CAR_HAIL%2CBUS%2CRAIL"); // Car hail, bus, rail
+    }};
+    public static final List<Map.Entry<String, String>> modeParams = modeParamsMap.entrySet().stream().collect(Collectors.toList());
 
 }
