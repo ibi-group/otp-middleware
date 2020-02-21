@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
 /**
  * Groups together a bunch of TypedPersistence abstractions around MongoDB Collections.
@@ -20,8 +21,8 @@ import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 public class Persistence {
 
     private static final Logger LOG = LoggerFactory.getLogger(Persistence.class);
-    private static final String MONGO_URI = "MONGO_URI";
-    private static final String MONGO_DB_NAME = "MONGO_DB_NAME";
+//    private static final String MONGO_URI = "MONGO_URI";
+    private static final String MONGO_DB_NAME = getConfigPropertyAsText("MONGO_DB_NAME");
 
     private static MongoClient mongo;
     private static MongoDatabase mongoDatabase;
@@ -45,11 +46,9 @@ public class Persistence {
             .codecRegistry(pojoCodecRegistry)
             .build();
         // TODO Add way to use external DB
-        LOG.info("Connecting to local MongoDB instance");
+        LOG.info("Connecting to local MongoDB instance db={}", MONGO_DB_NAME);
         mongo = MongoClients.create(settings);
-
-        // TODO Add configurable db name
-        mongoDatabase = mongo.getDatabase("otp_middleware");
+        mongoDatabase = mongo.getDatabase(MONGO_DB_NAME);
         users = new TypedPersistence(mongoDatabase, User.class);
         // TODO Add other models...
     }
