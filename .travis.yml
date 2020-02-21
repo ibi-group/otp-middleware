@@ -41,6 +41,7 @@ before_deploy:
 - ls target/*.jar
 - cp target/otp-middleware-*.jar deploy/
 - cp target/otp-middleware-*.jar "deploy/otp-middleware-latest-$BRANCH_CLEAN.jar"
+- echo $BRANCH_CLEAN
 deploy:
   provider: s3
   skip_cleanup: true
