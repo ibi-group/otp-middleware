@@ -132,7 +132,13 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
-
+        <!-- Used for unit testing -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
         <!-- Handles HTTP server -->
         <dependency>
             <groupId>com.sparkjava</groupId>
