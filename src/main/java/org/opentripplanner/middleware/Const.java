@@ -34,7 +34,7 @@ public class Const {
         put("Disney World", new Double[]{-81.579179,28.40572});
         put("MCO Airport", new Double[]{-81.306479,28.432306});
     }};
-    public static final List<Map.Entry<String, Double[]>> locations = locationsMap0.entrySet().stream().collect(Collectors.toList());
+    public static final List<Map.Entry<String, Double[]>> locations0 = locationsMap0.entrySet().stream().collect(Collectors.toList());
 
         // Arrays are in [lon, lat].
     public static final Map<String, Double[]> locationsMap = new HashMap<>() {{
@@ -63,7 +63,7 @@ public class Const {
         put("Downtown Sanford", new Double[] {-81.2666431, 28.8109338});
         put("Mall at Millenia", new Double[] {-81.431498, 28.485635});
     }};
-    public static final List<Map.Entry<String, Double[]>> locations11 = locationsMap.entrySet().stream().collect(Collectors.toList());
+    public static final List<Map.Entry<String, Double[]>> locations = locationsMap.entrySet().stream().collect(Collectors.toList());
 
     public static final Map<String, String> modeParamsMap = new HashMap<>() {{
         put("Transit", "WALK%2CBUS%2CRAIL"); // Walk, Bus, Rail

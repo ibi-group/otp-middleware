@@ -79,7 +79,7 @@ public class OtpJMeterRequestGenerator {
 
                     for (int k = 0; k < modeParams.size(); k++) {
                         Map.Entry<String, String> m = modeParams.get(k);
-                        String planUrl = makeOtpRequestUrl(OTP_PLAN_URL, e1, e2, m.getValue());
+                        String planUrl = makeXmlOtpRequestUrl(OTP_PLAN_URL, e1, e2, m.getValue());
                         System.out.println("<collectionProp name=\"req_" + indexStr + k + "\">");
                         System.out.println("<stringProp name=\"url_" + indexStr + k + "\">" + planUrl + "</stringProp>");
                         System.out.println("</collectionProp>");
@@ -177,22 +177,8 @@ public class OtpJMeterRequestGenerator {
         System.out.println("</jmeterTestPlan>");
     }
 
-    public static String getPlaceParam(Map.Entry<String, Double[]> loc) {
-        Double[] arr = loc.getValue();
-        double lat = arr[1];
-        double lon = arr[0];
-
-        return URLEncoder.encode(loc.getKey() + "::" + lat + "," + lon, StandardCharsets.UTF_8);
-    }
-
-    public static String makeOtpRequestUrl(String baseUrl, Map.Entry<String, Double[]> loc1, Map.Entry<String, Double[]> loc2, String modeParam) {
-        String result = baseUrl
-                + "?fromPlace=" + getPlaceParam(loc1)
-                + "&toPlace=" + getPlaceParam(loc2)
-                + "&mode=" + modeParam
-                + "&showIntermediateStops=true&maxWalkDistance=1609&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true"
-                + "&numItineraries=" + NUM_ITINERARIES;
-
-        return result.replaceAll("&", "&amp;");
+    public static String makeXmlOtpRequestUrl(String baseUrl, Map.Entry<String, Double[]> loc1, Map.Entry<String, Double[]> loc2, String modeParam) {
+        return Util.makeOtpRequestUrl(baseUrl, loc1, loc2, modeParam)
+                .replaceAll("&", "&amp;");
     }
 }

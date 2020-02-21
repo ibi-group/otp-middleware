@@ -12,6 +12,8 @@ datatools.iml
 datatools-manager.iml
 tmp/
 deploy/
+jmeter/apache*
+jmeter/output
 
 # Configurations
 configurations/*
