@@ -40,8 +40,8 @@ before_deploy:
 - mkdir deploy
 - ls target/*.jar
 - cp target/otp-middleware-*.jar deploy/
-- cp target/otp-middleware-*.jar "deploy/otp-middleware-latest-$BRANCH_CLEAN.jar"
-- cp target/generated-sources/openapi/openapi.json "deploy/otp-middleware-api-latest-$BRANCH_CLEAN.json"
+- cp target/otp-middleware-*.jar "deploy/otp-middleware-$BRANCH_CLEAN-$TRAVIS_COMMIT.jar"
+- cp target/generated-sources/openapi/openapi.json "deploy/otp-middleware-api-$BRANCH_CLEAN-$TRAVIS_COMMIT.json"
 deploy:
   provider: s3
   skip_cleanup: true
