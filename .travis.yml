@@ -40,7 +40,6 @@ before_deploy:
 - export COMMIT_SHA=${TRAVIS_COMMIT:0:7}
 - mkdir deploy
 - ls target/*.jar
-- cp target/otp-middleware-*.jar deploy/
 - cp target/otp-middleware-*.jar "deploy/otp-middleware-$BRANCH_CLEAN-$COMMIT_SHA.jar"
 - cp target/otp-middleware-*.jar "deploy/otp-middleware-$BRANCH_CLEAN-latest.jar"
 - cp target/generated-sources/openapi/openapi.json "deploy/otp-middleware-api-$BRANCH_CLEAN-$COMMIT_SHA.json"
