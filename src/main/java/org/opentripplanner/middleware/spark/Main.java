@@ -110,4 +110,17 @@ public class Main {
             return null;
         }
     }
+
+    /**
+     * @return a config value (nested fields defined by dot notation "data.use_s3_storage") as text or the default value
+     * if the config value is not defined (null).
+     */
+    public static String getConfigPropertyAsText(String name, String defaultValue) {
+        JsonNode node = getConfigProperty(name);
+        if (node != null) {
+            return node.asText();
+        } else {
+            return defaultValue;
+        }
+    }
 }

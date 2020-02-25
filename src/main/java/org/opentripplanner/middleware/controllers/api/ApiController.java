@@ -164,7 +164,7 @@ public abstract class ApiController<T extends Model> {
             logMessageAndHalt(req, 500, "An error was encountered while trying to save to the database", e);
         } finally {
             String operation = isCreating ? "Create" : "Update";
-            LOG.info("{} operation took {} msec", operation, System.currentTimeMillis() - startTime);
+            LOG.info("{} {} operation took {} msec", operation, classToLowercase, System.currentTimeMillis() - startTime);
         }
         return null;
     }
