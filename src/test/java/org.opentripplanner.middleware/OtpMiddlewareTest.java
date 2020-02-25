@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware;
 
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 import org.opentripplanner.middleware.spark.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,7 @@ public abstract class OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(OtpMiddlewareTest.class);
     private static boolean setUpIsDone = false;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws RuntimeException, IOException {
         if (setUpIsDone) {
             return;

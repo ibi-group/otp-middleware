@@ -1,14 +1,14 @@
 package org.opentripplanner.middleware.persistence;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.User;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests to verify that persistence in MongoDB collections are functioning properly. A number of
@@ -20,7 +20,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
     /**
      * Prepare and start a testing-specific web server
      */
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws IOException {
         // Start server if it isn't already running.
         OtpMiddlewareTest.setUp();
@@ -31,7 +31,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
         User user = createUser(TEST_EMAIL);
         String id = user.id;
         String retrievedId = Persistence.users.getById(id).id;
-        assertEquals("Found User ID should equal inserted ID.", id, retrievedId);
+        assertEquals(id, retrievedId, "Found User ID should equal inserted ID.");
     }
 
     @Test
@@ -42,7 +42,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
         user.email = updatedEmail;
         Persistence.users.replace(id, user);
         String retrievedEmail = Persistence.users.getById(id).email;
-        assertEquals("Found User email should equal updated email.", updatedEmail, retrievedEmail);
+        assertEquals(updatedEmail, retrievedEmail, "Found User email should equal updated email.");
     }
 
     @Test
@@ -50,7 +50,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
         User userToDelete = createUser(TEST_EMAIL);
         Persistence.users.removeById(userToDelete.id);
         User user = Persistence.users.getById(userToDelete.id);
-        assertNull("Deleted User should no longer exist in database (should return as null).", user);
+        assertNull(user, "Deleted User should no longer exist in database (should return as null).");
     }
 
     /**
