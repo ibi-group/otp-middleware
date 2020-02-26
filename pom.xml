@@ -17,14 +17,22 @@
         <version>2.2.4.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
+    <repositories>
+        <repository>
+            <id>manusant-beerRepo</id>
+            <url>https://packagecloud.io/manusant/beerRepo/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
     <build>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-                <includes>
-                    <include>logback.xml</include>
-                </includes>
             </resource>
         </resources>
         <plugins>
@@ -181,6 +189,13 @@
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
             <version>3.11.2</version>
+        </dependency>
+
+        <!-- To create Swagger API docs with spark-java -->
+        <dependency>
+            <groupId>com.beerboy.ss</groupId>
+            <artifactId>spark-swagger</artifactId>
+            <version>1.0.0.48</version>
         </dependency>
 
         <!-- dependency>
