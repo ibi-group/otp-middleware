@@ -5,7 +5,6 @@ import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
-import org.opentripplanner.middleware.spark.Main;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,11 +19,6 @@ import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
-import static spark.Spark.delete;
-import static spark.Spark.get;
-import static spark.Spark.options;
-import static spark.Spark.post;
-import static spark.Spark.put;
 
 /**
  * Generic API controller abstract class. This class provides CRUD methods using {@link spark.Spark} HTTP request
@@ -41,19 +35,18 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private static final String SECURE = "secure/";
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String classToLowercase;
-    private final TypedPersistence persistence;
+    private final TypedPersistence<T> persistence;
     private final Class<T> clazz;
 
     /**
      * @param apiPrefix string prefix to use in determining the resource location
      * @param persistence {@link TypedPersistence} persistence for the entity to set up CRUD endpoints for
      */
-    public ApiController (String apiPrefix, TypedPersistence persistence) {
+    public ApiController (String apiPrefix, TypedPersistence<T> persistence) {
         this.clazz = persistence.clazz;
         this.persistence = persistence;
         this.classToLowercase = persistence.clazz.getSimpleName().toLowerCase();
         this.ROOT_ROUTE = apiPrefix + SECURE + classToLowercase;
-        if (!Main.DO_SWAGGER) registerRoutes();
     }
 
     /**
@@ -74,73 +67,55 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 // Other HTTP methods are not affected by this bug.
 
                 // Get multiple entities.
+                // get(ROOT_ROUTE, this::getMany, JsonUtils::toJson);
                 .get(path(ROOT_ROUTE)
                         .withDescription("Gets a list of all '" + classToLowercase + "' entities.")
-                        .withResponseAsCollection(clazz)
-                        ,
+                        .withResponseAsCollection(clazz),
                         this::getMany, JsonUtils::toJson
                 )
 
                 // Get one entity.
+                // get(ROOT_ROUTE + ID_PARAM, this::getOne, JsonUtils::toJson);
                 .get(path(ROOT_ROUTE + ID_PARAM)
                         .withDescription("Returns a '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
                         .withPathParam().withName("id").withDescription("The id of the entity to search.").and()
-                        .withResponseType(clazz)
                         // .withResponses(...) // FIXME: not implemented (requires source change).
-                        ,
+                        .withResponseType(clazz),
                         this::getOne, JsonUtils::toJson
                 )
 
-                // Options request.
+                // Options response for CORS
+                // options(ROOT_ROUTE, (q, s) -> "");
                 .options(path(""), (req, res) -> "")
 
                 // Create entity request
+                // post(ROOT_ROUTE, this::createOrUpdate, JsonUtils::toJson);
                 .post(path("")
                         .withDescription("Creates a '" + classToLowercase + "' entity.")
                         .withRequestType(clazz) // FIXME: Embedded Swagger UI doesn't work for this request. (Embed or link a more recent version?)
-                        .withResponseType(clazz)
-                        ,
+                        .withResponseType(clazz),
                         this::createOrUpdate, JsonUtils::toJson
                 )
 
                 // Update entity request
+                // put(ROOT_ROUTE + ID_PARAM, this::createOrUpdate, JsonUtils::toJson);
                 .put(path(ID_PARAM)
                         .withDescription("Updates and returns the '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
                         .withPathParam().withName("id").withDescription("The id of the entity to update.").and()
                         .withRequestType(clazz) // FIXME: Embedded Swagger UI doesn't work for this request. (Embed or link a more recent version?)
-                        .withResponseType(clazz)
                         // .withResponses(...) // FIXME: not implemented (requires source change).
-                        ,
+                        .withResponseType(clazz),
                         this::createOrUpdate, JsonUtils::toJson
                 )
 
                 // Delete entity request
+                // delete(ROOT_ROUTE + ID_PARAM, this::deleteOne, JsonUtils::toJson);
                 .delete(path(ID_PARAM)
                         .withDescription("Deletes the '" + classToLowercase + "' entity with the specified id if it exists.")
                         .withPathParam().withName("id").withDescription("The id of the entity to delete.").and()
-                        .withGenericResponse()
-                        ,
+                        .withGenericResponse(),
                         this::deleteOne, JsonUtils::toJson
                 );
-    }
-
-    /**
-     * Register basic CRUD HTTP endpoints for the controller implementation.
-     */
-    private void registerRoutes() {
-        LOG.info("Registering routes for {}", ROOT_ROUTE);
-        // Options response for CORS
-        options(ROOT_ROUTE, (q, s) -> "");
-        // Get multiple entities.
-        get(ROOT_ROUTE, this::getMany, JsonUtils::toJson);
-        // Get one entity.
-        get(ROOT_ROUTE + ID_PARAM, this::getOne, JsonUtils::toJson);
-        // Create entity request
-        post(ROOT_ROUTE, this::createOrUpdate, JsonUtils::toJson);
-        // Update entity request
-        put(ROOT_ROUTE + ID_PARAM, this::createOrUpdate, JsonUtils::toJson);
-        // Delete entity request
-        delete(ROOT_ROUTE + ID_PARAM, this::deleteOne, JsonUtils::toJson);
     }
 
     /**
@@ -186,7 +161,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Convenience method for extracting the ID param from the HTTP request.
      */
     private T getObjectForId(Request req, String id) {
-        T object = (T) persistence.getById(id);
+        T object = persistence.getById(id);
         if (object == null) {
             logMessageAndHalt(
                 req,
@@ -214,7 +189,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         // Save or update to database
         try {
             // Validate fields by deserializing into POJO.
-            Model object = getPOJOFromRequestBody(req, clazz);
+            T object = getPOJOFromRequestBody(req, clazz);
             // TODO Add validation hooks for specific models... e.g., enforcing unique emails for users, checking
             //  valid email addresses, etc.
             if (isCreating) {
@@ -230,7 +205,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 persistence.replace(id, object);
             }
             // Return object that ultimately gets stored in database.
-            return (T) persistence.getById(object.id);
+            return persistence.getById(object.id);
         } catch (HaltException e) {
             throw e;
         } catch (Exception e) {
