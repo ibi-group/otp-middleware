@@ -10,6 +10,4 @@
 
 ### Description
 
-Please explain the changes you made here and, if not immediately obvious from the code, how they resolve any referenced
-issues. Be sure to include all issues being resolved and any special configuration settings that are need for the
-software to run properly with these changes. If merging to master, please also list the PRs that are to be included.
+Please explain the changes you made here and, if not immediately obvious from the code, how they resolve any referenced issues. Be sure to include all issues being resolved and any special configuration settings that are need for the software to run properly with these changes. If merging to master, please also list the PRs that are to be included.
