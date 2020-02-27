@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.spark.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

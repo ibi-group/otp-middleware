@@ -17,14 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  */
 public class PersistenceTest extends OtpMiddlewareTest {
     private static final String TEST_EMAIL = "john.doe@example.com";
-    /**
-     * Prepare and start a testing-specific web server
-     */
-    @BeforeAll
-    public static void setUp() throws IOException {
-        // Start server if it isn't already running.
-        OtpMiddlewareTest.setUp();
-    }
 
     @Test
     public void canCreateUser() {
