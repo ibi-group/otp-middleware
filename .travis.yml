@@ -3,6 +3,9 @@ dist: xenial
 language: java
 jdk:
 - openjdk11
+# Install mongoDB to perform persistence tests.
+services:
+  - mongodb
 cache:
   directories:
   - "$HOME/.m2"

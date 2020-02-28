@@ -8,8 +8,7 @@ coverage
 .idea
 target/
 .java-version
-datatools.iml
-datatools-manager.iml
+otp-middleware.iml
 tmp/
 deploy/
 
@@ -23,3 +22,5 @@ configurations/*
 env.yml
 env.yml-original
 server.yml
+# Test config is OK.
+!configurations/test/env.yml

@@ -150,7 +150,12 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         } catch (HaltException e) {
             throw e;
         } catch (Exception e) {
-            logMessageAndHalt(req, 400, String.format("Error deleting %s", classToLowercase), e);
+            logMessageAndHalt(
+                req,
+                HttpStatus.INTERNAL_SERVER_ERROR_500,
+                String.format("Error deleting %s", classToLowercase),
+                e
+            );
         } finally {
             LOG.info("Delete operation took {} msec", System.currentTimeMillis() - startTime);
         }
@@ -165,7 +170,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         if (object == null) {
             logMessageAndHalt(
                 req,
-                HttpStatus.BAD_REQUEST_400,
+                HttpStatus.NOT_FOUND_404,
                 String.format("No %s with id=%s found.", classToLowercase, id),
                 null
             );
@@ -183,7 +188,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         // Check if an update or create operation depending on presence of id param
         // This needs to be final because it is used in a lambda operation below.
         if (req.params("id") == null && req.requestMethod().equals("PUT")) {
-            logMessageAndHalt(req, 400, "Must provide id");
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
         }
         final boolean isCreating = req.params("id") == null;
         // Save or update to database
@@ -199,8 +204,9 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 // Update last updated value.
                 object.lastUpdated = new Date();
                 object.dateCreated = getObjectForId(req, id).dateCreated;
+                // Validate that ID in JSON body matches ID param. TODO add test
                 if (!id.equals(object.id)) {
-                    logMessageAndHalt(req, 400, "Must provide ID in JSON body.");
+                    logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "ID in JSON body must match ID param.");
                 }
                 persistence.replace(id, object);
             }
@@ -212,7 +218,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             logMessageAndHalt(req, 500, "An error was encountered while trying to save to the database", e);
         } finally {
             String operation = isCreating ? "Create" : "Update";
-            LOG.info("{} operation took {} msec", operation, System.currentTimeMillis() - startTime);
+            LOG.info("{} {} operation took {} msec", operation, classToLowercase, System.currentTimeMillis() - startTime);
         }
         return null;
     }
@@ -223,7 +229,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private String getIdFromRequest(Request req) {
         String id = req.params("id");
         if (id == null) {
-            logMessageAndHalt(req, 400, "Must provide id");
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
         }
         return id;
     }

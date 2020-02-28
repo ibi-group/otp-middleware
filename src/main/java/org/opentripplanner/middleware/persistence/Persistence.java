@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.persistence;
 
+import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
 /**
  * Groups together a bunch of TypedPersistence abstractions around MongoDB Collections.
@@ -20,10 +22,13 @@ import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 public class Persistence {
 
     private static final Logger LOG = LoggerFactory.getLogger(Persistence.class);
-    private static final String MONGO_URI = "MONGO_URI";
-    private static final String MONGO_DB_NAME = "MONGO_DB_NAME";
+    private static final String MONGO_PROTOCOL = getConfigPropertyAsText("MONGO_PROTOCOL", "mongodb");
+    private static final String MONGO_HOST = getConfigPropertyAsText("MONGO_HOST", "localhost:27017");
+    private static final String MONGO_USER = getConfigPropertyAsText("MONGO_USER");
+    private static final String MONGO_PASSWORD = getConfigPropertyAsText("MONGO_PASSWORD");
+    private static final String MONGO_DB_NAME = getConfigPropertyAsText("MONGO_DB_NAME");
 
-    private static MongoClient mongo;
+    private static MongoClient mongoClient;
     private static MongoDatabase mongoDatabase;
     // One abstracted Mongo collection for each class of persisted objects
     public static TypedPersistence<User> users;
@@ -40,16 +45,26 @@ public class Persistence {
             // Additional custom codecs can be supplied here in a custom
             // registry using CodecRegistry#fromCodecs.
         );
-
+        // Construct connection string from configuration values.
+        String userAtPassword = MONGO_USER != null && MONGO_PASSWORD != null
+            ? String.format("%s:%s@", MONGO_USER, MONGO_PASSWORD)
+            : "";
+        final String MONGO_URI = String.join("/", MONGO_HOST, MONGO_DB_NAME);
+        ConnectionString connectionString = new ConnectionString(
+            String.format(
+                "%s://%s%s?retryWrites=true&w=majority",
+                MONGO_PROTOCOL,
+                userAtPassword,
+                MONGO_URI
+            )
+        );
         MongoClientSettings settings = MongoClientSettings.builder()
             .codecRegistry(pojoCodecRegistry)
+            .applyConnectionString(connectionString)
             .build();
-        // TODO Add way to use external DB
-        LOG.info("Connecting to local MongoDB instance");
-        mongo = MongoClients.create(settings);
-
-        // TODO Add configurable db name
-        mongoDatabase = mongo.getDatabase("otp_middleware");
+        LOG.info("Connecting to MongoDB instance at {}://{}", MONGO_PROTOCOL, MONGO_URI);
+        mongoClient = MongoClients.create(settings);
+        mongoDatabase = mongoClient.getDatabase(MONGO_DB_NAME);
         users = new TypedPersistence(mongoDatabase, User.class);
         // TODO Add other models...
     }
