@@ -1,11 +1,8 @@
 package org.opentripplanner.middleware.persistence;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.User;
-
-import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -17,14 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  */
 public class PersistenceTest extends OtpMiddlewareTest {
     private static final String TEST_EMAIL = "john.doe@example.com";
-    /**
-     * Prepare and start a testing-specific web server
-     */
-    @BeforeAll
-    public static void setUp() throws IOException {
-        // Start server if it isn't already running.
-        OtpMiddlewareTest.setUp();
-    }
 
     @Test
     public void canCreateUser() {
