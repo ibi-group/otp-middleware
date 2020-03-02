@@ -1,10 +1,5 @@
 package org.opentripplanner.middleware;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 public class Const {
     // Play with some HTTP requests
     public static final int numItineraries = 3;
