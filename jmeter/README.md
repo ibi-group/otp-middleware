@@ -30,7 +30,7 @@ A helper script is provided to assist in running JMeter from the command line. (
 
 ## Test Plan
 
-A single test plan file is used for maintainablility??
+(to be completed)
 
 ## Reporting
 
