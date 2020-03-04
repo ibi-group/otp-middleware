@@ -17,7 +17,7 @@ JMeter test plans can be ran from the JMeter GUI or it can be ran without a GUI.
 
 ### Starting JMeter GUI
 
-This script starts the jmeter gui and loads a simple example test script.
+This script starts the JMeter GUI and loads a test script.
 
 ```sh
 ./run-gui.sh
