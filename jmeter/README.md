@@ -15,7 +15,7 @@ Install JMeter with this nifty script:
 
 JMeter test plans can be ran from the JMeter GUI or it can be ran without a GUI.
 
-### Starting jmeter GUI
+### Starting JMeter GUI
 
 This script starts the jmeter gui and loads a simple example test script.
 
@@ -25,12 +25,36 @@ This script starts the jmeter gui and loads a simple example test script.
 
 ### Running test plans without GUI
 
-Test plans can be ran straight from the command line.
-A helper script is provided to assist in running JMeter from the command line. (to be completed)
+JMeter tests can be ran straight from the command line:
 
-## Test Plan
+```sh
+./run-tests.sh <nthreads> <nloops> <csvfile>
+```
 
-(to be completed)
+The syntax for the script is as follows:
+
+* `<nthreads>`: (Required) Specifies the number of threads to run. Each thread is equivalent to a user.
+  Threads are run in parallel.
+* `<nloops>`: (Required) Specifies the number of loops, i.e. the number of times each thread or user will
+  go though the list of locations.
+* `<csvfile>`: (Required) Specifies the path to a CSV file with the OTP trip locations.
+  An example file can be found at `fixtures/locations.csv`
+
+### Uploading scripts and running tests on a remote server
+
+You can upload the test scripts to a remote server using:
+
+```sh
+./upload-jmeter-scripts.sh <hostname>
+```
+
+The syntax for the script is as follows:
+
+* `<hostname>`: (Required) Can be a server name found in your `~/.ssh/config` file,
+  or can be of the form `user:password@server` (same format as SSH).
+
+This script will also run `install-jmeter.sh` on the remote server.
+Once execution completes, you can run `run-tests.sh` from the `~/jmeter` folder on the remote server.
 
 ## Reporting
 

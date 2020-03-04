@@ -23,9 +23,9 @@
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <stringProp name="LoopController.loops">1</stringProp>
+          <stringProp name="LoopController.loops">${__P(loops, 1)}</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">21</stringProp>
+        <stringProp name="ThreadGroup.num_threads">${__P(threads, 1)}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">1</stringProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
         <stringProp name="ThreadGroup.duration"></stringProp>
@@ -33,6 +33,26 @@
         <boolProp name="ThreadGroup.same_user_on_next_iteration">false</boolProp>
       </ThreadGroup>
       <hashTree>
+        <Arguments guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+          <collectionProp name="Arguments.arguments">
+            <elementProp name="server" elementType="Argument">
+              <stringProp name="Argument.name">server</stringProp>
+              <stringProp name="Argument.value">fdot-otp-server.ibi-transit.com</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="path" elementType="Argument">
+              <stringProp name="Argument.name">path</stringProp>
+              <stringProp name="Argument.value">/otp/routers/default/plan</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="batchCsvFile" elementType="Argument">
+              <stringProp name="Argument.name">batchCsvFile</stringProp>
+              <stringProp name="Argument.value">${__P(batchcsvfile, fixtures/locations.csv)}</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+          </collectionProp>
+        </Arguments>
+        <hashTree/>
         <CounterConfig guiclass="CounterConfigGui" testclass="CounterConfig" testname="User Loop Counter" enabled="true">
           <stringProp name="CounterConfig.start">1</stringProp>
           <stringProp name="CounterConfig.end"></stringProp>
@@ -52,7 +72,7 @@
         </CounterConfig>
         <hashTree/>
         <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="User Origins (CSV Data Set Config)" enabled="true">
-          <stringProp name="filename">/Users/binhdam/git/otp-middleware/jmeter/locations.csv</stringProp>
+          <stringProp name="filename">${batchCsvFile}</stringProp>
           <stringProp name="fileEncoding">UTF-8</stringProp>
           <stringProp name="variableNames">mainlocation,mainlat,mainlon</stringProp>
           <boolProp name="ignoreFirstLine">true</boolProp>
@@ -62,21 +82,6 @@
           <boolProp name="stopThread">false</boolProp>
           <stringProp name="shareMode">shareMode.group</stringProp>
         </CSVDataSet>
-        <hashTree/>
-        <Arguments guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
-          <collectionProp name="Arguments.arguments">
-            <elementProp name="server" elementType="Argument">
-              <stringProp name="Argument.name">server</stringProp>
-              <stringProp name="Argument.value">fdot-otp-server.ibi-transit.com</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-            <elementProp name="path" elementType="Argument">
-              <stringProp name="Argument.name">path</stringProp>
-              <stringProp name="Argument.value">/otp/routers/default/plan</stringProp>
-              <stringProp name="Argument.metadata">=</stringProp>
-            </elementProp>
-          </collectionProp>
-        </Arguments>
         <hashTree/>
         <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults" enabled="true">
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
@@ -186,7 +191,7 @@ if (vars.get(&quot;FILE_CREATED&quot;) == null) {
             <stringProp name="TestPlan.comments">Locations for origin/destination pairs.</stringProp>
             <stringProp name="delimiter">,</stringProp>
             <stringProp name="fileEncoding">UTF-8</stringProp>
-            <stringProp name="filename">/Users/binhdam/git/otp-middleware/jmeter/locations.csv</stringProp>
+            <stringProp name="filename">${batchCsvFile}</stringProp>
             <boolProp name="ignoreFirstLine">true</boolProp>
             <boolProp name="quotedData">false</boolProp>
             <boolProp name="recycle">true</boolProp>
@@ -320,7 +325,7 @@ out.close();
             <connectTime>true</connectTime>
           </value>
         </objProp>
-        <stringProp name="filename">allsamples.csv</stringProp>
+        <stringProp name="filename"></stringProp>
       </ResultCollector>
       <hashTree/>
       <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">

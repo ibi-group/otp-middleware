@@ -7,7 +7,7 @@ rm -d -r apache-jmeter-$JMETER_VER
 
 # install jmeter
 wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-$JMETER_VER.zip
-unzip apache-jmeter-$JMETER_VER.zip
+unzip -q apache-jmeter-$JMETER_VER.zip
 rm -rf apache-jmeter-$JMETER_VER.zip
 
 # install jmeter plugin manager

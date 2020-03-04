@@ -6,12 +6,23 @@
 
 host=$1
 
-# Create directory if needed
-ssh $1 'mkdir -p ~/jmeter'
+if [ -z $1 ]
+then
+  >&2 echo 'Usage: upload-jmeter-scripts.sh <hostname>'
+  exit 1
+fi
 
-# Copy scripts and jmeter files
+# Create fresh directories, and copy jmeter files.
+ssh $1 'rm -rf ~/jmeter'
+
+ssh $1 'mkdir -p ~/jmeter'
 scp *.jmx $host:~/jmeter
-scp *.sh $host:~/jmeter
+scp install-jmeter.sh $host:~/jmeter
+scp jmeter-version.sh $host:~/jmeter
+scp run-tests.sh $host:~/jmeter
+
+ssh $1 'mkdir -p ~/jmeter/fixtures'
+scp fixtures/* $host:~/jmeter/fixtures
 
 # (re-)install JMeter
 ssh $host 'cd ~/jmeter; ./install-jmeter.sh'
