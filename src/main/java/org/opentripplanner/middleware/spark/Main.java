@@ -38,7 +38,7 @@ public class Main {
                 .generateDoc();
 
         // available at http://localhost:4567/hello
-        spark.get("/", (req, res) -> "(Sparks) OTP Middleware says Hi!");
+        spark.get("/hello", (req, res) -> "(Sparks) OTP Middleware says Hi!");
 
         // available at http://localhost:4567/sync
         spark.get("/sync", (req, res) -> BasicOtpDispatcher.executeRequestsInSequence());
