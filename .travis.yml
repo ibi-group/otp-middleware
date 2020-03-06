@@ -36,7 +36,7 @@ after_success:
     bash <(curl -s https://codecov.io/bash) -C "$(git rev-parse HEAD)"
     bash <(curl -s https://codecov.io/bash) -C "$(git rev-parse HEAD^)"
   fi
-- export GIT_DESC=$(git describe --all --always --abbrev=7 HEAD^)
+- export GIT_DESC=$(git describe --all --always HEAD^)
 - echo $GIT_DESC
 before_deploy:
 - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH;
@@ -47,7 +47,7 @@ before_deploy:
 - ls target/*.jar
 - cp target/otp-middleware.jar "deploy/otp-middleware-$BRANCH_CLEAN-$COMMIT_SHA.jar"
 - cp target/otp-middleware.jar "deploy/otp-middleware-$BRANCH_CLEAN-latest.jar"
-deploy:
+deployxxx:
   provider: s3
   skip_cleanup: true
   access_key_id: AKIA2YG5XQ2YJDTPRQ7Z
