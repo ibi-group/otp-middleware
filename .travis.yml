@@ -42,7 +42,8 @@ before_deploy:
 - export BRANCH_CLEAN=${BRANCH//\//_}
 - export COMMIT_SHA=${TRAVIS_COMMIT:0:7}
 - export GIT_DESC=$(git describe --all --abbrev=7 HEAD^)
-- echo git describe says... $GIT_DESC
+- echo git describe says...
+- echo $GIT_DESC
 - mkdir deploy
 - ls target/*.jar
 - cp target/otp-middleware.jar "deploy/otp-middleware-$BRANCH_CLEAN-$COMMIT_SHA.jar"
