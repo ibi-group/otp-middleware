@@ -41,12 +41,14 @@ before_deploy:
   else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
 - export BRANCH_CLEAN=${BRANCH//\//_}
 - export COMMIT_SHA=${TRAVIS_COMMIT:0:7}
+# `git describe --tags HEAD` returns a string of the form v0.0.0-52-ge10d02d.
+# It assumes you have pushed a tag on a commit on github (e.g. a commit on the dev branch).
 - export JAR_VERSION=$(git describe --tags HEAD)
 - echo $JAR_VERSION
 - mkdir deploy
-- ls target/*.jar
-- cp target/otp-middleware.jar "deploy/otp-middleware-$BRANCH_CLEAN-$COMMIT_SHA.jar"
-- cp target/otp-middleware.jar "deploy/otp-middleware-$BRANCH_CLEAN-latest.jar"
+- mkdir deploy/$BRANCH_CLEAN
+- echo otp-middleware-$JAR_VERSION.jar > deploy/$BRANCH_CLEAN/latest.txt
+- cp target/otp-middleware.jar "deploy/$BRANCH_CLEAN/otp-middleware-$JAR_VERSION.jar"
 deploy:
   provider: s3
   skip_cleanup: true
