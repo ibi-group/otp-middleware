@@ -36,13 +36,12 @@ after_success:
     bash <(curl -s https://codecov.io/bash) -C "$(git rev-parse HEAD)"
     bash <(curl -s https://codecov.io/bash) -C "$(git rev-parse HEAD^)"
   fi
-- bash <(curl -s https://codecov.io/bash) -C "$(git describe --all --always --abbrev=7 HEAD)"
+- export GIT_DESC=$(git describe --all --always --abbrev=7 HEAD^)
 before_deploy:
 - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH;
   else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
 - export BRANCH_CLEAN=${BRANCH//\//_}
 - export COMMIT_SHA=${TRAVIS_COMMIT:0:7}
-- export GIT_DESC=$(echo git describe --all --always --abbrev=7 HEAD^)
 - mkdir deploy
 - ls target/*.jar
 - cp target/otp-middleware.jar "deploy/otp-middleware-$BRANCH_CLEAN-$COMMIT_SHA.jar"
