@@ -41,7 +41,7 @@ before_deploy:
   else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
 - export BRANCH_CLEAN=${BRANCH//\//_}
 - export COMMIT_SHA=${TRAVIS_COMMIT:0:7}
-- export GIT_DESC="$(git describe --all --abbrev=7 HEAD^)"
+- export GIT_DESC=$(git describe --all --abbrev=7 HEAD^)
 - echo git describe says... $GIT_DESC
 - mkdir deploy
 - ls target/*.jar
