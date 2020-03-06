@@ -36,7 +36,7 @@ after_success:
     bash <(curl -s https://codecov.io/bash) -C "$(git rev-parse HEAD)"
     bash <(curl -s https://codecov.io/bash) -C "$(git rev-parse HEAD^)"
   fi
-- export GIT_DESC=$(git describe --all --always HEAD^)
+- export GIT_DESC=$(git describe --all --always HEAD)
 - echo $GIT_DESC
 before_deploy:
 - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH;
