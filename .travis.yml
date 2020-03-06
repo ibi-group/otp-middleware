@@ -47,7 +47,7 @@ before_deploy:
 - ls target/*.jar
 - cp target/otp-middleware.jar "deploy/otp-middleware-$BRANCH_CLEAN-$COMMIT_SHA.jar"
 - cp target/otp-middleware.jar "deploy/otp-middleware-$BRANCH_CLEAN-latest.jar"
-deployxxx:
+deploy:
   provider: s3
   skip_cleanup: true
   access_key_id: AKIA2YG5XQ2YJDTPRQ7Z
