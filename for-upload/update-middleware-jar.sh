@@ -24,6 +24,15 @@ AWS_S3_SERVER=https://otp-middleware-builds.s3.amazonaws.com
 OLD_JAR_FOLDER=oldjars
 
 
+# Basic, imperfect check for NEW_JAR_INFO_FILE
+# to avoid starting this script again if another instance is still running.
+if [ -f NEW_JAR_INFO_FILE ]
+then
+  >&2 echo Script is already running. Exiting.
+  exit 1
+fi
+
+
 # Extract name of existing jar from first line if file exists.
 currentjarfile=undefined
 if [ -f "$JAR_INFO_FILE" ]
@@ -57,7 +66,7 @@ echo -Latest JAR: $newjarfile
 # Double brackets needed to use wildcards.
 if [[ "$newjarfile" != *".jar" ]]
 then
-  echo Incorrect JAR file name. Exiting.
+  >&2 echo Incorrect JAR file name. Exiting.
   rm -f $NEW_JAR_INFO_FILE
   exit 1
 fi
@@ -80,7 +89,7 @@ oldjarlist=$(ls *.jar)
 # Exit if download failed.
 echo About to download file $newjarfile
 
-if wget $AWS_S3_SERVER/$branchname/$newjarfile
+if wget $AWS_S3_SERVER/$branchname/$newjarfile -q --show-progress
 then echo Download successfull.
 else
   >&2 echo Download failed. Exiting.
@@ -103,7 +112,7 @@ else
   if kill $process
   then echo Process $process has been stopped.
   else
-    >&2 echo Process $process was not stopped. Cleaning up and exiting.
+    >&2 echo Unable to stop process $process. Cleaning up and exiting.
     rm -f $NEW_JAR_INFO_FILE
     rm -f $newjarfile
     exit 1
