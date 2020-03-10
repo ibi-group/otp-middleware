@@ -52,6 +52,7 @@ before_deploy:
 - echo otp-middleware-$JAR_VERSION.jar > deploy/$BRANCH_CLEAN/latest.txt
 # Add the JAR file.
 - cp target/otp-middleware.jar "deploy/$BRANCH_CLEAN/otp-middleware-$JAR_VERSION.jar"
+# Deploy to S3.
 deploy:
   provider: s3
   skip_cleanup: true
