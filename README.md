@@ -18,8 +18,7 @@ otp-middleware is a potential way for agencies to fill in those gaps. It provide
 ## Deployment
 TODO - One-time deployment.
 
-Continuous deployment using AWS S3 for binaries is supported (To be completed).
-To enable that, upload `update-middleware-jar.sh`, `script-lib/`, and `continuous-deploy-config.yml` to the user home folder.
+OTP Middleware is also suitable for continuous deployment implementations.
 
 ## Development
 To run otp-middleware in a local, development environment:
