@@ -138,7 +138,11 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         long startTime = System.currentTimeMillis();
         String id = getIdFromRequest(req);
         try {
-            getObjectForId(req, id);
+            T object = getObjectForId(req, id);
+            // Run pre-delete hook. If return value is false, abort.
+            if (!preDeleteHook(object, req)) {
+                logMessageAndHalt(req, 500, "Unknown error occurred during delete attempt.");
+            }
             boolean success = persistence.removeById(id);
             int code = success ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500;
             String message = success
@@ -177,6 +181,21 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
+     * Hook called before object is created in MongoDB.
+     */
+    abstract T preCreateHook(T entity, Request req);
+
+    /**
+     * Hook called before object is updated in MongoDB. Validation of entity object could go here.
+     */
+    abstract T preUpdateHook(T entity, Request req);
+
+    /**
+     * Hook called before object is deleted in MongoDB.
+     */
+    abstract boolean preDeleteHook(T entity, Request req);
+
+    /**
      * HTTP endpoint to create or update a single entity. If the ID param is supplied and the HTTP method is
      * PUT, an update operation will be applied to the specified entity using the JSON body found in the request.
      * Otherwise, a new entity will be created.
@@ -193,10 +212,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         try {
             // Validate fields by deserializing into POJO.
             T object = getPOJOFromRequestBody(req, clazz);
-            // TODO Add validation hooks for specific models... e.g., enforcing unique emails for users, checking
-            //  valid email addresses, etc.
             if (isCreating) {
-                persistence.create(object);
+                // Run pre-create hook and use updated object (with potentially modified values) in create operation.
+                T updatedObject = preCreateHook(object, req);
+                persistence.create(updatedObject);
             } else {
                 String id = getIdFromRequest(req);
                 // Update last updated value.

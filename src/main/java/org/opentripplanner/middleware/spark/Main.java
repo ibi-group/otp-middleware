@@ -4,9 +4,10 @@ import com.beerboy.ss.SparkSwagger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
-import org.opentripplanner.middleware.controllers.api.ApiControllerImpl;
-import org.opentripplanner.middleware.models.User;
+import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.controllers.api.UserController;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +16,10 @@ import spark.Service;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
@@ -42,14 +46,26 @@ public class Main {
         // available at http://localhost:4567/async-websocket
         spark.webSocket("/async-websocket", BasicOtpWebSocketController.class);
 
-
         SparkSwagger.of(spark)
                 // Register API routes.
                 .endpoints(() -> List.of(
-                        new ApiControllerImpl<User>(API_PREFIX, Persistence.users)
+                        new UserController(API_PREFIX)
                         // TODO Add other models.
                 ))
                 .generateDoc();
+
+        // Apply CORS headers.
+        final HashMap<String, String> corsHeaders = new HashMap<>();
+//        corsHeaders.put("Access-Control-Allow-Origin", "*");
+        corsHeaders.put("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
+        corsHeaders.put("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin,");
+        corsHeaders.put("Access-Control-Allow-Credentials", "true");
+        spark.before((request, response) -> corsHeaders.forEach(response::header));
+        spark.options("/*",
+            (request, response) -> {
+            logMessageAndHalt(request, HttpStatus.OK_200, "OK");
+                return "OK";
+            });
 
         // available at http://localhost:4567/hello
         spark.get("/hello", (req, res) -> "(Sparks) OTP Middleware says Hi!");
@@ -61,15 +77,22 @@ public class Main {
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
 
         spark.before(API_PREFIX + "secure/*", ((request, response) -> {
-            // TODO Add Auth0 authentication to requests.
-//            Auth0Connection.checkUser(request);
-//            Auth0Connection.checkEditPrivileges(request);
+            if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
         }));
 
         // Return "application/json" and set gzip header for all API routes.
         spark.before(API_PREFIX + "*", (request, response) -> {
             response.type("application/json"); // Handled by API response documentation. If specified, "Try it out" feature in API docs fails.
             response.header("Content-Encoding", "gzip");
+        });
+
+        /////////////////    Final API routes     /////////////////////
+
+        // Return 404 for any API path that is not configured.
+        // IMPORTANT: Any API paths must be registered before this halt.
+        spark.get(API_PREFIX + "*", (request, response) -> {
+            logMessageAndHalt(request, 404, "No API route configured for this path.");
+            return null;
         });
     }
 
@@ -107,6 +130,25 @@ public class Main {
             node = node.get(parts[i]);
         }
         return node;
+    }
+
+    /**
+     * Convenience function to check existence of a config property (nested fields defined by dot notation
+     * "data.use_s3_storage") in either server.yml or env.yml.
+     */
+    public static boolean hasConfigProperty(String name) {
+        // try the server config first, then the main config
+        return hasConfigProperty(envConfig, name);
+    }
+
+    private static boolean hasConfigProperty(JsonNode config, String name) {
+        String parts[] = name.split("\\.");
+        JsonNode node = config;
+        for (int i = 0; i < parts.length; i++) {
+            if(node == null) return false;
+            node = node.get(parts[i]);
+        }
+        return node != null;
     }
 
     /**
