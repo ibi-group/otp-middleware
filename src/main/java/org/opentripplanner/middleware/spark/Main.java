@@ -7,6 +7,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.controllers.api.LogController;
 import org.opentripplanner.middleware.controllers.api.UserController;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -52,7 +53,9 @@ public class Main {
                         // TODO Add other models.
                 ))
                 .generateDoc();
-
+        // Add log controller HTTP endpoints
+        // TODO: We should determine whether we want to use Spark Swagger for these endpoints too.
+        LogController.register(spark, API_PREFIX);
         spark.options("/*",
             (request, response) -> {
             logMessageAndHalt(request, HttpStatus.OK_200, "OK");
