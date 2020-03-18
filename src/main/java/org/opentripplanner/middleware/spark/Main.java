@@ -56,11 +56,16 @@ public class Main {
 
         // Apply CORS headers.
         final HashMap<String, String> corsHeaders = new HashMap<>();
-//        corsHeaders.put("Access-Control-Allow-Origin", "*");
         corsHeaders.put("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
         corsHeaders.put("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin,");
         corsHeaders.put("Access-Control-Allow-Credentials", "true");
-        spark.before((request, response) -> corsHeaders.forEach(response::header));
+        spark.before((request, response) -> corsHeaders.forEach((key, value) -> {
+            response.header(key, value);
+            // There is a strange issue where the Access-Control-Allow-Origin header does not seem to be recognized
+            // when running the server/ui on local development environment. But if the header is applied while running
+            // on a remote machine (e.g., on EC2), the header is applied twice.
+            if (request.uri().contains("localhost")) response.header("Access-Control-Allow-Origin", "*");
+        }));
         spark.options("/*",
             (request, response) -> {
             logMessageAndHalt(request, HttpStatus.OK_200, "OK");
