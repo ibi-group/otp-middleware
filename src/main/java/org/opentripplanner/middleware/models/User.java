@@ -13,6 +13,8 @@ public class User extends Model {
     public String email;
     // FIXME: This will eventually reference the Auth0 user ID and not a randomly generated UUID.
     public String auth0UserId = UUID.randomUUID().toString();
-    /** Only store trip planning requests/results if a user has explicitly opted in. */
-    public boolean storeResults;
+    public OpenTripPlannerOptions openTripPlannerOptions;
+    public AdminOptions adminOptions;
+    /** Whether a user is also a Data Tools user */
+    public boolean isDataToolsUser;
 }

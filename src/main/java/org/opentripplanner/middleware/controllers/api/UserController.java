@@ -13,8 +13,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.bson.BsonDocument;
-import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.User;
@@ -70,18 +68,22 @@ public class UserController extends ApiController<User> {
         if (userWithEmail != null) {
             logMessageAndHalt(req, 400, "User with email already exists in database!");
         }
+        boolean isDataToolsUser = false;
         // Check for user in Auth0.
-        Auth0UserProfile auth0UserProfile = null;
-        auth0UserProfile = getUserByEmail(user.email);
+        Auth0UserProfile auth0UserProfile = getUserByEmail(user.email);
         if (auth0UserProfile != null) {
             // If a user with email exists in Auth0, assign Auth0 ID to new user record in MongoDB.
+            // TODO: Check app_metadata on user profile?
+            isDataToolsUser = true;
             LOG.warn("User {} already exists in Auth0. Storing new record in Mongo.", auth0UserProfile.email);
         } else {
+            LOG.info("No user found in Auth0. Creating new one.");
             // Otherwise, create the Auth0 user.
             auth0UserProfile = createAuth0User(user, req);
         }
         LOG.info("Created user: {}", auth0UserProfile.user_id);
         user.auth0UserId = auth0UserProfile.user_id;
+        user.isDataToolsUser = isDataToolsUser;
         return user;
     }
 

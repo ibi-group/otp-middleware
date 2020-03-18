@@ -262,7 +262,9 @@ public class Auth0Users {
      */
     public static Auth0UserProfile getUserByEmail(String email) {
         URIBuilder builder = getURIBuilder();
-        builder.setPath(String.join("=", USERS_API_PATH + "-by-email?email", email));
+        builder.setPath(USERS_API_PATH + "-by-email");
+        builder.setParameter("search_engine", SEARCH_API_VERSION);
+        builder.setParameter("email", email);
         URI uri;
         try {
             uri = builder.build();
@@ -276,18 +278,16 @@ public class Auth0Users {
             LOG.error("Auth0 request aborted due to issues during request.");
             return null;
         }
-        Auth0UserProfile user = null;
         try {
-            user = mapper.readValue(response, Auth0UserProfile.class);
-            if (user.user_id == null) {
-                LOG.error("Error parsing user profile response. Response {}", response);
-                return null;
+            Auth0UserProfile[] userProfiles = mapper.readValue(response, Auth0UserProfile[].class);
+            if (userProfiles.length > 0) {
+                return userProfiles[0];
             }
         } catch (IOException e) {
             LOG.error("Unable to parse user profile response from Auth0! Response: {}", response);
             e.printStackTrace();
         }
-        return user;
+        return null;
     }
 
     /**
