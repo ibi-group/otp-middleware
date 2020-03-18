@@ -102,6 +102,9 @@ public class Auth0Connection {
                 Algorithm algorithm = Algorithm.RSA256(publicKey, null);
                 verifier = JWT.require(algorithm)
                     .withIssuer(domain)
+                    // Account for issues with server time drift.
+                    // See https://github.com/auth0/java-jwt/issues/268
+                    .acceptLeeway(3)
                     .build();
             } catch (IllegalStateException | NullPointerException | JwkException e) {
                 LOG.error("Auth0 verifier configured incorrectly.");
