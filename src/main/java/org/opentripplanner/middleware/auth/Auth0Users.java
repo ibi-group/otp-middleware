@@ -1,28 +1,19 @@
 package org.opentripplanner.middleware.auth;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.auth0.client.auth.AuthAPI;
+import com.auth0.client.mgmt.ManagementAPI;
+import com.auth0.client.mgmt.filter.UserFilter;
+import com.auth0.exception.Auth0Exception;
+import com.auth0.json.auth.TokenHolder;
+import com.auth0.json.mgmt.users.User;
+import com.auth0.json.mgmt.users.UsersPage;
+import com.auth0.net.AuthRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
@@ -42,100 +33,34 @@ public class Auth0Users {
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
     public static final String USERS_API_PATH = API_PATH + "/users";
     // Cached API token so that we do not have to request a new one each time a Management API request is made.
-    private static Auth0AccessToken cachedToken = null;
+    private static TokenHolder cachedToken = null;
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Users.class);
+    private static final AuthAPI authAPI = new AuthAPI(AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET);
 
     /**
-     * Constructs a user search query URL.
-     * @param searchQuery   search query to perform (null value implies default query)
-     * @param page          which page of users to return
-     * @param perPage       number of users to return per page
-     * @param includeTotals whether to include the total number of users in search results
-     * @return              URI to perform the search query
+     * Assign Auth0 admin role to the users specified by the provided user IDs. In order to restrict access to the
+     * Admin Dashboard to only those Auth0 users designated as admins, the admin role must be assigned when an admin
+     * user is created (or if the Auth0 user already exists, the admin role can be assigned to their pre-existing user
+     * profile).
      */
-    private static URI getUrl(String searchQuery, int page, int perPage, boolean includeTotals) {
-        // always filter users by datatools client_id
-        String defaultQuery = "app_metadata.datatools.client_id:" + clientId;
-        URIBuilder builder = getURIBuilder();
-        builder.setPath(USERS_API_PATH);
-        builder.setParameter("sort", "email:1");
-        builder.setParameter("per_page", Integer.toString(perPage));
-        builder.setParameter("page", Integer.toString(page));
-        builder.setParameter("include_totals", Boolean.toString(includeTotals));
-        if (searchQuery != null) {
-            builder.setParameter("search_engine", SEARCH_API_VERSION);
-            builder.setParameter("q", searchQuery + " AND " + defaultQuery);
-        }
-        else {
-            builder.setParameter("search_engine", SEARCH_API_VERSION);
-            builder.setParameter("q", defaultQuery);
-        }
-
-        URI uri;
-
-        try {
-            uri = builder.build();
-            return uri;
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * Perform user search query, returning results as a JSON string.
-     */
-    private static String doRequest(URI uri) {
-        LOG.info("Auth0 getUsers URL=" + uri);
-        String charset = "UTF-8";
-
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpGet request = new HttpGet(uri);
+    public static boolean assignAdminRoleToUser(String... userIds) {
         String apiToken = getApiToken();
-        if (apiToken == null) {
-            LOG.error("API access token is null, aborting Auth0 request");
-            return null;
+        if (AUTH0_DOMAIN == null || apiToken == null) {
+            LOG.error("Cannot call Management API because token or Auth0 domain is null.");
+            return false;
         }
-        request.addHeader("Authorization", "Bearer " + apiToken);
-        request.setHeader("Accept-Charset", charset);
-        HttpResponse response;
-
-        LOG.info("Making request: ({})", request.toString());
-
+        String adminRoleId = getConfigPropertyAsText("AUTH0_ROLE");
+        ManagementAPI mgmt = new ManagementAPI(AUTH0_DOMAIN, apiToken);
         try {
-            response = client.execute(request);
-        } catch (IOException e) {
-            LOG.error("An exception occurred while making a request to Auth0");
-            e.printStackTrace();
-            return null;
+            mgmt.roles()
+                .assignUsers(adminRoleId, List.of(userIds))
+                .execute();
+            return true;
+        } catch (Auth0Exception e) {
+            LOG.error("Could not assign users {} to role {}", userIds, adminRoleId, e);
+            return false;
         }
-
-        String result = null;
-
-        if (response.getEntity() != null) {
-            try {
-                result = EntityUtils.toString(response.getEntity());
-            } catch (IOException e) {
-                LOG.error("An exception occurred while parsing a response from Auth0");
-                e.printStackTrace();
-            }
-        } else {
-            LOG.warn("No response body available to parse from Auth0 request");
-        }
-
-        int statusCode = response.getStatusLine().getStatusCode();
-        if(statusCode >= 300) {
-            LOG.warn(
-                "HTTP request to Auth0 returned error code >= 300: ({}). Body: {}",
-                request.toString(),
-                result != null ? result : ""
-            );
-        } else {
-            LOG.info("Successfully made request: ({})", request.toString());
-        }
-
-        return result;
     }
 
     /**
@@ -146,210 +71,98 @@ public class Auth0Users {
     public static String getApiToken() {
         long nowInMillis = new Date().getTime();
         // If cached token has not expired, use it instead of requesting a new one.
-        if (cachedToken != null && cachedToken.getExpirationTime() > nowInMillis) {
-            long minutesToExpiration = (cachedToken.getExpirationTime() - nowInMillis) / 1000 / 60;
+        if (cachedToken != null && cachedToken.getExpiresIn() > 60) {
+            long minutesToExpiration = cachedToken.getExpiresIn() / 60;
             LOG.info("Using cached token (expires in {} minutes)", minutesToExpiration);
-            return cachedToken.access_token;
+            return cachedToken.getAccessToken();
         }
         LOG.info("Getting new Auth0 API access token (cached token does not exist or has expired).");
-        // Create client and build URL.
-        HttpClient client = HttpClientBuilder.create().build();
-        URIBuilder builder = getURIBuilder();
-        String responseString;
-        try {
-            // First get base url for use in audience URL param. (Trailing slash required.)
-            final String audienceUrl = builder.setPath(API_PATH + "/").build().toString();
-            URI uri = builder.setPath("/oauth/token").build();
-            // Make POST request to Auth0 for new token.
-            HttpPost post = new HttpPost(uri);
-            post.setHeader("content-type", "application/x-www-form-urlencoded");
-            List<NameValuePair> urlParameters = new ArrayList<>();
-            urlParameters.add(new BasicNameValuePair("grant_type", "client_credentials"));
-            urlParameters.add(new BasicNameValuePair("client_id", AUTH0_API_CLIENT));
-            urlParameters.add(new BasicNameValuePair("client_secret", AUTH0_API_SECRET));
-            urlParameters.add(new BasicNameValuePair("audience", audienceUrl));
-            post.setEntity(new UrlEncodedFormEntity(urlParameters));
-            HttpResponse response = client.execute(post);
-            // Read response code/entity.
-            int code = response.getStatusLine().getStatusCode();
-            responseString = EntityUtils.toString(response.getEntity());
-            if (code >= 300) {
-                LOG.error("Could not get Auth0 API token {}", responseString);
-                throw new IllegalStateException("Bad response for Auth0 token");
-            }
-        } catch (IllegalStateException | URISyntaxException | IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        // Parse API Token.
-        Auth0AccessToken auth0AccessToken;
-        try {
-            auth0AccessToken = mapper.readValue(responseString, Auth0AccessToken.class);
-        } catch (IOException e) {
-            LOG.error("Error parsing Auth0 API access token.", e);
-            return null;
-        }
-        if (auth0AccessToken.scope == null) {
-            // TODO: Somehow verify that the scope of the token supports the original request's operation? Right now
-            //  we expect that the scope covers fully all of the operations handled by this application (i.e., update
-            //  user, delete user, etc.), which is something that must be configured in the Auth0 dashboard.
-            LOG.error("API access token has invalid scope.");
-            return null;
-        }
+        AuthRequest tokenRequest = authAPI.requestToken(getAuth0Url() + API_PATH + "/");
         // Cache token for later use and return token string.
-        setCachedApiToken(auth0AccessToken);
-        return getCachedApiToken().access_token;
-    }
-
-    /** Set the cached API token to the input parameter. */
-    public static void setCachedApiToken(Auth0AccessToken accessToken) {
-        cachedToken = accessToken;
-    }
-
-    /** Set the cached API token to the input parameter. */
-    public static Auth0AccessToken getCachedApiToken() {
-        return cachedToken;
+        try {
+            cachedToken = tokenRequest.execute();
+        } catch (Auth0Exception e) {
+            LOG.error("Could not fetch Auth0 token", e);
+            return null;
+        }
+        return cachedToken.getAccessToken();
     }
 
     /**
      * Wrapper method for performing user search with default per page count.
      * @return JSON string of users matching search query
      */
-    public static String getAuth0Users(String searchQuery, int page) {
-
-        URI uri = getUrl(searchQuery, page, 10, false);
-        return doRequest(uri);
+    public static UsersPage getAuth0Users(String searchQuery, int page) {
+        String apiToken = getApiToken();
+        if (AUTH0_DOMAIN == null || apiToken == null) {
+            LOG.error("Cannot call Management API because token or Auth0 domain is null.");
+            return null;
+        }
+        UserFilter filter = new UserFilter()
+            .withQuery(searchQuery)
+            .withPage(page, 10)
+            .withSearchEngine(SEARCH_API_VERSION)
+            .withTotals(false);
+        ManagementAPI mgmt = new ManagementAPI(AUTH0_DOMAIN, apiToken);
+        try {
+            return mgmt.users().list(filter).execute();
+        } catch (Auth0Exception e) {
+            LOG.error("Could not fetch users for query.", e);
+            return null;
+        }
     }
 
     /**
      * Wrapper method for performing user search with default per page count and page number = 0.
      */
-    public static String getAuth0Users(String queryString) {
+    public static UsersPage getAuth0Users(String queryString) {
         return getAuth0Users(queryString, 0);
-    }
-
-    /**
-     * Get a single Auth0 user for the specified ID.
-     */
-    public static Auth0UserProfile getUserById(String id) {
-        URIBuilder builder = getURIBuilder();
-        builder.setPath(String.join("/", USERS_API_PATH, id));
-        URI uri;
-        try {
-            uri = builder.build();
-        } catch (URISyntaxException e) {
-            LOG.error("Unable to build URI to getUserById");
-            e.printStackTrace();
-            return null;
-        }
-        String response = doRequest(uri);
-        if (response == null) {
-            LOG.error("Auth0 request aborted due to issues during request.");
-            return null;
-        }
-        Auth0UserProfile user = null;
-        try {
-            user = mapper.readValue(response, Auth0UserProfile.class);
-        } catch (IOException e) {
-            LOG.error("Unable to parse user profile response from Auth0! Response: {}", response);
-            e.printStackTrace();
-        }
-        return user;
     }
 
     /**
      * Get a single Auth0 user for the specified email.
      */
     public static Auth0UserProfile getUserByEmail(String email) {
-        URIBuilder builder = getURIBuilder();
-        builder.setPath(USERS_API_PATH + "-by-email");
-        builder.setParameter("search_engine", SEARCH_API_VERSION);
-        builder.setParameter("email", email);
-        URI uri;
+        ManagementAPI mgmt = new ManagementAPI(AUTH0_DOMAIN, getApiToken());
         try {
-            uri = builder.build();
-        } catch (URISyntaxException e) {
-            LOG.error("Unable to build URI to getUserById");
-            e.printStackTrace();
-            return null;
-        }
-        String response = doRequest(uri);
-        if (response == null) {
-            LOG.error("Auth0 request aborted due to issues during request.");
-            return null;
-        }
-        try {
-            Auth0UserProfile[] userProfiles = mapper.readValue(response, Auth0UserProfile[].class);
-            if (userProfiles.length > 0) {
-                return userProfiles[0];
-            }
-        } catch (IOException e) {
-            LOG.error("Unable to parse user profile response from Auth0! Response: {}", response);
-            e.printStackTrace();
+            List<User> users = mgmt.users().listByEmail(email, null).execute();
+            if (users.size() > 0) return new Auth0UserProfile(users.get(0));
+        } catch (Auth0Exception e) {
+            LOG.error("Could not perform user search by email", e);
         }
         return null;
     }
 
     /**
-     * Creates a new uri builder and sets the scheme, port and host according to whether a test environment is in effect
+     * Get the Auth0 URL, which is dependent on whether a test environment is in effect.
      */
-    private static URIBuilder getURIBuilder() {
-        URIBuilder builder = new URIBuilder();
-        if (AUTH0_DOMAIN.equals("your-auth0-domain")) {
-            // set items for testing purposes assuming use of a Wiremock server
-            builder.setScheme("http");
-            builder.setPort(8089);
-            builder.setHost("localhost");
-        } else {
-            // use live Auth0 domain
-            builder.setScheme("https");
-            builder.setHost(AUTH0_DOMAIN);
-        }
-        return builder;
-    }
-
-    /**
-     * Get users subscribed to a given target ID.
-     */
-    public static String getUsersBySubscription(String subscriptionType, String target) {
-        return getAuth0Users("app_metadata.datatools.subscriptions.type:" + subscriptionType + " AND app_metadata.datatools.subscriptions.target:" + target);
-    }
-
-    public static Set<String> getVerifiedEmailsBySubscription(String subscriptionType, String target) {
-        String json = getUsersBySubscription(subscriptionType, target);
-        JsonNode firstNode = null;
-        Set<String> emails = new HashSet<>();
-        try {
-            firstNode = mapper.readTree(json);
-        } catch (IOException e) {
-            LOG.error("Subscribed users list for type={}, target={} is null or unparseable.", subscriptionType, target);
-            return emails;
-        }
-        for (JsonNode user : firstNode) {
-            if (!user.has("email")) {
-                continue;
-            }
-            String email = user.get("email").asText();
-            boolean emailVerified = user.get("email_verified").asBoolean();
-            // only send email if address has been verified
-            if (!emailVerified) {
-                LOG.warn("Skipping user {}. User's email address has not been verified.", email);
-            } else {
-                emails.add(email);
-            }
-        }
-
-        return emails;
+    private static String getAuth0Url() {
+        // If testing, return Wiremock server. Otherwise, use live Auth0 domain.
+        return "your-auth0-domain".equals(AUTH0_DOMAIN)
+            ? "http://locahost:8089"
+            : "https://" + AUTH0_DOMAIN;
     }
 
     /**
      * Get number of users for the application.
      */
-    public static int getAuth0UserCount(String searchQuery) throws IOException {
-        URI uri = getUrl(searchQuery, 0, 1, true);
-        String result = doRequest(uri);
-        JsonNode jsonNode = new ObjectMapper().readTree(result);
-        return jsonNode.get("total").asInt();
+    public static int getAuth0UserCount(String searchQuery) {
+        String apiToken = getApiToken();
+        if (AUTH0_DOMAIN == null || apiToken == null) {
+            LOG.error("Cannot call Management API because token or Auth0 domain is null.");
+            return -1;
+        }
+        ManagementAPI mgmt = new ManagementAPI(AUTH0_DOMAIN, apiToken);
+        UserFilter filter = new UserFilter()
+            .withQuery(searchQuery)
+            .withSearchEngine(SEARCH_API_VERSION)
+            .withTotals(true);
+        try {
+            UsersPage page = mgmt.users().list(filter).execute();
+            return page.getTotal();
+        } catch (Auth0Exception e) {
+            LOG.error("Could not fetch user count.", e);
+            return -1;
+        }
     }
-
 }

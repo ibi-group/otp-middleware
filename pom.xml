@@ -212,11 +212,12 @@
             <artifactId>spark-swagger</artifactId>
             <version>1.0.0.48</version>
         </dependency>
-        <!-- HTTP client library -->
+
+        <!-- Auth0 Client library for using Management API  -->
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.12</version>
+            <groupId>com.auth0</groupId>
+            <artifactId>auth0</artifactId>
+            <version>1.15.0</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk -->

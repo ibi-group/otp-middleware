@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.auth;
 
+import com.auth0.json.mgmt.users.User;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -16,6 +17,11 @@ public class Auth0UserProfile {
     public Auth0UserProfile(String email, String user_id) {
         this.email = email;
         this.user_id = user_id;
+    }
+
+    public Auth0UserProfile(User user) {
+        this.email = user.getEmail();
+        this.user_id = user.getId();
     }
 
     public Auth0UserProfile(DecodedJWT jwt) {
