@@ -212,12 +212,6 @@
             <artifactId>spark-swagger</artifactId>
             <version>1.0.0.48</version>
         </dependency>
-        <!-- HTTP client library -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.12</version>
-        </dependency>
 
         <!-- Auth0 Client library for using Management API  -->
         <dependency>

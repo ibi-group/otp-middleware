@@ -4,15 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.User;
@@ -20,10 +11,14 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
-import org.apache.http.client.methods.HttpRequestBase;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -101,9 +96,10 @@ public class UserController extends ApiController<User> {
      */
     @Override
     boolean preDeleteHook(User user, Request req) {
-        HttpDelete deleteUserRequest = new HttpDelete(getUserIdUrl(user));
-        setHeaders(req, deleteUserRequest);
-        executeRequestAndGetResult(deleteUserRequest, req);
+        HttpRequest.Builder deleteUserRequestBuilder = HttpRequest.newBuilder();
+        deleteUserRequestBuilder.uri(URI.create(getUserIdUrl(user)));
+        setHeaders(req, deleteUserRequestBuilder);
+        executeRequestAndGetResult(deleteUserRequestBuilder.build(), req);
         return true;
     }
 
@@ -137,16 +133,23 @@ public class UserController extends ApiController<User> {
      * @return
      */
     private static Auth0UserProfile createAuth0User(User user, Request req) {
-        HttpPost createUserRequest = new HttpPost(baseUsersUrl);
-        setHeaders(req, createUserRequest);
+        HttpRequest.Builder createUserRequestBuilder = null;
+        try {
+            createUserRequestBuilder = HttpRequest.newBuilder()
+                .uri(new URI(baseUsersUrl));
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        setHeaders(req, createUserRequestBuilder);
         ObjectNode node = mapper.createObjectNode();
         node.put("connection", "Username-Password-Authentication");
         node.put("email", user.email);
         node.put("password", UUID.randomUUID().toString());
-        setRequestEntityUsingJson(createUserRequest, node.toString(), req);
-
+        HttpRequest request = createUserRequestBuilder
+            .POST(HttpRequest.BodyPublishers.ofString(node.toString()))
+            .build();
         try {
-            return mapper.readValue(executeRequestAndGetResult(createUserRequest, req), Auth0UserProfile.class);
+            return mapper.readValue(executeRequestAndGetResult(request, req), Auth0UserProfile.class);
         } catch (JsonProcessingException e) {
             logMessageAndHalt(req, 500, "Could not construct Auth0 user from JSON", e);
         }
@@ -154,22 +157,10 @@ public class UserController extends ApiController<User> {
     }
 
     /**
-     * Safely set the HTTP request body with a json string.
-     *
-     * @param request the outgoing HTTP post request
-     * @param json The json to set in the request body
-     * @param req The initating request that came into datatools-server
-     */
-    private static void setRequestEntityUsingJson(HttpEntityEnclosingRequestBase request, String json, Request req) {
-        HttpEntity entity = new ByteArrayEntity(json.getBytes(UTF_8));
-        request.setEntity(entity);
-    }
-
-    /**
      * Set some common headers on the request, including the API access token, which must be obtained via token request
      * to Auth0.
      */
-    private static void setHeaders(Request sparkRequest, HttpRequestBase auth0Request) {
+    private static void setHeaders(Request sparkRequest, HttpRequest.Builder auth0Request) {
         String apiToken = Auth0Users.getApiToken();
         if (apiToken == null) {
             logMessageAndHalt(
@@ -178,9 +169,10 @@ public class UserController extends ApiController<User> {
                 "Failed to obtain Auth0 API token for request"
             );
         }
-        auth0Request.addHeader("Authorization", "Bearer " + apiToken);
-        auth0Request.setHeader("Accept-Charset", String.valueOf(UTF_8));
-        auth0Request.setHeader("Content-Type", "application/json");
+        auth0Request
+            .setHeader("Authorization", "Bearer " + apiToken)
+            .setHeader("Accept-Charset", String.valueOf(UTF_8))
+            .setHeader("Content-Type", "application/json");
     }
 
     /**
@@ -190,14 +182,14 @@ public class UserController extends ApiController<User> {
      * @param httpRequest The outgoing HTTP request
      * @param req The initating request that came into datatools-server
      */
-    private static String executeRequestAndGetResult(HttpRequestBase httpRequest, Request req) {
+    private static String executeRequestAndGetResult(HttpRequest httpRequest, Request req) {
         // execute outside http request
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = null;
+        HttpClient client = HttpClient.newBuilder().build();
+        HttpResponse<String> response = null;
         try {
             LOG.info("Making request: ({})", httpRequest.toString());
-            response = client.execute(httpRequest);
-        } catch (IOException e) {
+            response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException | InterruptedException e) {
             LOG.error("HTTP request failed: ({})", httpRequest.toString());
             logMessageAndHalt(
                 req,
@@ -206,27 +198,12 @@ public class UserController extends ApiController<User> {
                 e
             );
         }
-
-        // parse response body if there is one
-        HttpEntity entity = response.getEntity();
-        String result = null;
-        if (entity != null) {
-            try {
-                result = EntityUtils.toString(entity);
-            } catch (IOException e) {
-                logMessageAndHalt(
-                    req,
-                    500,
-                    String.format(
-                        "Failed to parse result of http request (%s).",
-                        httpRequest.toString()
-                    ),
-                    e
-                );
-            }
+        if (response == null) {
+            return null;
         }
-
-        int statusCode = response.getStatusLine().getStatusCode();
+        // parse response body if there is one
+        String result = response.body();
+        int statusCode = response.statusCode();
         if(statusCode >= 300) {
             LOG.error(
                 "HTTP request returned error code >= 300: ({}). Body: {}",
@@ -239,7 +216,7 @@ public class UserController extends ApiController<User> {
             try {
                 jsonResponse = mapper.readTree(result);
             } catch (IOException e) {
-                LOG.warn("Could not parse json from auth0 error message. Body: {}", result != null ? result : "");
+                LOG.warn("Could not parse json from auth0 error message. Body: {}", result);
                 e.printStackTrace();
             }
 
@@ -251,7 +228,6 @@ public class UserController extends ApiController<User> {
         }
 
         LOG.info("Successfully made request: ({})", httpRequest.toString());
-
         return result;
     }
 
