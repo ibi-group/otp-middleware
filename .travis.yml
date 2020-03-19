@@ -37,14 +37,22 @@ after_success:
     bash <(curl -s https://codecov.io/bash) -C "$(git rev-parse HEAD^)"
   fi
 before_deploy:
+# Obtain the branch name.
 - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH;
   else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
 - export BRANCH_CLEAN=${BRANCH//\//_}
+# `git describe --tags HEAD` returns a string of the form v0.0.0-52-ge10d02d.
+# It assumes you have pushed a tag on a commit on github (e.g. a commit on the dev branch).
+- export JAR_VERSION=$(git describe --tags HEAD)
+- echo $JAR_VERSION
+# Create a deployment folder, and a folder for the branch.
 - mkdir deploy
-- ls target/*.jar
-- cp target/otp-middleware-*.jar deploy/
-- cp target/otp-middleware-*.jar "deploy/otp-middleware-latest-$BRANCH_CLEAN.jar"
-- echo $BRANCH_CLEAN
+- mkdir deploy/$BRANCH_CLEAN
+# Add a file with latest build info (that continuous deployment scripts can probe).
+- echo otp-middleware-$JAR_VERSION.jar > deploy/$BRANCH_CLEAN/latest.txt
+# Add the JAR file.
+- cp target/otp-middleware.jar "deploy/$BRANCH_CLEAN/otp-middleware-$JAR_VERSION.jar"
+# Deploy to S3.
 deploy:
   provider: s3
   skip_cleanup: true

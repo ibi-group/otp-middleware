@@ -1,63 +1,74 @@
 package org.opentripplanner.middleware.spark;
 
+import com.beerboy.ss.SparkSwagger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.controllers.api.ApiControllerImpl;
+import org.opentripplanner.middleware.models.User;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-
-import static spark.Spark.*;
+import java.util.List;
 
 public class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
-    private static final String API_PREFIX = "api/";
     private static final String DEFAULT_ENV = "configurations/default/env.yml";
     private static JsonNode envConfig;
     // ObjectMapper that loads in YAML config files
     private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+    private static final String API_PREFIX = "/api/";
 
     public static void main(String[] args) throws IOException {
         // Load configuration.
         loadConfig(args);
-        // Connect to the MongoDB.
+        // Connect to MongoDB.
         Persistence.initialize();
-        // Define some endpoints,
-        staticFileLocation("/public");
 
-        //
+        // Must start spark explicitly to use spark-swagger.
+        // https://github.com/manusant/spark-swagger#endpoints-binding
+        Service spark = Service.ignite().port(Service.SPARK_DEFAULT_PORT);
+
+        // Define some endpoints.
+        // spark.staticFileLocation("/public");
+
         // websocket() must be declared before the other get() endpoints.
         // available at http://localhost:4567/async-websocket
-        webSocket("/async-websocket", BasicOtpWebSocketController.class);
+        spark.webSocket("/async-websocket", BasicOtpWebSocketController.class);
+
+
+        SparkSwagger.of(spark)
+                // Register API routes.
+                .endpoints(() -> List.of(
+                        new ApiControllerImpl<User>(API_PREFIX, Persistence.users)
+                        // TODO Add other models.
+                ))
+                .generateDoc();
 
         // available at http://localhost:4567/hello
-        get("/hello", (req, res) -> "(Sparks) OTP Middleware says Hi!");
+        spark.get("/hello", (req, res) -> "(Sparks) OTP Middleware says Hi!");
 
         // available at http://localhost:4567/sync
-        get("/sync", (req, res) -> BasicOtpDispatcher.executeRequestsInSequence());
+        spark.get("/sync", (req, res) -> BasicOtpDispatcher.executeRequestsInSequence());
 
         // available at http://localhost:4567/async
-        get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
+        spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
 
-        // Register API routes.
-        new ApiControllerImpl(API_PREFIX, Persistence.users);
-        // TODO Add other models.
-
-        before(API_PREFIX + "secure/*", ((request, response) -> {
+        spark.before(API_PREFIX + "secure/*", ((request, response) -> {
             // TODO Add Auth0 authentication to requests.
 //            Auth0Connection.checkUser(request);
 //            Auth0Connection.checkEditPrivileges(request);
         }));
 
         // Return "application/json" and set gzip header for all API routes.
-        before(API_PREFIX + "*", (request, response) -> {
-            response.type("application/json");
+        spark.before(API_PREFIX + "*", (request, response) -> {
+            response.type("application/json"); // Handled by API response documentation. If specified, "Try it out" feature in API docs fails.
             response.header("Content-Encoding", "gzip");
         });
     }

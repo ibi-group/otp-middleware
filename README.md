@@ -16,7 +16,9 @@ otp-middleware is a potential way for agencies to fill in those gaps. It provide
 - and other features (TODO).
 
 ## Deployment
-TODO
+TODO - One-time deployment.
+
+OTP Middleware is also suitable for continuous deployment implementations.
 
 ## Development
 To run otp-middleware in a local, development environment:

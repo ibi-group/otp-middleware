@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
@@ -13,13 +15,10 @@ import spark.Response;
 import java.util.Date;
 import java.util.List;
 
+import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
-import static spark.Spark.delete;
-import static spark.Spark.get;
-import static spark.Spark.options;
-import static spark.Spark.post;
-import static spark.Spark.put;
 
 /**
  * Generic API controller abstract class. This class provides CRUD methods using {@link spark.Spark} HTTP request
@@ -30,57 +29,104 @@ import static spark.Spark.put;
  *  that exist in other collection).
  * @param <T> One of the {@link Model} classes (extracted from {@link TypedPersistence})
  */
-public abstract class ApiController<T extends Model> {
+public abstract class ApiController<T extends Model> implements Endpoint {
     private static final String ID_PARAM = "/:id";
     private final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String classToLowercase;
-    private final TypedPersistence persistence;
+    private final TypedPersistence<T> persistence;
     private final Class<T> clazz;
 
     /**
      * @param apiPrefix string prefix to use in determining the resource location
      * @param persistence {@link TypedPersistence} persistence for the entity to set up CRUD endpoints for
      */
-    public ApiController (String apiPrefix, TypedPersistence persistence) {
+    public ApiController (String apiPrefix, TypedPersistence<T> persistence) {
         this.clazz = persistence.clazz;
         this.persistence = persistence;
         this.classToLowercase = persistence.clazz.getSimpleName().toLowerCase();
         this.ROOT_ROUTE = apiPrefix + SECURE + classToLowercase;
-        registerRoutes();
     }
 
     /**
-     * Register basic CRUD HTTP endpoints for the controller implementation.
+     * This method is called by {@link SparkSwagger} to register endpoints and generate the docs.
+     * @param restApi The object to which to attach the documentation.
      */
-    private void registerRoutes() {
-        LOG.info("Registering routes for {}", ROOT_ROUTE);
-        // Options response for CORS
-        options(ROOT_ROUTE, (q, s) -> "");
-        // Get multiple entities.
-        get(ROOT_ROUTE, this::getMany, JsonUtils::toJson);
-        // Get one entity.
-        get(ROOT_ROUTE + ID_PARAM, this::getOne, JsonUtils::toJson);
-        // Create entity request
-        post(ROOT_ROUTE, this::createOrUpdate, JsonUtils::toJson);
-        // Update entity request
-        put(ROOT_ROUTE + ID_PARAM, this::createOrUpdate, JsonUtils::toJson);
-        // Delete entity request
-        delete(ROOT_ROUTE + ID_PARAM, this::deleteOne, JsonUtils::toJson);
+    @Override
+    public void bind(final SparkSwagger restApi) {
+        LOG.info("Registering routes and enabling docs for {}", ROOT_ROUTE);
+
+        restApi.endpoint(endpointPath(ROOT_ROUTE)
+            .withDescription("Interface for querying and managing '" + classToLowercase + "' entities."), (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase))
+
+            // Careful here!
+            // If using lambdas with the GET method, a bug in spark-swagger
+            // requires you to write path(<entire_route>).
+            // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
+            // Other HTTP methods are not affected by this bug.
+
+            // Get multiple entities.
+            .get(path(ROOT_ROUTE)
+                    .withDescription("Gets a list of all '" + classToLowercase + "' entities.")
+                    .withResponseAsCollection(clazz),
+                    this::getMany, JsonUtils::toJson
+            )
+
+            // Get one entity.
+            .get(path(ROOT_ROUTE + ID_PARAM)
+                    .withDescription("Returns a '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
+                    .withPathParam().withName("id").withDescription("The id of the entity to search.").and()
+                    // .withResponses(...) // FIXME: not implemented (requires source change).
+                    .withResponseType(clazz),
+                    this::getOne, JsonUtils::toJson
+            )
+
+            // Options response for CORS
+            .options(path(""), (req, res) -> "")
+
+            // Create entity request
+            .post(path("")
+                    .withDescription("Creates a '" + classToLowercase + "' entity.")
+                    .withRequestType(clazz) // FIXME: Embedded Swagger UI doesn't work for this request. (Embed or link a more recent version?)
+                    .withResponseType(clazz),
+                    this::createOrUpdate, JsonUtils::toJson
+            )
+
+            // Update entity request
+            .put(path(ID_PARAM)
+                    .withDescription("Updates and returns the '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
+                    .withPathParam().withName("id").withDescription("The id of the entity to update.").and()
+                    // FIXME: The Swagger UI embedded in spark-swagger doesn't work for this request.
+                    //  (Embed or link a more recent Swagger UI version?)
+                    .withRequestType(clazz)
+                    // FIXME: `withResponses` is supposed to document the expected HTTP responses (200, 403, 404)...
+                    //  but that doesn't appear to be implemented in spark-swagger.
+                    // .withResponses(...)
+                    .withResponseType(clazz),
+                    this::createOrUpdate, JsonUtils::toJson
+            )
+
+            // Delete entity request
+            .delete(path(ID_PARAM)
+                    .withDescription("Deletes the '" + classToLowercase + "' entity with the specified id if it exists.")
+                    .withPathParam().withName("id").withDescription("The id of the entity to delete.").and()
+                    .withGenericResponse(),
+                    this::deleteOne, JsonUtils::toJson
+            );
     }
 
     /**
      * HTTP endpoint to get multiple entities.
      */
-    private List getMany(Request req, Response res) {
+    private List<T> getMany(Request req, Response res) {
         return persistence.getAll();
     }
 
     /**
      * HTTP endpoint to get one entity specified by ID.
      */
-    private Model getOne(Request req, Response res) {
+    private T getOne(Request req, Response res) {
         String id = getIdFromRequest(req);
         return getObjectForId(req, id);
     }
@@ -117,8 +163,8 @@ public abstract class ApiController<T extends Model> {
     /**
      * Convenience method for extracting the ID param from the HTTP request.
      */
-    private Model getObjectForId(Request req, String id) {
-        Model object = persistence.getById(id);
+    private T getObjectForId(Request req, String id) {
+        T object = persistence.getById(id);
         if (object == null) {
             logMessageAndHalt(
                 req,
@@ -135,7 +181,7 @@ public abstract class ApiController<T extends Model> {
      * PUT, an update operation will be applied to the specified entity using the JSON body found in the request.
      * Otherwise, a new entity will be created.
      */
-    private Model createOrUpdate(Request req, Response res) {
+    private T createOrUpdate(Request req, Response res) {
         long startTime = System.currentTimeMillis();
         // Check if an update or create operation depending on presence of id param
         // This needs to be final because it is used in a lambda operation below.
@@ -146,7 +192,7 @@ public abstract class ApiController<T extends Model> {
         // Save or update to database
         try {
             // Validate fields by deserializing into POJO.
-            Model object = getPOJOFromRequestBody(req, clazz);
+            T object = getPOJOFromRequestBody(req, clazz);
             // TODO Add validation hooks for specific models... e.g., enforcing unique emails for users, checking
             //  valid email addresses, etc.
             if (isCreating) {
