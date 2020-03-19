@@ -4,8 +4,15 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.apigateway.AmazonApiGateway;
 import com.amazonaws.services.apigateway.AmazonApiGatewayClient;
 import com.amazonaws.services.apigateway.AmazonApiGatewayClientBuilder;
+import com.amazonaws.services.apigateway.model.GetApiKeyRequest;
+import com.amazonaws.services.apigateway.model.GetApiKeyResult;
+import com.amazonaws.services.apigateway.model.GetApiKeysRequest;
+import com.amazonaws.services.apigateway.model.GetApiKeysResult;
+import com.amazonaws.services.apigateway.model.GetUsagePlansRequest;
+import com.amazonaws.services.apigateway.model.GetUsagePlansResult;
 import com.amazonaws.services.apigateway.model.GetUsageRequest;
 import com.amazonaws.services.apigateway.model.GetUsageResult;
+import com.amazonaws.services.apigateway.model.UsagePlan;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +22,8 @@ import spark.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.spark.Main.hasConfigProperty;
@@ -40,19 +49,26 @@ public class LogController {
         spark.get(apiPrefix + "/secure/logs", LogController::getUsageLogs, JsonUtils::toJson);
     }
 
-    public static GetUsageResult getUsageLogs(Request req, Response res) {
+    public static List<GetUsageResult> getUsageLogs(Request req, Response res) {
         // TODO: how can we extract this usage plan ID? Perhaps this will just be stored along with the API key
         //  information in the database table containing info on third party apps.
+        GetApiKeysRequest getApiKeysRequest = new GetApiKeysRequest();
+        GetApiKeysResult apiKeys = gateway.getApiKeys(getApiKeysRequest);
+        apiKeys.getItems();
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String startDate = req.queryParamOrDefault("startDate", formatter.format(now.minusDays(30)));
         String endDate = req.queryParamOrDefault("endDate", formatter.format(now));
-        String usagePlanId = "ajjp1j";
-        GetUsageRequest getUsageRequest = new GetUsageRequest()
-            .withStartDate(startDate)
-            .withEndDate(endDate)
-            .withUsagePlanId(usagePlanId);
-        GetUsageResult usage = gateway.getUsage(getUsageRequest);
-        return usage;
+        GetUsagePlansRequest getUsagePlansRequest = new GetUsagePlansRequest();
+        GetUsagePlansResult usagePlansResult = gateway.getUsagePlans(getUsagePlansRequest);
+        List<GetUsageResult> usageResults = new ArrayList<>();
+        for (UsagePlan usagePlan : usagePlansResult.getItems()) {
+            GetUsageRequest getUsageRequest = new GetUsageRequest()
+                .withStartDate(startDate)
+                .withEndDate(endDate)
+                .withUsagePlanId(usagePlan.getId());
+            usageResults.add(gateway.getUsage(getUsageRequest));
+        }
+        return usageResults;
     }
 }
