@@ -29,8 +29,8 @@ import java.util.UUID;
 import static com.mongodb.client.model.Filters.eq;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.auth.Auth0Users.USERS_API_PATH;
+import static org.opentripplanner.middleware.auth.Auth0Users.assignAdminRoleToUser;
 import static org.opentripplanner.middleware.auth.Auth0Users.getUserByEmail;
-import static org.opentripplanner.middleware.auth.Auth0Users.getUserById;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -80,6 +80,9 @@ public class UserController extends ApiController<User> {
             LOG.info("No user found in Auth0. Creating new one.");
             // Otherwise, create the Auth0 user.
             auth0UserProfile = createAuth0User(user, req);
+        }
+        if (!assignAdminRoleToUser(auth0UserProfile.user_id)) {
+            logMessageAndHalt(req, 500, "Failed to assign admin role to user");
         }
         LOG.info("Created user: {}", auth0UserProfile.user_id);
         user.auth0UserId = auth0UserProfile.user_id;
