@@ -42,20 +42,7 @@ public class Auth0Connection {
             req.attribute("user", Auth0UserProfile.createTestAdminUser());
             return;
         }
-        // Check that auth header is present and formatted correctly (Authorization: Bearer [token]).
-        final String authHeader = req.headers("Authorization");
-        if (authHeader == null) {
-            logMessageAndHalt(req, 401, "Authorization header is missing.");
-        }
-        String[] parts = authHeader.split(" ");
-        if (parts.length != 2 || !"bearer".equals(parts[0].toLowerCase())) {
-            logMessageAndHalt(req, 401, String.format("Authorization header is malformed: %s", authHeader));
-        }
-        // Retrieve token from auth header.
-        String token = parts[1];
-        if (token == null) {
-            logMessageAndHalt(req, 401, "Could not find authorization token");
-        }
+        String token = getTokenFromRequest(req);
         // Handle getting the verifier outside of the below verification try/catch, which is intended to catch issues
         // with the client request. (getVerifier has its own exception/halt handling).
         verifier = getVerifier(req, token);
@@ -74,6 +61,27 @@ public class Auth0Connection {
             LOG.warn("Login failed to verify with our authorization provider.", e);
             logMessageAndHalt(req, 401, "Could not verify user's token");
         }
+    }
+
+    /**
+     * Extract JWT token from Spark HTTP request (in Authorization header).
+     */
+    private static String getTokenFromRequest(Request req) {
+        // Check that auth header is present and formatted correctly (Authorization: Bearer [token]).
+        final String authHeader = req.headers("Authorization");
+        if (authHeader == null) {
+            logMessageAndHalt(req, 401, "Authorization header is missing.");
+        }
+        String[] parts = authHeader.split(" ");
+        if (parts.length != 2 || !"bearer".equals(parts[0].toLowerCase())) {
+            logMessageAndHalt(req, 401, String.format("Authorization header is malformed: %s", authHeader));
+        }
+        // Retrieve token from auth header.
+        String token = parts[1];
+        if (token == null) {
+            logMessageAndHalt(req, 401, "Could not find authorization token");
+        }
+        return token;
     }
 
     /**

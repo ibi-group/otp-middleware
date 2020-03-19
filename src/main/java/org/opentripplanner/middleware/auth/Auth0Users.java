@@ -39,13 +39,8 @@ public class Auth0Users {
      * profile).
      */
     public static boolean assignAdminRoleToUser(String... userIds) {
-        String apiToken = getApiToken();
         String adminRoleId = getConfigPropertyAsText("AUTH0_ROLE");
-        if (AUTH0_DOMAIN == null || apiToken == null) {
-            LOG.error("Cannot call Management API because token or Auth0 domain is null.");
-            return false;
-        }
-        ManagementAPI mgmt = new ManagementAPI(AUTH0_DOMAIN, apiToken);
+        ManagementAPI mgmt = new ManagementAPI(AUTH0_DOMAIN, getApiToken());
         try {
             mgmt.roles()
                 .assignUsers(adminRoleId, List.of(userIds))
@@ -63,7 +58,6 @@ public class Auth0Users {
      * expired). More information on setting this up is here: https://auth0.com/docs/api/management/v2/get-access-tokens-for-production
      */
     public static String getApiToken() {
-        long nowInMillis = new Date().getTime();
         // If cached token has not expired, use it instead of requesting a new one.
         if (cachedToken != null && cachedToken.getExpiresIn() > 60) {
             long minutesToExpiration = cachedToken.getExpiresIn() / 60;
