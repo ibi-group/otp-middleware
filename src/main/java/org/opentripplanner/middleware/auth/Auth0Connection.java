@@ -8,33 +8,23 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
 import java.security.interfaces.RSAPublicKey;
-import java.util.Map;
 
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.spark.Main.hasConfigProperty;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
- * This handles verifying the Auth0 token passed in the Auth header of Spark HTTP requests.
- *
- * Created by demory on 3/22/16.
+ * This handles verifying the Auth0 token passed in the auth header (e.g., Authorization: Bearer MY_TOKEN of Spark HTTP
+ * requests.
  */
 
 public class Auth0Connection {
-    public static final String APP_METADATA = "app_metadata";
-    public static final String USER_METADATA = "user_metadata";
-    public static final String SCOPE = "http://datatools";
-    public static final String SCOPED_APP_METADATA = String.join("/", SCOPE, APP_METADATA);
-    public static final String SCOPED_USER_METADATA = String.join("/", SCOPE, USER_METADATA);
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Connection.class);
     private static JWTVerifier verifier;
 
@@ -87,51 +77,30 @@ public class Auth0Connection {
     }
 
     /**
-     * Choose the correct JWT verification algorithm (based on the values present in env.yml config) and get the
-     * respective verifier.
+     * Get the reusable verifier constructing a new instance if it has not been instantiated yet. Note: this only
+     * supports the RSA256 algorithm.
      */
     private static JWTVerifier getVerifier(Request req, String token) {
         if (verifier == null) {
             try {
-                // Get public key from provider.
                 final String domain = "https://" + getConfigPropertyAsText("AUTH0_DOMAIN") + "/";
                 JwkProvider provider = new UrlJwkProvider(domain);
+                // Decode the token.
                 DecodedJWT jwt = JWT.decode(token);
+                // Get public key from provider.
                 Jwk jwk = provider.get(jwt.getKeyId());
+                RSAPublicKey publicKey = (RSAPublicKey) jwk.getPublicKey();
                 // Use RS256 algorithm to verify token (uses public key/.pem file).
-                Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
+                Algorithm algorithm = Algorithm.RSA256(publicKey, null);
                 verifier = JWT.require(algorithm)
                     .withIssuer(domain)
-                    .build(); //Reusable verifier instance
+                    .build();
             } catch (IllegalStateException | NullPointerException | JwkException e) {
                 LOG.error("Auth0 verifier configured incorrectly.");
                 logMessageAndHalt(req, 500, "Server authentication configured incorrectly.", e);
             }
         }
         return verifier;
-    }
-
-    /**
-     * Handle mapping token values to the expected keys. This accounts for app_metadata and user_metadata that have been
-     * scoped to conform with OIDC (i.e., how newer Auth0 accounts structure the user profile) as well as the user_id ->
-     * sub mapping.
-     */
-    private static void remapTokenValues(DecodedJWT jwt) {
-        Map<String, Claim> claims = jwt.getClaims();
-        // If token did not contain app_metadata or user_metadata, add the scoped values to the decoded token object.
-        if (!claims.containsKey(APP_METADATA) && claims.containsKey(SCOPED_APP_METADATA)) {
-            claims.put(APP_METADATA, claims.get(SCOPED_APP_METADATA));
-        }
-        if (!claims.containsKey(USER_METADATA) && claims.containsKey(SCOPED_USER_METADATA)) {
-            claims.put(USER_METADATA, claims.get(SCOPED_USER_METADATA));
-        }
-        // Do the same for user_id -> sub
-        if (!claims.containsKey("user_id") && claims.containsKey("sub")) {
-            claims.put("user_id", claims.get("sub"));
-        }
-        // Remove scoped metadata objects to clean up user profile object.
-        claims.remove(SCOPED_APP_METADATA);
-        claims.remove(SCOPED_USER_METADATA);
     }
 
     /**
