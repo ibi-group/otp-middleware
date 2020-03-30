@@ -2,15 +2,24 @@ package org.opentripplanner.middleware.auth;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.opentripplanner.middleware.models.AdminUser;
+import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.User;
+import org.opentripplanner.middleware.persistence.Persistence;
 
 import java.util.Arrays;
 import java.util.Date;
+
+import static com.mongodb.client.model.Filters.eq;
 
 /**
  * User profile that is attached to an HTTP request.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Auth0UserProfile {
+    public final User otpUser;
+    public final ApiUser apiUser;
+    public final AdminUser adminUser;
     public String email;
     public boolean email_verified;
     public Date created_at;
@@ -25,6 +34,9 @@ public class Auth0UserProfile {
         this.created_at = new Date();
         this.email_verified = false;
         this.name = "John Doe";
+        otpUser = new User();
+        apiUser = new ApiUser();
+        adminUser = new AdminUser();
     }
 
     /** Create a user profile from the request's JSON web token. Check persistence for stored user */
@@ -33,6 +45,9 @@ public class Auth0UserProfile {
         String[] roles = jwt.getClaim("https://otp-middleware/roles").asArray(String.class);
         // TODO: This value may need to be stored in config with defaults?
         this.isAdmin = roles != null && Arrays.asList(roles).contains("OTP Admin");
+        otpUser = Persistence.users.getOneFiltered(eq("auth0UserId", user_id));
+        adminUser = Persistence.adminUsers.getOneFiltered(eq("auth0UserId", user_id));
+        apiUser = Persistence.apiUsers.getOneFiltered(eq("auth0UserId", user_id));
     }
 
     /**

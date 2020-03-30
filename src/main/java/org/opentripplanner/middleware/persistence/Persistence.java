@@ -8,6 +8,8 @@ import com.mongodb.client.MongoDatabase;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
+import org.opentripplanner.middleware.models.AdminUser;
+import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +34,8 @@ public class Persistence {
     private static MongoDatabase mongoDatabase;
     // One abstracted Mongo collection for each class of persisted objects
     public static TypedPersistence<User> users;
+    public static TypedPersistence<AdminUser> adminUsers;
+    public static TypedPersistence<ApiUser> apiUsers;
 
     public static void initialize () {
         // TODO Add custom codec libraries
@@ -66,6 +70,8 @@ public class Persistence {
         mongoClient = MongoClients.create(settings);
         mongoDatabase = mongoClient.getDatabase(MONGO_DB_NAME);
         users = new TypedPersistence(mongoDatabase, User.class);
+        adminUsers = new TypedPersistence(mongoDatabase, AdminUser.class);
+        apiUsers = new TypedPersistence(mongoDatabase, ApiUser.class);
         // TODO Add other models...
     }
 
