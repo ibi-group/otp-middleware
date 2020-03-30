@@ -18,8 +18,8 @@ public class ApiControllerImpl<T extends Model> extends ApiController<T> {
     }
 
     @Override
-    T preUpdateHook(T entity, Request req) {
-        return entity;
+    T preUpdateHook(T entityToUpdate, T preExistingEntity, Request req) {
+        return null;
     }
 
     @Override

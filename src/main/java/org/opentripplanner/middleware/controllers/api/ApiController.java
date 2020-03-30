@@ -3,6 +3,8 @@ package org.opentripplanner.middleware.controllers.api;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -35,7 +37,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private static final String SECURE = "secure/";
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String classToLowercase;
-    private final TypedPersistence<T> persistence;
+    final TypedPersistence<T> persistence;
     private final Class<T> clazz;
 
     /**
@@ -43,10 +45,16 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * @param persistence {@link TypedPersistence} persistence for the entity to set up CRUD endpoints for
      */
     public ApiController (String apiPrefix, TypedPersistence<T> persistence) {
+        this(apiPrefix, persistence, null);
+    }
+
+    public ApiController (String apiPrefix, TypedPersistence<T> persistence, String resource) {
         this.clazz = persistence.clazz;
         this.persistence = persistence;
         this.classToLowercase = persistence.clazz.getSimpleName().toLowerCase();
-        this.ROOT_ROUTE = apiPrefix + SECURE + classToLowercase;
+        // Default resource to class name.
+        if (resource == null) resource = SECURE + persistence.clazz.getSimpleName().toLowerCase();
+        this.ROOT_ROUTE = apiPrefix + resource;
     }
 
     /**
@@ -183,12 +191,12 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     /**
      * Hook called before object is created in MongoDB.
      */
-    abstract T preCreateHook(T entity, Request req);
+    abstract T preCreateHook(T entityToCreate, Request req);
 
     /**
      * Hook called before object is updated in MongoDB. Validation of entity object could go here.
      */
-    abstract T preUpdateHook(T entity, Request req);
+    abstract T preUpdateHook(T entityToUpdate, T preExistingEntity, Request req);
 
     /**
      * Hook called before object is deleted in MongoDB.
@@ -218,14 +226,22 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 persistence.create(updatedObject);
             } else {
                 String id = getIdFromRequest(req);
+                T preExistingObject = getObjectForId(req, id);
+                if (preExistingObject == null) {
+                    logMessageAndHalt(req, 400, "Object to update does not exist!");
+                    return null;
+                }
                 // Update last updated value.
                 object.lastUpdated = new Date();
-                object.dateCreated = getObjectForId(req, id).dateCreated;
+                // Pin the date created to pre-existing value.
+                object.dateCreated = preExistingObject.dateCreated;
                 // Validate that ID in JSON body matches ID param. TODO add test
                 if (!id.equals(object.id)) {
                     logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "ID in JSON body must match ID param.");
                 }
-                persistence.replace(id, object);
+                // Get updated object from pre-update hook method.
+                T updatedObject = preUpdateHook(object, preExistingObject, req);
+                persistence.replace(id, updatedObject);
             }
             // Return object that ultimately gets stored in database.
             return persistence.getById(object.id);

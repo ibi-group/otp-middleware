@@ -34,28 +34,32 @@ public class Main {
         // Connect to MongoDB.
         Persistence.initialize();
 
+        initializeHttpEndpoints();
+    }
+
+    private static void initializeHttpEndpoints() throws IOException {
         // Must start spark explicitly to use spark-swagger.
         // https://github.com/manusant/spark-swagger#endpoints-binding
         Service spark = Service.ignite().port(Service.SPARK_DEFAULT_PORT);
 
-        // Define some endpoints.
-        // spark.staticFileLocation("/public");
-
         // websocket() must be declared before the other get() endpoints.
         // available at http://localhost:4567/async-websocket
         spark.webSocket("/async-websocket", BasicOtpWebSocketController.class);
-
-        SparkSwagger.of(spark)
+        try {
+            SparkSwagger.of(spark)
                 // Register API routes.
                 .endpoints(() -> List.of(
                         new UserController(API_PREFIX)
                         // TODO Add other models.
                 ))
                 .generateDoc();
-
+        } catch (RuntimeException e) {
+            LOG.error("Error initializing API controllers", e);
+            System.exit(1);
+        }
         spark.options("/*",
             (request, response) -> {
-            logMessageAndHalt(request, HttpStatus.OK_200, "OK");
+                logMessageAndHalt(request, HttpStatus.OK_200, "OK");
                 return "OK";
             });
 
@@ -70,6 +74,11 @@ public class Main {
 
         spark.before(API_PREFIX + "secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
+        }));
+        spark.before(API_PREFIX + "admin/*", ((request, response) -> {
+            if (!request.requestMethod().equals("OPTIONS")) {
+                Auth0Connection.checkUserIsAdmin(request, response);
+            }
         }));
 
         // Return "application/json" and set gzip header for all API routes.
@@ -112,14 +121,14 @@ public class Main {
      * JsonNode. Checks env.yml and returns null if property is not found.
      */
     private static JsonNode getConfigProperty(String name) {
-        String parts[] = name.split("\\.");
+        String[] parts = name.split("\\.");
         JsonNode node = envConfig;
-        for (int i = 0; i < parts.length; i++) {
-            if(node == null) {
+        for (String part : parts) {
+            if (node == null) {
                 LOG.warn("Config property {} not found", name);
                 return null;
             }
-            node = node.get(parts[i]);
+            node = node.get(part);
         }
         return node;
     }
@@ -134,11 +143,11 @@ public class Main {
     }
 
     private static boolean hasConfigProperty(JsonNode config, String name) {
-        String parts[] = name.split("\\.");
+        String[] parts = name.split("\\.");
         JsonNode node = config;
-        for (int i = 0; i < parts.length; i++) {
-            if(node == null) return false;
-            node = node.get(parts[i]);
+        for (String part : parts) {
+            if (node == null) return false;
+            node = node.get(part);
         }
         return node != null;
     }

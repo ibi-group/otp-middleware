@@ -1,19 +1,24 @@
 package org.opentripplanner.middleware.auth;
 
-import com.auth0.json.mgmt.users.User;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.Arrays;
 import java.util.Date;
 
+/**
+ * User profile that is attached to an HTTP request.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Auth0UserProfile {
     public String email;
     public boolean email_verified;
     public Date created_at;
     public String name;
-    public String user_id;
+    public final String user_id;
+    public boolean isAdmin;
 
+    /** Constructor is only used for creating a test user */
     private Auth0UserProfile(String email, String user_id) {
         this.email = email;
         this.user_id = user_id;
@@ -22,16 +27,12 @@ public class Auth0UserProfile {
         this.name = "John Doe";
     }
 
-    public Auth0UserProfile(User user) {
-        this.email = user.getEmail();
-        this.user_id = user.getId();
-        this.created_at = user.getCreatedAt();
-        this.email_verified = user.isEmailVerified();
-        this.name = user.getName();
-    }
-
+    /** Create a user profile from the request's JSON web token. Check persistence for stored user */
     public Auth0UserProfile(DecodedJWT jwt) {
         this.user_id = jwt.getClaim("sub").asString();
+        String[] roles = jwt.getClaim("https://otp-middleware/roles").asArray(String.class);
+        // TODO: This value may need to be stored in config with defaults?
+        this.isAdmin = roles != null && Arrays.asList(roles).contains("OTP Admin");
     }
 
     /**

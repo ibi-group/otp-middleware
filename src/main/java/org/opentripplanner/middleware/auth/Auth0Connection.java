@@ -9,9 +9,11 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
+import spark.Response;
 
 import java.security.interfaces.RSAPublicKey;
 
@@ -39,7 +41,7 @@ public class Auth0Connection {
         if (authDisabled()) {
             // If in a development or testing environment, assign a mock profile of an admin user to the request
             // attribute and skip authentication.
-            req.attribute("user", Auth0UserProfile.createTestAdminUser());
+            addUserToRequest(req, Auth0UserProfile.createTestAdminUser());
             return;
         }
         String token = getTokenFromRequest(req);
@@ -53,7 +55,7 @@ public class Auth0Connection {
             Auth0UserProfile profile = new Auth0UserProfile(jwt);
             // The user attribute is used on the server side to check user permissions and does not have all of the
             // fields that the raw Auth0 profile string does.
-            req.attribute("user", profile);
+            addUserToRequest(req, profile);
         } catch (JWTVerificationException e){
             // Invalid signature/claims
             logMessageAndHalt(req, 401, "Login failed to verify with our authorization provider.", e);
@@ -61,6 +63,31 @@ public class Auth0Connection {
             LOG.warn("Login failed to verify with our authorization provider.", e);
             logMessageAndHalt(req, 401, "Could not verify user's token");
         }
+    }
+
+    /** Assign user to request and check that the user is ad admin. */
+    public static void checkUserIsAdmin(Request req, Response res) {
+        // Check auth token in request (and add user object to request).
+        checkUser(req);
+        // Check that user object is present and is admin.
+        Auth0UserProfile user = Auth0Connection.getUserFromRequest(req);
+        if (user == null || !user.isAdmin) {
+            logMessageAndHalt(
+                req,
+                HttpStatus.UNAUTHORIZED_401,
+                "User is not authorized to perform administrative action"
+            );
+        }
+    }
+
+    /** Add user profile to Spark Request object */
+    public static void addUserToRequest(Request req, Auth0UserProfile user) {
+        req.attribute("user", user);
+    }
+
+    /** Get user profile from Spark Request object */
+    public static Auth0UserProfile getUserFromRequest (Request req) {
+        return (Auth0UserProfile) req.attribute("user");
     }
 
     /**
