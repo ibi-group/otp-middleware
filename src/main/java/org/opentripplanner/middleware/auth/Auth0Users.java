@@ -41,30 +41,6 @@ public class Auth0Users {
     private static final AuthAPI authAPI = new AuthAPI(AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET);
 
     /**
-     * Assign Auth0 admin role to the users specified by the provided user IDs. In order to restrict access to the
-     * Admin Dashboard to only those Auth0 users designated as admins, the admin role must be assigned when an admin
-     * user is created (or if the Auth0 user already exists, the admin role can be assigned to their pre-existing user
-     * profile).
-     */
-    public static boolean assignAdminRoleToUser(String... userIds) {
-        String adminRoleId = getConfigPropertyAsText("AUTH0_ROLE");
-        if (adminRoleId == null) {
-            LOG.error("AUTH0_ROLE must be set in env.yml");
-            return false;
-        }
-        try {
-            getManagementAPI()
-                .roles()
-                .assignUsers(adminRoleId, List.of(userIds))
-                .execute();
-            return true;
-        } catch (Auth0Exception e) {
-            LOG.error("Could not assign users {} to role {}", userIds, adminRoleId, e);
-            return false;
-        }
-    }
-
-    /**
      * Creates a standard user for the provided email address. Defaults to a random UUID password and connection type
      * of {@link #DEFAULT_CONNECTION_TYPE}.
      */

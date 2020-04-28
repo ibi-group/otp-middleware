@@ -71,7 +71,7 @@ public class Auth0Connection {
         checkUser(req);
         // Check that user object is present and is admin.
         Auth0UserProfile user = Auth0Connection.getUserFromRequest(req);
-        if (user == null || !user.isAdmin) {
+        if (user == null || user.adminUser == null) {
             logMessageAndHalt(
                 req,
                 HttpStatus.UNAUTHORIZED_401,

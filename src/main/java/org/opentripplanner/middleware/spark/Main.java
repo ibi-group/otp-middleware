@@ -8,7 +8,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
-import org.opentripplanner.middleware.controllers.api.ApiController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.UserController;
 import org.opentripplanner.middleware.persistence.Persistence;

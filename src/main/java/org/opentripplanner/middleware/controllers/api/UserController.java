@@ -1,13 +1,15 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
+import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.User;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
-import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
 import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
@@ -22,7 +24,7 @@ public class UserController extends ApiController<User> {
     private static final Logger LOG = LoggerFactory.getLogger(UserController.class);
 
     public UserController(String apiPrefix){
-        super(apiPrefix, Persistence.users);
+        super(apiPrefix, Persistence.users, "public/user");
     }
 
     /**
@@ -37,6 +39,17 @@ public class UserController extends ApiController<User> {
 
     @Override
     User preUpdateHook(User user, User preExistingUser, Request req) {
+        // In order to update a user, the updating user must be authenticated. Because this API is registered under the
+        // "public" path, this is not done before the request (see Main class where routes are registered).
+        Auth0Connection.checkUser(req);
+        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        // Additionally, if the user is attempting to update someone else's profile, they must be an admin.
+        if (!user.auth0UserId.equals(requestingUser.user_id)) {
+            // TODO check that admin has manage user permission.
+            if (requestingUser.adminUser == null) {
+                logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to update other user accounts.");
+            }
+        }
         validateExistingUser(user, preExistingUser, req, this.persistence);
         return user;
     }

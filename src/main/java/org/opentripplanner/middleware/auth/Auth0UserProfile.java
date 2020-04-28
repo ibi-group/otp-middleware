@@ -7,7 +7,6 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.User;
 import org.opentripplanner.middleware.persistence.Persistence;
 
-import java.util.Arrays;
 import java.util.Date;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -25,7 +24,6 @@ public class Auth0UserProfile {
     public Date created_at;
     public String name;
     public final String user_id;
-    public boolean isAdmin;
 
     /** Constructor is only used for creating a test user */
     private Auth0UserProfile(String email, String user_id) {
@@ -42,12 +40,17 @@ public class Auth0UserProfile {
     /** Create a user profile from the request's JSON web token. Check persistence for stored user */
     public Auth0UserProfile(DecodedJWT jwt) {
         this.user_id = jwt.getClaim("sub").asString();
-        String[] roles = jwt.getClaim("https://otp-middleware/roles").asArray(String.class);
-        // TODO: This value may need to be stored in config with defaults?
-        this.isAdmin = roles != null && Arrays.asList(roles).contains("OTP Admin");
         otpUser = Persistence.users.getOneFiltered(eq("auth0UserId", user_id));
         adminUser = Persistence.adminUsers.getOneFiltered(eq("auth0UserId", user_id));
         apiUser = Persistence.apiUsers.getOneFiltered(eq("auth0UserId", user_id));
+    }
+
+    public boolean hasPermission (String id, Permission permission) {
+        if (adminUser != null) {
+            Permission permissionsForId = adminUser.permissions.get(id);
+            if (permissionsForId != null) return permissionsForId.equals(permission);
+        }
+        return false;
     }
 
     /**

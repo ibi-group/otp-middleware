@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
-import static org.opentripplanner.middleware.auth.Auth0Users.assignAdminRoleToUser;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
 import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
@@ -33,10 +32,6 @@ public class AdminUserController extends ApiController<AdminUser> {
     @Override
     AdminUser preCreateHook(AdminUser user, Request req) {
         User auth0UserProfile = createNewAuth0User(user, req, this.persistence);
-        // Assign admin role to user.
-        if (!assignAdminRoleToUser(auth0UserProfile.getId())) {
-            logMessageAndHalt(req, 500, "Failed to assign admin role to user");
-        }
         return updateAuthFieldsForUser(user, auth0UserProfile);
     }
 
