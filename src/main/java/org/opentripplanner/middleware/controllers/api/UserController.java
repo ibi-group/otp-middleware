@@ -24,7 +24,7 @@ public class UserController extends ApiController<User> {
     private static final Logger LOG = LoggerFactory.getLogger(UserController.class);
 
     public UserController(String apiPrefix){
-        super(apiPrefix, Persistence.users, "public/user");
+        super(apiPrefix, Persistence.users, "secure/user");
     }
 
     /**
