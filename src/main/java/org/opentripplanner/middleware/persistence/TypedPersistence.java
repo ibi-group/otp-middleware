@@ -123,6 +123,16 @@ public class TypedPersistence<T extends Model> {
     }
 
     /**
+     * Retrieves the first document that matches an field value, or null if there is no match.
+     * @param field The field to scan.
+     * @param value The value to find.
+     * @return A document whose specified field has the specified value.
+     */
+    public T getByField (String field, String value) {
+        return mongoCollection.find(eq(field, value)).first();
+    }
+
+    /**
      * This is not memory efficient.
      * TODO: Always use iterators / streams, always perform selection of subsets on the Mongo server side ("where clause").
      */

@@ -22,9 +22,15 @@ public class User extends Model {
 
     /**
      * Email address for contact. This must be unique in the collection.
-     * Assumes auth0 takes care of email verification.
      */
     public String email;
+
+    /**
+     * Whether the email address has been verified.
+     * Some identity services, such as Auth0, manage the email verification process and status,
+     * so this field is only for reference.
+     */
+    public boolean isEmailVerified;
 
     /** Whether the phone number has been verified. */
     public boolean isPhoneNumberVerified;
