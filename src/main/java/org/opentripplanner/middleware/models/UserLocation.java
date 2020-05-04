@@ -9,7 +9,7 @@ public class UserLocation {
     /** The address of this location. */
     public String address;
 
-    /** The FontAwesome icon name for this location. */
+    /** The icon name for this location (e.g. a FontAwesome icon name). */
     public String icon;
 
     /** The type/purpose of this location (free form) (e.g. home, work, shopping...) */

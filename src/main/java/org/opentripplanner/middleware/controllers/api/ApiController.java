@@ -149,7 +149,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * HTTP endpoint to get one entity specified by ID.
+     * HTTP endpoint to get one entity specified by a field value.
      */
     private T getOneByField(Request req, Response res) {
         String attribute = getParamFromRequest(req, "attribute");
@@ -207,7 +207,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * Convenience method for extracting the ID param from the HTTP request.
+     * Convenience method for extracting the attribute/field param from the HTTP request.
      */
     private T getObjectWithField(Request req, String field, String value) {
         T object = persistence.getByField(field, value);
@@ -298,7 +298,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * Get entity ID from request.
+     * Get entity attribute value from request.
      */
     private String getParamFromRequest(Request req, String paramName) {
         String paramValue = req.params(paramName);
