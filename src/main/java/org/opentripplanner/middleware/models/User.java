@@ -25,6 +25,9 @@ public class User extends Model {
      */
     public String email;
 
+    /** Whether the user has consented to terms of use. */
+    public boolean hasConsentedToTerms;
+
     /**
      * Whether the email address has been verified.
      * Some identity services, such as Auth0, manage the email verification process and status,
@@ -35,9 +38,6 @@ public class User extends Model {
     /** Whether the phone number has been verified. */
     public boolean isPhoneNumberVerified;
 
-    /** Phone number for SMS notifications. */
-    public String phoneNumber;
-
     /**
      * Notification preference for this user
      * ("none", "email", "sms").
@@ -45,8 +45,17 @@ public class User extends Model {
      */
     public String notificationChannel;
 
+    /** Phone number for SMS notifications. */
+    public String phoneNumber;
+
+    /** Locations that the user has searched. */
+    public List<UserLocation> recentLocations = new ArrayList<>();
+
     /** Locations that the user has saved. */
     public List<UserLocation> savedLocations = new ArrayList<>();
+
+    /** Whether to store the user's trip history (user must opt in). */
+    public boolean storeTripHistory;
 
     // TODO: Determine if OTP options should be a part of a separate user class (OtpUser)?
     public OpenTripPlannerOptions openTripPlannerOptions;
