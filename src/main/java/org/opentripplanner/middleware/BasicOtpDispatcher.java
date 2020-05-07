@@ -1,5 +1,8 @@
 package org.opentripplanner.middleware;
 
+import spark.Request;
+import spark.Response;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -117,5 +120,9 @@ public class BasicOtpDispatcher {
         String log = "Response " + index + " received in " + time + " ms.<br/>\n";
         System.out.println(log);
         sendMessageFn.accept(log);
+    }
+
+    public void processTripRequest(Request req, Response res) {
+
     }
 }

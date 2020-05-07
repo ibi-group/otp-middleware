@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
 
+import java.net.http.HttpResponse;
+
 import static spark.Spark.halt;
 
 public class JsonUtils {
@@ -45,6 +47,19 @@ public class JsonUtils {
             throw e;
         }
     }
+
+    /** Utility method to parse generic object from Http response. */
+    public static <T> T getPOJOFromHttpResponse(HttpResponse<String> response, Class<T> clazz) {
+        try {
+            // TODO: Use Jackson instead? If we opt for Jackson, we must change JsonUtils#toJson to also use Jackson.
+            return gson.fromJson(response.body(), clazz);
+//            return mapper.readValue(req.body(), clazz);
+        } catch (Exception e) {
+//            logMessageAndHalt(response, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for " + clazz.getSimpleName(), e);
+            throw e;
+        }
+    }
+
 
     /**
      * Wrapper around Spark halt method that formats message as JSON using {@link #formatJSON}.

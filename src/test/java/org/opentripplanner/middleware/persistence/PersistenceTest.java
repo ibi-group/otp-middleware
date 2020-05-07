@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.persistence;
 
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.User;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,4 +52,33 @@ public class PersistenceTest extends OtpMiddlewareTest {
         Persistence.users.create(user);
         return user;
     }
+
+    @Test
+    public void canCreateTripRequest() {
+        TripRequest tripRequest = createTripRequest();
+        String id = tripRequest.id;
+        String retrievedId = Persistence.tripRequest.getById(id).id;
+        assertEquals(id, retrievedId, "Found Trip request ID should equal inserted ID.");
+    }
+
+    @Test
+    public void canDeleteTripRequest() {
+        TripRequest tripRequestToDelete = createTripRequest();
+        Persistence.tripRequest.removeById(tripRequestToDelete.id);
+        TripRequest tripRequest = Persistence.tripRequest.getById(tripRequestToDelete.id);
+        assertNull(tripRequest, "Deleted TripRequest should no longer exist in database (should return as null).");
+    }
+
+    private TripRequest createTripRequest() {
+        String userId = "123456";
+        String batchId = "783726";
+        String fromPlace = "28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034";
+        String toPlace = "28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759";
+        String queryParams = "arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
+        TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, queryParams);
+        Persistence.tripRequest.create(tripRequest);
+        return tripRequest;
+    }
+
+
 }

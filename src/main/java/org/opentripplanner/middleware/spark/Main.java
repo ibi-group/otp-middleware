@@ -5,11 +5,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.api.resource.Response;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.UserController;
+import org.opentripplanner.middleware.models.TripRequest;
+import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.OtpDispatcher;
+import org.opentripplanner.middleware.otp.OtpDispatcherImpl;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +35,10 @@ public class Main {
     // ObjectMapper that loads in YAML config files
     private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private static final String API_PREFIX = "/api/";
+    private static final String USER_ID = "userId";
+    private static final String BATCH_ID = "batchId";
+    private static final String FROM_PLACE = "fromPlace";
+    private static final String TO_PLACE = "toPlace";
 
     public static void main(String[] args) throws IOException {
         // Load configuration.
@@ -75,6 +85,43 @@ public class Main {
 
         // available at http://localhost:4567/async
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
+
+        // available at http://localhost:4567/plan
+        spark.get("/plan", (request, response) -> {
+            response.type("application/json");
+
+            String userId = request.queryParams(USER_ID);
+            if (userId == null) {
+                //TODO log with logging system?
+                LOG.warn("User id not provided, this will be an anonymous request");
+            }
+
+            // Batch id is required to proceed
+            String batchId = request.queryParams(BATCH_ID);
+            if (batchId == null) {
+                //FIXME place holder for now
+                batchId = "-1";
+            }
+
+            // attempt to get response from OTP server based on UI parameters
+            OtpDispatcher otpDispatcher = new OtpDispatcherImpl(getConfigPropertyAsText("OTP_SERVER"));
+            OtpDispatcherResponse otpDispatcherResponse = otpDispatcher.getPlan(request.queryString());
+            if (otpDispatcherResponse == null) {
+                logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
+                return null;
+            } else {
+                // only save trip details if user is known
+                if (userId != null) {
+                    TripRequest tripRequest = new TripRequest(userId, batchId, request.params(FROM_PLACE), request.params(TO_PLACE), request.queryString());
+                    Persistence.tripRequest.create(tripRequest);
+                    Response r = otpDispatcherResponse.getResponse();
+                    TripSummary tripSummary = new TripSummary(userId, r.getPlan().date, r.getPlan().from, r.getPlan().to, r.getError(), r.getPlan().itinerary);
+                    Persistence.tripSummary.create(tripSummary);
+                }
+                response.status(otpDispatcherResponse.getStatusCode());
+                return otpDispatcherResponse.getResponseBody();
+            }
+        });
 
         spark.before(API_PREFIX + "secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
