@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.otp;
 
-import org.opentripplanner.api.resource.Response;
+
+import org.opentripplanner.middleware.otp.core.api.resource.Response;
 
 /**
  * An OTP dispatcher response represents the status code and body return from a call to an OTP end point e.g. plan
@@ -19,7 +20,7 @@ public class OtpDispatcherResponse {
     private final String responseBody;
 
     /**
-     * Response Body. Response Body returned with response from an OTP server.
+     * Response. POJO version of response from an OTP server.
      */
     private final Response response;
 

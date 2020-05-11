@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.otp;
 
-import org.opentripplanner.api.resource.Response;
+import org.opentripplanner.middleware.otp.core.api.resource.Response;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,11 +38,6 @@ public class OtpDispatcherImpl implements OtpDispatcher {
         UriBuilder uriBuilder = UriBuilder.fromUri(OTP_SERVER)
             .path(OTP_SERVER_PLAN_END_POINT)
             .replaceQuery(params);
-//        StringBuilder sb = new StringBuilder();
-//        sb.append(OTP_SERVER)
-//            .append(endPoint)
-//            .append("?")
-//            .append(params);
         URI uri = URI.create(uriBuilder.toString());
         LOG.debug("Constructed URI: {}", uri);
         return uri;

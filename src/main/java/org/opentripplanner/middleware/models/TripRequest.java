@@ -3,8 +3,8 @@ package org.opentripplanner.middleware.models;
 import java.util.Date;
 
 /**
- * A trp request represents a OTP UI trip request initiated by a user of an OpenTripPlanner instance.
- * otp-middleware stores these trip request for trip monitoring purposes.
+ * A trip request represents an OTP UI trip request (initiated by a user) destine for an OpenTripPlanner instance.
+ * otp-middleware stores these trip requests for trip monitoring purposes.
  */
 public class TripRequest extends Model {
     private static final long serialVersionUID = 1L;
@@ -12,34 +12,35 @@ public class TripRequest extends Model {
     /**
      * User Id. Id of user making trip request.
      */
-    private String userId;
+    public String userId;
 
     /**
      * Batch Id. Id for trip plans of different modes.
      */
-    private String batchId;
+    public String batchId;
 
     /**
      * Time stamp. Time at which the request was made.
      */
     // TODO: Perhaps not needed as Model -> dateCreated would be the same
-    private Date timestamp;
+    public Date timestamp;
 
     /**
      * From place. Trip starting point.
      */
-    private String fromPlace;
+    public String fromPlace;
 
     /**
      * To place. Trip end point.
      */
-    private String toPlace;
+    public String toPlace;
 
     /**
      * Query params. Query parameters influencing trip.
      */
-    private String queryParams;
+    public String queryParams;
 
+    /** This no-arg constructor exists to make MongoDB happy. */
     public TripRequest() {
     }
 
@@ -50,30 +51,6 @@ public class TripRequest extends Model {
         this.fromPlace = fromPlace;
         this.toPlace = toPlace;
         this.queryParams = queryParams;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public String getBatchId() {
-        return batchId;
-    }
-
-    public Date getTimestamp() {
-        return timestamp;
-    }
-
-    public String getFromPlace() {
-        return fromPlace;
-    }
-
-    public String getToPlace() {
-        return toPlace;
-    }
-
-    public String getQueryParams() {
-        return queryParams;
     }
 
     @Override

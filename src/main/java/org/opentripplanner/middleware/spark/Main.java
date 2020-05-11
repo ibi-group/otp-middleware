@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.api.resource.Response;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
@@ -16,6 +15,8 @@ import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherImpl;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.otp.core.api.model.TripPlan;
+import org.opentripplanner.middleware.otp.core.api.resource.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +100,7 @@ public class Main {
             // Batch id is required to proceed
             String batchId = request.queryParams(BATCH_ID);
             if (batchId == null) {
-                //FIXME place holder for now
+                //TODO place holder for now
                 batchId = "-1";
             }
 
@@ -110,13 +111,20 @@ public class Main {
                 logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
                 return null;
             } else {
-                // only save trip details if user is known
-                if (userId != null) {
+                Response otpResponse = otpDispatcherResponse.getResponse();
+                // only save trip details if user is known and a response from OTP is provided
+                if (userId != null && otpResponse != null) {
                     TripRequest tripRequest = new TripRequest(userId, batchId, request.params(FROM_PLACE), request.params(TO_PLACE), request.queryString());
                     Persistence.tripRequest.create(tripRequest);
-                    Response r = otpDispatcherResponse.getResponse();
-                    TripSummary tripSummary = new TripSummary(userId, r.getPlan().date, r.getPlan().from, r.getPlan().to, r.getError(), r.getPlan().itinerary);
+                    TripPlan tripPlan = otpResponse.getPlan();
+                    TripSummary tripSummary;
+                    if (tripPlan != null)
+                        tripSummary = new TripSummary(userId, otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary);
+                    else
+                        tripSummary = new TripSummary(userId, otpResponse.getError());
                     Persistence.tripSummary.create(tripSummary);
+                    TripSummary retrieved = Persistence.tripSummary.getById(tripSummary.id);
+                    System.out.println("Retrieved Trip summary:" + retrieved.toString());
                 }
                 response.status(otpDispatcherResponse.getStatusCode());
                 return otpDispatcherResponse.getResponseBody();

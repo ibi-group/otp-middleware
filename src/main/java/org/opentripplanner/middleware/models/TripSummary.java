@@ -1,69 +1,49 @@
 package org.opentripplanner.middleware.models;
 
-import org.opentripplanner.api.model.Itinerary;
-import org.opentripplanner.api.model.Place;
-import org.opentripplanner.api.model.error.PlannerError;
+import org.opentripplanner.middleware.otp.core.api.model.Itinerary;
+import org.opentripplanner.middleware.otp.core.api.model.Place;
+import org.opentripplanner.middleware.otp.core.api.model.error.PlannerError;
 
 import java.util.Date;
 import java.util.List;
 
+/**
+ * A trip summary represents the parts of an OTP plan response which are required for trip monitoring purposes
+ */
 public class TripSummary extends Model {
     private static final long serialVersionUID = 1L;
+    public String userId;
 
-    private final String userId;
-
-    /**
-     * Time stamp. Time at which the request was made.
-     */
     // TODO: Perhaps not needed as Model -> dateCreated would be the same
-    private final Date timestamp;
+    public Date timestamp;
 
-    /**
-     * From place. Trip starting point.
-     */
-    private final Place fromPlace;
+    public Place fromPlace;
 
-    /**
-     * To place. Trip end point.
-     */
-    private final Place toPlace;
+    public Place toPlace;
 
-    private final PlannerError error;
+    public PlannerError error;
 
-    private final List<Itinerary> itinerary;
+    public List<Itinerary> itinerary;
 
-    public TripSummary(String userId, Date timestamp, Place fromPlace, Place toPlace, PlannerError error, List<Itinerary> itinerary) {
+    /** This no-arg constructor exists to make MongoDB happy. */
+    public TripSummary() {
+    }
+
+    public TripSummary(String userId, Place fromPlace, Place toPlace, PlannerError error, List<Itinerary> itinerary) {
         this.userId = userId;
-        this.timestamp = timestamp;
+        this.timestamp = new Date();
         this.fromPlace = fromPlace;
         this.toPlace = toPlace;
         this.error = error;
         this.itinerary = itinerary;
     }
 
-    public String getUserId() {
-        return userId;
+    public TripSummary(String userId, PlannerError error) {
+        this.userId = userId;
+        this.timestamp = new Date();
+        this.error = error;
     }
 
-    public Date getTimestamp() {
-        return timestamp;
-    }
-
-    public Place getFromPlace() {
-        return fromPlace;
-    }
-
-    public Place getToPlace() {
-        return toPlace;
-    }
-
-    public PlannerError getError() {
-        return error;
-    }
-
-    public List<Itinerary> getItinerary() {
-        return itinerary;
-    }
 
     @Override
     public String toString() {

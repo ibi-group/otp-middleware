@@ -3,10 +3,14 @@ package org.opentripplanner.middleware.persistence;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.TripRequest;
+import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.models.User;
+import org.opentripplanner.middleware.otp.OtpDispatcherImpl;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.otp.core.api.model.TripPlan;
+import org.opentripplanner.middleware.otp.core.api.resource.Response;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests to verify that persistence in MongoDB collections are functioning properly. A number of
@@ -53,12 +57,15 @@ public class PersistenceTest extends OtpMiddlewareTest {
         return user;
     }
 
+    //    http://localhost:4567/plan?userId=123456&fromPlace=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=
+
     @Test
     public void canCreateTripRequest() {
         TripRequest tripRequest = createTripRequest();
         String id = tripRequest.id;
-        String retrievedId = Persistence.tripRequest.getById(id).id;
-        assertEquals(id, retrievedId, "Found Trip request ID should equal inserted ID.");
+        TripRequest retrieved = Persistence.tripRequest.getById(id);
+        System.out.println("Trip request retrieved:" + retrieved);
+        assertEquals(id, retrieved.id, "Found Trip request ID should equal inserted ID.");
     }
 
     @Test
@@ -78,6 +85,71 @@ public class PersistenceTest extends OtpMiddlewareTest {
         TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, queryParams);
         Persistence.tripRequest.create(tripRequest);
         return tripRequest;
+    }
+
+    private OtpDispatcherResponse getPlanFromOtp() {
+        OtpDispatcherImpl otpDispatcher = new OtpDispatcherImpl("https://fdot-otp-server.ibi-transit.com");
+        OtpDispatcherResponse response = otpDispatcher.getPlan("plan?userId=123456&fromPlace=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=");
+        System.out.println("OTP Plan response:" + response.toString());
+        return response;
+    }
+
+    // fromPalce instead of fromPlace to produce error
+    private OtpDispatcherResponse getPlanErrorFromOtp() {
+        OtpDispatcherImpl otpDispatcher = new OtpDispatcherImpl("https://fdot-otp-server.ibi-transit.com");
+        OtpDispatcherResponse response = otpDispatcher.getPlan("plan?userId=123456&fromPalce=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=");
+        System.out.println("OTP Plan error response:" + response.toString());
+        return response;
+    }
+
+    private TripSummary createTripSummaryWithError() {
+        OtpDispatcherResponse response = getPlanErrorFromOtp();
+        Response otpResponse = response.getResponse();
+        String userId = "123456";
+        TripPlan tripPlan = otpResponse.getPlan();
+        TripSummary tripSummary;
+        if (tripPlan != null)
+            tripSummary = new TripSummary(userId, otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary);
+        else
+            tripSummary = new TripSummary(userId, otpResponse.getError());
+
+        Persistence.tripSummary.create(tripSummary);
+        System.out.println("Saved trip summary:" + tripSummary.toString());
+        return tripSummary;
+    }
+
+    @Test
+    public void canCreateTripSummaryWithError() {
+        TripSummary tripSummary = createTripSummaryWithError();
+        TripSummary retrieved = Persistence.tripSummary.getById(tripSummary.id);
+        System.out.println("Retrieved trip summary with error:" + retrieved.toString());
+        assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
+    }
+
+    private TripSummary createTripSummary() {
+        OtpDispatcherResponse response = getPlanFromOtp();
+        Response otpResponse = response.getResponse();
+        String userId = "123456";
+        TripSummary tripSummary = new TripSummary(userId, otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary);
+        Persistence.tripSummary.create(tripSummary);
+        System.out.println("Saved trip summary:" + tripSummary.toString());
+        return tripSummary;
+    }
+
+    @Test
+    public void canCreateTripSummary() {
+        TripSummary tripSummary = createTripSummary();
+        TripSummary retrieved = Persistence.tripSummary.getById(tripSummary.id);
+        System.out.println("Retrieved trip summary:" + retrieved.toString());
+        assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
+    }
+
+    @Test
+    public void canDeleteTripSummary() {
+        TripSummary tripSummaryToDelete = createTripSummary();
+        Persistence.tripSummary.removeById(tripSummaryToDelete.id);
+        TripSummary tripSummary = Persistence.tripSummary.getById(tripSummaryToDelete.id);
+        assertNull(tripSummary, "Deleted trip summary should no longer exist in database (should return as null).");
     }
 
 
