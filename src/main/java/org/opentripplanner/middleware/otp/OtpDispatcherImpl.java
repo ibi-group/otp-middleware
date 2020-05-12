@@ -20,7 +20,6 @@ import java.time.Duration;
 public class OtpDispatcherImpl implements OtpDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcherImpl.class);
     private String OTP_SERVER;
-    private final String OTP_SERVER_PLAN_END_POINT = "/otp/routers/default/plan";
     private final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
     public OtpDispatcherImpl(String otpServer) {
@@ -29,14 +28,14 @@ public class OtpDispatcherImpl implements OtpDispatcher {
     }
 
     @Override
-    public OtpDispatcherResponse getPlan(String query) {
+    public OtpDispatcherResponse getPlan(String query, String endPoint) {
         LOG.debug("Original query string: {}", query);
-        return call(buildUri(query, OTP_SERVER_PLAN_END_POINT));
+        return call(buildUri(query, endPoint));
     }
 
     private URI buildUri(String params, String endPoint) {
         UriBuilder uriBuilder = UriBuilder.fromUri(OTP_SERVER)
-            .path(OTP_SERVER_PLAN_END_POINT)
+            .path(endPoint)
             .replaceQuery(params);
         URI uri = URI.create(uriBuilder.toString());
         LOG.debug("Constructed URI: {}", uri);

@@ -5,7 +5,6 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-//import org.opentripplanner.middleware.otp.core.model.FeedScopedId;
 
 /**
  * A Place is where a journey starts or ends, or a transit stop along the way.

@@ -13,10 +13,8 @@ import java.util.List;
  */
 public class FareComponent {
 
-    @JsonIgnore
     public FeedScopedId fareId;
     public Money price;
-    @JsonIgnore
     public List<FeedScopedId> routes;
 
     public FareComponent() {

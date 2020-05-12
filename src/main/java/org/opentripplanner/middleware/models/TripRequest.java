@@ -38,6 +38,7 @@ public class TripRequest extends Model {
     /**
      * Query params. Query parameters influencing trip.
      */
+    //TODO: This could be the request parameters returned as part of the plan response. Would be POJO based instead of just text.
     public String queryParams;
 
     /** This no-arg constructor exists to make MongoDB happy. */

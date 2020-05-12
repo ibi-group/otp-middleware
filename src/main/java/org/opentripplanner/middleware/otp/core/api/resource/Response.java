@@ -10,6 +10,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.opentripplanner.middleware.otp.core.api.model.TripPlan;
 import org.opentripplanner.middleware.otp.core.api.model.error.PlannerError;
 
+/**
+ * This and all child classes are (were possible) copies of classes (with matching names) from open trip planner.
+ * They are used to deserialize a plan response from OTP.
+ * */
 /** Represents a trip planner response, will be serialized into XML or JSON by Jersey */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Response {

@@ -1,5 +1,5 @@
 package org.opentripplanner.middleware.otp;
 
 public interface OtpDispatcher {
-    OtpDispatcherResponse getPlan(String query);
+    OtpDispatcherResponse getPlan(String query, String endPoint);
 }

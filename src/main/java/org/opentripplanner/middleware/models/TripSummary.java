@@ -44,7 +44,6 @@ public class TripSummary extends Model {
         this.error = error;
     }
 
-
     @Override
     public String toString() {
         return "TripSummary{" +

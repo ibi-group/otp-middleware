@@ -1,9 +1,7 @@
 package org.opentripplanner.middleware.otp.core.routing.core;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import java.util.Currency;
-import java.util.Locale;
 
 /**
  * A Bean wrapper class for java.util.Currency 
@@ -13,7 +11,7 @@ import java.util.Locale;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class WrappedCurrency {
     private Currency value;
-    
+
     public WrappedCurrency() {
         value = null;
     }
@@ -38,8 +36,17 @@ public class WrappedCurrency {
         return(value == null) ? null : value.getSymbol();
     }
     
-    public String getSymbol(Locale l) {
-        return value.getSymbol(l);
+//    public String getSymbol(Locale l) {
+//        return value.getSymbol(l);
+//    }
+//
+//    public void setCurrency(Currency value) {
+//        this.value = value;
+//    }
+
+    public void setCurrencyCode(String currencyCode) {
+        System.out.println("Setting currency code");
+        value = Currency.getInstance(currencyCode);
     }
 
     public String toString() {
