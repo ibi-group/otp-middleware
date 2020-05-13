@@ -99,6 +99,9 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     this::getOneByField, JsonUtils::toJson
             )
 
+            // Options response for CORS for the /find/{..}/{..} route
+            .options(path(FIND_PATH), (req, res) -> "")
+
             // Options response for CORS
             .options(path(""), (req, res) -> "")
 
