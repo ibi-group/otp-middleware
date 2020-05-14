@@ -56,14 +56,6 @@ public class JsonUtils {
         T pojo = null;
         try {
             // TODO: Use Jackson instead? If we opt for Jackson, we must change JsonUtils#toJson to also use Jackson.
-//            GsonBuilder builder = new GsonBuilder();
-//
-//            // Register an adapter to manage the date types as long values
-//            builder.registerTypeAdapter(Date.class, (JsonDeserializer<Date>) (json, typeOfT, context) -> new Date(json.getAsJsonPrimitive().getAsLong()));
-//            builder.registerTypeAdapter(Calendar.class, (JsonDeserializer<Calendar>) (json, typeOfT, context) -> {Calendar cal=Calendar.getInstance(); cal.setTimeInMillis(json.getAsJsonPrimitive().getAsLong()); return cal;});
-//            Gson gson = builder.create();
-//            return gson.fromJson(response.body(), clazz);
-//            mapper.addMixIn(Foo.class, IgnoreFooSetValueIntMixIn.class);
             pojo = mapper.readValue(response.body(), clazz);
             System.out.println("POJO from JSON: " + pojo);
         } catch (JsonProcessingException e) {

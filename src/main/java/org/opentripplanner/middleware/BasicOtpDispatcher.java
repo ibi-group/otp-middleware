@@ -121,8 +121,4 @@ public class BasicOtpDispatcher {
         System.out.println(log);
         sendMessageFn.accept(log);
     }
-
-    public void processTripRequest(Request req, Response res) {
-
-    }
 }
