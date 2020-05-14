@@ -51,7 +51,8 @@ public class OtpRequestProcessor {
         org.opentripplanner.middleware.otp.core.api.resource.Response otpResponse = otpDispatcherResponse.getResponse();
         // only save trip details if user is known and a response from OTP is provided
         if (user != null && otpResponse != null) {
-            TripRequest tripRequest = new TripRequest(userId, batchId, request.params(FROM_PLACE), request.params(TO_PLACE), request.queryString());
+            TripRequest tripRequest = new TripRequest(userId, batchId, request.queryParams(FROM_PLACE), request.queryParams(TO_PLACE), request.queryString());
+            System.out.println("Saving:" + tripRequest);
             Persistence.tripRequest.create(tripRequest);
             TripPlan tripPlan = otpResponse.getPlan();
             TripSummary tripSummary;

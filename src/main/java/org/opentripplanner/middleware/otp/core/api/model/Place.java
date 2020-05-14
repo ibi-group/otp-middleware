@@ -18,11 +18,6 @@ public class Place {
     public String name = null;
 
     /**
-     * The ID of the stop. This is often something that users don't care about.
-     */
-//    public FeedScopedId stopId = null;
-
-    /**
      * The "code" of the stop. Depending on the transit agency, this is often
      * something that users care about.
      */
@@ -73,13 +68,6 @@ public class Place {
     public Integer stopSequence;
 
     /**
-     * Type of vertex. (Normal, Bike sharing station, Bike P+R, Transit stop)
-     * Mostly used for better localization of bike sharing and P+R station names
-     */
-//    @JsonSerialize
-//    public VertexType vertexType;
-
-    /**
      * In case the vertex is of type Bike sharing station.
      */
     public String bikeShareId;
@@ -93,26 +81,6 @@ public class Place {
     @JsonSerialize
     public String address;
 
-    /**
-     * This is an optional field which can be used to distinguish among ways a passenger's
-     * boarding or alighting at a stop can differ among services operated by a transit agency.
-     * This will be "default" in most cases. Currently the only non-default values are for
-     * GTFS-Flex board or alight types.
-     */
-//    public BoardAlightType boardAlightType;
-
-    /**
-     * Board or alight area for flag stops
-     */
-//    public EncodedPolylineBean flagStopArea;
-
-    /**
-     * Returns the geometry in GeoJSON format
-     * @return
-     */
-//    String getGeometry() {
-//        return Constants.GEO_JSON_POINT + lon + "," + lat + Constants.GEO_JSON_TAIL;
-//    }
 
     public Place() {
     }
@@ -121,7 +89,6 @@ public class Place {
         this.lon = lon;
         this.lat = lat;
         this.name = name;
-//        this.vertexType = VertexType.NORMAL;
     }
 
     public Place(Double lon, Double lat, String name, Date arrival, Date departure) {

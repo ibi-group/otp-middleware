@@ -1,8 +1,6 @@
 package org.opentripplanner.middleware.otp.core.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.opentripplanner.middleware.otp.core.routing.core.Fare;
-
 import java.util.Date;
 
 /**
@@ -65,11 +63,6 @@ public class Itinerary {
      */
     public Integer transfers = 0;
 
-    /**
-     * The cost of this trip
-     */
-    public Fare fare;
-
     @Override
     public String toString() {
         return "Itinerary{" +
@@ -84,7 +77,6 @@ public class Itinerary {
                 ", elevationLost=" + elevationLost +
                 ", elevationGained=" + elevationGained +
                 ", transfers=" + transfers +
-                ", fare=" + fare +
                 '}';
     }
 }

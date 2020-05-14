@@ -1,7 +1,5 @@
 package org.opentripplanner.middleware.models;
 
-import java.util.Date;
-
 /**
  * A trip request represents an OTP UI trip request (initiated by a user) destine for an OpenTripPlanner instance.
  * otp-middleware stores these trip requests for trip monitoring purposes.
@@ -18,12 +16,6 @@ public class TripRequest extends Model {
      * Batch Id. Id for trip plans of different modes.
      */
     public String batchId;
-
-    /**
-     * Time stamp. Time at which the request was made.
-     */
-    // TODO: Perhaps not needed as Model -> dateCreated would be the same
-    public Date timestamp;
 
     /**
      * From place. Trip starting point.
@@ -48,7 +40,6 @@ public class TripRequest extends Model {
     public TripRequest(String userId, String batchId, String fromPlace, String toPlace, String queryParams) {
         this.userId = userId;
         this.batchId = batchId;
-        this.timestamp = new Date();
         this.fromPlace = fromPlace;
         this.toPlace = toPlace;
         this.queryParams = queryParams;
@@ -59,7 +50,6 @@ public class TripRequest extends Model {
         return "TripRequest{" +
                 "userId='" + userId + '\'' +
                 ", batchId='" + batchId + '\'' +
-                ", timestamp=" + timestamp +
                 ", fromPlace='" + fromPlace + '\'' +
                 ", toPlace='" + toPlace + '\'' +
                 ", queryParams='" + queryParams + '\'' +
