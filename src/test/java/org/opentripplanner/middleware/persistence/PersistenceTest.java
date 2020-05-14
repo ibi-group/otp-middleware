@@ -21,6 +21,9 @@ public class PersistenceTest extends OtpMiddlewareTest {
     private static final String TEST_EMAIL = "john.doe@example.com";
     private static final String OTP_SERVER = "https://fdot-otp-server.ibi-transit.com";
     private static final String OTP_SERVER_PLAN_END_POINT = "/otp/routers/default/plan";
+    private static final String userId = "123456";
+    private static final String batchId = "783726";
+    private static final String tripRequestId = "59382";
 
     @Test
     public void canCreateUser() {
@@ -86,8 +89,6 @@ public class PersistenceTest extends OtpMiddlewareTest {
     }
 
     private TripRequest createTripRequest() {
-        String userId = "123456";
-        String batchId = "783726";
         String fromPlace = "28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034";
         String toPlace = "28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759";
         String queryParams = "arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
@@ -114,13 +115,12 @@ public class PersistenceTest extends OtpMiddlewareTest {
     private TripSummary createTripSummaryWithError() {
         OtpDispatcherResponse response = getPlanErrorFromOtp();
         Response otpResponse = response.getResponse();
-        String userId = "123456";
         TripPlan tripPlan = otpResponse.getPlan();
         TripSummary tripSummary;
         if (tripPlan != null)
-            tripSummary = new TripSummary(userId, otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary);
+            tripSummary = new TripSummary(otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary, tripRequestId);
         else
-            tripSummary = new TripSummary(userId, otpResponse.getError());
+            tripSummary = new TripSummary(otpResponse.getError(), tripRequestId);
 
         Persistence.tripSummary.create(tripSummary);
         System.out.println("Saved trip summary:" + tripSummary.toString());
@@ -140,8 +140,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
     private TripSummary createTripSummary() {
         OtpDispatcherResponse response = getPlanFromOtp();
         Response otpResponse = response.getResponse();
-        String userId = "123456";
-        TripSummary tripSummary = new TripSummary(userId, otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary);
+        TripSummary tripSummary = new TripSummary(otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary, tripRequestId);
         Persistence.tripSummary.create(tripSummary);
         System.out.println("Saved trip summary:" + tripSummary.toString());
         return tripSummary;

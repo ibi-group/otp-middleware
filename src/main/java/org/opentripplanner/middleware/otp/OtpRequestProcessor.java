@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.otp;
 
+import com.mongodb.MongoException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
@@ -52,19 +53,44 @@ public class OtpRequestProcessor {
         // only save trip details if user is known and a response from OTP is provided
         if (user != null && otpResponse != null) {
             TripRequest tripRequest = new TripRequest(userId, batchId, request.queryParams(FROM_PLACE), request.queryParams(TO_PLACE), request.queryString());
-            System.out.println("Saving:" + tripRequest);
-            Persistence.tripRequest.create(tripRequest);
             TripPlan tripPlan = otpResponse.getPlan();
             TripSummary tripSummary;
             if (tripPlan != null)
-                tripSummary = new TripSummary(userId, otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary);
+                tripSummary = new TripSummary(otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary, tripRequest.id);
             else
-                tripSummary = new TripSummary(userId, otpResponse.getError());
-            Persistence.tripSummary.create(tripSummary);
+                tripSummary = new TripSummary(otpResponse.getError(), tripRequest.id);
+
+            // only save trip summary if the trip request was saved
+            if (saveTripRequest(tripRequest))
+                saveTripSummary(tripSummary);
+            else
+                LOG.warn("Unable to save trip request, orphaned trip summary not saved");
         }
 
         // provide response to calling UI as received from OTP server
         response.status(otpDispatcherResponse.getStatusCode());
         return otpDispatcherResponse.getResponseBody();
+    }
+
+    private static boolean saveTripRequest(TripRequest tripRequest) {
+        boolean success = true;
+        try {
+            Persistence.tripRequest.create(tripRequest);
+        } catch (MongoException e) {
+            success = false;
+            LOG.error("Unable to save trip request: " + tripRequest, e);
+        }
+        return success;
+    }
+
+    private static boolean saveTripSummary(TripSummary tripSummary) {
+        boolean success = true;
+        try {
+            Persistence.tripSummary.create(tripSummary);
+        } catch (MongoException e) {
+            success = false;
+            LOG.error("Unable to save trip summary: " + tripSummary, e);
+        }
+        return success;
     }
 }

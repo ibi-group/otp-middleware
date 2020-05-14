@@ -10,8 +10,6 @@ import java.util.List;
  */
 public class TripSummary extends Model {
     private static final long serialVersionUID = 1L;
-    public String userId;
-
     public Place fromPlace;
 
     public Place toPlace;
@@ -20,31 +18,33 @@ public class TripSummary extends Model {
 
     public List<Itinerary> itinerary;
 
+    public String tripRequestId;
+
     /** This no-arg constructor exists to make MongoDB happy. */
     public TripSummary() {
     }
 
-    public TripSummary(String userId, Place fromPlace, Place toPlace, PlannerError error, List<Itinerary> itinerary) {
-        this.userId = userId;
+    public TripSummary(Place fromPlace, Place toPlace, PlannerError error, List<Itinerary> itinerary, String tripRequestId) {
         this.fromPlace = fromPlace;
         this.toPlace = toPlace;
         this.error = error;
         this.itinerary = itinerary;
+        this.tripRequestId = tripRequestId;
     }
 
-    public TripSummary(String userId, PlannerError error) {
-        this.userId = userId;
+    public TripSummary(PlannerError error, String tripRequestId) {
         this.error = error;
+        this.tripRequestId = tripRequestId;
     }
 
     @Override
     public String toString() {
         return "TripSummary{" +
-                "userId='" + userId + '\'' +
-                ", fromPlace=" + fromPlace +
+                "fromPlace=" + fromPlace +
                 ", toPlace=" + toPlace +
                 ", error=" + error +
                 ", itinerary=" + itinerary +
+                ", tripRequestId='" + tripRequestId + '\'' +
                 '}';
     }
 }
