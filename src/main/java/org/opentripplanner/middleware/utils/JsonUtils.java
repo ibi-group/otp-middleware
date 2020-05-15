@@ -4,18 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.gson.*;
+import com.google.gson.Gson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
-
-import java.lang.reflect.Type;
 import java.net.http.HttpResponse;
-import java.util.Calendar;
-import java.util.Date;
-
 import static spark.Spark.halt;
 
 public class JsonUtils {
@@ -44,7 +39,6 @@ public class JsonUtils {
         try {
             // TODO: Use Jackson instead? If we opt for Jackson, we must change JsonUtils#toJson to also use Jackson.
             return gson.fromJson(req.body(), clazz);
-//            return mapper.readValue(req.body(), clazz);
         } catch (Exception e) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for " + clazz.getSimpleName(), e);
             throw e;
@@ -55,12 +49,9 @@ public class JsonUtils {
     public static <T> T getPOJOFromHttpResponse(HttpResponse<String> response, Class<T> clazz) {
         T pojo = null;
         try {
-            // TODO: Use Jackson instead? If we opt for Jackson, we must change JsonUtils#toJson to also use Jackson.
             pojo = mapper.readValue(response.body(), clazz);
-            System.out.println("POJO from JSON: " + pojo);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
-//            logMessageAndHalt(response, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for " + clazz.getSimpleName(), e);
+            LOG.error("Unable to get POJO from http response", e);
         }
         return pojo;
     }
@@ -72,7 +63,6 @@ public class JsonUtils {
      * Bugsnag is configured.
      */
     public static void logMessageAndHalt(
-        Request request,
         int statusCode,
         String message,
         Exception e
