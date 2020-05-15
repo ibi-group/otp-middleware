@@ -92,8 +92,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // Get one entity by field.
             .get(path(ROOT_ROUTE + FIND_PATH)
                     .withDescription("Returns a '" + classToLowercase + "' entity whose field has the specified value, or 404 if not found.")
-                    .withPathParam().withName("attribute").withDescription("The attribute the entity to search.").and()
-                    .withPathParam().withName("value").withDescription("The value of the attribute of entity to search.").and()
+                    .withPathParam().withName("attribute").withDescription("The name of the attribute of which to extract the value.").and()
+                    .withPathParam().withName("value").withDescription("The desired value for the specified attribute.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
                     .withResponseType(clazz),
                     this::getOneByField, JsonUtils::toJson

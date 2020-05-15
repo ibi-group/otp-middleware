@@ -13,7 +13,6 @@ import java.util.UUID;
  */
 public class User extends Model {
     private static final long serialVersionUID = 1L;
-    // TODO: Add personal info (name, phone, etc.)
     /**
      * Auth0 user ID, which we initialize to a random value, but when we link this user up with Auth0 we update this
      * value, so the stored user
@@ -40,10 +39,10 @@ public class User extends Model {
 
     /**
      * Notification preference for this user
-     * ("none", "email", "sms").
-     * TODO: use enum (https://jira.mongodb.org/browse/JAVA-268)
+     * (a combination of "email", "sms").
+     * NOTE: This could become an enum array, e.g. https://jira.mongodb.org/browse/JAVA-268.
      */
-    public String notificationChannel;
+    public List<String> notificationChannels;
 
     /** Phone number for SMS notifications. */
     public String phoneNumber;
