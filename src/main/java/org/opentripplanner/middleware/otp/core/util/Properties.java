@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The purpose of Properties is to easily read a ResourceBundel (set of localized .properties files), and get the named contents.
+ * The purpose of Properties is to easily read a ResourceBundle (set of localized .properties files), and get the named contents.
  * Goes really well with an enumerated type (@see org.opentripplanner.api.ws.Message)
  */
 public class Properties {
@@ -39,16 +39,16 @@ public class Properties {
             return ResourceBundle.getBundle(name, l);
         }
         catch(Exception e) {
-            LOG.error("Uh oh...no .properties file could be found, so things are most definately not going to turn out well!!!", e);
+            LOG.error(".properties file could be found", e);
         }
         return null;
     }
 
-    public synchronized String get(String name, Locale l) throws Exception {
+    public synchronized String get(String name, Locale l) {
         ResourceBundle rb = getBundle(bundle, l);
         return rb.getString(name);
     }
-    public synchronized String get(String name) throws Exception {
+    public synchronized String get(String name) {
         ResourceBundle rb = getBundle(bundle, Locale.getDefault());
         return rb.getString(name);
     }
