@@ -74,7 +74,6 @@ public class PersistenceTest extends OtpMiddlewareTest {
         TripRequest tripRequest = createTripRequest();
         String id = tripRequest.id;
         TripRequest retrieved = Persistence.tripRequest.getById(id);
-        System.out.println("Trip request retrieved:" + retrieved);
         assertEquals(id, retrieved.id, "Found Trip request ID should equal inserted ID.");
         // tidy up
         Persistence.tripRequest.removeById(tripRequest.id);

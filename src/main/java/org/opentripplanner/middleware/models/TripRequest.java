@@ -48,11 +48,11 @@ public class TripRequest extends Model {
     @Override
     public String toString() {
         return "TripRequest{" +
-                "userId='" + userId + '\'' +
-                ", batchId='" + batchId + '\'' +
-                ", fromPlace='" + fromPlace + '\'' +
-                ", toPlace='" + toPlace + '\'' +
-                ", queryParams='" + queryParams + '\'' +
-                '}';
+            "userId='" + userId + '\'' +
+            ", batchId='" + batchId + '\'' +
+            ", fromPlace='" + fromPlace + '\'' +
+            ", toPlace='" + toPlace + '\'' +
+            ", queryParams='" + queryParams + '\'' +
+            '}';
     }
 }
