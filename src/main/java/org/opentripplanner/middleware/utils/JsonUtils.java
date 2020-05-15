@@ -63,6 +63,7 @@ public class JsonUtils {
      * Bugsnag is configured.
      */
     public static void logMessageAndHalt(
+        Request request,
         int statusCode,
         String message,
         Exception e
