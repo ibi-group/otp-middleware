@@ -39,10 +39,10 @@ public class User extends Model {
 
     /**
      * Notification preference for this user
-     * (a combination of "email", "sms").
-     * NOTE: This could become an enum array, e.g. https://jira.mongodb.org/browse/JAVA-268.
+     * ("email", "sms", or "none").
+     * NOTE: This could become an enum, e.g. https://jira.mongodb.org/browse/JAVA-268.
      */
-    public List<String> notificationChannels;
+    public String notificationChannel;
 
     /** Phone number for SMS notifications. */
     public String phoneNumber;
