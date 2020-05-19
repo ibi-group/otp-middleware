@@ -67,8 +67,6 @@ public class TripHistoryController {
             lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(toEndOfDay.atZone(ZoneId.systemDefault()).toInstant())),
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, userId));
 
-        System.out.println(filter);
-
         return JsonUtils.toJson(tripRequest.getFilteredWithLimit(filter, limit));
     }
 }

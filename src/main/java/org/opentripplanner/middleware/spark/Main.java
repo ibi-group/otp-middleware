@@ -84,7 +84,7 @@ public class Main {
         spark.get("/plan", (request, response) -> OtpRequestProcessor.planning(request, response, getConfigPropertyAsText("OTP_SERVER"), getConfigPropertyAsText("OTP_SERVER_PLAN_END_POINT")));
 
         // available at http://localhost:4567/triprequests
-        spark.get("/triprequests", (request, response) -> TripHistoryController.getTripRequests(request, response, tripRequest, getConfigPropertyAsText("EXPECTED_DATE_PATTERN", "yyyy-mm-dd")));
+        spark.get("/secure/triprequests", (request, response) -> TripHistoryController.getTripRequests(request, response, tripRequest, getConfigPropertyAsText("EXPECTED_DATE_PATTERN", "yyyy-mm-dd")));
 
         spark.before(API_PREFIX + "secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
