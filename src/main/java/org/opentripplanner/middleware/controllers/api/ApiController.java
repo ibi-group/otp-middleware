@@ -158,7 +158,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private T getOneByField(Request req, Response res) {
         String attribute = getParamFromRequest(req, "attribute");
         String value = getParamFromRequest(req, "value");
-        return getObjectWithField(req, attribute, value);
+        return getFirstObjectByFieldValue(req, attribute, value);
     }
 
     /**
@@ -204,7 +204,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     /**
      * Convenience method for extracting the attribute/field param from the HTTP request.
      */
-    private T getObjectWithField(Request req, String field, String value) {
+    private T getFirstObjectByFieldValue(Request req, String field, String value) {
         return checkAndLogIfNull(req, persistence.getOneFiltered(eq(field, value)), field, value);
     }
 
