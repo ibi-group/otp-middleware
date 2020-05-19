@@ -1,16 +1,24 @@
 package org.opentripplanner.middleware.persistence;
 
+import com.mongodb.client.model.Filters;
+import org.bson.conversions.Bson;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.models.User;
-import org.opentripplanner.middleware.otp.OtpDispatcherImpl;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
-import org.opentripplanner.middleware.otp.core.api.model.TripPlan;
-import org.opentripplanner.middleware.otp.core.api.resource.Response;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+
+import static com.mongodb.client.model.Filters.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.opentripplanner.middleware.persistence.PersistenceUtil.*;
 
 /**
  * Tests to verify that persistence in MongoDB collections are functioning properly. A number of
@@ -19,11 +27,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class PersistenceTest extends OtpMiddlewareTest {
     private static final String TEST_EMAIL = "john.doe@example.com";
-    private static final String OTP_SERVER = "https://fdot-otp-server.ibi-transit.com";
-    private static final String OTP_SERVER_PLAN_END_POINT = "/otp/routers/default/plan";
-    private static final String userId = "123456";
-    private static final String batchId = "783726";
-    private static final String tripRequestId = "59382";
 
     @Test
     public void canCreateUser() {
@@ -57,21 +60,12 @@ public class PersistenceTest extends OtpMiddlewareTest {
         assertNull(user, "Deleted User should no longer exist in database (should return as null).");
     }
 
-    /**
-     * Utility to create user and store in database.
-     */
-    private User createUser(String email) {
-        User user = new User();
-        user.email = email;
-        Persistence.users.create(user);
-        return user;
-    }
-
     //    http://localhost:4567/plan?userId=b46266f7-a461-421b-8e92-01d99b945ab0&fromPlace=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=
 
     @Test
     public void canCreateTripRequest() {
-        TripRequest tripRequest = createTripRequest();
+        String userId = "123456";
+        TripRequest tripRequest = createTripRequest(userId);
         String id = tripRequest.id;
         TripRequest retrieved = Persistence.tripRequest.getById(id);
         assertEquals(id, retrieved.id, "Found Trip request ID should equal inserted ID.");
@@ -81,49 +75,11 @@ public class PersistenceTest extends OtpMiddlewareTest {
 
     @Test
     public void canDeleteTripRequest() {
-        TripRequest tripRequestToDelete = createTripRequest();
+        String userId = "123456";
+        TripRequest tripRequestToDelete = createTripRequest(userId);
         Persistence.tripRequest.removeById(tripRequestToDelete.id);
         TripRequest tripRequest = Persistence.tripRequest.getById(tripRequestToDelete.id);
         assertNull(tripRequest, "Deleted TripRequest should no longer exist in database (should return as null).");
-    }
-
-    private TripRequest createTripRequest() {
-        String fromPlace = "28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034";
-        String toPlace = "28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759";
-        String queryParams = "arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
-        TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, queryParams);
-        Persistence.tripRequest.create(tripRequest);
-        return tripRequest;
-    }
-
-    private OtpDispatcherResponse getPlanFromOtp() {
-        OtpDispatcherImpl otpDispatcher = new OtpDispatcherImpl(OTP_SERVER);
-        OtpDispatcherResponse response = otpDispatcher.getPlan("plan?userId=123456&fromPlace=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=", OTP_SERVER_PLAN_END_POINT);
-        System.out.println("OTP Plan response:" + response.toString());
-        return response;
-    }
-
-    // fromPalce instead of fromPlace to produce error
-    private OtpDispatcherResponse getPlanErrorFromOtp() {
-        OtpDispatcherImpl otpDispatcher = new OtpDispatcherImpl(OTP_SERVER);
-        OtpDispatcherResponse response = otpDispatcher.getPlan("plan?userId=123456&fromPalce=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=", OTP_SERVER_PLAN_END_POINT);
-        System.out.println("OTP Plan error response:" + response.toString());
-        return response;
-    }
-
-    private TripSummary createTripSummaryWithError() {
-        OtpDispatcherResponse response = getPlanErrorFromOtp();
-        Response otpResponse = response.getResponse();
-        TripPlan tripPlan = otpResponse.getPlan();
-        TripSummary tripSummary;
-        if (tripPlan != null)
-            tripSummary = new TripSummary(otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary, tripRequestId);
-        else
-            tripSummary = new TripSummary(otpResponse.getError(), tripRequestId);
-
-        Persistence.tripSummary.create(tripSummary);
-        System.out.println("Saved trip summary:" + tripSummary.toString());
-        return tripSummary;
     }
 
     @Test
@@ -134,15 +90,6 @@ public class PersistenceTest extends OtpMiddlewareTest {
         assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
         // tidy up
         Persistence.tripSummary.removeById(tripSummary.id);
-    }
-
-    private TripSummary createTripSummary() {
-        OtpDispatcherResponse response = getPlanFromOtp();
-        Response otpResponse = response.getResponse();
-        TripSummary tripSummary = new TripSummary(otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary, tripRequestId);
-        Persistence.tripSummary.create(tripSummary);
-        System.out.println("Saved trip summary:" + tripSummary.toString());
-        return tripSummary;
     }
 
     @Test
@@ -163,5 +110,26 @@ public class PersistenceTest extends OtpMiddlewareTest {
         assertNull(tripSummary, "Deleted trip summary should no longer exist in database (should return as null).");
     }
 
+    @Test void canGetFilteredTripRequests() {
+        int limit = 3;
+        String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
+        String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
+        User user = createUser(TEST_EMAIL);
+
+        List<TripRequest> tripRequests = createTripRequests(limit, user.id);
+
+        LocalDateTime fromStartOfDay = LocalDate.now().atTime(LocalTime.MIN);
+        LocalDateTime toEndOfDay = LocalDate.now().atTime(LocalTime.MAX);
+
+        Bson filter = Filters.and(gte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(fromStartOfDay.atZone(ZoneId.systemDefault()).toInstant())),
+            lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(toEndOfDay.atZone(ZoneId.systemDefault()).toInstant())),
+            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
+
+        List<TripRequest> result = Persistence.tripRequest.getFilteredWithLimit(filter, limit);
+        assertEquals(result.size(),tripRequests.size());
+
+        // tidy up
+        deleteTripRequests(tripRequests);
+    }
 }

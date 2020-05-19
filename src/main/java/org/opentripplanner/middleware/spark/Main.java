@@ -9,7 +9,7 @@ import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
-import org.opentripplanner.middleware.controllers.api.TripRequestController;
+import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.controllers.api.UserController;
 import org.opentripplanner.middleware.otp.OtpRequestProcessor;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
+import static org.opentripplanner.middleware.persistence.Persistence.tripRequest;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class Main {
@@ -55,8 +56,8 @@ public class Main {
                 .endpoints(() -> List.of(
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
-                    new UserController(API_PREFIX),
-                    new TripRequestController(API_PREFIX)
+                    new UserController(API_PREFIX)
+//                    new TripRequestController(API_PREFIX, getConfigPropertyAsText("EXPECTED_DATE_PATTERN", "yyyy-mm-dd"))
                     // TODO Add other models.
                 ))
                 .generateDoc();
@@ -81,6 +82,9 @@ public class Main {
 
         // available at http://localhost:4567/plan
         spark.get("/plan", (request, response) -> OtpRequestProcessor.planning(request, response, getConfigPropertyAsText("OTP_SERVER"), getConfigPropertyAsText("OTP_SERVER_PLAN_END_POINT")));
+
+        // available at http://localhost:4567/triprequests
+        spark.get("/triprequests", (request, response) -> TripHistoryController.getTripRequests(request, response, tripRequest, getConfigPropertyAsText("EXPECTED_DATE_PATTERN", "yyyy-mm-dd")));
 
         spark.before(API_PREFIX + "secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);

@@ -141,6 +141,15 @@ public class TypedPersistence<T extends Model> {
     }
 
     /**
+     * Get objects satisfying the supplied Mongo filter, limited to the specified maximum.
+     * This ties our persistence directly to Mongo for now but is expedient.
+     * We should really have a bit more abstraction here.
+     */
+    public List<T> getFilteredWithLimit(Bson filter, int maximum) {
+        return mongoCollection.find(filter).limit(maximum).into(new ArrayList<>());
+    }
+
+    /**
      * Get all objects satisfying the supplied Mongo filter.
      * This ties our persistence directly to Mongo for now but is expedient.
      * We should really have a bit more abstraction here.
@@ -148,6 +157,7 @@ public class TypedPersistence<T extends Model> {
     public List<T> getFiltered (Bson filter) {
         return mongoCollection.find(filter).into(new ArrayList<>());
     }
+
 
     /**
      * Expose the internal MongoCollection to the caller.
