@@ -17,6 +17,7 @@ import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -197,29 +198,26 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Convenience method for extracting the ID param from the HTTP request.
      */
     private T getObjectForId(Request req, String id) {
-        T object = persistence.getById(id);
-        if (object == null) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.NOT_FOUND_404,
-                String.format("No %s with id=%s found.", classToLowercase, id),
-                null
-            );
-        }
-        return object;
+        return checkAndLogIfNull(req, persistence.getById(id), "id", id);
     }
 
     /**
      * Convenience method for extracting the attribute/field param from the HTTP request.
      */
     private T getObjectWithField(Request req, String field, String value) {
-        T object = persistence.getByField(field, value);
+        return checkAndLogIfNull(req, persistence.getOneFiltered(eq(field, value)), field, value);
+    }
+
+    /**
+     * Log if an object was not found for a request.
+     */
+    private T checkAndLogIfNull(Request req, T object, String field, String value) {
         if (object == null) {
             logMessageAndHalt(
-                    req,
-                    HttpStatus.NOT_FOUND_404,
-                    String.format("No %s with %s=%s found.", classToLowercase, field, value),
-                    null
+                req,
+                HttpStatus.NOT_FOUND_404,
+                String.format("No %s with %s=%s found.", classToLowercase, field, value),
+                null
             );
         }
         return object;
