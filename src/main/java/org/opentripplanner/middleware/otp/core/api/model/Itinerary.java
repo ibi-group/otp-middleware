@@ -78,17 +78,18 @@ public class Itinerary {
     @Override
     public String toString() {
         return "Itinerary{" +
-                "duration=" + duration +
-                ", startTime=" + startTime +
-                ", endTime=" + endTime +
-                ", walkTime=" + walkTime +
-                ", transitTime=" + transitTime +
-                ", waitingTime=" + waitingTime +
-                ", walkDistance=" + walkDistance +
-                ", walkLimitExceeded=" + walkLimitExceeded +
-                ", elevationLost=" + elevationLost +
-                ", elevationGained=" + elevationGained +
-                ", transfers=" + transfers +
-                '}';
+            "duration=" + duration +
+            ", startTime=" + startTime +
+            ", endTime=" + endTime +
+            ", walkTime=" + walkTime +
+            ", transitTime=" + transitTime +
+            ", waitingTime=" + waitingTime +
+            ", walkDistance=" + walkDistance +
+            ", walkLimitExceeded=" + walkLimitExceeded +
+            ", elevationLost=" + elevationLost +
+            ", elevationGained=" + elevationGained +
+            ", transfers=" + transfers +
+            ", legs=" + legs +
+            '}';
     }
 }

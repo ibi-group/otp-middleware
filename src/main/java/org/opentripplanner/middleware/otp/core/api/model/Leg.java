@@ -58,4 +58,20 @@ public class Leg {
      * The Place where the leg begins.
      */
     public Place to = null;
+
+    @Override
+    public String toString() {
+        return "Leg{" +
+            "startTime=" + startTime +
+            ", endTime=" + endTime +
+            ", departureDelay=" + departureDelay +
+            ", arrivalDelay=" + arrivalDelay +
+            ", realTime=" + realTime +
+            ", distance=" + distance +
+            ", pathway=" + pathway +
+            ", mode='" + mode + '\'' +
+            ", from=" + from +
+            ", to=" + to +
+            '}';
+    }
 }
