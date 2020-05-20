@@ -4,6 +4,7 @@ import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.models.User;
@@ -18,6 +19,7 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.opentripplanner.middleware.persistence.Persistence.tripRequest;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.*;
 
 /**
@@ -77,7 +79,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
     public void canDeleteTripRequest() {
         String userId = "123456";
         TripRequest tripRequestToDelete = createTripRequest(userId);
-        Persistence.tripRequest.removeById(tripRequestToDelete.id);
+        tripRequest.removeById(tripRequestToDelete.id);
         TripRequest tripRequest = Persistence.tripRequest.getById(tripRequestToDelete.id);
         assertNull(tripRequest, "Deleted TripRequest should no longer exist in database (should return as null).");
     }
@@ -126,10 +128,21 @@ public class PersistenceTest extends OtpMiddlewareTest {
             lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(toEndOfDay.atZone(ZoneId.systemDefault()).toInstant())),
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
-        List<TripRequest> result = Persistence.tripRequest.getFilteredWithLimit(filter, limit);
+        List<TripRequest> result = tripRequest.getFilteredWithLimit(filter, limit);
         assertEquals(result.size(),tripRequests.size());
 
         // tidy up
         deleteTripRequests(tripRequests);
     }
+
+    @Test
+    public void canCreateMonitoredTrip() {
+        String userId = "123456";
+        MonitoredTrip monitoredTrip = createMonitoredTrip(userId);
+        MonitoredTrip retrieved = Persistence.monitoredTrip.getById(monitoredTrip.id);
+        assertEquals(monitoredTrip.id, retrieved.id, "Found monitored trip ID should equal inserted ID.");
+        // tidy up
+        Persistence.monitoredTrip.removeById(monitoredTrip.id);
+    }
+
 }

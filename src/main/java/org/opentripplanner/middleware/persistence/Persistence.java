@@ -36,6 +36,7 @@ public class Persistence {
     public static TypedPersistence<ApiUser> apiUsers;
     public static TypedPersistence<TripRequest> tripRequest;
     public static TypedPersistence<TripSummary> tripSummary;
+    public static TypedPersistence<MonitoredTrip> monitoredTrip;
 
     public static void initialize () {
         // TODO Add custom codec libraries
@@ -74,6 +75,7 @@ public class Persistence {
         apiUsers = new TypedPersistence(mongoDatabase, ApiUser.class);
         tripRequest = new TypedPersistence(mongoDatabase, TripRequest.class);
         tripSummary = new TypedPersistence(mongoDatabase, TripSummary.class);
+        monitoredTrip = new TypedPersistence(mongoDatabase, MonitoredTrip.class);
         // TODO Add other models...
     }
 
