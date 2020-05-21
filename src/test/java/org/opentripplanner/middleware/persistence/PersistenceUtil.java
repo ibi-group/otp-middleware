@@ -51,11 +51,11 @@ public class PersistenceUtil {
         Response otpResponse = response.getResponse();
         TripPlan tripPlan = otpResponse.getPlan();
         TripSummary tripSummary;
-        if (tripPlan != null)
+        if (tripPlan != null) {
             tripSummary = new TripSummary(otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary, tripRequestId);
-        else
+        } else {
             tripSummary = new TripSummary(otpResponse.getError(), tripRequestId);
-
+        }
         Persistence.tripSummary.create(tripSummary);
         System.out.println("Saved trip summary:" + tripSummary.toString());
         return tripSummary;
@@ -72,7 +72,7 @@ public class PersistenceUtil {
     }
 
     public static void deleteTripRequests(List<TripRequest> tripRequests) {
-        for(TripRequest tripRequest: tripRequests) {
+        for (TripRequest tripRequest: tripRequests) {
             Persistence.tripRequest.removeById(tripRequest.id);
         }
     }

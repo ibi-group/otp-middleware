@@ -110,7 +110,8 @@ public class PersistenceTest extends OtpMiddlewareTest {
         assertNull(tripSummary, "Deleted trip summary should no longer exist in database (should return as null).");
     }
 
-    @Test void canGetFilteredTripRequests() {
+    @Test
+    public void canGetFilteredTripRequestsWithFromAndToDate() {
         int limit = 3;
         String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
         String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
@@ -132,4 +133,89 @@ public class PersistenceTest extends OtpMiddlewareTest {
         // tidy up
         deleteTripRequests(tripRequests);
     }
+
+    @Test
+    public void canGetFilteredTripRequestsFromDate() {
+        int limit = 3;
+        String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
+        String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
+
+        User user = createUser(TEST_EMAIL);
+
+        List<TripRequest> tripRequests = createTripRequests(limit, user.id);
+
+        LocalDateTime fromStartOfDay = LocalDate.now().atTime(LocalTime.MIN);
+
+        Bson filter = Filters.and(gte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(fromStartOfDay.atZone(ZoneId.systemDefault()).toInstant())),
+            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
+
+        List<TripRequest> result = Persistence.tripRequest.getFilteredWithLimit(filter, limit);
+        assertEquals(result.size(),tripRequests.size());
+
+        // tidy up
+        deleteTripRequests(tripRequests);
+    }
+
+    @Test
+    public void canGetFilteredTripRequestsToDate() {
+        int limit = 3;
+        String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
+        String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
+
+        User user = createUser(TEST_EMAIL);
+
+        List<TripRequest> tripRequests = createTripRequests(limit, user.id);
+
+        LocalDateTime toEndOfDay = LocalDate.now().atTime(LocalTime.MAX);
+
+        Bson filter = Filters.and(
+            lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(toEndOfDay.atZone(ZoneId.systemDefault()).toInstant())),
+            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
+
+        List<TripRequest> result = Persistence.tripRequest.getFilteredWithLimit(filter, limit);
+        assertEquals(result.size(),tripRequests.size());
+
+        // tidy up
+        deleteTripRequests(tripRequests);
+    }
+
+    @Test
+    public void canGetFilteredTripRequestsForUser() {
+        int limit = 3;
+        String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
+
+        User user = createUser(TEST_EMAIL);
+
+        List<TripRequest> tripRequests = createTripRequests(limit, user.id);
+
+        Bson filter = Filters.and(
+            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
+
+        List<TripRequest> result = Persistence.tripRequest.getFilteredWithLimit(filter, limit);
+        assertEquals(result.size(),tripRequests.size());
+
+        // tidy up
+        deleteTripRequests(tripRequests);
+    }
+
+    @Test
+    public void canGetFilteredTripRequestsForUserWithMaxLimit() {
+        int limit = 10;
+        int max = 5;
+        String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
+
+        User user = createUser(TEST_EMAIL);
+
+        List<TripRequest> tripRequests = createTripRequests(limit, user.id);
+
+        Bson filter = Filters.and(
+            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
+
+        List<TripRequest> result = Persistence.tripRequest.getFilteredWithLimit(filter, max);
+        assertEquals(result.size(),max);
+
+        // tidy up
+        deleteTripRequests(tripRequests);
+    }
+
 }

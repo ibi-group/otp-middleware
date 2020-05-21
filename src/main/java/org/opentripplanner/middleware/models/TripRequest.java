@@ -1,8 +1,8 @@
 package org.opentripplanner.middleware.models;
 
 /**
- * A trip request represents an OTP UI trip request (initiated by a user) destine for an OpenTripPlanner instance.
- * otp-middleware stores these trip requests for trip monitoring purposes.
+ * A trip request represents an OTP UI trip request (initiated by a user) destined for an OpenTripPlanner instance.
+ * otp-middleware stores these trip requests for reporting purposes.
  */
 public class TripRequest extends Model {
     private static final long serialVersionUID = 1L;
