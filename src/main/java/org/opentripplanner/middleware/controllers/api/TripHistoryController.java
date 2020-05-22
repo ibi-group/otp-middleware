@@ -2,8 +2,14 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
+import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.TripRequest;
+import org.opentripplanner.middleware.models.User;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.utils.DateUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -11,13 +17,14 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
-import java.time.*;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoField;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 
 import static com.mongodb.client.model.Filters.*;
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Responsible for processing trip history related requests provided by MOD UI.
@@ -27,46 +34,107 @@ public class TripHistoryController {
 
     private static final Logger LOG = LoggerFactory.getLogger(TripHistoryController.class);
 
-    public static final String USER_ID_PARAM_NAME = "userId";
-    public static final String FROM_DATE_PARAM_NAME = "fromDate";
-    public static final String TO_DATE_PARAM_NAME = "toDate";
-    public static final String LIMIT_PARAM_NAME = "limit";
-    private static final String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
-    private static final String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
+    private static final String USER_ID_PARAM_NAME = "userId";
+    private static final String FROM_DATE_PARAM_NAME = "fromDate";
+    private static final String TO_DATE_PARAM_NAME = "toDate";
+    private static final String LIMIT_PARAM_NAME = "limit";
     private static final int DEFAULT_LIMIT = 10;
 
     /**
-     * return JSON representation of a user's trip request history based on provided parameters
+     * Return JSON representation of a user's trip request history based on provided parameters.
+     * Only the user id is required.
      */
-    public static String getTripRequests(Request request, Response response, TypedPersistence<TripRequest> tripRequest, String expectedDatePattern) {
-        response.type("application/json");
+    public static String getTripRequests(Request request, Response response, TypedPersistence<TripRequest> tripRequest) {
 
-        DateTimeFormatter expectDateFormat = new DateTimeFormatterBuilder().appendPattern(expectedDatePattern)
-            .parseDefaulting(ChronoField.NANO_OF_DAY, 0)
-            .toFormatter()
-            .withZone(ZoneId.systemDefault());
+//        Auth0Connection.checkUser(request);
+//        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(request);
 
-        String userId = HttpUtils.getParamFromRequest(request, USER_ID_PARAM_NAME);
+        final String userId = HttpUtils.getParamFromRequest(request, USER_ID_PARAM_NAME, false);
+//        User user = Persistence.users.getById(userId);
+//        if (requestingUser.user_id != user.auth0UserId) {
+//            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Can only obtain trip requests created by the same user.");
+//        }
+
         int limit = DEFAULT_LIMIT;
 
-        String param = null;
+        String paramLimit = null;
         try {
-            param = HttpUtils.getParamFromRequest(request, LIMIT_PARAM_NAME);
-            limit = Integer.parseInt(param);
+            paramLimit = HttpUtils.getParamFromRequest(request, LIMIT_PARAM_NAME, true);
+            if (paramLimit != null) {
+                limit = Integer.parseInt(paramLimit);
+                if (limit <= 0) {
+                    limit = DEFAULT_LIMIT;
+                }
+            }
         } catch (NumberFormatException e) {
-            LOG.error("Unable to parse {} : {}. Using default limit: {}", LIMIT_PARAM_NAME, param, DEFAULT_LIMIT, e);
+            LOG.error("Unable to parse {} value of {}. Using default limit: {}", LIMIT_PARAM_NAME, paramLimit, DEFAULT_LIMIT, e);
         }
 
-        LocalDate fromDate = HttpUtils.getDateFromRequestParam(request, expectDateFormat, expectedDatePattern, FROM_DATE_PARAM_NAME);
-        LocalDate toDate = HttpUtils.getDateFromRequestParam(request, expectDateFormat, expectedDatePattern, TO_DATE_PARAM_NAME);
+        String paramFromDate = HttpUtils.getParamFromRequest(request, FROM_DATE_PARAM_NAME, true);
+        Date fromDate = getDate(request, FROM_DATE_PARAM_NAME, paramFromDate, LocalTime.MIN);
 
-        LocalDateTime fromStartOfDay = fromDate.atTime(LocalTime.MIN);
-        LocalDateTime toEndOfDay = toDate.atTime(LocalTime.MAX);
+        String paramToDate = HttpUtils.getParamFromRequest(request, TO_DATE_PARAM_NAME, true);
+        Date toDate = getDate(request, TO_DATE_PARAM_NAME, paramToDate, LocalTime.MAX);
 
-        Bson filter = Filters.and(gte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(fromStartOfDay.atZone(ZoneId.systemDefault()).toInstant())),
-            lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(toEndOfDay.atZone(ZoneId.systemDefault()).toInstant())),
-            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, userId));
+        if (fromDate != null && toDate != null && toDate.before(fromDate)) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, TO_DATE_PARAM_NAME + " (" + paramToDate + ") before " + FROM_DATE_PARAM_NAME + " (" + paramFromDate + ")");
+        }
 
+        Bson filter = buildFilter(userId,fromDate, toDate);
         return JsonUtils.toJson(tripRequest.getFilteredWithLimit(filter, limit));
+    }
+
+    /**
+     * Build the filter which is passed to Mongo based on available parameters
+     */
+    private static Bson buildFilter(String userId, Date fromDate, Date toDate) {
+
+        final String createdFieldName = "dateCreated";
+        final String userIdFieldName = "userId";
+
+        // user id is required, so as a minimum return all trip requests for user
+        Bson filter = Filters.and(eq(userIdFieldName, userId));
+
+        if (fromDate != null && toDate != null) { // get all trips between start and end dates
+            filter = Filters.and(
+                gte(createdFieldName, fromDate),
+                lte(createdFieldName, toDate),
+                eq(userIdFieldName, userId));
+        } else if (fromDate == null && toDate != null) { // get all trip requests to end date
+            filter = Filters.and(
+                lte(createdFieldName, toDate),
+                eq(userIdFieldName, userId));
+        } else if (fromDate != null && toDate == null) { // get all trip requests from start date
+            filter = Filters.and(
+                gte(createdFieldName, fromDate),
+                eq(userIdFieldName, userId));
+        }
+
+        return filter;
+    }
+
+    /**
+     * Get date from request parameter and convert to java.util.Date at a specific time of day
+     */
+    private static Date getDate(Request request, String paramName, String paramValue, LocalTime timeOfDay) {
+
+        // no date value to work with
+        if (paramValue == null) {
+            return null;
+        }
+
+        String expectedDatePattern = "yyyy-MM-dd";
+        LocalDate localDate = null;
+        try {
+            localDate = DateUtils.getDateFromParam(paramName, paramValue, expectedDatePattern);
+        } catch (DateTimeParseException e) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, paramName + " value: " + paramValue + " is not a valid date. Must be in the format: " + expectedDatePattern);
+        }
+
+        if (localDate == null) {
+            return null;
+        }
+
+        return Date.from(localDate.atTime(timeOfDay).atZone(ZoneId.systemDefault()).toInstant());
     }
 }
