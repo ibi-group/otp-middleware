@@ -5,6 +5,7 @@ import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.Auth0Utils;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.User;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -46,13 +47,8 @@ public class TripHistoryController {
      */
     public static String getTripRequests(Request request, Response response, TypedPersistence<TripRequest> tripRequest) {
 
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(request);
-
         final String userId = HttpUtils.getParamFromRequest(request, USER_ID_PARAM_NAME, false);
-        User user = Persistence.users.getById(userId);
-        if (!requestingUser.user_id.equalsIgnoreCase(user.auth0UserId)) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Can only obtain trip requests created by the same user.");
-        }
+        isValidUser(userId, request);
 
         int limit = DEFAULT_LIMIT;
 
@@ -136,4 +132,18 @@ public class TripHistoryController {
 
         return Date.from(localDate.atTime(timeOfDay).atZone(ZoneId.systemDefault()).toInstant());
     }
+
+    /**
+     * Confirm that the user exists and is authorized
+     */
+    private static void isValidUser(String userId, Request request) {
+
+        User user = Persistence.users.getById(userId);
+        if (user == null) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
+        }
+
+        Auth0Utils.isAuthorizedUser(user, request);
+    }
+
 }

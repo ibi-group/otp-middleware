@@ -3,6 +3,9 @@ package org.opentripplanner.middleware.controllers.api;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.Auth0Utils;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.User;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -44,17 +47,21 @@ public class MonitorTripController extends ApiController<MonitoredTrip> {
 
     @Override
     boolean preDeleteHook(MonitoredTrip monitoredTrip, Request req) {
+        isValidUser(monitoredTrip.userId, req);
         return true;
     }
 
-    // Confirm that the user exists before creating monitored trip
-    private void isValidUser(String userId, Request req) {
-//        Auth0Connection.checkUser(request);
-//        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(request);
-//        User user = Persistence.users.getById(userId);
-//        if (requestingUser.user_id != user.auth0UserId) {
-//            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Can only obtain trip requests created by the same user.");
-//        }
+    /**
+     * Confirm that the user exists and is authorized
+     */
+    private void isValidUser(String userId, Request request) {
+
+        User user = Persistence.users.getById(userId);
+        if (user == null) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
+        }
+
+        Auth0Utils.isAuthorizedUser(user, request);
     }
 
     private void reachedMaximum(String userId, Request request) {
