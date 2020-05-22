@@ -46,7 +46,14 @@ public class TripHistoryController {
      */
     public static String getTripRequests(Request request, Response response, TypedPersistence<TripRequest> tripRequest) {
 
+//        Auth0Connection.checkUser(request);
+//        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(request);
+
         final String userId = HttpUtils.getParamFromRequest(request, USER_ID_PARAM_NAME, false);
+//        User user = Persistence.users.getById(userId);
+//        if (requestingUser.user_id != user.auth0UserId) {
+//            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Can only obtain trip requests created by the same user.");
+//        }
 
         int limit = DEFAULT_LIMIT;
 
@@ -68,6 +75,10 @@ public class TripHistoryController {
 
         String paramToDate = HttpUtils.getParamFromRequest(request, TO_DATE_PARAM_NAME, true);
         Date toDate = getDate(request, TO_DATE_PARAM_NAME, paramToDate, LocalTime.MAX);
+
+        if (fromDate != null && toDate != null && toDate.before(fromDate)) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, TO_DATE_PARAM_NAME + " (" + paramToDate + ") before " + FROM_DATE_PARAM_NAME + " (" + paramFromDate + ")");
+        }
 
         Bson filter = buildFilter(userId,fromDate, toDate);
         return JsonUtils.toJson(tripRequest.getFilteredWithLimit(filter, limit));
