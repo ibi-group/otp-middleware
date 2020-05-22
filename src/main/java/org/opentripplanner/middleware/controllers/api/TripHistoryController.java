@@ -46,14 +46,13 @@ public class TripHistoryController {
      */
     public static String getTripRequests(Request request, Response response, TypedPersistence<TripRequest> tripRequest) {
 
-//        Auth0Connection.checkUser(request);
-//        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(request);
+        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(request);
 
         final String userId = HttpUtils.getParamFromRequest(request, USER_ID_PARAM_NAME, false);
-//        User user = Persistence.users.getById(userId);
-//        if (requestingUser.user_id != user.auth0UserId) {
-//            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Can only obtain trip requests created by the same user.");
-//        }
+        User user = Persistence.users.getById(userId);
+        if (!requestingUser.user_id.equalsIgnoreCase(user.auth0UserId)) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Can only obtain trip requests created by the same user.");
+        }
 
         int limit = DEFAULT_LIMIT;
 
