@@ -60,7 +60,7 @@ public class UserController extends ApiController<User> {
     @Override
     boolean preDeleteHook(User user, Request req) {
         try {
-            deleteAuth0User(user.auth0UserId);
+            deleteAuth0User(req, user.auth0UserId);
         } catch (Auth0Exception e) {
             logMessageAndHalt(req, 500, "Error deleting user.", e);
             return false;

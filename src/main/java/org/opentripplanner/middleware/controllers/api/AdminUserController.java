@@ -47,7 +47,7 @@ public class AdminUserController extends ApiController<AdminUser> {
     @Override
     boolean preDeleteHook(AdminUser user, Request req) {
         try {
-            deleteAuth0User(user.auth0UserId);
+            deleteAuth0User(req, user.auth0UserId);
         } catch (Auth0Exception e) {
             logMessageAndHalt(req, 500, "Error deleting user.", e);
             return false;
