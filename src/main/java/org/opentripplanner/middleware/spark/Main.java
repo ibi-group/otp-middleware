@@ -106,7 +106,7 @@ public class Main {
      * Load config files from either program arguments or (if no args specified) from
      * default configuration file locations. Config fields are retrieved with getConfigProperty.
      */
-    public static void loadConfig(String[] args) throws IOException {
+    private static void loadConfig(String[] args) throws IOException {
         FileInputStream envConfigStream;
 
         if (args.length == 0) {

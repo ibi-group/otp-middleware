@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.auth;
 
+import com.auth0.json.auth.TokenHolder;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
@@ -146,5 +147,19 @@ public class Auth0Connection {
      */
     public static boolean authDisabled() {
         return hasConfigProperty("DISABLE_AUTH") && "true".equals(getConfigPropertyAsText("DISABLE_AUTH"));
+    }
+
+    /**
+     * Computes a token expiration time in seconds.
+     */
+    public static long getTokenExpirationTime(TokenHolder token) {
+        return System.currentTimeMillis() + token.getExpiresIn() /* seconds */ * 1000;
+    }
+
+    /**
+     * Returns true if a token's expiration date is stale (expiration date passed or about to pass).
+     */
+    public static boolean isStale(long expiration) {
+        return expiration - System.currentTimeMillis() <= 60000;
     }
 }

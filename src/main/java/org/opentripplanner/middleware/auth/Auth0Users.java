@@ -74,7 +74,7 @@ public class Auth0Users {
      */
     public static String getApiToken() {
         // If cached token has not expired, use it instead of requesting a new one.
-        if (!isStale(cachedTokenExpirationTime)) {
+        if (!Auth0Connection.isStale(cachedTokenExpirationTime)) {
             long minutesToExpiration = (cachedTokenExpirationTime - System.currentTimeMillis()) / 60000;
             LOG.info("Using cached token (expires in {} minutes)", minutesToExpiration);
             return cachedToken.getAccessToken();
@@ -84,7 +84,7 @@ public class Auth0Users {
         // Cache token for later use and return token string.
         try {
             cachedToken = tokenRequest.execute();
-            cachedTokenExpirationTime = getTokenExpirationTime(cachedToken);
+            cachedTokenExpirationTime = Auth0Connection.getTokenExpirationTime(cachedToken);
         } catch (Auth0Exception e) {
             LOG.error("Could not fetch Auth0 token", e);
             return null;
@@ -198,19 +198,5 @@ public class Auth0Users {
         return "your-auth0-domain".equals(AUTH0_DOMAIN)
             ? "http://locahost:8089"
             : "https://" + AUTH0_DOMAIN;
-    }
-
-    /**
-     * Computes a token expiration time in seconds.
-     */
-    public static long getTokenExpirationTime(TokenHolder token) {
-        return System.currentTimeMillis() + token.getExpiresIn() /* seconds */ * 1000;
-    }
-
-    /**
-     * Returns true if a token's expiration date is stale (expiration date passed or about to pass).
-     */
-    public static boolean isStale(long expiration) {
-        return expiration - System.currentTimeMillis() <= 60000;
     }
 }
