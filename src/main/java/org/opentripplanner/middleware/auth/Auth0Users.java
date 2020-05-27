@@ -8,7 +8,6 @@ import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +36,7 @@ public class Auth0Users {
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
     // Cached API token so that we do not have to request a new one each time a Management API request is made.
     private static TokenHolder cachedToken = null;
+    private static long cachedTokenExpirationTime = 0;
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Users.class);
     private static final AuthAPI authAPI = new AuthAPI(AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET);
 
@@ -74,21 +74,26 @@ public class Auth0Users {
      */
     public static String getApiToken() {
         // If cached token has not expired, use it instead of requesting a new one.
-        if (cachedToken != null && cachedToken.getExpiresIn() > 60) {
-            long minutesToExpiration = cachedToken.getExpiresIn() / 60;
+        if (!isStale(cachedTokenExpirationTime)) {
+            long minutesToExpiration = (cachedTokenExpirationTime - System.currentTimeMillis()) / 60000;
             LOG.info("Using cached token (expires in {} minutes)", minutesToExpiration);
             return cachedToken.getAccessToken();
         }
         LOG.info("Getting new Auth0 API access token (cached token does not exist or has expired).");
-        AuthRequest tokenRequest = authAPI.requestToken(getAuth0Url() + API_PATH + "/");
+        AuthRequest tokenRequest = getTokenRequest();
         // Cache token for later use and return token string.
         try {
             cachedToken = tokenRequest.execute();
+            cachedTokenExpirationTime = getTokenExpirationTime(cachedToken);
         } catch (Auth0Exception e) {
             LOG.error("Could not fetch Auth0 token", e);
             return null;
         }
         return cachedToken.getAccessToken();
+    }
+
+    static AuthRequest getTokenRequest() {
+        return authAPI.requestToken(getAuth0Url() + API_PATH + "/");
     }
 
     /**
@@ -193,5 +198,19 @@ public class Auth0Users {
         return "your-auth0-domain".equals(AUTH0_DOMAIN)
             ? "http://locahost:8089"
             : "https://" + AUTH0_DOMAIN;
+    }
+
+    /**
+     * Computes a token expiration time in seconds.
+     */
+    public static long getTokenExpirationTime(TokenHolder token) {
+        return System.currentTimeMillis() + token.getExpiresIn() /* seconds */ * 1000;
+    }
+
+    /**
+     * Returns true if a token's expiration date is stale (expiration date passed or about to pass).
+     */
+    public static boolean isStale(long expiration) {
+        return expiration - System.currentTimeMillis() <= 60000;
     }
 }

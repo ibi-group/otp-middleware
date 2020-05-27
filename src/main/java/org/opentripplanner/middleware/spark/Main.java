@@ -33,6 +33,7 @@ public class Main {
     public static void main(String[] args) throws IOException {
         // Load configuration.
         loadConfig(args);
+
         // Connect to MongoDB.
         Persistence.initialize();
 
@@ -105,7 +106,7 @@ public class Main {
      * Load config files from either program arguments or (if no args specified) from
      * default configuration file locations. Config fields are retrieved with getConfigProperty.
      */
-    private static void loadConfig(String[] args) throws IOException {
+    public static void loadConfig(String[] args) throws IOException {
         FileInputStream envConfigStream;
 
         if (args.length == 0) {
