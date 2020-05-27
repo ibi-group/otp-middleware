@@ -22,7 +22,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * services using the hooks provided by {@link ApiController}.
  */
 public class MonitorTripController extends ApiController<MonitoredTrip> {
-    private static final Logger LOG = LoggerFactory.getLogger(MonitorTripController.class);
 
     public MonitorTripController(String apiPrefix) {
         super(apiPrefix, Persistence.monitoredTrip, "secure/monitortrip");
@@ -30,7 +29,6 @@ public class MonitorTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
-        // Confirm that the user exists before creating monitored trip
         isValidUser(monitoredTrip.userId, req);
         reachedMaximum(monitoredTrip.userId, req);
 
@@ -39,7 +37,6 @@ public class MonitorTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        // Confirm that the user exists before creating monitored trip
         isValidUser(monitoredTrip.userId, req);
 
         return monitoredTrip;
@@ -62,8 +59,12 @@ public class MonitorTripController extends ApiController<MonitoredTrip> {
         }
 
         Auth0Utils.isAuthorizedUser(user, request);
+
     }
 
+    /**
+     * Confirm that the maximum number of saved monitored trips has not been reached
+     */
     private void reachedMaximum(String userId, Request request) {
         long maximum = 5;
 
