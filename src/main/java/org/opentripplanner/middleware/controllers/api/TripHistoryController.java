@@ -42,14 +42,21 @@ public class TripHistoryController {
 
     /**
      * Return JSON representation of a user's trip request history based on provided parameters.
-     * Only the user id is required.
+     * An authorized user (Auth0) and user id are required.
      */
     public static String getTripRequests(Request request, Response response, TypedPersistence<TripRequest> tripRequest) {
 
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(request);
+        if (requestingUser == null) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Authorization required.");
+        }
 
         final String userId = HttpUtils.getParamFromRequest(request, USER_ID_PARAM_NAME, false);
         User user = Persistence.users.getById(userId);
+        if (user == null) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
+        }
+
         if (!requestingUser.user_id.equalsIgnoreCase(user.auth0UserId)) {
             logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Can only obtain trip requests created by the same user.");
         }
@@ -70,7 +77,7 @@ public class TripHistoryController {
         }
 
         String paramFromDate = HttpUtils.getParamFromRequest(request, FROM_DATE_PARAM_NAME, true);
-        Date fromDate = getDate(request, FROM_DATE_PARAM_NAME, paramFromDate, LocalTime.MIN);
+        Date fromDate = getDate(request, FROM_DATE_PARAM_NAME, paramFromDate, LocalTime.MIDNIGHT);
 
         String paramToDate = HttpUtils.getParamFromRequest(request, TO_DATE_PARAM_NAME, true);
         Date toDate = getDate(request, TO_DATE_PARAM_NAME, paramToDate, LocalTime.MAX);
