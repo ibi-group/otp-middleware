@@ -198,20 +198,23 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Convenience method for extracting the ID param from the HTTP request.
      */
     private T getObjectForId(Request req, String id) {
-        return checkAndLogIfNull(req, persistence.getById(id), "id", id);
+        T object = persistence.getById(id);
+        if (object == null) {
+            logMessageAndHalt(
+                req,
+                HttpStatus.NOT_FOUND_404,
+                String.format("No %s with id=%s found.", classToLowercase, id),
+                null
+            );
+        }
+        return object;
     }
 
     /**
      * Convenience method for extracting the attribute/field param from the HTTP request.
      */
     private T getFirstObjectByFieldValue(Request req, String field, String value) {
-        return checkAndLogIfNull(req, persistence.getOneFiltered(eq(field, value)), field, value);
-    }
-
-    /**
-     * Log if an object was not found for a request.
-     */
-    private T checkAndLogIfNull(Request req, T object, String field, String value) {
+        T object =  persistence.getOneFiltered(eq(field, value));
         if (object == null) {
             logMessageAndHalt(
                 req,
