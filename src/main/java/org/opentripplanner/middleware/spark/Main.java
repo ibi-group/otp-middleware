@@ -33,7 +33,6 @@ public class Main {
     public static void main(String[] args) throws IOException {
         // Load configuration.
         loadConfig(args);
-
         // Connect to MongoDB.
         Persistence.initialize();
 

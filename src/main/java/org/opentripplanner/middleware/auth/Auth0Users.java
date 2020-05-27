@@ -80,7 +80,7 @@ public class Auth0Users {
             return cachedToken.getAccessToken();
         }
         LOG.info("Getting new Auth0 API access token (cached token does not exist or has expired).");
-        AuthRequest tokenRequest = getTokenRequest();
+        AuthRequest tokenRequest = authAPI.requestToken(getAuth0Url() + API_PATH + "/");
         // Cache token for later use and return token string.
         try {
             cachedToken = tokenRequest.execute();
@@ -90,10 +90,6 @@ public class Auth0Users {
             return null;
         }
         return cachedToken.getAccessToken();
-    }
-
-    static AuthRequest getTokenRequest() {
-        return authAPI.requestToken(getAuth0Url() + API_PATH + "/");
     }
 
     /**
