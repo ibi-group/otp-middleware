@@ -93,7 +93,7 @@ public class Auth0Connection {
     /**
      * Extract JWT token from Spark HTTP request (in Authorization header).
      */
-    private static String getTokenFromRequest(Request req) {
+    static String getTokenFromRequest(Request req) {
         // Check that auth header is present and formatted correctly (Authorization: Bearer [token]).
         final String authHeader = req.headers("Authorization");
         if (authHeader == null) {

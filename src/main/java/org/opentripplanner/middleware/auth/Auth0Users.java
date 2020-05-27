@@ -5,10 +5,8 @@ import com.auth0.client.mgmt.ManagementAPI;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.mgmt.users.User;
-import com.auth0.net.AuthRequest;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.auth.Auth0Connection.getTokenFromRequest;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -44,14 +43,14 @@ public class Auth0Users {
      * Creates a standard user for the provided email address. Defaults to a random UUID password and connection type
      * of {@link #DEFAULT_CONNECTION_TYPE}.
      */
-    public static User createAuth0UserForEmail(String email) throws Auth0Exception {
+    public static User createAuth0UserForEmail(Request req, String email) throws Auth0Exception {
         // Create user object and assign properties.
         User user = new User();
         user.setEmail(email);
         // TODO set name? phone? other Auth0 properties?
         user.setPassword(UUID.randomUUID().toString());
         user.setConnection(DEFAULT_CONNECTION_TYPE);
-        return getManagementAPI()
+        return getManagementAPI(req)
             .users()
             .create(user)
             .execute();
@@ -60,8 +59,8 @@ public class Auth0Users {
     /**
      * Delete Auth0 user by Auth0 user ID using the Management API.
      */
-    public static void deleteAuth0User(String userId) throws Auth0Exception {
-        getManagementAPI()
+    public static void deleteAuth0User(Request req, String userId) throws Auth0Exception {
+        getManagementAPI(req)
             .users()
             .delete(userId)
             .execute();
@@ -72,6 +71,7 @@ public class Auth0Users {
      * a new token using the oauth token endpoint or grab a cached token that it has already created (if it has not
      * expired). More information on setting this up is here: https://auth0.com/docs/api/management/v2/get-access-tokens-for-production
      */
+    /*
     public static String getApiToken() {
         // If cached token has not expired, use it instead of requesting a new one.
         if (cachedToken != null && cachedToken.getExpiresIn() > 60) {
@@ -90,14 +90,41 @@ public class Auth0Users {
         }
         return cachedToken.getAccessToken();
     }
-
+*/
     /**
      * Get a single Auth0 user for the specified email.
      */
-    public static User getUserByEmail(String email, boolean createIfNotExists) {
+    public static User getUserByEmail(Request req, String email, boolean createIfNotExists) {
         try {
-            List<User> users = getManagementAPI()
+            List<User> users = getManagementAPI(req)
                 .users()
+                .listByEmail(email, null)
+                .execute();
+            if (users.size() > 0) return users.get(0);
+        } catch (Auth0Exception e) {
+            LOG.error("Could not perform user search by email", e);
+            return null;
+        }
+        if (createIfNotExists) {
+            try {
+                return createAuth0UserForEmail(req, email);
+            } catch (Auth0Exception e) {
+                LOG.error("Could not create user for email", e);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get a single Auth0 user from the specified access token.
+     */
+    /*
+    public static User getUserFromRequest(Request req) {
+        String userId = getUserId();
+        try {
+            List<User> users = getManagementAPI(req)
+                .users()
+                .get(userId, )
                 .listByEmail(email, null)
                 .execute();
             if (users.size() > 0) return users.get(0);
@@ -114,6 +141,8 @@ public class Auth0Users {
         }
         return null;
     }
+
+     */
 
     /**
      * Checks if an Auth0 user is a Data Tools user. Note: this may need to change once Data Tools user structure
@@ -134,8 +163,9 @@ public class Auth0Users {
     }
 
     /** Wrapper method for getting a new instance of the Auth0 {@link ManagementAPI} */
-    private static ManagementAPI getManagementAPI() {
-        return new ManagementAPI(AUTH0_DOMAIN, getApiToken());
+    private static ManagementAPI getManagementAPI(Request req) {
+        String token = getTokenFromRequest(req);
+        return new ManagementAPI(AUTH0_DOMAIN, token);
     }
 
     /**
@@ -149,7 +179,7 @@ public class Auth0Users {
             logMessageAndHalt(req, 400, "User with email already exists in database!");
         }
         // Check for pre-existing user in Auth0 and create if not exists.
-        User auth0UserProfile = getUserByEmail(user.email, true);
+        User auth0UserProfile = getUserByEmail(req, user.email, true);
         if (auth0UserProfile == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Error creating user for email " + user.email);
         }
