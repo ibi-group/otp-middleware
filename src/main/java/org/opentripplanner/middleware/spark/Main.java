@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
+import org.opentripplanner.middleware.controllers.api.Auth0UserController;
 import org.opentripplanner.middleware.controllers.api.UserController;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -51,6 +52,7 @@ public class Main {
             SparkSwagger.of(spark)
                 // Register API routes.
                 .endpoints(() -> List.of(
+                    new Auth0UserController(API_PREFIX),
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
                     new UserController(API_PREFIX)

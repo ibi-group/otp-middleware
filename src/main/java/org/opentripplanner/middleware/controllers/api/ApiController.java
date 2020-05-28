@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -33,7 +34,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public abstract class ApiController<T extends Model> implements Endpoint {
     private static final String ID_PARAM = "/:id";
     private static final String FIND_PATH = "/find/:attribute/:value";
-    private final String ROOT_ROUTE;
+    protected final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String classToLowercase;
@@ -97,7 +98,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     .withPathParam().withName("value").withDescription("The desired value for the specified attribute.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
                     .withResponseType(clazz),
-                    this::getOneByField, JsonUtils::toJson
+                this::getOneByField, JsonUtils::toJson
             )
 
             // Options response for CORS for the /find/{..}/{..} route
@@ -160,6 +161,14 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         String value = getParamFromRequest(req, "value");
         return getFirstObjectByFieldValue(req, attribute, value);
     }
+    /**
+     * HTTP endpoint to get many entities of a given user.
+     */
+    private List<T> getManyForUser(Request req, Response res) {
+        Auth0UserProfile profile2 = req.attribute("user");
+
+        return null;
+    }
 
     /**
      * HTTP endpoint to delete one entity specified by ID.
@@ -214,6 +223,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Convenience method for extracting the attribute/field param from the HTTP request.
      */
     private T getFirstObjectByFieldValue(Request req, String field, String value) {
+        Auth0UserProfile profile2 = req.attribute("user");
+
         T object =  persistence.getOneFiltered(eq(field, value));
         if (object == null) {
             logMessageAndHalt(
