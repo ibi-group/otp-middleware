@@ -26,7 +26,10 @@ public class TokenCache {
         expirationDate = new Date(System.currentTimeMillis() + tokenHolder.getExpiresIn() * 1000);
     }
 
-    public boolean isTokenExpired() {
+    /**
+     * @return whether the Auth0 API token is stale (i.e., it has expired or is about to expire)
+     */
+    public boolean isStale() {
         return millisecondsUntilExpiration() <= EXPIRATION_BUFFER_MILLIS;
     }
 

@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.auth;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.client.mgmt.ManagementAPI;
 import com.auth0.exception.Auth0Exception;
-import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -13,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -82,7 +80,7 @@ public class Auth0Users {
      */
     public static String getApiToken() {
         // If cached token has not expired, use it instead of requesting a new one.
-        if (cachedToken != null && !cachedToken.isTokenExpired()) {
+        if (cachedToken != null && !cachedToken.isStale()) {
             LOG.info("Using cached token (expires in {} minutes)", cachedToken.minutesUntilExpiration());
             return cachedToken.tokenHolder.getAccessToken();
         }
