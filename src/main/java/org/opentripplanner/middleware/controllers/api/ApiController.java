@@ -2,7 +2,10 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
+import com.mongodb.client.model.Filters;
+import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -17,6 +20,9 @@ import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
+import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -134,10 +140,20 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * HTTP endpoint to get multiple entities.
+     * HTTP endpoint to get multiple entities based on the user permissions
      */
+    // FIXME Maybe better if the user check (and filtering) was done in a pre hook?
+    // FIXME Will potentially require further granularity for admin
     private List<T> getMany(Request req, Response res) {
-        return persistence.getAll();
+
+        Auth0UserProfile requestingUser = getUserFromRequest(req);
+        if (isUserAdmin(requestingUser)) {
+            return persistence.getAll();
+        } else {
+            // FIXME assumes all non admin user collections will have a user id field
+            Bson filter = Filters.and(eq("userId", requestingUser.otpUser.id));
+            return persistence.getFiltered(filter);
+        }
     }
 
     /**

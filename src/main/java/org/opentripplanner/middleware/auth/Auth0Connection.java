@@ -80,6 +80,10 @@ public class Auth0Connection {
         }
     }
 
+    public static boolean isUserAdmin(Auth0UserProfile user) {
+        return user != null && user.adminUser != null;
+    }
+
     /** Add user profile to Spark Request object */
     public static void addUserToRequest(Request req, Auth0UserProfile user) {
         req.attribute("user", user);
