@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.controllers.api;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -18,7 +17,6 @@ import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -33,8 +31,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public abstract class ApiController<T extends Model> implements Endpoint {
     private static final String ID_PARAM = "/:id";
-    private static final String FIND_PATH = "/find/:attribute/:value";
-    protected final String ROOT_ROUTE;
+    private final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String classToLowercase;
@@ -91,19 +88,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     this::getOne, JsonUtils::toJson
             )
 
-            // Get one entity by field.
-            .get(path(ROOT_ROUTE + FIND_PATH)
-                    .withDescription("Returns a '" + classToLowercase + "' entity whose field has the specified value, or 404 if not found.")
-                    .withPathParam().withName("attribute").withDescription("The name of the attribute of which to extract the value.").and()
-                    .withPathParam().withName("value").withDescription("The desired value for the specified attribute.").and()
-                    // .withResponses(...) // FIXME: not implemented (requires source change).
-                    .withResponseType(clazz),
-                this::getOneByField, JsonUtils::toJson
-            )
-
-            // Options response for CORS for the /find/{..}/{..} route
-            .options(path(FIND_PATH), (req, res) -> "")
-
             // Options response for CORS
             .options(path(""), (req, res) -> "")
 
@@ -154,23 +138,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * HTTP endpoint to get one entity specified by a field value.
-     */
-    private T getOneByField(Request req, Response res) {
-        String attribute = getParamFromRequest(req, "attribute");
-        String value = getParamFromRequest(req, "value");
-        return getFirstObjectByFieldValue(req, attribute, value);
-    }
-    /**
-     * HTTP endpoint to get many entities of a given user.
-     */
-    private List<T> getManyForUser(Request req, Response res) {
-        Auth0UserProfile profile2 = req.attribute("user");
-
-        return null;
-    }
-
-    /**
      * HTTP endpoint to delete one entity specified by ID.
      */
     private String deleteOne(Request req, Response res) {
@@ -213,24 +180,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 req,
                 HttpStatus.NOT_FOUND_404,
                 String.format("No %s with id=%s found.", classToLowercase, id),
-                null
-            );
-        }
-        return object;
-    }
-
-    /**
-     * Convenience method for extracting the attribute/field param from the HTTP request.
-     */
-    private T getFirstObjectByFieldValue(Request req, String field, String value) {
-        Auth0UserProfile profile2 = req.attribute("user");
-
-        T object =  persistence.getOneFiltered(eq(field, value));
-        if (object == null) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.NOT_FOUND_404,
-                String.format("No %s with %s=%s found.", classToLowercase, field, value),
                 null
             );
         }
