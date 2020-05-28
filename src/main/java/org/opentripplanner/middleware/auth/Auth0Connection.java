@@ -80,6 +80,7 @@ public class Auth0Connection {
         }
     }
 
+    /** Check if the incoming user is an admin user */
     public static boolean isUserAdmin(Auth0UserProfile user) {
         return user != null && user.adminUser != null;
     }

@@ -18,8 +18,8 @@ import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
- * Implementation of the {@link ApiController} abstract class for managing users. This controller connects with Auth0
- * services using the hooks provided by {@link ApiController}.
+ * Implementation of the {@link ApiController} abstract class for managing monitored trips. This controller connects
+ * with Auth0 services using the hooks provided by {@link ApiController}.
  */
 public class MonitorTripController extends ApiController<MonitoredTrip> {
 
