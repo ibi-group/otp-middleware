@@ -44,9 +44,7 @@ public abstract class AbstractUser extends Model {
         } else {
             // If not managing self, user must have manage permission.
             for (Permission permission : permissions) {
-                if (permission.action.equals(Permission.Action.MANAGE) && permission.clazz.equals(this.getClass())) {
-                    return true;
-                }
+                if (permission.canManage(this.getClass())) return true;
             }
         }
         // Fallback to Model#userCanManage.

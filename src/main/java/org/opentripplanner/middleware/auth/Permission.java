@@ -14,6 +14,10 @@ public class Permission {
         this.action = action;
     }
 
+    public boolean canManage(Class<? extends Model> clazz) {
+        return this.action.equals(Action.MANAGE) && clazz.equals(this.clazz);
+    }
+
     public enum Action {
         VIEW, MANAGE
     }
