@@ -25,7 +25,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * This handles verifying the Auth0 token passed in the auth header (e.g., Authorization: Bearer MY_TOKEN of Spark HTTP
  * requests.
  */
-
 public class Auth0Connection {
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Connection.class);
     private static JWTVerifier verifier;
