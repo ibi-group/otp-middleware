@@ -43,7 +43,7 @@ public class UserController extends ApiController<User> {
             .get(path(ROOT_ROUTE + TOKEN_PATH)
                 .withDescription("Retrieves a User entity (based on auth0UserId from request token).")
                 .withResponseType(persistence.clazz),
-                this::retrieve, JsonUtils::toJson
+                this::getUserFromRequest, JsonUtils::toJson
             )
 
             // Options response for CORS for the token path
@@ -95,24 +95,44 @@ public class UserController extends ApiController<User> {
     }
 
     /**
-     * HTTP endpoint to get the User entity from auth0.
+     * Holds result and message from getUserFromProfile.
      */
-    private User retrieve(Request req, Response res) {
+    static class UserFromProfileResult {
+        public User user;
+        public String message;
+    }
+
+    /**
+     * HTTP endpoint to get the {@link User} entity from a {@link Auth0UserProfile}.
+     * (Reminder: for endpoints under 'secure', we add a {@link Auth0UserProfile} to request attributes.)
+     */
+    private User getUserFromRequest(Request req, Response res) {
         Auth0UserProfile profile = req.attribute("user");
-        User result = null;
-        String message = "Unknown error.";
+        UserFromProfileResult result = getUserFromProfile(profile);
 
+        if (result.user == null) {
+            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, result.message,null);
+        }
+        return result.user;
+    }
+
+    /**
+     * @param profile The {@link Auth0UserProfile} from which to extract the User.
+     * @return An object containing the {@link User} entity from a {@link Auth0UserProfile}, or null and and an error message if that fails.
+     */
+    UserFromProfileResult getUserFromProfile(Auth0UserProfile profile) {
+        UserFromProfileResult result = new UserFromProfileResult();
+        String auth0UserId = profile.user_id;
         if (profile != null) {
-            String auth0UserId = profile.user_id;
-            result = persistence.getOneFiltered(eq("auth0UserId", auth0UserId));
-            if (result == null) message = String.format("No user with auth0UserID=%s found.", auth0UserId);
-        } else {
-            message = "Auth0 profile could not be processed.";
+            result.user = persistence.getOneFiltered(eq("auth0UserId", auth0UserId));
         }
 
-        if (result == null) {
-            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, message,null);
+        if (profile == null) {
+            result.message = "Auth0 profile could not be processed.";
+        } else if (result.user == null) {
+            result.message = String.format("No user with auth0UserID=%s found.", auth0UserId);
         }
+
         return result;
     }
 }
