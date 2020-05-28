@@ -28,6 +28,8 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public class UserController extends ApiController<User> {
     private static final Logger LOG = LoggerFactory.getLogger(UserController.class);
     private static final String TOKEN_PATH = "/fromtoken";
+    static final String NO_AUTH0_PROFILE_MESSAGE = "No Auth0 profile was provided.";
+    static final String NO_USER_WITH_AUTH0_ID_MESSAGE = "No user with auth0UserID=%s found.";
 
     public UserController(String apiPrefix){
         super(apiPrefix, Persistence.users, "secure/user");
@@ -122,15 +124,13 @@ public class UserController extends ApiController<User> {
      */
     UserFromProfileResult getUserFromProfile(Auth0UserProfile profile) {
         UserFromProfileResult result = new UserFromProfileResult();
-        String auth0UserId = profile.user_id;
-        if (profile != null) {
-            result.user = persistence.getOneFiltered(eq("auth0UserId", auth0UserId));
-        }
 
-        if (profile == null) {
-            result.message = "Auth0 profile could not be processed.";
-        } else if (result.user == null) {
-            result.message = String.format("No user with auth0UserID=%s found.", auth0UserId);
+        if (profile != null) {
+            String auth0UserId = profile.user_id;
+            result.user = persistence.getOneFiltered(eq("auth0UserId", auth0UserId));
+            if (result.user == null) result.message = String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, auth0UserId);
+        } else {
+            result.message = NO_AUTH0_PROFILE_MESSAGE;
         }
 
         return result;
