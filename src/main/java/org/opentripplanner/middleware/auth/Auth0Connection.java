@@ -26,7 +26,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * This handles verifying the Auth0 token passed in the auth header (e.g., Authorization: Bearer MY_TOKEN of Spark HTTP
  * requests.
  */
-
 public class Auth0Connection {
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Connection.class);
     private static JWTVerifier verifier;
@@ -154,12 +153,5 @@ public class Auth0Connection {
      */
     public static long getTokenExpirationTime(TokenHolder token) {
         return System.currentTimeMillis() + token.getExpiresIn() /* seconds */ * 1000;
-    }
-
-    /**
-     * Returns true if a token's expiration date is stale (expiration date passed or about to pass).
-     */
-    public static boolean isStale(long expiration) {
-        return expiration - System.currentTimeMillis() <= 60000;
     }
 }
