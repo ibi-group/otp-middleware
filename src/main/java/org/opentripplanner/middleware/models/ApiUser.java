@@ -1,5 +1,8 @@
 package org.opentripplanner.middleware.models;
 
-public class ApiUser extends User {
-    public ApiOptions apiOptions = new ApiOptions();
+import java.util.ArrayList;
+import java.util.List;
+
+public class ApiUser extends AbstractUser {
+    public List<String> apiKeyIds = new ArrayList<>();
 }

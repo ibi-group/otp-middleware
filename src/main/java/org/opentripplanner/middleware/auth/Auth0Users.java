@@ -4,11 +4,10 @@ import com.auth0.client.auth.AuthAPI;
 import com.auth0.client.mgmt.ManagementAPI;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
-import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.models.Model;
+import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +43,9 @@ public class Auth0Users {
      * Creates a standard user for the provided email address. Defaults to a random UUID password and connection type
      * of {@link #DEFAULT_CONNECTION_TYPE}.
      */
-    public static User createAuth0UserForEmail(String email) throws Auth0Exception {
+    public static com.auth0.json.mgmt.users.User createAuth0UserForEmail(String email) throws Auth0Exception {
         // Create user object and assign properties.
-        User user = new User();
+        com.auth0.json.mgmt.users.User user = new com.auth0.json.mgmt.users.User();
         user.setEmail(email);
         // TODO set name? phone? other Auth0 properties?
         user.setPassword(UUID.randomUUID().toString());
@@ -94,9 +93,9 @@ public class Auth0Users {
     /**
      * Get a single Auth0 user for the specified email.
      */
-    public static User getUserByEmail(String email, boolean createIfNotExists) {
+    public static com.auth0.json.mgmt.users.User getUserByEmail(String email, boolean createIfNotExists) {
         try {
-            List<User> users = getManagementAPI()
+            List<com.auth0.json.mgmt.users.User> users = getManagementAPI()
                 .users()
                 .listByEmail(email, null)
                 .execute();
@@ -125,7 +124,7 @@ public class Auth0Users {
         return appMetadata != null && appMetadata.containsKey("datatools");
     }
 
-    public static <U extends org.opentripplanner.middleware.models.User> U updateAuthFieldsForUser(U user, User auth0UserProfile) {
+    public static <U extends AbstractUser> U updateAuthFieldsForUser(U user, com.auth0.json.mgmt.users.User auth0UserProfile) {
         // If a user with email exists in Auth0, assign existing Auth0 ID to new user record in MongoDB. Also,
         // check if the user is a Data Tools user and assign value accordingly.
         user.auth0UserId = auth0UserProfile.getId();
@@ -141,7 +140,7 @@ public class Auth0Users {
     /**
      * Shorthand method for validating a new user and creating the user with Auth0.
      */
-    public static <U extends org.opentripplanner.middleware.models.User> User createNewAuth0User(U user, Request req, TypedPersistence<U> userStore) {
+    public static <U extends AbstractUser> com.auth0.json.mgmt.users.User createNewAuth0User(U user, Request req, TypedPersistence<U> userStore) {
         validateUser(user, req);
         // Ensure no user with email exists in MongoDB.
         U userWithEmail = userStore.getOneFiltered(eq("email", user.email));
@@ -149,7 +148,7 @@ public class Auth0Users {
             logMessageAndHalt(req, 400, "User with email already exists in database!");
         }
         // Check for pre-existing user in Auth0 and create if not exists.
-        User auth0UserProfile = getUserByEmail(user.email, true);
+        com.auth0.json.mgmt.users.User auth0UserProfile = getUserByEmail(user.email, true);
         if (auth0UserProfile == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Error creating user for email " + user.email);
         }
@@ -157,18 +156,18 @@ public class Auth0Users {
     }
 
     /**
-     * Validates a generic {@link User} to be used before creating or updating a user.
+     * Validates a generic {@link com.auth0.json.mgmt.users.User} to be used before creating or updating a user.
      */
-    public static <U extends org.opentripplanner.middleware.models.User> void validateUser(U user, Request req) {
+    public static <U extends AbstractUser> void validateUser(U user, Request req) {
         if (!isValidEmail(user.email)) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Email address is invalid.");
         }
     }
 
     /**
-     * Validates a generic {@link User} to be used before updating a user.
+     * Validates a generic {@link com.auth0.json.mgmt.users.User} to be used before updating a user.
      */
-    public static <U extends org.opentripplanner.middleware.models.User> void validateExistingUser(U user, U preExistingUser, Request req, TypedPersistence<U> userStore) {
+    public static <U extends AbstractUser> void validateExistingUser(U user, U preExistingUser, Request req, TypedPersistence<U> userStore) {
         validateUser(user, req);
         // Verify that email address for user has not changed.
         // TODO: should we permit changing email addresses? This would require making an update to Auth0.
