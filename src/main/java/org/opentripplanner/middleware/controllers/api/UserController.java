@@ -1,15 +1,20 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
+import com.beerboy.ss.ApiEndpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.User;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
+import spark.Response;
 
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
 import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
@@ -22,9 +27,30 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public class UserController extends ApiController<User> {
     private static final Logger LOG = LoggerFactory.getLogger(UserController.class);
+    private static final String TOKEN_PATH = "/fromtoken";
 
     public UserController(String apiPrefix){
         super(apiPrefix, Persistence.users, "secure/user");
+    }
+
+    @Override
+    protected ApiEndpoint makeEndPoint(ApiEndpoint baseEndPoint) {
+        LOG.info("Registering user/fromtoken path.");
+
+        // Add the user token route before the regular CRUD methods.
+        ApiEndpoint modifiedEndpoint = baseEndPoint
+            // Get user from token.
+            .get(path(ROOT_ROUTE + TOKEN_PATH)
+                .withDescription("Retrieves a User entity (based on auth0UserId from request token).")
+                .withResponseType(persistence.clazz),
+                this::retrieve, JsonUtils::toJson
+            )
+
+            // Options response for CORS for the token path
+            .options(path(TOKEN_PATH), (req, res) -> "");
+
+        // Add the regular CRUD methods and return to parent.
+        return super.makeEndPoint(modifiedEndpoint);
     }
 
     /**
@@ -66,5 +92,27 @@ public class UserController extends ApiController<User> {
             return false;
         }
         return true;
+    }
+
+    /**
+     * HTTP endpoint to get the User entity from auth0.
+     */
+    private User retrieve(Request req, Response res) {
+        Auth0UserProfile profile = req.attribute("user");
+        User result = null;
+        String message = "Unknown error.";
+
+        if (profile != null) {
+            String auth0UserId = profile.user_id;
+            result = persistence.getOneFiltered(eq("auth0UserId", auth0UserId));
+            if (result == null) message = String.format("No user with auth0UserID=%s found.", auth0UserId);
+        } else {
+            message = "Auth0 profile could not be processed.";
+        }
+
+        if (result == null) {
+            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, message,null);
+        }
+        return result;
     }
 }

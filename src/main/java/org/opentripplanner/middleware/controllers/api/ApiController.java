@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
@@ -31,7 +32,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public abstract class ApiController<T extends Model> implements Endpoint {
     private static final String ID_PARAM = "/:id";
-    private final String ROOT_ROUTE;
+    protected final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String classToLowercase;
@@ -61,10 +62,21 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      */
     @Override
     public void bind(final SparkSwagger restApi) {
-        LOG.info("Registering routes and enabling docs for {}", ROOT_ROUTE);
+        ApiEndpoint apiEndPoint = restApi.endpoint(endpointPath(ROOT_ROUTE)
+            .withDescription("Interface for querying and managing '" + classToLowercase + "' entities."),
+            (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase)
+        );
+        makeEndPoint(apiEndPoint);
+    }
 
-        restApi.endpoint(endpointPath(ROOT_ROUTE)
-            .withDescription("Interface for querying and managing '" + classToLowercase + "' entities."), (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase))
+    /**
+     * Adds a basic implementation of the HTTP CRUD methods that can be overriden by child classes.
+     * @param baseEndPoint The end point to which to add the methods.
+     * @return The passed end point.
+     */
+    protected ApiEndpoint makeEndPoint(ApiEndpoint baseEndPoint) {
+        LOG.info("Registering routes and enabling docs for {}", ROOT_ROUTE);
+        return baseEndPoint
 
             // Careful here!
             // If using lambdas with the GET method, a bug in spark-swagger
