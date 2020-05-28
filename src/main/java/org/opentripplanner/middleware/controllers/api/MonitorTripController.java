@@ -3,15 +3,10 @@ package org.opentripplanner.middleware.controllers.api;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Auth0Utils;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.User;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.HttpUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
