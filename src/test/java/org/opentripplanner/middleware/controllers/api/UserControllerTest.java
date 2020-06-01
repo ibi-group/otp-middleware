@@ -3,7 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
-import org.opentripplanner.middleware.models.User;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,7 +21,7 @@ public class UserControllerTest extends OtpMiddlewareTest {
     @Test
     public void testGetUserFromProfile() {
         Auth0UserProfile profile = Auth0UserProfile.createTestAdminUser();
-        User dbUser = createUser(profile.user_id, profile.email);
+        OtpUser dbUser = createUser(profile.user_id, profile.email);
 
         UserController controller = new UserController("/api/");
         UserController.UserFromProfileResult result = controller.getUserFromProfile(profile);
@@ -31,7 +31,7 @@ public class UserControllerTest extends OtpMiddlewareTest {
         assertEquals(profile.user_id, result.user.auth0UserId);
 
         // tidy up
-        Persistence.users.removeById(dbUser.id);
+        Persistence.otpUsers.removeById(dbUser.id);
     }
 
     /**
@@ -40,7 +40,7 @@ public class UserControllerTest extends OtpMiddlewareTest {
     @Test
     public void testGetUserFromProfile_noUser() {
         Auth0UserProfile profile = Auth0UserProfile.createTestAdminUser();
-        User dbUser = createUser(profile.user_id + "-stuff", profile.email);
+        OtpUser dbUser = createUser(profile.user_id + "-stuff", profile.email);
 
         UserController controller = new UserController("/api/");
         UserController.UserFromProfileResult result = controller.getUserFromProfile(profile);
@@ -50,36 +50,17 @@ public class UserControllerTest extends OtpMiddlewareTest {
         assertEquals(String.format(UserController.NO_USER_WITH_AUTH0_ID_MESSAGE, profile.user_id), result.message);
 
         // tidy up
-        Persistence.users.removeById(dbUser.id);
-    }
-
-    /**
-     * Same as above, but a profile is not given.
-     */
-    @Test
-    public void testGetUserFromProfile_noProfile() {
-        Auth0UserProfile profile = Auth0UserProfile.createTestAdminUser();
-        User dbUser = createUser(profile.user_id, profile.email);
-
-        UserController controller = new UserController("/api/");
-        UserController.UserFromProfileResult result = controller.getUserFromProfile(null);
-
-        assertNull(result.user);
-        assertNotNull(result.message);
-        assertEquals(UserController.NO_AUTH0_PROFILE_MESSAGE, result.message);
-
-        // tidy up
-        Persistence.users.removeById(dbUser.id);
+        Persistence.otpUsers.removeById(dbUser.id);
     }
 
     /**
      * Utility to create user and store in database.
      */
-    private User createUser(String auth0UserId, String email) {
-        User user = new User();
+    private OtpUser createUser(String auth0UserId, String email) {
+        OtpUser user = new OtpUser();
         user.auth0UserId = auth0UserId;
         user.email = email;
-        Persistence.users.create(user);
+        Persistence.otpUsers.create(user);
         return user;
     }
 }

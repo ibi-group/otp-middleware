@@ -59,7 +59,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * This method is called by {@link SparkSwagger} to register endpoints and generate the docs.
+     * This method is called on each object deriving from ApiController by {@link SparkSwagger}
+     * to register endpoints and generate the docs.
+     * In this method, we add the different API paths and methods (e.g. the CRUD methods)
+     * to the restApi parameter for the applicable applicable controller.
      * @param restApi The object to which to attach the documentation.
      */
     @Override
@@ -72,9 +75,16 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * This method implements a set of basic HTTP Spark methods (e.g., getOne, getMany, delete) for CRUD operations.
-     * It can be overridden by child classes to supplement additional methods through the ApiEndpoint
-     * (after supplemental methods are added, be sure to call the super method to add the basic methods).
+     * This method add to the provided baseEndPoint parameter a set of basic HTTP Spark methods
+     * (e.g., getOne, getMany, delete) for CRUD operations.
+     * It can optionally be overridden by child classes to add any supplemental methods to the baseEndPoint.
+     * Either before or after(*) supplemental methods are added, be sure to call the super method to add CRUD operations.
+     *
+     * (*) Note: spark-java will resolve methods in the order they are added to the baseEndPoint parameter.
+     * For instance, if /path and /path/subpath are added in this order, then
+     * a request with /path/subpath will be treated as /path, and the method for /path/subpath will be ignored.
+     * Conversely, if /path/subpath and /path are added in this order, then
+     * a request with /path/subpath will be handled by the method for /path/subpath.
      * @param baseEndPoint The end point to which to add the methods.
      */
     protected void buildEndPoint(ApiEndpoint baseEndPoint) {
