@@ -23,7 +23,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * services using the hooks provided by {@link ApiController}.
  */
 public class UserController extends ApiController<OtpUser> {
-    static final String NO_AUTH0_PROFILE_MESSAGE = "No Auth0 profile was provided.";
     static final String NO_USER_WITH_AUTH0_ID_MESSAGE = "No user with auth0UserID=%s found.";
     private static final String TOKEN_PATH = "/fromtoken";
 
@@ -32,10 +31,12 @@ public class UserController extends ApiController<OtpUser> {
     }
 
     @Override
-    protected ApiEndpoint makeEndPoint(ApiEndpoint baseEndPoint) {
+    protected void buildEndPoint(ApiEndpoint baseEndPoint) {
         LOG.info("Registering user/fromtoken path.");
 
-        // Add the user token route before the regular CRUD methods.
+        // Add the user token route BEFORE the regular CRUD methods
+        // (otherwise, /fromtoken requests would be considered
+        // by spark as 'GET user with id "fromtoken"', which we don't want).
         ApiEndpoint modifiedEndpoint = baseEndPoint
             // Get user from token.
             .get(path(ROOT_ROUTE + TOKEN_PATH)
@@ -47,8 +48,8 @@ public class UserController extends ApiController<OtpUser> {
             // Options response for CORS for the token path
             .options(path(TOKEN_PATH), (req, res) -> "");
 
-        // Add the regular CRUD methods and return to parent.
-        return super.makeEndPoint(modifiedEndpoint);
+        // Add the regular CRUD methods after defining the /fromtoken route.
+        super.buildEndPoint(modifiedEndpoint);
     }
 
     /**
@@ -104,19 +105,15 @@ public class UserController extends ApiController<OtpUser> {
     }
 
     /**
-     * @param profile The {@link Auth0UserProfile} from which to extract the User.
-     * @return An object containing the {@link OtpUser} entity from a {@link Auth0UserProfile}, or null and and an error message if that fails.
+     * @param profile The {@link Auth0UserProfile} from which to extract the User. Assumed not null.
+     * @return An object containing the {@link OtpUser} entity from a {@link Auth0UserProfile}, or null and an error message if that fails.
      */
     UserFromProfileResult getUserFromProfile(Auth0UserProfile profile) {
         UserFromProfileResult result = new UserFromProfileResult();
 
-        if (profile != null) {
-            String auth0UserId = profile.user_id;
-            result.user = persistence.getOneFiltered(eq("auth0UserId", auth0UserId));
-            if (result.user == null) result.message = String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, auth0UserId);
-        } else {
-            result.message = NO_AUTH0_PROFILE_MESSAGE;
-        }
+        String auth0UserId = profile.user_id;
+        result.user = persistence.getOneFiltered(eq("auth0UserId", auth0UserId));
+        if (result.user == null) result.message = String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, auth0UserId);
 
         return result;
     }

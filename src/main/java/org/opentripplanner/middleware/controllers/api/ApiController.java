@@ -68,24 +68,25 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             .withDescription("Interface for querying and managing '" + classToLowercase + "' entities."),
             (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase)
         );
-        makeEndPoint(apiEndPoint);
+        buildEndPoint(apiEndPoint);
     }
 
     /**
-     * Adds a basic implementation of the HTTP CRUD methods that can be overriden by child classes.
+     * This method implements a set of basic HTTP Spark methods (e.g., getOne, getMany, delete) for CRUD operations.
+     * It can be overridden by child classes to supplement additional methods through the ApiEndpoint
+     * (after supplemental methods are added, be sure to call the super method to add the basic methods).
      * @param baseEndPoint The end point to which to add the methods.
-     * @return The passed end point.
      */
-    protected ApiEndpoint makeEndPoint(ApiEndpoint baseEndPoint) {
+    protected void buildEndPoint(ApiEndpoint baseEndPoint) {
         LOG.info("Registering routes and enabling docs for {}", ROOT_ROUTE);
-        return baseEndPoint
 
-            // Careful here!
-            // If using lambdas with the GET method, a bug in spark-swagger
-            // requires you to write path(<entire_route>).
-            // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
-            // Other HTTP methods are not affected by this bug.
+        // Careful here!
+        // If using lambdas with the GET method, a bug in spark-swagger
+        // requires you to write path(<entire_route>).
+        // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
+        // Other HTTP methods are not affected by this bug.
 
+        baseEndPoint
             // Get multiple entities.
             .get(path(ROOT_ROUTE)
                     .withDescription("Gets a list of all '" + classToLowercase + "' entities.")
