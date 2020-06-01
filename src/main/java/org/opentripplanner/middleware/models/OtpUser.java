@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.models;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * This represents a user of an OpenTripPlanner instance (typically of the standard OTP UI/otp-react-redux).
@@ -11,16 +10,6 @@ import java.util.UUID;
  */
 public class OtpUser extends AbstractUser {
     private static final long serialVersionUID = 1L;
-    /**
-     * Auth0 user ID, which we initialize to a random value, but when we link this user up with Auth0 we update this
-     * value, so the stored user
-     */
-    public String auth0UserId = UUID.randomUUID().toString();
-
-    /**
-     * Email address for contact. This must be unique in the collection.
-     */
-    public String email;
 
     /** Whether the user has consented to terms of use. */
     public boolean hasConsentedToTerms;
@@ -53,7 +42,4 @@ public class OtpUser extends AbstractUser {
 
     /** Whether to store the user's trip history (user must opt in). */
     public boolean storeTripHistory;
-
-    /** Whether a user is also a Data Tools user */
-    public boolean isDataToolsUser;
 }
