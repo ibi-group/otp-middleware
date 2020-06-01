@@ -2,9 +2,19 @@ package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.auth.Permission;
 
-import java.util.HashMap;
-import java.util.Map;
+/**
+ * Represents an administrative user of the OTP Admin Dashboard (otp-admin-ui).
+ */
+public class AdminUser extends AbstractUser {
+    // TODO: Add admin-specific fields
 
-public class AdminUser extends User {
-    public Map<String, Permission> permissions = new HashMap<>();
+    /**
+     * Default constructor permits the user to manage all user types.
+     * TODO: Add other constructors for varying levels of permissions/different user types?
+     */
+    public AdminUser() {
+        permissions.add(new Permission(AdminUser.class, Permission.Action.MANAGE));
+        permissions.add(new Permission(ApiUser.class, Permission.Action.MANAGE));
+        permissions.add(new Permission(OtpUser.class, Permission.Action.MANAGE));
+    }
 }

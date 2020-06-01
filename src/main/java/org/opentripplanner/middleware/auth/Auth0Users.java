@@ -7,6 +7,7 @@ import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,13 +125,13 @@ public class Auth0Users {
      * Checks if an Auth0 user is a Data Tools user. Note: this may need to change once Data Tools user structure
      * changes.
      */
-    public static boolean isDataToolsUser(com.auth0.json.mgmt.users.User auth0UserProfile) {
+    public static boolean isDataToolsUser(User auth0UserProfile) {
         if (auth0UserProfile == null) return false;
         Map<String, Object> appMetadata = auth0UserProfile.getAppMetadata();
         return appMetadata != null && appMetadata.containsKey("datatools");
     }
 
-    public static <U extends org.opentripplanner.middleware.models.User> U updateAuthFieldsForUser(U user, User auth0UserProfile) {
+    public static <U extends AbstractUser> U updateAuthFieldsForUser(U user, User auth0UserProfile) {
         // If a user with email exists in Auth0, assign existing Auth0 ID to new user record in MongoDB. Also,
         // check if the user is a Data Tools user and assign value accordingly.
         user.auth0UserId = auth0UserProfile.getId();
@@ -146,7 +147,7 @@ public class Auth0Users {
     /**
      * Shorthand method for validating a new user and creating the user with Auth0.
      */
-    public static <U extends org.opentripplanner.middleware.models.User> User createNewAuth0User(U user, Request req, TypedPersistence<U> userStore) {
+    public static <U extends AbstractUser> User createNewAuth0User(U user, Request req, TypedPersistence<U> userStore) {
         validateUser(user, req);
         // Ensure no user with email exists in MongoDB.
         U userWithEmail = userStore.getOneFiltered(eq("email", user.email));
@@ -164,7 +165,7 @@ public class Auth0Users {
     /**
      * Validates a generic {@link User} to be used before creating or updating a user.
      */
-    public static <U extends org.opentripplanner.middleware.models.User> void validateUser(U user, Request req) {
+    public static <U extends AbstractUser> void validateUser(U user, Request req) {
         if (!isValidEmail(user.email)) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Email address is invalid.");
         }
@@ -173,7 +174,7 @@ public class Auth0Users {
     /**
      * Validates a generic {@link User} to be used before updating a user.
      */
-    public static <U extends org.opentripplanner.middleware.models.User> void validateExistingUser(U user, U preExistingUser, Request req, TypedPersistence<U> userStore) {
+    public static <U extends AbstractUser> void validateExistingUser(U user, U preExistingUser, Request req, TypedPersistence<U> userStore) {
         validateUser(user, req);
         // Verify that email address for user has not changed.
         // TODO: should we permit changing email addresses? This would require making an update to Auth0.

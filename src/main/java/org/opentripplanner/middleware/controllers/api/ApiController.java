@@ -4,6 +4,8 @@ import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -34,7 +36,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private static final String ID_PARAM = "/:id";
     protected final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
-    private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String classToLowercase;
     final TypedPersistence<T> persistence;
     private final Class<T> clazz;
@@ -150,6 +152,16 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
+     * Check that the requesting user can manage the user object specified by the payload.
+     */
+    private boolean requestingUserCanManageEntity(Request req, T entity) {
+        // In order to manage an entity, the requesting user must be authenticated.
+        Auth0Connection.checkUser(req);
+        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        return entity.userCanManage(requestingUser);
+    }
+
+    /**
      * HTTP endpoint to delete one entity specified by ID.
      */
     private String deleteOne(Request req, Response res) {
@@ -157,6 +169,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         String id = getIdFromRequest(req);
         try {
             T object = getObjectForId(req, id);
+            // Check that requesting user can manage entity.
+            if (!requestingUserCanManageEntity(req, object)) {
+                logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to delete %s.", classToLowercase));
+            }
             // Run pre-delete hook. If return value is false, abort.
             if (!preDeleteHook(object, req)) {
                 logMessageAndHalt(req, 500, "Unknown error occurred during delete attempt.");
@@ -240,6 +256,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 if (preExistingObject == null) {
                     logMessageAndHalt(req, 400, "Object to update does not exist!");
                     return null;
+                }
+                // Check that requesting user can manage entity.
+                if (!requestingUserCanManageEntity(req, preExistingObject)) {
+                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to update %s.", classToLowercase));
                 }
                 // Update last updated value.
                 object.lastUpdated = new Date();

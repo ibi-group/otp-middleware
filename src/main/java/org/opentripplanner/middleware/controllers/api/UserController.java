@@ -3,13 +3,10 @@ package org.opentripplanner.middleware.controllers.api;
 import com.auth0.exception.Auth0Exception;
 import com.beerboy.ss.ApiEndpoint;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
-import org.opentripplanner.middleware.models.User;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
@@ -25,14 +22,13 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * Implementation of the {@link ApiController} abstract class for managing users. This controller connects with Auth0
  * services using the hooks provided by {@link ApiController}.
  */
-public class UserController extends ApiController<User> {
-    private static final Logger LOG = LoggerFactory.getLogger(UserController.class);
-    private static final String TOKEN_PATH = "/fromtoken";
+public class UserController extends ApiController<OtpUser> {
     static final String NO_AUTH0_PROFILE_MESSAGE = "No Auth0 profile was provided.";
     static final String NO_USER_WITH_AUTH0_ID_MESSAGE = "No user with auth0UserID=%s found.";
+    private static final String TOKEN_PATH = "/fromtoken";
 
     public UserController(String apiPrefix){
-        super(apiPrefix, Persistence.users, "secure/user");
+        super(apiPrefix, Persistence.otpUsers, "secure/user");
     }
 
     @Override
@@ -56,28 +52,17 @@ public class UserController extends ApiController<User> {
     }
 
     /**
-     * Before creating/storing a user in MongoDB, create the user in Auth0 and update the {@link User#auth0UserId}
+     * Before creating/storing a user in MongoDB, create the user in Auth0 and update the {@link OtpUser#auth0UserId}
      * with the value from Auth0.
      */
     @Override
-    User preCreateHook(User user, Request req) {
+    OtpUser preCreateHook(OtpUser user, Request req) {
         com.auth0.json.mgmt.users.User auth0UserProfile = createNewAuth0User(user, req, this.persistence);
         return updateAuthFieldsForUser(user, auth0UserProfile);
     }
 
     @Override
-    User preUpdateHook(User user, User preExistingUser, Request req) {
-        // In order to update a user, the updating user must be authenticated. Because this API is registered under the
-        // "public" path, this is not done before the request (see Main class where routes are registered).
-        Auth0Connection.checkUser(req);
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
-        // Additionally, if the user is attempting to update someone else's profile, they must be an admin.
-        if (!user.auth0UserId.equals(requestingUser.user_id)) {
-            // TODO check that admin has manage user permission.
-            if (requestingUser.adminUser == null) {
-                logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to update other user accounts.");
-            }
-        }
+    OtpUser preUpdateHook(OtpUser user, OtpUser preExistingUser, Request req) {
         validateExistingUser(user, preExistingUser, req, this.persistence);
         return user;
     }
@@ -86,7 +71,7 @@ public class UserController extends ApiController<User> {
      * Before deleting the user in MongoDB, attempt to delete the user in Auth0.
      */
     @Override
-    boolean preDeleteHook(User user, Request req) {
+    boolean preDeleteHook(OtpUser user, Request req) {
         try {
             deleteAuth0User(user.auth0UserId);
         } catch (Auth0Exception e) {
@@ -100,15 +85,15 @@ public class UserController extends ApiController<User> {
      * Holds result and message from getUserFromProfile.
      */
     static class UserFromProfileResult {
-        public User user;
+        public OtpUser user;
         public String message;
     }
 
     /**
-     * HTTP endpoint to get the {@link User} entity from a {@link Auth0UserProfile}.
+     * HTTP endpoint to get the {@link OtpUser} entity from a {@link Auth0UserProfile}.
      * (Reminder: for endpoints under 'secure', we add a {@link Auth0UserProfile} to request attributes.)
      */
-    private User getUserFromRequest(Request req, Response res) {
+    private OtpUser getUserFromRequest(Request req, Response res) {
         Auth0UserProfile profile = req.attribute("user");
         UserFromProfileResult result = getUserFromProfile(profile);
 
@@ -120,7 +105,7 @@ public class UserController extends ApiController<User> {
 
     /**
      * @param profile The {@link Auth0UserProfile} from which to extract the User.
-     * @return An object containing the {@link User} entity from a {@link Auth0UserProfile}, or null and and an error message if that fails.
+     * @return An object containing the {@link OtpUser} entity from a {@link Auth0UserProfile}, or null and and an error message if that fails.
      */
     UserFromProfileResult getUserFromProfile(Auth0UserProfile profile) {
         UserFromProfileResult result = new UserFromProfileResult();

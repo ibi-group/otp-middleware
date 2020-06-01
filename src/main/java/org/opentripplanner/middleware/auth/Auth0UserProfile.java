@@ -4,7 +4,8 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
-import org.opentripplanner.middleware.models.User;
+import org.opentripplanner.middleware.models.AbstractUser;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 
 import java.util.Date;
@@ -16,7 +17,7 @@ import static com.mongodb.client.model.Filters.eq;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Auth0UserProfile {
-    public final User otpUser;
+    public final OtpUser otpUser;
     public final ApiUser apiUser;
     public final AdminUser adminUser;
     public String email;
@@ -32,7 +33,7 @@ public class Auth0UserProfile {
         this.created_at = new Date();
         this.email_verified = false;
         this.name = "John Doe";
-        otpUser = new User();
+        otpUser = new OtpUser();
         apiUser = new ApiUser();
         adminUser = new AdminUser();
     }
@@ -40,17 +41,9 @@ public class Auth0UserProfile {
     /** Create a user profile from the request's JSON web token. Check persistence for stored user */
     public Auth0UserProfile(DecodedJWT jwt) {
         this.user_id = jwt.getClaim("sub").asString();
-        otpUser = Persistence.users.getOneFiltered(eq("auth0UserId", user_id));
+        otpUser = Persistence.otpUsers.getOneFiltered(eq("auth0UserId", user_id));
         adminUser = Persistence.adminUsers.getOneFiltered(eq("auth0UserId", user_id));
         apiUser = Persistence.apiUsers.getOneFiltered(eq("auth0UserId", user_id));
-    }
-
-    public boolean hasPermission (String id, Permission permission) {
-        if (adminUser != null) {
-            Permission permissionsForId = adminUser.permissions.get(id);
-            if (permissionsForId != null) return permissionsForId.equals(permission);
-        }
-        return false;
     }
 
     /**
