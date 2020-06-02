@@ -11,7 +11,6 @@ import spark.Request;
 import spark.Response;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
 import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
@@ -96,25 +95,11 @@ public class UserController extends ApiController<OtpUser> {
      */
     private OtpUser getUserFromRequest(Request req, Response res) {
         Auth0UserProfile profile = req.attribute("user");
-        UserFromProfileResult result = getUserFromProfile(profile);
+        OtpUser user = profile.otpUser;
 
-        if (result.user == null) {
-            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, result.message,null);
+        if (user == null) {
+            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404,String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.user_id),null);
         }
-        return result.user;
-    }
-
-    /**
-     * @param profile The {@link Auth0UserProfile} from which to extract the User. Assumed not null.
-     * @return An object containing the {@link OtpUser} entity from a {@link Auth0UserProfile}, or null and an error message if that fails.
-     */
-    UserFromProfileResult getUserFromProfile(Auth0UserProfile profile) {
-        UserFromProfileResult result = new UserFromProfileResult();
-
-        String auth0UserId = profile.user_id;
-        result.user = persistence.getOneFiltered(eq("auth0UserId", auth0UserId));
-        if (result.user == null) result.message = String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, auth0UserId);
-
-        return result;
+        return user;
     }
 }
