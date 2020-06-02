@@ -149,7 +149,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         try {
             T object = getObjectForId(req, id);
             // Check that requesting user can manage entity.
-            if (!object.userCanManage(requestingUser)) {
+            if (!object.canBeManagedBy(requestingUser)) {
                 logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to delete %s.", classToLowercase));
             }
             // Run pre-delete hook. If return value is false, abort.
@@ -228,7 +228,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             T object = getPOJOFromRequestBody(req, clazz);
             if (isCreating) {
                 // Verify that the requesting user can create object.
-                if (!object.userCanCreate(requestingUser)) {
+                if (!object.canBeCreatedBy(requestingUser)) {
                     logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to create %s.", classToLowercase));
                 }
                 // Run pre-create hook and use updated object (with potentially modified values) in create operation.
@@ -242,7 +242,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     return null;
                 }
                 // Check that requesting user can manage entity.
-                if (!preExistingObject.userCanManage(requestingUser)) {
+                if (!preExistingObject.canBeManagedBy(requestingUser)) {
                     logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to update %s.", classToLowercase));
                 }
                 // Update last updated value.

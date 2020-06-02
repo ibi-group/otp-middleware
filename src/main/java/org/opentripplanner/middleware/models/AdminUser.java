@@ -26,7 +26,7 @@ public class AdminUser extends AbstractUser {
      * TODO: Change to application admin?
      */
     @Override
-    public boolean userCanCreate(Auth0UserProfile user) {
+    public boolean canBeCreatedBy(Auth0UserProfile user) {
         return isUserAdmin(user);
     }
 }
