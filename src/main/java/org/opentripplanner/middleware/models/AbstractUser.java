@@ -11,7 +11,7 @@ import java.util.UUID;
  * This is an abstract user class that {@link OtpUser}, {@link AdminUser}, and {@link ApiUser} extend.
  *
  * It provides a place to centralize common fields that all users share (e.g., email) and common methods (such as the
- * authorization check {@link #userCanManage}.
+ * authorization check {@link #canBeManagedBy}.
  */
 public abstract class AbstractUser extends Model {
     private static final long serialVersionUID = 1L;
@@ -36,7 +36,7 @@ public abstract class AbstractUser extends Model {
      * permissions) or if the requesting user has permission to manage the entity type.
      */
     @Override
-    public boolean userCanManage(Auth0UserProfile user) {
+    public boolean canBeManagedBy(Auth0UserProfile user) {
         // If the user is attempting to update someone else's profile, they must be an admin.
         boolean isManagingSelf = this.auth0UserId.equals(user.user_id);
         if (isManagingSelf) {
@@ -48,6 +48,6 @@ public abstract class AbstractUser extends Model {
             }
         }
         // Fallback to Model#userCanManage.
-        return super.userCanManage(user);
+        return super.canBeManagedBy(user);
     }
 }
