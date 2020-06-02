@@ -9,15 +9,30 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public class Auth0Utils {
 
     /**
-     * Check that the authenticated user matches the requesting user. This is to prevent unauthorized access to user
-     * information.
+     * Confirm that the user exists
      */
-    public static void isAuthorizedUser(User user, Request request) {
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(request);
+    public static void isValidUser(Request request) {
 
-        if (!requestingUser.user_id.equalsIgnoreCase(user.auth0UserId)) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access to service.");
+        // assumption is that profile will never be null
+        Auth0UserProfile profile = request.attribute("user");
+        if (profile.otpUser == null) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
         }
     }
 
+    /**
+     * Confirm that the user's actions are on their items.
+     */
+    public static void isAuthorized(String userId, Request request) {
+
+        if (userId == null) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
+        }
+
+        // assumption is that profile will never be null
+        Auth0UserProfile profile = request.attribute("user");
+        if (!profile.otpUser.id.equalsIgnoreCase(userId)) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
+        }
+    }
 }

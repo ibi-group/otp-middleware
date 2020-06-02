@@ -9,6 +9,8 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.auth.Auth0Utils.isAuthorized;
+import static org.opentripplanner.middleware.auth.Auth0Utils.isValidUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -43,28 +45,6 @@ public class MonitorTripController extends ApiController<MonitoredTrip> {
         isValidUser(req);
         isAuthorized(monitoredTrip.userId, req);
         return true;
-    }
-
-    /**
-     * Confirm that the user exists
-     */
-    private void isValidUser(Request request) {
-
-        Auth0UserProfile profile = request.attribute("user");
-        if (profile.otpUser == null) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
-        }
-    }
-
-    /**
-     * Confirm that the user's actions are on their own monitored trips.
-     */
-    private void isAuthorized(String userId, Request request) {
-
-        Auth0UserProfile profile = request.attribute("user");
-        if (!profile.otpUser.id.equalsIgnoreCase(userId)) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access");
-        }
     }
 
     /**

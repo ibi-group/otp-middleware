@@ -25,6 +25,8 @@ import java.time.format.DateTimeParseException;
 import java.util.Date;
 
 import static com.mongodb.client.model.Filters.*;
+import static org.opentripplanner.middleware.auth.Auth0Utils.isAuthorized;
+import static org.opentripplanner.middleware.auth.Auth0Utils.isValidUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -47,20 +49,10 @@ public class TripHistoryController {
      */
     public static String getTripRequests(Request request, Response response, TypedPersistence<TripRequest> tripRequest) {
 
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(request);
-        if (requestingUser == null) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Authorization required.");
-        }
-
         final String userId = HttpUtils.getParamFromRequest(request, USER_ID_PARAM_NAME, false);
-        User user = Persistence.users.getById(userId);
-        if (user == null) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
-        }
 
-        if (!requestingUser.user_id.equalsIgnoreCase(user.auth0UserId)) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Can only obtain trip requests created by the same user.");
-        }
+        isValidUser(request);
+        isAuthorized(userId, request);
 
         int limit = DEFAULT_LIMIT;
 
@@ -145,17 +137,6 @@ public class TripHistoryController {
         return Date.from(localDate.atTime(timeOfDay).atZone(ZoneId.systemDefault()).toInstant());
     }
 
-    /**
-     * Confirm that the user exists and is authorized
-     */
-    private static void isValidUser(String userId, Request request) {
 
-        User user = Persistence.users.getById(userId);
-        if (user == null) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
-        }
-
-        Auth0Utils.isAuthorizedUser(user, request);
-    }
 
 }
