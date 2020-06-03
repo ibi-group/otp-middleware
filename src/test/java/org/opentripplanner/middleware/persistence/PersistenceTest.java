@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
-import org.opentripplanner.middleware.models.User;
+import org.opentripplanner.middleware.models.OtpUser;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,33 +30,33 @@ public class PersistenceTest extends OtpMiddlewareTest {
 
     @Test
     public void canCreateUser() {
-        User user = createUser(TEST_EMAIL);
+        OtpUser user = createUser(TEST_EMAIL);
         String id = user.id;
         System.out.println("User id:" + id);
-        String retrievedId = Persistence.users.getById(id).id;
+        String retrievedId = Persistence.otpUsers.getById(id).id;
         assertEquals(id, retrievedId, "Found User ID should equal inserted ID.");
         // tidy up
-        Persistence.users.removeById(id);
+        Persistence.otpUsers.removeById(id);
     }
 
     @Test
     public void canUpdateUser() {
-        User user = createUser(TEST_EMAIL);
+        OtpUser user = createUser(TEST_EMAIL);
         String id = user.id;
         final String updatedEmail = "jane.doe@example.com";
         user.email = updatedEmail;
-        Persistence.users.replace(id, user);
-        String retrievedEmail = Persistence.users.getById(id).email;
+        Persistence.otpUsers.replace(id, user);
+        String retrievedEmail = Persistence.otpUsers.getById(id).email;
         assertEquals(updatedEmail, retrievedEmail, "Found User email should equal updated email.");
         // tidy up
-        Persistence.users.removeById(id);
+        Persistence.otpUsers.removeById(id);
     }
 
     @Test
     public void canDeleteUser() {
-        User userToDelete = createUser(TEST_EMAIL);
-        Persistence.users.removeById(userToDelete.id);
-        User user = Persistence.users.getById(userToDelete.id);
+        OtpUser userToDelete = createUser(TEST_EMAIL);
+        Persistence.otpUsers.removeById(userToDelete.id);
+        OtpUser user = Persistence.otpUsers.getById(userToDelete.id);
         assertNull(user, "Deleted User should no longer exist in database (should return as null).");
     }
 
@@ -116,7 +116,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
         String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
         String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
-        User user = createUser(TEST_EMAIL);
+        OtpUser user = createUser(TEST_EMAIL);
 
         List<TripRequest> tripRequests = createTripRequests(limit, user.id);
 
@@ -140,7 +140,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
         String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
         String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
-        User user = createUser(TEST_EMAIL);
+        OtpUser user = createUser(TEST_EMAIL);
 
         List<TripRequest> tripRequests = createTripRequests(limit, user.id);
 
@@ -162,7 +162,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
         String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
         String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
-        User user = createUser(TEST_EMAIL);
+        OtpUser user = createUser(TEST_EMAIL);
 
         List<TripRequest> tripRequests = createTripRequests(limit, user.id);
 
@@ -184,7 +184,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
         int limit = 3;
         String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
-        User user = createUser(TEST_EMAIL);
+        OtpUser user = createUser(TEST_EMAIL);
 
         List<TripRequest> tripRequests = createTripRequests(limit, user.id);
 
@@ -204,7 +204,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
         int max = 5;
         String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
-        User user = createUser(TEST_EMAIL);
+        OtpUser user = createUser(TEST_EMAIL);
 
         List<TripRequest> tripRequests = createTripRequests(limit, user.id);
 
@@ -212,10 +212,9 @@ public class PersistenceTest extends OtpMiddlewareTest {
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
         List<TripRequest> result = Persistence.tripRequest.getFilteredWithLimit(filter, max);
-        assertEquals(result.size(),max);
+        assertEquals(result.size(), max);
 
         // tidy up
         deleteTripRequests(tripRequests);
     }
-
 }

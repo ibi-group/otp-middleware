@@ -3,12 +3,11 @@ package org.opentripplanner.middleware.auth;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.client.mgmt.ManagementAPI;
 import com.auth0.exception.Auth0Exception;
-import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.models.Model;
+import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +34,8 @@ public class Auth0Users {
     private static final String MANAGEMENT_API_VERSION = "v2";
     private static final String SEARCH_API_VERSION = "v3";
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
-    // Cached API token so that we do not have to request a new one each time a Management API request is made.
-    private static TokenHolder cachedToken = null;
+    /** Cached API token so that we do not have to request a new one each time a Management API request is made. */
+    private static TokenCache cachedToken = null;
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Users.class);
     private static final AuthAPI authAPI = new AuthAPI(AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET);
 
@@ -67,6 +66,14 @@ public class Auth0Users {
             .execute();
     }
 
+    public static void setCachedToken(TokenCache tokenCache) {
+        cachedToken = tokenCache;
+    }
+
+    public static TokenCache getCachedToken() {
+        return cachedToken;
+    }
+
     /**
      * Gets an Auth0 API access token for authenticating requests to the Auth0 Management API. This will either create
      * a new token using the oauth token endpoint or grab a cached token that it has already created (if it has not
@@ -74,21 +81,20 @@ public class Auth0Users {
      */
     public static String getApiToken() {
         // If cached token has not expired, use it instead of requesting a new one.
-        if (cachedToken != null && cachedToken.getExpiresIn() > 60) {
-            long minutesToExpiration = cachedToken.getExpiresIn() / 60;
-            LOG.info("Using cached token (expires in {} minutes)", minutesToExpiration);
-            return cachedToken.getAccessToken();
+        if (cachedToken != null && !cachedToken.isStale()) {
+            LOG.info("Using cached token (expires in {} minutes)", cachedToken.minutesUntilExpiration());
+            return cachedToken.tokenHolder.getAccessToken();
         }
         LOG.info("Getting new Auth0 API access token (cached token does not exist or has expired).");
         AuthRequest tokenRequest = authAPI.requestToken(getAuth0Url() + API_PATH + "/");
         // Cache token for later use and return token string.
         try {
-            cachedToken = tokenRequest.execute();
+            setCachedToken(new TokenCache(tokenRequest.execute()));
         } catch (Auth0Exception e) {
             LOG.error("Could not fetch Auth0 token", e);
             return null;
         }
-        return cachedToken.getAccessToken();
+        return cachedToken.tokenHolder.getAccessToken();
     }
 
     /**
@@ -119,13 +125,13 @@ public class Auth0Users {
      * Checks if an Auth0 user is a Data Tools user. Note: this may need to change once Data Tools user structure
      * changes.
      */
-    public static boolean isDataToolsUser(com.auth0.json.mgmt.users.User auth0UserProfile) {
+    public static boolean isDataToolsUser(User auth0UserProfile) {
         if (auth0UserProfile == null) return false;
         Map<String, Object> appMetadata = auth0UserProfile.getAppMetadata();
         return appMetadata != null && appMetadata.containsKey("datatools");
     }
 
-    public static <U extends org.opentripplanner.middleware.models.User> U updateAuthFieldsForUser(U user, User auth0UserProfile) {
+    public static <U extends AbstractUser> U updateAuthFieldsForUser(U user, User auth0UserProfile) {
         // If a user with email exists in Auth0, assign existing Auth0 ID to new user record in MongoDB. Also,
         // check if the user is a Data Tools user and assign value accordingly.
         user.auth0UserId = auth0UserProfile.getId();
@@ -141,7 +147,7 @@ public class Auth0Users {
     /**
      * Shorthand method for validating a new user and creating the user with Auth0.
      */
-    public static <U extends org.opentripplanner.middleware.models.User> User createNewAuth0User(U user, Request req, TypedPersistence<U> userStore) {
+    public static <U extends AbstractUser> User createNewAuth0User(U user, Request req, TypedPersistence<U> userStore) {
         validateUser(user, req);
         // Ensure no user with email exists in MongoDB.
         U userWithEmail = userStore.getOneFiltered(eq("email", user.email));
@@ -159,7 +165,7 @@ public class Auth0Users {
     /**
      * Validates a generic {@link User} to be used before creating or updating a user.
      */
-    public static <U extends org.opentripplanner.middleware.models.User> void validateUser(U user, Request req) {
+    public static <U extends AbstractUser> void validateUser(U user, Request req) {
         if (!isValidEmail(user.email)) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Email address is invalid.");
         }
@@ -168,7 +174,7 @@ public class Auth0Users {
     /**
      * Validates a generic {@link User} to be used before updating a user.
      */
-    public static <U extends org.opentripplanner.middleware.models.User> void validateExistingUser(U user, U preExistingUser, Request req, TypedPersistence<U> userStore) {
+    public static <U extends AbstractUser> void validateExistingUser(U user, U preExistingUser, Request req, TypedPersistence<U> userStore) {
         validateUser(user, req);
         // Verify that email address for user has not changed.
         // TODO: should we permit changing email addresses? This would require making an update to Auth0.

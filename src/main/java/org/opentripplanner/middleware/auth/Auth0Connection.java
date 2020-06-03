@@ -25,7 +25,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * This handles verifying the Auth0 token passed in the auth header (e.g., Authorization: Bearer MY_TOKEN of Spark HTTP
  * requests.
  */
-
 public class Auth0Connection {
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Connection.class);
     private static JWTVerifier verifier;
@@ -71,13 +70,18 @@ public class Auth0Connection {
         checkUser(req);
         // Check that user object is present and is admin.
         Auth0UserProfile user = Auth0Connection.getUserFromRequest(req);
-        if (user == null || user.adminUser == null) {
+        if (!isUserAdmin(user)) {
             logMessageAndHalt(
                 req,
                 HttpStatus.UNAUTHORIZED_401,
                 "User is not authorized to perform administrative action"
             );
         }
+    }
+
+    /** Check if the incoming user is an admin user */
+    public static boolean isUserAdmin(Auth0UserProfile user) {
+        return user != null && user.adminUser != null;
     }
 
     /** Add user profile to Spark Request object */

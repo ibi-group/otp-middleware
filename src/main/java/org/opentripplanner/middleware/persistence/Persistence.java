@@ -31,7 +31,7 @@ public class Persistence {
     private static MongoClient mongoClient;
     private static MongoDatabase mongoDatabase;
     // One abstracted Mongo collection for each class of persisted objects
-    public static TypedPersistence<User> users;
+    public static TypedPersistence<OtpUser> otpUsers;
     public static TypedPersistence<AdminUser> adminUsers;
     public static TypedPersistence<ApiUser> apiUsers;
     public static TypedPersistence<TripRequest> tripRequest;
@@ -69,7 +69,7 @@ public class Persistence {
         LOG.info("Connecting to MongoDB instance at {}://{}", MONGO_PROTOCOL, MONGO_URI);
         mongoClient = MongoClients.create(settings);
         mongoDatabase = mongoClient.getDatabase(MONGO_DB_NAME);
-        users = new TypedPersistence(mongoDatabase, User.class);
+        otpUsers = new TypedPersistence(mongoDatabase, OtpUser.class);
         adminUsers = new TypedPersistence(mongoDatabase, AdminUser.class);
         apiUsers = new TypedPersistence(mongoDatabase, ApiUser.class);
         tripRequest = new TypedPersistence(mongoDatabase, TripRequest.class);

@@ -12,6 +12,15 @@ public class UserLocation {
     /** The icon name for this location (e.g. a FontAwesome icon name). */
     public String icon;
 
+    /** The latitude of this location. */
+    public double lat;
+
+    /** The longitude of this location. */
+    public double lon;
+
+    /** The display name of this location (free form) (e.g. "Downtown restaurant"). */
+    public String name;
+
     /** The type/purpose of this location (free form) (e.g. home, work, shopping...) */
     public String type;
 

@@ -4,7 +4,7 @@ import com.mongodb.MongoException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
-import org.opentripplanner.middleware.models.User;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.otp.core.api.model.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -41,10 +41,10 @@ public class OtpRequestProcessor {
             return null;
         }
 
-        User user = null;
+        OtpUser user = null;
         String userId = request.queryParams(USER_ID);
         if (userId != null) {
-            user = Persistence.users.getById(userId);
+            user = Persistence.otpUsers.getById(userId);
         } else {
             //TODO log with logging system?
             LOG.warn("User id not provided, this will be an anonymous request");
