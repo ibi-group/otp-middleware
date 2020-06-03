@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import com.auth0.exception.Auth0Exception;
 import com.beerboy.ss.ApiEndpoint;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -82,19 +83,11 @@ public class UserController extends ApiController<OtpUser> {
     }
 
     /**
-     * Holds result and message from getUserFromProfile.
-     */
-    static class UserFromProfileResult {
-        public OtpUser user;
-        public String message;
-    }
-
-    /**
-     * HTTP endpoint to get the {@link OtpUser} entity from a {@link Auth0UserProfile}.
-     * (Reminder: for endpoints under 'secure', we add a {@link Auth0UserProfile} to request attributes.)
+     * HTTP endpoint to get the {@link OtpUser} entity from an {@link Auth0UserProfile} attribute
+     * available from a {@link Request} (this is the case for '/api/secure/' endpoints).
      */
     private OtpUser getUserFromRequest(Request req, Response res) {
-        Auth0UserProfile profile = req.attribute("user");
+        Auth0UserProfile profile = Auth0Connection.getUserFromRequest(req);
         OtpUser user = profile.otpUser;
 
         if (user == null) {
