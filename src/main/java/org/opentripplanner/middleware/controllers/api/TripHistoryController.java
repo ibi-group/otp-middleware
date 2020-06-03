@@ -24,6 +24,8 @@ import java.time.format.DateTimeParseException;
 import java.util.Date;
 
 import static com.mongodb.client.model.Filters.*;
+import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
+import static org.opentripplanner.middleware.auth.Auth0Connection.isValidUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -46,20 +48,10 @@ public class TripHistoryController {
      */
     public static String getTripRequests(Request request, Response response, TypedPersistence<TripRequest> tripRequest) {
 
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(request);
-        if (requestingUser == null) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Authorization required.");
-        }
-
         final String userId = HttpUtils.getParamFromRequest(request, USER_ID_PARAM_NAME, false);
-        OtpUser user = Persistence.otpUsers.getById(userId);
-        if (user == null) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
-        }
 
-        if (!requestingUser.user_id.equalsIgnoreCase(user.auth0UserId)) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Can only obtain trip requests created by the same user.");
-        }
+        isValidUser(request);
+        isAuthorized(userId, request);
 
         int limit = DEFAULT_LIMIT;
 

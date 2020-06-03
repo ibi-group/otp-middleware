@@ -151,4 +151,27 @@ public class Auth0Connection {
     public static boolean authDisabled() {
         return hasConfigProperty("DISABLE_AUTH") && "true".equals(getConfigPropertyAsText("DISABLE_AUTH"));
     }
+
+    /**
+     * Confirm that the user exists
+     */
+    public static void isValidUser(Request request) {
+
+        Auth0UserProfile profile = getUserFromRequest(request);
+        if (profile == null || profile.otpUser == null) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
+        }
+    }
+
+    /**
+     * Confirm that the user's actions are on their items.
+     */
+    public static void isAuthorized(String userId, Request request) {
+
+        Auth0UserProfile profile = getUserFromRequest(request);
+        if (userId == null || profile == null || !profile.otpUser.id.equalsIgnoreCase(userId)) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
+        }
+    }
+
 }
