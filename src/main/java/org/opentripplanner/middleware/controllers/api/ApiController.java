@@ -164,11 +164,11 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         if (isUserAdmin(requestingUser)) {
             return persistence.getAll();
         } else if (persistence.clazz == OtpUser.class) { 
-            Bson filter = Filters.and(eq("_id", requestingUser.otpUser.id));
+            Bson filter = Filters.eq("_id", requestingUser.otpUser.id);
             return persistence.getFiltered(filter);
         } else {
             // FIXME assumes all non admin user collections will have a user id field
-            Bson filter = Filters.and(eq("userId", requestingUser.otpUser.id));
+            Bson filter = Filters.eq("userId", requestingUser.otpUser.id);
             return persistence.getFiltered(filter);
         }
     }
@@ -177,8 +177,13 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * HTTP endpoint to get one entity specified by ID.
      */
     private T getOne(Request req, Response res) {
+        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         String id = getIdFromRequest(req);
-        return getObjectForId(req, id);
+        T object = getObjectForId(req, id);
+        if (!object.canBeManagedBy(requestingUser)) {
+            logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to get %s.", classToLowercase));
+        }
+        return object;
     }
 
     /**

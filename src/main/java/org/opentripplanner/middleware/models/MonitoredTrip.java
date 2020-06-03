@@ -11,7 +11,7 @@ import java.util.Set;
 public class MonitoredTrip extends Model {
 
     /**
-     * User Id. Mongo Id of user monitoring trip.
+     * Mongo Id of user monitoring trip.
      */
     public String userId;
 
@@ -40,6 +40,8 @@ public class MonitoredTrip extends Model {
      * Expecting each effected day no more than once with the following representation:
      *
      * "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
+     *
+     * All use of this parameter will require equalsIgnoreCase() to avoid missing days.
      */
     public Set<String> days;
 

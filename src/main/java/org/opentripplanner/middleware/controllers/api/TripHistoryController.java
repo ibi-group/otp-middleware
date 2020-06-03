@@ -94,7 +94,7 @@ public class TripHistoryController {
         final String userIdFieldName = "userId";
 
         // user id is required, so as a minimum return all trip requests for user
-        Bson filter = Filters.and(eq(userIdFieldName, userId));
+        Bson filter = Filters.eq(userIdFieldName, userId);
 
         if (fromDate != null && toDate != null) { // get all trips between start and end dates
             filter = Filters.and(

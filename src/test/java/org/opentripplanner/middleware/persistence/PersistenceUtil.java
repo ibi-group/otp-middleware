@@ -82,11 +82,11 @@ public class PersistenceUtil {
 
     public static MonitoredTrip createMonitoredTrip(String userId) {
         Set<String> days = new HashSet<>();
-        days.add("Monday");
-        days.add("Tuesday");
-        days.add("Wednesday");
-        days.add("Thursday");
-        days.add("Friday");
+        days.add("monday");
+        days.add("tuesday");
+        days.add("wednesday");
+        days.add("thursday");
+        days.add("friday");
 
         MonitoredTrip monitoredTrip = new MonitoredTrip();
         monitoredTrip.userId = userId;
