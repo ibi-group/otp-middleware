@@ -25,7 +25,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * This handles verifying the Auth0 token passed in the auth header (e.g., Authorization: Bearer MY_TOKEN of Spark HTTP
  * requests.
  */
-
 public class Auth0Connection {
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Connection.class);
     private static JWTVerifier verifier;
@@ -71,7 +70,7 @@ public class Auth0Connection {
         checkUser(req);
         // Check that user object is present and is admin.
         Auth0UserProfile user = Auth0Connection.getUserFromRequest(req);
-        if (user == null || user.adminUser == null) {
+        if (!isUserAdmin(user)) {
             logMessageAndHalt(
                 req,
                 HttpStatus.UNAUTHORIZED_401,
@@ -152,4 +151,27 @@ public class Auth0Connection {
     public static boolean authDisabled() {
         return hasConfigProperty("DISABLE_AUTH") && "true".equals(getConfigPropertyAsText("DISABLE_AUTH"));
     }
+
+    /**
+     * Confirm that the user exists
+     */
+    public static void isValidUser(Request request) {
+
+        Auth0UserProfile profile = getUserFromRequest(request);
+        if (profile == null || profile.otpUser == null) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
+        }
+    }
+
+    /**
+     * Confirm that the user's actions are on their items.
+     */
+    public static void isAuthorized(String userId, Request request) {
+
+        Auth0UserProfile profile = getUserFromRequest(request);
+        if (userId == null || profile == null || !profile.otpUser.id.equalsIgnoreCase(userId)) {
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
+        }
+    }
+
 }

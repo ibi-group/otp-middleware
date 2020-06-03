@@ -3,14 +3,13 @@ package org.opentripplanner.middleware.controllers.api;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
 import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.auth.Auth0Utils.isAuthorized;
-import static org.opentripplanner.middleware.auth.Auth0Utils.isValidUser;
+import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
+import static org.opentripplanner.middleware.auth.Auth0Connection.isValidUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**

@@ -1,17 +1,17 @@
 package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.otp.core.api.model.Itinerary;
-
 import java.util.List;
 import java.util.Set;
 
 /**
- * A monitored trip represents
+ * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or
+ * route change.
  */
 public class MonitoredTrip extends Model {
 
     /**
-     * User Id. Id of user monitoring trip.
+     * User Id. Mongo Id of user monitoring trip.
      */
     public String userId;
 
@@ -44,9 +44,9 @@ public class MonitoredTrip extends Model {
     public Set<String> days;
 
     /**
-     * Specify if the monitored trip should be checked on a federal holiday.
+     * Specify if the monitored trip should be checked on a US federal holiday.
      */
-    //TODO define federal holiday source!
+    //TODO define US federal holiday source
     public boolean excludeFederalHolidays;
 
     /**
@@ -64,7 +64,7 @@ public class MonitoredTrip extends Model {
      */
     public List<Itinerary> itinerary;
 
-    //TODO
+    //TODO, agree on and implement these parameters
     /**
     notificationThresholds
     notifyRouteChange (true/false) - Instead of notificationThresholds
