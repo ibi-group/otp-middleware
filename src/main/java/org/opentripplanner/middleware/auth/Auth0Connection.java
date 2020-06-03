@@ -64,7 +64,7 @@ public class Auth0Connection {
         }
     }
 
-    /** Assign user to request and check that the user is ad admin. */
+    /** Assign user to request and check that the user is an admin. */
     public static void checkUserIsAdmin(Request req, Response res) {
         // Check auth token in request (and add user object to request).
         checkUser(req);
