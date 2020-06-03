@@ -9,6 +9,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.Model;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -156,12 +157,15 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * HTTP endpoint to get multiple entities based on the user permissions
      */
     // FIXME Maybe better if the user check (and filtering) was done in a pre hook?
-    // FIXME Will potentially require further granularity for admin
+    // FIXME Will require further granularity for admin
     private List<T> getMany(Request req, Response res) {
 
         Auth0UserProfile requestingUser = getUserFromRequest(req);
         if (isUserAdmin(requestingUser)) {
             return persistence.getAll();
+        } else if (persistence.clazz == OtpUser.class) { 
+            Bson filter = Filters.and(eq("_id", requestingUser.otpUser.id));
+            return persistence.getFiltered(filter);
         } else {
             // FIXME assumes all non admin user collections will have a user id field
             Bson filter = Filters.and(eq("userId", requestingUser.otpUser.id));
