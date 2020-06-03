@@ -1,10 +1,7 @@
 package org.opentripplanner.middleware.persistence;
 
-<<<<<<< HEAD
 import org.opentripplanner.middleware.models.MonitoredTrip;
-=======
 import org.opentripplanner.middleware.models.OtpUser;
->>>>>>> trip-history
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
