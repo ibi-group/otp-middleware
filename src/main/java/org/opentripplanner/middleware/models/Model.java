@@ -23,10 +23,18 @@ public class Model implements Serializable {
     public Date dateCreated;
 
     /**
+     * This is a basic authorization check for any entity to determine if a user can create the entity. By default any
+     * user can create any entity. This method should be overridden if there are more restrictions needed.
+     */
+    public boolean canBeCreatedBy(Auth0UserProfile user) {
+        return true;
+    }
+
+    /**
      * This is a basic authorization check for any entity to determine if a user can manage it. This method
      * should be overridden in subclasses in order to provide more fine-grained checks.
      */
-    public boolean userCanManage(Auth0UserProfile user) {
+    public boolean canBeManagedBy(Auth0UserProfile user) {
         // TODO: Check if user has application administrator permission?
         return isUserAdmin(user);
     }
