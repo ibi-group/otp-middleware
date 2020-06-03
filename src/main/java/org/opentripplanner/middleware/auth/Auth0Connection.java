@@ -159,7 +159,7 @@ public class Auth0Connection {
 
         Auth0UserProfile profile = getUserFromRequest(request);
         if (profile == null || profile.otpUser == null) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
+            logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "Unknown user.");
         }
     }
 
