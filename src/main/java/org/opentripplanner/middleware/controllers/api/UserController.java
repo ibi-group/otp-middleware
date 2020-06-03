@@ -83,7 +83,7 @@ public class UserController extends ApiController<OtpUser> {
     }
 
     /**
-     * HTTP endpoint to get the {@link OtpUser} entity from an {@link Auth0UserProfile} attribute
+     * HTTP endpoint to get the {@link OtpUser} entity, if it exists, from an {@link Auth0UserProfile} attribute
      * available from a {@link Request} (this is the case for '/api/secure/' endpoints).
      */
     private OtpUser getUserFromRequest(Request req, Response res) {
