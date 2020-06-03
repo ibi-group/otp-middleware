@@ -48,11 +48,6 @@ public class TripHistoryController {
 
         final String userId = HttpUtils.getParamFromRequest(request, USER_ID_PARAM_NAME, false);
 
-        OtpUser user = Persistence.otpUsers.getById(userId);
-        if (user == null) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
-        }
-
         isValidUser(request);
         isAuthorized(userId, request);
 
