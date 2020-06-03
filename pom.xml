@@ -125,6 +125,11 @@
     </build>
     <dependencies>
         <dependency>
+            <groupId>com.bugsnag</groupId>
+            <version>3.4.4</version>
+            <artifactId>bugsnag</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20190722</version>
