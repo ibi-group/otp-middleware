@@ -155,21 +155,32 @@ public class Auth0Connection {
     /**
      * Confirm that the user exists
      */
-    public static void isValidUser(Request request) {
+    private static Auth0UserProfile isValidUser(Request request) {
 
         Auth0UserProfile profile = getUserFromRequest(request);
-        if (profile == null || profile.otpUser == null) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unknown user.");
+        if (profile == null || (profile.adminUser == null  && profile.otpUser == null && profile.apiUser == null)) {
+            logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "Unknown user.");
         }
+
+        return profile;
     }
 
     /**
-     * Confirm that the user's actions are on their items.
+     * Confirm that the user's actions are on their items if not admin.
      */
     public static void isAuthorized(String userId, Request request) {
 
-        Auth0UserProfile profile = getUserFromRequest(request);
-        if (userId == null || profile == null || !profile.otpUser.id.equalsIgnoreCase(userId)) {
+        Auth0UserProfile profile = isValidUser(request);
+
+        // let admin do anything
+        if (profile.adminUser != null) {
+            return;
+        }
+
+        if (userId == null ||
+            (profile.otpUser != null && !profile.otpUser.id.equalsIgnoreCase(userId)) ||
+            (profile.apiUser != null && !profile.apiUser.id.equalsIgnoreCase(userId))) {
+
             logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
         }
     }

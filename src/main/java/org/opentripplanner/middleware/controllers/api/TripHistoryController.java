@@ -50,7 +50,6 @@ public class TripHistoryController {
 
         final String userId = HttpUtils.getParamFromRequest(request, USER_ID_PARAM_NAME, false);
 
-        isValidUser(request);
         isAuthorized(userId, request);
 
         int limit = DEFAULT_LIMIT;
