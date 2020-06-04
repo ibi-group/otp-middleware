@@ -9,7 +9,6 @@ import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isValidUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -25,7 +24,6 @@ public class MonitorTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
-        isValidUser(req);
         isAuthorized(monitoredTrip.userId, req);
         reachedMaximum(monitoredTrip.userId, req);
 
@@ -34,15 +32,13 @@ public class MonitorTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        isValidUser(req);
         isAuthorized(monitoredTrip.userId, req);
         return monitoredTrip;
     }
 
     @Override
     boolean preDeleteHook(MonitoredTrip monitoredTrip, Request req) {
-        isValidUser(req);
-        isAuthorized(monitoredTrip.userId, req);
+        // Authorization checks are done prior to this hook
         return true;
     }
 

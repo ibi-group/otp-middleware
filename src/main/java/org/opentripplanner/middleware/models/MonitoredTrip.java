@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.models;
 
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.otp.core.api.model.Itinerary;
 import java.util.List;
 import java.util.Set;
@@ -77,5 +79,32 @@ public class MonitoredTrip extends Model {
 
     public MonitoredTrip() {
     }
+
+    /**
+     * Confirm that the user updating a monitored trip has the required permissions
+     */
+    @Override
+    public boolean canBeManagedBy(Auth0UserProfile user) {
+        // If the user is attempting to update someone else's monitored trip, they must be admin.
+        boolean isManagingSelf = false;
+
+        if (user.otpUser != null) {
+            isManagingSelf = userId.equalsIgnoreCase(user.otpUser.id);
+        } else if (user.apiUser != null) {
+            isManagingSelf = userId.equalsIgnoreCase(user.apiUser.id);
+        }
+
+        if (isManagingSelf) {
+            return true;
+        } else if (user.adminUser != null) {
+            // If not managing self, user must have manage permission.
+            for (Permission permission : user.adminUser.permissions) {
+                if (permission.canManage(this.getClass())) return true;
+            }
+        }
+        // Fallback to Model#userCanManage.
+        return super.canBeManagedBy(user);
+    }
+
 }
 
