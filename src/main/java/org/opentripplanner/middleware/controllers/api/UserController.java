@@ -1,17 +1,10 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
-import com.beerboy.ss.ApiEndpoint;
-import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
-import spark.Response;
 
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
 import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
@@ -23,33 +16,8 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * services using the hooks provided by {@link ApiController}.
  */
 public class UserController extends ApiController<OtpUser> {
-    static final String NO_USER_WITH_AUTH0_ID_MESSAGE = "No user with auth0UserID=%s found.";
-    private static final String TOKEN_PATH = "/fromtoken";
-
     public UserController(String apiPrefix){
         super(apiPrefix, Persistence.otpUsers, "secure/user");
-    }
-
-    @Override
-    protected void buildEndPoint(ApiEndpoint baseEndPoint) {
-        LOG.info("Registering user/fromtoken path.");
-
-        // Add the user token route BEFORE the regular CRUD methods
-        // (otherwise, /fromtoken requests would be considered
-        // by spark as 'GET user with id "fromtoken"', which we don't want).
-        ApiEndpoint modifiedEndpoint = baseEndPoint
-            // Get user from token.
-            .get(path(ROOT_ROUTE + TOKEN_PATH)
-                .withDescription("Retrieves a User entity (based on auth0UserId from request token).")
-                .withResponseType(persistence.clazz),
-                this::getUserFromRequest, JsonUtils::toJson
-            )
-
-            // Options response for CORS for the token path
-            .options(path(TOKEN_PATH), (req, res) -> "");
-
-        // Add the regular CRUD methods after defining the /fromtoken route.
-        super.buildEndPoint(modifiedEndpoint);
     }
 
     /**
@@ -80,41 +48,5 @@ public class UserController extends ApiController<OtpUser> {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Holds result and message from getUserFromProfile.
-     */
-    static class UserFromProfileResult {
-        public OtpUser user;
-        public String message;
-    }
-
-    /**
-     * HTTP endpoint to get the {@link OtpUser} entity from a {@link Auth0UserProfile}.
-     * (Reminder: for endpoints under 'secure', we add a {@link Auth0UserProfile} to request attributes.)
-     */
-    private OtpUser getUserFromRequest(Request req, Response res) {
-        Auth0UserProfile profile = req.attribute("user");
-        UserFromProfileResult result = getUserFromProfile(profile);
-
-        if (result.user == null) {
-            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, result.message,null);
-        }
-        return result.user;
-    }
-
-    /**
-     * @param profile The {@link Auth0UserProfile} from which to extract the User. Assumed not null.
-     * @return An object containing the {@link OtpUser} entity from a {@link Auth0UserProfile}, or null and an error message if that fails.
-     */
-    UserFromProfileResult getUserFromProfile(Auth0UserProfile profile) {
-        UserFromProfileResult result = new UserFromProfileResult();
-
-        String auth0UserId = profile.user_id;
-        result.user = persistence.getOneFiltered(eq("auth0UserId", auth0UserId));
-        if (result.user == null) result.message = String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, auth0UserId);
-
-        return result;
     }
 }
