@@ -15,8 +15,8 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * Implementation of the {@link ApiController} abstract class for managing users. This controller connects with Auth0
  * services using the hooks provided by {@link ApiController}.
  */
-public class UserController extends ApiController<OtpUser> {
-    public UserController(String apiPrefix){
+public class OtpUserController extends ApiController<OtpUser> {
+    public OtpUserController(String apiPrefix){
         super(apiPrefix, Persistence.otpUsers, "secure/user");
     }
 
