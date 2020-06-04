@@ -75,7 +75,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * This method add to the provided baseEndPoint parameter a set of basic HTTP Spark methods
+     * This method adds to the provided baseEndPoint parameter a set of basic HTTP Spark methods
      * (e.g., getOne, getMany, delete) for CRUD operations.
      * It can optionally be overridden by child classes to add any supplemental methods to the baseEndPoint.
      * Either before or after(*) supplemental methods are added, be sure to call the super method to add CRUD operations.
