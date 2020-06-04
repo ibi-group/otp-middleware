@@ -3,11 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.TripRequest;
-import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.DateUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -25,7 +21,6 @@ import java.util.Date;
 
 import static com.mongodb.client.model.Filters.*;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isValidUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
