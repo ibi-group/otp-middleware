@@ -62,13 +62,13 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * This method is called on each object deriving from ApiController by {@link SparkSwagger}
      * to register endpoints and generate the docs.
      * In this method, we add the different API paths and methods (e.g. the CRUD methods)
-     * to the restApi parameter for the applicable applicable controller.
+     * to the restApi parameter for the applicable controller.
      * @param restApi The object to which to attach the documentation.
      */
     @Override
     public void bind(final SparkSwagger restApi) {
-        ApiEndpoint apiEndPoint = restApi.endpoint(endpointPath(ROOT_ROUTE)
-            .withDescription("Interface for querying and managing '" + classToLowercase + "' entities."),
+        ApiEndpoint apiEndPoint = restApi.endpoint(
+            endpointPath(ROOT_ROUTE).withDescription("Interface for querying and managing '" + classToLowercase + "' entities."),
             (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase)
         );
         buildEndPoint(apiEndPoint);

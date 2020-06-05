@@ -91,7 +91,7 @@ public class UserController extends ApiController<OtpUser> {
         OtpUser user = profile.otpUser;
 
         if (user == null) {
-            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404,String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.user_id),null);
+            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.user_id), null);
         }
         return user;
     }
