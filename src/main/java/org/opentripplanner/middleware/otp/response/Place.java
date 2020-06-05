@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.otp.core.api.model;
+package org.opentripplanner.middleware.otp.response;
 
 import java.util.Date;
 import java.util.Set;

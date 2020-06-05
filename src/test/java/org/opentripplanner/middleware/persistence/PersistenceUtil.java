@@ -4,8 +4,8 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
-import org.opentripplanner.middleware.otp.core.api.model.TripPlan;
-import org.opentripplanner.middleware.otp.core.api.resource.Response;
+import org.opentripplanner.middleware.otp.response.TripPlan;
+import org.opentripplanner.middleware.otp.response.Response;
 
 import java.util.ArrayList;
 import java.util.List;

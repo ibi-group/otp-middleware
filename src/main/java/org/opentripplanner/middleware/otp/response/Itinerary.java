@@ -1,7 +1,10 @@
-package org.opentripplanner.middleware.otp.core.api.model;
+package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Date;
+import java.util.List;
 
 /**
  * An Itinerary is one complete way of getting from the start location to the end location.
@@ -62,6 +65,10 @@ public class Itinerary {
      * The number of transfers this trip has.
      */
     public Integer transfers = 0;
+
+    public FareWrapper fare;
+
+    public List<Leg> legs = null;
 
     @Override
     public String toString() {

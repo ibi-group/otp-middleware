@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.otp.core.api.resource;
+package org.opentripplanner.middleware.otp.response;
 
 import java.util.HashMap;
 import java.util.List;
@@ -7,8 +7,6 @@ import java.util.Map.Entry;
 import javax.ws.rs.core.UriInfo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.opentripplanner.middleware.otp.core.api.model.TripPlan;
-import org.opentripplanner.middleware.otp.core.api.model.error.PlannerError;
 
 /**
  * This and all child classes are (were possible) copies of classes (with matching names) from open trip planner.

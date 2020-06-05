@@ -6,7 +6,8 @@ import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
-import org.opentripplanner.middleware.otp.core.api.model.TripPlan;
+import org.opentripplanner.middleware.otp.response.TripPlan;
+import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,7 @@ public class OtpRequestProcessor {
             LOG.debug("Anonymous user or user does not want trip history stored");
         }
 
-        org.opentripplanner.middleware.otp.core.api.resource.Response otpResponse = otpDispatcherResponse.getResponse();
+        Response otpResponse = otpDispatcherResponse.getResponse();
         // only save trip details if the user has given consent and a response from OTP is provided
         if (profile.otpUser.storeTripHistory && otpResponse != null) {
 
