@@ -25,7 +25,6 @@ public class Main {
     // ObjectMapper that loads in YAML config files
     private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private static final String API_PREFIX = "/api/";
-    private static Bugsnag bugsnag;
 
     public static void main(String[] args) throws IOException {
         // Load configuration.
@@ -33,9 +32,6 @@ public class Main {
 
         // Connect to MongoDB.
         Persistence.initialize();
-
-        // Initialize Bugsnag
-        initializeBugsnag();
 
         // Must start spark explicitly to use spark-swagger.
         // https://github.com/manusant/spark-swagger#endpoints-binding
@@ -141,24 +137,5 @@ public class Main {
         }
     }
 
-    /**
-     * Initialize Bugsnag using API key when application is first loaded
-     */
-    private static void initializeBugsnag() {
-        String bugsnagApiKey = getConfigPropertyAsText("BUGSNAG_API_KEY");
-        if (bugsnagApiKey != null) {
-            bugsnag = new Bugsnag(bugsnagApiKey);
-        }
-    }
-
-    /**
-     * Provide bugsnag hook, if available
-     */
-    public static Bugsnag getBugsnag() {
-        if (bugsnag != null) {
-            return  bugsnag;
-        }
-        return null;
-    }
 
 }

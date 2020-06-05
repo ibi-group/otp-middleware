@@ -1,16 +1,20 @@
 package org.opentripplanner.middleware;
 
-import com.bugsnag.Bugsnag;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.utils.bugsnag.BugsnagReporter;
 
-public class BugsnagTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-    String bugsnagApiKey = "423a4670558559fd47a23959f91054d3";
+public class BugsnagTest extends OtpMiddlewareTest {
 
     @Test
     public void notifyOfBug() {
-        Bugsnag bugsnag = new Bugsnag(bugsnagApiKey);
-        bugsnag.notify(new RuntimeException("Hello world"));
+        assertEquals(BugsnagReporter.getHook().notify(new RuntimeException("Unit test")), true);
     }
+
+//    @Test
+//    public void getData() {
+//
+//    }
 
 }
