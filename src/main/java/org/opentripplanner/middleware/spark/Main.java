@@ -80,10 +80,10 @@ public class Main {
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
 
         // available at http://localhost:4567/plan
-        spark.get("/plan", (req, res) -> OtpRequestProcessor.planning(req, res));
+        spark.get("/plan", OtpRequestProcessor::planning);
 
         // available at http://localhost:4567/api/secure/triprequests
-        spark.get(API_PREFIX + "/secure/triprequests", (req, res) -> TripHistoryController.getTripRequests(req, res));
+        spark.get(API_PREFIX + "/secure/triprequests", TripHistoryController::getTripRequests);
 
         spark.before(API_PREFIX + "/secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
