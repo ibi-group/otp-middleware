@@ -10,6 +10,9 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 
+/**
+ * Date specific utils
+ */
 public class DateUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(DateUtils.class);
@@ -17,21 +20,23 @@ public class DateUtils {
     /**
      * Get {@Link java.time.LocalDate} from provided value base on expected date format.
      */
-    public static LocalDate getDateFromParam(String paramName, String paramValue, String expectedDatePattern) throws DateTimeParseException {
+    public static LocalDate getDateFromParam(String paramName, String paramValue, String expectedDatePattern)
+        throws DateTimeParseException {
 
         // no date value to work with
         if (paramValue == null) {
             return null;
         }
 
-        DateTimeFormatter expectDateFormat = new DateTimeFormatterBuilder().appendPattern(expectedDatePattern)
+        DateTimeFormatter expectedDateFormat = new DateTimeFormatterBuilder()
+            .appendPattern(expectedDatePattern)
             .parseDefaulting(ChronoField.NANO_OF_DAY, 0)
             .toFormatter()
             .withZone(ZoneId.systemDefault());
 
         LocalDate date;
         try {
-            date = LocalDate.parse(paramValue, expectDateFormat);
+            date = LocalDate.parse(paramValue, expectedDateFormat);
         } catch (DateTimeParseException e) {
             LOG.error("Unable to parse {} : {}.", paramName, paramValue, e);
             throw e;

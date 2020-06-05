@@ -69,7 +69,7 @@ public class TypedPersistence<T extends Model> {
 //        findOneAndUpdateOptions.upsert(true);
     }
 
-    public T create (String updateJson) {
+    public T create(String updateJson) {
         T item = null;
         try {
             // Keeping our own reference to the constructor here is a little shady.
@@ -86,19 +86,19 @@ public class TypedPersistence<T extends Model> {
     /**
      * TODO maybe merge this with the other create implementation above, passing in the base object and the updates.
      */
-    public void create (T newObject) {
+    public void create(T newObject) {
         // What happens if an object already exists with the same ID?
         mongoCollection.insertOne(newObject);
     }
 
-    public void replace (String id, T replaceObject) {
+    public void replace(String id, T replaceObject) {
         mongoCollection.replaceOne(eq(id), replaceObject);
     }
 
     /**
      * Primary method to update Mongo object with provided document. This sets the lastUpdated field to the current time.
      */
-    public T update (String id, Document updateDocument) {
+    public T update(String id, Document updateDocument) {
         // Set last updated.
         updateDocument.put("lastUpdated", new Date());
         return mongoCollection.findOneAndUpdate(eq(id), new Document("$set", updateDocument), findOneAndUpdateOptions);
@@ -107,18 +107,18 @@ public class TypedPersistence<T extends Model> {
     /**
      * Update Mongo object by ID with the provided JSON string.
      */
-    public T update (String id, String updateJson) {
+    public T update(String id, String updateJson) {
         return update(id, Document.parse(updateJson));
     }
 
     /**
      * Update the field with the provided value for the Mongo object referenced by ID.
      */
-    public T updateField (String id, String fieldName, Object value) {
+    public T updateField(String id, String fieldName, Object value) {
         return update(id, new Document(fieldName, value));
     }
 
-    public T getById (String id) {
+    public T getById(String id) {
         return mongoCollection.find(eq(id)).first();
     }
 
@@ -126,7 +126,7 @@ public class TypedPersistence<T extends Model> {
      * This is not memory efficient.
      * TODO: Always use iterators / streams, always perform selection of subsets on the Mongo server side ("where clause").
      */
-    public List<T> getAll () {
+    public List<T> getAll() {
         return mongoCollection.find().into(new ArrayList<>());
     }
 
@@ -144,10 +144,9 @@ public class TypedPersistence<T extends Model> {
      * This ties our persistence directly to Mongo for now but is expedient.
      * We should really have a bit more abstraction here.
      */
-    public List<T> getFiltered (Bson filter) {
+    public List<T> getFiltered(Bson filter) {
         return mongoCollection.find(filter).into(new ArrayList<>());
     }
-
 
     /**
      * Expose the internal MongoCollection to the caller.
@@ -155,7 +154,7 @@ public class TypedPersistence<T extends Model> {
      * We will write all the queries we need in the calling methods, then make an abstraction here on TypedPersistence
      * once we see everything we need to support.
      */
-    public MongoCollection<T> getMongoCollection () {
+    public MongoCollection<T> getMongoCollection() {
         return this.mongoCollection;
     }
 
@@ -164,19 +163,20 @@ public class TypedPersistence<T extends Model> {
      * This ties our persistence directly to Mongo for now but is expedient.
      * We should really have a bit more abstraction here.
      */
-    public T getOneFiltered (Bson filter, Bson sortBy) {
-        if (sortBy != null)
+    public T getOneFiltered(Bson filter, Bson sortBy) {
+        if (sortBy != null) {
             return mongoCollection.find(filter).sort(sortBy).first();
-        else
+        } else {
             return mongoCollection.find(filter).first();
+        }
     }
 
     /** Convenience wrapper for #getOneFiltered that supplies null for sortBy arg. */
-    public T getOneFiltered (Bson filter) {
+    public T getOneFiltered(Bson filter) {
         return getOneFiltered(filter, null);
     }
 
-    public boolean removeById (String id) {
+    public boolean removeById(String id) {
         DeleteResult result = mongoCollection.deleteOne(eq(id));
         if (result.getDeletedCount() == 1) {
             LOG.info("Deleted object id={} type={}", id, collectionName);
@@ -189,7 +189,7 @@ public class TypedPersistence<T extends Model> {
         return false;
     }
 
-    public boolean removeFiltered (Bson filter) {
+    public boolean removeFiltered(Bson filter) {
         DeleteResult result = mongoCollection.deleteMany(filter);
         long count = result.getDeletedCount();
         if (count >= 1) {

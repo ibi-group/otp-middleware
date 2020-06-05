@@ -8,12 +8,12 @@ public class TripRequest extends Model {
     private static final long serialVersionUID = 1L;
 
     /**
-     * User Id. Id of user making trip request.
+     * User Id. {@link OtpUser#id} of user making trip request.
      */
     public String userId;
 
     /**
-     * Batch Id. Id for trip plans of different modes.
+     * Batch Id. Id for trip requests planned together but representing different modes.
      */
     public String batchId;
 

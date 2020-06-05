@@ -10,10 +10,10 @@ import java.util.Map;
 /** This API response element represents an error in trip planning. */
 public class PlannerError {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.opentripplanner.middleware.otp.core.api.model.error.PlannerError.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PlannerError.class);
     private static Map<Class<? extends Exception>, Message> messages;
 
-    public int    id;
+    public int id;
     public String msg;
     public Message message;
     private List<String> missing = null;
