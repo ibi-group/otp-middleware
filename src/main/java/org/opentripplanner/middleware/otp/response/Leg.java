@@ -12,40 +12,6 @@ import java.util.List;
  * Plan response, itinerary leg information. Produced using http://www.jsonschema2pojo.org/
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "startTime",
-    "endTime",
-    "departureDelay",
-    "arrivalDelay",
-    "realTime",
-    "distance",
-    "pathway",
-    "mode",
-    "route",
-    "agencyTimeZoneOffset",
-    "interlineWithPreviousLeg",
-    "from",
-    "to",
-    "legGeometry",
-    "rentedBike",
-    "rentedCar",
-    "rentedVehicle",
-    "hailedCar",
-    "transitLeg",
-    "duration",
-    "intermediateStops",
-    "steps",
-    "agencyName",
-    "agencyUrl",
-    "routeType",
-    "routeId",
-    "agencyId",
-    "tripId",
-    "serviceDate",
-    "interStopGeometry",
-    "routeShortName",
-    "routeLongName"
-})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Leg {
 
@@ -70,11 +36,11 @@ public class Leg {
     @JsonProperty("interlineWithPreviousLeg")
     public Boolean interlineWithPreviousLeg;
     @JsonProperty("from")
-    public PointLocation from;
+    public Place from;
     @JsonProperty("to")
-    public PointLocation to;
+    public Place to;
     @JsonProperty("legGeometry")
-    public LegGeometry legGeometry;
+    public EncodedPolyline legGeometry;
     @JsonProperty("rentedBike")
     public Boolean rentedBike;
     @JsonProperty("rentedCar")
@@ -88,7 +54,7 @@ public class Leg {
     @JsonProperty("duration")
     public Double duration;
     @JsonProperty("intermediateStops")
-    public List<PointLocation> intermediateStops = null;
+    public List<Place> intermediateStops = null;
     @JsonProperty("steps")
     public List<Step> steps = null;
     @JsonProperty("agencyName")
@@ -106,7 +72,7 @@ public class Leg {
     @JsonProperty("serviceDate")
     public String serviceDate;
     @JsonProperty("interStopGeometry")
-    public List<InterStopGeometry> interStopGeometry = null;
+    public List<EncodedPolyline> interStopGeometry = null;
     @JsonProperty("routeShortName")
     public String routeShortName;
     @JsonProperty("routeLongName")

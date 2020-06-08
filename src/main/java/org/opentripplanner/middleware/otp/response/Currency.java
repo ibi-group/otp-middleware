@@ -9,12 +9,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * Plan response, currency information. Produced using http://www.jsonschema2pojo.org/
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "symbol",
-    "currency",
-    "defaultFractionDigits",
-    "currencyCode"
-})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Currency {
 

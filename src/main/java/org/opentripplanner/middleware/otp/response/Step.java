@@ -9,18 +9,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * Plan response, step information. Produced using http://www.jsonschema2pojo.org/
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "distance",
-    "relativeDirection",
-    "streetName",
-    "absoluteDirection",
-    "stayOn",
-    "area",
-    "bogusName",
-    "lon",
-    "lat",
-    "elevation"
-})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Step {
 
