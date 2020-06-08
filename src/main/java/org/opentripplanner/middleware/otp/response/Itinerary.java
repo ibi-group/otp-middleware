@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.otp.core.api.model;
+package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -9,6 +9,7 @@ import java.util.List;
 
 /**
  * An Itinerary is one complete way of getting from the start location to the end location.
+ * Pare down version of class original produced for OpenTripPlanner.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Itinerary {
@@ -68,12 +69,14 @@ public class Itinerary {
     public Integer transfers = 0;
 
     /**
-     * A list of Legs. Each Leg is either a walking (cycling, car) portion of the trip, or a transit
-     * trip on a particular vehicle. So a trip where the use walks to the Q train, transfers to the
-     * 6, then walks to their destination, has four legs.
+     * Fare information for this itinerary.
      */
-    @JsonIgnore
-    public List<Leg> legs;
+    public FareWrapper fare;
+
+    /**
+     * Leg information for this itinerary.
+     */
+    public List<Leg> legs = null;
 
     @Override
     public String toString() {
@@ -89,6 +92,7 @@ public class Itinerary {
             ", elevationLost=" + elevationLost +
             ", elevationGained=" + elevationGained +
             ", transfers=" + transfers +
+            ", fare=" + fare +
             ", legs=" + legs +
             '}';
     }

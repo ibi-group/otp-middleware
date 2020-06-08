@@ -19,7 +19,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
-import static org.opentripplanner.middleware.persistence.Persistence.tripRequest;
+import static org.opentripplanner.middleware.persistence.Persistence.tripRequests;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class Main {
@@ -28,15 +28,7 @@ public class Main {
     private static JsonNode envConfig;
     // ObjectMapper that loads in YAML config files
     private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-
-    private static final String UNSECURE_PLAN = "/plan";
     private static final String API_PREFIX = "/api/";
-    private static final String API_PREFIX_ALL = API_PREFIX + "*";
-    private static final String API_SECURE = API_PREFIX + "/secure/";
-    private static final String API_SECURE_ALL = API_SECURE + "*";
-    private static final String API_ADMIN = API_PREFIX + "/admin/";
-    private static final String API_ADMIN_ALL = API_ADMIN + "*";
-    private static final String API_SECURE_TRIP_REQUESTS = API_SECURE + "triprequests";
 
     public static void main(String[] args) throws IOException {
         // Load configuration.
@@ -86,22 +78,22 @@ public class Main {
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
 
         // available at http://localhost:4567/plan
-        spark.get(UNSECURE_PLAN, (request, response) -> OtpRequestProcessor.planning(request, response, getConfigPropertyAsText("OTP_SERVER"), getConfigPropertyAsText("OTP_SERVER_PLAN_END_POINT")));
+        spark.get("/plan", OtpRequestProcessor::planning);
 
         // available at http://localhost:4567/api/secure/triprequests
-        spark.get(API_SECURE_TRIP_REQUESTS, (request, response) -> TripHistoryController.getTripRequests(request, response, tripRequest));
+        spark.get(API_PREFIX + "/secure/triprequests", TripHistoryController::getTripRequests);
 
-        spark.before(API_SECURE_ALL, ((request, response) -> {
+        spark.before(API_PREFIX + "/secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
         }));
-        spark.before(API_ADMIN_ALL, ((request, response) -> {
+        spark.before(API_PREFIX + "admin/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) {
                 Auth0Connection.checkUserIsAdmin(request, response);
             }
         }));
 
         // Return "application/json" and set gzip header for all API routes.
-        spark.before(API_PREFIX_ALL, (request, response) -> {
+        spark.before(API_PREFIX + "*", (request, response) -> {
             response.type("application/json"); // Handled by API response documentation. If specified, "Try it out" feature in API docs fails.
             response.header("Content-Encoding", "gzip");
         });
@@ -110,7 +102,7 @@ public class Main {
 
         // Return 404 for any API path that is not configured.
         // IMPORTANT: Any API paths must be registered before this halt.
-        spark.get(API_PREFIX_ALL, (request, response) -> {
+        spark.get(API_PREFIX + "*", (request, response) -> {
             logMessageAndHalt(request, 404, "No API route configured for this path.");
             return null;
         });

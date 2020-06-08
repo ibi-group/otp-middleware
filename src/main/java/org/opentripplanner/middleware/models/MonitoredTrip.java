@@ -2,7 +2,8 @@ package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
-import org.opentripplanner.middleware.otp.core.api.model.Itinerary;
+import org.opentripplanner.middleware.otp.response.Itinerary;
+
 import java.util.List;
 import java.util.Set;
 

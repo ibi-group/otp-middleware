@@ -1,8 +1,8 @@
 package org.opentripplanner.middleware.models;
 
-import org.opentripplanner.middleware.otp.core.api.model.Itinerary;
-import org.opentripplanner.middleware.otp.core.api.model.Place;
-import org.opentripplanner.middleware.otp.core.api.model.error.PlannerError;
+import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.PlannerError;
 import java.util.List;
 
 /**

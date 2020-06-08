@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.otp.core.api.model;
+package org.opentripplanner.middleware.otp.response;
 
 import java.util.Date;
 import java.util.Set;
@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * A Place is where a journey starts or ends, or a transit stop along the way.
+ * Pare down version of class original produced for OpenTripPlanner.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Place {

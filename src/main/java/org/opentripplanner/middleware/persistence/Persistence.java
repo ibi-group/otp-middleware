@@ -34,8 +34,8 @@ public class Persistence {
     public static TypedPersistence<OtpUser> otpUsers;
     public static TypedPersistence<AdminUser> adminUsers;
     public static TypedPersistence<ApiUser> apiUsers;
-    public static TypedPersistence<TripRequest> tripRequest;
-    public static TypedPersistence<TripSummary> tripSummary;
+    public static TypedPersistence<TripRequest> tripRequests;
+    public static TypedPersistence<TripSummary> tripSummaries;
     public static TypedPersistence<MonitoredTrip> monitoredTrip;
 
     public static void initialize () {
@@ -73,10 +73,10 @@ public class Persistence {
         otpUsers = new TypedPersistence(mongoDatabase, OtpUser.class);
         adminUsers = new TypedPersistence(mongoDatabase, AdminUser.class);
         apiUsers = new TypedPersistence(mongoDatabase, ApiUser.class);
-        tripRequest = new TypedPersistence(mongoDatabase, TripRequest.class);
-        tripSummary = new TypedPersistence(mongoDatabase, TripSummary.class);
+        tripRequests = new TypedPersistence(mongoDatabase, TripRequest.class);
+        tripSummaries = new TypedPersistence(mongoDatabase, TripSummary.class);
         monitoredTrip = new TypedPersistence(mongoDatabase, MonitoredTrip.class);
-        // TODO Add other models...
+       // TODO Add other models...
     }
 
 }

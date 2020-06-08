@@ -1,21 +1,17 @@
-package org.opentripplanner.middleware.otp.core.api.model.error;
+package org.opentripplanner.middleware.otp.response;
 
-import org.opentripplanner.middleware.otp.core.api.common.Message;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
-import java.util.Map;
 
-/** This API response element represents an error in trip planning. */
+/**
+ * This API response element represents an error in trip planning.
+ * Pare down version of class original produced for OpenTripPlanner.
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PlannerError {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.opentripplanner.middleware.otp.core.api.model.error.PlannerError.class);
-    private static Map<Class<? extends Exception>, Message> messages;
-
-    public int    id;
+    public int id;
     public String msg;
-    public Message message;
     private List<String> missing = null;
     private boolean noPath = false;
 
@@ -26,21 +22,10 @@ public class PlannerError {
 
     public PlannerError(Exception e) {
         this();
-        message = messages.get(e.getClass());
-        if (message == null) {
-            LOG.error("exception planning trip: ", e);
-            message = Message.SYSTEM_ERROR;
-        }
-        this.setMessage(message);
     }
-
 
     public PlannerError(boolean np) {
         noPath = np;
-    }
-
-    public PlannerError(Message msg) {
-        setMessage(msg);
     }
 
     public PlannerError(List<String> missing) {
@@ -50,15 +35,6 @@ public class PlannerError {
     public PlannerError(int id, String msg) {
         this.id  = id;
         this.msg = msg;
-    }
-
-    public void setMsg(String msg) {
-        this.msg = msg;
-    }
-
-    public void setMessage(Message msg) {
-        this.msg = msg.get();
-        this.id  = msg.getId();
     }
 
     /**
@@ -89,16 +65,11 @@ public class PlannerError {
         return noPath;
     }
 
-    public static boolean isPlanningError(Class<?> clazz) {
-        return messages.containsKey(clazz);
-    }
-
     @Override
     public String toString() {
         return "PlannerError{" +
                 "id=" + id +
                 ", msg='" + msg + '\'' +
-                ", message=" + message +
                 ", missing=" + missing +
                 ", noPath=" + noPath +
                 '}';

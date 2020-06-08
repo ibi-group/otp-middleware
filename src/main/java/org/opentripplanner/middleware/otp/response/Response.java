@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.otp.core.api.resource;
+package org.opentripplanner.middleware.otp.response;
 
 import java.util.HashMap;
 import java.util.List;
@@ -7,14 +7,15 @@ import java.util.Map.Entry;
 import javax.ws.rs.core.UriInfo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.opentripplanner.middleware.otp.core.api.model.TripPlan;
-import org.opentripplanner.middleware.otp.core.api.model.error.PlannerError;
 
 /**
  * This and all child classes are (were possible) copies of classes (with matching names) from open trip planner.
  * They are used to deserialize a plan response from OTP.
- * */
-/** Represents a trip planner response, will be serialized into XML or JSON by Jersey */
+ *
+ * Represents a trip planner response, will be serialized into XML or JSON by Jersey
+ *
+ * Pare down version of class original produced for OpenTripPlanner.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Response {
 
@@ -25,7 +26,7 @@ public class Response {
 
     /** This no-arg constructor exists to make JAX-RS happy. */
     @SuppressWarnings("unused")
-    private Response() {};
+    private Response() {}
 
     /** Construct an new response initialized with all the incoming query parameters. */
     public Response(UriInfo info) {
@@ -39,10 +40,6 @@ public class Response {
             requestParameters.put(e.getKey(), e.getValue().get(0));
         }
     }
-
-    // NOTE: the order the getter methods below is semi-important, in that Jersey will use the
-    // same order for the elements in the JS or XML serialized response. The traditional order
-    // is request params, followed by plan, followed by errors.
 
     /** The actual trip plan. */
     public TripPlan getPlan() {

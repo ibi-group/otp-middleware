@@ -5,11 +5,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
-import org.opentripplanner.middleware.otp.core.api.model.Itinerary;
-import org.opentripplanner.middleware.otp.core.api.model.Leg;
-import org.opentripplanner.middleware.otp.core.api.model.Place;
-import org.opentripplanner.middleware.otp.core.api.model.TripPlan;
-import org.opentripplanner.middleware.otp.core.api.resource.Response;
+import org.opentripplanner.middleware.otp.response.*;
 
 import java.util.*;
 
@@ -36,7 +32,7 @@ public class PersistenceUtil {
         String toPlace = "28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759";
         String queryParams = "arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
         TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, queryParams);
-        Persistence.tripRequest.create(tripRequest);
+        Persistence.tripRequests.create(tripRequest);
         return tripRequest;
     }
 
@@ -44,7 +40,7 @@ public class PersistenceUtil {
         OtpDispatcherResponse response = getPlanFromOtp();
         Response otpResponse = response.getResponse();
         TripSummary tripSummary = new TripSummary(otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary, tripRequestId);
-        Persistence.tripSummary.create(tripSummary);
+        Persistence.tripSummaries.create(tripSummary);
         System.out.println("Saved trip summary:" + tripSummary.toString());
         return tripSummary;
     }
@@ -59,7 +55,7 @@ public class PersistenceUtil {
         } else {
             tripSummary = new TripSummary(otpResponse.getError(), tripRequestId);
         }
-        Persistence.tripSummary.create(tripSummary);
+        Persistence.tripSummaries.create(tripSummary);
         System.out.println("Saved trip summary:" + tripSummary.toString());
         return tripSummary;
     }
@@ -76,7 +72,7 @@ public class PersistenceUtil {
 
     public static void deleteTripRequests(List<TripRequest> tripRequests) {
         for (TripRequest tripRequest: tripRequests) {
-            Persistence.tripRequest.removeById(tripRequest.id);
+            Persistence.tripRequests.removeById(tripRequest.id);
         }
     }
 
@@ -119,7 +115,7 @@ public class PersistenceUtil {
         leg.pathway = true;
         leg.mode = "walk";
 
-        Place place = new Place();
+        PointLocation place = new PointLocation();
         place.lat = 28.5398938204469;
         place.lon = -81.3772773742676;
         place.name = "28.54894, -81.38971";

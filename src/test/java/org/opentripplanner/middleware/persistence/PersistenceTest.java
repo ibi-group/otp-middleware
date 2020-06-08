@@ -19,7 +19,6 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.opentripplanner.middleware.persistence.Persistence.tripRequest;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.*;
 
 /**
@@ -69,46 +68,46 @@ public class PersistenceTest extends OtpMiddlewareTest {
         String userId = "123456";
         TripRequest tripRequest = createTripRequest(userId);
         String id = tripRequest.id;
-        TripRequest retrieved = Persistence.tripRequest.getById(id);
+        TripRequest retrieved = Persistence.tripRequests.getById(id);
         assertEquals(id, retrieved.id, "Found Trip request ID should equal inserted ID.");
         // tidy up
-        Persistence.tripRequest.removeById(tripRequest.id);
+        Persistence.tripRequests.removeById(tripRequest.id);
     }
 
     @Test
     public void canDeleteTripRequest() {
         String userId = "123456";
         TripRequest tripRequestToDelete = createTripRequest(userId);
-        tripRequest.removeById(tripRequestToDelete.id);
-        TripRequest tripRequest = Persistence.tripRequest.getById(tripRequestToDelete.id);
+        Persistence.tripRequests.removeById(tripRequestToDelete.id);
+        TripRequest tripRequest = Persistence.tripRequests.getById(tripRequestToDelete.id);
         assertNull(tripRequest, "Deleted TripRequest should no longer exist in database (should return as null).");
     }
 
     @Test
     public void canCreateTripSummaryWithError() {
         TripSummary tripSummary = createTripSummaryWithError();
-        TripSummary retrieved = Persistence.tripSummary.getById(tripSummary.id);
+        TripSummary retrieved = Persistence.tripSummaries.getById(tripSummary.id);
         System.out.println("Retrieved trip summary with error:" + retrieved.toString());
         assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
         // tidy up
-        Persistence.tripSummary.removeById(tripSummary.id);
+        Persistence.tripSummaries.removeById(tripSummary.id);
     }
 
     @Test
     public void canCreateTripSummary() {
         TripSummary tripSummary = createTripSummary();
-        TripSummary retrieved = Persistence.tripSummary.getById(tripSummary.id);
+        TripSummary retrieved = Persistence.tripSummaries.getById(tripSummary.id);
         System.out.println("Retrieved trip summary:" + retrieved.toString());
         assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
         // tidy up
-        Persistence.tripSummary.removeById(tripSummary.id);
+        Persistence.tripSummaries.removeById(tripSummary.id);
     }
 
     @Test
     public void canDeleteTripSummary() {
         TripSummary tripSummaryToDelete = createTripSummary();
-        Persistence.tripSummary.removeById(tripSummaryToDelete.id);
-        TripSummary tripSummary = Persistence.tripSummary.getById(tripSummaryToDelete.id);
+        Persistence.tripSummaries.removeById(tripSummaryToDelete.id);
+        TripSummary tripSummary = Persistence.tripSummaries.getById(tripSummaryToDelete.id);
         assertNull(tripSummary, "Deleted trip summary should no longer exist in database (should return as null).");
     }
 
@@ -129,7 +128,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
             lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(toEndOfDay.atZone(ZoneId.systemDefault()).toInstant())),
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
-        List<TripRequest> result = tripRequest.getFilteredWithLimit(filter, limit);
+        List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
         assertEquals(result.size(),tripRequests.size());
 
         // tidy up
@@ -161,7 +160,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
         Bson filter = Filters.and(gte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(fromStartOfDay.atZone(ZoneId.systemDefault()).toInstant())),
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
-        List<TripRequest> result = Persistence.tripRequest.getFilteredWithLimit(filter, limit);
+        List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
         assertEquals(result.size(),tripRequests.size());
 
         // tidy up
@@ -184,7 +183,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
             lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(toEndOfDay.atZone(ZoneId.systemDefault()).toInstant())),
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
-        List<TripRequest> result = Persistence.tripRequest.getFilteredWithLimit(filter, limit);
+        List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
         assertEquals(result.size(),tripRequests.size());
 
         // tidy up
@@ -203,7 +202,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
         Bson filter = Filters.and(
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
-        List<TripRequest> result = Persistence.tripRequest.getFilteredWithLimit(filter, limit);
+        List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
         assertEquals(result.size(),tripRequests.size());
 
         // tidy up
@@ -223,7 +222,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
         Bson filter = Filters.and(
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
-        List<TripRequest> result = Persistence.tripRequest.getFilteredWithLimit(filter, max);
+        List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, max);
         assertEquals(result.size(), max);
 
         // tidy up
