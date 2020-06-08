@@ -178,8 +178,8 @@ public class Auth0Connection {
         }
 
         if (userId == null ||
-            (profile.otpUser != null && !profile.otpUser.id.equalsIgnoreCase(userId)) ||
-            (profile.apiUser != null && !profile.apiUser.id.equalsIgnoreCase(userId))) {
+            (profile.otpUser != null && !profile.otpUser.id.equals(userId)) ||
+            (profile.apiUser != null && !profile.apiUser.id.equals(userId))) {
 
             logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
         }
