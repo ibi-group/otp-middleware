@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 /**
- *  This API response element represents an error in trip planning.
+ * This API response element represents an error in trip planning.
+ * Pare down version of class original produced for OpenTripPlanner.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlannerError {

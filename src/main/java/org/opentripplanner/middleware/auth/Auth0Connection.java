@@ -64,6 +64,12 @@ public class Auth0Connection {
         }
     }
 
+    public static boolean isAuthHeaderPresent(Request req) {
+        final String authHeader = req.headers("Authorization");
+        return (authHeader != null) ? true : false;
+    }
+
+
     /** Assign user to request and check that the user is an admin. */
     public static void checkUserIsAdmin(Request req, Response res) {
         // Check auth token in request (and add user object to request).

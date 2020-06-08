@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
+import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -51,16 +52,19 @@ public class OtpRequestProcessor {
             return null;
         }
 
-        Auth0Connection.checkUser(request);
+        if (isAuthHeaderPresent(request)) {
+            Auth0Connection.checkUser(request);
+        }
+
         Auth0UserProfile profile = Auth0Connection.getUserFromRequest(request);
 
-        if (profile.otpUser == null || !profile.otpUser.storeTripHistory) {
+        if (profile == null || profile.otpUser == null || !profile.otpUser.storeTripHistory) {
             LOG.debug("Anonymous user or user does not want trip history stored");
         }
 
         Response otpResponse = otpDispatcherResponse.getResponse();
         // only save trip details if the user has given consent and a response from OTP is provided
-        if (profile.otpUser.storeTripHistory && otpResponse != null) {
+        if (profile != null && profile.otpUser.storeTripHistory && otpResponse != null) {
 
             TripRequest tripRequest = new TripRequest(profile.otpUser.id, batchId, request.queryParams("fromPlace"),
                 request.queryParams("toPlace"), request.queryString());

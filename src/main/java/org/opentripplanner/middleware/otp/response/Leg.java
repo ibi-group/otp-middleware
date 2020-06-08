@@ -8,6 +8,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Plan response, itinerary leg information. Produced using http://www.jsonschema2pojo.org/
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "startTime",

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A TripPlan is a set of ways to get from point A to point B at time T.
+ * Pare down version of class original produced for OpenTripPlanner.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TripPlan {
@@ -24,7 +25,7 @@ public class TripPlan {
 
     /** A list of possible itineraries */
     @JsonProperty(value="itineraries")
-    public List<Itinerary> itinerary = new ArrayList<Itinerary>();
+    public List<Itinerary> itinerary = new ArrayList<>();
 
     public TripPlan() { }
 

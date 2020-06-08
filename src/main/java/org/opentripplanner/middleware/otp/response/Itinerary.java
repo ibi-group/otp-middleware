@@ -1,13 +1,12 @@
 package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Date;
 import java.util.List;
 
 /**
  * An Itinerary is one complete way of getting from the start location to the end location.
+ * Pare down version of class original produced for OpenTripPlanner.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Itinerary {
@@ -66,24 +65,32 @@ public class Itinerary {
      */
     public Integer transfers = 0;
 
+    /**
+     * Fare information for this itinerary.
+     */
     public FareWrapper fare;
 
+    /**
+     * Leg information for this itinerary.
+     */
     public List<Leg> legs = null;
 
     @Override
     public String toString() {
         return "Itinerary{" +
-                "duration=" + duration +
-                ", startTime=" + startTime +
-                ", endTime=" + endTime +
-                ", walkTime=" + walkTime +
-                ", transitTime=" + transitTime +
-                ", waitingTime=" + waitingTime +
-                ", walkDistance=" + walkDistance +
-                ", walkLimitExceeded=" + walkLimitExceeded +
-                ", elevationLost=" + elevationLost +
-                ", elevationGained=" + elevationGained +
-                ", transfers=" + transfers +
-                '}';
+            "duration=" + duration +
+            ", startTime=" + startTime +
+            ", endTime=" + endTime +
+            ", walkTime=" + walkTime +
+            ", transitTime=" + transitTime +
+            ", waitingTime=" + waitingTime +
+            ", walkDistance=" + walkDistance +
+            ", walkLimitExceeded=" + walkLimitExceeded +
+            ", elevationLost=" + elevationLost +
+            ", elevationGained=" + elevationGained +
+            ", transfers=" + transfers +
+            ", fare=" + fare +
+            ", legs=" + legs +
+            '}';
     }
 }
