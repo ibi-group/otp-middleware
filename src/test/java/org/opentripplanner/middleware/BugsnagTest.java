@@ -20,6 +20,7 @@ public class BugsnagTest extends OtpMiddlewareTest {
     public void getOrganization() {
         BugsnagDispatcher bd = new BugsnagDispatcherImpl();
         Organization organization = bd.getOrganization();
+        System.out.println(organization);
         assertNotNull(organization);
     }
 

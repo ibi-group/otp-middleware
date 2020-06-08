@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -10,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
+
+import java.net.http.HttpResponse;
 
 import static spark.Spark.halt;
 
@@ -44,6 +47,17 @@ public class JsonUtils {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for " + clazz.getSimpleName(), e);
             throw e;
         }
+    }
+
+    /** Utility method to parse generic object from Http response. */
+    public static <T> T getPOJOFromHttpResponse(HttpResponse<String> response, Class<T> clazz) {
+        T pojo = null;
+        try {
+            pojo = mapper.readValue(response.body(), clazz);
+        } catch (JsonProcessingException e) {
+            LOG.error("Unable to get POJO from http response", e);
+        }
+        return pojo;
     }
 
     /**

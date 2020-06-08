@@ -18,4 +18,13 @@ public class Creator {
     public String name;
     @JsonProperty("email")
     public String email;
+
+    @Override
+    public String toString() {
+        return "Creator{" +
+            "id='" + id + '\'' +
+            ", name='" + name + '\'' +
+            ", email='" + email + '\'' +
+            '}';
+    }
 }

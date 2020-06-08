@@ -55,4 +55,24 @@ public class Organization {
     public Boolean proTrialFeature;
     @JsonProperty("billing_emails")
     public List<String> billingEmails = null;
+
+    @Override
+    public String toString() {
+        return "Organization{" +
+            "id='" + id + '\'' +
+            ", name='" + name + '\'' +
+            ", slug='" + slug + '\'' +
+            ", creator=" + creator +
+            ", collaboratorsUrl='" + collaboratorsUrl + '\'' +
+            ", projectsUrl='" + projectsUrl + '\'' +
+            ", createdAt='" + createdAt + '\'' +
+            ", updatedAt='" + updatedAt + '\'' +
+            ", autoUpgrade=" + autoUpgrade +
+            ", upgradeUrl='" + upgradeUrl + '\'' +
+            ", canStartProTrial=" + canStartProTrial +
+            ", proTrialEndsAt=" + proTrialEndsAt +
+            ", proTrialFeature=" + proTrialFeature +
+            ", billingEmails=" + billingEmails +
+            '}';
+    }
 }
