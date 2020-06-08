@@ -17,7 +17,7 @@ import spark.Response;
 
 import java.security.interfaces.RSAPublicKey;
 
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.spark.Main.get
 import static org.opentripplanner.middleware.spark.Main.hasConfigProperty;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -66,7 +66,7 @@ public class Auth0Connection {
 
     public static boolean isAuthHeaderPresent(Request req) {
         final String authHeader = req.headers("Authorization");
-        return (authHeader != null) ? true : false;
+        return authHeader != null;
     }
 
 
