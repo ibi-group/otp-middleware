@@ -2,43 +2,45 @@ package org.opentripplanner.middleware.auth;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.bson.conversions.Bson;
+import org.opentripplanner.middleware.models.AdminUser;
+import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.persistence.Persistence;
 
-import java.util.Arrays;
-import java.util.Date;
+import static com.mongodb.client.model.Filters.eq;
 
 /**
  * User profile that is attached to an HTTP request.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Auth0UserProfile {
-    public String email;
-    public boolean email_verified;
-    public Date created_at;
-    public String name;
-    public final String user_id;
-    public boolean isAdmin;
+    public final OtpUser otpUser;
+    public final ApiUser apiUser;
+    public final AdminUser adminUser;
+    public final String auth0UserId;
 
     /** Constructor is only used for creating a test user */
-    private Auth0UserProfile(String email, String user_id) {
-        this.email = email;
-        this.user_id = user_id;
-        this.created_at = new Date();
-        this.email_verified = false;
-        this.name = "John Doe";
+    private Auth0UserProfile(String auth0UserId) {
+        this.auth0UserId = auth0UserId;
+        otpUser = new OtpUser();
+        apiUser = new ApiUser();
+        adminUser = new AdminUser();
     }
 
     /** Create a user profile from the request's JSON web token. Check persistence for stored user */
     public Auth0UserProfile(DecodedJWT jwt) {
-        this.user_id = jwt.getClaim("sub").asString();
-        String[] roles = jwt.getClaim("https://otp-middleware/roles").asArray(String.class);
-        // TODO: This value may need to be stored in config with defaults?
-        this.isAdmin = roles != null && Arrays.asList(roles).contains("OTP Admin");
+        this.auth0UserId = jwt.getClaim("sub").asString();
+        Bson withAuth0UserId = eq("auth0UserId", auth0UserId);
+        otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
+        adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
+        apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
     }
 
     /**
      * Utility method for creating a test admin (with application-admin permissions) user.
      */
     public static Auth0UserProfile createTestAdminUser() {
-        return new Auth0UserProfile("mock@example.com", "user_id:string");
+        return new Auth0UserProfile("user_id:string");
     }
 }

@@ -71,13 +71,18 @@ public class Auth0Connection {
         checkUser(req);
         // Check that user object is present and is admin.
         Auth0UserProfile user = Auth0Connection.getUserFromRequest(req);
-        if (user == null || !user.isAdmin) {
+        if (!isUserAdmin(user)) {
             logMessageAndHalt(
                 req,
                 HttpStatus.UNAUTHORIZED_401,
                 "User is not authorized to perform administrative action"
             );
         }
+    }
+
+    /** Check if the incoming user is an admin user */
+    public static boolean isUserAdmin(Auth0UserProfile user) {
+        return user != null && user.adminUser != null;
     }
 
     /** Add user profile to Spark Request object */

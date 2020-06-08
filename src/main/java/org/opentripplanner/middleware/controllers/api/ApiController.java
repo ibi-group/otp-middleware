@@ -145,8 +145,13 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private String deleteOne(Request req, Response res) {
         long startTime = System.currentTimeMillis();
         String id = getIdFromRequest(req);
+        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         try {
             T object = getObjectForId(req, id);
+            // Check that requesting user can manage entity.
+            if (!object.canBeManagedBy(requestingUser)) {
+                logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to delete %s.", classToLowercase));
+            }
             // Run pre-delete hook. If return value is false, abort.
             if (!preDeleteHook(object, req)) {
                 logMessageAndHalt(req, 500, "Unknown error occurred during delete attempt.");
@@ -215,12 +220,17 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         if (req.params("id") == null && req.requestMethod().equals("PUT")) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
         }
+        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         final boolean isCreating = req.params("id") == null;
         // Save or update to database
         try {
             // Validate fields by deserializing into POJO.
             T object = getPOJOFromRequestBody(req, clazz);
             if (isCreating) {
+                // Verify that the requesting user can create object.
+                if (!object.canBeCreatedBy(requestingUser)) {
+                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to create %s.", classToLowercase));
+                }
                 // Run pre-create hook and use updated object (with potentially modified values) in create operation.
                 T updatedObject = preCreateHook(object, req);
                 persistence.create(updatedObject);
@@ -230,6 +240,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 if (preExistingObject == null) {
                     logMessageAndHalt(req, 400, "Object to update does not exist!");
                     return null;
+                }
+                // Check that requesting user can manage entity.
+                if (!preExistingObject.canBeManagedBy(requestingUser)) {
+                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to update %s.", classToLowercase));
                 }
                 // Update last updated value.
                 object.lastUpdated = new Date();
