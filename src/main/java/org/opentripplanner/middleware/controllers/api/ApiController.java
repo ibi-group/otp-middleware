@@ -3,6 +3,8 @@ package org.opentripplanner.middleware.controllers.api;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -35,7 +37,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private static final String SECURE = "secure/";
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String classToLowercase;
-    private final TypedPersistence<T> persistence;
+    final TypedPersistence<T> persistence;
     private final Class<T> clazz;
 
     /**
@@ -43,10 +45,16 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * @param persistence {@link TypedPersistence} persistence for the entity to set up CRUD endpoints for
      */
     public ApiController (String apiPrefix, TypedPersistence<T> persistence) {
+        this(apiPrefix, persistence, null);
+    }
+
+    public ApiController (String apiPrefix, TypedPersistence<T> persistence, String resource) {
         this.clazz = persistence.clazz;
         this.persistence = persistence;
         this.classToLowercase = persistence.clazz.getSimpleName().toLowerCase();
-        this.ROOT_ROUTE = apiPrefix + SECURE + classToLowercase;
+        // Default resource to class name.
+        if (resource == null) resource = SECURE + persistence.clazz.getSimpleName().toLowerCase();
+        this.ROOT_ROUTE = apiPrefix + resource;
     }
 
     /**
@@ -137,8 +145,17 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private String deleteOne(Request req, Response res) {
         long startTime = System.currentTimeMillis();
         String id = getIdFromRequest(req);
+        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         try {
-            getObjectForId(req, id);
+            T object = getObjectForId(req, id);
+            // Check that requesting user can manage entity.
+            if (!object.canBeManagedBy(requestingUser)) {
+                logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to delete %s.", classToLowercase));
+            }
+            // Run pre-delete hook. If return value is false, abort.
+            if (!preDeleteHook(object, req)) {
+                logMessageAndHalt(req, 500, "Unknown error occurred during delete attempt.");
+            }
             boolean success = persistence.removeById(id);
             int code = success ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500;
             String message = success
@@ -177,6 +194,21 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
+     * Hook called before object is created in MongoDB.
+     */
+    abstract T preCreateHook(T entityToCreate, Request req);
+
+    /**
+     * Hook called before object is updated in MongoDB. Validation of entity object could go here.
+     */
+    abstract T preUpdateHook(T entityToUpdate, T preExistingEntity, Request req);
+
+    /**
+     * Hook called before object is deleted in MongoDB.
+     */
+    abstract boolean preDeleteHook(T entity, Request req);
+
+    /**
      * HTTP endpoint to create or update a single entity. If the ID param is supplied and the HTTP method is
      * PUT, an update operation will be applied to the specified entity using the JSON body found in the request.
      * Otherwise, a new entity will be created.
@@ -188,25 +220,42 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         if (req.params("id") == null && req.requestMethod().equals("PUT")) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
         }
+        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         final boolean isCreating = req.params("id") == null;
         // Save or update to database
         try {
             // Validate fields by deserializing into POJO.
             T object = getPOJOFromRequestBody(req, clazz);
-            // TODO Add validation hooks for specific models... e.g., enforcing unique emails for users, checking
-            //  valid email addresses, etc.
             if (isCreating) {
-                persistence.create(object);
+                // Verify that the requesting user can create object.
+                if (!object.canBeCreatedBy(requestingUser)) {
+                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to create %s.", classToLowercase));
+                }
+                // Run pre-create hook and use updated object (with potentially modified values) in create operation.
+                T updatedObject = preCreateHook(object, req);
+                persistence.create(updatedObject);
             } else {
                 String id = getIdFromRequest(req);
+                T preExistingObject = getObjectForId(req, id);
+                if (preExistingObject == null) {
+                    logMessageAndHalt(req, 400, "Object to update does not exist!");
+                    return null;
+                }
+                // Check that requesting user can manage entity.
+                if (!preExistingObject.canBeManagedBy(requestingUser)) {
+                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to update %s.", classToLowercase));
+                }
                 // Update last updated value.
                 object.lastUpdated = new Date();
-                object.dateCreated = getObjectForId(req, id).dateCreated;
+                // Pin the date created to pre-existing value.
+                object.dateCreated = preExistingObject.dateCreated;
                 // Validate that ID in JSON body matches ID param. TODO add test
                 if (!id.equals(object.id)) {
                     logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "ID in JSON body must match ID param.");
                 }
-                persistence.replace(id, object);
+                // Get updated object from pre-update hook method.
+                T updatedObject = preUpdateHook(object, preExistingObject, req);
+                persistence.replace(id, updatedObject);
             }
             // Return object that ultimately gets stored in database.
             return persistence.getById(object.id);
