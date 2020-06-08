@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.utils.bugsnag.response.Project;
 import java.util.List;
 
 public interface BugsnagDispatcher {
+    String ORGANIZATION_END_POINT = "/user/organizations";
     Organization getOrganization();
     List<Project> getProjects();
     List<Error> getAllProjectErrors(String projectName);

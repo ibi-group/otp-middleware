@@ -26,7 +26,7 @@ public class BugsnagReporter {
     /**
      * Provide bugsnag hook, if available, for reporting errors
      */
-    public static Bugsnag getHook() {
+    public static Bugsnag get() {
         if (bugsnag == null) {
             initializeBugsnag();
         }
