@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.otp.response;
 
-import java.util.Date;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -43,12 +42,12 @@ public class Place {
     /**
      * The time the rider will arrive at the place.
      */
-    public Date arrival = null;
+    public long arrival = 0L;
 
     /**
      * The time the rider will depart the place.
      */
-    public Date departure = null;
+    public long departure = 0L;
 
     @JsonSerialize
     public String orig;
@@ -92,7 +91,7 @@ public class Place {
         this.name = name;
     }
 
-    public Place(Double lon, Double lat, String name, Date arrival, Date departure) {
+    public Place(Double lon, Double lat, String name, long arrival, long departure) {
         this(lon, lat, name);
         this.arrival = arrival;
         this.departure = departure;

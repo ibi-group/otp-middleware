@@ -1,10 +1,7 @@
 package org.opentripplanner.middleware.otp.response;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -22,11 +19,11 @@ public class Itinerary {
     /**
      * Time that the trip departs.
      */
-    public Date startTime = null;
+    public long startTime = 0L;
     /**
      * Time that the trip arrives.
      */
-    public Date endTime = null;
+    public long endTime = 0L;
 
     /**
      * How much time is spent walking, in seconds.

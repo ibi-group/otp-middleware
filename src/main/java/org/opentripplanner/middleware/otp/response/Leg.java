@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -50,9 +49,9 @@ import java.util.List;
 public class Leg {
 
     @JsonProperty("startTime")
-    public Date startTime;
+    public long startTime;
     @JsonProperty("endTime")
-    public Date endTime;
+    public long endTime;
     @JsonProperty("departureDelay")
     public Integer departureDelay;
     @JsonProperty("arrivalDelay")

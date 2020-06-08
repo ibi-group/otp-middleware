@@ -97,8 +97,8 @@ public class PersistenceUtil {
         itinerary.duration = 1350L;
         itinerary.elevationGained = 0.0;
         itinerary.elevationLost = 0.0;
-        itinerary.endTime = new Date();
-        itinerary.startTime = new Date();
+        itinerary.endTime = 0L;
+        itinerary.startTime = 0L;
         itinerary.transfers = 0;
         itinerary.transitTime = 150;
         itinerary.waitingTime = 2;
@@ -106,8 +106,8 @@ public class PersistenceUtil {
         itinerary.walkLimitExceeded = false;
 
         Leg leg = new Leg();
-        leg.startTime = new Date();
-        leg.endTime = new Date();
+        leg.startTime = 0L;
+        leg.endTime = 0L;
         leg.departureDelay = 10;
         leg.arrivalDelay = 10;
         leg.realTime = true;

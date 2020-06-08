@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-import java.util.Date;
-
 /**
  * Plan response, point location information. Produced using http://www.jsonschema2pojo.org/
  */
@@ -33,7 +31,7 @@ public class PointLocation {
     @JsonProperty("lat")
     public Double lat;
     @JsonProperty("departure")
-    public Date departure;
+    public long departure;
     @JsonProperty("orig")
     public String orig;
     @JsonProperty("vertexType")
@@ -41,7 +39,7 @@ public class PointLocation {
     @JsonProperty("stopId")
     public String stopId;
     @JsonProperty("arrival")
-    public Date arrival;
+    public long arrival;
     @JsonProperty("stopIndex")
     public Integer stopIndex;
     @JsonProperty("stopSequence")

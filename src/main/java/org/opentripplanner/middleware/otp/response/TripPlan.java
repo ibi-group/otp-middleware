@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.otp.response;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -15,7 +14,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class TripPlan {
 
     /**  The time and date of travel */
-    public Date date = null;
+    public long date = 0L;
 
     /** The origin */
     public Place from = null;
@@ -29,7 +28,7 @@ public class TripPlan {
 
     public TripPlan() { }
 
-    public TripPlan(Place from, Place to, Date date) {
+    public TripPlan(Place from, Place to, long date) {
         this.from = from;
         this.to = to;
         this.date = date;
