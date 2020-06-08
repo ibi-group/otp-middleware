@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.gson.Gson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,15 +15,22 @@ import static spark.Spark.halt;
 public class JsonUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(JsonUtils.class);
-    private static Gson gson = new Gson();
+
+    // Gson is not suitable for parsing OTP itineraries (errors on parsing Dates).
+    // private static Gson gson = new Gson();
+
     private static final ObjectMapper mapper = new ObjectMapper();
 
     /**
      * Serialize an object into a JSON string representation.
-     * TODO: Replace with use of objectmapper?
      */
     public static String toJson(Object object) {
-        return gson.toJson(object);
+        try {
+            return mapper.writeValueAsString(object);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return "{}";
     }
 
     /**
@@ -37,12 +43,14 @@ public class JsonUtils {
     /** Utility method to parse generic object from Spark request body. */
     public static <T> T getPOJOFromRequestBody(Request req, Class<T> clazz) {
         try {
-            // TODO: Use Jackson instead? If we opt for Jackson, we must change JsonUtils#toJson to also use Jackson.
-            return gson.fromJson(req.body(), clazz);
-        } catch (Exception e) {
+            // This Gson call throws an error processing OTP itineraries sent from saving a trip.
+            //     gson.fromJson(req.body(), clazz);
+            // Jackson seems to process those objects correctly.
+            return mapper.readValue(req.body(), clazz);
+        } catch (JsonProcessingException e) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for " + clazz.getSimpleName(), e);
-            throw e;
         }
+        return null;
     }
 
     /** Utility method to parse generic object from Http response. */
