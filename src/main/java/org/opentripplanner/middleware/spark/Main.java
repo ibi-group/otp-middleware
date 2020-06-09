@@ -10,8 +10,8 @@ import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
-import org.opentripplanner.middleware.controllers.api.UserController;
 import org.opentripplanner.middleware.otp.OtpRequestProcessor;
+import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +22,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
-import static org.opentripplanner.middleware.persistence.Persistence.tripRequests;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class Main {
@@ -56,7 +55,7 @@ public class Main {
                 .endpoints(() -> List.of(
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
-                    new UserController(API_PREFIX)
+                    new OtpUserController(API_PREFIX)
                     // TODO Add other models.
                 ))
                 .generateDoc();
