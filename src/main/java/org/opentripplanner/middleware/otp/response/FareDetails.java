@@ -14,17 +14,12 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FareDetails {
 
-    @JsonProperty("regular")
+    // FIXME this may only ever return 'regular' making the other parameters redundant
     public List<FareComponent> regular = null;
-    @JsonProperty("student")
     public List<FareComponent> student = null;
-    @JsonProperty("senior")
     public List<FareComponent> senior = null;
-    @JsonProperty("tram")
     public List<FareComponent> tram = null;
-    @JsonProperty("special")
     public List<FareComponent> special = null;
-    @JsonProperty("youth")
     public List<FareComponent> youth = null;
 
 }

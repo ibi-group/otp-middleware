@@ -52,24 +52,25 @@ public class OtpDispatcherImpl implements OtpDispatcher {
     }
 
     /**
-     * Makes a call to the OTP server plan end point and converts, if possible, the response into POJOs. The POJOs,
-     * original response and status are wrapped in a single object and returned. It will fail if a connection is not
-     * made or is unable to parse the plan response.
+     * Makes a call to the OTP server plan end point and convert. The original response and status are wrapped in a
+     * single object and returned. It will fail if a connection is not made.
      */
     private OtpDispatcherResponse call(URI uri) {
-        OtpDispatcherResponse otpDispatcherResponse = null;
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(uri)
                 .timeout(Duration.ofSeconds(OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS))
                 .GET()
                 .build();
+
+        OtpDispatcherResponse otpDispatcherResponse = null;
+
+        // get plan response from OTP
         try {
-            // raw plan response
-            HttpResponse<String> OtpResponse = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
-            // convert raw plan response into concrete POJOs
-            Response response = JsonUtils.getPOJOFromHttpResponse(OtpResponse, Response.class);
-            otpDispatcherResponse = new OtpDispatcherResponse(OtpResponse.statusCode(), OtpResponse.body(), response);
+            HttpResponse<String> otpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
+            otpDispatcherResponse = new OtpDispatcherResponse();
+            otpDispatcherResponse.responseBody = otpResponse.body();
+            otpDispatcherResponse.statusCode = otpResponse.statusCode();
             LOG.debug("Response from OTP server: {}", otpDispatcherResponse.toString());
         } catch (InterruptedException | IOException e) {
             LOG.error("Error requesting OTP data", e);

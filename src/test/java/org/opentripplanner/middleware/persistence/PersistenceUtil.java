@@ -39,7 +39,7 @@ public class PersistenceUtil {
 
     public static TripSummary createTripSummary() {
         OtpDispatcherResponse response = getPlanFromOtp();
-        Response otpResponse = response.getResponse();
+        Response otpResponse = response.response;
         TripSummary tripSummary = new TripSummary(otpResponse.getPlan().from, otpResponse.getPlan().to, otpResponse.getError(), otpResponse.getPlan().itinerary, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
         System.out.println("Saved trip summary:" + tripSummary.toString());
@@ -48,7 +48,7 @@ public class PersistenceUtil {
 
     public static TripSummary createTripSummaryWithError() {
         OtpDispatcherResponse response = getPlanErrorFromOtp();
-        Response otpResponse = response.getResponse();
+        Response otpResponse = response.response;
         TripPlan tripPlan = otpResponse.getPlan();
         TripSummary tripSummary;
         if (tripPlan != null) {
