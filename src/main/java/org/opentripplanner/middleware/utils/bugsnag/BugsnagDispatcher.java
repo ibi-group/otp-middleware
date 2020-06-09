@@ -7,10 +7,7 @@ import java.util.List;
 
 public interface BugsnagDispatcher {
 
-    String BUGSNAG_URL = "https://api.bugsnag.com";
-    String ORGANIZATION_END_POINT = "/user/organizations";
-
-    Organization getOrganization();
-    List<Project> getProjects();
+    List<Organization> getOrganization();
+    List<Project> getProjects(String organizationId);
     List<Error> getAllProjectErrors(String projectName);
 }

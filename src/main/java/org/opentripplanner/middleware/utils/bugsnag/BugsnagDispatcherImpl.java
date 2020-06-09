@@ -1,32 +1,35 @@
 package org.opentripplanner.middleware.utils.bugsnag;
 
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.bugsnag.response.Organization;
 import org.opentripplanner.middleware.utils.bugsnag.response.Project;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
 public class BugsnagDispatcherImpl implements BugsnagDispatcher {
-    String BugsnagUser = getConfigPropertyAsText("BUGSNAG_USER");
-    String BugsnagPassword = getConfigPropertyAsText("BUGSNAG_PASSWORD");
 
-    public Organization getOrganization() {
+    String BUGSNAG_URL = "https://api.bugsnag.com";
+    String ORGANIZATION_END_POINT = "/user/organizations/";
+    String PROJECT_END_POINT = "/organizations/{organization_Id}/projects";
 
-        String auth = BugsnagUser + ":" + BugsnagPassword;
-        byte[] basicAuth = Base64.encodeBase64(auth.getBytes(StandardCharsets.UTF_8));
+    String bugsnagUser = getConfigPropertyAsText("BUGSNAG_USER");
+    String bugsnagPassword = getConfigPropertyAsText("BUGSNAG_PASSWORD");
+
+    public List<Organization> getOrganization() {
 
         URI uri = HttpUtils.buildUri(BUGSNAG_URL, ORGANIZATION_END_POINT);
-        Organization organization = HttpUtils.call(uri, Organization.class, basicAuth);
-        return organization;
+        Organization[] organizations = HttpUtils.callWithBasicAuth(uri, Organization[].class, bugsnagUser, bugsnagPassword);
+        return (organizations == null) ? null : Arrays.asList(organizations);
     }
 
-    public List<Project> getProjects() {
-        return null;
+    public List<Project> getProjects(String organizationId) {
+        URI uri = HttpUtils.buildUri(BUGSNAG_URL, PROJECT_END_POINT.replace("{organization_Id}", organizationId));
+        Project[] projects = HttpUtils.callWithBasicAuth(uri, Project[].class, bugsnagUser, bugsnagPassword);
+        return (projects == null) ? null : Arrays.asList(projects);
     }
 
     public List<Error> getAllProjectErrors(String projectName) {
