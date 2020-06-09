@@ -115,7 +115,7 @@ public class PersistenceUtil {
         leg.pathway = true;
         leg.mode = "walk";
 
-        PointLocation place = new PointLocation();
+        Place place = new Place();
         place.lat = 28.5398938204469;
         place.lon = -81.3772773742676;
         place.name = "28.54894, -81.38971";
