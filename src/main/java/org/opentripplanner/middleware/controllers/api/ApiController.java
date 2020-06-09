@@ -163,6 +163,15 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
+     * HTTP endpoint to get one entity specified by a field value.
+     */
+    private T getOneByField(Request req, Response res) {
+        String attribute = getParamFromRequest(req, "attribute");
+        String value = getParamFromRequest(req, "value");
+        return getFirstObjectByFieldValue(req, attribute, value);
+    }
+
+    /**
      * HTTP endpoint to delete one entity specified by ID.
      */
     private String deleteOne(Request req, Response res) {

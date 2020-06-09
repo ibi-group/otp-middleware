@@ -22,11 +22,11 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * Implementation of the {@link ApiController} abstract class for managing users. This controller connects with Auth0
  * services using the hooks provided by {@link ApiController}.
  */
-public class UserController extends ApiController<OtpUser> {
+public class OtpUserController extends ApiController<OtpUser> {
     static final String NO_USER_WITH_AUTH0_ID_MESSAGE = "No user with auth0UserID=%s found.";
     private static final String TOKEN_PATH = "/fromtoken";
 
-    public UserController(String apiPrefix){
+    public OtpUserController(String apiPrefix){
         super(apiPrefix, Persistence.otpUsers, "secure/user");
     }
 
@@ -91,7 +91,7 @@ public class UserController extends ApiController<OtpUser> {
         OtpUser user = profile.otpUser;
 
         if (user == null) {
-            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.user_id), null);
+            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.auth0UserId), null);
         }
         return user;
     }
