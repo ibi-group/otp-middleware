@@ -6,11 +6,11 @@ import org.opentripplanner.middleware.utils.bugsnag.BugsnagDispatcherImpl;
 import org.opentripplanner.middleware.utils.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.utils.bugsnag.response.Organization;
 import org.opentripplanner.middleware.utils.bugsnag.response.Project;
+import org.opentripplanner.middleware.utils.bugsnag.response.ProjectError;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BugsnagTest extends OtpMiddlewareTest {
 
@@ -32,7 +32,14 @@ public class BugsnagTest extends OtpMiddlewareTest {
         for (Organization organization : organizations) {
             System.out.println(organization);
         }
-        assertNotNull(organizations);
+        assertTrue(organizations.size() > 0);
+    }
+
+    private Project getFirstProject() {
+        Organization organization = getFirstOrganization();
+        BugsnagDispatcher bd = new BugsnagDispatcherImpl();
+        List<Project> projects = bd.getProjects(organization.id);
+        return projects.get(0);
     }
 
     @Test
@@ -43,7 +50,15 @@ public class BugsnagTest extends OtpMiddlewareTest {
         for (Project project : projects) {
             System.out.println(project);
         }
-        assertNotNull(projects);
+        assertTrue(projects.size() > 0);
+    }
+
+    @Test
+    public void getAllProjectErrors() {
+        Project project = getFirstProject();
+        BugsnagDispatcher bd = new BugsnagDispatcherImpl();
+        List<ProjectError> errors = bd.getAllProjectErrors(project.id);
+        assertTrue(errors.size() > 0);
     }
 
 }
