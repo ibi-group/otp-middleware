@@ -33,7 +33,6 @@ public class OtpRequestProcessor {
      * process and all exceptions seamlessly so as not to affect the response provided to the requester.
      */
     public static String planning(Request request, spark.Response response) {
-
         if (OTP_SERVER == null) {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
             return null;
@@ -45,7 +44,7 @@ public class OtpRequestProcessor {
             batchId = "-1";
         }
 
-        // attempt to get response from OTP server based on requester's parameters
+        // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcher otpDispatcher = new OtpDispatcherImpl(OTP_SERVER);
         OtpDispatcherResponse otpDispatcherResponse = otpDispatcher.getPlan(request.queryString(), OTP_SERVER_PLAN_END_POINT);
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
@@ -57,45 +56,40 @@ public class OtpRequestProcessor {
         otpDispatcherResponse.response = JsonUtils.getPOJOFromJSON(otpDispatcherResponse.responseBody, Response.class);
         LOG.debug("OTP server response as POJOs: {}", otpDispatcherResponse.response);
 
+        // Dispatch request to OTP and store request/response summary if user elected to store trip history.
+        long tripStorageStartTime = System.currentTimeMillis();
+        // If the Auth header is present, this indicates that the request was made by a logged in user. This indicates
+        // that we should store trip history (but we verify this preference before doing so).
+        // FIXME: Determine how much time the Auth checking/request storage takes.
         if (isAuthHeaderPresent(request)) {
             Auth0Connection.checkUser(request);
-        }
-
-        Auth0UserProfile profile = Auth0Connection.getUserFromRequest(request);
-
-        if (profile == null || profile.otpUser == null || !profile.otpUser.storeTripHistory) {
-            LOG.debug("Anonymous user or user does not want trip history stored");
-        }
-
-        // only save trip details if the user has given consent and a response from OTP is provided
-        if (profile != null && profile.otpUser.storeTripHistory && otpDispatcherResponse.response != null) {
-
-            TripRequest tripRequest = new TripRequest(profile.otpUser.id, batchId, request.queryParams("fromPlace"),
-                request.queryParams("toPlace"), request.queryString());
-
-            TripPlan tripPlan = otpDispatcherResponse.response.getPlan();
-
-            TripSummary tripSummary;
-            if (tripPlan != null) {
-                tripSummary = new TripSummary(otpDispatcherResponse.response.getPlan().from,
-                    otpDispatcherResponse.response.getPlan().to,
-                    otpDispatcherResponse.response.getError(),
-                    otpDispatcherResponse.response.getPlan().itinerary,
-                    tripRequest.id);
+            Auth0UserProfile profile = Auth0Connection.getUserFromRequest(request);
+            final boolean storeTripHistory = profile != null && profile.otpUser != null && profile.otpUser.storeTripHistory;
+            // only save trip details if the user has given consent and a response from OTP is provided
+            if (!storeTripHistory) {
+                LOG.debug("Anonymous user or user does not want trip history stored");
+            } else if (otpDispatcherResponse.response == null) {
+                LOG.warn("OTP response is null, cannot save trip history for user!");
             } else {
-                tripSummary = new TripSummary(otpDispatcherResponse.response.getError(), tripRequest.id);
+                TripRequest tripRequest = new TripRequest(profile.otpUser.id, batchId, request.queryParams("fromPlace"),
+                    request.queryParams("toPlace"), request.queryString());
+                // only save trip summary if the trip request was saved
+                if (saveTripRequest(tripRequest)) {
+                    TripPlan tripPlan = otpDispatcherResponse.response.plan;
+                    TripSummary tripSummary;
+                    if (tripPlan != null) {
+                        tripSummary = new TripSummary(tripPlan, otpDispatcherResponse.response.error, tripRequest.id);
+                    } else {
+                        tripSummary = new TripSummary(otpDispatcherResponse.response.error, tripRequest.id);
+                    }
+                    saveTripSummary(tripSummary);
+                } else {
+                    LOG.warn("Unable to save trip request, orphaned trip summary not saved");
+                }
             }
-
-            // only save trip summary if the trip request was saved
-            if (saveTripRequest(tripRequest)) {
-                saveTripSummary(tripSummary);
-            } else {
-                LOG.warn("Unable to save trip request, orphaned trip summary not saved");
-                // TODO bugsnag here
-            }
+            LOG.debug("Trip storage added {} ms", System.currentTimeMillis() - tripStorageStartTime);
         }
-
-        // provide response to calling UI as received from OTP server
+        // provide response to caller as received from OTP server
         response.type("application/json");
         response.status(otpDispatcherResponse.statusCode);
         return otpDispatcherResponse.responseBody;
