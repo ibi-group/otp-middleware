@@ -129,7 +129,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
         List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
-        assertEquals(result.size(),tripRequests.size());
+        assertEquals(result.size(), tripRequests.size());
 
         // tidy up
         deleteTripRequests(tripRequests);
@@ -161,7 +161,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
         List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
-        assertEquals(result.size(),tripRequests.size());
+        assertEquals(result.size(), tripRequests.size());
 
         // tidy up
         deleteTripRequests(tripRequests);
@@ -184,7 +184,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
         List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
-        assertEquals(result.size(),tripRequests.size());
+        assertEquals(result.size(), tripRequests.size());
 
         // tidy up
         deleteTripRequests(tripRequests);
@@ -203,7 +203,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
         List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
-        assertEquals(result.size(),tripRequests.size());
+        assertEquals(result.size(), tripRequests.size());
 
         // tidy up
         deleteTripRequests(tripRequests);

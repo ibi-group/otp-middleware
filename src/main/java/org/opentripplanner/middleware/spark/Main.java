@@ -19,7 +19,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
-import static org.opentripplanner.middleware.persistence.Persistence.tripRequests;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class Main {
@@ -53,8 +52,8 @@ public class Main {
                 .endpoints(() -> List.of(
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
-                    new UserController(API_PREFIX),
-                    new MonitorTripController(API_PREFIX)
+                    new MonitorTripController(API_PREFIX),
+                    new OtpUserController(API_PREFIX)
                     // TODO Add other models.
                 ))
                 .generateDoc();

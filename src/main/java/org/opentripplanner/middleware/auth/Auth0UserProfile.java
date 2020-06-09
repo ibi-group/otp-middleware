@@ -2,13 +2,11 @@ package org.opentripplanner.middleware.auth;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
-import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
-
-import java.util.Date;
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -20,19 +18,11 @@ public class Auth0UserProfile {
     public final OtpUser otpUser;
     public final ApiUser apiUser;
     public final AdminUser adminUser;
-    public String email;
-    public boolean email_verified;
-    public Date created_at;
-    public String name;
-    public final String user_id;
+    public final String auth0UserId;
 
     /** Constructor is only used for creating a test user */
-    private Auth0UserProfile(String email, String user_id) {
-        this.email = email;
-        this.user_id = user_id;
-        this.created_at = new Date();
-        this.email_verified = false;
-        this.name = "John Doe";
+    private Auth0UserProfile(String auth0UserId) {
+        this.auth0UserId = auth0UserId;
         otpUser = new OtpUser();
         apiUser = new ApiUser();
         adminUser = new AdminUser();
@@ -40,16 +30,17 @@ public class Auth0UserProfile {
 
     /** Create a user profile from the request's JSON web token. Check persistence for stored user */
     public Auth0UserProfile(DecodedJWT jwt) {
-        this.user_id = jwt.getClaim("sub").asString();
-        otpUser = Persistence.otpUsers.getOneFiltered(eq("auth0UserId", user_id));
-        adminUser = Persistence.adminUsers.getOneFiltered(eq("auth0UserId", user_id));
-        apiUser = Persistence.apiUsers.getOneFiltered(eq("auth0UserId", user_id));
+        this.auth0UserId = jwt.getClaim("sub").asString();
+        Bson withAuth0UserId = eq("auth0UserId", auth0UserId);
+        otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
+        adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
+        apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
     }
 
     /**
      * Utility method for creating a test admin (with application-admin permissions) user.
      */
     public static Auth0UserProfile createTestAdminUser() {
-        return new Auth0UserProfile("mock@example.com", "user_id:string");
+        return new Auth0UserProfile("user_id:string");
     }
 }
