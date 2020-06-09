@@ -53,17 +53,16 @@ public class JsonUtils {
         return null;
     }
 
-    /** Utility method to parse generic object from Http response. */
-    public static <T> T getPOJOFromHttpResponse(HttpResponse<String> response, Class<T> clazz) {
+    /** Utility method to parse generic object from JSON String. */
+    public static <T> T getPOJOFromJSON(String json, Class<T> clazz) {
         T pojo = null;
         try {
-            pojo = mapper.readValue(response.body(), clazz);
+            pojo = mapper.readValue(json, clazz);
         } catch (JsonProcessingException e) {
-            LOG.error("Unable to get POJO from http response", e);
+            LOG.error("Unable to get POJO from json", e);
         }
         return pojo;
     }
-
 
     /**
      * Wrapper around Spark halt method that formats message as JSON using {@link #formatJSON}.

@@ -24,20 +24,7 @@ public class TripPlan {
     public Place to = null;
 
     /** A list of possible itineraries */
-    @JsonProperty(value="itineraries")
-    public List<Itinerary> itinerary = new ArrayList<>();
-
-    public TripPlan() { }
-
-    public TripPlan(Place from, Place to, Date date) {
-        this.from = from;
-        this.to = to;
-        this.date = date;
-    }
-
-    public void addItinerary(Itinerary itinerary) {
-        this.itinerary.add(itinerary);
-    }
+    public List<Itinerary> itineraries = new ArrayList<>();
 
     @Override
     public String toString() {
@@ -45,7 +32,7 @@ public class TripPlan {
                 "date=" + date +
                 ", from=" + from +
                 ", to=" + to +
-                ", itinerary=" + itinerary +
+                ", itineraries=" + itineraries +
                 '}';
     }
 }

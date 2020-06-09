@@ -12,36 +12,18 @@ public class OtpDispatcherResponse {
     /**
      * Status code. Status code returned with response from an OTP server.
      */
-    private final int statusCode;
+    public int statusCode;
 
     /**
      * Response Body. Response Body returned with response from an OTP server.
      */
-    private final String responseBody;
+    public String responseBody = null;
 
     /**
      * Response. POJO version of response from an OTP server.
      */
-    private final Response response;
+    public Response response = null;
 
-
-    public OtpDispatcherResponse(int statusCode, String responseBody, Response response) {
-        this.statusCode = statusCode;
-        this.responseBody = responseBody;
-        this.response = response;
-    }
-
-    public int getStatusCode() {
-        return statusCode;
-    }
-
-    public String getResponseBody() {
-        return responseBody;
-    }
-
-    public Response getResponse() {
-        return response;
-    }
 
     @Override
     public String toString() {

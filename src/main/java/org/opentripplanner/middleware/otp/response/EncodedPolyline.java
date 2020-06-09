@@ -4,14 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * Plan response, currency information. Produced using http://www.jsonschema2pojo.org/
+ * Plan response, encoded polyline information. Produced using http://www.jsonschema2pojo.org/
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Currency {
-
-    public String symbol;
-    public String currency;
-    public Integer defaultFractionDigits;
-    public String currencyCode;
+public class EncodedPolyline {
+    public String points;
+    public String levels;
+    public Integer length;
 }
