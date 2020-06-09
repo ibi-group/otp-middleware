@@ -32,7 +32,7 @@ public class OtpUserController extends ApiController<OtpUser> {
 
     @Override
     protected void buildEndPoint(ApiEndpoint baseEndPoint) {
-        LOG.info("Registering user/fromtoken path.");
+        LOG.info("Registering path {}.", ROOT_ROUTE + TOKEN_PATH);
 
         // Add the user token route BEFORE the regular CRUD methods
         // (otherwise, /fromtoken requests would be considered
@@ -40,7 +40,7 @@ public class OtpUserController extends ApiController<OtpUser> {
         ApiEndpoint modifiedEndpoint = baseEndPoint
             // Get user from token.
             .get(path(ROOT_ROUTE + TOKEN_PATH)
-                .withDescription("Retrieves a User entity (based on auth0UserId from request token).")
+                .withDescription("Retrieves an OtpUser entity using an Auth0 access token passed in an Authorization header.")
                 .withResponseType(persistence.clazz),
                 this::getUserFromRequest, JsonUtils::toJson
             )
