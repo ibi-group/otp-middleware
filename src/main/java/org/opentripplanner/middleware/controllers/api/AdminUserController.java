@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -21,6 +22,11 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public class AdminUserController extends ApiController<AdminUser> {
     private static final Logger LOG = LoggerFactory.getLogger(AdminUserController.class);
 
+    /**
+     * Instantiate the {@link AdminUser} endpoints. Note: this controller must sit behind the /admin path. This ensures
+     * that the requesting user is checked for admin authorization (handled by
+     * {@link org.opentripplanner.middleware.auth.Auth0Connection#checkUserIsAdmin}).
+     */
     public AdminUserController(String apiPrefix){
         super(apiPrefix, Persistence.adminUsers, "admin/user");
     }

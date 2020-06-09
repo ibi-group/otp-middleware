@@ -9,7 +9,7 @@ import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
-import org.opentripplanner.middleware.controllers.api.UserController;
+import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,7 @@ public class Main {
                 .endpoints(() -> List.of(
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
-                    new UserController(API_PREFIX)
+                    new OtpUserController(API_PREFIX)
                     // TODO Add other models.
                 ))
                 .generateDoc();

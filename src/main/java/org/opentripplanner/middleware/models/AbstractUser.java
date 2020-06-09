@@ -20,7 +20,7 @@ public abstract class AbstractUser extends Model {
     // TODO: Add personal info (name, phone, etc.)
     /**
      * Auth0 user ID, which we initialize to a random value, but when we link this user up with Auth0 we update this
-     * value, so the stored user
+     * value, so the stored user will contain the value from Auth0 (e.g., "auth0|abcd1234").
      */
     public String auth0UserId = UUID.randomUUID().toString();
     /** Whether a user is also a Data Tools user */
@@ -38,7 +38,7 @@ public abstract class AbstractUser extends Model {
     @Override
     public boolean canBeManagedBy(Auth0UserProfile user) {
         // If the user is attempting to update someone else's profile, they must be an admin.
-        boolean isManagingSelf = this.auth0UserId.equals(user.user_id);
+        boolean isManagingSelf = this.auth0UserId.equals(user.auth0UserId);
         if (isManagingSelf) {
             return true;
         } else {
