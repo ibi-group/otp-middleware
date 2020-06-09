@@ -79,7 +79,7 @@ public class TripHistoryController {
                     paramFromDate));
         }
 
-        Bson filter = buildFilter(userId,fromDate, toDate);
+        Bson filter = buildFilter(userId, fromDate, toDate);
         return JsonUtils.toJson(tripRequest.getFilteredWithLimit(filter, limit));
     }
 
