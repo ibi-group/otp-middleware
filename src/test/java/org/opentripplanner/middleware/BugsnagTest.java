@@ -7,6 +7,7 @@ import org.opentripplanner.middleware.utils.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.utils.bugsnag.response.Organization;
 import org.opentripplanner.middleware.utils.bugsnag.response.Project;
 import org.opentripplanner.middleware.utils.bugsnag.response.ProjectError;
+import org.opentripplanner.middleware.utils.bugsnag.response.event.EventException;
 
 import java.util.List;
 
@@ -61,4 +62,18 @@ public class BugsnagTest extends OtpMiddlewareTest {
         assertTrue(errors.size() > 0);
     }
 
+    private ProjectError getFirstError() {
+        Project project = getFirstProject();
+        BugsnagDispatcher bd = new BugsnagDispatcherImpl();
+        List<ProjectError> errors = bd.getAllProjectErrors(project.id);
+        return errors.get(0);
+    }
+
+    @Test
+    public void getAllProjectErrorEvents() {
+        ProjectError projectError = getFirstError();
+        BugsnagDispatcher bd = new BugsnagDispatcherImpl();
+        List<EventException> eventExceptions = bd.getAllErrorEvents(projectError.projectId, projectError.id);
+        assertTrue(eventExceptions.size() > 0);
+    }
 }
