@@ -47,7 +47,7 @@ public class TripHistoryController {
 
         TypedPersistence<TripRequest> tripRequest = Persistence.tripRequests;
 
-        final String userId = HttpUtils.getParamFromRequest(request, "userId", false);
+        final String userId = HttpUtils.getRequiredParamFromRequest(request, "userId", false);
 
         isAuthorized(userId, request);
 
@@ -55,7 +55,7 @@ public class TripHistoryController {
 
         String paramLimit = null;
         try {
-            paramLimit = HttpUtils.getParamFromRequest(request, LIMIT_PARAM_NAME, true);
+            paramLimit = HttpUtils.getRequiredParamFromRequest(request, LIMIT_PARAM_NAME, true);
             if (paramLimit != null) {
                 limit = Integer.parseInt(paramLimit);
                 if (limit <= 0) {
@@ -67,10 +67,10 @@ public class TripHistoryController {
                 paramLimit, DEFAULT_LIMIT, e);
         }
 
-        String paramFromDate = HttpUtils.getParamFromRequest(request, FROM_DATE_PARAM_NAME, true);
+        String paramFromDate = HttpUtils.getRequiredParamFromRequest(request, FROM_DATE_PARAM_NAME, true);
         Date fromDate = getDate(request, FROM_DATE_PARAM_NAME, paramFromDate, LocalTime.MIDNIGHT);
 
-        String paramToDate = HttpUtils.getParamFromRequest(request, TO_DATE_PARAM_NAME, true);
+        String paramToDate = HttpUtils.getRequiredParamFromRequest(request, TO_DATE_PARAM_NAME, true);
         Date toDate = getDate(request, TO_DATE_PARAM_NAME, paramToDate, LocalTime.MAX);
 
         if (fromDate != null && toDate != null && toDate.before(fromDate)) {
@@ -107,7 +107,8 @@ public class TripHistoryController {
     }
 
     /**
-     * Get date from request parameter and convert to java.util.Date at a specific time of day
+     * Get date from request parameter and convert to java.util.Date at a specific time of day. The date conversion
+     * is based on the system time zone.
      */
     private static Date getDate(Request request, String paramName, String paramValue, LocalTime timeOfDay) {
 

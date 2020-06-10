@@ -37,8 +37,8 @@ public class PersistenceUtil {
         return tripRequest;
     }
 
-    public static TripSummary createTripSummary() {
-        OtpDispatcherResponse response = getPlanFromOtp();
+    public static TripSummary createTripSummary(String otpServer, String planEndpoint) {
+        OtpDispatcherResponse response = getPlanFromOtp(otpServer, planEndpoint);
         Response otpResponse = response.response;
         TripSummary tripSummary = new TripSummary(otpResponse.plan, otpResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
@@ -46,8 +46,8 @@ public class PersistenceUtil {
         return tripSummary;
     }
 
-    public static TripSummary createTripSummaryWithError() {
-        OtpDispatcherResponse response = getPlanErrorFromOtp();
+    public static TripSummary createTripSummaryWithError(String otpServer, String planEndpoint) {
+        OtpDispatcherResponse response = getPlanErrorFromOtp(otpServer, planEndpoint);
         Response otpResponse = response.response;
         TripPlan tripPlan = otpResponse.plan;
         TripSummary tripSummary;

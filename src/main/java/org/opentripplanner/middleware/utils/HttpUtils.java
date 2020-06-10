@@ -8,9 +8,9 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public class HttpUtils {
 
     /**
-     * Get entity attribute value from request.
+     * Get entity attribute value from request. If nulls are not allowed, halt with error message.
      */
-    public static String getParamFromRequest(Request req, String paramName, boolean allowNull) {
+    public static String getRequiredParamFromRequest(Request req, String paramName, boolean allowNull) {
         String paramValue = req.queryParams(paramName);
         if (paramValue == null && !allowNull) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "The parameter name " + paramName + " must be provided.");
