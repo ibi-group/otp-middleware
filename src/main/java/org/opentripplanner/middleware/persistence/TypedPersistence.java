@@ -17,7 +17,6 @@ import java.util.Date;
 import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Updates.set;
 
 /**
  * This provides some abstraction over the Mongo Java driver for storing a particular kind of POJO.

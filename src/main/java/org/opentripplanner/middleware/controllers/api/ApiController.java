@@ -67,11 +67,11 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      */
     @Override
     public void bind(final SparkSwagger restApi) {
-        ApiEndpoint apiEndPoint = restApi.endpoint(
+        ApiEndpoint apiEndpoint = restApi.endpoint(
             endpointPath(ROOT_ROUTE).withDescription("Interface for querying and managing '" + classToLowercase + "' entities."),
             (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase)
         );
-        buildEndPoint(apiEndPoint);
+        buildEndpoint(apiEndpoint);
     }
 
     /**
@@ -87,7 +87,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * a request with /path/subpath will be handled by the method for /path/subpath.
      * @param baseEndPoint The end point to which to add the methods.
      */
-    protected void buildEndPoint(ApiEndpoint baseEndPoint) {
+    protected void buildEndpoint(ApiEndpoint baseEndPoint) {
         LOG.info("Registering routes and enabling docs for {}", ROOT_ROUTE);
 
         // Careful here!
@@ -297,13 +297,14 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Get entity ID from request.
      */
     private String getIdFromRequest(Request req) {
-        return getParamFromRequest(req, "id");
+        return getRequiredParamFromRequest(req, "id");
     }
 
     /**
-     * Get entity attribute value from request.
+     * Get a request parameter value.
+     * This method will halt the request if paramName is not provided in the request.
      */
-    private String getParamFromRequest(Request req, String paramName) {
+    private String getRequiredParamFromRequest(Request req, String paramName) {
         String paramValue = req.params(paramName);
         if (paramValue == null) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide parameter name.");
