@@ -18,7 +18,8 @@ public class DateUtils {
     private static final Logger LOG = LoggerFactory.getLogger(DateUtils.class);
 
     /**
-     * Get {@Link java.time.LocalDate} from provided value base on expected date format.
+     * Get {@Link java.time.LocalDate} from provided value base on expected date format. The date conversion
+     * is based on the system time zone.
      */
     public static LocalDate getDateFromParam(String paramName, String paramValue, String expectedDatePattern)
         throws DateTimeParseException {
