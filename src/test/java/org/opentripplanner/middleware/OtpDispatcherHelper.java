@@ -5,8 +5,6 @@ import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
-
 /**
  * Used to provide real plan responses from OTP
  */
