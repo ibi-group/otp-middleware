@@ -158,7 +158,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             Bson filter = Filters.eq("_id", requestingUser.otpUser.id);
             return persistence.getFiltered(filter);
         } else {
-            // FIXME assumes all non admin user collections will have a user id field
             Bson filter = Filters.eq("userId", requestingUser.otpUser.id);
             return persistence.getFiltered(filter);
         }

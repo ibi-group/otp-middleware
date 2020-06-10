@@ -25,12 +25,16 @@ public class JsonUtils {
      * Serialize an object into a JSON string representation.
      */
     public static String toJson(Object object) {
+
+        String message;
         try {
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
+            message = e.getMessage();
         }
-        return "{}";
+
+        return String.format("{Error: Unable to serialize object: %s. %s.", object.toString(), message);
     }
 
     /**

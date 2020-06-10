@@ -67,7 +67,7 @@ public class MonitoredTrip extends Model {
     /**
      * The trips itinerary
      */
-    public List<Itinerary> itinerary;
+    public Itinerary itinerary;
 
     //TODO, agree on and implement these parameters
     /**

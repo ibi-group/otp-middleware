@@ -9,6 +9,8 @@ import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
+import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -16,7 +18,8 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * with Auth0 services using the hooks provided by {@link ApiController}.
  */
 public class MonitorTripController extends ApiController<MonitoredTrip> {
-    private static final long MAXIMUM_ALLOWED_MONITORED_TRIPS = 5;
+    private static final int MAXIMUM_PERMITTED_MONITORED_TRIPS
+        = getConfigPropertyAsInt("MAXIMUM_PERMITTED_MONITORED_TRIPS", 5);
 
     public MonitorTripController(String apiPrefix) {
         super(apiPrefix, Persistence.monitoredTrip, "secure/monitortrip");
@@ -25,7 +28,7 @@ public class MonitorTripController extends ApiController<MonitoredTrip> {
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         isAuthorized(monitoredTrip.userId, req);
-        reachedMaximum(monitoredTrip.userId, req);
+        verifyBelowMaxNumTrips(monitoredTrip.userId, req);
 
         return monitoredTrip;
     }
@@ -45,13 +48,13 @@ public class MonitorTripController extends ApiController<MonitoredTrip> {
     /**
      * Confirm that the maximum number of saved monitored trips has not been reached
      */
-    private void reachedMaximum(String userId, Request request) {
+    private void verifyBelowMaxNumTrips(String userId, Request request) {
 
         // filter monitored trip on user id to find out how many have already been saved
         Bson filter = Filters.and(eq("userId", userId));
         long count = this.persistence.getCountFiltered(filter);
-        if (count >= MAXIMUM_ALLOWED_MONITORED_TRIPS) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Maximum amount of saved monitored trips reached. Maximum = " + MAXIMUM_ALLOWED_MONITORED_TRIPS);
+        if (count >= MAXIMUM_PERMITTED_MONITORED_TRIPS) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Maximum permitted saved monitored trips reached. Maximum = " + MAXIMUM_PERMITTED_MONITORED_TRIPS);
         }
     }
 }

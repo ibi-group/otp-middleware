@@ -127,9 +127,7 @@ public class PersistenceUtil {
         legs.add(leg);
         itinerary.legs = legs;
 
-        List<Itinerary> itineraries = new ArrayList<>();
-        itineraries.add(itinerary);
-        monitoredTrip.itinerary = itineraries;
+        monitoredTrip.itinerary = itinerary;
 
         Persistence.monitoredTrip.create(monitoredTrip);
         return monitoredTrip;

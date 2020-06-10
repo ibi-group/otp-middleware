@@ -187,4 +187,22 @@ public class Main {
             return defaultValue;
         }
     }
+
+    /**
+     * @return a config value (nested fields defined by dot notation "data.use_s3_storage") as an int or the default
+     * value if the config value is not defined (null) or cannot be converted to an int.
+     */
+    public static int getConfigPropertyAsInt(String name, int defaultValue) {
+
+        int value = defaultValue;
+
+        try {
+            JsonNode node = getConfigProperty(name);
+            value = Integer.parseInt(node.asText());
+        } catch (NumberFormatException e) {
+            LOG.error("Unable to parse {}. Using default: {}", name, defaultValue, e);
+        }
+        return value;
+    }
+
 }
