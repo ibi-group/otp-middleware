@@ -5,9 +5,12 @@ import com.bugsnag.Bugsnag;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
-import org.opentripplanner.middleware.controllers.api.ApiControllerImpl;
-import org.opentripplanner.middleware.models.User;
+import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.controllers.api.AdminUserController;
+import org.opentripplanner.middleware.controllers.api.ApiUserController;
+import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +20,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
+
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
@@ -33,25 +38,36 @@ public class Main {
         // Connect to MongoDB.
         Persistence.initialize();
 
+        initializeHttpEndpoints();
+    }
+
+    private static void initializeHttpEndpoints() throws IOException {
         // Must start spark explicitly to use spark-swagger.
         // https://github.com/manusant/spark-swagger#endpoints-binding
         Service spark = Service.ignite().port(Service.SPARK_DEFAULT_PORT);
 
-        // Define some endpoints.
-        // spark.staticFileLocation("/public");
-
         // websocket() must be declared before the other get() endpoints.
         // available at http://localhost:4567/async-websocket
         spark.webSocket("/async-websocket", BasicOtpWebSocketController.class);
-
-
-        SparkSwagger.of(spark)
+        try {
+            SparkSwagger.of(spark)
                 // Register API routes.
                 .endpoints(() -> List.of(
-                        new ApiControllerImpl<User>(API_PREFIX, Persistence.users)
-                        // TODO Add other models.
+                    new AdminUserController(API_PREFIX),
+                    new ApiUserController(API_PREFIX),
+                    new OtpUserController(API_PREFIX)
+                    // TODO Add other models.
                 ))
                 .generateDoc();
+        } catch (RuntimeException e) {
+            LOG.error("Error initializing API controllers", e);
+            System.exit(1);
+        }
+        spark.options("/*",
+            (request, response) -> {
+                logMessageAndHalt(request, HttpStatus.OK_200, "OK");
+                return "OK";
+            });
 
         // available at http://localhost:4567/hello
         spark.get("/hello", (req, res) -> "(Sparks) OTP Middleware says Hi!");
@@ -63,15 +79,27 @@ public class Main {
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
 
         spark.before(API_PREFIX + "secure/*", ((request, response) -> {
-            // TODO Add Auth0 authentication to requests.
-//            Auth0Connection.checkUser(request);
-//            Auth0Connection.checkEditPrivileges(request);
+            if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
+        }));
+        spark.before(API_PREFIX + "admin/*", ((request, response) -> {
+            if (!request.requestMethod().equals("OPTIONS")) {
+                Auth0Connection.checkUserIsAdmin(request, response);
+            }
         }));
 
         // Return "application/json" and set gzip header for all API routes.
         spark.before(API_PREFIX + "*", (request, response) -> {
             response.type("application/json"); // Handled by API response documentation. If specified, "Try it out" feature in API docs fails.
             response.header("Content-Encoding", "gzip");
+        });
+
+        /////////////////    Final API routes     /////////////////////
+
+        // Return 404 for any API path that is not configured.
+        // IMPORTANT: Any API paths must be registered before this halt.
+        spark.get(API_PREFIX + "*", (request, response) -> {
+            logMessageAndHalt(request, 404, "No API route configured for this path.");
+            return null;
         });
     }
 
@@ -99,16 +127,35 @@ public class Main {
      * JsonNode. Checks env.yml and returns null if property is not found.
      */
     private static JsonNode getConfigProperty(String name) {
-        String parts[] = name.split("\\.");
+        String[] parts = name.split("\\.");
         JsonNode node = envConfig;
-        for (int i = 0; i < parts.length; i++) {
-            if(node == null) {
+        for (String part : parts) {
+            if (node == null) {
                 LOG.warn("Config property {} not found", name);
                 return null;
             }
-            node = node.get(parts[i]);
+            node = node.get(part);
         }
         return node;
+    }
+
+    /**
+     * Convenience function to check existence of a config property (nested fields defined by dot notation
+     * "data.use_s3_storage") in either server.yml or env.yml.
+     */
+    public static boolean hasConfigProperty(String name) {
+        // try the server config first, then the main config
+        return hasConfigProperty(envConfig, name);
+    }
+
+    private static boolean hasConfigProperty(JsonNode config, String name) {
+        String[] parts = name.split("\\.");
+        JsonNode node = config;
+        for (String part : parts) {
+            if (node == null) return false;
+            node = node.get(part);
+        }
+        return node != null;
     }
 
     /**

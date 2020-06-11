@@ -147,6 +147,18 @@
             <artifactId>json</artifactId>
             <version>20190722</version>
         </dependency>
+        <!--  Handles authentication/JWT signing with Auth0 -->
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>3.10.1</version>
+        </dependency>
+        <!-- Provides a util for getting Auth0 public key -->
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>jwks-rsa</artifactId>
+            <version>0.9.0</version>
+        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
@@ -212,11 +224,25 @@
             <version>3.11.2</version>
         </dependency>
 
+        <!-- Used for things like validating email addresses. -->
+        <dependency>
+            <groupId>commons-validator</groupId>
+            <artifactId>commons-validator</artifactId>
+            <version>1.4.1</version>
+        </dependency>
+
         <!-- To create Swagger API docs with spark-java -->
         <dependency>
             <groupId>com.beerboy.ss</groupId>
             <artifactId>spark-swagger</artifactId>
             <version>1.0.0.48</version>
+        </dependency>
+
+        <!-- Auth0 Client library for using Management API  -->
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>auth0</artifactId>
+            <version>1.15.0</version>
         </dependency>
 
         <!-- dependency>
