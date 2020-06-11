@@ -75,19 +75,19 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * This method adds to the provided baseEndPoint parameter a set of basic HTTP Spark methods
+     * This method adds to the provided baseEndpoint parameter a set of basic HTTP Spark methods
      * (e.g., getOne, getMany, delete) for CRUD operations.
-     * It can optionally be overridden by child classes to add any supplemental methods to the baseEndPoint.
+     * It can optionally be overridden by child classes to add any supplemental methods to the baseEndpoint.
      * Either before or after(*) supplemental methods are added, be sure to call the super method to add CRUD operations.
      *
-     * (*) Note: spark-java will resolve methods in the order they are added to the baseEndPoint parameter.
+     * (*) Note: spark-java will resolve methods in the order they are added to the baseEndpoint parameter.
      * For instance, if /path and /path/subpath are added in this order, then
      * a request with /path/subpath will be treated as /path, and the method for /path/subpath will be ignored.
      * Conversely, if /path/subpath and /path are added in this order, then
      * a request with /path/subpath will be handled by the method for /path/subpath.
-     * @param baseEndPoint The end point to which to add the methods.
+     * @param baseEndpoint The end point to which to add the methods.
      */
-    protected void buildEndpoint(ApiEndpoint baseEndPoint) {
+    protected void buildEndpoint(ApiEndpoint baseEndpoint) {
         LOG.info("Registering routes and enabling docs for {}", ROOT_ROUTE);
 
         // Careful here!
@@ -96,7 +96,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
         // Other HTTP methods are not affected by this bug.
 
-        baseEndPoint
+        baseEndpoint
             // Get multiple entities.
             .get(path(ROOT_ROUTE)
                     .withDescription("Gets a list of all '" + classToLowercase + "' entities.")

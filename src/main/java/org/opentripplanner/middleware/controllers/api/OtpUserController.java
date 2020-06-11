@@ -31,13 +31,13 @@ public class OtpUserController extends ApiController<OtpUser> {
     }
 
     @Override
-    protected void buildEndpoint(ApiEndpoint baseEndPoint) {
+    protected void buildEndpoint(ApiEndpoint baseEndpoint) {
         LOG.info("Registering path {}.", ROOT_ROUTE + TOKEN_PATH);
 
         // Add the user token route BEFORE the regular CRUD methods
         // (otherwise, /fromtoken requests would be considered
         // by spark as 'GET user with id "fromtoken"', which we don't want).
-        ApiEndpoint modifiedEndpoint = baseEndPoint
+        ApiEndpoint modifiedEndpoint = baseEndpoint
             // Get user from token.
             .get(path(ROOT_ROUTE + TOKEN_PATH)
                 .withDescription("Retrieves an OtpUser entity using an Auth0 access token passed in an Authorization header.")
