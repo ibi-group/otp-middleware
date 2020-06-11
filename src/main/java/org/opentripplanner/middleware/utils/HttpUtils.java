@@ -18,13 +18,16 @@ public class HttpUtils {
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
 
     /**
-     * Constructs a url based on the uri and endpoint
+     * Constructs a url based on the uri, endpoint and query params if provided
      */
-    public static URI buildUri(String uri, String endPoint) {
-        UriBuilder uriBuilder = UriBuilder.fromUri(uri)
-            .path(endPoint);
+    public static URI buildUri(String uri, String endPoint, String queryParams) {
+        UriBuilder uriBuilder = UriBuilder.fromUri(uri).path(endPoint);
+        if (queryParams != null) {
+            uriBuilder.replaceQuery(queryParams);
+        }
         return URI.create(uriBuilder.toString());
     }
+
 
     public static <T> T callWithBasicAuth(URI uri, Class<T> responseClazz, String user, String password) {
 

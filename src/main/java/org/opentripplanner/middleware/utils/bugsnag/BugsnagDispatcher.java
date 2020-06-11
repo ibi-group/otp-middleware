@@ -13,4 +13,6 @@ public interface BugsnagDispatcher {
     List<Project> getProjects(String organizationId);
     List<ProjectError> getAllProjectErrors(String projectId);
     List<EventException> getAllErrorEvents(String projectId, String errorId);
+    int getTotalNumOfErrorsWithinReportingWindow();
+    List<ErrorSummary> getErrorSummary();
 }
