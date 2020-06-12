@@ -11,7 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class Auth0UsersTest extends OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(Auth0UsersTest.class);

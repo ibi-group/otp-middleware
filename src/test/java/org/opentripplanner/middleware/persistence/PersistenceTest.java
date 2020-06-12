@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.persistence;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -16,28 +17,25 @@ import static org.opentripplanner.middleware.persistence.PersistenceUtil.createU
 public class PersistenceTest extends OtpMiddlewareTest {
     private static final String TEST_EMAIL = "john.doe@example.com";
 
+    OtpUser user = null;
+
     @Test
     public void canCreateUser() {
-        OtpUser user = createUser(TEST_EMAIL);
+        user = createUser(TEST_EMAIL);
         String id = user.id;
-        System.out.println("User id:" + id);
         String retrievedId = Persistence.otpUsers.getById(id).id;
         assertEquals(id, retrievedId, "Found User ID should equal inserted ID.");
-        // tidy up
-        Persistence.otpUsers.removeById(id);
     }
 
     @Test
     public void canUpdateUser() {
-        OtpUser user = createUser(TEST_EMAIL);
+        user = createUser(TEST_EMAIL);
         String id = user.id;
         final String updatedEmail = "jane.doe@example.com";
         user.email = updatedEmail;
         Persistence.otpUsers.replace(id, user);
         String retrievedEmail = Persistence.otpUsers.getById(id).email;
         assertEquals(updatedEmail, retrievedEmail, "Found User email should equal updated email.");
-        // tidy up
-        Persistence.otpUsers.removeById(id);
     }
 
     @Test
@@ -47,4 +45,12 @@ public class PersistenceTest extends OtpMiddlewareTest {
         OtpUser user = Persistence.otpUsers.getById(userToDelete.id);
         assertNull(user, "Deleted User should no longer exist in database (should return as null).");
     }
+
+    @AfterEach
+    public void remove() {
+        if (user != null) {
+            Persistence.otpUsers.removeById(user.id);
+        }
+    }
+
 }
