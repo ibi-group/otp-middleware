@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
@@ -33,9 +34,9 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public abstract class ApiController<T extends Model> implements Endpoint {
     private static final String ID_PARAM = "/:id";
-    private final String ROOT_ROUTE;
+    protected final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
-    private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String classToLowercase;
     final TypedPersistence<T> persistence;
     private final Class<T> clazz;
@@ -58,22 +59,44 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * This method is called by {@link SparkSwagger} to register endpoints and generate the docs.
+     * This method is called on each object deriving from ApiController by {@link SparkSwagger}
+     * to register endpoints and generate the docs.
+     * In this method, we add the different API paths and methods (e.g. the CRUD methods)
+     * to the restApi parameter for the applicable controller.
      * @param restApi The object to which to attach the documentation.
      */
     @Override
     public void bind(final SparkSwagger restApi) {
+        ApiEndpoint apiEndpoint = restApi.endpoint(
+            endpointPath(ROOT_ROUTE).withDescription("Interface for querying and managing '" + classToLowercase + "' entities."),
+            (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase)
+        );
+        buildEndpoint(apiEndpoint);
+    }
+
+    /**
+     * This method adds to the provided baseEndpoint parameter a set of basic HTTP Spark methods
+     * (e.g., getOne, getMany, delete) for CRUD operations.
+     * It can optionally be overridden by child classes to add any supplemental methods to the baseEndpoint.
+     * Either before or after(*) supplemental methods are added, be sure to call the super method to add CRUD operations.
+     *
+     * (*) Note: spark-java will resolve methods in the order they are added to the baseEndpoint parameter.
+     * For instance, if /path and /path/subpath are added in this order, then
+     * a request with /path/subpath will be treated as /path, and the method for /path/subpath will be ignored.
+     * Conversely, if /path/subpath and /path are added in this order, then
+     * a request with /path/subpath will be handled by the method for /path/subpath.
+     * @param baseEndpoint The end point to which to add the methods.
+     */
+    protected void buildEndpoint(ApiEndpoint baseEndpoint) {
         LOG.info("Registering routes and enabling docs for {}", ROOT_ROUTE);
 
-        restApi.endpoint(endpointPath(ROOT_ROUTE)
-            .withDescription("Interface for querying and managing '" + classToLowercase + "' entities."), (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase))
+        // Careful here!
+        // If using lambdas with the GET method, a bug in spark-swagger
+        // requires you to write path(<entire_route>).
+        // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
+        // Other HTTP methods are not affected by this bug.
 
-            // Careful here!
-            // If using lambdas with the GET method, a bug in spark-swagger
-            // requires you to write path(<entire_route>).
-            // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
-            // Other HTTP methods are not affected by this bug.
-
+        baseEndpoint
             // Get multiple entities.
             .get(path(ROOT_ROUTE)
                     .withDescription("Gets a list of all '" + classToLowercase + "' entities.")
@@ -274,10 +297,18 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Get entity ID from request.
      */
     private String getIdFromRequest(Request req) {
-        String id = req.params("id");
-        if (id == null) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
+        return getRequiredParamFromRequest(req, "id");
+    }
+
+    /**
+     * Get a request parameter value.
+     * This method will halt the request if paramName is not provided in the request.
+     */
+    private String getRequiredParamFromRequest(Request req, String paramName) {
+        String paramValue = req.params(paramName);
+        if (paramValue == null) {
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide parameter name.");
         }
-        return id;
+        return paramValue;
     }
 }

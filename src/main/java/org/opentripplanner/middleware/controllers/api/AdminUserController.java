@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
