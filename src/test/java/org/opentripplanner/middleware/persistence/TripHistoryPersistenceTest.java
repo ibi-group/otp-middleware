@@ -2,13 +2,13 @@ package org.opentripplanner.middleware.persistence;
 
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
-import org.opentripplanner.middleware.models.OtpUser;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,7 +21,6 @@ import static com.mongodb.client.model.Filters.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.*;
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
 /**
  * Tests to verify that trip request and trip summary persistence in MongoDB collections are functioning properly. A
@@ -30,12 +29,15 @@ import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
  */
 public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
     private static final String TEST_EMAIL = "john.doe@example.com";
-    private static final String OTP_SERVER = getConfigPropertyAsText("OTP_SERVER");
-    private static final String OTP_SERVER_PLAN_END_POINT = getConfigPropertyAsText("OTP_SERVER_PLAN_END_POINT");
 
     TripRequest tripRequest = null;
     TripSummary tripSummary = null;
     List<TripRequest> tripRequests = null;
+
+    @BeforeAll
+    public static void setup() {
+        stagePlanResponses();
+    }
 
     @Test
     public void canCreateTripRequest() {
@@ -57,23 +59,21 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
 
     @Test
     public void canCreateTripSummaryWithError() {
-        tripSummary = createTripSummaryWithError(OTP_SERVER, OTP_SERVER_PLAN_END_POINT);
+        tripSummary = createTripSummaryWithError();
         TripSummary retrieved = Persistence.tripSummaries.getById(tripSummary.id);
-        System.out.println("Retrieved trip summary with error:" + retrieved.toString());
         assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
     }
 
     @Test
     public void canCreateTripSummary() {
-        tripSummary = createTripSummary(OTP_SERVER, OTP_SERVER_PLAN_END_POINT);
+        tripSummary = createTripSummary();
         TripSummary retrieved = Persistence.tripSummaries.getById(tripSummary.id);
-        System.out.println("Retrieved trip summary:" + retrieved.toString());
         assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
     }
 
     @Test
     public void canDeleteTripSummary() {
-        TripSummary tripSummaryToDelete = createTripSummary(OTP_SERVER, OTP_SERVER_PLAN_END_POINT);
+        TripSummary tripSummaryToDelete = createTripSummary();
         Persistence.tripSummaries.removeById(tripSummaryToDelete.id);
         TripSummary tripSummary = Persistence.tripSummaries.getById(tripSummaryToDelete.id);
         assertNull(tripSummary, "Deleted trip summary should no longer exist in database (should return as null).");
@@ -92,8 +92,15 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
         LocalDateTime fromStartOfDay = LocalDate.now().atTime(LocalTime.MIN);
         LocalDateTime toEndOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
-        Bson filter = Filters.and(gte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(fromStartOfDay.atZone(ZoneId.systemDefault()).toInstant())),
-            lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(toEndOfDay.atZone(ZoneId.systemDefault()).toInstant())),
+        Bson filter = Filters.and(
+            gte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
+                Date.from(fromStartOfDay
+                    .atZone(ZoneId.systemDefault())
+                    .toInstant())),
+            lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
+                Date.from(toEndOfDay
+                    .atZone(ZoneId.systemDefault())
+                    .toInstant())),
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
         List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);

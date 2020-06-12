@@ -75,13 +75,8 @@ public class OtpRequestProcessor {
                     request.queryParams("toPlace"), request.queryString());
                 // only save trip summary if the trip request was saved
                 if (saveTripRequest(tripRequest)) {
-                    TripPlan tripPlan = otpDispatcherResponse.response.plan;
-                    TripSummary tripSummary;
-                    if (tripPlan != null) {
-                        tripSummary = new TripSummary(tripPlan, otpDispatcherResponse.response.error, tripRequest.id);
-                    } else {
-                        tripSummary = new TripSummary(otpDispatcherResponse.response.error, tripRequest.id);
-                    }
+                    TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan,
+                        otpDispatcherResponse.response.error, tripRequest.id);
                     saveTripSummary(tripSummary);
                 } else {
                     LOG.warn("Unable to save trip request, orphaned trip summary not saved");
