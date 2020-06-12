@@ -13,6 +13,9 @@ import java.util.*;
 
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
+/**
+ * Class to provide Bugsnag information bu constructing required API calls to Bugsnag
+ */
 public class BugsnagDispatcherImpl implements BugsnagDispatcher {
 
     private final String BUGSNAG_USER = getConfigPropertyAsText("BUGSNAG_USER");
@@ -25,9 +28,9 @@ public class BugsnagDispatcherImpl implements BugsnagDispatcher {
      * Get all organisations from Bugsnag
      */
     public List<Organization> getOrganization() {
-        final String enpoint = "/user/organizations/";
+        final String endpoint = "/user/organizations/";
 
-        Organization[] organizations = callAPI(Organization[].class, enpoint, null);
+        Organization[] organizations = callAPI(Organization[].class, endpoint, null);
         return (organizations == null) ? new ArrayList<>() : Arrays.asList(organizations);
     }
 
@@ -81,8 +84,8 @@ public class BugsnagDispatcherImpl implements BugsnagDispatcher {
     public List<ProjectError> getAllProjectErrors(String projectId) {
         String endpoint = "/projects/" + projectId + "/errors";
 
-        ProjectError[] errors = callAPI(ProjectError[].class, endpoint, null);
-        return (errors == null) ? new ArrayList<>() : Arrays.asList(errors);
+        ProjectError[] projectErrors = callAPI(ProjectError[].class, endpoint, null);
+        return (projectErrors == null) ? new ArrayList<>() : Arrays.asList(projectErrors);
     }
 
 
@@ -90,8 +93,8 @@ public class BugsnagDispatcherImpl implements BugsnagDispatcher {
         String endpoint = "/projects/" + projectId + "/errors";
 
         String queryParams = buildFilterByDateRange(fromDate, toDate);
-        ProjectError[] errors = callAPI(ProjectError[].class, endpoint, queryParams);
-        return (errors == null) ? new ArrayList<>() : Arrays.asList(errors);
+        ProjectError[] projectErrors = callAPI(ProjectError[].class, endpoint, queryParams);
+        return (projectErrors == null) ? new ArrayList<>() : Arrays.asList(projectErrors);
     }
 
     /**
@@ -100,8 +103,8 @@ public class BugsnagDispatcherImpl implements BugsnagDispatcher {
     public List<EventException> getAllErrorEvents(String projectId, String errorId) {
         String endpoint = "/projects/" + projectId + "/errors/" + errorId + "/events";
 
-        EventException[] errors = callAPI(EventException[].class, endpoint, null);
-        return (errors == null) ? new ArrayList<>() : Arrays.asList(errors);
+        EventException[] errorEvents = callAPI(EventException[].class, endpoint, null);
+        return (errorEvents == null) ? new ArrayList<>() : Arrays.asList(errorEvents);
     }
 
     /**

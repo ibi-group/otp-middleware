@@ -7,6 +7,9 @@ import org.opentripplanner.middleware.utils.bugsnag.response.event.EventExceptio
 
 import java.util.List;
 
+/**
+ * Interface to Bugsnag API
+ */
 public interface BugsnagDispatcher {
 
     List<Organization> getOrganization();
