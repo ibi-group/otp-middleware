@@ -26,15 +26,15 @@ public class JsonUtils {
      */
     public static String toJson(Object object) {
 
-        String message;
+        String json;
         try {
-            return mapper.writeValueAsString(object);
+            json = mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
-            message = e.getMessage();
+            json = formatJSON(String.format("Unable to serialize object: %s.", object.toString()), 500, e);
         }
 
-        return String.format("{Error: Unable to serialize object: %s. %s.", object.toString(), message);
+        return json;
     }
 
     /**
