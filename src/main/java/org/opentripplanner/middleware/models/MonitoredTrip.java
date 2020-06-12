@@ -4,7 +4,6 @@ import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 
-import java.util.List;
 import java.util.Set;
 
 /**

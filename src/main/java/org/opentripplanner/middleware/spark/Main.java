@@ -52,7 +52,7 @@ public class Main {
                 .endpoints(() -> List.of(
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
-                    new MonitorTripController(API_PREFIX),
+                    new MonitoredTripController(API_PREFIX),
                     new OtpUserController(API_PREFIX)
                     // TODO Add other models.
                 ))
@@ -199,7 +199,7 @@ public class Main {
         try {
             JsonNode node = getConfigProperty(name);
             value = Integer.parseInt(node.asText());
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException | NullPointerException e) {
             LOG.error("Unable to parse {}. Using default: {}", name, defaultValue, e);
         }
         return value;

@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
-import java.net.http.HttpResponse;
+
 import static spark.Spark.halt;
 
 public class JsonUtils {

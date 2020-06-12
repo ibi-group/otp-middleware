@@ -10,19 +10,18 @@ import spark.Request;
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsInt;
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Implementation of the {@link ApiController} abstract class for managing monitored trips. This controller connects
  * with Auth0 services using the hooks provided by {@link ApiController}.
  */
-public class MonitorTripController extends ApiController<MonitoredTrip> {
+public class MonitoredTripController extends ApiController<MonitoredTrip> {
     private static final int MAXIMUM_PERMITTED_MONITORED_TRIPS
         = getConfigPropertyAsInt("MAXIMUM_PERMITTED_MONITORED_TRIPS", 5);
 
-    public MonitorTripController(String apiPrefix) {
-        super(apiPrefix, Persistence.monitoredTrip, "secure/monitortrip");
+    public MonitoredTripController(String apiPrefix) {
+        super(apiPrefix, Persistence.monitoredTrip, "secure/monitoredtrip");
     }
 
     @Override
