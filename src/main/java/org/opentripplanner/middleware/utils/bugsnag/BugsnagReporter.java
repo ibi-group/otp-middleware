@@ -17,7 +17,7 @@ public class BugsnagReporter {
      * Initialize Bugsnag using API key when application is first loaded
      */
     private static void initializeBugsnag() {
-        String apiKey = getConfigPropertyAsText("BUGSNAG_API_KEY");
+        String apiKey = getConfigPropertyAsText("BUGSNAG_PROJECT_NOTIFIER_API_KEY");
         if (apiKey != null) {
             bugsnag = new Bugsnag(apiKey);
         }

@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.utils;
 
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +9,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 public class HttpUtils {
@@ -28,17 +26,15 @@ public class HttpUtils {
         return URI.create(uriBuilder.toString());
     }
 
+    public static <T> T callWithAuthToken(URI uri, Class<T> responseClazz, String token) {
 
-    public static <T> T callWithBasicAuth(URI uri, Class<T> responseClazz, String user, String password) {
-
-        String auth = user + ":" + password;
-        byte[] basicAuth = Base64.encodeBase64(auth.getBytes(StandardCharsets.UTF_8));
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
             .uri(uri)
             .timeout(Duration.ofSeconds(5))
-            .setHeader("Authorization", "Basic " + new String(basicAuth))
+            .setHeader("Authorization", "token " + token)
+            .setHeader("Accept", "application/json; version=2")
             .GET()
             .build();
 

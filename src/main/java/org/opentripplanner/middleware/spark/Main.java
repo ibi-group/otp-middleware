@@ -10,6 +10,7 @@ import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
+import org.opentripplanner.middleware.controllers.api.BugsnagController;
 import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -77,6 +78,11 @@ public class Main {
 
         // available at http://localhost:4567/async
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
+
+        // available at http://localhost:4567/api/secure/triprequests
+        //TODO move to admin
+        BugsnagController bugsnagController = new BugsnagController();
+        spark.get("/bugsnag/errorsummary", (request, response) -> bugsnagController.getErrorSummary(request, response));
 
         spark.before(API_PREFIX + "secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);

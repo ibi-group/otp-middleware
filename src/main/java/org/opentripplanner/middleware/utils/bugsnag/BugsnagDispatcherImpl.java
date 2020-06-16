@@ -18,8 +18,7 @@ import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
  */
 public class BugsnagDispatcherImpl implements BugsnagDispatcher {
 
-    private final String BUGSNAG_USER = getConfigPropertyAsText("BUGSNAG_USER");
-    private final String BUGSNAG_PASSWORD = getConfigPropertyAsText("BUGSNAG_PASSWORD");
+    private final String BUGSNAG_API_KEY = getConfigPropertyAsText("BUGSNAG_API_KEY");
     private final String BUGSNAG_ORGANIZATION = getConfigPropertyAsText("BUGSNAG_ORGANIZATION");
     // TODO use getConfigPropertyAsInt once all branches are merged
     private final String BUGSNAG_REPORTING_WINDOW_IN_DAYS = getConfigPropertyAsText("BUGSNAG_REPORTING_WINDOW_IN_DAYS");
@@ -89,10 +88,10 @@ public class BugsnagDispatcherImpl implements BugsnagDispatcher {
     }
 
 
-    public List<ProjectError> getProjectErrorsWithinDateRange(String projectId, LocalDate fromDate, LocalDate toDate) {
+    public List<ProjectError> getProjectErrorsWithinDateRange(String projectId) {
         String endpoint = "/projects/" + projectId + "/errors";
 
-        String queryParams = buildFilterByDateRange(fromDate, toDate);
+        String queryParams = buildFilterByDateRange(Integer.parseInt(BUGSNAG_REPORTING_WINDOW_IN_DAYS));
         ProjectError[] projectErrors = callAPI(ProjectError[].class, endpoint, queryParams);
         return (projectErrors == null) ? new ArrayList<>() : Arrays.asList(projectErrors);
     }
@@ -114,13 +113,9 @@ public class BugsnagDispatcherImpl implements BugsnagDispatcher {
         Organization organization = getOrganization(BUGSNAG_ORGANIZATION);
         List<Project> projects = getProjects(organization.id);
 
-        LocalDate start = getStartOfReportingWindow();
-        LocalDate end = LocalDate.now();
-        end.atTime(LocalTime.MIDNIGHT);
-
         List<ProjectError> allProjectErrors = new ArrayList<>();
         for (Project project : projects) {
-            List<ProjectError> projectErrors = getProjectErrorsWithinDateRange(project.id, start, end);
+            List<ProjectError> projectErrors = getProjectErrorsWithinDateRange(project.id);
             allProjectErrors.addAll(projectErrors);
         }
 
@@ -153,26 +148,14 @@ public class BugsnagDispatcherImpl implements BugsnagDispatcher {
     }
 
     /**
-     * Get the start date for the reporting window
+     * Build filter parameters based on last number of days provided
      */
-    private LocalDate getStartOfReportingWindow() {
-        LocalDate date = LocalDate.now();
-        date.atTime(LocalTime.MIN);
-        date.minusDays(Long.valueOf(BUGSNAG_REPORTING_WINDOW_IN_DAYS));
-        return date;
-    }
-
-    /**
-     * Build filter parameters based on provided start and end dates
-     */
-    private String buildFilterByDateRange(LocalDate start, LocalDate end) {
+    private String buildFilterByDateRange(int lastNumOfDays) {
         StringBuilder sb = new StringBuilder();
-        sb.append("filters[event.since][][type]=eq");
-        sb.append("&filters[event.since][][value]=");
-        sb.append(start);
-        sb.append("&filters[event.before][][type]=eq");
-        sb.append("&filters[event.before][][value]=");
-        sb.append(end);
+        sb.append("filters[event.since][][value]=")
+            .append(lastNumOfDays)
+            // following 'd' is very important
+            .append("d&filters[event.since][][type]=eq");
 
         return sb.toString();
     }
@@ -182,6 +165,6 @@ public class BugsnagDispatcherImpl implements BugsnagDispatcher {
      */
     private <T> T callAPI(Class<T> responseClazz, String endpoint, String queryParams) {
         URI uri = HttpUtils.buildUri("https://api.bugsnag.com", endpoint, queryParams);
-        return HttpUtils.callWithBasicAuth(uri, responseClazz, BUGSNAG_USER, BUGSNAG_PASSWORD);
+        return HttpUtils.callWithAuthToken(uri, responseClazz, BUGSNAG_API_KEY);
     }
 }
