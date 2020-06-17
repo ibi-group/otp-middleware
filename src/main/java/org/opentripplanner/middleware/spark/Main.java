@@ -11,6 +11,8 @@ import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.BugsnagController;
+import org.opentripplanner.middleware.controllers.api.TripHistoryController;
+import org.opentripplanner.middleware.otp.OtpRequestProcessor;
 import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -82,9 +84,15 @@ public class Main {
         // available at http://localhost:4567/api/secure/triprequests
         //TODO move to admin
         BugsnagController bugsnagController = new BugsnagController();
-        spark.get("/bugsnag/errorsummary", (request, response) -> bugsnagController.getErrorSummary(request, response));
+        spark.get("/bugsnag/errorsummary", bugsnagController::getErrorSummary);
 
-        spark.before(API_PREFIX + "secure/*", ((request, response) -> {
+        // available at http://localhost:4567/plan
+        spark.get("/plan", OtpRequestProcessor::planning);
+
+        // available at http://localhost:4567/api/secure/triprequests
+        spark.get(API_PREFIX + "/secure/triprequests", TripHistoryController::getTripRequests);
+
+        spark.before(API_PREFIX + "/secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
         }));
         spark.before(API_PREFIX + "admin/*", ((request, response) -> {

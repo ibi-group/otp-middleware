@@ -66,24 +66,30 @@
                 <executions>
                     <execution>
                         <phase>package</phase>
-                        <goals><goal>shade</goal></goals>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
                         <configuration>
                             <finalName>otp-middleware</finalName>
                             <transformers>
                                 <!-- The three below are for Spring, need to be placed above geotools. -->
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>META-INF/spring.handlers</resource>
                                 </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>META-INF/spring.schemas</resource>
                                 </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>META-INF/spring.factories</resource>
                                 </transformer>
 
                                 <!-- files overwrite each other and geotools does not function without this.
                                          http://docs.geotools.org/latest/userguide/faq.html#how-do-i-create-an-executable-jar-for-my-geotools-app -->
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
 
                             <!-- signature files from included jars cause problems: http://stackoverflow.com/questions/999489 -->
@@ -147,12 +153,14 @@
             <artifactId>json</artifactId>
             <version>20190722</version>
         </dependency>
+
         <!--  Handles authentication/JWT signing with Auth0 -->
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
             <version>3.10.1</version>
         </dependency>
+
         <!-- Provides a util for getting Auth0 public key -->
         <dependency>
             <groupId>com.auth0</groupId>
@@ -164,6 +172,7 @@
             <artifactId>jackson-core</artifactId>
             <version>${jackson.version}</version>
         </dependency>
+
         <!-- Handles parsing yaml config -->
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -186,6 +195,7 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
+
         <!-- Used for unit testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -193,6 +203,7 @@
             <version>5.5.2</version>
             <scope>test</scope>
         </dependency>
+
         <!-- Handles HTTP server -->
         <dependency>
             <groupId>com.sparkjava</groupId>
@@ -244,17 +255,5 @@
             <artifactId>auth0</artifactId>
             <version>1.15.0</version>
         </dependency>
-
-        <!-- dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.junit.vintage</groupId>
-                    <artifactId>junit-vintage-engine</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency -->
     </dependencies>
 </project>

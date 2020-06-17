@@ -1,7 +1,9 @@
 package org.opentripplanner.middleware.utils;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Request;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
@@ -10,6 +12,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
 
@@ -49,4 +53,15 @@ public class HttpUtils {
         return null;
     }
 
+
+    /**
+     * Get entity attribute value from request. If nulls are not allowed, halt with error message.
+     */
+    public static String getRequiredParamFromRequest(Request req, String paramName, boolean allowNull) {
+        String paramValue = req.queryParams(paramName);
+        if (paramValue == null && !allowNull) {
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "The parameter name " + paramName + " must be provided.");
+        }
+        return paramValue;
+    }
 }

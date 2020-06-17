@@ -10,9 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
-
 import java.net.http.HttpResponse;
-
+import java.net.http.HttpResponse;
 import static spark.Spark.halt;
 
 public class JsonUtils {
@@ -41,7 +40,6 @@ public class JsonUtils {
         try {
             // TODO: Use Jackson instead? If we opt for Jackson, we must change JsonUtils#toJson to also use Jackson.
             return gson.fromJson(req.body(), clazz);
-//            return mapper.readValue(req.body(), clazz);
         } catch (Exception e) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for " + clazz.getSimpleName(), e);
             throw e;
@@ -55,6 +53,17 @@ public class JsonUtils {
             pojo = mapper.readValue(response.body(), clazz);
         } catch (JsonProcessingException e) {
             LOG.error("Unable to get POJO from http response", e);
+        }
+        return pojo;
+    }
+
+    /** Utility method to parse generic object from JSON String. */
+    public static <T> T getPOJOFromJSON(String json, Class<T> clazz) {
+        T pojo = null;
+        try {
+            pojo = mapper.readValue(json, clazz);
+        } catch (JsonProcessingException e) {
+            LOG.error("Unable to get POJO from json", e);
         }
         return pojo;
     }

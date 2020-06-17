@@ -1,0 +1,33 @@
+{
+  "requestParameters": {
+    "date": "2020-06-09",
+    "mode": "WALK,BUS,TRAM,RAIL,GONDOLA",
+    "arriveBy": "false",
+    "walkSpeed": "1.34",
+    "ignoreRealtimeUpdates": "true",
+    "companies": "NaN",
+    "fromPace": "1709 NW Irving St, Portland 97209::45.527817334203,-122.68865964147231",
+    "showIntermediateStops": "true",
+    "optimize": "QUICK",
+    "toPlace": "Uncharted Realities, SW 3rd Ave, Downtown - Portland 97204::45.51639151281627,-122.67681483620306",
+    "time": "08:35",
+    "maxWalkDistance": "1207"
+  },
+  "error": {
+    "id": 400,
+    "msg": "Trip is not possible.  You might be trying to plan a trip outside the map data boundary.",
+    "message": "OUTSIDE_BOUNDS",
+    "missing": [
+      "from"
+    ],
+    "noPath": true
+  },
+  "debugOutput": {
+    "precalculationTime": 0,
+    "pathCalculationTime": 0,
+    "pathTimes": [],
+    "renderingTime": 0,
+    "totalTime": 0,
+    "timedOut": false
+  }
+}

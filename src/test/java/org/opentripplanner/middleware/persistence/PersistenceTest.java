@@ -1,11 +1,13 @@
 package org.opentripplanner.middleware.persistence;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
 
 /**
  * Tests to verify that persistence in MongoDB collections are functioning properly. A number of
@@ -15,9 +17,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class PersistenceTest extends OtpMiddlewareTest {
     private static final String TEST_EMAIL = "john.doe@example.com";
 
+    OtpUser user = null;
+
     @Test
     public void canCreateUser() {
-        OtpUser user = createUser(TEST_EMAIL);
+        user = createUser(TEST_EMAIL);
         String id = user.id;
         String retrievedId = Persistence.otpUsers.getById(id).id;
         assertEquals(id, retrievedId, "Found User ID should equal inserted ID.");
@@ -25,7 +29,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
 
     @Test
     public void canUpdateUser() {
-        OtpUser user = createUser(TEST_EMAIL);
+        user = createUser(TEST_EMAIL);
         String id = user.id;
         final String updatedEmail = "jane.doe@example.com";
         user.email = updatedEmail;
@@ -42,13 +46,11 @@ public class PersistenceTest extends OtpMiddlewareTest {
         assertNull(user, "Deleted User should no longer exist in database (should return as null).");
     }
 
-    /**
-     * Utility to create user and store in database.
-     */
-    private OtpUser createUser(String email) {
-        OtpUser user = new OtpUser();
-        user.email = email;
-        Persistence.otpUsers.create(user);
-        return user;
+    @AfterEach
+    public void remove() {
+        if (user != null) {
+            Persistence.otpUsers.removeById(user.id);
+        }
     }
+
 }
