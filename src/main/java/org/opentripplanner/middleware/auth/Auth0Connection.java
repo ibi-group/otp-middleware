@@ -64,6 +64,12 @@ public class Auth0Connection {
         }
     }
 
+    public static boolean isAuthHeaderPresent(Request req) {
+        final String authHeader = req.headers("Authorization");
+        return authHeader != null;
+    }
+
+
     /** Assign user to request and check that the user is an admin. */
     public static void checkUserIsAdmin(Request req, Response res) {
         // Check auth token in request (and add user object to request).
@@ -98,11 +104,12 @@ public class Auth0Connection {
      * Extract JWT token from Spark HTTP request (in Authorization header).
      */
     private static String getTokenFromRequest(Request req) {
-        // Check that auth header is present and formatted correctly (Authorization: Bearer [token]).
-        final String authHeader = req.headers("Authorization");
-        if (authHeader == null) {
+        if (!isAuthHeaderPresent(req)) {
             logMessageAndHalt(req, 401, "Authorization header is missing.");
         }
+
+        // Check that auth header is present and formatted correctly (Authorization: Bearer [token]).
+        final String authHeader = req.headers("Authorization");
         String[] parts = authHeader.split(" ");
         if (parts.length != 2 || !"bearer".equals(parts[0].toLowerCase())) {
             logMessageAndHalt(req, 401, String.format("Authorization header is malformed: %s", authHeader));
@@ -151,4 +158,38 @@ public class Auth0Connection {
     public static boolean authDisabled() {
         return hasConfigProperty("DISABLE_AUTH") && "true".equals(getConfigPropertyAsText("DISABLE_AUTH"));
     }
+
+    /**
+     * Confirm that the user exists
+     */
+    private static Auth0UserProfile isValidUser(Request request) {
+
+        Auth0UserProfile profile = getUserFromRequest(request);
+        if (profile == null || (profile.adminUser == null  && profile.otpUser == null && profile.apiUser == null)) {
+            logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "Unknown user.");
+        }
+
+        return profile;
+    }
+
+    /**
+     * Confirm that the user's actions are on their items if not admin.
+     */
+    public static void isAuthorized(String userId, Request request) {
+
+        Auth0UserProfile profile = isValidUser(request);
+
+        // let admin do anything
+        if (profile.adminUser != null) {
+            return;
+        }
+
+        if (userId == null ||
+            (profile.otpUser != null && !profile.otpUser.id.equals(userId)) ||
+            (profile.apiUser != null && !profile.apiUser.id.equals(userId))) {
+
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
+        }
+    }
+
 }
