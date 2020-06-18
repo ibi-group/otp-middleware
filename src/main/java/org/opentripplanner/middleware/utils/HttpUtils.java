@@ -12,44 +12,72 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
 
+    public enum REQUEST_METHOD {GET, POST}
+
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
 
     /**
-     * Constructs a url based on the uri, endpoint and query params if provided
+     * Constructs a url based on the uri.  endpoint and query params if provided
      */
-    public static URI buildUri(String uri, String endPoint, String queryParams) {
-        UriBuilder uriBuilder = UriBuilder.fromUri(uri).path(endPoint);
+    public static URI buildUri(String uri, String endpoint, String queryParams) {
+        UriBuilder uriBuilder = UriBuilder.fromUri(uri);
+
+        if (endpoint != null) {
+            uriBuilder.path(endpoint);
+        }
+
         if (queryParams != null) {
             uriBuilder.replaceQuery(queryParams);
         }
         return URI.create(uriBuilder.toString());
     }
 
-    public static <T> T callWithAuthToken(URI uri, Class<T> responseClazz, String token) {
+    /**
+     * Makes an http get/post request and returns the response body. The request is based on the provided params
+     */
+    public static String httpRequest(URI uri, int connectionTimeout, REQUEST_METHOD method,
+                                     HashMap<String, String> headers, String bodyContent) {
 
 
         HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder()
             .uri(uri)
-            .timeout(Duration.ofSeconds(5))
-            .setHeader("Authorization", "token " + token)
-            .setHeader("Accept", "application/json; version=2")
-            .GET()
-            .build();
+            .timeout(Duration.ofSeconds(connectionTimeout))
+            .GET();
+
+        if (method.equals(REQUEST_METHOD.GET)) {
+            httpRequestBuilder.GET();
+        }
+
+        if (method.equals(REQUEST_METHOD.POST)) {
+            httpRequestBuilder.POST(HttpRequest
+                .BodyPublishers
+                .ofString(bodyContent));
+        }
+
+        if (headers != null && !headers.isEmpty()) {
+            for(Map.Entry<String, String> e: headers.entrySet()){
+                httpRequestBuilder.setHeader(e.getKey(), e.getValue());
+            }
+        }
+
+        HttpRequest request = httpRequestBuilder.build();
 
         try {
             // raw response
             HttpResponse<String> httpResponse = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
-            // convert raw response into concrete POJOs
-            return JsonUtils.getPOJOFromHttpResponse(httpResponse, responseClazz);
+            return httpResponse.body();
         } catch (InterruptedException | IOException e) {
-            LOG.error("Error requesting data from server", e);
+            LOG.error("Error requesting data from URI", e);
         }
+
         return null;
     }
 

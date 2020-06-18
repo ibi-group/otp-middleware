@@ -1,19 +1,15 @@
 package org.opentripplanner.middleware.spark;
 
 import com.beerboy.ss.SparkSwagger;
-import com.bugsnag.Bugsnag;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.controllers.api.AdminUserController;
-import org.opentripplanner.middleware.controllers.api.ApiUserController;
-import org.opentripplanner.middleware.controllers.api.BugsnagController;
-import org.opentripplanner.middleware.controllers.api.TripHistoryController;
+import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
+import org.opentripplanner.middleware.controllers.api.*;
 import org.opentripplanner.middleware.otp.OtpRequestProcessor;
-import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +38,8 @@ public class Main {
         Persistence.initialize();
 
         initializeHttpEndpoints();
+
+        BugsnagJobs.initialize();
     }
 
     private static void initializeHttpEndpoints() throws IOException {
@@ -81,10 +79,9 @@ public class Main {
         // available at http://localhost:4567/async
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
 
-        // available at http://localhost:4567/api/secure/triprequests
+        // available at http://localhost:4567/api/admin/bugsnag/errorsummary
         //TODO move to admin
-        BugsnagController bugsnagController = new BugsnagController();
-        spark.get("/bugsnag/errorsummary", bugsnagController::getErrorSummary);
+        spark.get("/bugsnag/errorsummary", BugsnagController::getErrorSummary);
 
         // available at http://localhost:4567/plan
         spark.get("/plan", OtpRequestProcessor::planning);

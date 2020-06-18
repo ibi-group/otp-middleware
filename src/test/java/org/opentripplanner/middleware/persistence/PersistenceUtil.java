@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.persistence;
 
-import org.opentripplanner.middleware.FileUtils;
+import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;

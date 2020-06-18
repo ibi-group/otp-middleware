@@ -1,0 +1,17 @@
+{
+  "filters": {
+    "error.status": [
+      {
+        "type": "eq",
+        "value": "open"
+      }
+    ],
+    "error.since": [
+      {
+        "type": "eq",
+        "value": "14d"
+      }
+    ]
+  }
+}
+

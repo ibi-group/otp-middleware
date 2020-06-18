@@ -36,6 +36,8 @@ public class Persistence {
     public static TypedPersistence<ApiUser> apiUsers;
     public static TypedPersistence<TripRequest> tripRequests;
     public static TypedPersistence<TripSummary> tripSummaries;
+    public static TypedPersistence<BugsnagEventRequest> bugsnagEventRequests;
+    public static TypedPersistence<BugsnagEvent> bugsnagEvents;
 
     public static void initialize () {
         // TODO Add custom codec libraries
@@ -74,6 +76,8 @@ public class Persistence {
         apiUsers = new TypedPersistence(mongoDatabase, ApiUser.class);
         tripRequests = new TypedPersistence(mongoDatabase, TripRequest.class);
         tripSummaries = new TypedPersistence(mongoDatabase, TripSummary.class);
+        bugsnagEventRequests = new TypedPersistence(mongoDatabase, BugsnagEventRequest.class);
+        bugsnagEvents = new TypedPersistence(mongoDatabase, BugsnagEvent.class);
         // TODO Add other models...
     }
 

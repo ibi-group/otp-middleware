@@ -130,6 +130,13 @@
         </plugins>
     </build>
     <dependencies>
+        <!-- Required for file IO -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.7</version>
+        </dependency>
+
         <!-- Required to construct URI (UriBuilder) -->
         <dependency>
             <groupId>javax.ws.rs</groupId>

@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A TripPlan is a set of ways to get from point A to point B at time T.

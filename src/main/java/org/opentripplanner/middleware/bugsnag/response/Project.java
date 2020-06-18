@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.utils.bugsnag.response;
+package org.opentripplanner.middleware.bugsnag.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
