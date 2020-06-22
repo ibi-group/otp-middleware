@@ -56,14 +56,14 @@ public class BugsnagEventJob implements Runnable {
         // remove event request now that it has been completed
         bugsnagEventRequests.removeById(originalRequest.id);
 
-        // get event data from Bugsnag storage produced from original event request
+        // get event data produced from original event request from Bugsnag storage
         List<BugsnagEvent> events = BugsnagDispatcher.getEventData(currentRequest);
 
         // add new events
         for (BugsnagEvent bugsnagEvent : events) {
             Bson filter = Filters.eq("errorId", bugsnagEvent.errorId);
             if (bugsnagEvents.getOneFiltered(filter) == null) {
-                // only create event if the event does not already exist
+                // only create event if not present
                 bugsnagEvents.create(bugsnagEvent);
             }
         }
