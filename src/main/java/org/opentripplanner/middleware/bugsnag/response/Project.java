@@ -1,41 +1,10 @@
 package org.opentripplanner.middleware.bugsnag.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.List;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "id",
-    "slug",
-    "name",
-    "api_key",
-    "type",
-    "is_full_view",
-    "release_stages",
-    "language",
-    "created_at",
-    "updated_at",
-    "errors_url",
-    "events_url",
-    "url",
-    "html_url",
-    "open_error_count",
-    "for_review_error_count",
-    "collaborators_count",
-    "global_grouping",
-    "location_grouping",
-    "discarded_app_versions",
-    "discarded_errors",
-    "custom_event_fields_used",
-    "resolve_on_deploy",
-    "url_whitelist",
-    "ignore_old_browsers",
-    "ignored_browser_versions"
-})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Project {
 
@@ -90,34 +59,4 @@ public class Project {
     @JsonProperty("ignore_old_browsers")
     public Boolean ignoreOldBrowsers;
 
-    @Override
-    public String toString() {
-        return "Project{" +
-            "id='" + id + '\'' +
-            ", slug='" + slug + '\'' +
-            ", name='" + name + '\'' +
-            ", apiKey='" + apiKey + '\'' +
-            ", type='" + type + '\'' +
-            ", isFullView=" + isFullView +
-            ", releaseStages=" + releaseStages +
-            ", language='" + language + '\'' +
-            ", createdAt='" + createdAt + '\'' +
-            ", updatedAt='" + updatedAt + '\'' +
-            ", errorsUrl='" + errorsUrl + '\'' +
-            ", eventsUrl='" + eventsUrl + '\'' +
-            ", url='" + url + '\'' +
-            ", htmlUrl='" + htmlUrl + '\'' +
-            ", openErrorCount=" + openErrorCount +
-            ", forReviewErrorCount=" + forReviewErrorCount +
-            ", collaboratorsCount=" + collaboratorsCount +
-            ", globalGrouping=" + globalGrouping +
-            ", locationGrouping=" + locationGrouping +
-            ", discardedAppVersions=" + discardedAppVersions +
-            ", discardedErrors=" + discardedErrors +
-            ", customEventFieldsUsed=" + customEventFieldsUsed +
-            ", resolveOnDeploy=" + resolveOnDeploy +
-            ", urlWhitelist=" + urlWhitelist +
-            ", ignoreOldBrowsers=" + ignoreOldBrowsers +
-            '}';
-    }
 }

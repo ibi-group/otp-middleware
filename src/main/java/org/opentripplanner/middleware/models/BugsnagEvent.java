@@ -8,6 +8,9 @@ import org.opentripplanner.middleware.bugsnag.response.EventException;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * Represents a Bugsnag error events. Class is used for both Mongo storage and JSON deserializing
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BugsnagEvent extends Model {
 

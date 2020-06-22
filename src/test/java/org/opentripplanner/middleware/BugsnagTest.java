@@ -1,71 +1,59 @@
 package org.opentripplanner.middleware;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.models.BugsnagEvent;
+import org.opentripplanner.middleware.models.BugsnagEventRequest;
+import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.FileUtils;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BugsnagTest extends OtpMiddlewareTest {
 
-    @Test
-    public void notifyOfBug() {
-        assertEquals(BugsnagReporter.get().notify(new RuntimeException("Unit test")), true);
+    private static BugsnagEvent BUGSNAG_EVENT = null;
+    private static BugsnagEventRequest BUGSNAG_EVENT_REQUEST = null;
+
+    @BeforeAll
+    public static void setup() {
+        stageResponses();
     }
 
-//    private Organization getFirstOrganization() {
-//        BugsnagDispatcher bd = new BugsnagDispatcher();
-//        List<Organization> organizations = bd.getOrganization();
-//        return organizations.get(0);
-//    }
-//
-//    @Test
-//    public void getOrganizations() {
-//        BugsnagDispatcher bd = new BugsnagDispatcher();
-//        List<Organization> organizations = bd.getOrganization();
-//        for (Organization organization : organizations) {
-//            System.out.println(organization);
-//        }
-//        assertTrue(organizations.size() > 0);
-//    }
-//
-//    private Project getFirstProject() {
-//        Organization organization = getFirstOrganization();
-//        BugsnagDispatcher bd = new BugsnagDispatcher();
-//        List<Project> projects = bd.getProjects(organization.id);
-//        return projects.get(0);
-//    }
-//
-//    @Test
-//    public void getProjects() {
-//        Organization organization = getFirstOrganization();
-//        BugsnagDispatcher bd = new BugsnagDispatcher();
-//        List<Project> projects = bd.getProjects(organization.id);
-//        for (Project project : projects) {
-//            System.out.println(project);
-//        }
-//        assertTrue(projects.size() > 0);
-//    }
+    @Test
+    public void canCreateBugsnagEvent() {
+        Persistence.bugsnagEvents.create(BUGSNAG_EVENT);
+        BugsnagEvent retrieved = Persistence.bugsnagEvents.getById(BUGSNAG_EVENT.id);
+        assertEquals(BUGSNAG_EVENT.id, retrieved.id, "Found Bugsnag event.");
 
-//    @Test
-//    public void getAllProjectErrors() {
-//        Project project = getFirstProject();
-//        BugsnagDispatcher bd = new BugsnagDispatcher();
-//        List<ProjectError> errors = bd.getAllProjectErrors(project.id);
-//        assertTrue(errors.size() > 0);
-//    }
-//
-//    private ProjectError getFirstError() {
-//        Project project = getFirstProject();
-//        BugsnagDispatcher bd = new BugsnagDispatcher();
-//        List<ProjectError> errors = bd.getAllProjectErrors(project.id);
-//        return errors.get(0);
-//    }
-//
-//    @Test
-//    public void getAllProjectErrorEvents() {
-//        ProjectError projectError = getFirstError();
-//        BugsnagDispatcher bd = new BugsnagDispatcher();
-//        List<EventException> eventExceptions = bd.getAllErrorEvents(projectError.projectId, projectError.id);
-//        assertTrue(eventExceptions.size() > 0);
-//    }
+    }
+
+    @Test
+    public void canCreateBugsnagEventRequest() {
+        Persistence.bugsnagEventRequests.create(BUGSNAG_EVENT_REQUEST);
+        BugsnagEventRequest retrieved = Persistence.bugsnagEventRequests.getById(BUGSNAG_EVENT_REQUEST.id);
+        assertEquals(BUGSNAG_EVENT_REQUEST.id, retrieved.id, "Found Bugsnag event request.");
+    }
+
+    @AfterAll
+    public static void tearDown() {
+        if (BUGSNAG_EVENT != null) {
+            Persistence.bugsnagEvents.removeById(BUGSNAG_EVENT.id);
+        }
+
+        if (BUGSNAG_EVENT_REQUEST != null) {
+            Persistence.bugsnagEventRequests.removeById(BUGSNAG_EVENT_REQUEST.id);
+        }
+    }
+
+    /**
+     * Get Bugsnag responses from file for creating a Bugsnag event and event request.
+     */
+    private static void stageResponses() {
+        final String filePath = "src/test/resources/org/opentripplanner/middleware/";
+        BUGSNAG_EVENT = FileUtils.getFileContentsAsJSON(filePath + "bugsnagEvent.json", BugsnagEvent.class);
+        BUGSNAG_EVENT_REQUEST = FileUtils.getFileContentsAsJSON(filePath + "bugsnagEventRequest.json", BugsnagEventRequest.class);
+    }
+
 }

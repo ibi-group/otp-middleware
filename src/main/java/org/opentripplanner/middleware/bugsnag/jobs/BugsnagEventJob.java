@@ -13,18 +13,21 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
+import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsInt;
 
 /**
- * Job to check for new event data requests and confirm that Bugsbag has completed the request. At which point obtain
+ * Job to check for new event data requests and confirm that Bugsnag has completed the request. At which point obtain
  * the event data from Bugsnag storage, save to Mongo and remove stale events.
  */
 public class BugsnagEventJob implements Runnable {
 
-    private static final String BUGSNAG_REPORTING_WINDOW_IN_DAYS
-        = getConfigPropertyAsText("BUGSNAG_REPORTING_WINDOW_IN_DAYS");
+    private static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS
+        = getConfigPropertyAsInt("BUGSNAG_REPORTING_WINDOW_IN_DAYS", 14);
 
     private static TypedPersistence<BugsnagEventRequest> bugsnagEventRequests = Persistence.bugsnagEventRequests;
     private static TypedPersistence<BugsnagEvent> bugsnagEvents = Persistence.bugsnagEvents;
@@ -61,8 +64,11 @@ public class BugsnagEventJob implements Runnable {
 
         // add new events
         for (BugsnagEvent bugsnagEvent : events) {
-            Bson filter = Filters.eq("errorId", bugsnagEvent.errorId);
-            if (bugsnagEvents.getOneFiltered(filter) == null) {
+            Set<Bson> clauses = new HashSet<>();
+            clauses.add(eq("errorId", bugsnagEvent.errorId));
+            clauses.add(eq("projectId", bugsnagEvent.projectId));
+            clauses.add(eq("receivedAt", bugsnagEvent.receivedAt));
+            if (bugsnagEvents.getOneFiltered(Filters.and(clauses)) == null) {
                 // only create event if not present
                 bugsnagEvents.create(bugsnagEvent);
             }
@@ -75,14 +81,14 @@ public class BugsnagEventJob implements Runnable {
     private void removeStaleEvents() {
         LocalDate startOfReportingWindow = LocalDate
             .now()
-            .minusDays(Integer.parseInt(BUGSNAG_REPORTING_WINDOW_IN_DAYS) + 1);
+            .minusDays(BUGSNAG_REPORTING_WINDOW_IN_DAYS + 1);
         startOfReportingWindow.atTime(LocalTime.MIDNIGHT);
 
         Date date = Date.from(startOfReportingWindow.atTime(LocalTime.MIDNIGHT)
             .atZone(ZoneId.systemDefault())
             .toInstant());
 
-        Bson filter = Filters.lte("dateCreated", date);
+        Bson filter = Filters.lte("receivedAt", date);
         List<BugsnagEvent> events = bugsnagEvents.getFiltered(filter);
         for (BugsnagEvent event : events) {
             bugsnagEvents.removeById(event.id);

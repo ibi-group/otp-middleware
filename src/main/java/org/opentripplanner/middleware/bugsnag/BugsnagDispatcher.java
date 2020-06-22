@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
 /**
@@ -24,13 +25,14 @@ public class BugsnagDispatcher {
     private static final String BUGSNAG_API_URL = "https://api.bugsnag.com";
     private static final String BUGSNAG_API_KEY = getConfigPropertyAsText("BUGSNAG_API_KEY");
     private static final String BUGSNAG_ORGANIZATION = getConfigPropertyAsText("BUGSNAG_ORGANIZATION");
+    private static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS
+        = getConfigPropertyAsInt("BUGSNAG_REPORTING_WINDOW_IN_DAYS", 14);
 
     private static Organization ORGANIZATION = null;
     public static HashMap<String, Project> PROJECTS = new HashMap<>();
 
     private static HashMap<String, String> BUGSNAG_HEADERS = new HashMap<>();
 
-    // if BUGSNAG_REPORTING_WINDOW_IN_DAYS changes the error.since value in this JSON file will need to be updated
     private static String EVENT_DATA_REQUEST_FILTER;
 
     private static int CONNECTION_TIMEOUT_IN_SECONDS = 5;
@@ -46,6 +48,11 @@ public class BugsnagDispatcher {
 
         EVENT_DATA_REQUEST_FILTER
             = FileUtils.getFileContents("src/main/resources/org/opentripplanner/middleware/eventDataRequestFilter.json");
+
+        // replace placeholder with reporting window number of days
+        EVENT_DATA_REQUEST_FILTER
+            = EVENT_DATA_REQUEST_FILTER.replace("$BUGSNAG_REPORTING_WINDOW_IN_DAYS$",
+            String.valueOf(BUGSNAG_REPORTING_WINDOW_IN_DAYS));
     }
 
     /**

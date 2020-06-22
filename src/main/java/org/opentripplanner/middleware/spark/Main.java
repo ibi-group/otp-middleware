@@ -8,7 +8,11 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
-import org.opentripplanner.middleware.controllers.api.*;
+import org.opentripplanner.middleware.controllers.api.AdminUserController;
+import org.opentripplanner.middleware.controllers.api.ApiUserController;
+import org.opentripplanner.middleware.controllers.api.BugsnagController;
+import org.opentripplanner.middleware.controllers.api.OtpUserController;
+import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.otp.OtpRequestProcessor;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -79,9 +83,8 @@ public class Main {
         // available at http://localhost:4567/async
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
 
-        // available at http://localhost:4567/api/admin/bugsnag/errorsummary
-        //TODO move to admin
-        spark.get("/bugsnag/errorsummary", BugsnagController::getErrorSummary);
+        // available at http://localhost:4567/api/admin/bugsnag/eventsummary
+        spark.get(API_PREFIX + "admin/bugsnag/eventsummary", BugsnagController::getEventSummary);
 
         // available at http://localhost:4567/plan
         spark.get("/plan", OtpRequestProcessor::planning);
@@ -195,5 +198,21 @@ public class Main {
         }
     }
 
+    /**
+     * @return a config value (nested fields defined by dot notation "data.use_s3_storage") as an int or the default
+     * value if the config value is not defined (null) or cannot be converted to an int.
+     */
+    public static int getConfigPropertyAsInt(String name, int defaultValue) {
+
+        int value = defaultValue;
+
+        try {
+            JsonNode node = getConfigProperty(name);
+            value = Integer.parseInt(node.asText());
+        } catch (NumberFormatException | NullPointerException e) {
+            LOG.error("Unable to parse {}. Using default: {}", name, defaultValue, e);
+        }
+        return value;
+    }
 
 }
