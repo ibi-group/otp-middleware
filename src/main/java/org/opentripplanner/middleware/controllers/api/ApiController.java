@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import com.mongodb.client.model.Filters;
@@ -22,7 +23,6 @@ import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
@@ -39,10 +39,9 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public abstract class ApiController<T extends Model> implements Endpoint {
     private static final String ID_PARAM = "/:id";
-    private static final String FIND_PATH = "/find/:attribute/:value";
-    private final String ROOT_ROUTE;
+    protected final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
-    private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String classToLowercase;
     final TypedPersistence<T> persistence;
     private final Class<T> clazz;
@@ -65,22 +64,44 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * This method is called by {@link SparkSwagger} to register endpoints and generate the docs.
+     * This method is called on each object deriving from ApiController by {@link SparkSwagger}
+     * to register endpoints and generate the docs.
+     * In this method, we add the different API paths and methods (e.g. the CRUD methods)
+     * to the restApi parameter for the applicable controller.
      * @param restApi The object to which to attach the documentation.
      */
     @Override
     public void bind(final SparkSwagger restApi) {
+        ApiEndpoint apiEndpoint = restApi.endpoint(
+            endpointPath(ROOT_ROUTE).withDescription("Interface for querying and managing '" + classToLowercase + "' entities."),
+            (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase)
+        );
+        buildEndpoint(apiEndpoint);
+    }
+
+    /**
+     * This method adds to the provided baseEndpoint parameter a set of basic HTTP Spark methods
+     * (e.g., getOne, getMany, delete) for CRUD operations.
+     * It can optionally be overridden by child classes to add any supplemental methods to the baseEndpoint.
+     * Either before or after(*) supplemental methods are added, be sure to call the super method to add CRUD operations.
+     *
+     * (*) Note: spark-java will resolve methods in the order they are added to the baseEndpoint parameter.
+     * For instance, if /path and /path/subpath are added in this order, then
+     * a request with /path/subpath will be treated as /path, and the method for /path/subpath will be ignored.
+     * Conversely, if /path/subpath and /path are added in this order, then
+     * a request with /path/subpath will be handled by the method for /path/subpath.
+     * @param baseEndpoint The end point to which to add the methods.
+     */
+    protected void buildEndpoint(ApiEndpoint baseEndpoint) {
         LOG.info("Registering routes and enabling docs for {}", ROOT_ROUTE);
 
-        restApi.endpoint(endpointPath(ROOT_ROUTE)
-            .withDescription("Interface for querying and managing '" + classToLowercase + "' entities."), (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase))
+        // Careful here!
+        // If using lambdas with the GET method, a bug in spark-swagger
+        // requires you to write path(<entire_route>).
+        // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
+        // Other HTTP methods are not affected by this bug.
 
-            // Careful here!
-            // If using lambdas with the GET method, a bug in spark-swagger
-            // requires you to write path(<entire_route>).
-            // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
-            // Other HTTP methods are not affected by this bug.
-
+        baseEndpoint
             // Get multiple entities.
             .get(path(ROOT_ROUTE)
                     .withDescription("Gets a list of all '" + classToLowercase + "' entities.")
@@ -96,19 +117,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     .withResponseType(clazz),
                     this::getOne, JsonUtils::toJson
             )
-
-            // Get one entity by field.
-            .get(path(ROOT_ROUTE + FIND_PATH)
-                    .withDescription("Returns a '" + classToLowercase + "' entity whose field has the specified value, or 404 if not found.")
-                    .withPathParam().withName("attribute").withDescription("The name of the attribute of which to extract the value.").and()
-                    .withPathParam().withName("value").withDescription("The desired value for the specified attribute.").and()
-                    // .withResponses(...) // FIXME: not implemented (requires source change).
-                    .withResponseType(clazz),
-                    this::getOneByField, JsonUtils::toJson
-            )
-
-            // Options response for CORS for the /find/{..}/{..} route
-            .options(path(FIND_PATH), (req, res) -> "")
 
             // Options response for CORS
             .options(path(""), (req, res) -> "")
@@ -184,15 +192,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * HTTP endpoint to get one entity specified by a field value.
-     */
-    private T getOneByField(Request req, Response res) {
-        String attribute = getParamFromRequest(req, "attribute");
-        String value = getParamFromRequest(req, "value");
-        return getFirstObjectByFieldValue(req, attribute, value);
-    }
-
-    /**
      * HTTP endpoint to delete one entity specified by ID.
      */
     private String deleteOne(Request req, Response res) {
@@ -240,22 +239,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 req,
                 HttpStatus.NOT_FOUND_404,
                 String.format("No %s with id=%s found.", classToLowercase, id),
-                null
-            );
-        }
-        return object;
-    }
-
-    /**
-     * Convenience method for extracting the attribute/field param from the HTTP request.
-     */
-    private T getFirstObjectByFieldValue(Request req, String field, String value) {
-        T object =  persistence.getOneFiltered(eq(field, value));
-        if (object == null) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.NOT_FOUND_404,
-                String.format("No %s with %s=%s found.", classToLowercase, field, value),
                 null
             );
         }
@@ -343,13 +326,14 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Get entity ID from request.
      */
     private String getIdFromRequest(Request req) {
-        return getParamFromRequest(req, "id");
+        return getRequiredParamFromRequest(req, "id");
     }
 
     /**
-     * Get entity attribute value from request.
+     * Get a request parameter value.
+     * This method will halt the request if paramName is not provided in the request.
      */
-    private String getParamFromRequest(Request req, String paramName) {
+    private String getRequiredParamFromRequest(Request req, String paramName) {
         String paramValue = req.params(paramName);
         if (paramValue == null) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide parameter name.");

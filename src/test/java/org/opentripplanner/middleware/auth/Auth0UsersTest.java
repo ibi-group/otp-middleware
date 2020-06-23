@@ -35,10 +35,20 @@ public class Auth0UsersTest extends OtpMiddlewareTest {
      * Checks that token is valid soon after creation and seconds until expiration does diminish.
      */
     @Test
-    public void isTokenStale() {
+    public void isTokenStale() throws InterruptedException {
+        final int MILLIS = 2500;
+
+        // Verify that seconds until expiration has decreased since first set.
+        long secondsBefore = Auth0Users.getCachedToken().secondsUntilExpiration();
+        Thread.sleep(MILLIS);
+        long secondsAfter = Auth0Users.getCachedToken().secondsUntilExpiration();
+        assertTrue(secondsAfter <= secondsBefore);
+
+        // MILLIS / 1000 is an int division and the result will be rounded down.
+        assertTrue(secondsAfter + (MILLIS / 1000) <= secondsBefore);
+
         // Verify that token is not expired soon after it set.
         assertFalse(Auth0Users.getCachedToken().isStale());
-        // Verify that seconds until expiration has decreased since first set.
-        assertTrue(Auth0Users.getCachedToken().secondsUntilExpiration() < TOKEN_DURATION_SECONDS);
+        assertTrue(secondsAfter < TOKEN_DURATION_SECONDS);
     }
 }

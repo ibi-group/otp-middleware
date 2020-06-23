@@ -14,28 +14,18 @@ public class OtpUser extends AbstractUser {
     /** Whether the user has consented to terms of use. */
     public boolean hasConsentedToTerms;
 
-    /**
-     * Whether the email address has been verified.
-     * Some identity services, such as Auth0, manage the email verification process and status,
-     * so this field is only for reference.
-     */
-    public boolean isEmailVerified;
-
-    /** Whether the phone number has been verified. */
+    /** Whether the phone number has been verified. (TODO: implement phone verification.) */
     public boolean isPhoneNumberVerified;
 
     /**
      * Notification preference for this user
      * ("email", "sms", or "none").
-     * NOTE: This could become an enum, e.g. https://jira.mongodb.org/browse/JAVA-268.
+     * TODO: Convert to enum. See http://mongodb.github.io/mongo-java-driver/3.7/bson/pojos/ for guidance.
      */
     public String notificationChannel;
 
     /** Phone number for SMS notifications. */
     public String phoneNumber;
-
-    /** Locations that the user has searched. */
-    public List<UserLocation> recentLocations = new ArrayList<>();
 
     /** Locations that the user has saved. */
     public List<UserLocation> savedLocations = new ArrayList<>();
