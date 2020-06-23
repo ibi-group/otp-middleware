@@ -1,8 +1,11 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -31,11 +34,11 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public abstract class ApiController<T extends Model> implements Endpoint {
     private static final String ID_PARAM = "/:id";
-    private final String ROOT_ROUTE;
+    protected final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
-    private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String classToLowercase;
-    private final TypedPersistence<T> persistence;
+    final TypedPersistence<T> persistence;
     private final Class<T> clazz;
 
     /**
@@ -43,29 +46,57 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * @param persistence {@link TypedPersistence} persistence for the entity to set up CRUD endpoints for
      */
     public ApiController (String apiPrefix, TypedPersistence<T> persistence) {
+        this(apiPrefix, persistence, null);
+    }
+
+    public ApiController (String apiPrefix, TypedPersistence<T> persistence, String resource) {
         this.clazz = persistence.clazz;
         this.persistence = persistence;
         this.classToLowercase = persistence.clazz.getSimpleName().toLowerCase();
-        this.ROOT_ROUTE = apiPrefix + SECURE + classToLowercase;
+        // Default resource to class name.
+        if (resource == null) resource = SECURE + persistence.clazz.getSimpleName().toLowerCase();
+        this.ROOT_ROUTE = apiPrefix + resource;
     }
 
     /**
-     * This method is called by {@link SparkSwagger} to register endpoints and generate the docs.
+     * This method is called on each object deriving from ApiController by {@link SparkSwagger}
+     * to register endpoints and generate the docs.
+     * In this method, we add the different API paths and methods (e.g. the CRUD methods)
+     * to the restApi parameter for the applicable controller.
      * @param restApi The object to which to attach the documentation.
      */
     @Override
     public void bind(final SparkSwagger restApi) {
+        ApiEndpoint apiEndpoint = restApi.endpoint(
+            endpointPath(ROOT_ROUTE).withDescription("Interface for querying and managing '" + classToLowercase + "' entities."),
+            (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase)
+        );
+        buildEndpoint(apiEndpoint);
+    }
+
+    /**
+     * This method adds to the provided baseEndpoint parameter a set of basic HTTP Spark methods
+     * (e.g., getOne, getMany, delete) for CRUD operations.
+     * It can optionally be overridden by child classes to add any supplemental methods to the baseEndpoint.
+     * Either before or after(*) supplemental methods are added, be sure to call the super method to add CRUD operations.
+     *
+     * (*) Note: spark-java will resolve methods in the order they are added to the baseEndpoint parameter.
+     * For instance, if /path and /path/subpath are added in this order, then
+     * a request with /path/subpath will be treated as /path, and the method for /path/subpath will be ignored.
+     * Conversely, if /path/subpath and /path are added in this order, then
+     * a request with /path/subpath will be handled by the method for /path/subpath.
+     * @param baseEndpoint The end point to which to add the methods.
+     */
+    protected void buildEndpoint(ApiEndpoint baseEndpoint) {
         LOG.info("Registering routes and enabling docs for {}", ROOT_ROUTE);
 
-        restApi.endpoint(endpointPath(ROOT_ROUTE)
-            .withDescription("Interface for querying and managing '" + classToLowercase + "' entities."), (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase))
+        // Careful here!
+        // If using lambdas with the GET method, a bug in spark-swagger
+        // requires you to write path(<entire_route>).
+        // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
+        // Other HTTP methods are not affected by this bug.
 
-            // Careful here!
-            // If using lambdas with the GET method, a bug in spark-swagger
-            // requires you to write path(<entire_route>).
-            // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
-            // Other HTTP methods are not affected by this bug.
-
+        baseEndpoint
             // Get multiple entities.
             .get(path(ROOT_ROUTE)
                     .withDescription("Gets a list of all '" + classToLowercase + "' entities.")
@@ -137,8 +168,13 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private String deleteOne(Request req, Response res) {
         long startTime = System.currentTimeMillis();
         String id = getIdFromRequest(req);
+        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         try {
             T object = getObjectForId(req, id);
+            // Check that requesting user can manage entity.
+            if (!object.canBeManagedBy(requestingUser)) {
+                logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to delete %s.", classToLowercase));
+            }
             // Run pre-delete hook. If return value is false, abort.
             if (!preDeleteHook(object, req)) {
                 logMessageAndHalt(req, 500, "Unknown error occurred during delete attempt.");
@@ -183,12 +219,12 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     /**
      * Hook called before object is created in MongoDB.
      */
-    abstract T preCreateHook(T entity, Request req);
+    abstract T preCreateHook(T entityToCreate, Request req);
 
     /**
      * Hook called before object is updated in MongoDB. Validation of entity object could go here.
      */
-    abstract T preUpdateHook(T entity, Request req);
+    abstract T preUpdateHook(T entityToUpdate, T preExistingEntity, Request req);
 
     /**
      * Hook called before object is deleted in MongoDB.
@@ -207,25 +243,42 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         if (req.params("id") == null && req.requestMethod().equals("PUT")) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
         }
+        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         final boolean isCreating = req.params("id") == null;
         // Save or update to database
         try {
             // Validate fields by deserializing into POJO.
             T object = getPOJOFromRequestBody(req, clazz);
             if (isCreating) {
+                // Verify that the requesting user can create object.
+                if (!object.canBeCreatedBy(requestingUser)) {
+                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to create %s.", classToLowercase));
+                }
                 // Run pre-create hook and use updated object (with potentially modified values) in create operation.
                 T updatedObject = preCreateHook(object, req);
                 persistence.create(updatedObject);
             } else {
                 String id = getIdFromRequest(req);
+                T preExistingObject = getObjectForId(req, id);
+                if (preExistingObject == null) {
+                    logMessageAndHalt(req, 400, "Object to update does not exist!");
+                    return null;
+                }
+                // Check that requesting user can manage entity.
+                if (!preExistingObject.canBeManagedBy(requestingUser)) {
+                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to update %s.", classToLowercase));
+                }
                 // Update last updated value.
                 object.lastUpdated = new Date();
-                object.dateCreated = getObjectForId(req, id).dateCreated;
+                // Pin the date created to pre-existing value.
+                object.dateCreated = preExistingObject.dateCreated;
                 // Validate that ID in JSON body matches ID param. TODO add test
                 if (!id.equals(object.id)) {
                     logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "ID in JSON body must match ID param.");
                 }
-                persistence.replace(id, object);
+                // Get updated object from pre-update hook method.
+                T updatedObject = preUpdateHook(object, preExistingObject, req);
+                persistence.replace(id, updatedObject);
             }
             // Return object that ultimately gets stored in database.
             return persistence.getById(object.id);
@@ -244,10 +297,18 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Get entity ID from request.
      */
     private String getIdFromRequest(Request req) {
-        String id = req.params("id");
-        if (id == null) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
+        return getRequiredParamFromRequest(req, "id");
+    }
+
+    /**
+     * Get a request parameter value.
+     * This method will halt the request if paramName is not provided in the request.
+     */
+    private String getRequiredParamFromRequest(Request req, String paramName) {
+        String paramValue = req.params(paramName);
+        if (paramValue == null) {
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide parameter name.");
         }
-        return id;
+        return paramValue;
     }
 }

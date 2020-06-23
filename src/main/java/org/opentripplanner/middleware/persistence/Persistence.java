@@ -8,7 +8,7 @@ import com.mongodb.client.MongoDatabase;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
-import org.opentripplanner.middleware.models.User;
+import org.opentripplanner.middleware.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,11 @@ public class Persistence {
     private static MongoClient mongoClient;
     private static MongoDatabase mongoDatabase;
     // One abstracted Mongo collection for each class of persisted objects
-    public static TypedPersistence<User> users;
+    public static TypedPersistence<OtpUser> otpUsers;
+    public static TypedPersistence<AdminUser> adminUsers;
+    public static TypedPersistence<ApiUser> apiUsers;
+    public static TypedPersistence<TripRequest> tripRequests;
+    public static TypedPersistence<TripSummary> tripSummaries;
 
     public static void initialize () {
         // TODO Add custom codec libraries
@@ -65,7 +69,11 @@ public class Persistence {
         LOG.info("Connecting to MongoDB instance at {}://{}", MONGO_PROTOCOL, MONGO_URI);
         mongoClient = MongoClients.create(settings);
         mongoDatabase = mongoClient.getDatabase(MONGO_DB_NAME);
-        users = new TypedPersistence(mongoDatabase, User.class);
+        otpUsers = new TypedPersistence(mongoDatabase, OtpUser.class);
+        adminUsers = new TypedPersistence(mongoDatabase, AdminUser.class);
+        apiUsers = new TypedPersistence(mongoDatabase, ApiUser.class);
+        tripRequests = new TypedPersistence(mongoDatabase, TripRequest.class);
+        tripSummaries = new TypedPersistence(mongoDatabase, TripSummary.class);
         // TODO Add other models...
     }
 

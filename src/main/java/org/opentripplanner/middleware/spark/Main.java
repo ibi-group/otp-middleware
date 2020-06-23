@@ -7,8 +7,12 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.controllers.api.AdminUserController;
+import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.LogController;
-import org.opentripplanner.middleware.controllers.api.UserController;
+import org.opentripplanner.middleware.controllers.api.TripHistoryController;
+import org.opentripplanner.middleware.otp.OtpRequestProcessor;
+import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,30 +40,37 @@ public class Main {
         // Connect to MongoDB.
         Persistence.initialize();
 
+        initializeHttpEndpoints();
+    }
+
+    private static void initializeHttpEndpoints() throws IOException {
         // Must start spark explicitly to use spark-swagger.
         // https://github.com/manusant/spark-swagger#endpoints-binding
         Service spark = Service.ignite().port(Service.SPARK_DEFAULT_PORT);
 
-        // Define some endpoints.
-        // spark.staticFileLocation("/public");
-
         // websocket() must be declared before the other get() endpoints.
         // available at http://localhost:4567/async-websocket
         spark.webSocket("/async-websocket", BasicOtpWebSocketController.class);
-
-        SparkSwagger.of(spark)
+        try {
+            SparkSwagger.of(spark)
                 // Register API routes.
                 .endpoints(() -> List.of(
-                        new UserController(API_PREFIX)
-                        // TODO Add other models.
+                    new AdminUserController(API_PREFIX),
+                    new ApiUserController(API_PREFIX),
+                    new OtpUserController(API_PREFIX)
+                    // TODO Add other models.
                 ))
                 .generateDoc();
         // Add log controller HTTP endpoints
         // TODO: We should determine whether we want to use Spark Swagger for these endpoints too.
         LogController.register(spark, API_PREFIX);
+        } catch (RuntimeException e) {
+            LOG.error("Error initializing API controllers", e);
+            System.exit(1);
+        }
         spark.options("/*",
             (request, response) -> {
-            logMessageAndHalt(request, HttpStatus.OK_200, "OK");
+                logMessageAndHalt(request, HttpStatus.OK_200, "OK");
                 return "OK";
             });
 
@@ -72,8 +83,19 @@ public class Main {
         // available at http://localhost:4567/async
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
 
-        spark.before(API_PREFIX + "secure/*", ((request, response) -> {
+        // available at http://localhost:4567/plan
+        spark.get("/plan", OtpRequestProcessor::planning);
+
+        // available at http://localhost:4567/api/secure/triprequests
+        spark.get(API_PREFIX + "/secure/triprequests", TripHistoryController::getTripRequests);
+
+        spark.before(API_PREFIX + "/secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
+        }));
+        spark.before(API_PREFIX + "admin/*", ((request, response) -> {
+            if (!request.requestMethod().equals("OPTIONS")) {
+                Auth0Connection.checkUserIsAdmin(request, response);
+            }
         }));
 
         // Return "application/json" and set gzip header for all API routes.
@@ -116,14 +138,14 @@ public class Main {
      * JsonNode. Checks env.yml and returns null if property is not found.
      */
     private static JsonNode getConfigProperty(String name) {
-        String parts[] = name.split("\\.");
+        String[] parts = name.split("\\.");
         JsonNode node = envConfig;
-        for (int i = 0; i < parts.length; i++) {
-            if(node == null) {
+        for (String part : parts) {
+            if (node == null) {
                 LOG.warn("Config property {} not found", name);
                 return null;
             }
-            node = node.get(parts[i]);
+            node = node.get(part);
         }
         return node;
     }
@@ -138,11 +160,11 @@ public class Main {
     }
 
     private static boolean hasConfigProperty(JsonNode config, String name) {
-        String parts[] = name.split("\\.");
+        String[] parts = name.split("\\.");
         JsonNode node = config;
-        for (int i = 0; i < parts.length; i++) {
-            if(node == null) return false;
-            node = node.get(parts[i]);
+        for (String part : parts) {
+            if (node == null) return false;
+            node = node.get(part);
         }
         return node != null;
     }

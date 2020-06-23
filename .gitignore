@@ -11,6 +11,8 @@ target/
 otp-middleware.iml
 tmp/
 deploy/
+jmeter/apache*
+jmeter/output
 
 # Configurations
 configurations/*

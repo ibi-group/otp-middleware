@@ -2,20 +2,24 @@ package org.opentripplanner.middleware.auth;
 
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.client.mgmt.ManagementAPI;
-import com.auth0.client.mgmt.filter.UserFilter;
 import com.auth0.exception.Auth0Exception;
-import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.mgmt.users.User;
-import com.auth0.json.mgmt.users.UsersPage;
 import com.auth0.net.AuthRequest;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.validator.routines.EmailValidator;
+import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.models.AbstractUser;
+import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Request;
 
-import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
+import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * This class contains methods for querying Auth0 users using the Auth0 User Management API. Auth0 docs describing the
@@ -26,41 +30,48 @@ public class Auth0Users {
     // This client/secret pair is for making requests for an API access token used with the Management API.
     private static final String AUTH0_API_CLIENT = getConfigPropertyAsText("AUTH0_API_CLIENT");
     private static final String AUTH0_API_SECRET = getConfigPropertyAsText("AUTH0_API_SECRET");
-    // This is the UI client ID which is currently used to synchronize the user permissions object between server and UI.
-    private static final String clientId = getConfigPropertyAsText("AUTH0_CLIENT_ID");
+    private static final String DEFAULT_CONNECTION_TYPE = "Username-Password-Authentication";
     private static final String MANAGEMENT_API_VERSION = "v2";
     private static final String SEARCH_API_VERSION = "v3";
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
-    public static final String USERS_API_PATH = API_PATH + "/users";
-    // Cached API token so that we do not have to request a new one each time a Management API request is made.
-    private static TokenHolder cachedToken = null;
-    private static final ObjectMapper mapper = new ObjectMapper();
+    /** Cached API token so that we do not have to request a new one each time a Management API request is made. */
+    private static TokenCache cachedToken = null;
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Users.class);
     private static final AuthAPI authAPI = new AuthAPI(AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET);
 
     /**
-     * Assign Auth0 admin role to the users specified by the provided user IDs. In order to restrict access to the
-     * Admin Dashboard to only those Auth0 users designated as admins, the admin role must be assigned when an admin
-     * user is created (or if the Auth0 user already exists, the admin role can be assigned to their pre-existing user
-     * profile).
+     * Creates a standard user for the provided email address. Defaults to a random UUID password and connection type
+     * of {@link #DEFAULT_CONNECTION_TYPE}.
      */
-    public static boolean assignAdminRoleToUser(String... userIds) {
-        String apiToken = getApiToken();
-        if (AUTH0_DOMAIN == null || apiToken == null) {
-            LOG.error("Cannot call Management API because token or Auth0 domain is null.");
-            return false;
-        }
-        String adminRoleId = getConfigPropertyAsText("AUTH0_ROLE");
-        ManagementAPI mgmt = new ManagementAPI(AUTH0_DOMAIN, apiToken);
-        try {
-            mgmt.roles()
-                .assignUsers(adminRoleId, List.of(userIds))
-                .execute();
-            return true;
-        } catch (Auth0Exception e) {
-            LOG.error("Could not assign users {} to role {}", userIds, adminRoleId, e);
-            return false;
-        }
+    public static User createAuth0UserForEmail(String email) throws Auth0Exception {
+        // Create user object and assign properties.
+        User user = new User();
+        user.setEmail(email);
+        // TODO set name? phone? other Auth0 properties?
+        user.setPassword(UUID.randomUUID().toString());
+        user.setConnection(DEFAULT_CONNECTION_TYPE);
+        return getManagementAPI()
+            .users()
+            .create(user)
+            .execute();
+    }
+
+    /**
+     * Delete Auth0 user by Auth0 user ID using the Management API.
+     */
+    public static void deleteAuth0User(String userId) throws Auth0Exception {
+        getManagementAPI()
+            .users()
+            .delete(userId)
+            .execute();
+    }
+
+    public static void setCachedToken(TokenCache tokenCache) {
+        cachedToken = tokenCache;
+    }
+
+    public static TokenCache getCachedToken() {
+        return cachedToken;
     }
 
     /**
@@ -69,68 +80,115 @@ public class Auth0Users {
      * expired). More information on setting this up is here: https://auth0.com/docs/api/management/v2/get-access-tokens-for-production
      */
     public static String getApiToken() {
-        long nowInMillis = new Date().getTime();
         // If cached token has not expired, use it instead of requesting a new one.
-        if (cachedToken != null && cachedToken.getExpiresIn() > 60) {
-            long minutesToExpiration = cachedToken.getExpiresIn() / 60;
-            LOG.info("Using cached token (expires in {} minutes)", minutesToExpiration);
-            return cachedToken.getAccessToken();
+        if (cachedToken != null && !cachedToken.isStale()) {
+            LOG.info("Using cached token (expires in {} minutes)", cachedToken.minutesUntilExpiration());
+            return cachedToken.tokenHolder.getAccessToken();
         }
         LOG.info("Getting new Auth0 API access token (cached token does not exist or has expired).");
         AuthRequest tokenRequest = authAPI.requestToken(getAuth0Url() + API_PATH + "/");
         // Cache token for later use and return token string.
         try {
-            cachedToken = tokenRequest.execute();
+            setCachedToken(new TokenCache(tokenRequest.execute()));
         } catch (Auth0Exception e) {
             LOG.error("Could not fetch Auth0 token", e);
             return null;
         }
-        return cachedToken.getAccessToken();
-    }
-
-    /**
-     * Wrapper method for performing user search with default per page count.
-     * @return JSON string of users matching search query
-     */
-    public static UsersPage getAuth0Users(String searchQuery, int page) {
-        String apiToken = getApiToken();
-        if (AUTH0_DOMAIN == null || apiToken == null) {
-            LOG.error("Cannot call Management API because token or Auth0 domain is null.");
-            return null;
-        }
-        UserFilter filter = new UserFilter()
-            .withQuery(searchQuery)
-            .withPage(page, 10)
-            .withSearchEngine(SEARCH_API_VERSION)
-            .withTotals(false);
-        ManagementAPI mgmt = new ManagementAPI(AUTH0_DOMAIN, apiToken);
-        try {
-            return mgmt.users().list(filter).execute();
-        } catch (Auth0Exception e) {
-            LOG.error("Could not fetch users for query.", e);
-            return null;
-        }
-    }
-
-    /**
-     * Wrapper method for performing user search with default per page count and page number = 0.
-     */
-    public static UsersPage getAuth0Users(String queryString) {
-        return getAuth0Users(queryString, 0);
+        return cachedToken.tokenHolder.getAccessToken();
     }
 
     /**
      * Get a single Auth0 user for the specified email.
      */
-    public static Auth0UserProfile getUserByEmail(String email) {
-        ManagementAPI mgmt = new ManagementAPI(AUTH0_DOMAIN, getApiToken());
+    public static User getUserByEmail(String email, boolean createIfNotExists) {
         try {
-            List<User> users = mgmt.users().listByEmail(email, null).execute();
-            if (users.size() > 0) return new Auth0UserProfile(users.get(0));
+            List<User> users = getManagementAPI()
+                .users()
+                .listByEmail(email, null)
+                .execute();
+            if (users.size() > 0) return users.get(0);
         } catch (Auth0Exception e) {
             LOG.error("Could not perform user search by email", e);
+            return null;
+        }
+        if (createIfNotExists) {
+            try {
+                return createAuth0UserForEmail(email);
+            } catch (Auth0Exception e) {
+                LOG.error("Could not create user for email", e);
+            }
         }
         return null;
+    }
+
+    /**
+     * Checks if an Auth0 user is a Data Tools user. Note: this may need to change once Data Tools user structure
+     * changes.
+     */
+    public static boolean isDataToolsUser(User auth0UserProfile) {
+        if (auth0UserProfile == null) return false;
+        Map<String, Object> appMetadata = auth0UserProfile.getAppMetadata();
+        return appMetadata != null && appMetadata.containsKey("datatools");
+    }
+
+    public static <U extends AbstractUser> U updateAuthFieldsForUser(U user, User auth0UserProfile) {
+        // If a user with email exists in Auth0, assign existing Auth0 ID to new user record in MongoDB. Also,
+        // check if the user is a Data Tools user and assign value accordingly.
+        user.auth0UserId = auth0UserProfile.getId();
+        user.isDataToolsUser = isDataToolsUser(auth0UserProfile);
+        return user;
+    }
+
+    /** Wrapper method for getting a new instance of the Auth0 {@link ManagementAPI} */
+    private static ManagementAPI getManagementAPI() {
+        return new ManagementAPI(AUTH0_DOMAIN, getApiToken());
+    }
+
+    /**
+     * Shorthand method for validating a new user and creating the user with Auth0.
+     */
+    public static <U extends AbstractUser> User createNewAuth0User(U user, Request req, TypedPersistence<U> userStore) {
+        validateUser(user, req);
+        // Ensure no user with email exists in MongoDB.
+        U userWithEmail = userStore.getOneFiltered(eq("email", user.email));
+        if (userWithEmail != null) {
+            logMessageAndHalt(req, 400, "User with email already exists in database!");
+        }
+        // Check for pre-existing user in Auth0 and create if not exists.
+        User auth0UserProfile = getUserByEmail(user.email, true);
+        if (auth0UserProfile == null) {
+            logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Error creating user for email " + user.email);
+        }
+        return auth0UserProfile;
+    }
+
+    /**
+     * Validates a generic {@link User} to be used before creating or updating a user.
+     */
+    public static <U extends AbstractUser> void validateUser(U user, Request req) {
+        if (!isValidEmail(user.email)) {
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Email address is invalid.");
+        }
+    }
+
+    /**
+     * Validates a generic {@link User} to be used before updating a user.
+     */
+    public static <U extends AbstractUser> void validateExistingUser(U user, U preExistingUser, Request req, TypedPersistence<U> userStore) {
+        validateUser(user, req);
+        // Verify that email address for user has not changed.
+        // TODO: should we permit changing email addresses? This would require making an update to Auth0.
+        if (!preExistingUser.email.equals(user.email)) {
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Cannot change user email address!");
+        }
+        // Verify that Auth0 ID for user has not changed.
+        if (!preExistingUser.auth0UserId.equals(user.auth0UserId)) {
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Cannot change Auth0 ID!");
+        }
+    }
+
+    private static boolean isValidEmail(String email) {
+        return EmailValidator.getInstance().isValid(email);
     }
 
     /**
@@ -141,28 +199,5 @@ public class Auth0Users {
         return "your-auth0-domain".equals(AUTH0_DOMAIN)
             ? "http://locahost:8089"
             : "https://" + AUTH0_DOMAIN;
-    }
-
-    /**
-     * Get number of users for the application.
-     */
-    public static int getAuth0UserCount(String searchQuery) {
-        String apiToken = getApiToken();
-        if (AUTH0_DOMAIN == null || apiToken == null) {
-            LOG.error("Cannot call Management API because token or Auth0 domain is null.");
-            return -1;
-        }
-        ManagementAPI mgmt = new ManagementAPI(AUTH0_DOMAIN, apiToken);
-        UserFilter filter = new UserFilter()
-            .withQuery(searchQuery)
-            .withSearchEngine(SEARCH_API_VERSION)
-            .withTotals(true);
-        try {
-            UsersPage page = mgmt.users().list(filter).execute();
-            return page.getTotal();
-        } catch (Auth0Exception e) {
-            LOG.error("Could not fetch user count.", e);
-            return -1;
-        }
     }
 }
