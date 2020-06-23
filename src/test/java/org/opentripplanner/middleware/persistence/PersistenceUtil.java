@@ -87,21 +87,18 @@ public class PersistenceUtil {
     }
 
     public static MonitoredTrip createMonitoredTrip(String userId) {
-        Set<String> days = new HashSet<>();
-        days.add("monday");
-        days.add("tuesday");
-        days.add("wednesday");
-        days.add("thursday");
-        days.add("friday");
-
         MonitoredTrip monitoredTrip = new MonitoredTrip();
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "Commute to work";
         monitoredTrip.tripTime = "07:30";
         monitoredTrip.leadTimeInMinutes = 30;
-        monitoredTrip.days = days;
+        monitoredTrip.monday = true;
+        monitoredTrip.tuesday = true;
+        monitoredTrip.webnesday = true;
+        monitoredTrip.thursday = true;
+        monitoredTrip.friday = true;
         monitoredTrip.excludeFederalHolidays = true;
-        monitoredTrip.queryParams = "userId=b46266f7-a461-421b-8e92-01d99b945ab0&fromPlace=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
+        monitoredTrip.queryParams = "fromPlace=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
 
         Itinerary itinerary = new Itinerary();
         itinerary.duration = 1350L;
@@ -139,7 +136,7 @@ public class PersistenceUtil {
 
         monitoredTrip.itinerary = itinerary;
 
-        Persistence.monitoredTrip.create(monitoredTrip);
+        Persistence.monitoredTrips.create(monitoredTrip);
         return monitoredTrip;
     }
 

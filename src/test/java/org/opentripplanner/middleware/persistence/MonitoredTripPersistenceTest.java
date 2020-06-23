@@ -22,7 +22,7 @@ public class MonitoredTripPersistenceTest  extends OtpMiddlewareTest {
     public void canCreateMonitoredTrip() {
         String userId = "123456";
         monitoredTrip = createMonitoredTrip(userId);
-        MonitoredTrip retrieved = Persistence.monitoredTrip.getById(monitoredTrip.id);
+        MonitoredTrip retrieved = Persistence.monitoredTrips.getById(monitoredTrip.id);
         assertEquals(monitoredTrip.id, retrieved.id, "Found monitored trip ID should equal inserted ID.");
     }
 
@@ -30,15 +30,15 @@ public class MonitoredTripPersistenceTest  extends OtpMiddlewareTest {
     public void canDeleteMonitoredTrip() {
         String userId = "123456";
         MonitoredTrip monitoredTripToDelete = createMonitoredTrip(userId);
-        Persistence.monitoredTrip.removeById(monitoredTripToDelete.id);
-        MonitoredTrip monitoredTrip = Persistence.monitoredTrip.getById(monitoredTripToDelete.id);
+        Persistence.monitoredTrips.removeById(monitoredTripToDelete.id);
+        MonitoredTrip monitoredTrip = Persistence.monitoredTrips.getById(monitoredTripToDelete.id);
         assertNull(monitoredTrip, "Deleted MonitoredTrip should no longer exist in database (should return as null).");
     }
 
     @AfterEach
     public void remove() {
         if (monitoredTrip != null) {
-            Persistence.monitoredTrip.removeById(monitoredTrip.id);
+            Persistence.monitoredTrips.removeById(monitoredTrip.id);
         }
     }
 

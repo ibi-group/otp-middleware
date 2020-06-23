@@ -153,11 +153,18 @@ public abstract class ApiController<T extends Model> implements Endpoint {
 
         Auth0UserProfile requestingUser = getUserFromRequest(req);
         if (isUserAdmin(requestingUser)) {
+            // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
+            // management or review without restriction.
             return persistence.getAll();
-        } else if (persistence.clazz == OtpUser.class) { 
+        } else if (persistence.clazz == OtpUser.class) {
+            // If the required entity is of type 'OtpUser' the assumption is that a call is being made via the
+            // OtpUserController. Therefore, the request should be limited to return just the entity matching the
+            // requesting user.
             Bson filter = Filters.eq("_id", requestingUser.otpUser.id);
             return persistence.getFiltered(filter);
         } else {
+            // For all other cases the assumption is that the request is being made by an Otp user and the requested
+            // entities have a 'userId' parameter. Only entities that match the requesting user id are returned
             Bson filter = Filters.eq("userId", requestingUser.otpUser.id);
             return persistence.getFiltered(filter);
         }

@@ -35,17 +35,39 @@ public class MonitoredTrip extends Model {
     public int leadTimeInMinutes;
 
     /**
-     * The days on which the trip status should be checked. This will be a text representation of each day of the week.
-     * Enums have not been used because they are not compatible with MongoDB at this point in time. Java's number
-     * representation hasn't been used because it is irrelevant to calling systems.
-     *
-     * Expecting each effected day no more than once with the following representation:
-     *
-     * "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
-     *
-     * All use of this parameter will require equalsIgnoreCase() to avoid missing days.
+     * Specify if the monitored trip should be checked on this day
      */
-    public Set<String> days;
+    public boolean monday;
+
+    /**
+     * Specify if the monitored trip should be checked on this day
+     */
+    public boolean tuesday;
+
+    /**
+     * Specify if the monitored trip should be checked on this day
+     */
+    public boolean webnesday;
+
+    /**
+     * Specify if the monitored trip should be checked on this day
+     */
+    public boolean thursday;
+
+    /**
+     * Specify if the monitored trip should be checked on this day
+     */
+    public boolean friday;
+
+    /**
+     * Specify if the monitored trip should be checked on this day
+     */
+    public boolean saturday;
+
+    /**
+     * Specify if the monitored trip should be checked on this day
+     */
+    public boolean sunday;
 
     /**
      * Specify if the monitored trip should be checked on a US federal holiday.
@@ -86,15 +108,15 @@ public class MonitoredTrip extends Model {
     @Override
     public boolean canBeManagedBy(Auth0UserProfile user) {
         // If the user is attempting to update someone else's monitored trip, they must be admin.
-        boolean isManagingSelf = false;
+        boolean belongsToUser = false;
 
         if (user.otpUser != null) {
-            isManagingSelf = userId.equalsIgnoreCase(user.otpUser.id);
+            belongsToUser = userId.equals(user.otpUser.id);
         } else if (user.apiUser != null) {
-            isManagingSelf = userId.equalsIgnoreCase(user.apiUser.id);
+            belongsToUser = userId.equals(user.apiUser.id);
         }
 
-        if (isManagingSelf) {
+        if (belongsToUser) {
             return true;
         } else if (user.adminUser != null) {
             // If not managing self, user must have manage permission.

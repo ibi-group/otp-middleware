@@ -21,7 +21,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         = getConfigPropertyAsInt("MAXIMUM_PERMITTED_MONITORED_TRIPS", 5);
 
     public MonitoredTripController(String apiPrefix) {
-        super(apiPrefix, Persistence.monitoredTrip, "secure/monitoredtrip");
+        super(apiPrefix, Persistence.monitoredTrips, "secure/monitoredtrip");
     }
 
     @Override
