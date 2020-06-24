@@ -38,7 +38,8 @@ public class BugsnagEventJob implements Runnable {
      */
     public void run() {
         Bson filter = Filters.ne("status", "complete");
-        BugsnagEventRequest originalRequest = bugsnagEventRequests.getOneFiltered(filter, Sorts.descending("dateCreated"));
+        BugsnagEventRequest originalRequest =
+            bugsnagEventRequests.getOneFiltered(filter, Sorts.descending("dateCreated"));
         if (originalRequest != null) {
             manageEvents(originalRequest);
         }
@@ -56,8 +57,7 @@ public class BugsnagEventJob implements Runnable {
             return;
         }
 
-        // remove event request now that it has been completed
-        bugsnagEventRequests.removeById(originalRequest.id);
+        removeStaleEventRequests(originalRequest);
 
         // get event data produced from original event request from Bugsnag storage
         List<BugsnagEvent> events = BugsnagDispatcher.getEventData(currentRequest);
@@ -73,6 +73,19 @@ public class BugsnagEventJob implements Runnable {
                 bugsnagEvents.create(bugsnagEvent);
             }
         }
+    }
+
+    /**
+     * Remove event requests which have been completed or superseded
+     */
+    private void removeStaleEventRequests(BugsnagEventRequest latestRequest) {
+        Bson filter = Filters.lte("dateCreated", latestRequest.dateCreated);
+        List<BugsnagEventRequest> eventRequests = bugsnagEventRequests.getFiltered(filter);
+        for (BugsnagEventRequest eventRequest : eventRequests) {
+            // remove event request now that it has been completed
+            bugsnagEventRequests.removeById(eventRequest.id);
+        }
+
     }
 
     /**
