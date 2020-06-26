@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -11,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
 
-import java.net.http.HttpResponse;
+import java.util.List;
 
 import static spark.Spark.halt;
 
@@ -47,26 +48,29 @@ public class JsonUtils {
         }
     }
 
-    /** Utility method to parse generic object from Http response. */
-    public static <T> T getPOJOFromHttpResponse(HttpResponse<String> response, Class<T> clazz) {
-        T pojo = null;
-        try {
-            pojo = mapper.readValue(response.body(), clazz);
-        } catch (JsonProcessingException e) {
-            LOG.error("Unable to get POJO from http response", e);
-        }
-        return pojo;
-    }
-
     /** Utility method to parse generic object from JSON String. */
     public static <T> T getPOJOFromJSON(String json, Class<T> clazz) {
         T pojo = null;
         try {
             pojo = mapper.readValue(json, clazz);
         } catch (JsonProcessingException e) {
-            LOG.error("Unable to get POJO from json", e);
+            LOG.error("Unable to get POJO from json for " + clazz.getSimpleName(), e);
         }
         return pojo;
+    }
+
+    /**
+     * Utility method to parse generic objects from JSON String and return as list
+     */
+    public static <T> List<T> getPOJOFromJSONAsList(String json, Class<T> clazz) {
+        List<T> pojos = null;
+        try {
+            JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, clazz);
+            pojos = mapper.readValue(json, type);
+        } catch (JsonProcessingException e) {
+            LOG.error("Unable to get POJO from json for " + clazz.getSimpleName(), e);
+        }
+        return pojos;
     }
 
     /**

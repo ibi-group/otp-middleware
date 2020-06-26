@@ -11,6 +11,7 @@ import spark.Request;
 import spark.Response;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -28,9 +29,11 @@ public class BugsnagController {
 
         List<EventSummary> eventSummaries = new ArrayList<>();
         List<BugsnagEvent> events = bugsnagEvents.getAll();
+        HashMap<String, Project> projects = BugsnagDispatcher.getProjects();
+
         // FIXME: Group by error/project type?
         for (BugsnagEvent event : events) {
-            Project project = BugsnagDispatcher.PROJECTS.get(event.projectId);
+            Project project = projects.get(event.projectId);
             eventSummaries.add(new EventSummary(project, event));
         }
 

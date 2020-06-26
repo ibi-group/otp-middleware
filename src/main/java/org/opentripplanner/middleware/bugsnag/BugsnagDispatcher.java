@@ -1,16 +1,18 @@
 package org.opentripplanner.middleware.bugsnag;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.opentripplanner.middleware.bugsnag.response.Organization;
 import org.opentripplanner.middleware.bugsnag.response.Project;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
-import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -18,9 +20,11 @@ import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
 /**
- * Class to provide Bugsnag information bu constructing required API calls to Bugsnag
+ * Class to provide Bugsnag information by constructing required API calls to Bugsnag
  */
 public class BugsnagDispatcher {
+
+    private static final Logger LOG = LoggerFactory.getLogger(BugsnagDispatcher.class);
 
     private static final String BUGSNAG_API_URL = "https://api.bugsnag.com";
     private static final String BUGSNAG_API_KEY = getConfigPropertyAsText("BUGSNAG_API_KEY");
@@ -29,30 +33,47 @@ public class BugsnagDispatcher {
         = getConfigPropertyAsInt("BUGSNAG_REPORTING_WINDOW_IN_DAYS", 14);
 
     private static Organization ORGANIZATION = null;
-    public static HashMap<String, Project> PROJECTS = new HashMap<>();
+    private static HashMap<String, Project> PROJECTS = new HashMap<>();
 
     private static HashMap<String, String> BUGSNAG_HEADERS = new HashMap<>();
 
-    private static String EVENT_DATA_REQUEST_FILTER;
+    private static ObjectNode eventRequestFilter;
 
     private static int CONNECTION_TIMEOUT_IN_SECONDS = 5;
 
-
     static {
+        setBugsnagRequestHeaders();
+        buildEventRequestFilter();
+        setOrganization();
+        setProjects();
+    }
+
+    /**
+     * Define the mandatory Bugsnag request headers
+     */
+    private static void setBugsnagRequestHeaders() {
         BUGSNAG_HEADERS.put("Authorization", "token " + BUGSNAG_API_KEY);
         BUGSNAG_HEADERS.put("Accept", "application/json; version=2");
         BUGSNAG_HEADERS.put("Content-Type", "application/json");
+    }
 
-        getOrganization();
-        getProjects();
+    /**
+     * Build the event request filter that will be passed to Bugsnag with every event data request
+     */
+    private static void buildEventRequestFilter() {
+        final ObjectMapper mapper = new ObjectMapper();
+        ObjectNode reportingWindowCondition = mapper.createObjectNode();
+        reportingWindowCondition.put("type", "eq");
+        reportingWindowCondition.put("value", BUGSNAG_REPORTING_WINDOW_IN_DAYS + "d");
 
-        EVENT_DATA_REQUEST_FILTER
-            = FileUtils.getFileContents("src/main/resources/org/opentripplanner/middleware/eventDataRequestFilter.json");
+        ArrayNode sinceFilters = mapper.createArrayNode();
+        sinceFilters.add(reportingWindowCondition);
 
-        // replace placeholder with reporting window number of days
-        EVENT_DATA_REQUEST_FILTER
-            = EVENT_DATA_REQUEST_FILTER.replace("$BUGSNAG_REPORTING_WINDOW_IN_DAYS$",
-            String.valueOf(BUGSNAG_REPORTING_WINDOW_IN_DAYS));
+        ObjectNode filters = mapper.createObjectNode();
+        filters.set("event.since", sinceFilters);
+
+        eventRequestFilter = mapper.createObjectNode();
+        eventRequestFilter.set("filters", filters);
     }
 
     /**
@@ -65,18 +86,19 @@ public class BugsnagDispatcher {
             return null;
         }
 
-        URI uri = HttpUtils.buildUri(BUGSNAG_API_URL,
+        URI uri = HttpUtils.buildUri(
+            BUGSNAG_API_URL,
             "/organizations/" + ORGANIZATION.id + "/event_data_requests",
             null);
 
-        String response = HttpUtils.httpRequest(uri,
+        String response = HttpUtils.httpRequest(
+            uri,
             CONNECTION_TIMEOUT_IN_SECONDS,
             HttpUtils.REQUEST_METHOD.POST,
-            BUGSNAG_HEADERS, EVENT_DATA_REQUEST_FILTER);
+            BUGSNAG_HEADERS,
+            eventRequestFilter.toString());
 
-        BugsnagEventRequest eventDataRequest = JsonUtils.getPOJOFromJSON(response, BugsnagEventRequest.class);
-
-        return eventDataRequest;
+        return JsonUtils.getPOJOFromJSON(response, BugsnagEventRequest.class);
     }
 
     /**
@@ -94,48 +116,71 @@ public class BugsnagDispatcher {
 
         URI uri = HttpUtils.buildUri(BUGSNAG_API_URL, endpoint, null);
 
-        String response = HttpUtils.httpRequest(uri,
+        String response = HttpUtils.httpRequest(
+            uri,
             CONNECTION_TIMEOUT_IN_SECONDS,
-            HttpUtils.REQUEST_METHOD.GET, BUGSNAG_HEADERS, null);
+            HttpUtils.REQUEST_METHOD.GET,
+            BUGSNAG_HEADERS,
+            null);
 
-        BugsnagEventRequest eventDataRequest = JsonUtils.getPOJOFromJSON(response, BugsnagEventRequest.class);
-
-        return eventDataRequest;
+        return JsonUtils.getPOJOFromJSON(response, BugsnagEventRequest.class);
     }
 
 
     /**
-     * Get a single organisation matching the organization held in the property file
+     * Get a single organization matching the organization held in the property file
      */
-    private static void getOrganization() {
+    private static void setOrganization() {
 
         URI uri = HttpUtils.buildUri(BUGSNAG_API_URL, "/user/organizations/", null);
-        String response = HttpUtils.httpRequest(uri,
+        String response = HttpUtils.httpRequest(
+            uri,
             CONNECTION_TIMEOUT_IN_SECONDS,
-            HttpUtils.REQUEST_METHOD.GET, BUGSNAG_HEADERS, null);
-        Organization[] organizations = JsonUtils.getPOJOFromJSON(response, Organization[].class);
+            HttpUtils.REQUEST_METHOD.GET,
+            BUGSNAG_HEADERS,
+            null);
 
+        List<Organization> organizations = JsonUtils.getPOJOFromJSONAsList(response, Organization.class);
+
+        Organization organization = null;
         for (Organization org : organizations) {
             if (org.name.equalsIgnoreCase(BUGSNAG_ORGANIZATION)) {
-                ORGANIZATION = org;
+                organization = org;
                 break;
             }
         }
+
+        if (organization == null) {
+            LOG.error("Can not get required organization from Bugsnag matching organization name: " + BUGSNAG_ORGANIZATION);
+        } else {
+            ORGANIZATION = organization;
+        }
+
     }
 
     /**
      * Get all projects configured under the provided organization id
      */
-    private static void getProjects() {
-        URI uri = HttpUtils.buildUri(BUGSNAG_API_URL,
+    private static void setProjects() {
+
+        if (ORGANIZATION == null) {
+            LOG.error("Required organization is not available. Unable to get Bugsnag projects");
+            return;
+        }
+
+        URI uri = HttpUtils.buildUri(
+            BUGSNAG_API_URL,
             "/organizations/" + ORGANIZATION.id + "/projects",
             null);
 
-        String response = HttpUtils.httpRequest(uri,
+        String response = HttpUtils.httpRequest(
+            uri,
             CONNECTION_TIMEOUT_IN_SECONDS,
-            HttpUtils.REQUEST_METHOD.GET, BUGSNAG_HEADERS, null);
+            HttpUtils.REQUEST_METHOD.GET,
+            BUGSNAG_HEADERS,
+            null);
 
-        Project[] projects = JsonUtils.getPOJOFromJSON(response, Project[].class);
+        List<Project> projects = JsonUtils.getPOJOFromJSONAsList(response, Project.class);
         if (projects != null) {
             for (Project project : projects) {
                 PROJECTS.put(project.id, project);
@@ -144,18 +189,25 @@ public class BugsnagDispatcher {
     }
 
     /**
+     * Provide a list of Bugsnag projects
+     */
+    public static HashMap<String, Project> getProjects() {
+        return PROJECTS;
+    }
+
+    /**
      * Get requested event data from unique url generated by Bugsnag once the requested data is ready
      */
     public static List<BugsnagEvent> getEventData(BugsnagEventRequest originalEventDataRequest) {
         URI uri = HttpUtils.buildUri(originalEventDataRequest.url, null, null);
 
-        String response = HttpUtils.httpRequest(uri,
+        String response = HttpUtils.httpRequest(
+            uri,
             CONNECTION_TIMEOUT_IN_SECONDS,
             HttpUtils.REQUEST_METHOD.GET,
             null,
             null);
 
-        BugsnagEvent[] eventData = JsonUtils.getPOJOFromJSON(response, BugsnagEvent[].class);
-        return (eventData == null) ? new ArrayList<>() : Arrays.asList(eventData);
+        return JsonUtils.getPOJOFromJSONAsList(response, BugsnagEvent.class);
     }
 }

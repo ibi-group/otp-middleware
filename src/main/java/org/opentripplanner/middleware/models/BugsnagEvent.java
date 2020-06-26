@@ -9,7 +9,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Represents a Bugsnag error events. Class is used for both Mongo storage and JSON deserializing
+ * Represents a Bugsnag error event. Class is used for both Mongo storage and JSON deserialization
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BugsnagEvent extends Model {
