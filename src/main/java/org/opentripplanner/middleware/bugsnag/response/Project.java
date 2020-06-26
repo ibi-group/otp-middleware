@@ -5,13 +5,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+/**
+ * Information relating to this class can be found here: https://bugsnagapiv2.docs.apiary.io/#reference/projects
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Project {
 
     @JsonProperty("id")
     public String id;
-    @JsonProperty("slug")
-    public String slug;
     @JsonProperty("name")
     public String name;
     @JsonProperty("api_key")
