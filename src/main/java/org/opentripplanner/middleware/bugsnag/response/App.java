@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class App {
 
-    /** Associated environment e.g. Test, Dev, Production */
+    /** The release stage for which this event was received from e.g. Test, Dev, Production */
     public String releaseStage;
 
 }

@@ -50,27 +50,25 @@ public class JsonUtils {
 
     /** Utility method to parse generic object from JSON String. */
     public static <T> T getPOJOFromJSON(String json, Class<T> clazz) {
-        T pojo = null;
         try {
-            pojo = mapper.readValue(json, clazz);
+            return mapper.readValue(json, clazz);
         } catch (JsonProcessingException e) {
             LOG.error("Unable to get POJO from json for " + clazz.getSimpleName(), e);
         }
-        return pojo;
+        return null;
     }
 
     /**
      * Utility method to parse generic objects from JSON String and return as list
      */
     public static <T> List<T> getPOJOFromJSONAsList(String json, Class<T> clazz) {
-        List<T> pojos = null;
         try {
             JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, clazz);
-            pojos = mapper.readValue(json, type);
+            return mapper.readValue(json, type);
         } catch (JsonProcessingException e) {
             LOG.error("Unable to get POJO from json for " + clazz.getSimpleName(), e);
         }
-        return pojos;
+        return null;
     }
 
     /**

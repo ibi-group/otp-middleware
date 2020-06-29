@@ -33,8 +33,10 @@ public class EventSummary {
     public String releaseStage;
 
     public EventSummary(Project project, BugsnagEvent bugsnagEvent) {
-        this.projectName = project.name;
-        this.projectId = project.id;
+        if (project != null) {
+            this.projectName = project.name;
+            this.projectId = project.id;
+        }
         this.errorId = bugsnagEvent.id;
         this.exceptions = bugsnagEvent.exceptions;
         this.received = bugsnagEvent.receivedAt;
