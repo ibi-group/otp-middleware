@@ -103,7 +103,7 @@ public class MonitoredTrip extends Model {
     }
 
     /**
-     * Confirm that the user updating a monitored trip has the required permissions
+     * Confirm that the requesting user has the required permissions
      */
     @Override
     public boolean canBeManagedBy(Auth0UserProfile user) {

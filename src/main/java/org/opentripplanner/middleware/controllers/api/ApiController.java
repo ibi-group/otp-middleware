@@ -172,22 +172,27 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             return persistence.getFiltered(filter);
         } else {
             // For all other cases the assumption is that the request is being made by an Otp user and the requested
-            // entities have a 'userId' parameter. Only entities that match the requesting user id are returned
+            // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
             Bson filter = Filters.eq("userId", requestingUser.otpUser.id);
             return persistence.getFiltered(filter);
         }
     }
 
     /**
-     * HTTP endpoint to get one entity specified by ID.
+     * HTTP endpoint to get one entity specified by ID. This will return an object based on the checks carried out in
+     * the overridden 'canBeManagedBy' method. It is the responsibility of this method to define access to it's own
+     * object. The default behaviour is defined in {@link Model#canBeManagedBy} and may have too restrictive access
+     * (must be admin) than is desired.
      */
     private T getOne(Request req, Response res) {
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         String id = getIdFromRequest(req);
         T object = getObjectForId(req, id);
+
         if (!object.canBeManagedBy(requestingUser)) {
             logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to get %s.", classToLowercase));
         }
+
         return object;
     }
 
