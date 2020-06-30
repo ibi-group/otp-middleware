@@ -28,7 +28,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
-    private static final String DEFAULT_ENV = "configurations/default/env.yml.tmp";
+    private static final String DEFAULT_ENV = "configurations/default/env.yml";
     private static JsonNode envConfig;
     // ObjectMapper that loads in YAML config files
     private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
@@ -125,11 +125,11 @@ public class Main {
         FileInputStream envConfigStream;
 
         if (args.length == 0) {
-            LOG.warn("Using default env.yml.tmp: {}", DEFAULT_ENV);
+            LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
             envConfigStream = new FileInputStream(new File(DEFAULT_ENV));
         }
         else {
-            LOG.info("Loading env.yml.tmp: {}", args[0]);
+            LOG.info("Loading env.yml: {}", args[0]);
             envConfigStream = new FileInputStream(new File(args[0]));
         }
 
@@ -138,7 +138,7 @@ public class Main {
 
     /**
      * Convenience function to get a config property (nested fields defined by dot notation "data.use_s3_storage") as
-     * JsonNode. Checks env.yml.tmp and returns null if property is not found.
+     * JsonNode. Checks env.yml and returns null if property is not found.
      */
     private static JsonNode getConfigProperty(String name) {
         String[] parts = name.split("\\.");
@@ -155,7 +155,7 @@ public class Main {
 
     /**
      * Convenience function to check existence of a config property (nested fields defined by dot notation
-     * "data.use_s3_storage") in either server.yml or env.yml.tmp.
+     * "data.use_s3_storage") in either server.yml or env.yml.
      */
     public static boolean hasConfigProperty(String name) {
         // try the server config first, then the main config
@@ -166,7 +166,9 @@ public class Main {
         String[] parts = name.split("\\.");
         JsonNode node = config;
         for (String part : parts) {
-            if (node == null) return false;
+            if (node == null) {
+                return false;
+            }
             node = node.get(part);
         }
         return node != null;
