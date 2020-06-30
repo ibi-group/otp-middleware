@@ -1,8 +1,8 @@
 package org.opentripplanner.middleware.bugsnag;
 
 import org.opentripplanner.middleware.bugsnag.response.EventException;
-import org.opentripplanner.middleware.bugsnag.response.Project;
 import org.opentripplanner.middleware.models.BugsnagEvent;
+import org.opentripplanner.middleware.models.BugsnagProject;
 
 import java.util.Date;
 import java.util.List;
@@ -32,7 +32,7 @@ public class EventSummary {
     /** Associated environment e.g. Test, Dev, Production */
     public String releaseStage;
 
-    public EventSummary(Project project, BugsnagEvent bugsnagEvent) {
+    public EventSummary(BugsnagProject project, BugsnagEvent bugsnagEvent) {
         if (project != null) {
             this.projectName = project.name;
             this.projectId = project.id;

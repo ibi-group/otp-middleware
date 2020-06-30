@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.bugsnag.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.opentripplanner.middleware.models.BugsnagProject;
 
 import java.util.Date;
 
@@ -27,7 +28,7 @@ public class Organization {
     @JsonProperty("collaborators_url")
     public String collaboratorsUrl;
 
-    /** URL referencing an organization's {@link Project}s */
+    /** URL referencing an organization's {@link BugsnagProject}s */
     @JsonProperty("projects_url")
     public String projectsUrl;
 

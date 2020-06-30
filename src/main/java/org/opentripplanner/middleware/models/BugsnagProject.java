@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.bugsnag.response;
+package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -7,15 +7,15 @@ import java.util.Date;
 import java.util.List;
 
 /**
+ * Represents a Bugsnag project. The class is used for both Mongo storage and JSON deserialization.
  * Information relating to this class can be found here: https://bugsnagapiv2.docs.apiary.io/#reference/projects
- * The projects are pulled only once upon application start. All dynamic parameters has been removed.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Project {
+public class BugsnagProject extends Model {
 
     /** Project id */
     @JsonProperty("id")
-    public String id;
+    public String projectId;
 
     /** Project name */
     @JsonProperty("name")

@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.opentripplanner.middleware.bugsnag.response.Organization;
-import org.opentripplanner.middleware.bugsnag.response.Project;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
+import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -20,7 +20,18 @@ import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
 /**
- * Class to provide Bugsnag information by constructing required API calls to Bugsnag
+ * Responsible for getting required information from Bugsnag. This is done by making calls to Bugsnag's API endpoints
+ * with a valid authorization token (BUGSNAG_API_KEY).
+ *
+ * A bugsnag API key is a key that is unique to an individual Bugsnag user. This key can be obtained by logging into
+ * Bugsnag (https://app.bugsnag.com), clicking on settings (top right hand corner) -> “My account settings”. From here
+ * select “Personal auth tokens” and then “Generate new token”.
+ *
+ * The following Bugsnag API endpoints are currently used:
+ *
+ * - https://api.bugsnag.com/organizations/<organization_id>/event_data_requests
+ * - https://api.bugsnag.com/organizations/<organization_id>/event_data_requests/<event_data_request_id>
+ * - https://api.bugsnag.com/organizations/<organization_id>/projects
  */
 public class BugsnagDispatcher {
 
@@ -32,11 +43,14 @@ public class BugsnagDispatcher {
     private static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS
         = getConfigPropertyAsInt("BUGSNAG_REPORTING_WINDOW_IN_DAYS", 14);
 
+    /** Organization from which all projects and event request information will be extracted. Set once during
+     * startup. */
     private static Organization ORGANIZATION = null;
-    private static HashMap<String, Project> PROJECTS = new HashMap<>();
 
+    /** Headers that are required by Bugsnag for each request */
     private static HashMap<String, String> BUGSNAG_HEADERS = new HashMap<>();
 
+    /** Filter object defining the boundaries on which event requests will be based. */
     private static ObjectNode eventRequestFilter;
 
     private static int CONNECTION_TIMEOUT_IN_SECONDS = 5;
@@ -45,7 +59,6 @@ public class BugsnagDispatcher {
         setBugsnagRequestHeaders();
         buildEventRequestFilter();
         setOrganization();
-        setProjects();
     }
 
     /**
@@ -128,7 +141,6 @@ public class BugsnagDispatcher {
         return JsonUtils.getPOJOFromJSON(response, BugsnagEventRequest.class);
     }
 
-
     /**
      * Get a single organization matching the organization held in the property file.
      */
@@ -164,11 +176,11 @@ public class BugsnagDispatcher {
     /**
      * Get all projects configured under the provided organization id.
      */
-    private static void setProjects() {
+    public static List<BugsnagProject> getProjects() {
 
         if (ORGANIZATION == null) {
             LOG.error("Required organization is not available. Unable to get Bugsnag projects");
-            return;
+            return null;
         }
 
         URI uri = HttpUtils.buildUri(
@@ -183,19 +195,7 @@ public class BugsnagDispatcher {
             BUGSNAG_HEADERS,
             null);
 
-        List<Project> projects = JsonUtils.getPOJOFromJSONAsList(response, Project.class);
-        if (projects != null) {
-            for (Project project : projects) {
-                PROJECTS.put(project.id, project);
-            }
-        }
-    }
-
-    /**
-     * Provide a list of Bugsnag projects.
-     */
-    public static HashMap<String, Project> getProjects() {
-        return PROJECTS;
+        return JsonUtils.getPOJOFromJSONAsList(response, BugsnagProject.class);
     }
 
     /**

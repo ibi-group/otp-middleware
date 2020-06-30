@@ -8,7 +8,14 @@ import com.mongodb.client.MongoDatabase;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
-import org.opentripplanner.middleware.models.*;
+import org.opentripplanner.middleware.models.AdminUser;
+import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.BugsnagEvent;
+import org.opentripplanner.middleware.models.BugsnagEventRequest;
+import org.opentripplanner.middleware.models.BugsnagProject;
+import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TripRequest;
+import org.opentripplanner.middleware.models.TripSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +45,7 @@ public class Persistence {
     public static TypedPersistence<TripSummary> tripSummaries;
     public static TypedPersistence<BugsnagEventRequest> bugsnagEventRequests;
     public static TypedPersistence<BugsnagEvent> bugsnagEvents;
+    public static TypedPersistence<BugsnagProject> bugsnagProjects;
 
     public static void initialize () {
         // TODO Add custom codec libraries
@@ -78,6 +86,7 @@ public class Persistence {
         tripSummaries = new TypedPersistence(mongoDatabase, TripSummary.class);
         bugsnagEventRequests = new TypedPersistence(mongoDatabase, BugsnagEventRequest.class);
         bugsnagEvents = new TypedPersistence(mongoDatabase, BugsnagEvent.class);
+        bugsnagProjects = new TypedPersistence(mongoDatabase, BugsnagProject.class);
         // TODO Add other models...
     }
 

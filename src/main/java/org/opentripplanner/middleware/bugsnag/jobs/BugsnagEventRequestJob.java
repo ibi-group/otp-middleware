@@ -6,7 +6,17 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 
 /**
- * Job to make event data request to Bugsnag and store the initial response.
+ * This job is responsible for making event data requests to Bugsnag and storing the response.
+ *
+ * Bugsnag only allows ten API requests per minute (with the current pricing plan). This places too greater limit on
+ * confidently being able to extract error and event information via the organization, project, error and event
+ * endpoints. Bugsnag provides a mechanism to extract event information from across all projects and events.
+ *
+ * The “create an event data request” allows event data for a given organization to be collated in an asynchronous job
+ * by Bugsnag. Once this job has completed a bespoke URL is provided where this data can be downloaded. Information on
+ * this approach along with the filter parameters can be reviewed here:
+ *
+ * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/create-an-event-data-request
  */
 public class BugsnagEventRequestJob implements Runnable {
 

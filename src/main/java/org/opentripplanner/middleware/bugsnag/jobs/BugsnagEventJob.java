@@ -21,8 +21,14 @@ import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsInt;
 
 /**
- * Job to check for new event data requests and confirm that Bugsnag has completed the request. At which point obtain
- * the event data from Bugsnag storage, save to Mongo and remove stale events.
+ * This job is responsible for maintaining Bugsnag event data. This is achieved by managing the event request jobs
+ * triggered by {@link BugsnagEventJob}, obtaining event data from Bugsnag storage and removing stale events.
+ *
+ * Event requests triggered by {@link BugsnagEventJob} are not completed immediately, instead a job is initiated by
+ * Bugsnag and a 'pending' event request is returned. This event request is then checked with Bugsnag every minute
+ * until the status becomes 'completed'. At this point the event data compiled by the original request made by
+ * {@link BugsnagEventJob} is available for download from a unique URL now present in the updated event request. This is
+ * downloaded and saved to Mongo. Any event data that is older than the reporting window is then deleted.
  */
 public class BugsnagEventJob implements Runnable {
 
@@ -33,8 +39,8 @@ public class BugsnagEventJob implements Runnable {
     private static TypedPersistence<BugsnagEvent> bugsnagEvents = Persistence.bugsnagEvents;
 
     /**
-     * On each cycle get the newest event request. Update the events based on the response from Bugsnag and remove
-     * stale events.
+     * On each cycle get the newest event data request from Mongo. If that request has been fulfilled by Bugsnag, add
+     * all new events to Mongo and remove all that are older than the Bugsnag reporting window.
      */
     public void run() {
         Bson filter = Filters.ne("status", "complete");
@@ -47,7 +53,7 @@ public class BugsnagEventJob implements Runnable {
     }
 
     /**
-     * Confirm that the event request has completed and update event data accordingly
+     * Confirm that the event request has completed and update event data accordingly.
      */
     private void manageEvents(BugsnagEventRequest originalRequest) {
 
@@ -76,20 +82,15 @@ public class BugsnagEventJob implements Runnable {
     }
 
     /**
-     * Remove event requests which have been completed or superseded
+     * Remove event requests which have been completed or superseded.
      */
     private void removeStaleEventRequests(BugsnagEventRequest latestRequest) {
         Bson filter = Filters.lte("dateCreated", latestRequest.dateCreated);
-        List<BugsnagEventRequest> eventRequests = bugsnagEventRequests.getFiltered(filter);
-        for (BugsnagEventRequest eventRequest : eventRequests) {
-            // remove event request now that it has been completed
-            bugsnagEventRequests.removeById(eventRequest.id);
-        }
-
+        bugsnagEventRequests.removeFiltered(filter);
     }
 
     /**
-     * Remove events that are older than the reporting window
+     * Remove events that are older than the reporting window.
      */
     private void removeStaleEvents() {
         LocalDate startOfReportingWindow = LocalDate
@@ -102,10 +103,7 @@ public class BugsnagEventJob implements Runnable {
             .toInstant());
 
         Bson filter = Filters.lte("receivedAt", date);
-        List<BugsnagEvent> events = bugsnagEvents.getFiltered(filter);
-        for (BugsnagEvent event : events) {
-            bugsnagEvents.removeById(event.id);
-        }
+        bugsnagEvents.removeFiltered(filter);
     }
 }
 

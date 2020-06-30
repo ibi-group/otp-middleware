@@ -30,7 +30,7 @@ public abstract class OtpMiddlewareTest {
         LOG.info("OtpMiddlewareTest setup");
 
         LOG.info("Starting server");
-        otpMiddleware.main(new String[]{"configurations/test/env.yml"});
+        otpMiddleware.main(new String[]{"configurations/test/env.yml.tmp"});
         setUpIsDone = true;
     }
 }

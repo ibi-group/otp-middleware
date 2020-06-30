@@ -12,9 +12,9 @@ import spark.Request;
 import spark.Response;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
-import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.validateExistingUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 

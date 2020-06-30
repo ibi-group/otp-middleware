@@ -22,7 +22,9 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.gte;
+import static com.mongodb.client.model.Filters.lte;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 

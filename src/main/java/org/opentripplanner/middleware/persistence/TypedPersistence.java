@@ -90,6 +90,11 @@ public class TypedPersistence<T extends Model> {
         mongoCollection.insertOne(newObject);
     }
 
+    public void createMany(List<T> newObjects) {
+        // What happens if an object already exists with the same ID?
+        mongoCollection.insertMany(newObjects);
+    }
+
     public void replace(String id, T replaceObject) {
         mongoCollection.replaceOne(eq(id), replaceObject);
     }
