@@ -24,5 +24,3 @@ configurations/*
 env.yml
 env.yml-original
 server.yml
-# Test config is OK.
-!configurations/test/env.yml

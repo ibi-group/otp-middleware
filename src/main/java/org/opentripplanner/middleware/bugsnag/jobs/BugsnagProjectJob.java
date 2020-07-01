@@ -1,13 +1,11 @@
 package org.opentripplanner.middleware.bugsnag.jobs;
 
-import com.mongodb.client.model.Filters;
-import org.bson.conversions.Bson;
+import com.mongodb.BasicDBObject;
 import org.opentripplanner.middleware.bugsnag.BugsnagDispatcher;
 import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -29,8 +27,7 @@ public class BugsnagProjectJob implements Runnable {
         }
 
         // Remove all Bugsnag projects
-        Bson filter = Filters.lte("dateCreated", new Date());
-        bugsnagProjects.removeFiltered(filter);
+        bugsnagProjects.removeFiltered(new BasicDBObject());
 
         // Sync Bugsnag projects
         bugsnagProjects.createMany(projects);

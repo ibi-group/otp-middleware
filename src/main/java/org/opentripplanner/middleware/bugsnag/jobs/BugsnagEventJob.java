@@ -68,6 +68,9 @@ public class BugsnagEventJob implements Runnable {
         // get event data produced from original event request from Bugsnag storage
         List<BugsnagEvent> events = BugsnagDispatcher.getEventData(currentRequest);
 
+        //TODO Potential bottleneck depending on the number of projects and events. Dropping all rows and than
+        // inserting would speed this up, but you run the risk of return nothing to the admin dashboard.
+
         // add new events
         for (BugsnagEvent bugsnagEvent : events) {
             Set<Bson> clauses = new HashSet<>();

@@ -47,7 +47,7 @@ public class BugsnagDispatcher {
      * startup. */
     private static Organization ORGANIZATION = null;
 
-    /** Headers that are required by Bugsnag for each request */
+    /** Headers that are required by Bugsnag for each request. */
     private static HashMap<String, String> BUGSNAG_HEADERS = new HashMap<>();
 
     /** Filter object defining the boundaries on which event requests will be based. */
@@ -96,7 +96,7 @@ public class BugsnagDispatcher {
     public static BugsnagEventRequest makeEventDataRequest() {
 
         if (ORGANIZATION == null) {
-            LOG.error("Required organization is not available. Unable to make event dadta request");
+            LOG.error("Required organization is not available. Unable to make event data request");
             return null;
         }
 
@@ -122,7 +122,7 @@ public class BugsnagDispatcher {
     public static BugsnagEventRequest getEventDataRequest(BugsnagEventRequest originalEventDataRequest) {
 
         if (ORGANIZATION == null) {
-            LOG.error("Required organization is not available. Unable to get event data request");
+            LOG.error("Required organization is not available. Unable to get event data request.");
             return null;
         }
 
@@ -179,10 +179,11 @@ public class BugsnagDispatcher {
     public static List<BugsnagProject> getProjects() {
 
         if (ORGANIZATION == null) {
-            LOG.error("Required organization is not available. Unable to get Bugsnag projects");
+            LOG.error("Required organization is not available. Unable to get Bugsnag projects.");
             return null;
         }
 
+        //TODO Consider limiting the projects to just that required by the admin dashboard
         URI uri = HttpUtils.buildUri(
             BUGSNAG_API_URL,
             "/organizations/" + ORGANIZATION.id + "/projects",
