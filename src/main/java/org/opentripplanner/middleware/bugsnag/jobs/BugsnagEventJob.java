@@ -70,8 +70,7 @@ public class BugsnagEventJob implements Runnable {
 
         //TODO Potential bottleneck depending on the number of projects and events. Dropping all rows and than
         // inserting would speed this up, but you run the risk of return nothing to the admin dashboard.
-
-        // add new events
+        // Adds new events if they are not already in the database
         for (BugsnagEvent bugsnagEvent : events) {
             Set<Bson> clauses = new HashSet<>();
             clauses.add(eq("errorId", bugsnagEvent.errorId));

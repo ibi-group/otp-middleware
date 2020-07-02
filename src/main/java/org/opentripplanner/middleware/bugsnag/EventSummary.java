@@ -24,10 +24,10 @@ public class EventSummary {
     public Date received;
 
     /** The project which this event is associated with */
-    public String projectId;
+    public String projectId = "-1";
 
     /** The associated project name */
-    public String projectName;
+    public String projectName = "Unknown";
 
     /** Associated environment e.g. Test, Dev, Production */
     public String releaseStage;

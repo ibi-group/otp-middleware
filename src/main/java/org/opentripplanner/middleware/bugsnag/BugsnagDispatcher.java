@@ -96,7 +96,7 @@ public class BugsnagDispatcher {
     public static BugsnagEventRequest makeEventDataRequest() {
 
         if (ORGANIZATION == null) {
-            LOG.error("Required organization is not available. Unable to make event data request");
+            LOG.error("Required organization is not available. Unable to make event data request.");
             return null;
         }
 
