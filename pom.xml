@@ -252,7 +252,10 @@
             <version>1.15.0</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk -->
+        <!--
+            AWS SDK is used for integration with the API Gateway service, which is how access to the OTP API is managed
+            for third party dev accounts
+        -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-core</artifactId>

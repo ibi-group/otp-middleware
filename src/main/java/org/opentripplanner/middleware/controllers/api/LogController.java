@@ -4,15 +4,12 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.apigateway.AmazonApiGateway;
 import com.amazonaws.services.apigateway.AmazonApiGatewayClient;
 import com.amazonaws.services.apigateway.AmazonApiGatewayClientBuilder;
-import com.amazonaws.services.apigateway.model.GetApiKeyRequest;
-import com.amazonaws.services.apigateway.model.GetApiKeyResult;
-import com.amazonaws.services.apigateway.model.GetApiKeysRequest;
-import com.amazonaws.services.apigateway.model.GetApiKeysResult;
 import com.amazonaws.services.apigateway.model.GetUsagePlansRequest;
 import com.amazonaws.services.apigateway.model.GetUsagePlansResult;
 import com.amazonaws.services.apigateway.model.GetUsageRequest;
 import com.amazonaws.services.apigateway.model.GetUsageResult;
 import com.amazonaws.services.apigateway.model.UsagePlan;
+import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +25,7 @@ import java.util.List;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.spark.Main.hasConfigProperty;
 import static org.opentripplanner.middleware.spark.Main.inTestEnvironment;
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Sets up HTTP endpoints for getting logging and request summary information from AWS Cloudwatch and API Gateway.
@@ -35,6 +33,10 @@ import static org.opentripplanner.middleware.spark.Main.inTestEnvironment;
 public class LogController {
     private static final Logger LOG = LoggerFactory.getLogger(LogController.class);
     private static AmazonApiGateway gateway;
+
+    /**
+     * Register http endpoints with {@link spark.Spark} instance at the provided API prefix.
+     */
     public static void register (Service spark, String apiPrefix) {
         AmazonApiGatewayClientBuilder gatewayBuilder = AmazonApiGatewayClient.builder();
         if (hasConfigProperty("AWS_PROFILE")) {
@@ -49,13 +51,16 @@ public class LogController {
         spark.get(apiPrefix + "/secure/logs", LogController::getUsageLogs, JsonUtils::toJson);
     }
 
+    /**
+     * HTTP endpoint to return the usage (number of requests made/requests remaining) for the AWS API Gateway usage
+     * plans. Defaults to the last 30 days for all API keys in the AWS account.
+     */
     public static List<GetUsageResult> getUsageLogs(Request req, Response res) {
-        // TODO: how can we extract this usage plan ID? Perhaps this will just be stored along with the API key
-        //  information in the database table containing info on third party apps.
-        GetApiKeysRequest getApiKeysRequest = new GetApiKeysRequest();
-        GetApiKeysResult apiKeys = gateway.getApiKeys(getApiKeysRequest);
-        apiKeys.getItems();
+        // keyId param is optional (if not provided, all API keys will be included in response).
+        String keyId = req.queryParamOrDefault("keyId", null);
         LocalDateTime now = LocalDateTime.now();
+        // TODO: Future work might modify this so that we accept multiple API key IDs for a single request (depends on
+        //  how third party developer accounts are structured).
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String startDate = req.queryParamOrDefault("startDate", formatter.format(now.minusDays(30)));
         String endDate = req.queryParamOrDefault("endDate", formatter.format(now));
@@ -64,10 +69,17 @@ public class LogController {
         List<GetUsageResult> usageResults = new ArrayList<>();
         for (UsagePlan usagePlan : usagePlansResult.getItems()) {
             GetUsageRequest getUsageRequest = new GetUsageRequest()
+                // TODO: Once third party dev accounts are fleshed out, this query param might go away?
+                .withKeyId(keyId)
                 .withStartDate(startDate)
                 .withEndDate(endDate)
                 .withUsagePlanId(usagePlan.getId());
-            usageResults.add(gateway.getUsage(getUsageRequest));
+            try {
+                usageResults.add(gateway.getUsage(getUsageRequest));
+            } catch (Exception e) {
+                // Catch any issues with bad request parameters (e.g., invalid API keyId or bad date format).
+                logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error requesting usage results", e);
+            }
         }
         return usageResults;
     }
