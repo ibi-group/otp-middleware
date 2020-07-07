@@ -168,14 +168,20 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // If the required entity is of type 'OtpUser' the assumption is that a call is being made via the
             // OtpUserController. Therefore, the request should be limited to return just the entity matching the
             // requesting user.
-            Bson filter = Filters.eq("_id", requestingUser.otpUser.id);
-            return persistence.getFiltered(filter);
+            return getObjectsFiltered("_id", requestingUser.otpUser.id);
         } else {
             // For all other cases the assumption is that the request is being made by an Otp user and the requested
             // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
-            Bson filter = Filters.eq("userId", requestingUser.otpUser.id);
-            return persistence.getFiltered(filter);
+            return getObjectsFiltered("userId", requestingUser.otpUser.id);
         }
+    }
+
+    /**
+     * Get a list of objects filtered by the provided field name and value.
+     */
+    private List<T> getObjectsFiltered(String fieldName, String value) {
+        Bson filter = Filters.eq(fieldName, value);
+        return persistence.getFiltered(filter);
     }
 
     /**
