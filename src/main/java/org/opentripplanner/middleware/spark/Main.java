@@ -59,6 +59,7 @@ public class Main {
                     // TODO Add other models.
                 ))
                 .generateDoc();
+            OtpRequestProcessor.register(spark);
         } catch (RuntimeException e) {
             LOG.error("Error initializing API controllers", e);
             System.exit(1);
@@ -77,9 +78,6 @@ public class Main {
 
         // available at http://localhost:4567/async
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
-
-        // available at http://localhost:4567/plan
-        spark.get("/plan", OtpRequestProcessor::planning);
 
         // available at http://localhost:4567/api/secure/triprequests
         spark.get(API_PREFIX + "/secure/triprequests", TripHistoryController::getTripRequests);
