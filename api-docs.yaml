@@ -1,0 +1,7 @@
+openapi: "3.0.0"
+basePath: "/api"
+info:
+  version: "0.0.1"
+  title: "otp-middleware"
+  license: 
+    name: "MIT"

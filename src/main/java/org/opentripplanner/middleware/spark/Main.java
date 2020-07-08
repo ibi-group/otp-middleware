@@ -79,6 +79,13 @@ public class Main {
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
 
         // available at http://localhost:4567/plan
+        /**
+         * @oas [get] /plan
+         * description: "Forwards a trip plan request to OTP."
+         * parameters:
+         *  - (query) fromPlace* {String} Origin of the trip.
+         *  - (query) toPlace* {String} Origin of the trip.
+         **/
         spark.get("/plan", OtpRequestProcessor::planning);
 
         // available at http://localhost:4567/api/secure/triprequests
