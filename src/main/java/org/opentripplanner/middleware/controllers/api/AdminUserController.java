@@ -50,7 +50,7 @@ public class AdminUserController extends ApiController<AdminUser> {
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Get user from token.
             .get(path(ROOT_ROUTE + TOKEN_PATH)
-                    .withDescription("Retrieves an OtpUser entity using an Auth0 access token passed in an Authorization header.")
+                    .withDescription("Retrieves an AdminUser entity using an Auth0 access token passed in an Authorization header.")
                     .withResponseType(persistence.clazz),
                 this::getUserFromRequest, JsonUtils::toJson
             )
@@ -63,17 +63,14 @@ public class AdminUserController extends ApiController<AdminUser> {
     }
 
     /**
-     * HTTP endpoint to get the {@link OtpUser} entity, if it exists, from an {@link Auth0UserProfile} attribute
-     * available from a {@link Request} (this is the case for '/api/secure/' endpoints).
+     * HTTP endpoint to get the {@link AdminUser} entity, if it exists, from an {@link Auth0UserProfile} attribute
+     * available from a {@link Request} (this is the case for '/api/admin/' endpoints).
      */
     private AdminUser getUserFromRequest(Request req, Response res) {
         Auth0UserProfile profile = Auth0Connection.getUserFromRequest(req);
         AdminUser user = profile.adminUser;
 
-        // If the OtpUser object is null, it is most likely because it was not created yet,
-        // for instance, for users who just created an Auth0 login and have an Auth0UserProfile
-        // but have not completed the account setup form yet.
-        // For those users, the OtpUser profile would be 404 not found (as opposed to 403 forbidden).
+        // If the AdminUser object is null (i.e. not found), return 404.
         if (user == null) {
             logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.auth0UserId), null);
         }
