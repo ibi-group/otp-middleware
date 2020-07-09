@@ -28,8 +28,11 @@ public abstract class AbstractUser extends Model {
     /**
      * Set of permissions the user has.
      * TODO: fill out permissions more completely.
+     * NOTE: permissions is marked as transient to prevent serialization by GSON that results in an exception
+     * trying to serialize Java.class inside {@link Permission} and a 500 error when querying users from UI.
+     * (See, for instance, https://howtoprogram.xyz/2016/10/16/ignore-or-exclude-field-in-gson/ for more info.)
      */
-    public Set<Permission> permissions = new HashSet<>();
+    public transient Set<Permission> permissions = new HashSet<>();
 
     /**
      * A requesting user can manage this user object if they are the same user (and not attempting to modify things like
