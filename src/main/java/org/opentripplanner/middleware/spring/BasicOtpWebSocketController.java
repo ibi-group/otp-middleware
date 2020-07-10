@@ -1,13 +1,13 @@
 package org.opentripplanner.middleware.spring;
 
-import java.io.IOException;
-
 import org.json.JSONObject;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+
+import java.io.IOException;
 
 @Component
 public class BasicOtpWebSocketController extends TextWebSocketHandler {

@@ -1,8 +1,5 @@
 package org.opentripplanner.middleware;
 
-import spark.Request;
-import spark.Response;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
