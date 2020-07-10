@@ -20,15 +20,15 @@ import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
 /**
- * Responsible for getting required information from Bugsnag. This is done by making calls to Bugsnag's API endpoints
+ * Responsible for getting {@link BugsnagEvent} information from Bugsnag. This is done by making calls to Bugsnag's API endpoints
  * with a valid authorization token (BUGSNAG_API_KEY).
- *
+ * <p>
  * A bugsnag API key is a key that is unique to an individual Bugsnag user. This key can be obtained by logging into
  * Bugsnag (https://app.bugsnag.com), clicking on settings (top right hand corner) -> “My account settings”. From here
  * select “Personal auth tokens” and then “Generate new token”.
- *
+ * <p>
  * The following Bugsnag API endpoints are currently used:
- *
+ * <p>
  * - https://api.bugsnag.com/organizations/<organization_id>/event_data_requests
  * - https://api.bugsnag.com/organizations/<organization_id>/event_data_requests/<event_data_request_id>
  * - https://api.bugsnag.com/organizations/<organization_id>/projects
@@ -40,17 +40,24 @@ public class BugsnagDispatcher {
     private static final String BUGSNAG_API_URL = "https://api.bugsnag.com";
     private static final String BUGSNAG_API_KEY = getConfigPropertyAsText("BUGSNAG_API_KEY");
     private static final String BUGSNAG_ORGANIZATION = getConfigPropertyAsText("BUGSNAG_ORGANIZATION");
-    private static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS
-        = getConfigPropertyAsInt("BUGSNAG_REPORTING_WINDOW_IN_DAYS", 14);
+    private static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS =
+        getConfigPropertyAsInt("BUGSNAG_REPORTING_WINDOW_IN_DAYS", 14);
 
-    /** Organization from which all projects and event request information will be extracted. Set once during
-     * startup. */
+    /**
+     * Organization from which all projects and event request information will be extracted. Set once during
+     * startup.
+     */
+    // FIXME Perhaps replace with a list of required projects in the config
     private static Organization ORGANIZATION = null;
 
-    /** Headers that are required by Bugsnag for each request. */
+    /**
+     * Headers that are required by Bugsnag for each request.
+     */
     private static HashMap<String, String> BUGSNAG_HEADERS = new HashMap<>();
 
-    /** Filter object defining the boundaries on which event requests will be based. */
+    /**
+     * Filter object defining the boundaries on which event requests will be based.
+     */
     private static ObjectNode eventRequestFilter;
 
     private static int CONNECTION_TIMEOUT_IN_SECONDS = 5;
@@ -71,20 +78,40 @@ public class BugsnagDispatcher {
     }
 
     /**
-     * Build the event request filter that will be passed to Bugsnag with every event data request.
+     * Build the event request filter that will be passed to Bugsnag with every event data request. The request filter
+     * constructed is as follows:
+     *
+     * {
+     *   "filters": {
+     *     "event.since": [
+     *       {
+     *         "type": "eq",
+     *         "value": "14d"
+     *       }
+     *     ]
+     *   }
+     * }
+     *
      */
     private static void buildEventRequestFilter() {
         final ObjectMapper mapper = new ObjectMapper();
+
         ObjectNode reportingWindowCondition = mapper.createObjectNode();
+
+        // Specifies how far in the past events should be retrieved. Instead of specifying a date, Bugsnag allows a
+        // number of days to be defined. It is very important to include the 'd' value, else the filter fails.
         reportingWindowCondition.put("type", "eq");
         reportingWindowCondition.put("value", BUGSNAG_REPORTING_WINDOW_IN_DAYS + "d");
 
+        // Defines the node which contains the event since filter
         ArrayNode sinceFilters = mapper.createArrayNode();
         sinceFilters.add(reportingWindowCondition);
 
+        // Defines the event since wrapper
         ObjectNode filters = mapper.createObjectNode();
         filters.set("event.since", sinceFilters);
 
+        // Defines the filters wrapper
         eventRequestFilter = mapper.createObjectNode();
         eventRequestFilter.set("filters", filters);
     }

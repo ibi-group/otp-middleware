@@ -9,8 +9,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class Scheduler {
 
-    private final static ScheduledExecutorService schedulerService
-        = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+    private final static ScheduledExecutorService schedulerService =
+        Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 
     /**
      * Schedule jobs based on the provided job and parameters

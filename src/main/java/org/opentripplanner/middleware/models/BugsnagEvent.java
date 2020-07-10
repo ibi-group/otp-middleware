@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Represents a Bugsnag event. This class is used for both Mongo storage and JSON deserialization.
  * Information relating to this can be found here:
- * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/collaborators/create-an-event-data-request
+ * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/create-an-event-data-request
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BugsnagEvent extends Model {

@@ -43,6 +43,7 @@ public class Main {
 
         initializeHttpEndpoints();
 
+        // Schedule Bugsnag jobs to start retrieving Bugsnag event and project information
         BugsnagJobs.initialize();
     }
 

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Represents a Bugsnag event request. The class is used for both Mongo storage and JSON deserialization.
  * Information relating to this can be found here:
- * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/collaborators/create-an-event-data-request
+ * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/create-an-event-data-request
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BugsnagEventRequest extends Model {

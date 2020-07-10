@@ -36,3 +36,32 @@ cp configurations/default/env.yml.tmp configurations/default/env.yml
 mvn package
 java -jar target/otp-middleware.jar configurations/default/env.yml
 ```
+## Bugsnag Configuration Parameters
+
+- BUGSNAG_API_KEY: Used to authenticate against Bugsnag's API.
+- BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES: Frequency in minutes to obtain events.
+- BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES: Frequency in minutes to trigger event requests.
+- BUGSNAG_ORGANIZATION: The name of the organization defined within Bugsnag. This is used as a starting point with the Bugsnag API to obtain the organization ID which in-turn is use with most API calls. 
+- BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES: Frequency in minutes to obtain projects.
+- BUGSNAG_PROJECT_NOTIFIER_API_KEY: Used to report project errors to Bugsnag.
+- BUGSNAG_REPORTING_WINDOW_IN_DAYS: The number of days in the past to start retrieving event information.  
+
+## Bugsnag Setup
+
+These values can used as defined here, or commented out so the default values are used:
+
+    BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES: 1
+    BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES: 5
+    BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES: 1
+    BUGSNAG_REPORTING_WINDOW_IN_DAYS: 14
+
+The remaining values can be obtained by following these steps:
+
+##### BUGSNAG_API_KEY
+A bugsnag API key is a key that is unique to an individual Bugsnag user. This key can be obtained by logging into Bugsnag (https://app.bugsnag.com), clicking on settings (top right hand corner) -> “My account settings”. From here select “Personal auth tokens” and then “Generate new token”.
+
+##### BUGSNAG_ORGANIZATION
+A bugsnag organization contains all projects which errors/events will be reported on. The organization name and more specifically it's ID is the starting point for most Bugsnag API requests. The organization name can be obtained by logging into Bugsnag (https://app.bugsnag.com), clicking on settings (top right hand corner) -> “Organization settings”. From here, click on the organization name and then copy the name from the pop-up window.
+
+##### BUGSNAG_PROJECT_NOTIFIER_API_KEY
+A Bugsnag project identifier key is unique to a Bugsnag project and allows errors to be saved against it. This key can be obtained by logging into Bugsnag (https://app.bugsnag.com), clicking on Projects (left side menu) and selecting the required project. Once selected, the notifier API key is presented.

@@ -18,14 +18,14 @@ import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsInt;
  */
 public class BugsnagJobs {
 
-    private static final int BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES
-        = getConfigPropertyAsInt("BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES", 5);
+    private static final int BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES =
+        getConfigPropertyAsInt("BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES", 5);
 
-    private static final int BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES
-        = getConfigPropertyAsInt("BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES", 1);
+    private static final int BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES =
+        getConfigPropertyAsInt("BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES", 1);
 
-    private static final int BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES
-        = getConfigPropertyAsInt("BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES", 1);
+    private static final int BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES =
+        getConfigPropertyAsInt("BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES", 1);
 
     private static final Logger LOG = LoggerFactory.getLogger(BugsnagReporter.class);
 

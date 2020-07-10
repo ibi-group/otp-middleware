@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Event summary information provided to calling services. Response is based on static project and dynamic event
  * information. Additional information relating to this can be found here:
- * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/collaborators/create-an-event-data-request
+ * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/create-an-event-data-request
  */
 public class EventSummary {
 
@@ -32,10 +32,15 @@ public class EventSummary {
     /** Associated environment e.g. Test, Dev, Production */
     public String releaseStage;
 
+    /** The dashboard URL for the project */
+    public String htmlUrl = "Unknown";
+
+
     public EventSummary(BugsnagProject project, BugsnagEvent bugsnagEvent) {
         if (project != null) {
             this.projectName = project.name;
             this.projectId = project.id;
+            this.htmlUrl = project.htmlUrl;
         }
         this.errorId = bugsnagEvent.id;
         this.exceptions = bugsnagEvent.exceptions;
