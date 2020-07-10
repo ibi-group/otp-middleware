@@ -38,9 +38,10 @@ java -jar target/otp-middleware.jar configurations/default/env.yml
 ```
 
 ## OTP Server Proxy Setup
+The follow parameters are used to interact with an OTP server.
 
-OTP_SERVER: http://otp-server.example.com - This is the address of the OTP server which all OTP related requests will be sent to.
-
-OTP_ROOT_ENDPOINT: /otp_root_endpoint/ - This will form the endpoint used by Spark which all OTP requests will be filtered through.
-
-OTP_PLAN_ENDPOINT: plan_endpoint - This defines the plan endpoint part of the requesting URL. If a request is made to this, the assumption is that a plan request has been made and that the response should be processed accordingly.
+| Parameter | Description | Example |
+| --- | --- | --- |
+| OTP_SERVER | This is the address of the OTP server which all OTP related requests will be sent to. | http://otp-server.example.com | 
+| OTP_ROOT_ENDPOINT | This will form the endpoint used by Spark which all OTP requests will be filtered through. | /otp_root_endpoint/ |
+| OTP_PLAN_ENDPOINT | This defines the plan endpoint part of the requesting URL. If a request is made to this, the assumption is that a plan request has been made and that the response should be processed accordingly. | plan_endpoint |
