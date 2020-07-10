@@ -20,18 +20,18 @@ import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
 /**
- * Responsible for getting {@link BugsnagEvent} information from Bugsnag. This is done by making calls to Bugsnag's API endpoints
- * with a valid authorization token (BUGSNAG_API_KEY).
- * <p>
+ * Responsible for getting {@link BugsnagEvent} information from Bugsnag. This is done by making calls to Bugsnag's API
+ * endpoints with a valid authorization token (BUGSNAG_API_KEY).
+ *
  * A bugsnag API key is a key that is unique to an individual Bugsnag user. This key can be obtained by logging into
  * Bugsnag (https://app.bugsnag.com), clicking on settings (top right hand corner) -> “My account settings”. From here
  * select “Personal auth tokens” and then “Generate new token”.
- * <p>
+ *
  * The following Bugsnag API endpoints are currently used:
- * <p>
- * - https://api.bugsnag.com/organizations/<organization_id>/event_data_requests
- * - https://api.bugsnag.com/organizations/<organization_id>/event_data_requests/<event_data_request_id>
- * - https://api.bugsnag.com/organizations/<organization_id>/projects
+ *
+ * https://api.bugsnag.com/organizations/<organization_id>/event_data_requests
+ * https://api.bugsnag.com/organizations/<organization_id>/event_data_requests/<event_data_request_id>
+ * https://api.bugsnag.com/organizations/<organization_id>/projects
  */
 public class BugsnagDispatcher {
 
