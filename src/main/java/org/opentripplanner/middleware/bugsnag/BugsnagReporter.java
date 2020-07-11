@@ -2,7 +2,7 @@ package org.opentripplanner.middleware.bugsnag;
 
 import com.bugsnag.Bugsnag;
 
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
  * Bugsnag util for reporting errors to the project defined by the Bugsnag project notifier API key.

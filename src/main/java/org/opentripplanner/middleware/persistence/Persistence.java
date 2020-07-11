@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
  * Groups together a bunch of TypedPersistence abstractions around MongoDB Collections.

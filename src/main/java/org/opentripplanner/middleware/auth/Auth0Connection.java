@@ -17,8 +17,8 @@ import spark.Response;
 
 import java.security.interfaces.RSAPublicKey;
 
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.spark.Main.hasConfigProperty;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.hasConfigProperty;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**

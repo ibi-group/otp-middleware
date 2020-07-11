@@ -22,8 +22,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.spark.Main.hasConfigProperty;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.hasConfigProperty;
 import static org.opentripplanner.middleware.spark.Main.inTestEnvironment;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
