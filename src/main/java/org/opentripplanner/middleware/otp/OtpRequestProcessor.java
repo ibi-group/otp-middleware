@@ -7,6 +7,7 @@ import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
