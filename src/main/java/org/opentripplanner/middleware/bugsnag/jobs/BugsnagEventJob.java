@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 
 /**
  * This job is responsible for maintaining Bugsnag event data. This is achieved by managing the event request jobs
