@@ -4,6 +4,7 @@ import org.opentripplanner.middleware.auth.Auth0UserProfile;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
@@ -37,5 +38,20 @@ public class Model implements Serializable {
     public boolean canBeManagedBy(Auth0UserProfile user) {
         // TODO: Check if user has application administrator permission?
         return isUserAdmin(user);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Model model = (Model) o;
+        return id.equals(model.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

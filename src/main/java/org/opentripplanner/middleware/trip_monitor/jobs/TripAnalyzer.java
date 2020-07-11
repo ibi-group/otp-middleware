@@ -8,23 +8,33 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.opentripplanner.middleware.trip_monitor.jobs.MonitorAllTripsJob.monitoredTripLocks;
+
 public class TripAnalyzer implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TripAnalyzer.class);
 
     private final int BLOCKING_QUEUE_POLL_TIMEOUT_MILLIS = 250;
 
+    private final AtomicBoolean analyzerIsIdle;
     private final BlockingQueue<MonitoredTrip> tripAnalysisQueue;
     private final AtomicBoolean queueDepleted;
 
-    public TripAnalyzer(BlockingQueue<MonitoredTrip> tripAnalysisQueue, AtomicBoolean queueDepleted) {
+    public TripAnalyzer(
+        BlockingQueue<MonitoredTrip> tripAnalysisQueue,
+        AtomicBoolean queueDepleted,
+        AtomicBoolean analyzerIsIdle
+    ) {
         this.tripAnalysisQueue = tripAnalysisQueue;
         this.queueDepleted = queueDepleted;
+        this.analyzerIsIdle = analyzerIsIdle;
     }
 
     @Override
     public void run() {
         try {
             while (!queueDepleted.get()) {
+                analyzerIsIdle.set(false);
+
                 // get the next monitored trip from the queue
                 MonitoredTrip trip;
                 try {
@@ -32,6 +42,7 @@ public class TripAnalyzer implements Runnable {
                 } catch (InterruptedException e) {
                     LOG.warn("TripAnalyzer thread interrupted");
                     e.printStackTrace();
+                    analyzerIsIdle.set(true);
                     Thread.sleep(BLOCKING_QUEUE_POLL_TIMEOUT_MILLIS);
                     continue;
                 }
@@ -40,13 +51,21 @@ public class TripAnalyzer implements Runnable {
                 // exceeded on an empty queue. Therefore, check if the trip is null and if so, wait and then continue.
                 if (trip == null) {
                     Thread.sleep(BLOCKING_QUEUE_POLL_TIMEOUT_MILLIS);
+                    analyzerIsIdle.set(true);
                     continue;
                 }
 
-                // TODO verify that a lock hasn't been placed on trip by another trip analyzer task
-                // TODO place lock on trip
+                // verify that a lock hasn't been placed on trip by another trip analyzer task
+                if (monitoredTripLocks.containsKey(trip)) {
+                    LOG.warn("Skipping trip analysis due to existing lock on trip: {}", trip);
+                    analyzerIsIdle.set(true);
+                    continue;
+                }
 
                 LOG.info("Analyzing trip {}", trip);
+
+                // place lock on trip
+                monitoredTripLocks.put(trip, true);
 
                 // TODO check if trip should be analyzed
 
@@ -60,7 +79,10 @@ public class TripAnalyzer implements Runnable {
 
                 LOG.info("Finished analyzing trip {}", trip);
 
-                // TODO remove lock on trip
+                // remove lock on trip
+                monitoredTripLocks.remove(trip);
+
+                analyzerIsIdle.set(true);
             }
         } catch (InterruptedException e) {
             LOG.error("error encountered while waiting during TripAnalyzer.");
