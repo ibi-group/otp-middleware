@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.persistence;
 
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
@@ -132,6 +133,10 @@ public class TypedPersistence<T extends Model> {
      */
     public List<T> getAll() {
         return mongoCollection.find().into(new ArrayList<>());
+    }
+
+    public FindIterable<T> getAllAsFindIterable() {
+        return mongoCollection.find();
     }
 
     /**
