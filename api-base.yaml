@@ -1,0 +1,97 @@
+# To generate the full OpenAPI (Swagger) file, use command
+# swagger-inline "**/*.java" --base api-base.yaml > api.yaml
+# or
+# swagger-inline "**/*.java" --base api-base.yaml --format .json > api.json
+openapi: "3.0.0"
+info:
+  version: "0.0.1"
+  title: "otp-middleware"
+  license: 
+    name: "MIT"
+components:
+  # Reusable response headers
+
+
+  # Reusable request parameters
+  parameters:
+    AWSAuthHeaderRequired:
+      deprecated: true
+      description: Use the proper authorization manager instead of passing this individual header.
+      name: Authorization # Required for AWS integration.
+      in: header
+      required: false
+      schema:
+        type: string
+    IDParameter:
+      name: id
+      in: path
+      description: The ID of the entity to search.
+      required: true
+      schema:
+        type: string
+
+  # Reusable response bodies
+  responses:
+    # For malformed credentials.
+    401Unauthorized:
+      description: API key or token is missing or could not be validated.
+      headers:
+        WWW_Authenticate:
+          schema:
+            type: string
+    # For enabling CORS.
+    AllowCORS:
+      description: Success
+      headers:
+        Access-Control-Allow-Origin:
+          schema:
+            type: string
+        Access-Control-Allow-Methods:
+          schema:
+            type: string
+        Access-Control-Allow-Headers:
+          schema:
+            type: string
+    # For returning one OtpUser
+    OtpUser:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OtpUser"
+      headers:
+        Access-Control-Allow-Origin:
+          schema:
+            type: string
+
+  requestBodies:
+    OtpUser:
+      description: The OtpUser entity to add or update.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OtpUser"
+
+  securitySchemes:
+    # AWS API Gateway will erroneously warn that http is an invalid type and will drop this entry.
+    # But it is the proper form for the documentation outside of AWS.
+    Auth0Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+
+# You would normally apply the security globally to all operations
+# However, AWS requires spelling out ApiKey and Authorization explicitly in all api paths that need them.
+# security:
+#  - Auth0Bearer: []
+# - ApiKey: []
+tags:
+  - name: admin
+    description: Interface for managing OTP admin users.
+  - name: api/secure/user
+    description: Interface for managing OTP users (general public).

@@ -8,6 +8,25 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
+ * @schema AbstractUser
+ * description: An abstract user.
+ * type: object
+ * required:
+ * - email
+ * - auth0UserId
+ * properties:
+ *   email:
+ *     type: string
+ *     description: Email address for contact. This must be unique in the collection.
+ *   auth0UserId:
+ *     type: string
+ *     description: Auth0 user name.
+ *   isDataToolsUser:
+ *      type: boolean
+ *      description: Determines whether this user has access to OTP Data Tools.
+ */
+
+/**
  * This is an abstract user class that {@link OtpUser}, {@link AdminUser}, and {@link ApiUser} extend.
  *
  * It provides a place to centralize common fields that all users share (e.g., email) and common methods (such as the

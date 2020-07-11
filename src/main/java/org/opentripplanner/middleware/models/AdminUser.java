@@ -6,6 +6,11 @@ import org.opentripplanner.middleware.auth.Permission;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
 
 /**
+ * @schema AdminUser
+ *   allOf:
+ *    - $ref: '#/components/schemas/AbstractUser'
+ */
+/**
  * Represents an administrative user of the OTP Admin Dashboard (otp-admin-ui).
  */
 public class AdminUser extends AbstractUser {

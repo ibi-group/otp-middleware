@@ -4,6 +4,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * @schema OtpUser
+ *   allOf:
+ *    - $ref: '#/components/schemas/AbstractUser'
+ *    - type: object
+ *      properties:
+ *        hasConsentedToTerms:
+ *          type: boolean
+ *          description: Whether the user has consented to the terms of use.
+ *        isPhoneNumberVerified:
+ *          type: boolean
+ *          description: Whether the user's phone number has been verified (to be implemented)
+ *        notificationChannel:
+ *          type: string
+ *          description: Notification preferences for this user ("email", "sms", "none").
+ *        phoneNumber:
+ *          type: string
+ *          description: Phone number for SMS notifications.
+ *        savedLocations:
+ *          type: object
+ *          description: Locations that the user has saved.
+ *        storeTripHistory:
+ *          type: boolean
+ *          description: Whether to store the user's trip history (user must opt in).
+ */
+
+/**
  * This represents a user of an OpenTripPlanner instance (typically of the standard OTP UI/otp-react-redux).
  * otp-middleware stores these users and associated information (e.g., home/work locations and other favorites). Users
  * can also opt-in to storing their trip planning requests/responses.

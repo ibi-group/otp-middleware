@@ -15,6 +15,30 @@ import static org.opentripplanner.middleware.auth.Auth0Users.validateExistingUse
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
+ * @api [get] /api/admin/user
+ * summary: Gets all OTP admin users.
+ * tags:
+ *  - admin
+ */
+/**
+ * @api [options] /api/admin/user
+ * tags:
+ *  - admin
+ */
+/**
+ * @api [post] /api/admin/user
+ * summary: Creates an OTP admin user.
+ * tags:
+ *  - admin
+ * requestBody:
+ *   required: true
+ *   content:
+ *     application/json:
+ *       schema:
+ *         $ref: '#/components/schemas/AdminUser'
+ */
+
+/**
  * Implementation of the {@link ApiController} abstract class for managing users. This controller connects with Auth0
  * services using the hooks provided by {@link ApiController}.
  */

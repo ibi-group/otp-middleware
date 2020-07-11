@@ -85,7 +85,7 @@ public class Main {
 
         // available at http://localhost:4567/plan
         /**
-         * @oas [get] /plan
+         * @oas_zzzzz [get] /plan
          * description: "Forwards a trip plan request to OTP."
          * parameters:
          *  - (query) fromPlace* {String} Origin of the trip.
