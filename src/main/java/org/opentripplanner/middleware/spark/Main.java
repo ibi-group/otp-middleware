@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
+import org.opentripplanner.middleware.controllers.api.LogController;
 import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
 import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
@@ -32,6 +33,7 @@ public class Main {
     // ObjectMapper that loads in YAML config files
     private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private static final String API_PREFIX = "/api/";
+    public static boolean inTestEnvironment = false;
 
     public static void main(String[] args) throws IOException {
         // Load configuration.
@@ -61,6 +63,9 @@ public class Main {
                     // TODO Add other models.
                 ))
                 .generateDoc();
+        // Add log controller HTTP endpoints
+        // TODO: We should determine whether we want to use Spark Swagger for these endpoints too.
+        LogController.register(spark, API_PREFIX);
         } catch (RuntimeException e) {
             LOG.error("Error initializing API controllers", e);
             System.exit(1);
