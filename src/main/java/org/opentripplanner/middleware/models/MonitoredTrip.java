@@ -47,7 +47,7 @@ public class MonitoredTrip extends Model {
     /**
      * Specify if the monitored trip should be checked on this day
      */
-    public boolean webnesday;
+    public boolean wednesday;
 
     /**
      * Specify if the monitored trip should be checked on this day
