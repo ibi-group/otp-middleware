@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -9,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
-
+import java.util.List;
 import static spark.Spark.halt;
 
 public class JsonUtils {
@@ -56,13 +57,25 @@ public class JsonUtils {
 
     /** Utility method to parse generic object from JSON String. */
     public static <T> T getPOJOFromJSON(String json, Class<T> clazz) {
-        T pojo = null;
         try {
-            pojo = mapper.readValue(json, clazz);
+            return mapper.readValue(json, clazz);
         } catch (JsonProcessingException e) {
-            LOG.error("Unable to get POJO from json", e);
+            LOG.error("Unable to get POJO from json for " + clazz.getSimpleName(), e);
         }
-        return pojo;
+        return null;
+    }
+
+    /**
+     * Utility method to parse generic objects from JSON String and return as list
+     */
+    public static <T> List<T> getPOJOFromJSONAsList(String json, Class<T> clazz) {
+        try {
+            JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, clazz);
+            return mapper.readValue(json, type);
+        } catch (JsonProcessingException e) {
+            LOG.error("Unable to get POJO from json for " + clazz.getSimpleName(), e);
+        }
+        return null;
     }
 
     /**

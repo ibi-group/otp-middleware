@@ -86,8 +86,13 @@ public class TypedPersistence<T extends Model> {
      * TODO maybe merge this with the other create implementation above, passing in the base object and the updates.
      */
     public void create(T newObject) {
-        // What happens if an object already exists with the same ID?
+        // TODO What happens if an object already exists with the same ID?
         mongoCollection.insertOne(newObject);
+    }
+
+    public void createMany(List<T> newObjects) {
+        // TODO What happens if an object already exists with the same ID?
+        mongoCollection.insertMany(newObjects);
     }
 
     public void replace(String id, T replaceObject) {

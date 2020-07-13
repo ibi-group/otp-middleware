@@ -10,6 +10,9 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.BugsnagEvent;
+import org.opentripplanner.middleware.models.BugsnagEventRequest;
+import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -41,6 +44,9 @@ public class Persistence {
     public static TypedPersistence<ApiUser> apiUsers;
     public static TypedPersistence<TripRequest> tripRequests;
     public static TypedPersistence<TripSummary> tripSummaries;
+    public static TypedPersistence<BugsnagEventRequest> bugsnagEventRequests;
+    public static TypedPersistence<BugsnagEvent> bugsnagEvents;
+    public static TypedPersistence<BugsnagProject> bugsnagProjects;
     public static TypedPersistence<MonitoredTrip> monitoredTrips;
 
     public static void initialize () {
@@ -80,8 +86,11 @@ public class Persistence {
         apiUsers = new TypedPersistence(mongoDatabase, ApiUser.class);
         tripRequests = new TypedPersistence(mongoDatabase, TripRequest.class);
         tripSummaries = new TypedPersistence(mongoDatabase, TripSummary.class);
+        bugsnagEventRequests = new TypedPersistence(mongoDatabase, BugsnagEventRequest.class);
+        bugsnagEvents = new TypedPersistence(mongoDatabase, BugsnagEvent.class);
+        bugsnagProjects = new TypedPersistence(mongoDatabase, BugsnagProject.class);
         monitoredTrips = new TypedPersistence(mongoDatabase, MonitoredTrip.class);
-       // TODO Add other models...
+        // TODO Add other models...
     }
 
 }
