@@ -22,6 +22,7 @@ import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsFor
 import static org.opentripplanner.middleware.auth.Auth0Users.validateExistingUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
+// Open API documentation for inherited CRUD methods
 /**
  * @api [get] /api/admin/user
  * tags:

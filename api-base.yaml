@@ -63,6 +63,17 @@ components:
         Access-Control-Allow-Origin:
           schema:
             type: string
+    # For returning one ApiUser
+    ApiUser:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiUser"
+      headers:
+        Access-Control-Allow-Origin:
+          schema:
+            type: string
     # For returning one OtpUser
     OtpUser:
       description: Success
@@ -83,6 +94,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/AdminUser"
+    ApiUser:
+      description: The ApiUser entity to add or update.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiUser"
     OtpUser:
       description: The OtpUser entity to add or update.
       required: true
@@ -92,8 +110,9 @@ components:
             $ref: "#/components/schemas/OtpUser"
 
   securitySchemes:
-    # AWS API Gateway will erroneously warn that http is an invalid type and will drop this entry.
-    # But it is the proper form for the documentation outside of AWS.
+    # For Auth0Bearer below: As of July 2020, AWS API Gateway will incorrectly warn
+    # that http is an invalid type. AWS will drop this entry on import.
+    # Outside of AWS, however, this is the proper form for the documenting a bearer token requirement.
     Auth0Bearer:
       type: http
       scheme: bearer
@@ -104,12 +123,15 @@ components:
       name: x-api-key
 
 # You would normally apply the security globally to all operations
-# However, AWS requires spelling out ApiKey and Authorization explicitly in all api paths that need them.
+# However, as of July 2020, AWS API Gateway requires spelling out ApiKey and Auth0Bearer authorizations
+# explicitly in all api paths that need them.
 # security:
 #  - Auth0Bearer: []
-# - ApiKey: []
+#  - ApiKey: []
 tags:
-  - name: admin
-    description: Interface for managing OTP admin users.
+  - name: api/admin/user
+    description: Interface for managing admin dashboard users (admin access only).
+  - name: api/secure/application
+    description: Interface for managing API users (the application developers).
   - name: api/secure/user
-    description: Interface for managing OTP users (general public).
+    description: Interface for managing OTP users (the general public).

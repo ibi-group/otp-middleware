@@ -4,6 +4,37 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * @schema ApiUser
+ *   allOf:
+ *    - $ref: '#/components/schemas/AbstractUser'
+ *    - type: object
+ *      properties:
+ *        apiKeyIds:
+ *          type: array
+ *          items:
+ *              type: string
+ *          description: Holds the API keys assigned to the user.
+ *        appName:
+ *          type: string
+ *          description: The name of the application built by this user.
+ *        appPurpose:
+ *          type: string
+ *          description: The purpose of the application built by this user.
+ *        appUrl:
+ *          type: string
+ *          description: The URL of the application built by this user.
+ *        company:
+ *          type: string
+ *          description: The company or organization that this user belongs to.
+ *        hasConsentedToTerms:
+ *          type: boolean
+ *          description: Whether the user has consented to the terms of use.
+ *        name:
+ *          type: string
+ *          description: The name of this user.
+ */
+
+/**
  * Represents a third-party application developer, which has a set of AWS API Gateway API keys which they can use to
  * access otp-middleware's endpoints (as well as the geocoding and OTP endpoints).
  */
