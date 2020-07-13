@@ -7,6 +7,63 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import java.util.Set;
 
 /**
+ * @schema MonitoredTrip
+ * description: A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route change.
+ * type: object
+ * required:
+ * - email
+ * - auth0UserId
+ * properties:
+ *   userId:
+ *     type: string
+ *     description: Mongo Id of user monitoring trip.
+ *   tripName:
+ *     type: string
+ *     description: Name given to the trip by the user.
+ *   tripTime:
+ *     type: string
+ *     format: "HH:mm"
+ *     example: "14:08"
+ *     description: "The time at which the trip takes place, in format HH:mm."
+ *   leadTimeInMinutes:
+ *     type: integer
+ *     description: The number of minutes prior to a trip taking place that the status should be checked.
+ *   monday:
+ *     type: boolean
+ *     description: Specify if the monitored trip should be checked on Mondays.
+ *   tuesday:
+ *     type: boolean
+ *     description: Specify if the monitored trip should be checked on Tuesdays.
+ *   webnesday:
+ *     type: boolean
+ *     description: Specify if the monitored trip should be checked on Wednesdays.
+ *   thursday:
+ *     type: boolean
+ *     description: Specify if the monitored trip should be checked on Thursdays.
+ *   friday:
+ *     type: boolean
+ *     description: Specify if the monitored trip should be checked on Fridays.
+ *   saturday:
+ *     type: boolean
+ *     description: Specify if the monitored trip should be checked on Saturdays.
+ *   sunday:
+ *     type: boolean
+ *     description: Specify if the monitored trip should be checked on Sundays.
+ *   excludeFederalHolidays:
+ *     type: boolean
+ *     description: Specify if the monitored trip should be checked on a US federal holiday.
+ *   isActive:
+ *     type: boolean
+ *     description: Specify if the monitored trip is active. If `true`, the trip will be checked. Defaults to `true`.
+ *   queryParams:
+ *     type: string
+ *     description: OTP query parameters. Query parameters influencing trip.
+ *   itinerary:
+ *     type: object # TODO - complete this.
+ *     description: The OTP itinerary (not including real-time data) that should be monitored.
+ */
+
+/**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or
  * route change.
  */
