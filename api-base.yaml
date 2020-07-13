@@ -2,16 +2,25 @@
 # swagger-inline "**/*.java" --base api-base.yaml > api.yaml
 # or
 # swagger-inline "**/*.java" --base api-base.yaml --format .json > api.json
-openapi: "3.0.0"
+openapi: 3.0.0
 info:
-  version: "0.0.1"
-  title: "otp-middleware"
+  title: otp-middleware
+  version: 0.0.1
+  description: OpenTripPlanner (OTP) Middleware API
   license: 
-    name: "MIT"
+    name: MIT
+    url: "https://opensource.org/licenses/MIT"
+  contact:
+    email: "transitdatasupport@ibigroup.com"
+    name: "IBI Group"
+    url: "https://github.com/ibi-group"
+servers:
+  - url: "https://nnxedhtje2.execute-api.us-east-1.amazonaws.com/dev"
+    description: Demo (development) stage server on AWS API Gateway
+  - url: " https://w7tqwg7j5a.execute-api.us-east-1.amazonaws.com/dev1"
+    description: Less stable dev stage server on AWS API Gateway
+
 components:
-  # Reusable response headers
-
-
   # Reusable request parameters
   parameters:
     AWSAuthHeaderRequired:
@@ -63,6 +72,17 @@ components:
         Access-Control-Allow-Origin:
           schema:
             type: string
+    # For returning one MonitoredTrip
+    MonitoredTrip:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MonitoredTrip"
+      headers:
+        Access-Control-Allow-Origin:
+          schema:
+            type: string
     # For returning one OtpUser
     OtpUser:
       description: Success
@@ -83,6 +103,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/AdminUser"
+    MonitoredTrip:
+      description: The MonitoredTrip entity to add or update.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MonitoredTrip"
     OtpUser:
       description: The OtpUser entity to add or update.
       required: true
