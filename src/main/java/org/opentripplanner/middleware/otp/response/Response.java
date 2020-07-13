@@ -1,12 +1,8 @@
 package org.opentripplanner.middleware.otp.response;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map.Entry;
-
-import javax.ws.rs.core.UriInfo;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.util.HashMap;
 
 /**
  * Represents a trip planner response

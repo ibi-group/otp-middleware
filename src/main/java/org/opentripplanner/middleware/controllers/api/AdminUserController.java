@@ -8,9 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
+import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
-import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.validateExistingUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
