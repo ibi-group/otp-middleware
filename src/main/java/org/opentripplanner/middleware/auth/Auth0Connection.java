@@ -32,6 +32,7 @@ public class Auth0Connection {
     /**
      * Check the incoming API request for the user token (and verify it) and assign as the "user" attribute on the
      * incoming request object for use in downstream controllers.
+     *
      * @param req Spark request object
      */
     public static void checkUser(Request req) {
@@ -55,7 +56,7 @@ public class Auth0Connection {
             // The user attribute is used on the server side to check user permissions and does not have all of the
             // fields that the raw Auth0 profile string does.
             addUserToRequest(req, profile);
-        } catch (JWTVerificationException e){
+        } catch (JWTVerificationException e) {
             // Invalid signature/claims
             logMessageAndHalt(req, 401, "Login failed to verify with our authorization provider.", e);
         } catch (Exception e) {
@@ -70,7 +71,9 @@ public class Auth0Connection {
     }
 
 
-    /** Assign user to request and check that the user is an admin. */
+    /**
+     * Assign user to request and check that the user is an admin.
+     */
     public static void checkUserIsAdmin(Request req, Response res) {
         // Check auth token in request (and add user object to request).
         checkUser(req);
@@ -85,18 +88,24 @@ public class Auth0Connection {
         }
     }
 
-    /** Check if the incoming user is an admin user */
+    /**
+     * Check if the incoming user is an admin user
+     */
     public static boolean isUserAdmin(Auth0UserProfile user) {
         return user != null && user.adminUser != null;
     }
 
-    /** Add user profile to Spark Request object */
+    /**
+     * Add user profile to Spark Request object
+     */
     public static void addUserToRequest(Request req, Auth0UserProfile user) {
         req.attribute("user", user);
     }
 
-    /** Get user profile from Spark Request object */
-    public static Auth0UserProfile getUserFromRequest (Request req) {
+    /**
+     * Get user profile from Spark Request object
+     */
+    public static Auth0UserProfile getUserFromRequest(Request req) {
         return (Auth0UserProfile) req.attribute("user");
     }
 
@@ -165,7 +174,7 @@ public class Auth0Connection {
     private static Auth0UserProfile isValidUser(Request request) {
 
         Auth0UserProfile profile = getUserFromRequest(request);
-        if (profile == null || (profile.adminUser == null  && profile.otpUser == null && profile.apiUser == null)) {
+        if (profile == null || (profile.adminUser == null && profile.otpUser == null && profile.apiUser == null)) {
             logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "Unknown user.");
         }
 
@@ -184,12 +193,17 @@ public class Auth0Connection {
             return;
         }
 
-        if (userId == null ||
-            (profile.otpUser != null && !profile.otpUser.id.equals(userId)) ||
-            (profile.apiUser != null && !profile.apiUser.id.equals(userId))) {
+        if (userId != null) {
+            if (profile.otpUser != null && profile.otpUser.id.equals(userId)) {
+                return;
+            }
 
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
+            if (profile.apiUser != null && profile.apiUser.id.equals(userId)) {
+                return;
+            }
         }
+
+        logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
     }
 
 }

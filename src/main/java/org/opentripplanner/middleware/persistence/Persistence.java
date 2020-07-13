@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.BugsnagProject;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
@@ -46,6 +47,7 @@ public class Persistence {
     public static TypedPersistence<BugsnagEventRequest> bugsnagEventRequests;
     public static TypedPersistence<BugsnagEvent> bugsnagEvents;
     public static TypedPersistence<BugsnagProject> bugsnagProjects;
+    public static TypedPersistence<MonitoredTrip> monitoredTrips;
 
     public static void initialize () {
         // TODO Add custom codec libraries
@@ -87,6 +89,7 @@ public class Persistence {
         bugsnagEventRequests = new TypedPersistence(mongoDatabase, BugsnagEventRequest.class);
         bugsnagEvents = new TypedPersistence(mongoDatabase, BugsnagEvent.class);
         bugsnagProjects = new TypedPersistence(mongoDatabase, BugsnagProject.class);
+        monitoredTrips = new TypedPersistence(mongoDatabase, MonitoredTrip.class);
         // TODO Add other models...
     }
 

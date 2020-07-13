@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.BugsnagController;
 import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.LogController;
+import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.otp.OtpRequestProcessor;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -63,6 +64,7 @@ public class Main {
                 .endpoints(() -> List.of(
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
+                    new MonitoredTripController(API_PREFIX),
                     new OtpUserController(API_PREFIX)
                     // TODO Add other models.
                 ))
