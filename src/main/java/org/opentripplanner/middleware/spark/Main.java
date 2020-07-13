@@ -218,7 +218,7 @@ public class Main {
             JsonNode node = getConfigProperty(name);
             value = Integer.parseInt(node.asText());
         } catch (NumberFormatException | NullPointerException e) {
-            LOG.error("Unable to parse {}. Using default: {}", name, defaultValue, e);
+            LOG.warn("Unable to parse {}. Using default: {}", name, defaultValue, e);
         }
         return value;
     }
