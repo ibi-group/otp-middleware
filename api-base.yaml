@@ -52,6 +52,17 @@ components:
         Access-Control-Allow-Headers:
           schema:
             type: string
+    # For returning one AdminUser
+    AdminUser:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminUser"
+      headers:
+        Access-Control-Allow-Origin:
+          schema:
+            type: string
     # For returning one OtpUser
     OtpUser:
       description: Success
@@ -65,6 +76,13 @@ components:
             type: string
 
   requestBodies:
+    AdminUser:
+      description: The AdminUser entity to add or update.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminUser"
     OtpUser:
       description: The OtpUser entity to add or update.
       required: true

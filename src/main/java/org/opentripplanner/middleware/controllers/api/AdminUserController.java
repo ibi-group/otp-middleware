@@ -16,26 +16,292 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * @api [get] /api/admin/user
- * summary: Gets all OTP admin users.
  * tags:
- *  - admin
+ * - "api/admin/user"
+ * description: "Gets a list of all AdminUser entities."
+ * parameters:
+ * - $ref: '#/components/parameters/AWSAuthHeaderRequired'
+ * security:
+ * - ApiKey: [] # Required for AWS integration.
+ *   Auth0Bearer: []
+ * responses:
+ *   200:
+ *     description: "successful operation"
+ *     content:
+ *       application/json:
+ *         schema:
+ *           type: array
+ *           items:
+ *             $ref: "#/components/schemas/AdminUser"
+ *     headers:
+ *       Access-Control-Allow-Origin:
+ *         schema:
+ *           type: "string"
+ * x-amazon-apigateway-integration:
+ *   uri: "http://54.147.40.127/api/admin/user"
+ *   responses:
+ *     default:
+ *       statusCode: "200"
+ *       responseParameters:
+ *         method.response.header.Access-Control-Allow-Origin: "'*'"
+ *   requestParameters:
+ *     integration.request.header.Authorization: "method.request.header.Authorization"
+ *   passthroughBehavior: "when_no_match"
+ *   httpMethod: "GET"
+ *   type: "http"
+ *
  */
+
 /**
  * @api [options] /api/admin/user
+ * responses:
+ *   200:
+ *     $ref: "#/components/responses/AllowCORS"
  * tags:
- *  - admin
+ *  - "api/admin/user"
+ * x-amazon-apigateway-integration:
+ *   uri: "http://54.147.40.127/api/admin/user"
+ *   responses:
+ *     default:
+ *       statusCode: 200
+ *       responseParameters:
+ *         method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+ *         method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+ *         method.response.header.Access-Control-Allow-Origin: "'*'"
+ *   passthroughBehavior: when_no_match
+ *   httpMethod: OPTIONS
+ *   type: http
  */
+
 /**
  * @api [post] /api/admin/user
- * summary: Creates an OTP admin user.
  * tags:
- *  - admin
+ * - "api/admin/user"
+ * description: "Creates a new AdminUser entity."
+ * parameters:
+ * - $ref: '#/components/parameters/AWSAuthHeaderRequired'
+ * security:
+ * - ApiKey: [] # Required for AWS integration.
+ *   Auth0Bearer: []
  * requestBody:
- *   required: true
- *   content:
- *     application/json:
- *       schema:
- *         $ref: '#/components/schemas/AdminUser'
+ *   $ref: "#/components/requestBodies/AdminUser"
+ * responses:
+ *   200:
+ *     $ref: "#/components/responses/AdminUser"
+ *   400:
+ *     description: "400 response"
+ *     headers:
+ *       Access-Control-Allow-Origin:
+ *         schema:
+ *           type: "string"
+ *   500:
+ *     description: "500 response"
+ *     headers:
+ *       Access-Control-Allow-Origin:
+ *         schema:
+ *           type: "string"
+ *   401:
+ *     description: "401 response"
+ *     headers:
+ *       Access-Control-Allow-Origin:
+ *         schema:
+ *           type: "string"
+ * x-amazon-apigateway-integration:
+ *   uri: "http://54.147.40.127/api/admin/user"
+ *   responses:
+ *     200:
+ *       statusCode: "200"
+ *       responseParameters:
+ *         method.response.header.Access-Control-Allow-Origin: "'*'"
+ *     401:
+ *       statusCode: "401"
+ *       responseParameters:
+ *         method.response.header.Access-Control-Allow-Origin: "'*'"
+ *     5\d{2}:
+ *       statusCode: "500"
+ *       responseParameters:
+ *         method.response.header.Access-Control-Allow-Origin: "'*'"
+ *   requestParameters:
+ *     integration.request.header.Authorization: "method.request.header.Authorization"
+ *   passthroughBehavior: "when_no_match"
+ *   httpMethod: "POST"
+ *   type: "http"
+ *
+ */
+
+// fromtoken route
+/**
+ * @api [get] /api/admin/user/fromtoken
+ * tags:
+ * - "api/admin/user"
+ * description: "Retrieve a user from the Auth0 token."
+ * parameters:
+ * - $ref: '#/components/parameters/AWSAuthHeaderRequired'
+ * security:
+ * - ApiKey: [] # Required for AWS integration.
+ *   Auth0Bearer: []
+ * responses:
+ *   200:
+ *     $ref: "#/components/responses/AdminUser"
+ * x-amazon-apigateway-integration:
+ *   uri: "http://54.147.40.127/api/admin/user/fromtoken"
+ *   responses:
+ *     default:
+ *       statusCode: "200"
+ *       responseParameters:
+ *         method.response.header.Access-Control-Allow-Origin: "'*'"
+ *   requestParameters:
+ *     integration.request.header.Authorization: "method.request.header.Authorization"
+ *   passthroughBehavior: "when_no_match"
+ *   httpMethod: "GET"
+ *   type: "http"
+ *
+ */
+/**
+ * @api [options] /api/admin/user/fromtoken
+ * responses:
+ *   200:
+ *     $ref: "#/components/responses/AllowCORS"
+ * tags:
+ *  - "api/admin/user"
+ * x-amazon-apigateway-integration:
+ *   uri: "http://54.147.40.127/api/admin/user/fromtoken"
+ *   responses:
+ *     default:
+ *       statusCode: 200
+ *       responseParameters:
+ *         method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+ *         method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+ *         method.response.header.Access-Control-Allow-Origin: "'*'"
+ *   passthroughBehavior: when_no_match
+ *   httpMethod: OPTIONS
+ *   type: http
+ */
+
+// {id} methods
+/**
+ * @api [get] /api/admin/user/{id}
+ * tags:
+ * - "api/admin/user"
+ * description: "Returns an AdminUser entity with the specified id, or 404 if not found."
+ * parameters:
+ * - $ref: '#/components/parameters/AWSAuthHeaderRequired'
+ * - $ref: '#/components/parameters/IDParameter'
+ * security:
+ * - ApiKey: [] # Required for AWS integration.
+ *   Auth0Bearer: []
+ * responses:
+ *   200:
+ *     $ref: "#/components/responses/AdminUser"
+ * x-amazon-apigateway-integration:
+ *   uri: "http://54.147.40.127/api/admin/user/{id}"
+ *   responses:
+ *     default:
+ *       statusCode: "200"
+ *       responseParameters:
+ *         method.response.header.Access-Control-Allow-Origin: "'*'"
+ *   requestParameters:
+ *     integration.request.header.Authorization: "method.request.header.Authorization"
+ *     integration.request.path.id: "method.request.path.id"
+ *   passthroughBehavior: "when_no_match"
+ *   httpMethod: "GET"
+ *   type: "http"
+ */
+/**
+ * @api [put] /api/admin/user/{id}
+ * tags:
+ * - "api/admin/user"
+ * description: "Updates and returns the AdminUser entity with the specified id, or\
+ *   \ 404 if not found."
+ * parameters:
+ * - $ref: '#/components/parameters/AWSAuthHeaderRequired'
+ * - $ref: '#/components/parameters/IDParameter'
+ * security:
+ * - ApiKey: [] # Required for AWS integration.
+ *   Auth0Bearer: []
+ * requestBody:
+ *   $ref: "#/components/requestBodies/AdminUser"
+ * responses:
+ *   200:
+ *     $ref: "#/components/responses/AdminUser"
+ * x-amazon-apigateway-integration:
+ *   uri: "http://54.147.40.127/api/admin/user/{id}"
+ *   responses:
+ *     default:
+ *       statusCode: "200"
+ *       responseParameters:
+ *         method.response.header.Access-Control-Allow-Origin: "'*'"
+ *   requestParameters:
+ *     integration.request.header.Authorization: "method.request.header.Authorization"
+ *     integration.request.path.id: "method.request.path.id"
+ *   passthroughBehavior: "when_no_match"
+ *   httpMethod: "PUT"
+ *   type: "http"
+ */
+/**
+ * @api [delete] /api/admin/user/{id}
+ * tags:
+ * - "api/admin/user"
+ * description: "Deletes the AdminUser entity with the specified id if it exists."
+ * parameters:
+ * - $ref: '#/components/parameters/AWSAuthHeaderRequired'
+ * - $ref: '#/components/parameters/IDParameter'
+ * security:
+ * - ApiKey: [] # Required for AWS integration.
+ *   Auth0Bearer: []
+ * responses:
+ *   200:
+ *     description: "successful operation"
+ *     headers:
+ *       Access-Control-Allow-Origin:
+ *         schema:
+ *           type: "string"
+ *   400:
+ *     description: "400 response"
+ *   401:
+ *     description: "401 response"
+ * x-amazon-apigateway-integration:
+ *   uri: "http://54.147.40.127/api/admin/user/{id}"
+ *   responses:
+ *     200:
+ *       statusCode: "200"
+ *       responseParameters:
+ *         method.response.header.Access-Control-Allow-Origin: "'*'"
+ *     400:
+ *       statusCode: "400"
+ *     401:
+ *       statusCode: "401"
+ *   requestParameters:
+ *     integration.request.header.Authorization: "method.request.header.Authorization"
+ *     integration.request.path.id: "method.request.path.id"
+ *   passthroughBehavior: "when_no_match"
+ *   httpMethod: "DELETE"
+ *   type: "http"
+ */
+/**
+ * @api [options] /api/admin/user/{id}
+ * tags:
+ * - "api/admin/user"
+ * parameters:
+ * - $ref: '#/components/parameters/IDParameter'
+ * responses:
+ *   200:
+ *     $ref: "#/components/responses/AllowCORS"
+ * x-amazon-apigateway-integration:
+ *   uri: "http://54.147.40.127/api/admin/user/{id}"
+ *   responses:
+ *     default:
+ *       statusCode: "200"
+ *       responseParameters:
+ *         method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,OPTIONS,PUT'"
+ *         method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+ *         method.response.header.Access-Control-Allow-Origin: "'*'"
+ *   requestParameters:
+ *     integration.request.path.id: "method.request.path.id"
+ *   passthroughBehavior: "when_no_match"
+ *   httpMethod: "OPTIONS"
+ *   type: "http"
+ *
  */
 
 /**
