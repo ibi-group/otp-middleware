@@ -139,6 +139,14 @@ public class TypedPersistence<T extends Model> {
     }
 
     /**
+     * Return the number of items based on the supplied Mongo filter
+     *
+     */
+    public long getCountFiltered(Bson filter) {
+        return mongoCollection.countDocuments(filter);
+    }
+
+    /**
      * Get all objects satisfying the supplied Mongo filter.
      * This ties our persistence directly to Mongo for now but is expedient.
      * We should really have a bit more abstraction here.

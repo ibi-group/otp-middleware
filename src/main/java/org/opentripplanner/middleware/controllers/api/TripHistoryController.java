@@ -22,7 +22,9 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.gte;
+import static com.mongodb.client.model.Filters.lte;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -75,7 +77,7 @@ public class TripHistoryController {
 
         if (fromDate != null && toDate != null && toDate.before(fromDate)) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400,
-                String.format("%s (%s) before %s (%s)", TO_DATE_PARAM_NAME , paramToDate, FROM_DATE_PARAM_NAME,
+                String.format("%s (%s) before %s (%s)", TO_DATE_PARAM_NAME, paramToDate, FROM_DATE_PARAM_NAME,
                     paramFromDate));
         }
 
@@ -132,7 +134,7 @@ public class TripHistoryController {
         }
 
         return Date.from(localDate.atTime(timeOfDay)
-                .atZone(ZoneId.systemDefault())
-                .toInstant());
+            .atZone(ZoneId.systemDefault())
+            .toInstant());
     }
 }
