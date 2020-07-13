@@ -8,17 +8,16 @@ info:
   version: 0.0.1
   description: OpenTripPlanner (OTP) Middleware API
   license: 
-    name: MIT
+    name: MIT License
     url: "https://opensource.org/licenses/MIT"
   contact:
     email: "transitdatasupport@ibigroup.com"
-    name: "IBI Group"
+    name: "IBI Group on GitHub"
     url: "https://github.com/ibi-group"
+# AWS API Gateway will only accept one server entry.
 servers:
   - url: "https://nnxedhtje2.execute-api.us-east-1.amazonaws.com/dev"
     description: Demo (development) stage server on AWS API Gateway
-  - url: " https://w7tqwg7j5a.execute-api.us-east-1.amazonaws.com/dev1"
-    description: Less stable dev stage server on AWS API Gateway
 
 components:
   # Reusable request parameters
