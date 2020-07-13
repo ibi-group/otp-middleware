@@ -11,10 +11,10 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
 import spark.Response;
 
+import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
-import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.validateExistingUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -344,6 +344,24 @@ public class OtpUserController extends ApiController<OtpUser> {
     }
 
     /**
+     * HTTP endpoint to get the {@link OtpUser} entity, if it exists, from an {@link Auth0UserProfile} attribute
+     * available from a {@link Request} (this is the case for '/api/secure/' endpoints).
+     */
+    private OtpUser getUserFromRequest(Request req, Response res) {
+        Auth0UserProfile profile = Auth0Connection.getUserFromRequest(req);
+        OtpUser user = profile.otpUser;
+
+        // If the OtpUser object is null, it is most likely because it was not created yet,
+        // for instance, for users who just created an Auth0 login and have an Auth0UserProfile
+        // but have not completed the account setup form yet.
+        // For those users, the OtpUser profile would be 404 not found (as opposed to 403 forbidden).
+        if (user == null) {
+            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.auth0UserId), null);
+        }
+        return user;
+    }
+
+    /**
      * Before creating/storing a user in MongoDB, create the user in Auth0 and update the {@link OtpUser#auth0UserId}
      * with the value from Auth0.
      */
@@ -371,23 +389,5 @@ public class OtpUserController extends ApiController<OtpUser> {
             return false;
         }
         return true;
-    }
-
-    /**
-     * HTTP endpoint to get the {@link OtpUser} entity, if it exists, from an {@link Auth0UserProfile} attribute
-     * available from a {@link Request} (this is the case for '/api/secure/' endpoints).
-     */
-    private OtpUser getUserFromRequest(Request req, Response res) {
-        Auth0UserProfile profile = Auth0Connection.getUserFromRequest(req);
-        OtpUser user = profile.otpUser;
-
-        // If the OtpUser object is null, it is most likely because it was not created yet,
-        // for instance, for users who just created an Auth0 login and have an Auth0UserProfile
-        // but have not completed the account setup form yet.
-        // For those users, the OtpUser profile would be 404 not found (as opposed to 403 forbidden).
-        if (user == null) {
-            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.auth0UserId), null);
-        }
-        return user;
     }
 }

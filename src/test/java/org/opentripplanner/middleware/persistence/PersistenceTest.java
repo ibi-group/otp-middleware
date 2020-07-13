@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.persistence;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.OtpUser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,6 +19,14 @@ public class PersistenceTest extends OtpMiddlewareTest {
     private static final String TEST_EMAIL = "john.doe@example.com";
 
     OtpUser user = null;
+
+    @Test
+    public void canCreateAdminUser() {
+        AdminUser adminUser = new AdminUser();
+        adminUser.email = TEST_EMAIL;
+        adminUser.auth0UserId = "auth0|TEST_ID";
+        Persistence.adminUsers.create(adminUser);
+    }
 
     @Test
     public void canCreateUser() {

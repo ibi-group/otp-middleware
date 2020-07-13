@@ -3,10 +3,13 @@ package org.opentripplanner.middleware.controllers.api;
 import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
+import com.mongodb.client.model.Filters;
+import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.Model;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -20,6 +23,8 @@ import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
+import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -148,18 +153,53 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * HTTP endpoint to get multiple entities.
+     * HTTP endpoint to get multiple entities based on the user permissions
      */
+    // FIXME Maybe better if the user check (and filtering) was done in a pre hook?
+    // FIXME Will require further granularity for admin
     private List<T> getMany(Request req, Response res) {
-        return persistence.getAll();
+
+        Auth0UserProfile requestingUser = getUserFromRequest(req);
+        if (isUserAdmin(requestingUser)) {
+            // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
+            // management or review without restriction.
+            return persistence.getAll();
+        } else if (persistence.clazz == OtpUser.class) {
+            // If the required entity is of type 'OtpUser' the assumption is that a call is being made via the
+            // OtpUserController. Therefore, the request should be limited to return just the entity matching the
+            // requesting user.
+            return getObjectsFiltered("_id", requestingUser.otpUser.id);
+        } else {
+            // For all other cases the assumption is that the request is being made by an Otp user and the requested
+            // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
+            return getObjectsFiltered("userId", requestingUser.otpUser.id);
+        }
     }
 
     /**
-     * HTTP endpoint to get one entity specified by ID.
+     * Get a list of objects filtered by the provided field name and value.
+     */
+    private List<T> getObjectsFiltered(String fieldName, String value) {
+        Bson filter = Filters.eq(fieldName, value);
+        return persistence.getFiltered(filter);
+    }
+
+    /**
+     * HTTP endpoint to get one entity specified by ID. This will return an object based on the checks carried out in
+     * the overridden 'canBeManagedBy' method. It is the responsibility of this method to define access to it's own
+     * object. The default behaviour is defined in {@link Model#canBeManagedBy} and may have too restrictive access
+     * (must be admin) than is desired.
      */
     private T getOne(Request req, Response res) {
+        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         String id = getIdFromRequest(req);
-        return getObjectForId(req, id);
+        T object = getObjectForId(req, id);
+
+        if (!object.canBeManagedBy(requestingUser)) {
+            logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to get %s.", classToLowercase));
+        }
+
+        return object;
     }
 
     /**

@@ -24,6 +24,7 @@ public class AdminUser extends AbstractUser {
         permissions.add(new Permission(AdminUser.class, Permission.Action.MANAGE));
         permissions.add(new Permission(ApiUser.class, Permission.Action.MANAGE));
         permissions.add(new Permission(OtpUser.class, Permission.Action.MANAGE));
+        permissions.add(new Permission(MonitoredTrip.class, Permission.Action.MANAGE));
     }
 
     /**
