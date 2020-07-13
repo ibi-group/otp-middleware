@@ -160,6 +160,43 @@
       }
     },
     "schemas": {
+      "EventSummary": {
+        "description": "Summary information for events logged in Bugsnag. For additional information: https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/create-an-event-data-requestData structure for log response. The data is based on https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/AmazonWebServiceResult.html, with items having the fields outlined in https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/apigateway/model/GetUsageResult.html.",
+        "type": "object",
+        "properties": {
+          "errorId": {
+            "type": "string",
+            "description": "The error which this event is associated with."
+          },
+          "exceptions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "A list of EventException classes and messages associated with this event."
+          },
+          "received": {
+            "type": "string",
+            "description": "The date/time Bugsnag received the event."
+          },
+          "projectId": {
+            "type": "string",
+            "description": "The project which this event is associated with."
+          },
+          "projectName": {
+            "type": "string",
+            "description": "The associated project name."
+          },
+          "releaseState": {
+            "type": "string",
+            "description": "Associated environment e.g. Test, Dev, Production."
+          },
+          "htmlUrl": {
+            "type": "string",
+            "description": "The dashboard URL for the project."
+          }
+        }
+      },
       "AbstractUser": {
         "description": "An abstract user.",
         "type": "object",
@@ -267,6 +304,10 @@
             }
           }
         ]
+      },
+      "LogResult": {
+        "description": "Data structure for log response. The data is based on https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/AmazonWebServiceResult.html, with items having the fields outlined in https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/apigateway/model/GetUsageResult.html.",
+        "type": "object"
       }
     }
   },
@@ -278,6 +319,10 @@
     {
       "name": "api/secure/application",
       "description": "Interface for managing API users (the application developers)."
+    },
+    {
+      "name": "api/secure/logs",
+      "description": "Interface for retrieving logs."
     },
     {
       "name": "api/secure/user",
@@ -1122,6 +1167,174 @@
           },
           "requestParameters": {
             "integration.request.path.id": "method.request.path.id"
+          },
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "OPTIONS",
+          "type": "http"
+        }
+      }
+    },
+    "/api/admin/bugsnag/eventsummary": {
+      "get": {
+        "tags": [
+          "api/admin/bugsnag/eventsummary"
+        ],
+        "description": "Gets a list of recent Bugsnag events.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AWSAuthHeaderRequired"
+          }
+        ],
+        "security": [
+          {
+            "ApiKey": [],
+            "Auth0Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventSummary"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "uri": "http://54.147.40.127/api/admin/bugsnag/eventsummary",
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              }
+            }
+          },
+          "requestParameters": {
+            "integration.request.header.Authorization": "method.request.header.Authorization"
+          },
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "GET",
+          "type": "http"
+        }
+      },
+      "options": {
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AllowCORS"
+          }
+        },
+        "tags": [
+          "api/admin/bugsnag/eventsummary"
+        ],
+        "x-amazon-apigateway-integration": {
+          "uri": "http://54.147.40.127/api/admin/bugsnag/eventsummary",
+          "responses": {
+            "default": {
+              "statusCode": 200,
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              }
+            }
+          },
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "OPTIONS",
+          "type": "http"
+        }
+      }
+    },
+    "/api/secure/logs": {
+      "get": {
+        "tags": [
+          "api/secure/logs"
+        ],
+        "description": "Gets a list of recent logs.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AWSAuthHeaderRequired"
+          }
+        ],
+        "security": [
+          {
+            "ApiKey": [],
+            "Auth0Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LogResult"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "uri": "http://54.147.40.127/api/secure/logs",
+          "responses": {
+            "default": {
+              "statusCode": "200",
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              }
+            }
+          },
+          "requestParameters": {
+            "integration.request.header.Authorization": "method.request.header.Authorization"
+          },
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "GET",
+          "type": "http"
+        }
+      },
+      "options": {
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/AllowCORS"
+          }
+        },
+        "tags": [
+          "api/secure/logs"
+        ],
+        "x-amazon-apigateway-integration": {
+          "uri": "http://54.147.40.127/api/secure/logs",
+          "responses": {
+            "default": {
+              "statusCode": 200,
+              "responseParameters": {
+                "method.response.header.Access-Control-Allow-Methods": "'GET,OPTIONS'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'"
+              }
+            }
           },
           "passthroughBehavior": "when_no_match",
           "httpMethod": "OPTIONS",
