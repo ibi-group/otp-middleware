@@ -73,9 +73,7 @@ public class LogController {
          *         schema:
          *           type: array
          *           items:
-         *              schema:
-         *                $ref: "#/components/schemas/LogResult"
-         *
+         *             $ref: "#/components/schemas/LogResult"
          *     headers:
          *       Access-Control-Allow-Origin:
          *         schema:
