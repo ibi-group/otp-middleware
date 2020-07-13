@@ -14,7 +14,7 @@ import static org.opentripplanner.middleware.persistence.PersistenceUtil.createM
  * number of {@link TypedPersistence} methods are tested here, but the HTTP endpoints defined in
  * {@link org.opentripplanner.middleware.controllers.api.ApiController} are not themselves tested here.
  */
-public class MonitoredTripPersistenceTest  extends OtpMiddlewareTest {
+public class MonitoredTripPersistenceTest extends OtpMiddlewareTest {
 
     MonitoredTrip monitoredTrip = null;
 
