@@ -133,5 +133,7 @@ tags:
     description: Interface for managing admin dashboard users (admin access only).
   - name: api/secure/application
     description: Interface for managing API users (the application developers).
+  - name: api/secure/logs
+    description: Interface for retrieving logs.
   - name: api/secure/user
     description: Interface for managing OTP users (the general public).
