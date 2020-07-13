@@ -69,9 +69,12 @@ public class Main {
                     // TODO Add other models.
                 ))
                 .generateDoc();
-        // Add log controller HTTP endpoints
-        // TODO: We should determine whether we want to use Spark Swagger for these endpoints too.
-        LogController.register(spark, API_PREFIX);
+            // Add log controller HTTP endpoints
+            // TODO: We should determine whether we want to use Spark Swagger for these endpoints too.
+            LogController.register(spark, API_PREFIX);
+
+            // Add Bugsnag controller HTTP endpoints
+            BugsnagController.register(spark, API_PREFIX);
         } catch (RuntimeException e) {
             LOG.error("Error initializing API controllers", e);
             System.exit(1);
@@ -90,9 +93,6 @@ public class Main {
 
         // available at http://localhost:4567/async
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
-
-        // available at http://localhost:4567/api/admin/bugsnag/eventsummary
-        spark.get(API_PREFIX + "admin/bugsnag/eventsummary", BugsnagController::getEventSummary);
 
         // available at http://localhost:4567/plan
         /**
@@ -142,8 +142,7 @@ public class Main {
         if (args.length == 0) {
             LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
             envConfigStream = new FileInputStream(new File(DEFAULT_ENV));
-        }
-        else {
+        } else {
             LOG.info("Loading env.yml: {}", args[0]);
             envConfigStream = new FileInputStream(new File(args[0]));
         }
