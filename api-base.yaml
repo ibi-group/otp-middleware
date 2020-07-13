@@ -109,7 +109,9 @@ components:
 #  - Auth0Bearer: []
 # - ApiKey: []
 tags:
-  - name: admin
-    description: Interface for managing OTP admin users.
+  - name: api/admin/user
+    description: Interface for managing admin dashboard users (admin access only).
+  - name: api/secure/logs
+    description: Interface for retrieving logs.
   - name: api/secure/user
-    description: Interface for managing OTP users (general public).
+    description: Interface for managing OTP users (the general public).

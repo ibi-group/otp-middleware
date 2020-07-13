@@ -28,6 +28,12 @@ import static org.opentripplanner.middleware.spark.Main.inTestEnvironment;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
+ * @schema LogResult
+ * description: Data structure for log response. The data is based on https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/AmazonWebServiceResult.html, with items having the fields outlined in https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/apigateway/model/GetUsageResult.html.
+ * type: object
+ */
+
+/**
  * Sets up HTTP endpoints for getting logging and request summary information from AWS Cloudwatch and API Gateway.
  */
 public class LogController {
@@ -48,6 +54,67 @@ public class LogController {
         } else {
             LOG.warn("Not building API Gateway client.");
         }
+
+        /**
+         * @api [get] /api/secure/logs
+         * tags:
+         * - "api/secure/logs"
+         * description: "Gets a list of recent logs."
+         * parameters:
+         * - $ref: '#/components/parameters/AWSAuthHeaderRequired'
+         * security:
+         * - ApiKey: [] # Required for AWS integration.
+         *   Auth0Bearer: []
+         * responses:
+         *   200:
+         *     description: "successful operation"
+         *     content:
+         *       application/json:
+         *         schema:
+         *           type: array
+         *           items:
+         *              schema:
+         *                $ref: "#/components/schemas/LogResult"
+         *
+         *     headers:
+         *       Access-Control-Allow-Origin:
+         *         schema:
+         *           type: "string"
+         * x-amazon-apigateway-integration:
+         *   uri: "http://54.147.40.127/api/secure/logs"
+         *   responses:
+         *     default:
+         *       statusCode: "200"
+         *       responseParameters:
+         *         method.response.header.Access-Control-Allow-Origin: "'*'"
+         *   requestParameters:
+         *     integration.request.header.Authorization: "method.request.header.Authorization"
+         *   passthroughBehavior: "when_no_match"
+         *   httpMethod: "GET"
+         *   type: "http"
+         *
+         */
+
+        /**
+         * @api [options] /api/secure/logs
+         * responses:
+         *   200:
+         *     $ref: "#/components/responses/AllowCORS"
+         * tags:
+         *  - "api/secure/logs"
+         * x-amazon-apigateway-integration:
+         *   uri: "http://54.147.40.127/api/secure/logs"
+         *   responses:
+         *     default:
+         *       statusCode: 200
+         *       responseParameters:
+         *         method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+         *         method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+         *         method.response.header.Access-Control-Allow-Origin: "'*'"
+         *   passthroughBehavior: when_no_match
+         *   httpMethod: OPTIONS
+         *   type: http
+         */
         spark.get(apiPrefix + "/secure/logs", LogController::getUsageLogs, JsonUtils::toJson);
     }
 
