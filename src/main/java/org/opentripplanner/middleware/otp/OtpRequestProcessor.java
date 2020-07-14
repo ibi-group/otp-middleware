@@ -34,8 +34,8 @@ public class OtpRequestProcessor {
      * required to distinguish between OTP and other middleware requests.
      */
     public static void register(Service spark) {
-        // available at http://localhost:4567/otp/routers/default/*
-        spark.get("/otp/routers/default/*", OtpRequestProcessor::proxy);
+        // available at http://localhost:4567/otp/*
+        spark.get("/otp/*", OtpRequestProcessor::proxy);
     }
 
     /**
@@ -57,12 +57,8 @@ public class OtpRequestProcessor {
             return null;
         }
 
-        // Extract from the requesting URI the OTP target service e.g. '/plan'. The assumption is that the
-        // target service will be the remaining part of the URL from the last forward slash ('/').
-        String targetService = request.uri().substring(request.uri().lastIndexOf("/"));
-
-        // if the target service is '/plan', process response
-        if (targetService.equalsIgnoreCase(OTP_PLAN_ENDPOINT)) handlePlanTripResponse(request, otpDispatcherResponse);
+        // If the request ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
+        if (request.pathInfo().endsWith(OTP_PLAN_ENDPOINT)) handlePlanTripResponse(request, otpDispatcherResponse);
 
         // provide response to requester as received from OTP server
         response.type("application/json");
