@@ -1,0 +1,14 @@
+{
+  "id": "5ef08f5707cc784411278079",
+  "status": "PREPARING",
+  "total": null,
+  "filters": {
+    "event.since": [
+      "2020-06-08T11:00:39Z"
+    ]
+  },
+  "report_type": "",
+  "created_at": "2020-06-22T11:00:39.832Z",
+  "completed_at": null,
+  "expires_at": null
+}
