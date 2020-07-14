@@ -1,0 +1,19 @@
+# TODO: Enhance with reusable info for injecting into Swagger docs.
+components:
+  # Reusable request parameters
+  parameters:
+    AWSAuthHeaderRequired:
+      deprecated: true
+      description: Use the proper authorization manager instead of passing this individual header.
+      name: Authorization # Required for AWS integration.
+      in: header
+      required: false
+      schema:
+        type: string
+    IDParameter:
+      name: id
+      in: path
+      description: The ID of the entity to search.
+      required: true
+      schema:
+        type: string
