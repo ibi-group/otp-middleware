@@ -26,8 +26,15 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public class OtpRequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
+    /**
+     * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
+     * return OTP version info.
+     */
     private static final String OTP_SERVER = getConfigPropertyAsText("OTP_SERVER");
+    /** Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse} */
     private static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
+    /** Endpoint for the OTP Middleware's OTP proxy */
+    private static final String OTP_PROXY_ENDPOINT = "/otp";
 
     /**
      * Register http endpoint with {@link spark.Spark} instance based on the OTP root endpoint. An OTP root endpoint is
@@ -35,7 +42,7 @@ public class OtpRequestProcessor {
      */
     public static void register(Service spark) {
         // available at http://localhost:4567/otp/*
-        spark.get("/otp/*", OtpRequestProcessor::proxy);
+        spark.get(OTP_PROXY_ENDPOINT + "/*", OtpRequestProcessor::proxy);
     }
 
     /**
@@ -49,16 +56,17 @@ public class OtpRequestProcessor {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
             return null;
         }
-
+        // Get request path intended for OTP API by removing the proxy endpoint (/otp).
+        String otpRequestPath = request.uri().replace(OTP_PROXY_ENDPOINT, "");
         // attempt to get response from OTP server based on requester's query parameters
-        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), request.uri());
+        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
             return null;
         }
 
-        // If the request ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
-        if (request.pathInfo().endsWith(OTP_PLAN_ENDPOINT)) handlePlanTripResponse(request, otpDispatcherResponse);
+        // If the request path ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
+        if (otpRequestPath.endsWith(OTP_PLAN_ENDPOINT)) handlePlanTripResponse(request, otpDispatcherResponse);
 
         // provide response to requester as received from OTP server
         response.type("application/json");
