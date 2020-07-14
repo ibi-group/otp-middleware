@@ -24,10 +24,7 @@ tags:
 - name: "api/secure/user"
   description: "Interface for querying and managing 'otpuser' entities."
 schemes:
-- "http"
 - "https"
-- "ws"
-- "wss"
 paths:
   /api/admin/user:
     get:
