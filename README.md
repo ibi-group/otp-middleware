@@ -42,5 +42,5 @@ The follow parameters are used to interact with an OTP server.
 
 | Parameter | Description | Example |
 | --- | --- | --- |
-| OTP_SERVER | This is the address of the OTP server which all OTP related requests will be sent to. | http://otp-server.example.com | 
+| OTP_SERVER | This is the address of the OTP server which all OTP related requests will be sent to. | http://otp-server.example.com/otp | 
 | OTP_PLAN_ENDPOINT | This defines the plan endpoint part of the requesting URL. If a request is made to this, the assumption is that a plan request has been made and that the response should be processed accordingly. | /plan |

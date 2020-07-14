@@ -26,18 +26,18 @@ public class OtpDispatcher {
     /**
      * Provides a response from the OTP server target service based on the query parameters provided.
      */
-    public static OtpDispatcherResponse sendOtpRequest(String query, String endpoint) {
+    public static OtpDispatcherResponse sendOtpRequest(String query, String path) {
         LOG.debug("Original query string: {}", query);
-        return sendOtpRequest(buildOtpUri(query, endpoint));
+        return sendOtpRequest(buildOtpUri(query, path));
     }
 
     /**
      * Constructs a URL based on the otp server URL and the requester's target service (e.g. plan) and query
      * parameters.
      */
-    private static URI buildOtpUri(String params, String endpoint) {
+    private static URI buildOtpUri(String params, String path) {
         UriBuilder uriBuilder = UriBuilder.fromUri(OTP_SERVER)
-            .path(endpoint)
+            .path(path)
             .replaceQuery(params);
         URI uri = URI.create(uriBuilder.toString());
         LOG.debug("Constructed URI: {}", uri);
