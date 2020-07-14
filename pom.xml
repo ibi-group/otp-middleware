@@ -9,7 +9,7 @@
     <version>1.0-SNAPSHOT</version>
     <properties>
         <jackson.version>2.10.1</jackson.version>
-        <awsjavasdk.version>1.11.625</awsjavasdk.version>
+        <awsjavasdk.version>1.11.728</awsjavasdk.version>
     </properties>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -250,6 +250,21 @@
             <groupId>com.auth0</groupId>
             <artifactId>auth0</artifactId>
             <version>1.15.0</version>
+        </dependency>
+
+        <!--
+            AWS SDK is used for integration with the API Gateway service, which is how access to the OTP API is managed
+            for third party dev accounts
+        -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-core</artifactId>
+            <version>${awsjavasdk.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-api-gateway</artifactId>
+            <version>${awsjavasdk.version}</version>
         </dependency>
     </dependencies>
 </project>
