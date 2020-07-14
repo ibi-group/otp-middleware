@@ -7,7 +7,6 @@ import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.response.Response;
-import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -31,9 +30,13 @@ public class OtpRequestProcessor {
      * return OTP version info.
      */
     private static final String OTP_SERVER = getConfigPropertyAsText("OTP_SERVER");
-    /** Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse} */
+    /**
+     * Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse}
+     */
     private static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
-    /** Endpoint for the OTP Middleware's OTP proxy */
+    /**
+     * Endpoint for the OTP Middleware's OTP proxy
+     */
     private static final String OTP_PROXY_ENDPOINT = "/otp";
 
     /**
@@ -83,6 +86,7 @@ public class OtpRequestProcessor {
         // If the Auth header is present, this indicates that the request was made by a logged in user. This indicates
         // that we should store trip history (but we verify this preference before doing so).
         if (!isAuthHeaderPresent(request)) {
+            LOG.debug("Anonymous user, trip history not stored");
             return;
         }
 
@@ -91,10 +95,6 @@ public class OtpRequestProcessor {
             //TODO place holder for now
             batchId = "-1";
         }
-
-        // convert plan response into concrete POJOs
-        otpDispatcherResponse.response = JsonUtils.getPOJOFromJSON(otpDispatcherResponse.responseBody, Response.class);
-        LOG.debug("OTP server response as POJOs: {}", otpDispatcherResponse.response);
 
         // Dispatch request to OTP and store request/response summary if user elected to store trip history.
         long tripStorageStartTime = System.currentTimeMillis();
@@ -105,19 +105,25 @@ public class OtpRequestProcessor {
         final boolean storeTripHistory = profile != null && profile.otpUser != null && profile.otpUser.storeTripHistory;
         // only save trip details if the user has given consent and a response from OTP is provided
         if (!storeTripHistory) {
-            LOG.debug("Anonymous user or user does not want trip history stored");
-        } else if (otpDispatcherResponse.response == null) {
-            LOG.warn("OTP response is null, cannot save trip history for user!");
+            LOG.debug("User does not want trip history stored");
         } else {
-            TripRequest tripRequest = new TripRequest(profile.otpUser.id, batchId, request.queryParams("fromPlace"),
-                request.queryParams("toPlace"), request.queryString());
-            // only save trip summary if the trip request was saved
-            if (saveTripRequest(tripRequest)) {
-                TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan,
-                    otpDispatcherResponse.response.error, tripRequest.id);
-                saveTripSummary(tripSummary);
+            // convert plan response into concrete POJOs
+            otpDispatcherResponse.response = JsonUtils.getPOJOFromJSON(otpDispatcherResponse.responseBody, Response.class);
+            LOG.debug("OTP server response as POJOs: {}", otpDispatcherResponse.response);
+
+            if (otpDispatcherResponse.response == null) {
+                LOG.warn("OTP response is null, cannot save trip history for user!");
             } else {
-                LOG.warn("Unable to save trip request, orphaned trip summary not saved");
+                TripRequest tripRequest = new TripRequest(profile.otpUser.id, batchId, request.queryParams("fromPlace"),
+                    request.queryParams("toPlace"), request.queryString());
+                // only save trip summary if the trip request was saved
+                if (saveTripRequest(tripRequest)) {
+                    TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan,
+                        otpDispatcherResponse.response.error, tripRequest.id);
+                    saveTripSummary(tripSummary);
+                } else {
+                    LOG.warn("Unable to save trip request, orphaned trip summary not saved");
+                }
             }
         }
         LOG.debug("Trip storage added {} ms", System.currentTimeMillis() - tripStorageStartTime);
