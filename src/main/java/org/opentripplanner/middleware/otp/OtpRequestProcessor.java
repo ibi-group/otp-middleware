@@ -14,7 +14,7 @@ import spark.Request;
 import spark.Service;
 
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
