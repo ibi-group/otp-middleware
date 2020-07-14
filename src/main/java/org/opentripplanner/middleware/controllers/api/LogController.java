@@ -22,9 +22,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.spark.Main.hasConfigProperty;
-import static org.opentripplanner.middleware.spark.Main.inTestEnvironment;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.hasConfigProperty;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.inTestEnvironment;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**

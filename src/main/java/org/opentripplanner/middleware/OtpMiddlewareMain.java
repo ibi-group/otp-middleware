@@ -1,11 +1,10 @@
-package org.opentripplanner.middleware.spark;
+package org.opentripplanner.middleware;
 
 import com.beerboy.ss.SparkSwagger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
@@ -13,7 +12,6 @@ import org.opentripplanner.middleware.controllers.api.LogController;
 import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
 import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
-import org.opentripplanner.middleware.otp.OtpRequestProcessor;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,13 +23,16 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
+import static org.opentripplanner.middleware.utils.YamlUtils.yamlMapper;
 
-public class Main {
-    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+/**
+ * Main class for OTP Middleware application. This handles loading the configuration files, initializing the MongoDB
+ * persistence, and booting up the Spark HTTP service and its endpoints.
+ */
+public class OtpMiddlewareMain {
+    private static final Logger LOG = LoggerFactory.getLogger(OtpMiddlewareMain.class);
     private static final String DEFAULT_ENV = "configurations/default/env.yml";
     private static JsonNode envConfig;
-    // ObjectMapper that loads in YAML config files
-    private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private static final String API_PREFIX = "/api/";
     public static boolean inTestEnvironment = false;
 
@@ -48,10 +49,6 @@ public class Main {
         // Must start spark explicitly to use spark-swagger.
         // https://github.com/manusant/spark-swagger#endpoints-binding
         Service spark = Service.ignite().port(Service.SPARK_DEFAULT_PORT);
-
-        // websocket() must be declared before the other get() endpoints.
-        // available at http://localhost:4567/async-websocket
-        spark.webSocket("/async-websocket", BasicOtpWebSocketController.class);
         try {
             SparkSwagger.of(spark)
                 // Register API routes.
@@ -75,18 +72,6 @@ public class Main {
                 logMessageAndHalt(request, HttpStatus.OK_200, "OK");
                 return "OK";
             });
-
-        // available at http://localhost:4567/hello
-        spark.get("/hello", (req, res) -> "(Sparks) OTP Middleware says Hi!");
-
-        // available at http://localhost:4567/sync
-        spark.get("/sync", (req, res) -> BasicOtpDispatcher.executeRequestsInSequence());
-
-        // available at http://localhost:4567/async
-        spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
-
-        // available at http://localhost:4567/plan
-        spark.get("/plan", OtpRequestProcessor::planning);
 
         // available at http://localhost:4567/api/secure/triprequests
         spark.get(API_PREFIX + "/secure/triprequests", TripHistoryController::getTripRequests);

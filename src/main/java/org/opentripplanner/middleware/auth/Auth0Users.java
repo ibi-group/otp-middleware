@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
