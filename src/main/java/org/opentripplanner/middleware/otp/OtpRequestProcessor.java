@@ -27,7 +27,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public class OtpRequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
     private static final String OTP_SERVER = getConfigPropertyAsText("OTP_SERVER");
-    private static final String OTP_ROOT_ENDPOINT = getConfigPropertyAsText("OTP_ROOT_ENDPOINT");
     private static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
 
     /**
@@ -35,13 +34,15 @@ public class OtpRequestProcessor {
      * required to distinguish between OTP and other middleware requests.
      */
     public static void register(Service spark) {
-        // available at (depending on config) http://localhost:4567/otp/*
-        spark.get(OTP_ROOT_ENDPOINT + "/*", OtpRequestProcessor::proxy);
+        // available at http://localhost:4567/otp/routers/default/*
+        spark.get("/otp/routers/default/*", OtpRequestProcessor::proxy);
     }
 
     /**
-     * Inspect all requests that are made to OTP. If the request is of interest (for instance plan response) intercept
-     * the response from OTP and process accordingly. In all cases, pass the response back to the requester.
+     * Responsible for proxying any and all requests made to its HTTP endpoint to OTP. If the target service is of
+     * interest (e.g., requests made to the plan trip endpoint are currently logged if the user has consented to storing
+     * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
+     * status) is passed back to the requester.
      */
     private static String proxy(Request request, spark.Response response) {
         if (OTP_SERVER == null) {
@@ -50,15 +51,18 @@ public class OtpRequestProcessor {
         }
 
         // attempt to get response from OTP server based on requester's query parameters
-        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.serviceRequest(request.queryString(), request.uri());
+        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), request.uri());
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
             return null;
         }
 
-        String targetService = extractTargetService(request.uri());
-        // if the target service is plan, process response
-        if (targetService.equalsIgnoreCase(OTP_PLAN_ENDPOINT)) plan(request, otpDispatcherResponse);
+        // Extract from the requesting URI the OTP target service e.g. '/plan'. The assumption is that the
+        // target service will be the remaining part of the URL from the last forward slash ('/').
+        String targetService = request.uri().substring(request.uri().lastIndexOf("/"));
+
+        // if the target service is '/plan', process response
+        if (targetService.equalsIgnoreCase(OTP_PLAN_ENDPOINT)) handlePlanTripResponse(request, otpDispatcherResponse);
 
         // provide response to requester as received from OTP server
         response.type("application/json");
@@ -67,25 +71,10 @@ public class OtpRequestProcessor {
     }
 
     /**
-     * Extract from the requesting URI the OTP target service e.g. 'routers/default/plan'. The assumption is that the
-     * target service will be the remaining part of the URL after the OTP root endpoint has been removed.
-     *
-     * The following example is based on calls being made to the FDOT OTP server:
-     *
-     * Middleware call: http://otp-middleware.com/otp/routers/default/plan
-     * FDOT OTP call: https://fdot-otp-server.com/otp/routers/default/plan
-     * OTP root endpoint: /otp/
-     * Target service: routers/default/plan
-     */
-    private static String extractTargetService(String uri) {
-        return uri.replace(OTP_ROOT_ENDPOINT, "");
-    }
-
-    /**
      * Process plan response from OTP. Store the response if consent is given. Handle the process and all exceptions
      * seamlessly so as not to affect the response provided to the requester.
      */
-    private static void plan(Request request, OtpDispatcherResponse otpDispatcherResponse) {
+    private static void handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse) {
 
         // If the Auth header is present, this indicates that the request was made by a logged in user. This indicates
         // that we should store trip history (but we verify this preference before doing so).

@@ -26,18 +26,18 @@ public class OtpDispatcher {
     /**
      * Provides a response from the OTP server target service based on the query parameters provided.
      */
-    public static OtpDispatcherResponse serviceRequest(String query, String endpoint) {
+    public static OtpDispatcherResponse sendOtpRequest(String query, String endpoint) {
         LOG.debug("Original query string: {}", query);
-        return call(buildUri(query, endpoint));
+        return sendOtpRequest(buildOtpUri(query, endpoint));
     }
 
     /**
      * Constructs a URL based on the otp server URL and the requester's target service (e.g. plan) and query
      * parameters.
      */
-    private static URI buildUri(String params, String endPoint) {
+    private static URI buildOtpUri(String params, String endpoint) {
         UriBuilder uriBuilder = UriBuilder.fromUri(OTP_SERVER)
-            .path(endPoint)
+            .path(endpoint)
             .replaceQuery(params);
         URI uri = URI.create(uriBuilder.toString());
         LOG.debug("Constructed URI: {}", uri);
@@ -48,7 +48,7 @@ public class OtpDispatcher {
      * Makes a call to the OTP server end point. The original response and status are wrapped in a
      * single object and returned. It will fail if a connection is not made.
      */
-    private static OtpDispatcherResponse call(URI uri) {
+    private static OtpDispatcherResponse sendOtpRequest(URI uri) {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(uri)
