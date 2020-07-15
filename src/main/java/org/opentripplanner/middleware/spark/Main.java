@@ -7,11 +7,13 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
+import org.opentripplanner.middleware.controllers.api.BugsnagController;
+import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.LogController;
 import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
-import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.otp.OtpRequestProcessor;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -38,10 +40,14 @@ public class Main {
     public static void main(String[] args) throws IOException {
         // Load configuration.
         loadConfig(args);
+
         // Connect to MongoDB.
         Persistence.initialize();
 
         initializeHttpEndpoints();
+
+        // Schedule Bugsnag jobs to start retrieving Bugsnag event and project information
+        BugsnagJobs.initialize();
     }
 
     private static void initializeHttpEndpoints() throws IOException {
@@ -63,10 +69,14 @@ public class Main {
                     // TODO Add other models.
                 ))
                 .generateDoc();
+
             OtpRequestProcessor.register(spark);
             // Add log controller HTTP endpoints
             // TODO: We should determine whether we want to use Spark Swagger for these endpoints too.
             LogController.register(spark, API_PREFIX);
+
+            // Add Bugsnag controller HTTP endpoints
+            BugsnagController.register(spark, API_PREFIX);
         } catch (RuntimeException e) {
             LOG.error("Error initializing API controllers", e);
             System.exit(1);
@@ -162,7 +172,9 @@ public class Main {
         String[] parts = name.split("\\.");
         JsonNode node = config;
         for (String part : parts) {
-            if (node == null) return false;
+            if (node == null) {
+                return false;
+            }
             node = node.get(part);
         }
         return node != null;
@@ -206,7 +218,7 @@ public class Main {
             JsonNode node = getConfigProperty(name);
             value = Integer.parseInt(node.asText());
         } catch (NumberFormatException | NullPointerException e) {
-            LOG.error("Unable to parse {}. Using default: {}", name, defaultValue, e);
+            LOG.warn("Unable to parse {}. Using default: {}", name, defaultValue, e);
         }
         return value;
     }

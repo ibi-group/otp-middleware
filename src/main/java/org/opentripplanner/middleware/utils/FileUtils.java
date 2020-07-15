@@ -1,7 +1,6 @@
-package org.opentripplanner.middleware;
+package org.opentripplanner.middleware.utils;
 
 import org.apache.commons.io.IOUtils;
-import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,7 +26,7 @@ public class FileUtils {
     /**
      * Extract the file contents from the provided path and file name
      */
-    private static String getFileContents(String pathAndFileName) {
+    public static String getFileContents(String pathAndFileName) {
         String fileContents = null;
         try {
             FileInputStream fileInputStream = new FileInputStream(pathAndFileName);
