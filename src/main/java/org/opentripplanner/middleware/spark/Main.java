@@ -69,6 +69,8 @@ public class Main {
                     // TODO Add other models.
                 ))
                 .generateDoc();
+
+            OtpRequestProcessor.register(spark);
             // Add log controller HTTP endpoints
             // TODO: We should determine whether we want to use Spark Swagger for these endpoints too.
             LogController.register(spark, API_PREFIX);
@@ -93,9 +95,6 @@ public class Main {
 
         // available at http://localhost:4567/async
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
-
-        // available at http://localhost:4567/plan
-        spark.get("/plan", OtpRequestProcessor::planning);
 
         // available at http://localhost:4567/api/secure/triprequests
         spark.get(API_PREFIX + "/secure/triprequests", TripHistoryController::getTripRequests);
