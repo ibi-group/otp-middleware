@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
@@ -60,7 +61,9 @@ public class JsonUtils {
         try {
             return mapper.readValue(json, clazz);
         } catch (JsonProcessingException e) {
-            LOG.error("Unable to get POJO from json for " + clazz.getSimpleName(), e);
+            String message = String.format("Unable to get POJO from json for %s", clazz.getSimpleName());
+            LOG.error(message, e);
+            BugsnagReporter.reportErrorToBugsnag(e, message);
         }
         return null;
     }
@@ -73,7 +76,9 @@ public class JsonUtils {
             JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, clazz);
             return mapper.readValue(json, type);
         } catch (JsonProcessingException e) {
-            LOG.error("Unable to get POJO from json for " + clazz.getSimpleName(), e);
+            String message = String.format("Unable to get POJO from json for %s", clazz.getSimpleName());
+            LOG.error(message, e);
+            BugsnagReporter.reportErrorToBugsnag(e, message);
         }
         return null;
     }
@@ -95,7 +100,7 @@ public class JsonUtils {
 
         if (statusCode >= 500) {
             LOG.error(message);
-            // TODO Add bugsnag?
+            BugsnagReporter.reportErrorToBugsnag(e, message);
         }
         JsonNode json = getObjectNode(message, statusCode, e);
         halt(statusCode, json.toString());

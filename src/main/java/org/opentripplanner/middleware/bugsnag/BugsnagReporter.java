@@ -1,6 +1,9 @@
 package org.opentripplanner.middleware.bugsnag;
 
 import com.bugsnag.Bugsnag;
+import com.bugsnag.Report;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 
@@ -13,26 +16,36 @@ import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
  */
 public class BugsnagReporter {
     private static Bugsnag bugsnag;
+    private static final Logger LOG = LoggerFactory.getLogger(BugsnagReporter.class);
 
     /**
-     * Initialize Bugsnag using API key when application is first loaded
+     * Initialize Bugsnag using the project notifier API key when the application is first loaded.
      */
-    private static void initializeBugsnag() {
+    public static void initializeBugsnagErrorReporting() {
         String apiKey = getConfigPropertyAsText("BUGSNAG_PROJECT_NOTIFIER_API_KEY");
         if (apiKey != null) {
             bugsnag = new Bugsnag(apiKey);
+        } else {
+            LOG.warn("Bugsnag project notifier API key not available. Bugsnag error reporting disabled.");
         }
     }
 
     /**
-     * Provide Bugsnag hook, if available, for reporting errors
+     * If Bugsnag has been configured, report error based on provided information.
      */
-    public static Bugsnag get() {
+    public static boolean reportErrorToBugsnag(Throwable throwable, String message) {
         if (bugsnag == null) {
-            initializeBugsnag();
+            LOG.warn("Bugsnag error reporting is disabled. Unable to report this message: {} ", message, throwable);
+            return false;
         }
-        return bugsnag;
+
+        if (throwable == null) {
+            LOG.warn("An exception is mandatory with Bugsnag error reporting. Unable to report this message: {} ", message);
+            return false;
+        }
+
+        Report report = bugsnag.buildReport(throwable);
+        report.setContext(message);
+        return bugsnag.notify(report);
     }
-
-
 }

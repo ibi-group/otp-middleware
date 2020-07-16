@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,9 @@ public class DateUtils {
         try {
             date = LocalDate.parse(paramValue, expectedDateFormat);
         } catch (DateTimeParseException e) {
-            LOG.error("Unable to parse {} : {}.", paramName, paramValue, e);
+            String message = String.format("Unable to parse %s : %s.", paramName, paramValue);
+            LOG.error(message, e);
+            BugsnagReporter.reportErrorToBugsnag(e, message);
             throw e;
         }
 

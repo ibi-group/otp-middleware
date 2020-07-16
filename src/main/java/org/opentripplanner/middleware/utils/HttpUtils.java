@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -75,7 +76,9 @@ public class HttpUtils {
             HttpResponse<String> httpResponse = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
             return httpResponse.body();
         } catch (InterruptedException | IOException e) {
-            LOG.error("Error requesting data from URI", e);
+            String message = "Error requesting data from URI";
+            LOG.error(message, e);
+            BugsnagReporter.reportErrorToBugsnag(e, message);
         }
 
         return null;

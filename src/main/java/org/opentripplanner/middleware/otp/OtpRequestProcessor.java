@@ -4,6 +4,7 @@ import com.mongodb.MongoException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.response.Response;
@@ -139,6 +140,7 @@ public class OtpRequestProcessor {
         } catch (MongoException e) {
             success = false;
             LOG.error("Unable to save trip request: " + tripRequest, e);
+            BugsnagReporter.reportErrorToBugsnag(e, "Unable to save trip request");
         }
         return success;
     }
@@ -151,6 +153,7 @@ public class OtpRequestProcessor {
             Persistence.tripSummaries.create(tripSummary);
         } catch (MongoException e) {
             LOG.error("Unable to save trip summary: " + tripSummary, e);
+            BugsnagReporter.reportErrorToBugsnag(e, "Unable to save trip summary");
         }
     }
 }
