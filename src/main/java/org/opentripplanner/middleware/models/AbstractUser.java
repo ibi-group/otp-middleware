@@ -28,6 +28,7 @@ public abstract class AbstractUser extends Model {
     /**
      * Set of permissions the user has (not persisted in Mongo).
      * TODO: fill out permissions more completely.
+     * FIXME: Persist permissions.
      */
     protected Set<Permission> permissions = new HashSet<>();
 

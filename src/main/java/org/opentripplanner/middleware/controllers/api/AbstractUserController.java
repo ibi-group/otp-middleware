@@ -12,7 +12,10 @@ import spark.Request;
 import spark.Response;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static org.opentripplanner.middleware.auth.Auth0Users.*;
+import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
+import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
+import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
+import static org.opentripplanner.middleware.auth.Auth0Users.validateExistingUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -100,6 +103,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         try {
             deleteAuth0User(user.auth0UserId);
         } catch (Auth0Exception e) {
+            // FIXME: Add Bugsnag error report.
             logMessageAndHalt(req, 500, "Error deleting user.", e);
             return false;
         }
