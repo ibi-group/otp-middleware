@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.otp.OtpRequestProcessor;
+import org.opentripplanner.middleware.persistence.Persistence;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,6 +44,7 @@ public class BugsnagReporterTest extends OtpMiddlewareTest {
 
     @Test @Disabled
     public void createErrorReportWithNullTripRequest() {
-        assertFalse(OtpRequestProcessor.saveTripRequest(null));
+        TripRequest badRequest = null;
+        assertFalse(Persistence.tripRequests.create(badRequest));
     }
 }
