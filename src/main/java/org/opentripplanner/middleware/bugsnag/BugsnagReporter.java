@@ -34,25 +34,33 @@ public class BugsnagReporter {
     /**
      * If Bugsnag has been configured, report error based on provided information.
      */
-    public static boolean reportErrorToBugsnag(String context, String message, Throwable throwable) {
+    public static boolean reportErrorToBugsnag(String message, Throwable throwable) {
+        return reportErrorToBugsnag(message, null, throwable);
+    }
+
+    /**
+     * If Bugsnag has been configured, report error based on provided information.
+     */
+    public static boolean reportErrorToBugsnag(String message, Object badEntity, Throwable throwable) {
+        LOG.error(message, throwable);
         if (bugsnag == null) {
             LOG.warn("Bugsnag error reporting is disabled. Unable to report to Bugsnag in this context: {}, this message: {}",
-                context,
                 message,
+                badEntity,
                 throwable);
             return false;
         }
 
         if (throwable == null) {
             LOG.warn("This error is not an exception and will not/cannot be reported to Bugsnag in this context: {}, this message: {}",
-                context,
-                message);
+                message,
+                badEntity);
             return false;
         }
 
         Report report = bugsnag.buildReport(throwable);
-        report.setContext(context);
-        report.setAppInfo("message", message);
+        report.setContext(message);
+        report.setAppInfo("entity", badEntity != null ? badEntity.toString() : "N/A");
         report.setSeverity(Severity.ERROR);
         return bugsnag.notify(report);
     }
