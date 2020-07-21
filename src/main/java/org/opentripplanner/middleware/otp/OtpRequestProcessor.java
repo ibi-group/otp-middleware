@@ -140,7 +140,7 @@ public class OtpRequestProcessor {
         } catch (MongoException e) {
             success = false;
             LOG.error("Unable to save trip request: " + tripRequest, e);
-            BugsnagReporter.reportErrorToBugsnag(e, "Unable to save trip request");
+            BugsnagReporter.reportErrorToBugsnag("Unable to save trip request", tripRequest.toString(), e);
         }
         return success;
     }
@@ -153,7 +153,7 @@ public class OtpRequestProcessor {
             Persistence.tripSummaries.create(tripSummary);
         } catch (MongoException e) {
             LOG.error("Unable to save trip summary: " + tripSummary, e);
-            BugsnagReporter.reportErrorToBugsnag(e, "Unable to save trip summary");
+            BugsnagReporter.reportErrorToBugsnag( "Unable to save trip summary", tripSummary.toString(), e);
         }
     }
 }

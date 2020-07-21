@@ -76,9 +76,9 @@ public class HttpUtils {
             HttpResponse<String> httpResponse = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
             return httpResponse.body();
         } catch (InterruptedException | IOException e) {
-            String message = "Error requesting data from URI";
+            String message = "Error requesting data from URI: " + uri;
             LOG.error(message, e);
-            BugsnagReporter.reportErrorToBugsnag(e, message);
+            BugsnagReporter.reportErrorToBugsnag("Http request", message, e);
         }
 
         return null;

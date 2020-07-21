@@ -42,7 +42,7 @@ public class DateUtils {
         } catch (DateTimeParseException e) {
             String message = String.format("Unable to parse %s : %s.", paramName, paramValue);
             LOG.error(message, e);
-            BugsnagReporter.reportErrorToBugsnag(e, message);
+            BugsnagReporter.reportErrorToBugsnag("Get date from param", message, e);
             throw e;
         }
 

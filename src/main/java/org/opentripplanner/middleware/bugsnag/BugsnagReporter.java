@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.bugsnag;
 
 import com.bugsnag.Bugsnag;
 import com.bugsnag.Report;
+import com.bugsnag.Severity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,19 +34,26 @@ public class BugsnagReporter {
     /**
      * If Bugsnag has been configured, report error based on provided information.
      */
-    public static boolean reportErrorToBugsnag(Throwable throwable, String message) {
+    public static boolean reportErrorToBugsnag(String context, String message, Throwable throwable) {
         if (bugsnag == null) {
-            LOG.warn("Bugsnag error reporting is disabled. Unable to report this message: {} ", message, throwable);
+            LOG.warn("Bugsnag error reporting is disabled. Unable to report to Bugsnag in this context: {}, this message: {}",
+                context,
+                message,
+                throwable);
             return false;
         }
 
         if (throwable == null) {
-            LOG.warn("An exception is mandatory with Bugsnag error reporting. Unable to report this message: {} ", message);
+            LOG.warn("This error is not an exception and will not/cannot be reported to Bugsnag in this context: {}, this message: {}",
+                context,
+                message);
             return false;
         }
 
         Report report = bugsnag.buildReport(throwable);
-        report.setContext(message);
+        report.setContext(context);
+        report.setAppInfo("message", message);
+        report.setSeverity(Severity.ERROR);
         return bugsnag.notify(report);
     }
 }
