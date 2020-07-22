@@ -19,9 +19,6 @@ public class JsonUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(JsonUtils.class);
 
-    // Gson is not suitable for parsing OTP itineraries (errors on parsing Dates).
-    // private static Gson gson = new Gson();
-
     private static final ObjectMapper mapper = new ObjectMapper();
 
     /**

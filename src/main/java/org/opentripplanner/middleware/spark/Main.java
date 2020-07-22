@@ -62,9 +62,14 @@ public class Main {
                     // TODO Add other models.
                 ))
                 .generateDoc();
-        // Add log controller HTTP endpoints
-        // TODO: We should determine whether we want to use Spark Swagger for these endpoints too.
-        LogController.register(spark, API_PREFIX);
+
+            OtpRequestProcessor.register(spark);
+            // Add log controller HTTP endpoints
+            // TODO: We should determine whether we want to use Spark Swagger for these endpoints too.
+            LogController.register(spark, API_PREFIX);
+
+            // Add Bugsnag controller HTTP endpoints
+            BugsnagController.register(spark, API_PREFIX);
         } catch (RuntimeException e) {
             LOG.error("Error initializing API controllers", e);
             System.exit(1);
@@ -83,12 +88,6 @@ public class Main {
 
         // available at http://localhost:4567/async
         spark.get("/async", (req, res) -> BasicOtpDispatcher.executeRequestsAsync());
-
-        // available at http://localhost:4567/api/admin/bugsnag/eventsummary
-        spark.get(API_PREFIX + "admin/bugsnag/eventsummary", BugsnagController::getEventSummary);
-
-        // available at http://localhost:4567/plan
-        spark.get("/plan", OtpRequestProcessor::planning);
 
         // available at http://localhost:4567/api/secure/triprequests
         spark.get(API_PREFIX + "/secure/triprequests", TripHistoryController::getTripRequests);
@@ -117,5 +116,4 @@ public class Main {
             return null;
         });
     }
-
 }

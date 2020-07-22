@@ -10,6 +10,7 @@ import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
 import spark.Response;
+import spark.Service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,14 @@ public class BugsnagController {
 
     private static TypedPersistence<BugsnagEvent> bugsnagEvents = Persistence.bugsnagEvents;
     private static TypedPersistence<BugsnagProject> bugsnagProjects = Persistence.bugsnagProjects;
+
+    /**
+     * Register http endpoints with {@link spark.Spark} instance at the provided API prefix.
+     */
+    public static void register (Service spark, String apiPrefix) {
+        // available at http://localhost:4567/api/admin/bugsnag/eventsummary
+        spark.get(apiPrefix + "admin/bugsnag/eventsummary", BugsnagController::getEventSummary);
+    }
 
     /**
      * Get all Bugsnag events from Mongo and replace the project id with the project name and return

@@ -94,7 +94,7 @@ public class PersistenceUtil {
         monitoredTrip.leadTimeInMinutes = 30;
         monitoredTrip.monday = true;
         monitoredTrip.tuesday = true;
-        monitoredTrip.webnesday = true;
+        monitoredTrip.wednesday = true;
         monitoredTrip.thursday = true;
         monitoredTrip.friday = true;
         monitoredTrip.excludeFederalHolidays = true;

@@ -36,6 +36,15 @@ cp configurations/default/env.yml.tmp configurations/default/env.yml
 mvn package
 java -jar target/otp-middleware.jar configurations/default/env.yml
 ```
+
+## OTP Server Proxy Setup
+The follow parameters are used to interact with an OTP server.
+
+| Parameter | Description | Example |
+| --- | --- | --- |
+| OTP_SERVER | This is the address of the OTP server which all OTP related requests will be sent to. | http://otp-server.example.com/otp | 
+| OTP_PLAN_ENDPOINT | This defines the plan endpoint part of the requesting URL. If a request is made to this, the assumption is that a plan request has been made and that the response should be processed accordingly. | /plan |
+
 ## Bugsnag Configuration Parameters
 
 These values can used as defined here (were applicable), or commented out so the default values are used. Parameters 
