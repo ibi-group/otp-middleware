@@ -86,17 +86,14 @@ public class TypedPersistence<T extends Model> {
     /**
      * TODO maybe merge this with the other create implementation above, passing in the base object and the updates.
      */
-    public void create(T newObject) {
+    public boolean create(T newObject) {
         try {
             // TODO What happens if an object already exists with the same ID?
             mongoCollection.insertOne(newObject);
+            return true;
         } catch (Exception e) {
-            String objName = (newObject == null) ? "N/A" : newObject.getClass().getSimpleName();
-            String objContent = (newObject == null) ? "N/A" : newObject.toString();
-            String message = String.format("Unable to create object: %s with content: %s", objName, objContent);
-            LOG.error(message, e);
-            BugsnagReporter.reportErrorToBugsnag("Creating object", message, e);
-            throw e;
+            BugsnagReporter.reportErrorToBugsnag("Unable to create new object", newObject, e);
+            return false;
         }
     }
 

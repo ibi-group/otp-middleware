@@ -4,10 +4,10 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.TripRequest;
+import org.opentripplanner.middleware.otp.OtpRequestProcessor;
 import org.opentripplanner.middleware.persistence.Persistence;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * test\env.yml file which gets committed. If these tests are required to be run, the README explains how to get a
  * BUGSNAG_PROJECT_NOTIFIER_API_KEY from Bugsnag which can be temporarily saved to test\env.yml.
  */
-public class BugsnagReportingTest extends OtpMiddlewareTest {
+public class BugsnagReporterTest extends OtpMiddlewareTest {
 
     @Test @Disabled
     public void createErrorReportWithExceptionContextAndMessage() {
@@ -26,22 +26,25 @@ public class BugsnagReportingTest extends OtpMiddlewareTest {
 
     @Test @Disabled
     public void createErrorReportWithMessageAndException() {
-        assertTrue(BugsnagReporter.reportErrorToBugsnag(null,
+        boolean success = BugsnagReporter.reportErrorToBugsnag(
+            null,
             "Unit test 2 message",
-            new Exception("Unit test exception 2")));
+            new Exception("Unit test exception 2"));
+        assertTrue(success);
     }
 
     @Test @Disabled
     public void createErrorReportWithContextAndException() {
-        assertTrue(BugsnagReporter.reportErrorToBugsnag("Unit test 3 context",
-            null,
-            new Exception("Unit test exception 3")));
+        boolean success = BugsnagReporter.reportErrorToBugsnag(
+            "Unit test 3 context",
+            new Exception("Unit test exception 3")
+        );
+        assertTrue(success);
     }
 
     @Test @Disabled
     public void createErrorReportWithNullTripRequest() {
-        TripRequest t = null;
-        Throwable exception = assertThrows(IllegalArgumentException.class, () -> Persistence.tripRequests.create(t));
-        assertEquals("document can not be null", exception.getMessage());
+        TripRequest badRequest = null;
+        assertFalse(Persistence.tripRequests.create(badRequest));
     }
 }

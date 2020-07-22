@@ -61,9 +61,11 @@ public class JsonUtils {
         try {
             return mapper.readValue(json, clazz);
         } catch (JsonProcessingException e) {
-            String message = String.format("Unable to get POJO from json for %s from %s", clazz.getSimpleName(), json);
-            LOG.error(message, e);
-            BugsnagReporter.reportErrorToBugsnag("Get POJO from JSON", message, e);
+            BugsnagReporter.reportErrorToBugsnag(
+                String.format("Unable to get POJO from json for %s", clazz.getSimpleName()),
+                json,
+                e
+            );
         }
         return null;
     }
@@ -76,9 +78,11 @@ public class JsonUtils {
             JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, clazz);
             return mapper.readValue(json, type);
         } catch (JsonProcessingException e) {
-            String message = String.format("Unable to get POJO from json for %s from %s", clazz.getSimpleName(), json);
-            LOG.error(message, e);
-            BugsnagReporter.reportErrorToBugsnag("Get POJO from JSON as list", message, e);
+            BugsnagReporter.reportErrorToBugsnag(
+                String.format("Unable to get POJO List from json for %s", clazz.getSimpleName()),
+                json,
+                e
+            );
         }
         return null;
     }
@@ -99,8 +103,7 @@ public class JsonUtils {
         LOG.info("Halting with status code {}.  Error message: {}", statusCode, message);
 
         if (statusCode >= 500) {
-            LOG.error(message);
-            BugsnagReporter.reportErrorToBugsnag("Log message and halt", message, e);
+            BugsnagReporter.reportErrorToBugsnag(message, e);
         }
         JsonNode json = getObjectNode(message, statusCode, e);
         halt(statusCode, json.toString());

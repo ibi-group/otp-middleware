@@ -40,9 +40,7 @@ public class DateUtils {
         try {
             date = LocalDate.parse(paramValue, expectedDateFormat);
         } catch (DateTimeParseException e) {
-            String message = String.format("Unable to parse %s : %s.", paramName, paramValue);
-            LOG.error(message, e);
-            BugsnagReporter.reportErrorToBugsnag("Get date from param", message, e);
+            BugsnagReporter.reportErrorToBugsnag(String.format("Unable to parse date from %s", paramName), paramValue, e);
             throw e;
         }
 
