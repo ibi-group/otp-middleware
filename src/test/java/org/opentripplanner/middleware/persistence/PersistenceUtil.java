@@ -92,14 +92,17 @@ public class PersistenceUtil {
         monitoredTrip.tripName = "Commute to work";
         monitoredTrip.tripTime = "07:30";
         monitoredTrip.leadTimeInMinutes = 30;
-        monitoredTrip.monday = true;
-        monitoredTrip.tuesday = true;
-        monitoredTrip.wednesday = true;
-        monitoredTrip.thursday = true;
-        monitoredTrip.friday = true;
+        monitoredTrip.updateWeekdays(true);
         monitoredTrip.excludeFederalHolidays = true;
         monitoredTrip.queryParams = "fromPlace=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
 
+        monitoredTrip.itinerary = createItinerary();
+
+        Persistence.monitoredTrips.create(monitoredTrip);
+        return monitoredTrip;
+    }
+
+    private static Itinerary createItinerary() {
         Itinerary itinerary = new Itinerary();
         itinerary.duration = 1350L;
         itinerary.elevationGained = 0.0;
@@ -133,11 +136,7 @@ public class PersistenceUtil {
         List<Leg> legs = new ArrayList<>();
         legs.add(leg);
         itinerary.legs = legs;
-
-        monitoredTrip.itinerary = itinerary;
-
-        Persistence.monitoredTrips.create(monitoredTrip);
-        return monitoredTrip;
+        return itinerary;
     }
 
     /**

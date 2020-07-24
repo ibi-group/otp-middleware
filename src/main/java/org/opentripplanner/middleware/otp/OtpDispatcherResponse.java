@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.net.http.HttpResponse;
 
 /**
@@ -14,8 +15,10 @@ import java.net.http.HttpResponse;
 
 public class OtpDispatcherResponse {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcherResponse.class);
+    public final URI requestUri;
 
     public OtpDispatcherResponse(HttpResponse<String> otpResponse) {
+        requestUri = otpResponse.uri();
         responseBody = otpResponse.body();
         statusCode = otpResponse.statusCode();
         LOG.debug("Response from OTP server: {}", toString());

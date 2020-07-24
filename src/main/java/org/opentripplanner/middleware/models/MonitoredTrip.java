@@ -2,11 +2,12 @@ package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Response;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.util.Set;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or
@@ -35,7 +36,7 @@ public class MonitoredTrip extends Model {
      * Tracks information during the active monitoring of the trip (e.g., last alerts encountered, last time a check was
      * made, etc.).
      */
-    public JourneyState journeyState;
+    public JourneyState journeyState = new JourneyState();
 
     /**
      * The number of minutes prior to a trip taking place that the status should be checked.
@@ -123,6 +124,30 @@ public class MonitoredTrip extends Model {
     public MonitoredTrip() {
     }
 
+    public MonitoredTrip(OtpDispatcherResponse otpDispatcherResponse) {
+        queryParams = otpDispatcherResponse.requestUri.getQuery();
+        itinerary = otpDispatcherResponse.response.plan.itineraries.get(0);
+        // FIXME: Should
+        itinerary.clearAlerts();
+//        tripTime = otpDispatcherResponse.response.plan.date
+    }
+
+    public MonitoredTrip updateAllDaysOfWeek(boolean value) {
+        updateWeekdays(value);
+        saturday = value;
+        sunday = value;
+        return this;
+    }
+
+    public MonitoredTrip updateWeekdays(boolean value) {
+        monday = value;
+        tuesday = value;
+        wednesday = value;
+        thursday = value;
+        friday = value;
+        return this;
+    }
+
     public boolean isActiveOnDate(LocalDate date) {
         DayOfWeek dayOfWeek = date.getDayOfWeek();
         // TODO: Maybe we should just refactor DOW to be a list of ints (TIntList).
@@ -164,5 +189,16 @@ public class MonitoredTrip extends Model {
         return super.canBeManagedBy(user);
     }
 
+    public Itinerary lastItinerary() {
+        if (journeyState.responses.size() > 0) {
+            return journeyState.responses.get(0).plan.itineraries.get(0);
+        }
+        return itinerary;
+    }
+
+    public void addResponse(Response response) {
+        journeyState.lastChecked = System.currentTimeMillis();
+        journeyState.responses.add(0, response);
+    }
 }
 

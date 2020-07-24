@@ -44,4 +44,5 @@ public class Leg {
     public List<EncodedPolyline> interStopGeometry = null;
     public String routeShortName;
     public String routeLongName;
+    public List<LocalizedAlert> alerts = null;
 }

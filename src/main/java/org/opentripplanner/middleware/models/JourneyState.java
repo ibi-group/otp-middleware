@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.models;
 
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Response;
 
 import java.util.ArrayList;
@@ -10,23 +11,13 @@ import java.util.List;
  */
 public class JourneyState extends Model {
 
-    public JourneyState(MonitoredTrip monitoredTrip) {
-        monitoredTripId = monitoredTrip.id;
+    public JourneyState() {
     }
-
-    public final String monitoredTripId;
 
     /**
      * Timestamp checking the last time a journey was checked.
      */
     public long lastChecked;
 
-    /**
-     *
-     */
-    public List<String> alertIds = new ArrayList<>();
-
-    public List<Response> responses;
-
-
+    public List<Response> responses = new ArrayList<>();
 }

@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.otp;
 
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ public class OtpDispatcher {
     /**
      * Location of the plan endpoint (e.g., /plan).
      */
-    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
+    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
 
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
@@ -47,6 +48,13 @@ public class OtpDispatcher {
     public static OtpDispatcherResponse sendOtpPlanRequest(String query) {
         LOG.debug("Original query string: {}", query);
         return sendOtpRequest(buildOtpUri(query, OTP_PLAN_ENDPOINT));
+    }
+
+    /**
+     * Provides a response from the OTP server target service based on the query parameters provided.
+     */
+    public static OtpDispatcherResponse sendOtpPlanRequest(String from, String to) {
+        return sendOtpPlanRequest(String.format("fromPlace=%s&toPlace=%s", from, to));
     }
 
     /**
