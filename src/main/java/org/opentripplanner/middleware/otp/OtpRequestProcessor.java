@@ -6,16 +6,15 @@ import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
-import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Service;
 
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_SERVER;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -25,15 +24,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public class OtpRequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
-    /**
-     * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
-     * return OTP version info.
-     */
-    private static final String OTP_SERVER = getConfigPropertyAsText("OTP_SERVER");
-    /**
-     * Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse}
-     */
-    private static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
+
     /**
      * Endpoint for the OTP Middleware's OTP proxy
      */
@@ -107,10 +98,6 @@ public class OtpRequestProcessor {
         if (!storeTripHistory) {
             LOG.debug("User does not want trip history stored");
         } else {
-            // convert plan response into concrete POJOs
-            otpDispatcherResponse.response = JsonUtils.getPOJOFromJSON(otpDispatcherResponse.responseBody, Response.class);
-            LOG.debug("OTP server response as POJOs: {}", otpDispatcherResponse.response);
-
             if (otpDispatcherResponse.response == null) {
                 LOG.warn("OTP response is null, cannot save trip history for user!");
             } else {

@@ -220,6 +220,13 @@
             <version>2.7.2</version>
         </dependency>
 
+        <!-- Used to send email notifications for users monitoring trips. -->
+        <dependency>
+            <groupId>com.sparkpost</groupId>
+            <artifactId>sparkpost-lib</artifactId>
+            <version>0.15</version>
+        </dependency>
+
         <!-- Web Socket client (can safely remove with WebSocketClient.java) -->
         <dependency>
             <groupId>org.java-websocket</groupId>

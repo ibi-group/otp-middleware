@@ -23,27 +23,29 @@ public class DateUtils {
      */
     public static LocalDate getDateFromParam(String paramName, String paramValue, String expectedDatePattern)
         throws DateTimeParseException {
+        try {
+            return getDateFromString(paramValue, expectedDatePattern);
+        } catch (DateTimeParseException e) {
+            LOG.error("Unable to parse {} : {}.", paramName, paramValue, e);
+            throw e;
+        }
+    }
 
+    public static LocalDate getDateFromString(String value, String expectedDatePattern) throws DateTimeParseException {
         // no date value to work with
-        if (paramValue == null) {
+        if (value == null) {
             return null;
         }
-
         DateTimeFormatter expectedDateFormat = new DateTimeFormatterBuilder()
             .appendPattern(expectedDatePattern)
             .parseDefaulting(ChronoField.NANO_OF_DAY, 0)
             .toFormatter()
             .withZone(ZoneId.systemDefault());
-
-        LocalDate date;
         try {
-            date = LocalDate.parse(paramValue, expectedDateFormat);
+            return LocalDate.parse(value, expectedDateFormat);
         } catch (DateTimeParseException e) {
-            LOG.error("Unable to parse {} : {}.", paramName, paramValue, e);
             throw e;
         }
-
-        return date;
     }
 
 

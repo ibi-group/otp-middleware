@@ -4,6 +4,8 @@ import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.Set;
 
 /**
@@ -28,6 +30,12 @@ public class MonitoredTrip extends Model {
      * time the trip requires checking.
      */
     public String tripTime;
+
+    /**
+     * Tracks information during the active monitoring of the trip (e.g., last alerts encountered, last time a check was
+     * made, etc.).
+     */
+    public JourneyState journeyState;
 
     /**
      * The number of minutes prior to a trip taking place that the status should be checked.
@@ -90,16 +98,44 @@ public class MonitoredTrip extends Model {
      */
     public Itinerary itinerary;
 
-    //TODO, agree on and implement these parameters
     /**
-    notificationThresholds
-    notifyRouteChange (true/false) - Instead of notificationThresholds
-    arrivalDelayMinutesThreshold (int minutes) - Instead of notificationThresholds
-    departureDelayMinutesThreshold (int minutes) - Instead of notificationThresholds
-    notifyDelayToTrip (true/false)
-    */
+     * Whether to notify the user if an alert is present on monitored trip.
+     */
+    public boolean notifyOnAlert = true;
+
+    /**
+     * Threshold in minutes for a departure time variance (absolute value) to trigger a notification.
+     * -1 indicates that notifications are not enabled.
+     */
+    public int departureVarianceMinutesThreshold = 15;
+
+    /**
+     * Threshold in minutes for an arrival time variance (absolute value) to trigger a notification.
+     * -1 indicates that notifications are not enabled.
+     */
+    public int arrivalVarianceMinutesThreshold = 15;
+
+    /**
+     * Whether to notify the user if the itinerary details (routes or stops used) change for monitored trip.
+     */
+    public boolean notifyOnItineraryChange = true;
 
     public MonitoredTrip() {
+    }
+
+    public boolean isActiveOnDate(LocalDate date) {
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+        // TODO: Maybe we should just refactor DOW to be a list of ints (TIntList).
+        return isActive &&
+            (
+                monday && dayOfWeek == DayOfWeek.MONDAY ||
+                tuesday && dayOfWeek == DayOfWeek.TUESDAY ||
+                wednesday && dayOfWeek == DayOfWeek.WEDNESDAY ||
+                thursday && dayOfWeek == DayOfWeek.THURSDAY ||
+                friday && dayOfWeek == DayOfWeek.FRIDAY ||
+                saturday && dayOfWeek == DayOfWeek.SATURDAY ||
+                sunday && dayOfWeek == DayOfWeek.SUNDAY
+            );
     }
 
     /**
