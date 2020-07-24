@@ -1,23 +1,15 @@
 package org.opentripplanner.middleware.trip_monitor.jobs;
 
-import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
-import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.api.model.Itinerary;
 import org.opentripplanner.middleware.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -96,7 +88,7 @@ public class TripAnalyzer implements Runnable {
                     // TODO: Should null tripRequestId be fixed?
 //                    TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan, otpDispatcherResponse.response.error, null);
                     // TODO: Find the specific itinerary to compare against. For now, just choose the first itin.
-                    Itinerary itinerary = otpDispatcherResponse.response.plan.itineraries.get(0);
+                    Itinerary itinerary = otpDispatcherResponse.response.getPlan().itinerary.get(0);
                     // BEGIN CHECKS
                     // Check for new alerts.
                     checkTripForNewAlerts(trip, itinerary);

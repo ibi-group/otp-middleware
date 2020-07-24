@@ -2,7 +2,7 @@ package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
-import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.api.model.Itinerary;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;

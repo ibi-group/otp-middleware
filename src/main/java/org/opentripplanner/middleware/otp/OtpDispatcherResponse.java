@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.otp;
 
 
-import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.api.resource.Response;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

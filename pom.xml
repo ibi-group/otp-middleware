@@ -151,6 +151,12 @@
             <version>2.22.2</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.opentripplanner</groupId>
+            <artifactId>otp</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
         <!-- Required to communicate with Bugsnag's API -->
         <dependency>
             <groupId>com.bugsnag</groupId>

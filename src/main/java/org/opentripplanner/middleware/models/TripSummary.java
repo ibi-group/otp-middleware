@@ -1,9 +1,9 @@
 package org.opentripplanner.middleware.models;
 
-import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.otp.response.PlannerError;
-import org.opentripplanner.middleware.otp.response.TripPlan;
+import org.opentripplanner.api.model.Itinerary;
+import org.opentripplanner.api.model.Place;
+import org.opentripplanner.api.model.TripPlan;
+import org.opentripplanner.api.model.error.PlannerError;
 
 import java.util.List;
 
@@ -18,7 +18,7 @@ public class TripSummary extends Model {
 
     public PlannerError error;
 
-    public List<Itinerary> itineraries;
+    public List<Itinerary> itinerary;
 
     public String tripRequestId;
 
@@ -30,7 +30,7 @@ public class TripSummary extends Model {
         if (tripPlan != null) {
             this.fromPlace = tripPlan.from;
             this.toPlace = tripPlan.to;
-            this.itineraries = tripPlan.itineraries;
+            this.itinerary = tripPlan.itinerary;
         }
         this.error = error;
         this.tripRequestId = tripRequestId;
@@ -42,7 +42,7 @@ public class TripSummary extends Model {
                 "fromPlace=" + fromPlace +
                 ", toPlace=" + toPlace +
                 ", error=" + error +
-                ", itineraries=" + itineraries +
+                ", itineraries=" + itinerary +
                 ", tripRequestId='" + tripRequestId + '\'' +
                 '}';
     }

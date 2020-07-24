@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.models;
 
-import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.api.resource.Response;
 
 import java.util.ArrayList;
 import java.util.List;

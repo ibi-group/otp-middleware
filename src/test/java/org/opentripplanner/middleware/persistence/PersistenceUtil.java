@@ -4,10 +4,10 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
-import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Leg;
-import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.api.model.Itinerary;
+import org.opentripplanner.api.model.Leg;
+import org.opentripplanner.api.model.Place;
+import org.opentripplanner.api.resource.Response;
 import org.opentripplanner.middleware.utils.FileUtils;
 
 import java.util.*;
@@ -50,7 +50,7 @@ public class PersistenceUtil {
      * Create trip summary from static plan response file and store in database.
      */
     public static TripSummary createTripSummary() {
-        TripSummary tripSummary = new TripSummary(PLAN_RESPONSE.plan, PLAN_RESPONSE.error, TRIP_REQUEST_ID);
+        TripSummary tripSummary = new TripSummary(PLAN_RESPONSE.getPlan(), PLAN_RESPONSE.getError(), TRIP_REQUEST_ID);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
     }
@@ -59,7 +59,7 @@ public class PersistenceUtil {
      * Create trip summary from static plan error response file and store in database.
      */
     public static TripSummary createTripSummaryWithError() {
-        TripSummary tripSummary = new TripSummary(null, PLAN_ERROR_RESPONSE.error, TRIP_REQUEST_ID);
+        TripSummary tripSummary = new TripSummary(null, PLAN_ERROR_RESPONSE.getError(), TRIP_REQUEST_ID);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
     }
@@ -104,8 +104,8 @@ public class PersistenceUtil {
         itinerary.duration = 1350L;
         itinerary.elevationGained = 0.0;
         itinerary.elevationLost = 0.0;
-        itinerary.endTime = new Date();
-        itinerary.startTime = new Date();
+        itinerary.endTime = Calendar.getInstance();
+        itinerary.startTime = Calendar.getInstance();
         itinerary.transfers = 0;
         itinerary.transitTime = 150;
         itinerary.waitingTime = 2;
@@ -113,8 +113,8 @@ public class PersistenceUtil {
         itinerary.walkLimitExceeded = false;
 
         Leg leg = new Leg();
-        leg.startTime = new Date();
-        leg.endTime = new Date();
+        leg.startTime = Calendar.getInstance();
+        leg.endTime = Calendar.getInstance();
         leg.departureDelay = 10;
         leg.arrivalDelay = 10;
         leg.realTime = true;
