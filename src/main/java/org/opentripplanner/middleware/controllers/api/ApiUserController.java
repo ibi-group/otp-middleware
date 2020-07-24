@@ -5,6 +5,7 @@ import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.aws.AwsApiGateway;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import spark.HaltException;
 import spark.Request;
 
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -13,7 +14,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * Implementation of the {@link AbstractUserController} for {@link ApiUser}.
  */
 public class ApiUserController extends AbstractUserController<ApiUser> {
-    public ApiUserController(String apiPrefix){
+    public ApiUserController(String apiPrefix) {
         super(apiPrefix, Persistence.apiUsers, "secure/application");
     }
 
@@ -38,8 +39,12 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         //FIXME This suggests many, where only one is returned?
         user.apiKeyIds.add(apiKeyId);
 
-        //FIXME If there are any issues creating the user, the api key in AWS will be orphaned
-        return super.preCreateHook(user, req);
+        try {
+            return super.preCreateHook(user, req);
+        } catch (HaltException e) {
+            AwsApiGateway.deleteApiKeys(user.apiKeyIds);
+            throw e;
+        }
     }
 
     /**
