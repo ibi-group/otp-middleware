@@ -1,19 +1,24 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
-import org.opentripplanner.middleware.aws.AwsApiGateway;
+import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import spark.HaltException;
 import spark.Request;
 
+import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Implementation of the {@link AbstractUserController} for {@link ApiUser}.
  */
 public class ApiUserController extends AbstractUserController<ApiUser> {
+    private static final String DEFAULT_USAGE_PLAN_ID
+        = getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
+
     public ApiUserController(String apiPrefix) {
         super(apiPrefix, Persistence.apiUsers, "secure/application");
     }
@@ -29,31 +34,31 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     @Override
     ApiUser preCreateHook(ApiUser user, Request req) {
-        String apiKeyId = AwsApiGateway.getApiKeyId(user.id);
-        if (apiKeyId == null) {
-            logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500,
-                String.format("Unable to get AWS api key for user %s", user)
-                , null);
+        CreateApiKeyResult apiKey = ApiGatewayUtils.createApiKey(user.id, DEFAULT_USAGE_PLAN_ID);
+        if (apiKey == null) {
+            logMessageAndHalt(req,
+                HttpStatus.INTERNAL_SERVER_ERROR_500,
+                String.format("Unable to get AWS api key for user %s", user),
+                null);
         }
 
-        //FIXME This suggests many, where only one is returned?
-        user.apiKeyIds.add(apiKeyId);
+        user.apiKeyIds.add(apiKey.getId());
 
         try {
             return super.preCreateHook(user, req);
         } catch (HaltException e) {
-            AwsApiGateway.deleteApiKeys(user.apiKeyIds);
+            ApiGatewayUtils.deleteApiKeys(user.apiKeyIds);
             throw e;
         }
     }
 
     /**
      * Before deleting an API user in MongoDB,
-     * remove the API keys for this user.
+     * remove the API keys for this user from AWS.
      */
     @Override
     boolean preDeleteHook(ApiUser user, Request req) {
-        AwsApiGateway.deleteApiKeys(user.apiKeyIds);
+        ApiGatewayUtils.deleteApiKeys(user.apiKeyIds);
         return true;
     }
 

@@ -35,7 +35,6 @@ public class Main {
     // ObjectMapper that loads in YAML config files
     private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private static final String API_PREFIX = "/api/";
-    public static boolean inTestEnvironment = false;
 
     public static void main(String[] args) throws IOException {
         // Load configuration.
