@@ -44,7 +44,7 @@ public class BugsnagReporter {
     public static boolean reportErrorToBugsnag(String message, Object badEntity, Throwable throwable) {
         LOG.error(message, throwable);
         if (bugsnag == null) {
-            LOG.warn("Bugsnag error reporting is disabled. Unable to report to Bugsnag in this context: {}, this message: {}",
+            LOG.warn("Bugsnag error reporting is disabled. Unable to report to Bugsnag this message: {} for this bad entity: {}",
                 message,
                 badEntity,
                 throwable);
@@ -52,7 +52,7 @@ public class BugsnagReporter {
         }
 
         if (throwable == null) {
-            LOG.warn("This error is not an exception and will not/cannot be reported to Bugsnag in this context: {}, this message: {}",
+            LOG.warn("This error is not an exception and cannot be reported to Bugsnag. This message: {} for this bad entity: {}",
                 message,
                 badEntity);
             return false;
