@@ -63,6 +63,8 @@ public class ApiGatewayUtils {
             CreateApiKeyRequest apiKeyRequest = new CreateApiKeyRequest();
             apiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
             apiKeyRequest
+                //FIXME I think this needs to include stage key(s). Not sure what impact that places on the calling
+                // services though?
                 .withName(userId)
                 .withCustomerId(userId)
                 .withEnabled(true);
@@ -146,7 +148,22 @@ public class ApiGatewayUtils {
                 throw e;
             }
         }
-        LOG.debug("Retrieving usage logs took {} msec", System.currentTimeMillis() - startTime);
+        LOG.debug("Retrieving usage logs an api key took {} msec", System.currentTimeMillis() - startTime);
+        return usageResults;
+    }
+
+    /**
+     * Get usage logs from AWS api gateway for a given list of api keys, start and end date
+     */
+    public static List<GetUsageResult> getUsageLogs(List<String> apiKeyIds, String startDate, String endDate) {
+        long startTime = System.currentTimeMillis();
+
+        List<GetUsageResult> usageResults = new ArrayList<>();
+        for(String apiKeyId : apiKeyIds) {
+            usageResults.addAll(getUsageLogs(apiKeyId, startDate, endDate));
+        }
+
+        LOG.debug("Retrieving usage logs for a list of api keys took {} msec", System.currentTimeMillis() - startTime);
         return usageResults;
     }
 }
