@@ -34,7 +34,7 @@ public class ApiKeyManagementController {
      * Register http endpoints with {@link spark.Spark} instance at the provided API prefix.
      */
     public static void register(Service spark, String apiPrefix) {
-        // FIXME need to agree on endpoint (/admin or /secure) and endpoint names
+        // FIXME need to agree on endpoint (/admin or /secure or a mix) and endpoint names
         spark.get(apiPrefix + "/admin/apikey/create", ApiKeyManagementController::createApiKeyForApiUser, JsonUtils::toJson);
         spark.get(apiPrefix + "/admin/apikey/delete", ApiKeyManagementController::deleteApiKeyForApiUser, JsonUtils::toJson);
         spark.get(apiPrefix + "/admin/apikey/usage", ApiKeyManagementController::getUsageLogsForApiUser, JsonUtils::toJson);
@@ -49,7 +49,7 @@ public class ApiKeyManagementController {
         ApiUser user = getApiUser(req);
 
         String usagePlanId = req.queryParamOrDefault("usagePlanId", DEFAULT_USAGE_PLAN_ID);
-        // FIXME Should an Api user be limited to one api key per usage plan (and perhaps stage key)?
+        // FIXME Should an Api user be limited to one api key per usage plan (and perhaps stage)?
         CreateApiKeyResult apiKey = ApiGatewayUtils.createApiKey(user.id, usagePlanId);
         if (apiKey == null) {
             logMessageAndHalt(req,
@@ -140,7 +140,7 @@ public class ApiKeyManagementController {
         ApiUser user = apiUsers.getById(userId);
         if (user == null) {
             logMessageAndHalt(req,
-                HttpStatus.INTERNAL_SERVER_ERROR_500,
+                HttpStatus.BAD_REQUEST_400,
                 String.format("No Api user matching the given user id (%s)", userId),
                 null);
         }

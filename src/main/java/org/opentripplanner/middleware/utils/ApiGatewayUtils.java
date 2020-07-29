@@ -16,6 +16,7 @@ import com.amazonaws.services.apigateway.model.GetUsageRequest;
 import com.amazonaws.services.apigateway.model.GetUsageResult;
 import com.amazonaws.services.apigateway.model.NotFoundException;
 import com.amazonaws.services.apigateway.model.UsagePlan;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,8 +85,10 @@ public class ApiGatewayUtils {
 
             return apiKeyResult;
         } catch (Exception e) {
-            LOG.error("Unable to get api key from AWS", e);
-            //FIXME add bugsnag
+            String message = String.format("Unable to get api key from AWS for user id (%s) and usage plan id (%s)",
+                userId,
+                usagePlanId);
+            BugsnagReporter.reportErrorToBugsnag(message, e);
         } finally {
             LOG.debug("Get api key and assign to usage plan took {} msec", System.currentTimeMillis() - startTime);
         }
@@ -109,8 +112,8 @@ public class ApiGatewayUtils {
             } catch (NotFoundException e) {
                 LOG.warn("Api key ({}) not found, unable to delete", apiKeyId, e);
             } catch (Exception e) {
-                LOG.error("Unable to delete api key ({})", apiKeyId, e);
-                //FIXME add bugsnag
+                String message = String.format("Unable to delete api key (%s)", apiKeyId);
+                BugsnagReporter.reportErrorToBugsnag(message, e);
             }
         }
         LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
@@ -138,12 +141,11 @@ public class ApiGatewayUtils {
                 usageResults.add(gateway.getUsage(getUsageRequest));
             } catch (Exception e) {
                 // Catch any issues with bad request parameters (e.g., invalid API keyId or bad date format).
-                LOG.error("Unable to get usage results for key id ({}) with start date ({}) and end date ({})",
+                String message = String.format("Unable to get usage results for key id (%s) with start date (%s) and end date (%s)",
                     keyId,
                     startDate,
-                    endDate,
-                    e);
-                //FIXME add bugsnag
+                    endDate);
+                BugsnagReporter.reportErrorToBugsnag(message, e);
                 throw e;
             }
         }
@@ -158,7 +160,7 @@ public class ApiGatewayUtils {
         long startTime = System.currentTimeMillis();
 
         List<GetUsageResult> usageResults = new ArrayList<>();
-        for(String apiKeyId : apiKeyIds) {
+        for (String apiKeyId : apiKeyIds) {
             usageResults.addAll(getUsageLogs(apiKeyId, startDate, endDate));
         }
 
