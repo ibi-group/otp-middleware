@@ -8,6 +8,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.BasicOtpDispatcher;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiKeyManagementController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
@@ -48,6 +49,9 @@ public class Main {
 
         // Schedule Bugsnag jobs to start retrieving Bugsnag event and project information
         BugsnagJobs.initialize();
+
+        // Initialize Bugsnag in order to report application errors
+        BugsnagReporter.initializeBugsnagErrorReporting();
     }
 
     private static void initializeHttpEndpoints() throws IOException {

@@ -42,6 +42,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 null);
         }
 
+        // store api key id (not the actual api key)
         user.apiKeyIds.add(apiKey.getId());
 
         try {

@@ -53,6 +53,9 @@ public class TripRequest extends Model {
             ", fromPlace='" + fromPlace + '\'' +
             ", toPlace='" + toPlace + '\'' +
             ", queryParams='" + queryParams + '\'' +
+            ", id='" + id + '\'' +
+            ", lastUpdated=" + lastUpdated +
+            ", dateCreated=" + dateCreated +
             '}';
     }
 }
