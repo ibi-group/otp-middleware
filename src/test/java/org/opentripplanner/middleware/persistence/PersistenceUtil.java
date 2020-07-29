@@ -28,8 +28,14 @@ public class PersistenceUtil {
      * Create user and store in database.
      */
     public static OtpUser createUser(String email) {
+        return createUser(email, null);
+    }
+
+    public static OtpUser createUser(String email, String phoneNumber) {
         OtpUser user = new OtpUser();
         user.email = email;
+        user.phoneNumber = phoneNumber;
+        user.notificationChannel = "email";
         Persistence.otpUsers.create(user);
         return user;
     }

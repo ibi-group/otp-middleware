@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,15 +99,16 @@ public class OtpRequestProcessor {
         if (!storeTripHistory) {
             LOG.debug("User does not want trip history stored");
         } else {
-            if (otpDispatcherResponse.response == null) {
+            Response otpResponse = otpDispatcherResponse.getResponse();
+            if (otpResponse == null) {
                 LOG.warn("OTP response is null, cannot save trip history for user!");
             } else {
                 TripRequest tripRequest = new TripRequest(profile.otpUser.id, batchId, request.queryParams("fromPlace"),
                     request.queryParams("toPlace"), request.queryString());
                 // only save trip summary if the trip request was saved
                 if (saveTripRequest(tripRequest)) {
-                    TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan,
-                        otpDispatcherResponse.response.error, tripRequest.id);
+                    TripSummary tripSummary = new TripSummary(otpResponse.plan,
+                        otpResponse.error, tripRequest.id);
                     saveTripSummary(tripSummary);
                 } else {
                     LOG.warn("Unable to save trip request, orphaned trip summary not saved");

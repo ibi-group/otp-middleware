@@ -126,9 +126,10 @@ public class MonitoredTrip extends Model {
 
     public MonitoredTrip(OtpDispatcherResponse otpDispatcherResponse) {
         queryParams = otpDispatcherResponse.requestUri.getQuery();
-        itinerary = otpDispatcherResponse.response.plan.itineraries.get(0);
-        // FIXME: Should
+        itinerary = otpDispatcherResponse.getResponse().plan.itineraries.get(0);
+        // FIXME: Should we clear any realtime alerts/info here? How to handle trips planned with realtime enabled?
         itinerary.clearAlerts();
+        // FIXME: set trip time other params?
 //        tripTime = otpDispatcherResponse.response.plan.date
     }
 

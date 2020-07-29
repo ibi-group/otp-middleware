@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
+import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.trip_monitor.jobs.TripMonitorNotification;
 import org.opentripplanner.middleware.utils.DateUtils;
@@ -21,11 +22,18 @@ import java.util.List;
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
     private final MonitoredTrip trip;
+    private OtpDispatcherResponse injectedOtpResponse;
     private final List<TripMonitorNotification> notifications = new ArrayList<>();
 
     public CheckMonitoredTrip(MonitoredTrip trip) {
         this.trip = trip;
     }
+
+    public CheckMonitoredTrip(MonitoredTrip trip, OtpDispatcherResponse injectedOtpResponse) {
+        this.trip = trip;
+        this.injectedOtpResponse = injectedOtpResponse;
+    }
+
     @Override
     public void run() {
         // Check if the trip check should be skipped (based on time, day of week, etc.)
@@ -33,17 +41,22 @@ public class CheckMonitoredTrip implements Runnable {
             LOG.debug("Skipping check for trip: {}", trip.id);
             return;
         }
-        // Make a request to OTP with the monitored trip params.
-        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(trip.queryParams);
+        // Make a request to OTP with the monitored trip params or if this is in a test environment use the injected OTP
+        // response.
+        OtpDispatcherResponse otpDispatcherResponse = injectedOtpResponse != null
+            ? injectedOtpResponse
+            : OtpDispatcher.sendOtpPlanRequest(trip.queryParams);
+
         if (otpDispatcherResponse.statusCode >= 400) {
             // TODO: report bugsnag
             LOG.error("Could not reach OTP server. status={}", otpDispatcherResponse.statusCode);
             return;
         }
+        Response otpResponse = otpDispatcherResponse.getResponse();
         // TODO: Should null tripRequestId be fixed?
         // TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan, otpDispatcherResponse.response.error, null);
         // TODO: Find the specific itinerary to compare against. For now, just choose the first itin.
-        Itinerary itinerary = otpDispatcherResponse.response.plan.itineraries.get(0);
+        Itinerary itinerary = otpResponse.plan.itineraries.get(0);
         // BEGIN CHECKS
         // Check for notifications related to service alerts.
         checkTripForNewAlerts(trip, itinerary);
@@ -52,7 +65,7 @@ public class CheckMonitoredTrip implements Runnable {
         // Check for notifications related to itinerary changes
         checkTripForItineraryChanges(trip, itinerary);
         // Add latest OTP response.
-        trip.addResponse(otpDispatcherResponse.response);
+        trip.addResponse(otpResponse);
         Persistence.monitoredTrips.replace(trip.id, trip);
         // Send notification to user.
         sendNotification();
@@ -73,20 +86,35 @@ public class CheckMonitoredTrip implements Runnable {
             LOG.info("No notifications queued up. Skipping notify.");
             return;
         }
-        String subject = trip.tripName + " Notification";
-        StringBuilder body = new StringBuilder();
-        for (TripMonitorNotification notification : notifications) {
-            body.append(notification.body);
-        }
-        // FIXME: Change log level
-        LOG.info("Sending notification {} to user {}", subject, trip.userId);
         OtpUser otpUser = Persistence.otpUsers.getById(trip.userId);
         if (otpUser == null) {
             LOG.error("Cannot find user for id {}", trip.userId);
             // TODO: Bugsnag / delete monitored trip?
             return;
         }
-        NotificationUtils.sendNotification(otpUser.email, subject, body.toString(), null);
+        String name = trip.tripName != null ? trip.tripName : "Trip for " + otpUser.email;
+        String subject = name + " Notification";
+        StringBuilder body = new StringBuilder();
+        for (TripMonitorNotification notification : notifications) {
+            body.append(notification.body);
+        }
+        // FIXME: Change log level
+        LOG.info("Sending notification '{}' to user {}", subject, trip.userId);
+        // FIXME: This needs to be an enum.
+        switch (otpUser.notificationChannel.toLowerCase()) {
+            case "sms":
+                NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString());
+                break;
+            case "email":
+                NotificationUtils.sendEmail(otpUser.email, subject, body.toString(), null);
+                break;
+            case "all":
+                NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString());
+                NotificationUtils.sendEmail(otpUser.email, subject, body.toString(), null);
+                break;
+            default:
+                break;
+        }
     }
 
     private void checkTripForNewAlerts(MonitoredTrip trip, Itinerary itinerary) {
