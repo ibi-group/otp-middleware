@@ -56,7 +56,6 @@ public class ApiGatewayUtils {
         long startTime = System.currentTimeMillis();
 
         try {
-
             AmazonApiGateway gateway = getAmazonApiGateway();
 
             // create API key
