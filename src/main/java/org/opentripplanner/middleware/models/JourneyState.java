@@ -19,5 +19,12 @@ public class JourneyState extends Model {
      */
     public long lastChecked;
 
+    /**
+     * Store the recent plan requests made over the course of monitoring a trip. Note: these should be cleared once the
+     * monitored trip clears for the day (i.e., if the monitored trip occurs at 9am, responses will stack up as we check
+     * the trip. At 9:01am (or perhaps some later time in the day) this should be cleared.).
+     *
+     * FIXME: Should the type be string/responseBody instead?
+     */
     public List<Response> responses = new ArrayList<>();
 }
