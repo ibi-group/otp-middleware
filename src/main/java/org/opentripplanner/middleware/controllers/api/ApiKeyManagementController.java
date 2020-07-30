@@ -30,14 +30,23 @@ public class ApiKeyManagementController {
     private static final String DEFAULT_USAGE_PLAN_ID
         = getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
 
+    // FIXME Required for testing, but once agreed could be hardcoded?
+    public static String createApiKeyEndpoint;
+    public static String deleteApiKeyEndpoint;
+    public static String usageApiKeyEndpoint;
+
     /**
      * Register http endpoints with {@link spark.Spark} instance at the provided API prefix.
      */
     public static void register(Service spark, String apiPrefix) {
+        createApiKeyEndpoint = apiPrefix + "admin/apikey/create";
+        deleteApiKeyEndpoint = apiPrefix + "admin/apikey/delete";
+        usageApiKeyEndpoint = apiPrefix + "admin/apikey/usage";
+
         // FIXME need to agree on endpoint (/admin or /secure or a mix) and endpoint names
-        spark.get(apiPrefix + "/admin/apikey/create", ApiKeyManagementController::createApiKeyForApiUser, JsonUtils::toJson);
-        spark.get(apiPrefix + "/admin/apikey/delete", ApiKeyManagementController::deleteApiKeyForApiUser, JsonUtils::toJson);
-        spark.get(apiPrefix + "/admin/apikey/usage", ApiKeyManagementController::getUsageLogsForApiUser, JsonUtils::toJson);
+        spark.get(createApiKeyEndpoint, ApiKeyManagementController::createApiKeyForApiUser, JsonUtils::toJson);
+        spark.get(deleteApiKeyEndpoint, ApiKeyManagementController::deleteApiKeyForApiUser, JsonUtils::toJson);
+        spark.get(usageApiKeyEndpoint, ApiKeyManagementController::getUsageLogsForApiUser, JsonUtils::toJson);
     }
 
     /**

@@ -14,7 +14,6 @@ import java.io.IOException;
 public abstract class OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(OtpMiddlewareTest.class);
     private static boolean setUpIsDone = false;
-    protected static Main otpMiddleware;
 
     /**
      * Set up the otp-middleware application in order for tests to run properly. If test classes that implement this
@@ -30,7 +29,8 @@ public abstract class OtpMiddlewareTest {
         LOG.info("OtpMiddlewareTest setup");
 
         LOG.info("Starting server");
-        otpMiddleware.main(new String[]{"configurations/test/env.yml"});
+        Main.inTestEnvironment = true;
+        Main.main(new String[]{"configurations/test/env.yml"});
         setUpIsDone = true;
     }
 }

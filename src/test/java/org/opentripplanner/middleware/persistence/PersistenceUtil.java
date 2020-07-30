@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.persistence;
 
+import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -25,7 +26,7 @@ public class PersistenceUtil {
 
 
     /**
-     * Create user and store in database.
+     * Create Otp user and store in database.
      */
     public static OtpUser createUser(String email) {
         OtpUser user = new OtpUser();
@@ -33,6 +34,17 @@ public class PersistenceUtil {
         Persistence.otpUsers.create(user);
         return user;
     }
+
+    /**
+     * Create Api user and store in database.
+     */
+    public static ApiUser createApiUser(String email) {
+        ApiUser user = new ApiUser();
+        user.email = email;
+        Persistence.apiUsers.create(user);
+        return user;
+    }
+
 
     /**
      * Create trip request and store in database.

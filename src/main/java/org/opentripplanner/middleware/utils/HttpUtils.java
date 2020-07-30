@@ -41,10 +41,19 @@ public class HttpUtils {
     }
 
     /**
-     * Makes an http get/post request and returns the response body. The request is based on the provided params
+     * Makes an http get/post request and returns the response body. The request is based on the provided params.
      */
     public static String httpRequest(URI uri, int connectionTimeout, REQUEST_METHOD method,
                                      HashMap<String, String> headers, String bodyContent) {
+
+        return httpRequestRawResponse(uri, connectionTimeout, method, headers, bodyContent).body();
+    }
+
+    /**
+     * Makes an http get/post request and returns the response. The request is based on the provided params.
+     */
+    public static HttpResponse<String> httpRequestRawResponse(URI uri, int connectionTimeout, REQUEST_METHOD method,
+                                                              HashMap<String, String> headers, String bodyContent) {
 
 
         HttpClient client = HttpClient.newHttpClient();
@@ -64,7 +73,7 @@ public class HttpUtils {
         }
 
         if (headers != null && !headers.isEmpty()) {
-            for(Map.Entry<String, String> e: headers.entrySet()){
+            for (Map.Entry<String, String> e : headers.entrySet()) {
                 httpRequestBuilder.setHeader(e.getKey(), e.getValue());
             }
         }
@@ -72,16 +81,13 @@ public class HttpUtils {
         HttpRequest request = httpRequestBuilder.build();
 
         try {
-            // raw response
-            HttpResponse<String> httpResponse = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
-            return httpResponse.body();
+            return client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
         } catch (InterruptedException | IOException e) {
             BugsnagReporter.reportErrorToBugsnag("Error requesting data from URI", uri, e);
         }
 
         return null;
     }
-
 
     /**
      * Get entity attribute value from request. If nulls are not allowed, halt with error message.

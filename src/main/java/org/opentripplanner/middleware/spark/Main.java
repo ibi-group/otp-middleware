@@ -37,6 +37,7 @@ public class Main {
     // ObjectMapper that loads in YAML config files
     private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private static final String API_PREFIX = "/api/";
+    public static boolean inTestEnvironment = false;
 
     public static void main(String[] args) throws IOException {
         // Load configuration.
@@ -47,11 +48,13 @@ public class Main {
 
         initializeHttpEndpoints();
 
-        // Schedule Bugsnag jobs to start retrieving Bugsnag event and project information
-        BugsnagJobs.initialize();
+        if (!inTestEnvironment) {
+            // Schedule Bugsnag jobs to start retrieving Bugsnag event and project information
+            BugsnagJobs.initialize();
 
-        // Initialize Bugsnag in order to report application errors
-        BugsnagReporter.initializeBugsnagErrorReporting();
+            // Initialize Bugsnag in order to report application errors
+            BugsnagReporter.initializeBugsnagErrorReporting();
+        }
     }
 
     private static void initializeHttpEndpoints() throws IOException {
