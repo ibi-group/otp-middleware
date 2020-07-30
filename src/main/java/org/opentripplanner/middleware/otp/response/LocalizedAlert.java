@@ -1,10 +1,12 @@
 package org.opentripplanner.middleware.otp.response;
 
+import java.util.Date;
+
 public class LocalizedAlert {
     public String alertHeaderText;
     public String alertDescriptionText;
     public String alertUrl;
-    public int effectiveStartDate;
+    public Date effectiveStartDate;
 
     public boolean equals(Object o) {
         if (!(o instanceof LocalizedAlert)) {

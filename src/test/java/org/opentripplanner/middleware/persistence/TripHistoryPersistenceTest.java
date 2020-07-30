@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.persistence;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -33,11 +32,6 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
     TripRequest tripRequest = null;
     TripSummary tripSummary = null;
     List<TripRequest> tripRequests = null;
-
-    @BeforeAll
-    public static void setup() {
-        stagePlanResponses();
-    }
 
     @Test
     public void canCreateTripRequest() {

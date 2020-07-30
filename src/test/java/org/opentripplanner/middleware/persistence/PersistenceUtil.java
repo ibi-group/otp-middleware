@@ -20,8 +20,7 @@ public class PersistenceUtil {
     private static final String BATCH_ID = "783726";
     private static final String TRIP_REQUEST_ID = "59382";
 
-    private static Response PLAN_RESPONSE = null;
-    private static Response PLAN_ERROR_RESPONSE = null;
+    private static final String filePath = "src/test/resources/org/opentripplanner/middleware/";
 
 
     /**
@@ -56,7 +55,8 @@ public class PersistenceUtil {
      * Create trip summary from static plan response file and store in database.
      */
     public static TripSummary createTripSummary() {
-        TripSummary tripSummary = new TripSummary(PLAN_RESPONSE.plan, PLAN_RESPONSE.error, TRIP_REQUEST_ID);
+        Response planResponse = getPlanResponse();
+        TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, TRIP_REQUEST_ID);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
     }
@@ -65,7 +65,8 @@ public class PersistenceUtil {
      * Create trip summary from static plan error response file and store in database.
      */
     public static TripSummary createTripSummaryWithError() {
-        TripSummary tripSummary = new TripSummary(null, PLAN_ERROR_RESPONSE.error, TRIP_REQUEST_ID);
+        Response planErrorResponse = getPlanErrorResponse();
+        TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, TRIP_REQUEST_ID);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
     }
@@ -146,11 +147,16 @@ public class PersistenceUtil {
     }
 
     /**
-     * Get plan responses from file for creating trip summaries.
+     * Get successful plan response from file for creating trip summaries.
      */
-    public static void stagePlanResponses() {
-        final String filePath = "src/test/resources/org/opentripplanner/middleware/";
-        PLAN_RESPONSE = FileUtils.getFileContentsAsJSON(filePath + "planResponse.json", Response.class);
-        PLAN_ERROR_RESPONSE = FileUtils.getFileContentsAsJSON(filePath + "planErrorResponse.json", Response.class);
+    public static Response getPlanResponse() {
+        return FileUtils.getFileContentsAsJSON(filePath + "planResponse.json", Response.class);
+    }
+
+    /**
+     * Get error plan response from file for creating trip summaries.
+     */
+    public static Response getPlanErrorResponse() {
+        return FileUtils.getFileContentsAsJSON(filePath + "planErrorResponse.json", Response.class);
     }
 }
