@@ -1,4 +1,7 @@
 get:
+  tags:
+    - "{PATH}"
+  description: "Retrieves a '{RETURN_TYPE}' entity using an Auth0 access token passed in an Authorization header."
   produces:
     - "application/json"
   parameters:
