@@ -8,6 +8,8 @@ import com.amazonaws.services.apigateway.model.CreateApiKeyRequest;
 import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
 import com.amazonaws.services.apigateway.model.CreateUsagePlanKeyRequest;
 import com.amazonaws.services.apigateway.model.DeleteApiKeyRequest;
+import com.amazonaws.services.apigateway.model.GetApiKeyRequest;
+import com.amazonaws.services.apigateway.model.GetApiKeyResult;
 import com.amazonaws.services.apigateway.model.GetUsagePlanRequest;
 import com.amazonaws.services.apigateway.model.GetUsagePlanResult;
 import com.amazonaws.services.apigateway.model.GetUsagePlansRequest;
@@ -63,7 +65,7 @@ public class ApiGatewayUtils {
             CreateApiKeyRequest apiKeyRequest = new CreateApiKeyRequest();
             apiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
             apiKeyRequest
-                //FIXME I think this needs to include stage key(s). Not sure what impact that places on the calling
+                //FIXME This may need to include stage key(s). Not sure what impact that places on the calling
                 // services though?
                 .withName(userId)
                 .withCustomerId(userId)
@@ -95,20 +97,34 @@ public class ApiGatewayUtils {
         return null;
     }
 
+    public static GetApiKeyResult getApiKey(String apiKeyId) {
+        AmazonApiGateway gateway = getAmazonApiGateway();
+        try {
+            GetApiKeyRequest getApiKeyRequest = new GetApiKeyRequest()
+                .withApiKey(apiKeyId);
+            GetApiKeyResult apiKey = gateway.getApiKey(getApiKeyRequest);
+            LOG.info("API key: {}", apiKey.getValue());
+            return apiKey;
+        } catch (Exception e) {
+            LOG.error("Error encountered while fetching API Key", e);
+            return null;
+        }
+    }
+
     /**
      * Delete api keys from AWS api gateway.
      */
-    public static void deleteApiKeys(List<String> apiKeyIds) {
+    public static boolean deleteApiKeys(List<String> apiKeyIds) {
         long startTime = System.currentTimeMillis();
-
         AmazonApiGateway gateway = getAmazonApiGateway();
-
         for (String apiKeyId : apiKeyIds) {
             try {
                 DeleteApiKeyRequest deleteApiKeyRequest = new DeleteApiKeyRequest();
                 deleteApiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
                 deleteApiKeyRequest.setApiKey(apiKeyId);
                 gateway.deleteApiKey(deleteApiKeyRequest);
+                LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
+                return true;
             } catch (NotFoundException e) {
                 LOG.warn("Api key ({}) not found, unable to delete", apiKeyId, e);
             } catch (Exception e) {
@@ -116,7 +132,7 @@ public class ApiGatewayUtils {
                 BugsnagReporter.reportErrorToBugsnag(message, e);
             }
         }
-        LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
+        return false;
     }
 
     /**
