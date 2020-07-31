@@ -143,7 +143,7 @@ public class Auth0Users {
     }
 
     /**
-     * Get a single Auth0 user for the specified email.
+     * Get a single Auth0 user for the provided Auth0 user ID.
      */
     public static User getUserByAuth0Id(String auth0Id) {
         try {
@@ -152,7 +152,7 @@ public class Auth0Users {
                 .get(auth0Id, null)
                 .execute();
         } catch (Auth0Exception e) {
-            LOG.error("Could not perform user search by email", e);
+            LOG.error("Could not get user for ID", e);
             // FIXME: Bugsnag
             return null;
         }

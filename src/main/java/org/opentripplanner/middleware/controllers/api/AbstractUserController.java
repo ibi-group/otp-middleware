@@ -15,11 +15,8 @@ import spark.Request;
 import spark.Response;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
-import static org.opentripplanner.middleware.auth.Auth0Users.getUserByAuth0Id;
-import static org.opentripplanner.middleware.auth.Auth0Users.getUserByEmail;
 import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
 import static org.opentripplanner.middleware.auth.Auth0Users.validateExistingUser;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
