@@ -22,7 +22,8 @@ import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
- * Implementation of the {@link AbstractUserController} for {@link ApiUser}.
+ * Implementation of the {@link AbstractUserController} for {@link ApiUser}. This controller also contains methods for
+ * managing an {@link ApiUser}'s API keys.
  */
 public class ApiUserController extends AbstractUserController<ApiUser> {
     private static final String DEFAULT_USAGE_PLAN_ID = getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
@@ -68,9 +69,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     }
 
     /**
-     * Create a new API key and assign it to the provided usage plan. If no usage plan is provided use the default
-     * usage plan instead.
-     * @return
+     * HTTP endpoint that reveals the actual API Key value for a given apiKeyId.
      */
     private GetApiKeyResult getApiKey(Request req, Response res) {
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
@@ -89,6 +88,9 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         return null;
     }
 
+    /**
+     * Shorthand method to determine if an API user exists and has an API key.
+     */
     private boolean userHasKey(ApiUser user, String apiKey) {
         return user != null && user.apiKeyIds.contains(apiKey);
     }

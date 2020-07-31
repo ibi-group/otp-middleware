@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.auth;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.client.mgmt.ManagementAPI;
 import com.auth0.exception.Auth0Exception;
+import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
 import org.apache.commons.validator.routines.EmailValidator;
@@ -109,6 +110,7 @@ public class Auth0Users {
             if (users.size() > 0) return users.get(0);
         } catch (Auth0Exception e) {
             LOG.error("Could not perform user search by email", e);
+            // FIXME: Bugsnag
             return null;
         }
         if (createIfNotExists) {
@@ -119,6 +121,41 @@ public class Auth0Users {
             }
         }
         return null;
+    }
+
+    /**
+     * Method to trigger an Auth0 job to resend a verification email. Returns an Auth0 {@link Job} which can be
+     * used to monitor the progress of the job (using job ID). Typically the verification email goes out pretty quickly
+     * so there shouldn't be too much of a need to monitor the result.
+     */
+    public static Job resendVerificationEmail(String userId) {
+        try {
+            return getManagementAPI()
+                .jobs()
+                // FIXME: This may need to be the otp-admin client_id instead.
+                .sendVerificationEmail(userId, AUTH0_API_CLIENT)
+                .execute();
+        } catch (Auth0Exception e) {
+            LOG.error("Could not send verification email", e);
+            // FIXME Bugsnag
+            return null;
+        }
+    }
+
+    /**
+     * Get a single Auth0 user for the specified email.
+     */
+    public static User getUserByAuth0Id(String auth0Id) {
+        try {
+            return getManagementAPI()
+                .users()
+                .get(auth0Id, null)
+                .execute();
+        } catch (Auth0Exception e) {
+            LOG.error("Could not perform user search by email", e);
+            // FIXME: Bugsnag
+            return null;
+        }
     }
 
     /**

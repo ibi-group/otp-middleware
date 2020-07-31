@@ -97,10 +97,14 @@ public class ApiGatewayUtils {
         return null;
     }
 
+    /**
+     * Get API key (with key value) for the provided id.
+     */
     public static GetApiKeyResult getApiKey(String apiKeyId) {
         AmazonApiGateway gateway = getAmazonApiGateway();
         try {
             GetApiKeyRequest getApiKeyRequest = new GetApiKeyRequest()
+                .withIncludeValue(true)
                 .withApiKey(apiKeyId);
             GetApiKeyResult apiKey = gateway.getApiKey(getApiKeyRequest);
             LOG.info("API key: {}", apiKey.getValue());
@@ -138,7 +142,7 @@ public class ApiGatewayUtils {
     /**
      * Get usage logs from AWS api gateway for a given key id, start and end date
      */
-    public static List<GetUsageResult> getUsageLogs(String keyId, String startDate, String endDate) {
+    public static List<GetUsageResult> getUsageLogsForKey(String keyId, String startDate, String endDate) {
         long startTime = System.currentTimeMillis();
 
         AmazonApiGateway gateway = getAmazonApiGateway();
@@ -172,12 +176,12 @@ public class ApiGatewayUtils {
     /**
      * Get usage logs from AWS api gateway for a given list of api keys, start and end date
      */
-    public static List<GetUsageResult> getUsageLogs(List<String> apiKeyIds, String startDate, String endDate) {
+    public static List<GetUsageResult> getUsageLogsForKeys(List<String> apiKeyIds, String startDate, String endDate) {
         long startTime = System.currentTimeMillis();
 
         List<GetUsageResult> usageResults = new ArrayList<>();
         for (String apiKeyId : apiKeyIds) {
-            usageResults.addAll(getUsageLogs(apiKeyId, startDate, endDate));
+            usageResults.addAll(getUsageLogsForKey(apiKeyId, startDate, endDate));
         }
 
         LOG.debug("Retrieving usage logs for a list of api keys took {} msec", System.currentTimeMillis() - startTime);
