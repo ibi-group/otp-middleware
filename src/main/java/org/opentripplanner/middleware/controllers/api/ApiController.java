@@ -73,7 +73,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     @Override
     public void bind(final SparkSwagger restApi) {
         ApiEndpoint apiEndpoint = restApi.endpoint(
-            endpointPath(ROOT_ROUTE).withDescription("Interface for querying and managing '" + classToLowercase + "' entities."),
+            endpointPath(ROOT_ROUTE).withDescription(String.format("API_TEMPLATE:%s", clazz.getSimpleName())),
             (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase)
         );
         buildEndpoint(apiEndpoint);
@@ -103,53 +103,22 @@ public abstract class ApiController<T extends Model> implements Endpoint {
 
         baseEndpoint
             // Get multiple entities.
-            .get(path(ROOT_ROUTE)
-                    .withDescription("Gets a list of all '" + classToLowercase + "' entities.")
-                    .withResponseAsCollection(clazz),
-                    this::getMany, JsonUtils::toJson
-            )
+            .get(path(ROOT_ROUTE), this::getMany, JsonUtils::toJson)
 
             // Get one entity.
-            .get(path(ROOT_ROUTE + ID_PARAM)
-                    .withDescription("Returns a '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
-                    .withPathParam().withName("id").withDescription("The id of the entity to search.").and()
-                    // .withResponses(...) // FIXME: not implemented (requires source change).
-                    .withResponseType(clazz),
-                    this::getOne, JsonUtils::toJson
-            )
+            .get(path(ROOT_ROUTE + ID_PARAM), this::getOne, JsonUtils::toJson)
 
             // Options response for CORS
             .options(path(""), (req, res) -> "")
 
             // Create entity request
-            .post(path("")
-                    .withDescription("Creates a '" + classToLowercase + "' entity.")
-                    .withRequestType(clazz) // FIXME: Embedded Swagger UI doesn't work for this request. (Embed or link a more recent version?)
-                    .withResponseType(clazz),
-                    this::createOrUpdate, JsonUtils::toJson
-            )
+            .post(path(""), this::createOrUpdate, JsonUtils::toJson)
 
             // Update entity request
-            .put(path(ID_PARAM)
-                    .withDescription("Updates and returns the '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
-                    .withPathParam().withName("id").withDescription("The id of the entity to update.").and()
-                    // FIXME: The Swagger UI embedded in spark-swagger doesn't work for this request.
-                    //  (Embed or link a more recent Swagger UI version?)
-                    .withRequestType(clazz)
-                    // FIXME: `withResponses` is supposed to document the expected HTTP responses (200, 403, 404)...
-                    //  but that doesn't appear to be implemented in spark-swagger.
-                    // .withResponses(...)
-                    .withResponseType(clazz),
-                    this::createOrUpdate, JsonUtils::toJson
-            )
+            .put(path(ID_PARAM), this::createOrUpdate, JsonUtils::toJson)
 
             // Delete entity request
-            .delete(path(ID_PARAM)
-                    .withDescription("Deletes the '" + classToLowercase + "' entity with the specified id if it exists.")
-                    .withPathParam().withName("id").withDescription("The id of the entity to delete.").and()
-                    .withGenericResponse(),
-                    this::deleteOne, JsonUtils::toJson
-            );
+            .delete(path(ID_PARAM), this::deleteOne, JsonUtils::toJson);
     }
 
     /**

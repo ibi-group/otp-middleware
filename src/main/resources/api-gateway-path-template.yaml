@@ -1,0 +1,135 @@
+get:
+  tags:
+    - "{PATH}"
+  description: "Gets a list of all '{RETURN_TYPE}' entities."
+  produces:
+    - "application/json"
+  parameters:
+    - name: "Authorization"
+      in: "header"
+      required: false
+      type: "string"
+  responses:
+    200:
+      description: "successful operation"
+      schema:
+        $ref: "#/definitions/ArrayOf{RETURN_TYPE}"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+  security:
+    - api_key: []
+  x-amazon-apigateway-integration:
+    uri: "{HOST}/{PATH}"
+    responses:
+      default:
+        statusCode: "200"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+    requestParameters:
+      integration.request.header.Authorization: "method.request.header.Authorization"
+    passthroughBehavior: "when_no_match"
+    httpMethod: "GET"
+    type: "http"
+post:
+  tags:
+    - "{PATH}"
+  description: "Creates a 'user' entity."
+  consumes:
+    - "application/json"
+  produces:
+    - "application/json"
+  parameters:
+    - name: "Authorization"
+      in: "header"
+      required: false
+      type: "string"
+    - in: "body"
+      name: "Request body"
+      description: "An object representing the new {RETURN_TYPE} entity to add."
+      required: true
+      schema:
+        $ref: "#/definitions/{RETURN_TYPE}"
+  responses:
+    200:
+      description: "successful operation"
+      schema:
+        $ref: "#/definitions/{RETURN_TYPE}"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    400:
+      description: "Bad request"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    401:
+      description: "Could not authorize"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    403:
+      description: "Forbidden"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    500:
+      description: "Error processing the request"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+  security:
+    - api_key: []
+  x-amazon-apigateway-integration:
+    uri: "{HOST}/{PATH}"
+    responses:
+      200:
+        statusCode: "200"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      400:
+        statusCode: "400"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      401:
+        statusCode: "401"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      403:
+        statusCode: "403"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      5\d{2}:
+        statusCode: "500"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+    requestParameters:
+      integration.request.header.Authorization: "method.request.header.Authorization"
+    passthroughBehavior: "when_no_match"
+    httpMethod: "POST"
+    type: "http"
+options:
+  responses:
+    200:
+      description: "successful operation"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+        Access-Control-Allow-Methods:
+          type: "string"
+        Access-Control-Allow-Credentials:
+          type: "string"
+        Access-Control-Allow-Headers:
+          type: "string"
+  x-amazon-apigateway-integration:
+    uri: "{HOST}/{PATH}"
+    responses:
+      default:
+        statusCode: "200"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+          method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+    passthroughBehavior: "when_no_match"
+    httpMethod: "OPTIONS"
+    type: "http"

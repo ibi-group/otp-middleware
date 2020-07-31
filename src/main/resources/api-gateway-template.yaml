@@ -1,0 +1,198 @@
+info:
+  version: 0.0.3
+securityDefinitions:
+  api_key:
+    type: "apiKey"
+    name: "x-api-key"
+    in: "header"
+definitions:
+  ApiUser:
+    allOf:
+      - $ref: "#/definitions/AbstractUser"
+      - type: "object"
+        properties:
+          apiKeyIds:
+            type: "array"
+            description: "Holds the API keys assigned to the user."
+            items:
+              type: "string"
+          appName:
+            type: "string"
+            description: "The name of the application built by this user."
+          appPurpose:
+            type: "string"
+            description: "The purpose of the application built by this user."
+          appUrl:
+            type: "string"
+            description: "The URL of the application built by this user."
+          company:
+            type: "string"
+            description: "The company or organization that this user belongs to."
+          hasConsentedToTerms:
+            type: "boolean"
+            description: "Whether the user has consented to the terms of use."
+          name:
+            type: "string"
+            description: "The name of this user."
+  LogResult:
+    type: "object"
+    description: "Data structure for log response. The data is based on https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/AmazonWebServiceResult.html,\
+      \ with items having the fields outlined in https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/apigateway/model/GetUsageResult.html."
+  OtpUser:
+    allOf:
+      - $ref: "#/definitions/AbstractUser"
+      - type: "object"
+        properties:
+          hasConsentedToTerms:
+            type: "boolean"
+            description: "Whether the user has consented to the terms of use."
+          isPhoneNumberVerified:
+            type: "boolean"
+            description: "Whether the user's phone number has been verified (to be implemented)"
+          notificationChannel:
+            type: "string"
+            description: "Notification preferences for this user (\"email\", \"sms\"\
+            , \"none\")."
+          phoneNumber:
+            type: "string"
+            description: "Phone number for SMS notifications."
+          savedLocations:
+            type: "object"
+            description: "Locations that the user has saved."
+            properties: {}
+          storeTripHistory:
+            type: "boolean"
+            description: "Whether to store the user's trip history (user must opt in)."
+  AbstractUser:
+    type: "object"
+    required:
+      - "auth0UserId"
+      - "email"
+    properties:
+      email:
+        type: "string"
+        description: "Email address for contact. This must be unique in the collection."
+      auth0UserId:
+        type: "string"
+        description: "Auth0 user name."
+      isDataToolsUser:
+        type: "boolean"
+        description: "Determines whether this user has access to OTP Data Tools."
+    description: "An abstract user."
+  ArrayOfApiUser:
+    type: "array"
+    items:
+      $ref: "#/definitions/ApiUser"
+  ArrayOfLogResult:
+    type: "array"
+    items:
+      $ref: "#/definitions/LogResult"
+  ArrayOfOtpUser:
+    type: "array"
+    items:
+      $ref: "#/definitions/OtpUser"
+  ArrayOfEventSummary:
+    type: "array"
+    items:
+      $ref: "#/definitions/EventSummary"
+  EventSummary:
+    type: "object"
+    properties:
+      errorId:
+        type: "string"
+        description: "The error which this event is associated with."
+      exceptions:
+        type: "array"
+        description: "A list of EventException classes and messages associated with\
+          \ this event."
+        items:
+          type: "object"
+          properties: {}
+      received:
+        type: "string"
+        description: "The date/time Bugsnag received the event."
+      projectId:
+        type: "string"
+        description: "The project which this event is associated with."
+      projectName:
+        type: "string"
+        description: "The associated project name."
+      releaseState:
+        type: "string"
+        description: "Associated environment e.g. Test, Dev, Production."
+      htmlUrl:
+        type: "string"
+        description: "The dashboard URL for the project."
+    description: "Summary information for events logged in Bugsnag. For additional\
+      \ information: https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/create-an-event-data-requestData\
+      \ structure for log response. The data is based on https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/AmazonWebServiceResult.html,\
+      \ with items having the fields outlined in https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/apigateway/model/GetUsageResult.html."
+  AdminUser:
+    allOf:
+      - $ref: "#/definitions/AbstractUser"
+      - {}
+  ArrayOfMonitoredTrip:
+    type: "array"
+    items:
+      $ref: "#/definitions/MonitoredTrip"
+  ArrayOfAdminUser:
+    type: "array"
+    items:
+      $ref: "#/definitions/AdminUser"
+  MonitoredTrip:
+    type: "object"
+    properties:
+      userId:
+        type: "string"
+        description: "Mongo Id of user monitoring trip."
+      tripName:
+        type: "string"
+        description: "Name given to the trip by the user."
+      tripTime:
+        type: "string"
+        format: "HH:mm"
+        description: "The time at which the trip takes place, in format HH:mm."
+      leadTimeInMinutes:
+        type: "integer"
+        format: "int32"
+        description: "The number of minutes prior to a trip taking place that the\
+          \ status should be checked."
+      monday:
+        type: "boolean"
+        description: "Specify if the monitored trip should be checked on Mondays."
+      tuesday:
+        type: "boolean"
+        description: "Specify if the monitored trip should be checked on Tuesdays."
+      wednesday:
+        type: "boolean"
+        description: "Specify if the monitored trip should be checked on Wednesdays."
+      thursday:
+        type: "boolean"
+        description: "Specify if the monitored trip should be checked on Thursdays."
+      friday:
+        type: "boolean"
+        description: "Specify if the monitored trip should be checked on Fridays."
+      saturday:
+        type: "boolean"
+        description: "Specify if the monitored trip should be checked on Saturdays."
+      sunday:
+        type: "boolean"
+        description: "Specify if the monitored trip should be checked on Sundays."
+      excludeFederalHolidays:
+        type: "boolean"
+        description: "Specify if the monitored trip should be checked on a US federal\
+          \ holiday."
+      isActive:
+        type: "boolean"
+        description: "Specify if the monitored trip is active. If `true`, the trip\
+          \ will be checked. Defaults to `true`."
+      queryParams:
+        type: "string"
+        description: "OTP query parameters. Query parameters influencing trip."
+      itinerary:
+        type: "object"
+        description: "The OTP itinerary (not including real-time data) that should\
+          \ be monitored."
+        properties: {}
+    description: "A monitored trip represents a trip a user would like to receive\
+      \ notification on if affected by a delay and/or route change."
