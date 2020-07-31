@@ -1,0 +1,226 @@
+get:
+  tags:
+    - "{PATH}"
+  description: "Returns a '{RETURN_TYPE}' entity with the specified id, or 404 if not found."
+  produces:
+    - "application/json"
+  parameters:
+    - name: "Authorization"
+      in: "header"
+      required: false
+      type: "string"
+    - name: "id"
+      in: "path"
+      description: "The id of the entity to search."
+      required: true
+      type: "string"
+  responses:
+    200:
+      description: "successful operation"
+      schema:
+        $ref: "#/definitions/{RETURN_TYPE}"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+  security:
+    - api_key: []
+  x-amazon-apigateway-integration:
+    uri: "{HOST}/{PATH}/{id}"
+    responses:
+      default:
+        statusCode: "200"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+    requestParameters:
+      integration.request.header.Authorization: "method.request.header.Authorization"
+      integration.request.path.id: "method.request.path.id"
+    passthroughBehavior: "when_no_match"
+    httpMethod: "GET"
+    type: "http"
+put:
+  tags:
+    - "{PATH}"
+  description: "Updates and returns the '{RETURN_TYPE}' entity with the specified id, or\
+        \ 404 if not found."
+  consumes:
+    - "application/json"
+  produces:
+    - "application/json"
+  parameters:
+    - name: "Authorization"
+      in: "header"
+      required: false
+      type: "string"
+    - name: "id"
+      in: "path"
+      description: "The id of the entity to update."
+      required: true
+      type: "string"
+    - in: "body"
+      name: "OtpUser"
+      description: "Body object description"
+      required: true
+      schema:
+        $ref: "#/definitions/{RETURN_TYPE}"
+  responses:
+    200:
+      description: "successful operation"
+      schema:
+        $ref: "#/definitions/{RETURN_TYPE}"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    400:
+      description: "Bad request"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    401:
+      description: "Could not authorize"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    403:
+      description: "Forbidden"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    500:
+      description: "Error processing the request"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+  security:
+    - api_key: []
+  x-amazon-apigateway-integration:
+    uri: "{HOST}/{PATH}/{id}"
+    responses:
+      200:
+        statusCode: "200"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      400:
+        statusCode: "400"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      401:
+        statusCode: "401"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      403:
+        statusCode: "403"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      5\d{2}:
+        statusCode: "500"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+    requestParameters:
+      integration.request.header.Authorization: "method.request.header.Authorization"
+      integration.request.path.id: "method.request.path.id"
+    passthroughBehavior: "when_no_match"
+    httpMethod: "PUT"
+    type: "http"
+delete:
+  tags:
+    - "{PATH}"
+  description: "Deletes the '{RETURN_TYPE}' entity with the specified id if it exists."
+  parameters:
+    - name: "Authorization"
+      in: "header"
+      required: false
+      type: "string"
+    - name: "id"
+      in: "path"
+      description: "The id of the entity to delete."
+      required: true
+      type: "string"
+  responses:
+    200:
+      description: "successful operation"
+      schema:
+        $ref: "#/definitions/{RETURN_TYPE}"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    400:
+      description: "Bad request"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    401:
+      description: "Could not authorize"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    403:
+      description: "Forbidden"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+    500:
+      description: "Error processing the request"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+  security:
+    - api_key: []
+  x-amazon-apigateway-integration:
+    uri: "{HOST}/{PATH}/{id}"
+    responses:
+      200:
+        statusCode: "200"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      400:
+        statusCode: "400"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      401:
+        statusCode: "401"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      403:
+        statusCode: "403"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+      5\d{2}:
+        statusCode: "500"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+    requestParameters:
+      integration.request.header.Authorization: "method.request.header.Authorization"
+      integration.request.path.id: "method.request.path.id"
+    passthroughBehavior: "when_no_match"
+    httpMethod: "DELETE"
+    type: "http"
+options:
+  parameters:
+    - name: "id"
+      in: "path"
+      required: true
+      type: "string"
+  responses:
+    200:
+      description: "successful operation"
+      headers:
+        Access-Control-Allow-Origin:
+          type: "string"
+        Access-Control-Allow-Methods:
+          type: "string"
+        Access-Control-Allow-Headers:
+          type: "string"
+  x-amazon-apigateway-integration:
+    uri: "{HOST}/{PATH}/{id}"
+    responses:
+      default:
+        statusCode: "200"
+        responseParameters:
+          method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,OPTIONS,PUT'"
+          method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          method.response.header.Access-Control-Allow-Origin: "'*'"
+    requestParameters:
+      integration.request.path.id: "method.request.path.id"
+    passthroughBehavior: "when_no_match"
+    httpMethod: "OPTIONS"
+    type: "http"
