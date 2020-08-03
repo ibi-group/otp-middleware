@@ -10,7 +10,6 @@ import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
-import org.opentripplanner.middleware.controllers.api.ApiKeyManagementController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.BugsnagController;
 import org.opentripplanner.middleware.controllers.api.OtpUserController;
@@ -81,9 +80,6 @@ public class Main {
 
             // Add Bugsnag controller HTTP endpoints
             BugsnagController.register(spark, API_PREFIX);
-
-            // Add API key management controller HTTP endpoints
-            ApiKeyManagementController.register(spark, API_PREFIX);
         } catch (RuntimeException e) {
             LOG.error("Error initializing API controllers", e);
             System.exit(1);
