@@ -22,8 +22,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.spark.Main.hasConfigProperty;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.hasConfigProperty;
 
 /**
  * Manages all interactions with AWS api gateway.

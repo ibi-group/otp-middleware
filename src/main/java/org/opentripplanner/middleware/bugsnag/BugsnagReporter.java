@@ -6,7 +6,7 @@ import com.bugsnag.Severity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 
 /**
  * Bugsnag util for reporting errors to the project defined by the Bugsnag project notifier API key.
