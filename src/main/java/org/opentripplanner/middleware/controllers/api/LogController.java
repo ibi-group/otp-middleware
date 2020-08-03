@@ -1,29 +1,59 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.amazonaws.services.apigateway.model.GetUsageResult;
+import com.beerboy.ss.ApiEndpoint;
+import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
-import spark.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Sets up HTTP endpoints for getting logging and request summary information from AWS Cloudwatch and API Gateway.
  */
-public class LogController {
+public class LogController implements Endpoint {
+    private static final Logger LOG = LoggerFactory.getLogger(LogController.class);
+    private final Class clazz;
+    private final String ROOT_ROUTE;
+
+    public LogController(String apiPrefix) {
+        this.ROOT_ROUTE = apiPrefix + "secure/logs";
+        this.clazz = GetUsageResult.class;
+    }
 
     /**
-     * Register http endpoints with {@link spark.Spark} instance at the provided API prefix.
+     * This method is called on each object deriving from Endpoint by {@link SparkSwagger}
+     * to register endpoints and generate the swagger documentation skeleton.
+     * Here, we just register the GET method under the provided API prefix path to retrieve log usage.
+     * @param restApi The object to which to attach the documentation.
      */
-    public static void register(Service spark, String apiPrefix) {
-        spark.get(apiPrefix + "/secure/logs", LogController::getUsageLogs, JsonUtils::toJson);
+    @Override
+    public void bind(final SparkSwagger restApi) {
+        ApiEndpoint apiEndpoint = restApi.endpoint(
+            endpointPath(ROOT_ROUTE).withDescription(String.format("Log controller with type:%s", clazz)),
+            (q, a) -> LOG.info("Received request for 'logs' Rest API")
+        );
+        apiEndpoint
+            // Important: Unlike what the method name suggests,
+            // withResponseAsCollection does not generate an array of the specified class,
+            // although it generates the type for that class in the swagger output.
+            .get(path(ROOT_ROUTE).withResponseAsCollection(clazz),
+                LogController::getUsageLogs, JsonUtils::toJson)
+
+            // Options response for CORS
+            .options(path(""), (req, res) -> "");
     }
 
     /**

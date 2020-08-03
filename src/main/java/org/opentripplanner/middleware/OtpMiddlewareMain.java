@@ -64,18 +64,14 @@ public class OtpMiddlewareMain {
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
                     new MonitoredTripController(API_PREFIX),
-                    new OtpUserController(API_PREFIX)
+                    new OtpUserController(API_PREFIX),
+                    new LogController(API_PREFIX),
+                    new BugsnagController(API_PREFIX)
                     // TODO Add other models.
                 ))
                 .generateDoc();
 
             OtpRequestProcessor.register(spark);
-            // Add log controller HTTP endpoints
-            // TODO: We should determine whether we want to use Spark Swagger for these endpoints too.
-            LogController.register(spark, API_PREFIX);
-
-            // Add Bugsnag controller HTTP endpoints
-            BugsnagController.register(spark, API_PREFIX);
         } catch (RuntimeException e) {
             LOG.error("Error initializing API controllers", e);
             System.exit(1);
