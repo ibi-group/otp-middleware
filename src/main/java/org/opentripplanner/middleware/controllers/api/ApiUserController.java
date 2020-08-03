@@ -9,7 +9,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import spark.HaltException;
 import spark.Request;
 
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
