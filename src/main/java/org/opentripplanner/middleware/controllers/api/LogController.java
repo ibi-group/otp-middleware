@@ -42,7 +42,7 @@ public class LogController implements Endpoint {
     @Override
     public void bind(final SparkSwagger restApi) {
         ApiEndpoint apiEndpoint = restApi.endpoint(
-            endpointPath(ROOT_ROUTE).withDescription(String.format("Log controller with type:%s", clazz)),
+            endpointPath(ROOT_ROUTE).withDescription(String.format("API_TEMPLATE:%s", clazz.getSimpleName())),
             (q, a) -> LOG.info("Received request for 'logs' Rest API")
         );
         apiEndpoint

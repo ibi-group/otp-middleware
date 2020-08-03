@@ -49,14 +49,14 @@ public class BugsnagController implements Endpoint {
     @Override
     public void bind(final SparkSwagger restApi) {
         ApiEndpoint apiEndpoint = restApi.endpoint(
-            endpointPath(ROOT_ROUTE).withDescription(String.format("Bugsnag controller with type:%s", clazz)),
+            endpointPath(ROOT_ROUTE).withDescription(String.format("API_TEMPLATE:%s", clazz.getSimpleName())),
             (q, a) -> LOG.info("Received request for 'logs' Rest API")
         );
         apiEndpoint
             // Important: Unlike what the method name suggests,
             // withResponseAsCollection does not generate an array of the specified class,
             // although it generates the type for that class in the swagger output.
-            .get(path(ROOT_ROUTE).withResponseAsCollection(clazz),
+            .get(path(ROOT_ROUTE).withResponseAsCollection(BugsnagEvent.class),
                 BugsnagController::getEventSummary, JsonUtils::toJson)
 
             // Options response for CORS
