@@ -64,8 +64,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * This method is called on each object deriving from ApiController by {@link SparkSwagger}
-     * to register endpoints and generate the docs.
+     * This method is called on each object deriving from Endpoint by {@link SparkSwagger}
+     * to register endpoints and generate the swagger documentation skeleton.
      * In this method, we add the different API paths and methods (e.g. the CRUD methods)
      * to the restApi parameter for the applicable controller.
      * @param restApi The object to which to attach the documentation.
