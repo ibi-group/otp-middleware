@@ -344,7 +344,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Get a request parameter value.
      * This method will halt the request if paramName is not provided in the request.
      */
-    private String getRequiredParamFromRequest(Request req, String paramName) {
+    protected String getRequiredParamFromRequest(Request req, String paramName) {
         String paramValue = req.params(paramName);
         if (paramValue == null) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide parameter name.");

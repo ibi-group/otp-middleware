@@ -29,6 +29,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     private static final String DEFAULT_USAGE_PLAN_ID = getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
     private static final String API_KEY_PATH = "/apikey";
     private static final int API_KEY_LIMIT_PER_USER = 2;
+    private static final String API_KEY_ID_PARAM = "/:apiKeyId";
 
     public ApiUserController(String apiPrefix) {
         super(apiPrefix, Persistence.apiUsers, "secure/application");
@@ -43,20 +44,22 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         // by spark as 'GET user with id "fromtoken"', which we don't want).
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Reveal the actual API key value for the key ID
-            .get(path(ROOT_ROUTE + API_KEY_PATH)
-                    .withDescription("Gets the API key value for a given key ID")
+            .get(path(ROOT_ROUTE + API_KEY_PATH + API_KEY_ID_PARAM)
+                    .withDescription("Gets the API key value for a given api key ID")
+                    .withPathParam().withName("apiKeyId").withDescription("The api key ID of the API key.").and()
                     .withResponseType(GetApiKeyResult.class),
                 this::getApiKey, JsonUtils::toJson
             )
-            // Create API key.
-            .post(path(ROOT_ROUTE + API_KEY_PATH)
+            // Create API key
+            .post(path(API_KEY_PATH)
                     .withDescription("Creates API key for ApiUser")
                     .withResponseType(persistence.clazz),
                 this::createApiKeyForApiUser, JsonUtils::toJson
             )
             // Delete API key
-            .delete(path(ROOT_ROUTE + API_KEY_PATH)
+            .delete(path(API_KEY_PATH + API_KEY_ID_PARAM)
                     .withDescription("Deletes API key for ApiUser")
+                    .withPathParam().withName("apiKeyId").withDescription("The ID of the API key.").and()
                     .withResponseType(persistence.clazz),
                 this::deleteApiKeyForApiUser, JsonUtils::toJson
             )
@@ -73,13 +76,8 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     private GetApiKeyResult getApiKey(Request req, Response res) {
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
-        String apiKeyId = req.queryParamOrDefault("apiKeyId", null);
-        if (apiKeyId == null) {
-            logMessageAndHalt(req,
-                HttpStatus.BAD_REQUEST_400,
-                "An api key id is required",
-                null);
-        }
+        String apiKeyId = getRequiredParamFromRequest(req, "apiKeyId");
+
         // User must be admin or have the key in order to view key details.
         if (isUserAdmin(requestingUser) || userHasKey(requestingUser.apiUser, apiKeyId)) {
             return ApiGatewayUtils.getApiKey(apiKeyId);
@@ -132,7 +130,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     private ApiUser deleteApiKeyForApiUser(Request req, Response res) {
         ApiUser targetUser = getApiUser(req);
-        String apiKeyId = req.queryParamOrDefault("apiKeyId", null);
+        String apiKeyId = getRequiredParamFromRequest(req, "apiKeyId");
         if (apiKeyId == null) {
             logMessageAndHalt(req,
                 HttpStatus.BAD_REQUEST_400,

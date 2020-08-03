@@ -8,6 +8,7 @@ import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.slf4j.Logger;
@@ -109,8 +110,7 @@ public class Auth0Users {
                 .execute();
             if (users.size() > 0) return users.get(0);
         } catch (Auth0Exception e) {
-            LOG.error("Could not perform user search by email", e);
-            // FIXME: Bugsnag
+            BugsnagReporter.reportErrorToBugsnag("Could not perform user search by email", e);
             return null;
         }
         if (createIfNotExists) {
@@ -136,8 +136,7 @@ public class Auth0Users {
                 .sendVerificationEmail(userId, AUTH0_API_CLIENT)
                 .execute();
         } catch (Auth0Exception e) {
-            LOG.error("Could not send verification email", e);
-            // FIXME Bugsnag
+            BugsnagReporter.reportErrorToBugsnag("Could not send verification email", e);
             return null;
         }
     }
@@ -152,8 +151,7 @@ public class Auth0Users {
                 .get(auth0Id, null)
                 .execute();
         } catch (Auth0Exception e) {
-            LOG.error("Could not get user for ID", e);
-            // FIXME: Bugsnag
+            BugsnagReporter.reportErrorToBugsnag("Could not get user for ID", e);
             return null;
         }
     }

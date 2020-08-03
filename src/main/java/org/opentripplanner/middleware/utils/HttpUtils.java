@@ -20,7 +20,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
 
-    public enum REQUEST_METHOD {GET, POST}
+    public enum REQUEST_METHOD {GET, POST, DELETE}
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
 
@@ -64,6 +64,10 @@ public class HttpUtils {
 
         if (method.equals(REQUEST_METHOD.GET)) {
             httpRequestBuilder.GET();
+        }
+
+        if (method.equals(REQUEST_METHOD.DELETE)) {
+            httpRequestBuilder.DELETE();
         }
 
         if (method.equals(REQUEST_METHOD.POST)) {
