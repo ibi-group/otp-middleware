@@ -9,7 +9,7 @@ import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**

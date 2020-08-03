@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.opentripplanner.middleware.spark.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +28,8 @@ public abstract class OtpMiddlewareTest {
         LOG.info("OtpMiddlewareTest setup");
 
         LOG.info("Starting server");
-        Main.inTestEnvironment = true;
-        Main.main(new String[]{"configurations/test/env.yml"});
+        OtpMiddlewareMain.inTestEnvironment = true;
+        OtpMiddlewareMain.main(new String[]{"configurations/test/env.yml"});
         setUpIsDone = true;
     }
 }
