@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.otp;
 
-import com.mongodb.MongoException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
@@ -15,7 +14,7 @@ import spark.Request;
 import spark.Service;
 
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
-import static org.opentripplanner.middleware.spark.Main.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -117,40 +116,16 @@ public class OtpRequestProcessor {
                 TripRequest tripRequest = new TripRequest(profile.otpUser.id, batchId, request.queryParams("fromPlace"),
                     request.queryParams("toPlace"), request.queryString());
                 // only save trip summary if the trip request was saved
-                if (saveTripRequest(tripRequest)) {
+                boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
+                if (tripRequestSaved) {
                     TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan,
                         otpDispatcherResponse.response.error, tripRequest.id);
-                    saveTripSummary(tripSummary);
+                    Persistence.tripSummaries.create(tripSummary);
                 } else {
                     LOG.warn("Unable to save trip request, orphaned trip summary not saved");
                 }
             }
         }
         LOG.debug("Trip storage added {} ms", System.currentTimeMillis() - tripStorageStartTime);
-    }
-
-    /**
-     * Save trip request to Mongo and return if successful
-     */
-    private static boolean saveTripRequest(TripRequest tripRequest) {
-        boolean success = true;
-        try {
-            Persistence.tripRequests.create(tripRequest);
-        } catch (MongoException e) {
-            success = false;
-            LOG.error("Unable to save trip request: " + tripRequest, e);
-        }
-        return success;
-    }
-
-    /**
-     * Save trip summary to Mongo
-     */
-    private static void saveTripSummary(TripSummary tripSummary) {
-        try {
-            Persistence.tripSummaries.create(tripSummary);
-        } catch (MongoException e) {
-            LOG.error("Unable to save trip summary: " + tripSummary, e);
-        }
     }
 }

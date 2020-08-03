@@ -42,11 +42,14 @@ public class TripSummary extends Model {
     @Override
     public String toString() {
         return "TripSummary{" +
-                "fromPlace=" + fromPlace +
-                ", toPlace=" + toPlace +
-                ", error=" + error +
-                ", itineraries=" + itineraries +
-                ", tripRequestId='" + tripRequestId + '\'' +
-                '}';
+            "fromPlace=" + fromPlace +
+            ", toPlace=" + toPlace +
+            ", error=" + error +
+            ", itineraries=" + itineraries +
+            ", tripRequestId='" + tripRequestId + '\'' +
+            ", id='" + id + '\'' +
+            ", lastUpdated=" + lastUpdated +
+            ", dateCreated=" + dateCreated +
+            '}';
     }
 }
