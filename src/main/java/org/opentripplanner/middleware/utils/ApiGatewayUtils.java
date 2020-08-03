@@ -8,6 +8,8 @@ import com.amazonaws.services.apigateway.model.CreateApiKeyRequest;
 import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
 import com.amazonaws.services.apigateway.model.CreateUsagePlanKeyRequest;
 import com.amazonaws.services.apigateway.model.DeleteApiKeyRequest;
+import com.amazonaws.services.apigateway.model.GetApiKeyRequest;
+import com.amazonaws.services.apigateway.model.GetApiKeyResult;
 import com.amazonaws.services.apigateway.model.GetUsagePlanRequest;
 import com.amazonaws.services.apigateway.model.GetUsagePlanResult;
 import com.amazonaws.services.apigateway.model.GetUsagePlansRequest;
@@ -63,7 +65,7 @@ public class ApiGatewayUtils {
             CreateApiKeyRequest apiKeyRequest = new CreateApiKeyRequest();
             apiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
             apiKeyRequest
-                //FIXME I think this needs to include stage key(s). Not sure what impact that places on the calling
+                //FIXME This may need to include stage key(s). Not sure what impact that places on the calling
                 // services though?
                 .withName(userId)
                 .withCustomerId(userId)
@@ -96,19 +98,37 @@ public class ApiGatewayUtils {
     }
 
     /**
+     * Get API key (with key value) for the provided id.
+     */
+    public static GetApiKeyResult getApiKey(String apiKeyId) {
+        AmazonApiGateway gateway = getAmazonApiGateway();
+        try {
+            GetApiKeyRequest getApiKeyRequest = new GetApiKeyRequest()
+                .withIncludeValue(true)
+                .withApiKey(apiKeyId);
+            GetApiKeyResult apiKey = gateway.getApiKey(getApiKeyRequest);
+            LOG.info("API key: {}", apiKey.getValue());
+            return apiKey;
+        } catch (Exception e) {
+            LOG.error("Error encountered while fetching API Key", e);
+            return null;
+        }
+    }
+
+    /**
      * Delete api keys from AWS api gateway.
      */
-    public static void deleteApiKeys(List<String> apiKeyIds) {
+    public static boolean deleteApiKeys(List<String> apiKeyIds) {
         long startTime = System.currentTimeMillis();
-
         AmazonApiGateway gateway = getAmazonApiGateway();
-
         for (String apiKeyId : apiKeyIds) {
             try {
                 DeleteApiKeyRequest deleteApiKeyRequest = new DeleteApiKeyRequest();
                 deleteApiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
                 deleteApiKeyRequest.setApiKey(apiKeyId);
                 gateway.deleteApiKey(deleteApiKeyRequest);
+                LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
+                return true;
             } catch (NotFoundException e) {
                 LOG.warn("Api key ({}) not found, unable to delete", apiKeyId, e);
             } catch (Exception e) {
@@ -116,13 +136,13 @@ public class ApiGatewayUtils {
                 BugsnagReporter.reportErrorToBugsnag(message, e);
             }
         }
-        LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
+        return false;
     }
 
     /**
      * Get usage logs from AWS api gateway for a given key id, start and end date
      */
-    public static List<GetUsageResult> getUsageLogs(String keyId, String startDate, String endDate) {
+    public static List<GetUsageResult> getUsageLogsForKey(String keyId, String startDate, String endDate) {
         long startTime = System.currentTimeMillis();
 
         AmazonApiGateway gateway = getAmazonApiGateway();
@@ -156,12 +176,12 @@ public class ApiGatewayUtils {
     /**
      * Get usage logs from AWS api gateway for a given list of api keys, start and end date
      */
-    public static List<GetUsageResult> getUsageLogs(List<String> apiKeyIds, String startDate, String endDate) {
+    public static List<GetUsageResult> getUsageLogsForKeys(List<String> apiKeyIds, String startDate, String endDate) {
         long startTime = System.currentTimeMillis();
 
         List<GetUsageResult> usageResults = new ArrayList<>();
         for (String apiKeyId : apiKeyIds) {
-            usageResults.addAll(getUsageLogs(apiKeyId, startDate, endDate));
+            usageResults.addAll(getUsageLogsForKey(apiKeyId, startDate, endDate));
         }
 
         LOG.debug("Retrieving usage logs for a list of api keys took {} msec", System.currentTimeMillis() - startTime);
