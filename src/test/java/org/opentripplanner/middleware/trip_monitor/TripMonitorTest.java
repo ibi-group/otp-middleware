@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.trip_monitor;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -14,22 +15,31 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.trip_monitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
 
+/**
+ * This class contains tests for the {@link CheckMonitoredTrip} job and the {@link NotificationUtils} it uses.
+ */
 public class TripMonitorTest extends OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(TripMonitorTest.class);
     private static OtpUser user;
 
     @BeforeAll
     public static void setup() {
-        String email = "test@example.com";
-        String phone = "+15551234";
+        // Note: In order to run the notification tests, these values must be provided in in system
+        // environment variables, which can be defined in a run configuration in your IDE.
+        String email = System.getenv("TEST_TO_EMAIL");
+        // Phone must be in the form "+15551234" and must be verified first in order to send notifications
+        String phone = System.getenv("TEST_TO_PHONE");
         user = createUser(email, phone);
     }
 
@@ -42,8 +52,9 @@ public class TripMonitorTest extends OtpMiddlewareTest {
      * To run this trip, change the env.yml config values for OTP_SERVER
      * (and OTP_PLAN_ENDPOINT) to a valid OTP server.
      */
-    @Test @Disabled
+    @Test
     public void canMonitorTrip() {
+        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         // Submit a query to the OTP server.
         // From P&R to Downtown Orlando
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(
@@ -72,13 +83,16 @@ public class TripMonitorTest extends OtpMiddlewareTest {
         Persistence.monitoredTrips.removeById(monitoredTrip.id);
     }
 
-    @Test @Disabled
-    public void canSendEmailNotification() {
-        NotificationUtils.sendEmail(user.email, "Hi there", "This is the body", null);
+    @Test
+    public void canSendSparkpostEmailNotification() {
+        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        boolean success = NotificationUtils.sendEmail(user.email, "Hi there", "This is the body", null);
+        Assertions.assertTrue(success);
     }
 
-    @Test @Disabled
+    @Test
     public void canSendSendGridEmailNotification() {
+        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         boolean success = NotificationUtils.sendSendGridEmail(
             user.email,
             "Hi there",
@@ -88,13 +102,16 @@ public class TripMonitorTest extends OtpMiddlewareTest {
         Assertions.assertTrue(success);
     }
 
-    @Test @Disabled
-    public void canSendSmsNotification() {
+    @Test
+    public void canSendTwilioSmsNotification() {
+        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         // Note: toPhone must be verified.
         String messageId = NotificationUtils.sendSMS(
+            // Note: phone number is configured in setup method above.
             user.phoneNumber,
             "This is the ship that made the Kessel Run in fourteen parsecs?"
         );
+        LOG.info("Notification (id={}) successfully sent to {}", messageId, user.phoneNumber);
         Assertions.assertNotNull(messageId);
     }
 }

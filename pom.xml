@@ -213,6 +213,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Used to look up timezones based on lat/lng coordinates -->
+        <dependency>
+            <groupId>net.iakovlev</groupId>
+            <artifactId>timeshape</artifactId>
+            <version>2020a.10</version>
+        </dependency>
+
         <!-- Handles HTTP server -->
         <dependency>
             <groupId>com.sparkjava</groupId>

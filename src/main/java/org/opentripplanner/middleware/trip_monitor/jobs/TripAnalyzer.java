@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.trip_monitor.jobs;
 
 import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.trip_monitor.CheckMonitoredTrip;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,8 +68,12 @@ public class TripAnalyzer implements Runnable {
                 monitoredTripLocks.put(trip, true);
 
                 /////// BEGIN TRIP ANALYSIS
-                new CheckMonitoredTrip(trip).run();
-
+                try {
+                    new CheckMonitoredTrip(trip).run();
+                } catch (Exception e) {
+                    LOG.error("Error encountered while checking monitored trip", e);
+                    // FIXME bugsnag
+                }
                 LOG.info("Finished analyzing trip {}", trip);
 
                 // remove lock on trip

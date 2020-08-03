@@ -4,10 +4,15 @@ import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.middleware.otp.response.TripPlan;
+import org.opentripplanner.middleware.persistence.Persistence;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+
+import static com.mongodb.client.model.Filters.eq;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or
@@ -16,7 +21,7 @@ import java.time.LocalDate;
 public class MonitoredTrip extends Model {
 
     /**
-     * Mongo Id of user monitoring trip.
+     * Mongo Id of the {@link OtpUser} monitoring trip.
      */
     public String userId;
 
@@ -29,14 +34,15 @@ public class MonitoredTrip extends Model {
      * The time at which the trip takes place. This will be in the format HH:mm and is extracted (or provided separately)
      * to the date and time within the query parameters. The reasoning is so that it doesn't have to be extracted every
      * time the trip requires checking.
+     * TODO: Remove?
      */
     public String tripTime;
 
     /**
-     * Tracks information during the active monitoring of the trip (e.g., last alerts encountered, last time a check was
-     * made, etc.).
+     * From and to locations for the stored trip.
      */
-    public JourneyState journeyState = new JourneyState();
+    public Place from;
+    public Place to;
 
     /**
      * The number of minutes prior to a trip taking place that the status should be checked.
@@ -126,7 +132,10 @@ public class MonitoredTrip extends Model {
 
     public MonitoredTrip(OtpDispatcherResponse otpDispatcherResponse) {
         queryParams = otpDispatcherResponse.requestUri.getQuery();
-        itinerary = otpDispatcherResponse.getResponse().plan.itineraries.get(0);
+        TripPlan plan = otpDispatcherResponse.getResponse().plan;
+        itinerary = plan.itineraries.get(0);
+        from = plan.from;
+        to = plan.to;
         // FIXME: Should we clear any realtime alerts/info here? How to handle trips planned with realtime enabled?
         itinerary.clearAlerts();
         // FIXME: set trip time other params?
@@ -190,7 +199,14 @@ public class MonitoredTrip extends Model {
         return super.canBeManagedBy(user);
     }
 
-    public Itinerary lastItinerary() {
+    public JourneyState retrieveJourneyState() {
+        JourneyState journeyState = Persistence.journeyStates.getOneFiltered(eq("monitoredTripId", this.id));
+        if (journeyState == null) journeyState = new JourneyState();
+        return journeyState;
+    }
+
+    public Itinerary latestItinerary() {
+        JourneyState journeyState = retrieveJourneyState();
         if (journeyState.responses.size() > 0) {
             return journeyState.responses.get(0).plan.itineraries.get(0);
         }
@@ -198,8 +214,10 @@ public class MonitoredTrip extends Model {
     }
 
     public void addResponse(Response response) {
+        JourneyState journeyState = retrieveJourneyState();
         journeyState.lastChecked = System.currentTimeMillis();
         journeyState.responses.add(0, response);
+        Persistence.journeyStates.replace(journeyState.id, journeyState);
     }
 }
 
