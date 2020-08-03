@@ -101,6 +101,13 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
         // Other HTTP methods are not affected by this bug.
 
+        // Beware of these omissions in spark-swagger that affect the code below:
+        // - withResponses will not be processed (Only '200' responses will be generated).
+        //   See https://github.com/manusant/spark-swagger/blob/master/src/main/java/io/github/manusant/ss/Swagger.java#L518.
+        // - withResponseAsCollection generates the provided type, but not the type for the array/collection.
+        //   See https://github.com/manusant/spark-swagger/blob/master/src/main/java/io/github/manusant/ss/Swagger.java#L499.
+        // - fields from parent classes are ignored.
+
         baseEndpoint
             // Get multiple entities.
             .get(path(ROOT_ROUTE).withResponseAsCollection(clazz), this::getMany, JsonUtils::toJson)
