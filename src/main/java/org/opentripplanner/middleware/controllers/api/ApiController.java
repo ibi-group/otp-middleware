@@ -110,16 +110,24 @@ public abstract class ApiController<T extends Model> implements Endpoint {
 
         baseEndpoint
             // Get multiple entities.
-            .get(path(ROOT_ROUTE).withResponseAsCollection(clazz), this::getMany, JsonUtils::toJson)
+            .get(path(ROOT_ROUTE)
+                .withResponseAsCollection(clazz)
+                .withConsumes(List.of("application/json"))
+                .withProduces(List.of("application/json")),
+                this::getMany, JsonUtils::toJson)
 
             // Get one entity.
-            .get(path(ROOT_ROUTE + ID_PARAM).withResponseType(clazz), this::getOne, JsonUtils::toJson)
+            .get(path(ROOT_ROUTE + ID_PARAM)
+                .withPathParam().withName(ID_PARAM).and()
+                .withResponseType(clazz), this::getOne, JsonUtils::toJson)
 
             // Options response for CORS
             .options(path(""), (req, res) -> "")
 
             // Create entity request
-            .post(path("").withResponseType(clazz), this::createOrUpdate, JsonUtils::toJson)
+            .post(path("")
+                .withRequestType(clazz)
+                .withResponseType(clazz), this::createOrUpdate, JsonUtils::toJson)
 
             // Update entity request
             .put(path(ID_PARAM).withResponseType(clazz), this::createOrUpdate, JsonUtils::toJson)
