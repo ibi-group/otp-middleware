@@ -58,8 +58,10 @@ public class OtpRequestProcessor {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
             return null;
         }
-        // Get request path intended for OTP API by removing the proxy endpoint (/otp).
-        String otpRequestPath = request.uri().replace(OTP_PROXY_ENDPOINT, "");
+
+        // Remove the /otp portion of the middleware OTP proxy endpoint
+        String otpRequestPath = stripFirstOtpPathPrefix(request.uri());
+
         // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
@@ -74,6 +76,15 @@ public class OtpRequestProcessor {
         response.type("application/json");
         response.status(otpDispatcherResponse.statusCode);
         return otpDispatcherResponse.responseBody;
+    }
+
+    /**
+     * Get request path intended for OTP API by removing the proxy endpoint (/otp).
+     */
+    static String stripFirstOtpPathPrefix(String uri) {
+        // Only remove the first /otp proxy endpoint.
+        // The other one, if any, is part of the OTP router path on the OTP server.
+        return uri.replaceFirst(OTP_PROXY_ENDPOINT, "");
     }
 
     /**
