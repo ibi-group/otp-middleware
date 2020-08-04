@@ -16,15 +16,19 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.trip_monitor.jobs.CheckMonitoredTrip;
+import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 
+import static com.zenika.snapshotmatcher.SnapshotMatcher.matchesSnapshot;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
+import static org.opentripplanner.middleware.persistence.PersistenceUtil.getPlanResponse;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job and the {@link NotificationUtils} it uses.
@@ -78,9 +82,39 @@ public class TripMonitorTest extends OtpMiddlewareTest {
         simulatedResponse.setResponse(otpResponse);
         LOG.info("Created trip {}", monitoredTrip.id);
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
-        new CheckMonitoredTrip(monitoredTrip, simulatedResponse).run();
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, simulatedResponse);
+        checkMonitoredTrip.run();
+        // Assert that there is one notification generated during check.
+        // TODO: Improve assertions to use snapshots.
+        Assertions.assertEquals(checkMonitoredTrip.notifications.size(), 1);
         // Clear the created trip.
         Persistence.monitoredTrips.removeById(monitoredTrip.id);
+    }
+
+    @Test
+    public void willSkipMonitoredTripCheck() {
+        String mockResponse = FileUtils.getFileContents(
+            "src/test/resources/org/opentripplanner/middleware/planResponse.json"
+        );
+        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse);
+        MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
+        monitoredTrip.userId = user.id;
+        monitoredTrip.sunday = true;
+        monitoredTrip.tripName = "My Sunday drive";
+        Persistence.monitoredTrips.create(monitoredTrip);
+        // TODO: Set clock with TestUtils.clock: https://stackoverflow.com/questions/24491260/mocking-time-in-java-8s-java-time-api/29360514#29360514
+        // Should skip if today is not sunday. FIXME: Don't run this on a Sunday!
+        Assertions.assertTrue(CheckMonitoredTrip.shouldSkipMonitoredTripCheck(monitoredTrip));
+        //TODO:
+        // - Returns false for weekend trip when current time is on a weekday.
+        // - Returns false for weekday trip when current time is on a weekend.
+        // - Returns true if trip is starting in greater than 1 hr, but the last time checked was 2 hours ago
+        // - Returns false if trip is starting in greater than 1 hr, but the last time checked was 2 minutes ago
+        // - Returns false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
+        // - Returns true if trip is starting in 45 minutes and the last time checked was 2 minutes ago
+        // - Returns false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
+        // - Returns false if trip is starting in 10 minutes and the last time checked was 2 minutes ago
+        // - Returns true if trip has ended 3 minutes ago
     }
 
     @Test

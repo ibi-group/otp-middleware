@@ -9,14 +9,20 @@ public class TripMonitorNotification {
     public NotificationType type;
     public String body;
 
-    public static TripMonitorNotification createAlertNotification(Collection<LocalizedAlert> newAlerts, Collection<LocalizedAlert> resolvedAlerts) {
+    public static TripMonitorNotification createAlertNotification(
+        Collection<LocalizedAlert> newAlerts,
+        Collection<LocalizedAlert> resolvedAlerts)
+    {
         TripMonitorNotification notification = new TripMonitorNotification();
         notification.type = NotificationType.ALERT_FOUND;
         notification.body = bodyFromAlerts(newAlerts, resolvedAlerts);
         return notification;
     }
 
-    private static String bodyFromAlerts(Collection<LocalizedAlert> newAlerts, Collection<LocalizedAlert> resolvedAlerts) {
+    private static String bodyFromAlerts(
+        Collection<LocalizedAlert> newAlerts,
+        Collection<LocalizedAlert> resolvedAlerts)
+    {
         StringBuilder body = new StringBuilder();
         if (newAlerts != null && newAlerts.size() > 0) {
             // TODO: Improve message.

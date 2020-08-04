@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.models;
 
+import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
@@ -199,25 +200,48 @@ public class MonitoredTrip extends Model {
         return super.canBeManagedBy(user);
     }
 
+    private Bson tripIdFilter() {
+        return eq("monitoredTripId", this.id);
+    }
+
+    /**
+     * Get the journey state for this trip.
+     */
     public JourneyState retrieveJourneyState() {
-        JourneyState journeyState = Persistence.journeyStates.getOneFiltered(eq("monitoredTripId", this.id));
+        JourneyState journeyState = Persistence.journeyStates.getOneFiltered(tripIdFilter());
         if (journeyState == null) journeyState = new JourneyState();
         return journeyState;
     }
 
+    /**
+     * Get the latest itinerary that was tracked in the journey state.
+     */
     public Itinerary latestItinerary() {
         JourneyState journeyState = retrieveJourneyState();
         if (journeyState.responses.size() > 0) {
+            // FIXME: we need to be more intentional about which itinerary we are fetching from the response.
             return journeyState.responses.get(0).plan.itineraries.get(0);
         }
         return itinerary;
     }
 
+    /**
+     * Add OTP response to the trip's journey state.
+     */
     public void addResponse(Response response) {
         JourneyState journeyState = retrieveJourneyState();
         journeyState.lastChecked = System.currentTimeMillis();
+        // FIXME: we may need to be more selective about which itinerary we are storing from the response (e.g., clear
+        //  the unused itins).
         journeyState.responses.add(0, response);
         Persistence.journeyStates.replace(journeyState.id, journeyState);
+    }
+
+    /**
+     * Clear journey state for the trip.
+     */
+    public boolean clearJourneyState() {
+        return Persistence.journeyStates.removeFiltered(tripIdFilter());
     }
 }
 

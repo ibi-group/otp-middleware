@@ -29,6 +29,16 @@ public class OtpDispatcherResponse implements Serializable {
     }
 
     /**
+     * Constructor used only for testing.
+     */
+    public OtpDispatcherResponse(String otpResponse) {
+        requestUri = URI.create("http://test.com");
+        responseBody = otpResponse;
+        statusCode = 200;
+        LOG.debug("Response from OTP server: {}", toString());
+    }
+
+    /**
      * Status code. Status code returned with response from an OTP server.
      */
     public int statusCode;

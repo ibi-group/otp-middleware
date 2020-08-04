@@ -37,12 +37,16 @@ public class CheckMonitoredTrip implements Runnable {
      * This is only used during testing to inject a mock OTP response for comparison against a monitored trip.
      */
     private OtpDispatcherResponse injectedOtpResponseForTesting;
-    private final List<TripMonitorNotification> notifications = new ArrayList<>();
+    public final List<TripMonitorNotification> notifications = new ArrayList<>();
+    public boolean checkSkipped;
 
     public CheckMonitoredTrip(MonitoredTrip trip) {
         this.trip = trip;
     }
 
+    /**
+     * This constructor should only be used for testing when we need to inject a mock OTP response.
+     */
     public CheckMonitoredTrip(MonitoredTrip trip, OtpDispatcherResponse injectedOtpResponseForTesting) {
         this.trip = trip;
         this.injectedOtpResponseForTesting = injectedOtpResponseForTesting;
@@ -51,7 +55,8 @@ public class CheckMonitoredTrip implements Runnable {
     @Override
     public void run() {
         // Check if the trip check should be skipped (based on time, day of week, etc.)
-        if (shouldSkipMonitoredTripCheck(trip)) {
+        checkSkipped = shouldSkipMonitoredTripCheck(trip);
+        if (checkSkipped) {
             LOG.debug("Skipping check for trip: {}", trip.id);
             return;
         }
@@ -102,7 +107,7 @@ public class CheckMonitoredTrip implements Runnable {
         Set<LocalizedAlert> previousAlerts = new HashSet<>(latestItinerary.getAlerts());
         // Unseen alerts consists of all new alerts that we did not previously track.
         Set<LocalizedAlert> unseenAlerts = new HashSet<>(newAlerts);
-        unseenAlerts.addAll(previousAlerts);
+        unseenAlerts.removeAll(previousAlerts);
         // Resolved alerts consists of all previous alerts that no longer exist.
         Set<LocalizedAlert> resolvedAlerts = new HashSet<>(previousAlerts);
         resolvedAlerts.removeAll(newAlerts);
@@ -162,23 +167,47 @@ public class CheckMonitoredTrip implements Runnable {
         notifications.add(tripMonitorNotification);
     }
 
-    private boolean shouldSkipMonitoredTripCheck(MonitoredTrip trip) {
-        // Default to system's zone if one can't be inferred from trip destination.
-        ZoneId zoneId = ZoneId.systemDefault();
-        // TODO: Verify that this check doesn't cost anything.
-        Optional<ZoneId> zoneIdForCoordinates = getZoneIdForCoordinates(trip.to.lat, trip.to.lon);
-        if (zoneIdForCoordinates.isEmpty()) {
-            LOG.error("Could not find timezone for monitored trip: {}", trip.id);
+    /**
+     * Check whether monitored trip check should be skipped.
+     * TODO: Should this be a method on {@link MonitoredTrip}?
+     */
+    public static boolean shouldSkipMonitoredTripCheck(MonitoredTrip trip) {
+        ZoneId zoneId;
+        Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(trip.from.lat, trip.from.lon);
+        if (fromZoneId.isEmpty()) {
+            String message = String.format(
+                "Could not find coordinate's (lat=%.6f, lon=%.6f) timezone for monitored trip %s",
+                trip.from.lat,
+                trip.from.lon,
+                trip.id
+            );
+            throw new RuntimeException(message);
         } else {
-            zoneId = zoneIdForCoordinates.get();
+            zoneId = fromZoneId.get();
         }
-        // Get current time and trip time for comparison.
+        // Get current time and trip time (with the time offset to today) for comparison.
         LocalDate now = LocalDate.now(zoneId);
+        // TODO: Determine whether we want to monitor trips during the length of the trip.
+        //  If we do this, we will want to use the itinerary end time (and destination zoneId) to determine this time
+        //  value. Also, we may want to use the start time leading up to the trip (for periodic monitoring) and once
+        //  the trip has started, switch to some other monitoring interval while the trip is in progress.
         LocalDate tripTime = trip.itinerary.startTime.toInstant()
             .atZone(zoneId)
-            .toLocalDate();
-        // Skip check if trip is not active today or trip has already occurred.
-        if (!trip.isActiveOnDate(now) || tripTime.isAfter(now)) return true;
+            .toLocalDate()
+            // Offset the trip time to today's date.
+            .withYear(now.getYear())
+            .withMonth(now.getMonthValue())
+            .withDayOfMonth(now.getDayOfMonth());
+        // TODO: This check may eventually make use of endTime and be used in conjunction with tripInProgress check (see
+        //  above).
+        boolean tripHasEnded = tripTime.isAfter(now);
+        // Skip check if trip is not active today.
+        if (!trip.isActiveOnDate(now)) return true;
+        // If the trip has already occurred, clear the journey state.
+        // TODO: Decide whether this should happen at some other time.
+        if (tripHasEnded) {
+            trip.clearJourneyState();
+        }
         // If last check was more than an hour ago and trip doesn't occur until an hour from now, check trip.
         long millisSinceLastCheck = System.currentTimeMillis() - trip.retrieveJourneyState().lastChecked;
         long minutesSinceLastCheck = TimeUnit.MILLISECONDS.toMinutes(millisSinceLastCheck);
@@ -187,7 +216,7 @@ public class CheckMonitoredTrip implements Runnable {
         // If time until trip is greater than 60 minutes, we only need to check once every hour.
         if (minutesUntilTrip > 60) {
             // It's been about an hour since the last check. Do not skip.
-            if (minutesSinceLastCheck <= 60) {
+            if (minutesSinceLastCheck >= 60) {
                 return false;
             }
         } else {
@@ -195,8 +224,9 @@ public class CheckMonitoredTrip implements Runnable {
             if (minutesSinceLastCheck <= 15) {
                 return false;
             }
-            // During the last 5 minutes, check every minute (assuming the loop runs every minute).
-            if (minutesUntilTrip <= 5) {
+            // If the minutes until the trip is within the lead time, check the trip every minute
+            // (assuming the loop runs every minute).
+            if (minutesUntilTrip <= trip.leadTimeInMinutes) {
                 return false;
             }
         }
