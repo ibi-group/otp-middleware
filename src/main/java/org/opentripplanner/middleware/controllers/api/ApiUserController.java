@@ -1,11 +1,11 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
-import com.amazonaws.services.apigateway.model.GetApiKeyResult;
 import com.beerboy.ss.ApiEndpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
@@ -42,17 +42,20 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         // Add the user token route BEFORE the regular CRUD methods
         // (otherwise, /fromtoken requests would be considered
         // by spark as 'GET user with id "fromtoken"', which we don't want).
+        // TODO: Define usage plan id as an optional parameter under Spark Swagger. 'withParam' method does not register
+        //  the parameter and 'withPathParam' is not optional (even with 'withRequired(false))'. For the time being
+        //  appending '?usagePlanId=<id>' works.
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Reveal the actual API key value for the key ID
             .get(path(ROOT_ROUTE + API_KEY_PATH + API_KEY_ID_PARAM)
                     .withDescription("Gets the API key value for a given api key ID")
                     .withPathParam().withName("apiKeyId").withDescription("The api key ID of the API key.").and()
-                    .withResponseType(GetApiKeyResult.class),
+                    .withResponseType(ApiKey.class),
                 this::getApiKey, JsonUtils::toJson
             )
             // Create API key
             .post(path(API_KEY_PATH)
-                    .withDescription("Creates API key for ApiUser")
+                    .withDescription("Creates API key for ApiUser (with optional usagePlanId)")
                     .withResponseType(persistence.clazz),
                 this::createApiKeyForApiUser, JsonUtils::toJson
             )
@@ -74,13 +77,13 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     /**
      * HTTP endpoint that reveals the actual API Key value for a given apiKeyId.
      */
-    private GetApiKeyResult getApiKey(Request req, Response res) {
+    private ApiKey getApiKey(Request req, Response res) {
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         String apiKeyId = getRequiredParamFromRequest(req, "apiKeyId");
 
         // User must be admin or have the key in order to view key details.
         if (isUserAdmin(requestingUser) || userHasKey(requestingUser.apiUser, apiKeyId)) {
-            return ApiGatewayUtils.getApiKey(apiKeyId);
+            return new ApiKey(ApiGatewayUtils.getApiKey(apiKeyId));
         }
         logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "User not permitted to view API key.");
         return null;
@@ -89,8 +92,13 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     /**
      * Shorthand method to determine if an API user exists and has an API key.
      */
-    private boolean userHasKey(ApiUser user, String apiKey) {
-        return user != null && user.apiKeyIds.contains(apiKey);
+    private boolean userHasKey(ApiUser user, String apiKeyId) {
+        return user != null &&
+            user.apiKeys
+                .stream()
+                .filter(ApiKey -> apiKeyId.equals(ApiKey.id))
+                .findAny()
+                .orElse(null) != null;
     }
 
     /**
@@ -105,13 +113,13 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         // user should not be able to create an API key for any usage plan.
         if (!isUserAdmin(requestingUser)) {
             usagePlanId = DEFAULT_USAGE_PLAN_ID;
-            if (targetUser.apiKeyIds.size() >= API_KEY_LIMIT_PER_USER) {
+            if (targetUser.apiKeys.size() >= API_KEY_LIMIT_PER_USER) {
                 logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "User has reached API key limit.");
             }
         }
         // FIXME Should an Api user be limited to one api key per usage plan (and perhaps stage)?
-        CreateApiKeyResult apiKey = ApiGatewayUtils.createApiKey(targetUser.id, usagePlanId);
-        if (apiKey == null || apiKey.getId() == null) {
+        CreateApiKeyResult apiKeyResult = ApiGatewayUtils.createApiKey(targetUser.id, usagePlanId);
+        if (apiKeyResult == null || apiKeyResult.getId() == null) {
             logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
                 String.format("Unable to get AWS api key for user (%s)", targetUser),
@@ -120,7 +128,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             return null;
         }
         // Add new API key to user and persist
-        targetUser.apiKeyIds.add(apiKey.getId());
+        targetUser.apiKeys.add(new ApiKey(apiKeyResult));
         Persistence.apiUsers.replace(targetUser.id, targetUser);
         return Persistence.apiUsers.getById(targetUser.id);
     }
@@ -145,10 +153,10 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         }
 
         // Delete api key from AWS.
-        boolean success = ApiGatewayUtils.deleteApiKeys(Collections.singletonList(apiKeyId));
+        boolean success = ApiGatewayUtils.deleteApiKeys(Collections.singletonList(new ApiKey(apiKeyId)));
         if (success) {
             // Delete api key from user and persist
-            targetUser.apiKeyIds.remove(apiKeyId);
+            targetUser.apiKeys.remove(new ApiKey(apiKeyId));
             Persistence.apiUsers.replace(targetUser.id, targetUser);
             return Persistence.apiUsers.getById(targetUser.id);
         } else {
@@ -169,8 +177,8 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     @Override
     ApiUser preCreateHook(ApiUser user, Request req) {
-        CreateApiKeyResult apiKey = ApiGatewayUtils.createApiKey(user.id, DEFAULT_USAGE_PLAN_ID);
-        if (apiKey == null) {
+        CreateApiKeyResult apiKeyResult = ApiGatewayUtils.createApiKey(user.id, DEFAULT_USAGE_PLAN_ID);
+        if (apiKeyResult == null) {
             logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
                 String.format("Unable to get AWS api key for user %s", user),
@@ -178,12 +186,12 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         }
 
         // store api key id (not the actual api key)
-        user.apiKeyIds.add(apiKey.getId());
+        user.apiKeys.add(new ApiKey(apiKeyResult));
 
         try {
             return super.preCreateHook(user, req);
         } catch (HaltException e) {
-            ApiGatewayUtils.deleteApiKeys(user.apiKeyIds);
+            ApiGatewayUtils.deleteApiKeys(user.apiKeys);
             throw e;
         }
     }
@@ -194,7 +202,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     @Override
     boolean preDeleteHook(ApiUser user, Request req) {
-        ApiGatewayUtils.deleteApiKeys(user.apiKeyIds);
+        ApiGatewayUtils.deleteApiKeys(user.apiKeys);
         return true;
     }
 
