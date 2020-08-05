@@ -14,7 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -114,6 +116,9 @@ public class CheckMonitoredTrip implements Runnable {
         // If journey state is already tracking alerts from previous checks, see if they have changed.
         if (unseenAlerts.size() > 0 || resolvedAlerts.size() > 0) {
             enqueueNotification(TripMonitorNotification.createAlertNotification(unseenAlerts, resolvedAlerts));
+        } else {
+            // TODO: Change log level
+            LOG.info("No unseen/resolved alerts found for trip {}", trip.id);
         }
     }
 
@@ -128,7 +133,7 @@ public class CheckMonitoredTrip implements Runnable {
     private void sendNotification() {
         if (notifications.size() == 0) {
             // FIXME: Change log level
-            LOG.info("No notifications queued up. Skipping notify.");
+            LOG.info("No notifications queued for trip {}. Skipping notify.", trip.id);
             return;
         }
         OtpUser otpUser = Persistence.otpUsers.getById(trip.userId);
@@ -186,52 +191,77 @@ public class CheckMonitoredTrip implements Runnable {
             zoneId = fromZoneId.get();
         }
         // Get current time and trip time (with the time offset to today) for comparison.
-        LocalDate now = LocalDate.now(zoneId);
+        LocalDateTime now = LocalDateTime.now(zoneId);
         // TODO: Determine whether we want to monitor trips during the length of the trip.
         //  If we do this, we will want to use the itinerary end time (and destination zoneId) to determine this time
         //  value. Also, we may want to use the start time leading up to the trip (for periodic monitoring) and once
         //  the trip has started, switch to some other monitoring interval while the trip is in progress.
-        LocalDate tripTime = trip.itinerary.startTime.toInstant()
+        LocalDateTime tripTime = trip.itinerary.startTime.toInstant()
             .atZone(zoneId)
-            .toLocalDate()
+            .toLocalDateTime()
             // Offset the trip time to today's date.
             .withYear(now.getYear())
             .withMonth(now.getMonthValue())
             .withDayOfMonth(now.getDayOfMonth());
+        // TODO: Change log level.
+        LOG.info("Trip {} starts at {} (now={})", trip.id, tripTime.toString(), now.toString());
         // TODO: This check may eventually make use of endTime and be used in conjunction with tripInProgress check (see
         //  above).
-        boolean tripHasEnded = tripTime.isAfter(now);
+        boolean tripHasEnded = now.isAfter(tripTime);
         // Skip check if trip is not active today.
-        if (!trip.isActiveOnDate(now)) return true;
+        if (!trip.isActiveOnDate(now)) {
+            // TODO: Change log level.
+            LOG.info("Trip {} not active today.", trip.id);
+            return true;
+        }
         // If the trip has already occurred, clear the journey state.
         // TODO: Decide whether this should happen at some other time.
         if (tripHasEnded) {
+            // TODO: Change log level.
+            LOG.info("Trip {} has cleared.", trip.id);
             trip.clearJourneyState();
+            return true;
         }
         // If last check was more than an hour ago and trip doesn't occur until an hour from now, check trip.
         long millisSinceLastCheck = System.currentTimeMillis() - trip.retrieveJourneyState().lastChecked;
         long minutesSinceLastCheck = TimeUnit.MILLISECONDS.toMinutes(millisSinceLastCheck);
-        long minutesUntilTrip = Duration.between(tripTime.atStartOfDay(), now.atStartOfDay()).toMinutes();
+        long minutesUntilTrip = Duration.between(now, tripTime).toMinutes();
+        LOG.info("Trip {} starts in {} minutes", trip.id, minutesUntilTrip);
         // TODO: Refine these frequency intervals for monitor checks.
         // If time until trip is greater than 60 minutes, we only need to check once every hour.
         if (minutesUntilTrip > 60) {
             // It's been about an hour since the last check. Do not skip.
             if (minutesSinceLastCheck >= 60) {
+                // TODO: Change log level.
+                LOG.info("Trip {} not checked in at least an hour. Checking.", trip.id);
                 return false;
             }
         } else {
             // It's less than an hour until the trip time, start more frequent trip checks (about every 15 minutes).
-            if (minutesSinceLastCheck <= 15) {
+            if (minutesSinceLastCheck >= 15) {
+                // Last check was more than 15 minutes ago. Check. (approx. 4 checks per hour).
+                // TODO: Change log level.
+                LOG.info("Trip {} happening soon. Checking.", trip.id);
                 return false;
             }
             // If the minutes until the trip is within the lead time, check the trip every minute
             // (assuming the loop runs every minute).
+            // TODO: Should lead time just be used for notification time limit?
             if (minutesUntilTrip <= trip.leadTimeInMinutes) {
+                // TODO: Change log level.
+                LOG.info(
+                    "Trip {} happening within user's lead time ({} minutes). Checking every minute.",
+                    trip.id,
+                    trip.leadTimeInMinutes
+                );
                 return false;
             }
         }
-        // TODO: Check that journey state is not flagged?
+        // TODO: Check that journey state is not flagged
+        // TODO: Check last notification time.
         // Default to skipping check.
+        // TODO: Change log level.
+        LOG.info("Trip {} criteria not met to check. Skipping.", trip.id);
         return true;
     }
 }

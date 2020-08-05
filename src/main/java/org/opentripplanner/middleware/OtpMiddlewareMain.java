@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware;
 
 import com.beerboy.ss.SparkSwagger;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
@@ -34,9 +33,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public class OtpMiddlewareMain {
     private static final Logger LOG = LoggerFactory.getLogger(OtpMiddlewareMain.class);
-    private static final String DEFAULT_ENV = "configurations/default/env.yml";
     public static boolean inTestEnvironment;
-    private static JsonNode envConfig;
     private static final String API_PREFIX = "/api/";
 
     public static void main(String[] args) throws IOException {

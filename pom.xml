@@ -234,7 +234,14 @@
         <dependency>
             <groupId>com.sparkpost</groupId>
             <artifactId>sparkpost-lib</artifactId>
-            <version>0.15</version>
+            <version>0.22</version>
+        </dependency>
+
+        <!-- Used for logging -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
         </dependency>
 
         <!-- Used to send email notifications for users monitoring trips. TODO: decide between sendgrid/sparkpost -->

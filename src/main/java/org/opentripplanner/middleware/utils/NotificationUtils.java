@@ -76,7 +76,7 @@ public class NotificationUtils {
         try {
             Client client = new Client(SPARKPOST_KEY);
             Response response = client.sendMessage(FROM_EMAIL, toEmail, subject, text, html);
-            LOG.info(response.getResponseMessage());
+            LOG.info("Notification sent to {} status: {}", toEmail, response.getResponseMessage());
             return true;
             // TODO: Is there a more specific exception we're ok with here?
         } catch (Exception e) {

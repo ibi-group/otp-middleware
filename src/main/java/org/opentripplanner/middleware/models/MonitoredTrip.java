@@ -12,6 +12,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -159,7 +160,7 @@ public class MonitoredTrip extends Model {
         return this;
     }
 
-    public boolean isActiveOnDate(LocalDate date) {
+    public boolean isActiveOnDate(LocalDateTime date) {
         DayOfWeek dayOfWeek = date.getDayOfWeek();
         // TODO: Maybe we should just refactor DOW to be a list of ints (TIntList).
         return isActive &&
@@ -209,7 +210,11 @@ public class MonitoredTrip extends Model {
      */
     public JourneyState retrieveJourneyState() {
         JourneyState journeyState = Persistence.journeyStates.getOneFiltered(tripIdFilter());
-        if (journeyState == null) journeyState = new JourneyState();
+        // If journey state does not exist, create and persist.
+        if (journeyState == null) {
+            journeyState = new JourneyState(this);
+            Persistence.journeyStates.create(journeyState);
+        }
         return journeyState;
     }
 
@@ -242,6 +247,14 @@ public class MonitoredTrip extends Model {
      */
     public boolean clearJourneyState() {
         return Persistence.journeyStates.removeFiltered(tripIdFilter());
+    }
+
+    /**
+     * Clear real-time info from itinerary to store.
+     * FIXME: Do we need to clear more than the alerts?
+     */
+    public void clearRealtimeInfo() {
+        itinerary.clearAlerts();
     }
 }
 

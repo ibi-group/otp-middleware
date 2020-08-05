@@ -10,14 +10,30 @@ import java.util.List;
  * (e.g., last alerts encountered, last time a check was made, etc.).
  */
 public class JourneyState extends Model {
-
+    /**
+     * No-arg constructor for de-serialization.
+     */
     public JourneyState() {
     }
+
+    /**
+     * Main constructor to create journey state for associated {@link MonitoredTrip}.
+     */
+    public JourneyState(MonitoredTrip monitoredTrip) {
+        this.monitoredTripId = monitoredTrip.id;
+        this.userId = monitoredTrip.userId;
+    }
+
     /**
      * The {@link MonitoredTrip} id that this journey state is tracking.
      */
-
     public String monitoredTripId;
+
+    /**
+     * User ID for {@link OtpUser} that owns the {@link MonitoredTrip}.
+     */
+    private String userId;
+
     /**
      * Timestamp checking the last time a journey was checked.
      */

@@ -62,7 +62,7 @@ public class TripAnalyzer implements Runnable {
                     continue;
                 }
 
-                LOG.info("Analyzing trip {}", trip);
+                LOG.info("Analyzing trip {}", trip.id);
 
                 // place lock on trip
                 monitoredTripLocks.put(trip, true);
@@ -74,7 +74,7 @@ public class TripAnalyzer implements Runnable {
                     LOG.error("Error encountered while checking monitored trip", e);
                     // FIXME bugsnag
                 }
-                LOG.info("Finished analyzing trip {}", trip);
+                LOG.info("Finished analyzing trip {}", trip.id);
 
                 // remove lock on trip
                 monitoredTripLocks.remove(trip);
