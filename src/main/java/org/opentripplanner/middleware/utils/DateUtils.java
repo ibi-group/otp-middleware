@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
 import net.iakovlev.timeshape.TimeZoneEngine;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ public class DateUtils {
         try {
             return getDateFromString(paramValue, expectedDatePattern);
         } catch (DateTimeParseException e) {
-            LOG.error("Unable to parse {} : {}.", paramName, paramValue, e);
+            BugsnagReporter.reportErrorToBugsnag(String.format("Unable to parse date from %s", paramName), paramValue, e);
             throw e;
         }
     }
@@ -52,6 +53,7 @@ public class DateUtils {
         try {
             return LocalDate.parse(value, expectedDateFormat);
         } catch (DateTimeParseException e) {
+            BugsnagReporter.reportErrorToBugsnag("Unable to parse LocalDate", value, e);
             throw e;
         }
     }

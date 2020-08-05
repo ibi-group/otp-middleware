@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.opentripplanner.middleware.spark.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +31,7 @@ public abstract class OtpMiddlewareTest {
         LOG.info("OtpMiddlewareTest setup");
 
         LOG.info("Starting server");
-        Main.inTestEnvironment = true;
+        OtpMiddlewareMain.inTestEnvironment = true;
         // If in the e2e environment, use the secret env.yml file to start the server.
         // TODO: When ran on Travis CI, this file will automatically be setup.
         String[] args = getBooleanEnvVar("RUN_E2E")
@@ -45,7 +44,7 @@ public abstract class OtpMiddlewareTest {
                 throw new IOException(String.format("Required config file %s does not exist!", f.getName()));
             }
         }
-        Main.main(args);
+        OtpMiddlewareMain.main(args);
         setUpIsDone = true;
     }
 }

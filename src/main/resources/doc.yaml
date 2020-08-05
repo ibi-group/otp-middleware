@@ -1,0 +1,760 @@
+---
+swagger: "2.0"
+info:
+  description: "OpenTripPlanner Middleware API"
+  version: ""
+  title: "OTP Middleware"
+  termsOfService: ""
+  contact:
+    name: "IBI Group"
+    url: "https://github.com/ibi-group"
+    email: "transitdatasupport@ibigroup.com"
+  license:
+    name: "MIT License"
+    url: "https://opensource.org/licenses/MIT"
+host: "localhost:4567"
+basePath: "/"
+tags:
+- name: "api/admin/user"
+  description: "Interface for querying and managing 'adminuser' entities."
+- name: "api/secure/application"
+  description: "Interface for querying and managing 'apiuser' entities."
+- name: "api/secure/monitoredtrip"
+  description: "Interface for querying and managing 'monitoredtrip' entities."
+- name: "api/secure/user"
+  description: "Interface for querying and managing 'otpuser' entities."
+schemes:
+- "http"
+- "https"
+- "ws"
+- "wss"
+paths:
+  /api/admin/user:
+    get:
+      tags:
+      - "api/admin/user"
+      description: "Gets a list of all 'adminuser' entities."
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/AdminUser"
+    post:
+      tags:
+      - "api/admin/user"
+      description: "Creates a 'adminuser' entity."
+      parameters:
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/AdminUser"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/AdminUser"
+    options:
+      tags:
+      - "api/admin/user"
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+  /api/admin/user/{id}:
+    get:
+      tags:
+      - "api/admin/user"
+      description: "Returns a 'adminuser' entity with the specified id, or 404 if\
+        \ not found."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/AdminUser"
+    put:
+      tags:
+      - "api/admin/user"
+      description: "Updates and returns the 'adminuser' entity with the specified\
+        \ id, or 404 if not found."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/AdminUser"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/AdminUser"
+    delete:
+      tags:
+      - "api/admin/user"
+      description: "Deletes the 'adminuser' entity with the specified id if it exists."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestResponse"
+  /api/secure/application:
+    get:
+      tags:
+      - "api/secure/application"
+      description: "Gets a list of all 'apiuser' entities."
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiUser"
+    post:
+      tags:
+      - "api/secure/application"
+      description: "Creates a 'apiuser' entity."
+      parameters:
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/ApiUser"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiUser"
+    options:
+      tags:
+      - "api/secure/application"
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+  /api/secure/application/{id}:
+    get:
+      tags:
+      - "api/secure/application"
+      description: "Returns a 'apiuser' entity with the specified id, or 404 if not\
+        \ found."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiUser"
+    put:
+      tags:
+      - "api/secure/application"
+      description: "Updates and returns the 'apiuser' entity with the specified id,\
+        \ or 404 if not found."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/ApiUser"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiUser"
+    delete:
+      tags:
+      - "api/secure/application"
+      description: "Deletes the 'apiuser' entity with the specified id if it exists."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestResponse"
+  /api/secure/monitoredtrip:
+    get:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Gets a list of all 'monitoredtrip' entities."
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/MonitoredTrip"
+    post:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Creates a 'monitoredtrip' entity."
+      parameters:
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredTrip"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/MonitoredTrip"
+    options:
+      tags:
+      - "api/secure/monitoredtrip"
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+  /api/secure/monitoredtrip/{id}:
+    get:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Returns a 'monitoredtrip' entity with the specified id, or 404\
+        \ if not found."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/MonitoredTrip"
+    put:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Updates and returns the 'monitoredtrip' entity with the specified\
+        \ id, or 404 if not found."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredTrip"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/MonitoredTrip"
+    delete:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Deletes the 'monitoredtrip' entity with the specified id if it\
+        \ exists."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestResponse"
+  /api/secure/user/fromtoken:
+    get:
+      tags:
+      - "api/secure/user"
+      description: "Retrieves an OtpUser entity using an Auth0 access token passed\
+        \ in an Authorization header."
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/OtpUser"
+    options:
+      tags:
+      - "api/secure/user"
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+  /api/secure/user:
+    get:
+      tags:
+      - "api/secure/user"
+      description: "Gets a list of all 'otpuser' entities."
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/OtpUser"
+    post:
+      tags:
+      - "api/secure/user"
+      description: "Creates a 'otpuser' entity."
+      parameters:
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/OtpUser"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/OtpUser"
+    options:
+      tags:
+      - "api/secure/user"
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+  /api/secure/user/{id}:
+    get:
+      tags:
+      - "api/secure/user"
+      description: "Returns a 'otpuser' entity with the specified id, or 404 if not\
+        \ found."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/OtpUser"
+    put:
+      tags:
+      - "api/secure/user"
+      description: "Updates and returns the 'otpuser' entity with the specified id,\
+        \ or 404 if not found."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/OtpUser"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/OtpUser"
+    delete:
+      tags:
+      - "api/secure/user"
+      description: "Deletes the 'otpuser' entity with the specified id if it exists."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RestResponse"
+definitions:
+  AdminUser:
+    type: "object"
+  RestResponse:
+    type: "object"
+    properties:
+      statusCode:
+        type: "integer"
+        format: "int32"
+      body:
+        type: "string"
+  ApiUser:
+    type: "object"
+    properties:
+      apiKeyIds:
+        type: "array"
+        items:
+          type: "string"
+  Price:
+    type: "object"
+    properties:
+      currency:
+        $ref: "#/definitions/Currency"
+      cents:
+        type: "integer"
+        format: "int32"
+  Currency:
+    type: "object"
+    properties:
+      symbol:
+        type: "string"
+      currency:
+        type: "string"
+      defaultFractionDigits:
+        type: "integer"
+        format: "int32"
+      currencyCode:
+        type: "string"
+  Itinerary:
+    type: "object"
+    properties:
+      duration:
+        type: "integer"
+        format: "int64"
+      startTime:
+        type: "string"
+        format: "date"
+      endTime:
+        type: "string"
+        format: "date"
+      walkTime:
+        type: "integer"
+        format: "int64"
+      transitTime:
+        type: "integer"
+        format: "int64"
+      waitingTime:
+        type: "integer"
+        format: "int64"
+      walkDistance:
+        type: "number"
+        format: "double"
+      walkLimitExceeded:
+        type: "boolean"
+      elevationLost:
+        type: "number"
+        format: "double"
+      elevationGained:
+        type: "number"
+        format: "double"
+      transfers:
+        type: "integer"
+        format: "int32"
+      fare:
+        $ref: "#/definitions/FareWrapper"
+      legs:
+        type: "array"
+        items:
+          $ref: "#/definitions/Leg"
+  EncodedPolyline:
+    type: "object"
+    properties:
+      points:
+        type: "string"
+      levels:
+        type: "string"
+      length:
+        type: "integer"
+        format: "int32"
+  FareDetails:
+    type: "object"
+    properties:
+      regular:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
+      student:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
+      senior:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
+      tram:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
+      special:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
+      youth:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
+  FareComponent:
+    type: "object"
+    properties:
+      fareId:
+        type: "string"
+      price:
+        $ref: "#/definitions/Price"
+      routes:
+        type: "array"
+        items:
+          type: "string"
+  FareWrapper:
+    type: "object"
+    properties:
+      fare:
+        $ref: "#/definitions/Fare"
+      details:
+        $ref: "#/definitions/FareDetails"
+  Step:
+    type: "object"
+    properties:
+      distance:
+        type: "number"
+        format: "double"
+      relativeDirection:
+        type: "string"
+      streetName:
+        type: "string"
+      absoluteDirection:
+        type: "string"
+      stayOn:
+        type: "boolean"
+      area:
+        type: "boolean"
+      bogusName:
+        type: "boolean"
+      lon:
+        type: "number"
+        format: "double"
+      lat:
+        type: "number"
+        format: "double"
+  Place:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      lon:
+        type: "number"
+        format: "double"
+      lat:
+        type: "number"
+        format: "double"
+      departure:
+        type: "string"
+        format: "date"
+      orig:
+        type: "string"
+      vertexType:
+        type: "string"
+      stopId:
+        type: "string"
+      arrival:
+        type: "string"
+        format: "date"
+      stopIndex:
+        type: "integer"
+        format: "int32"
+      stopSequence:
+        type: "integer"
+        format: "int32"
+      stopCode:
+        type: "string"
+      platformCode:
+        type: "string"
+      zoneId:
+        type: "string"
+      bikeShareId:
+        type: "string"
+      networks:
+        type: "array"
+        items:
+          type: "string"
+      address:
+        type: "string"
+  MonitoredTrip:
+    type: "object"
+    properties:
+      userId:
+        type: "string"
+      tripName:
+        type: "string"
+      tripTime:
+        type: "string"
+      leadTimeInMinutes:
+        type: "integer"
+        format: "int32"
+      monday:
+        type: "boolean"
+      tuesday:
+        type: "boolean"
+      wednesday:
+        type: "boolean"
+      thursday:
+        type: "boolean"
+      friday:
+        type: "boolean"
+      saturday:
+        type: "boolean"
+      sunday:
+        type: "boolean"
+      excludeFederalHolidays:
+        type: "boolean"
+      isActive:
+        type: "boolean"
+      queryParams:
+        type: "string"
+      itinerary:
+        $ref: "#/definitions/Itinerary"
+  Fare:
+    type: "object"
+    properties:
+      regular:
+        $ref: "#/definitions/Price"
+      student:
+        $ref: "#/definitions/Price"
+      senior:
+        $ref: "#/definitions/Price"
+      tram:
+        $ref: "#/definitions/Price"
+      special:
+        $ref: "#/definitions/Price"
+      youth:
+        $ref: "#/definitions/Price"
+  Leg:
+    type: "object"
+    properties:
+      startTime:
+        type: "string"
+        format: "date"
+      endTime:
+        type: "string"
+        format: "date"
+      departureDelay:
+        type: "integer"
+        format: "int32"
+      arrivalDelay:
+        type: "integer"
+        format: "int32"
+      realTime:
+        type: "boolean"
+      distance:
+        type: "number"
+        format: "double"
+      pathway:
+        type: "boolean"
+      mode:
+        type: "string"
+      route:
+        type: "string"
+      interlineWithPreviousLeg:
+        type: "boolean"
+      from:
+        $ref: "#/definitions/Place"
+      to:
+        $ref: "#/definitions/Place"
+      legGeometry:
+        $ref: "#/definitions/EncodedPolyline"
+      rentedBike:
+        type: "boolean"
+      rentedCar:
+        type: "boolean"
+      rentedVehicle:
+        type: "boolean"
+      hailedCar:
+        type: "boolean"
+      transitLeg:
+        type: "boolean"
+      duration:
+        type: "number"
+        format: "double"
+      intermediateStops:
+        type: "array"
+        items:
+          $ref: "#/definitions/Place"
+      steps:
+        type: "array"
+        items:
+          $ref: "#/definitions/Step"
+      agencyName:
+        type: "string"
+      agencyUrl:
+        type: "string"
+      routeType:
+        type: "integer"
+        format: "int32"
+      routeId:
+        type: "string"
+      agencyId:
+        type: "string"
+      tripId:
+        type: "string"
+      serviceDate:
+        type: "string"
+      interStopGeometry:
+        type: "array"
+        items:
+          $ref: "#/definitions/EncodedPolyline"
+      routeShortName:
+        type: "string"
+      routeLongName:
+        type: "string"
+  UserLocation:
+    type: "object"
+    properties:
+      address:
+        type: "string"
+      icon:
+        type: "string"
+      lat:
+        type: "number"
+        format: "double"
+      lon:
+        type: "number"
+        format: "double"
+      name:
+        type: "string"
+      type:
+        type: "string"
+  OtpUser:
+    type: "object"
+    properties:
+      hasConsentedToTerms:
+        type: "boolean"
+      isPhoneNumberVerified:
+        type: "boolean"
+      notificationChannel:
+        type: "string"
+      phoneNumber:
+        type: "string"
+      savedLocations:
+        type: "array"
+        items:
+          $ref: "#/definitions/UserLocation"
+      storeTripHistory:
+        type: "boolean"
+externalDocs:
+  description: ""
+  url: ""

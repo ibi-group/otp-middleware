@@ -26,10 +26,11 @@ public abstract class AbstractUser extends Model {
     /** Whether a user is also a Data Tools user */
     public boolean isDataToolsUser;
     /**
-     * Set of permissions the user has.
+     * Set of permissions the user has (not persisted in Mongo).
      * TODO: fill out permissions more completely.
+     * FIXME: Persist permissions.
      */
-    public Set<Permission> permissions = new HashSet<>();
+    protected Set<Permission> permissions = new HashSet<>();
 
     /**
      * A requesting user can manage this user object if they are the same user (and not attempting to modify things like

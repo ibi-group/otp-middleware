@@ -8,6 +8,7 @@ import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,9 +87,15 @@ public class TypedPersistence<T extends Model> {
     /**
      * TODO maybe merge this with the other create implementation above, passing in the base object and the updates.
      */
-    public void create(T newObject) {
-        // TODO What happens if an object already exists with the same ID?
-        mongoCollection.insertOne(newObject);
+    public boolean create(T newObject) {
+        try {
+            // TODO What happens if an object already exists with the same ID?
+            mongoCollection.insertOne(newObject);
+            return true;
+        } catch (Exception e) {
+            BugsnagReporter.reportErrorToBugsnag("Unable to create new object", newObject, e);
+            return false;
+        }
     }
 
     public void createMany(List<T> newObjects) {
