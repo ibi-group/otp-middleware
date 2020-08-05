@@ -15,13 +15,16 @@ import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.otp.OtpRequestProcessor;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.trip_monitor.jobs.MonitorAllTripsJob;
 import org.opentripplanner.middleware.utils.ConfigUtils;
+import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -50,6 +53,16 @@ public class OtpMiddlewareMain {
 
         // Initialize Bugsnag in order to report application errors
         BugsnagReporter.initializeBugsnagErrorReporting();
+
+        // Schedule recurring Monitor All Trips Job.
+        // TODO: Determine whether this should go in some other process.
+        MonitorAllTripsJob monitorAllTripsJob = new MonitorAllTripsJob();
+        Scheduler.scheduleJob(
+            monitorAllTripsJob,
+            0,
+            1,
+            TimeUnit.MINUTES
+        );
     }
 
     private static void initializeHttpEndpoints() throws IOException {
