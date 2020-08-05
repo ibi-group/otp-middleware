@@ -27,16 +27,13 @@ public class TripSummary extends Model {
     }
 
     public TripSummary(TripPlan tripPlan, PlannerError error, String tripRequestId) {
-
         if (tripPlan != null) {
             this.fromPlace = tripPlan.from;
             this.toPlace = tripPlan.to;
             this.itineraries = tripPlan.itineraries;
         }
-
         this.error = error;
         this.tripRequestId = tripRequestId;
-
     }
 
     @Override

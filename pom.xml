@@ -213,11 +213,42 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Used to look up timezones based on lat/lng coordinates -->
+        <dependency>
+            <groupId>net.iakovlev</groupId>
+            <artifactId>timeshape</artifactId>
+            <version>2020a.10</version>
+        </dependency>
+
         <!-- Handles HTTP server -->
         <dependency>
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>
             <version>2.7.2</version>
+        </dependency>
+
+        <!--
+            Used to send email notifications for users monitoring trips.
+            TODO: decide between sendgrid/sparkpost
+        -->
+        <dependency>
+            <groupId>com.sparkpost</groupId>
+            <artifactId>sparkpost-lib</artifactId>
+            <version>0.15</version>
+        </dependency>
+
+        <!-- Used to send email notifications for users monitoring trips. TODO: decide between sendgrid/sparkpost -->
+        <dependency>
+            <groupId>com.sendgrid</groupId>
+            <artifactId>sendgrid-java</artifactId>
+            <version>4.0.1</version>
+        </dependency>
+
+        <!-- Used to send SMS notifications for users monitoring trips. -->
+        <dependency>
+            <groupId>com.twilio.sdk</groupId>
+            <artifactId>twilio</artifactId>
+            <version>7.54.1</version>
         </dependency>
 
         <!-- Web Socket client (can safely remove with WebSocketClient.java) -->

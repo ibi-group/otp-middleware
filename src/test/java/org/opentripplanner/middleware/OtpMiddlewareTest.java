@@ -5,7 +5,10 @@ import org.opentripplanner.middleware.spark.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
+
+import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 
 /**
  * This abstract class is used to start a test instance of otp-middleware that other tests can use to perform
@@ -14,7 +17,6 @@ import java.io.IOException;
 public abstract class OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(OtpMiddlewareTest.class);
     private static boolean setUpIsDone = false;
-    protected static Main otpMiddleware;
 
     /**
      * Set up the otp-middleware application in order for tests to run properly. If test classes that implement this
@@ -30,8 +32,20 @@ public abstract class OtpMiddlewareTest {
         LOG.info("OtpMiddlewareTest setup");
 
         LOG.info("Starting server");
-        otpMiddleware.inTestEnvironment = true;
-        otpMiddleware.main(new String[]{"configurations/test/env.yml"});
+        Main.inTestEnvironment = true;
+        // If in the e2e environment, use the secret env.yml file to start the server.
+        // TODO: When ran on Travis CI, this file will automatically be setup.
+        String[] args = getBooleanEnvVar("RUN_E2E")
+            ? new String[] { "configurations/default/env.yml"}
+            : new String[] { "configurations/test/env.yml"};
+        // Fail this test and others if the above files do not exist.
+        for (String arg : args) {
+            File f = new File(arg);
+            if (!f.exists() || f.isDirectory()) {
+                throw new IOException(String.format("Required config file %s does not exist!", f.getName()));
+            }
+        }
+        Main.main(args);
         setUpIsDone = true;
     }
 }

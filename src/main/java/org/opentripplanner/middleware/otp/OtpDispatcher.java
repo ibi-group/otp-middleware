@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.otp;
 
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +21,17 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
  */
 public class OtpDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcher.class);
-    private static String OTP_SERVER = getConfigPropertyAsText("OTP_SERVER");
+    /**
+     * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
+     * return OTP version info.
+     */
+    public static final String OTP_SERVER = getConfigPropertyAsText("OTP_SERVER");
+
+    /**
+     * Location of the plan endpoint (e.g., /plan).
+     */
+    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
+
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
     /**
@@ -29,6 +40,21 @@ public class OtpDispatcher {
     public static OtpDispatcherResponse sendOtpRequest(String query, String path) {
         LOG.debug("Original query string: {}", query);
         return sendOtpRequest(buildOtpUri(query, path));
+    }
+
+    /**
+     * Provides a response from the OTP server target service based on the query parameters provided.
+     */
+    public static OtpDispatcherResponse sendOtpPlanRequest(String query) {
+        LOG.debug("Original query string: {}", query);
+        return sendOtpRequest(buildOtpUri(query, OTP_PLAN_ENDPOINT));
+    }
+
+    /**
+     * Provides a response from the OTP server target service based on the query parameters provided.
+     */
+    public static OtpDispatcherResponse sendOtpPlanRequest(String from, String to) {
+        return sendOtpPlanRequest(String.format("fromPlace=%s&toPlace=%s", from, to));
     }
 
     /**
@@ -56,19 +82,14 @@ public class OtpDispatcher {
                 .GET()
                 .build();
 
+        // Get response from OTP
         OtpDispatcherResponse otpDispatcherResponse = null;
-
-        // get response from OTP
         try {
             HttpResponse<String> otpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
-            otpDispatcherResponse = new OtpDispatcherResponse();
-            otpDispatcherResponse.responseBody = otpResponse.body();
-            otpDispatcherResponse.statusCode = otpResponse.statusCode();
-            LOG.debug("Response from OTP server: {}", otpDispatcherResponse.toString());
+            otpDispatcherResponse = new OtpDispatcherResponse(otpResponse);
         } catch (InterruptedException | IOException e) {
             LOG.error("Error requesting OTP data", e);
         }
-
         return otpDispatcherResponse;
     }
 }

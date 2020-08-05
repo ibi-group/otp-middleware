@@ -67,16 +67,13 @@ public class TripAnalyzer implements Runnable {
                 // place lock on trip
                 monitoredTripLocks.put(trip, true);
 
-                // TODO check if trip should be analyzed
-
-                // TODO check for notifications that should be sent related to service alerts
-
-                // TODO check for notifications that should be sent related to delays
-
-                // TODO check for notifications that should be sent related to itinerary changes
-
-                // TODO send relevant notifications
-
+                /////// BEGIN TRIP ANALYSIS
+                try {
+                    new CheckMonitoredTrip(trip).run();
+                } catch (Exception e) {
+                    LOG.error("Error encountered while checking monitored trip", e);
+                    // FIXME bugsnag
+                }
                 LOG.info("Finished analyzing trip {}", trip);
 
                 // remove lock on trip
@@ -85,8 +82,7 @@ public class TripAnalyzer implements Runnable {
                 analyzerIsIdle.set(true);
             }
         } catch (InterruptedException e) {
-            LOG.error("error encountered while waiting during TripAnalyzer.");
-            e.printStackTrace();
+            LOG.error("error encountered while waiting during TripAnalyzer.", e);
         }
     }
 }

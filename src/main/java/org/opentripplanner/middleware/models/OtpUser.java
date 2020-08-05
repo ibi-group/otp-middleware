@@ -24,7 +24,10 @@ public class OtpUser extends AbstractUser {
      */
     public String notificationChannel;
 
-    /** Phone number for SMS notifications. */
+    /**
+     * Phone number for SMS notifications.
+     * Must include country code, e.g., +15551234
+     */
     public String phoneNumber;
 
     /** Locations that the user has saved. */

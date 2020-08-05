@@ -63,6 +63,7 @@ public class JsonUtils {
             return mapper.readValue(json, clazz);
         } catch (JsonProcessingException e) {
             LOG.error("Unable to get POJO from json for " + clazz.getSimpleName(), e);
+            // TODO: Bugsnag?
         }
         return null;
     }

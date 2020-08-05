@@ -16,6 +16,8 @@ public class Response {
     public HashMap<String, String> requestParameters;
     public TripPlan plan;
     public PlannerError error = null;
+    /** A timestamp representing when the response was received */
+    public long timestamp = System.currentTimeMillis();
 
     @Override
     public String toString() {
