@@ -45,7 +45,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>org.opentripplanner.middleware.spark.Main</mainClass>
+                            <mainClass>org.opentripplanner.middleware.OtpMiddlewareMain</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
