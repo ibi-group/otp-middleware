@@ -2,9 +2,7 @@ package org.opentripplanner.middleware.trip_monitor;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -23,12 +21,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 
-import static com.zenika.snapshotmatcher.SnapshotMatcher.matchesSnapshot;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.getPlanResponse;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job and the {@link NotificationUtils} it uses.
