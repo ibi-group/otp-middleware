@@ -47,8 +47,8 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Get user from token.
             .get(path(ROOT_ROUTE + TOKEN_PATH)
-                .withDescription("Retrieves an " + persistence.clazz.getSimpleName() + " entity using an Auth0 access token passed in an Authorization header.")
-                .withResponseType(persistence.clazz),
+                    .withDescription("Retrieves an " + persistence.clazz.getSimpleName() + " entity using an Auth0 access token passed in an Authorization header.")
+                    .withResponseType(persistence.clazz),
                 this::getUserFromRequest, JsonUtils::toJson
             )
 
@@ -58,7 +58,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
                 this::resendVerificationEmail, JsonUtils::toJson
             )
 
-            // Options response for CORS for the token path
+            // Options response for CORS for the token and verification email paths
             .options(path(TOKEN_PATH), (req, res) -> "")
             .options(path(VERIFICATION_EMAIL_PATH), (req, res) -> "");
 

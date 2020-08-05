@@ -36,7 +36,9 @@ public class Auth0Users {
     private static final String MANAGEMENT_API_VERSION = "v2";
     private static final String SEARCH_API_VERSION = "v3";
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
-    /** Cached API token so that we do not have to request a new one each time a Management API request is made. */
+    /**
+     * Cached API token so that we do not have to request a new one each time a Management API request is made.
+     */
     private static TokenCache cachedToken = null;
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Users.class);
     private static final AuthAPI authAPI = new AuthAPI(AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET);
@@ -142,21 +144,6 @@ public class Auth0Users {
     }
 
     /**
-     * Get a single Auth0 user for the provided Auth0 user ID.
-     */
-    public static User getUserByAuth0Id(String auth0Id) {
-        try {
-            return getManagementAPI()
-                .users()
-                .get(auth0Id, null)
-                .execute();
-        } catch (Auth0Exception e) {
-            BugsnagReporter.reportErrorToBugsnag("Could not get user for ID", e);
-            return null;
-        }
-    }
-
-    /**
      * Checks if an Auth0 user is a Data Tools user. Note: this may need to change once Data Tools user structure
      * changes.
      */
@@ -174,7 +161,9 @@ public class Auth0Users {
         return user;
     }
 
-    /** Wrapper method for getting a new instance of the Auth0 {@link ManagementAPI} */
+    /**
+     * Wrapper method for getting a new instance of the Auth0 {@link ManagementAPI}
+     */
     private static ManagementAPI getManagementAPI() {
         return new ManagementAPI(AUTH0_DOMAIN, getApiToken());
     }

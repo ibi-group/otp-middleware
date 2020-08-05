@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.HaltException;
 import spark.Request;
@@ -39,9 +40,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     protected void buildEndpoint(ApiEndpoint baseEndpoint) {
         LOG.info("Registering path {}.", ROOT_ROUTE + API_KEY_PATH);
 
-        // Add the user token route BEFORE the regular CRUD methods
-        // (otherwise, /fromtoken requests would be considered
-        // by spark as 'GET user with id "fromtoken"', which we don't want).
+        // Add the api key route BEFORE the regular CRUD methods
         // TODO: Define usage plan id as an optional parameter under Spark Swagger. 'withParam' method does not register
         //  the parameter and 'withPathParam' is not optional (even with 'withRequired(false))'. For the time being
         //  appending '?usagePlanId=<id>' works.
@@ -67,7 +66,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 this::deleteApiKeyForApiUser, JsonUtils::toJson
             )
 
-            // Options response for CORS for the token path
+            // Options response for CORS for the api key path
             .options(path(API_KEY_PATH), (req, res) -> "");
 
         // Add the regular CRUD methods after defining the /apikey route.
@@ -79,7 +78,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     private ApiKey getApiKey(Request req, Response res) {
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
-        String apiKeyId = getRequiredParamFromRequest(req, "apiKeyId");
+        String apiKeyId = HttpUtils.getRequiredParamFromRequest(req, "apiKeyId", false);
 
         // User must be admin or have the key in order to view key details.
         if (isUserAdmin(requestingUser) || userHasKey(requestingUser.apiUser, apiKeyId)) {
@@ -138,7 +137,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     private ApiUser deleteApiKeyForApiUser(Request req, Response res) {
         ApiUser targetUser = getApiUser(req);
-        String apiKeyId = getRequiredParamFromRequest(req, "apiKeyId");
+        String apiKeyId = HttpUtils.getRequiredParamFromRequest(req, "apiKeyId", false);
         if (apiKeyId == null) {
             logMessageAndHalt(req,
                 HttpStatus.BAD_REQUEST_400,
@@ -147,7 +146,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         }
         if (!userHasKey(targetUser, apiKeyId)) {
             logMessageAndHalt(req,
-                HttpStatus.BAD_REQUEST_400,
+                HttpStatus.NOT_FOUND_404,
                 String.format("User id (%s) does not have expected api key id (%s)", targetUser.id, apiKeyId),
                 null);
         }
@@ -224,7 +223,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             if (user == null) {
                 logMessageAndHalt(
                     req,
-                    HttpStatus.BAD_REQUEST_400,
+                    HttpStatus.NOT_FOUND_404,
                     String.format("No Api user matching the given user id (%s)", userId),
                     null
                 );
