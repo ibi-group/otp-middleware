@@ -114,7 +114,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // Get one entity.
             .get(path(ROOT_ROUTE + ID_PARAM)
                     .withDescription("Returns a '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
-                    .withPathParam().withName("id").withDescription("The id of the entity to search.").and()
+                    .withPathParam()
+                        .withName("id")
+                        .withRequired(true)
+                        .withDescription("The id of the entity to search.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
                     .withProduces(MIMETYPES_JSONONLY)
                     .withResponseType(clazz),
@@ -137,7 +140,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // Update entity request
             .put(path(ID_PARAM)
                     .withDescription("Updates and returns the '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
-                    .withPathParam().withName("id").withDescription("The id of the entity to update.").and()
+                    .withPathParam()
+                        .withName("id")
+                        .withRequired(true)
+                        .withDescription("The id of the entity to update.").and()
                     // FIXME: The Swagger UI embedded in spark-swagger doesn't work for this request.
                     //  (Embed or link a more recent Swagger UI version?)
                     .withConsumes(MIMETYPES_JSONONLY)
@@ -153,7 +159,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // Delete entity request
             .delete(path(ID_PARAM)
                     .withDescription("Deletes the '" + classToLowercase + "' entity with the specified id if it exists.")
-                    .withPathParam().withName("id").withDescription("The id of the entity to delete.").and()
+                    .withPathParam()
+                        .withName("id")
+                        .withRequired(true)
+                        .withDescription("The id of the entity to delete.").and()
                     .withGenericResponse(),
                     this::deleteOne, JsonUtils::toJson
             );
