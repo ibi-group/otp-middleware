@@ -67,7 +67,8 @@ public class OtpMiddlewareMain {
                     new MonitoredTripController(API_PREFIX),
                     new OtpUserController(API_PREFIX),
                     new LogController(API_PREFIX),
-                    new BugsnagController(API_PREFIX)
+                    new BugsnagController(API_PREFIX),
+                    new TripHistoryController(API_PREFIX)
                     // TODO Add other models.
                 ))
                 .generateDoc();
@@ -82,9 +83,6 @@ public class OtpMiddlewareMain {
                 logMessageAndHalt(request, HttpStatus.OK_200, "OK");
                 return "OK";
             });
-
-        // available at http://localhost:4567/api/secure/triprequests
-        spark.get(API_PREFIX + "/secure/triprequests", TripHistoryController::getTripRequests);
 
         spark.before(API_PREFIX + "/secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
