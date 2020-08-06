@@ -26,12 +26,10 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public class LogController implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(LogController.class);
-    private final Class clazz;
     private final String ROOT_ROUTE;
 
     public LogController(String apiPrefix) {
         this.ROOT_ROUTE = apiPrefix + "secure/logs";
-        this.clazz = GetUsageResult.class;
     }
 
     /**
@@ -53,7 +51,7 @@ public class LogController implements Endpoint {
                     .withProduces(MIMETYPES_JSONONLY)
                     // Note: unlike the name suggests, withResponseAsCollection does not generate an array
                     // as the return type for this method. (It does generate the type for that class nonetheless.)
-                    .withResponseAsCollection(clazz),
+                    .withResponseAsCollection(GetUsageResult.class),
                 LogController::getUsageLogs, JsonUtils::toJson)
 
             // Options response for CORS

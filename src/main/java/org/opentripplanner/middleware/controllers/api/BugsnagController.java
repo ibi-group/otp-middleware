@@ -33,11 +33,9 @@ public class BugsnagController implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(LogController.class);
 
     private final String ROOT_ROUTE;
-    private final Class clazz;
 
     public BugsnagController(String apiPrefix) {
         this.ROOT_ROUTE = apiPrefix + "admin/bugsnag/eventsummary";
-        this.clazz = BugsnagEvent.class;
     }
 
     /**
@@ -56,7 +54,7 @@ public class BugsnagController implements Endpoint {
                     .withProduces(MIMETYPES_JSONONLY)
                     // Note: unlike the name suggests, withResponseAsCollection does not generate an array
                     // as the return type for this method. (It does generate the type for that class nonetheless.)
-                    .withResponseAsCollection(clazz),
+                    .withResponseAsCollection(BugsnagEvent.class),
                 BugsnagController::getEventSummary, JsonUtils::toJson)
 
             // Options response for CORS
