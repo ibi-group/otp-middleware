@@ -112,7 +112,11 @@ public class OtpMiddlewareMain {
         // Return 404 for any API path that is not configured.
         // IMPORTANT: Any API paths must be registered before this halt.
         spark.get(API_PREFIX + "*", (request, response) -> {
-            logMessageAndHalt(request, 404, "No API route configured for this path.");
+            logMessageAndHalt(
+                request,
+                404,
+                String.format("No API route configured for path %s.", request.uri())
+            );
             return null;
         });
     }
