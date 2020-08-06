@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 import static org.opentripplanner.middleware.utils.YamlUtils.yamlMapper;
 
@@ -96,7 +97,7 @@ public class OtpMiddlewareMain {
 
         // Return "application/json" and set gzip header for all API routes.
         spark.before(API_PREFIX + "*", (request, response) -> {
-            response.type("application/json"); // Handled by API response documentation. If specified, "Try it out" feature in API docs fails.
+            response.type(APPLICATION_JSON); // Handled by API response documentation. If specified, "Try it out" feature in API docs fails.
             response.header("Content-Encoding", "gzip");
         });
 

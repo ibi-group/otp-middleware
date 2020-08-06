@@ -21,7 +21,6 @@ import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
 
 /**
@@ -68,8 +67,6 @@ public class BugsnagController implements Endpoint {
      * Get all Bugsnag events from Mongo and replace the project id with the project name and return
      */
     public static List<EventSummary> getEventSummary(Request request, Response response) {
-        response.type(APPLICATION_JSON);
-
         List<EventSummary> eventSummaries = new ArrayList<>();
         List<BugsnagEvent> events = bugsnagEvents.getAll();
 

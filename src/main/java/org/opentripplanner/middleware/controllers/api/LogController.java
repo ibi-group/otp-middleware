@@ -18,7 +18,6 @@ import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -66,8 +65,6 @@ public class LogController implements Endpoint {
      * plans. Defaults to the last 30 days for all API keys in the AWS account.
      */
     private static List<GetUsageResult> getUsageLogs(Request req, Response res) {
-        res.type(APPLICATION_JSON);
-
         // keyId param is optional (if not provided, all API keys will be included in response).
         String keyId = req.queryParamOrDefault("keyId", null);
         LocalDateTime now = LocalDateTime.now();
