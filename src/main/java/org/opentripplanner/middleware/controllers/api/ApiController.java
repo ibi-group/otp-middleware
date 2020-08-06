@@ -25,6 +25,7 @@ import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
+import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -65,7 +66,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
 
     /**
      * This method is called on each object deriving from Endpoint by {@link SparkSwagger}
-     * to register endpoints and generate the swagger documentation skeleton.
+     * to register endpoints and generate the swagger documentation.
      * In this method, we add the different API paths and methods (e.g. the CRUD methods)
      * to the restApi parameter for the applicable controller.
      * @param restApi The object to which to attach the documentation.
@@ -105,6 +106,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // Get multiple entities.
             .get(path(ROOT_ROUTE)
                     .withDescription("Gets a list of all '" + classToLowercase + "' entities.")
+                    .withProduces(MIMETYPES_JSONONLY)
                     .withResponseAsCollection(clazz),
                     this::getMany, JsonUtils::toJson
             )
@@ -114,6 +116,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     .withDescription("Returns a '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName("id").withDescription("The id of the entity to search.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
+                    .withProduces(MIMETYPES_JSONONLY)
                     .withResponseType(clazz),
                     this::getOne, JsonUtils::toJson
             )
@@ -124,7 +127,9 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // Create entity request
             .post(path("")
                     .withDescription("Creates a '" + classToLowercase + "' entity.")
+                    .withConsumes(MIMETYPES_JSONONLY)
                     .withRequestType(clazz) // FIXME: Embedded Swagger UI doesn't work for this request. (Embed or link a more recent version?)
+                    .withProduces(MIMETYPES_JSONONLY)
                     .withResponseType(clazz),
                     this::createOrUpdate, JsonUtils::toJson
             )
@@ -135,7 +140,9 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     .withPathParam().withName("id").withDescription("The id of the entity to update.").and()
                     // FIXME: The Swagger UI embedded in spark-swagger doesn't work for this request.
                     //  (Embed or link a more recent Swagger UI version?)
+                    .withConsumes(MIMETYPES_JSONONLY)
                     .withRequestType(clazz)
+                    .withProduces(MIMETYPES_JSONONLY)
                     // FIXME: `withResponses` is supposed to document the expected HTTP responses (200, 403, 404)...
                     //  but that doesn't appear to be implemented in spark-swagger.
                     // .withResponses(...)
