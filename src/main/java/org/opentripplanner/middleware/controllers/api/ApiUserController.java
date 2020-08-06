@@ -78,7 +78,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     private ApiKey getApiKey(Request req, Response res) {
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
-        String apiKeyId = HttpUtils.getRequiredParamFromRequest(req, "apiKeyId", false);
+        String apiKeyId = HttpUtils.getRequiredParamFromRequest(req, "apiKeyId");
 
         // User must be admin or have the key in order to view key details.
         if (isUserAdmin(requestingUser) || userHasKey(requestingUser.apiUser, apiKeyId)) {
@@ -137,7 +137,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     private ApiUser deleteApiKeyForApiUser(Request req, Response res) {
         ApiUser targetUser = getApiUser(req);
-        String apiKeyId = HttpUtils.getRequiredParamFromRequest(req, "apiKeyId", false);
+        String apiKeyId = HttpUtils.getRequiredParamFromRequest(req, "apiKeyId");
         if (apiKeyId == null) {
             logMessageAndHalt(req,
                 HttpStatus.BAD_REQUEST_400,

@@ -96,11 +96,24 @@ public class HttpUtils {
     /**
      * Get entity attribute value from request. If nulls are not allowed, halt with error message.
      */
-    public static String getRequiredParamFromRequest(Request req, String paramName, boolean allowNull) {
+    public static String getRequiredQueryParamFromRequest(Request req, String paramName, boolean allowNull) {
         String paramValue = req.queryParams(paramName);
         if (paramValue == null && !allowNull) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "The parameter name " + paramName + " must be provided.");
         }
         return paramValue;
     }
+
+    /**
+     * Get a request parameter value.
+     * This method will halt the request if paramName is not provided in the request.
+     */
+    public static String getRequiredParamFromRequest(Request req, String paramName) {
+        String paramValue = req.params(paramName);
+        if (paramValue == null) {
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide parameter name.");
+        }
+        return paramValue;
+    }
+
 }

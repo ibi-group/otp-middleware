@@ -341,6 +341,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Get entity ID from request.
      */
     private String getIdFromRequest(Request req) {
-        return HttpUtils.getRequiredParamFromRequest(req, "id", false);
+        return HttpUtils.getRequiredParamFromRequest(req, "id");
     }
 }
