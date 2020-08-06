@@ -21,6 +21,8 @@ import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
 
 /**
  * Responsible for providing the current set of Bugsnag events to the calling service
@@ -40,23 +42,22 @@ public class BugsnagController implements Endpoint {
     }
 
     /**
-     * This method is called on each object deriving from Endpoint by {@link SparkSwagger}
-     * to register endpoints and generate the swagger documentation skeleton.
-     * Here, we just register the GET method under the provided API prefix path
-     * to retrieve the bugsnag event summaries.
-     * @param restApi The object to which to attach the documentation.
+     * Register the API endpoint and GET resource to retrieve Bugsnag event summaries
+     * when spark-swagger calls this function with the target API instance.
      */
     @Override
     public void bind(final SparkSwagger restApi) {
         ApiEndpoint apiEndpoint = restApi.endpoint(
-            endpointPath(ROOT_ROUTE).withDescription(String.format("Bugsnag controller with type:%s", clazz)),
-            (q, a) -> LOG.info("Received request for 'logs' Rest API")
+            endpointPath(ROOT_ROUTE).withDescription("Interface for reporting and retrieving application errors using Bugsnag."),
+            (q, a) -> LOG.info("Received request for 'bugsnag' Rest API")
         );
         apiEndpoint
-            // Important: Unlike what the method name suggests,
-            // withResponseAsCollection does not generate an array of the specified class,
-            // although it generates the type for that class in the swagger output.
-            .get(path(ROOT_ROUTE).withResponseAsCollection(clazz),
+            .get(path(ROOT_ROUTE)
+                    .withDescription("Gets a list of all Bugsnag event summaries.")
+                    .withProduces(MIMETYPES_JSONONLY)
+                    // Note: unlike the name suggests, withResponseAsCollection does not generate an array
+                    // as the return type for this method. (It does generate the type for that class nonetheless.)
+                    .withResponseAsCollection(clazz),
                 BugsnagController::getEventSummary, JsonUtils::toJson)
 
             // Options response for CORS
@@ -67,7 +68,7 @@ public class BugsnagController implements Endpoint {
      * Get all Bugsnag events from Mongo and replace the project id with the project name and return
      */
     public static List<EventSummary> getEventSummary(Request request, Response response) {
-        response.type("application/json");
+        response.type(APPLICATION_JSON);
 
         List<EventSummary> eventSummaries = new ArrayList<>();
         List<BugsnagEvent> events = bugsnagEvents.getAll();

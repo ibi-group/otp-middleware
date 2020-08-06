@@ -18,6 +18,8 @@ import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -34,22 +36,25 @@ public class LogController implements Endpoint {
     }
 
     /**
-     * This method is called on each object deriving from Endpoint by {@link SparkSwagger}
-     * to register endpoints and generate the swagger documentation skeleton.
-     * Here, we just register the GET method under the provided API prefix path to retrieve log usage.
-     * @param restApi The object to which to attach the documentation.
+     * Register the API endpoint and GET resource to retrieve API usage logs
+     * when spark-swagger calls this function with the target API instance.
      */
     @Override
     public void bind(final SparkSwagger restApi) {
         ApiEndpoint apiEndpoint = restApi.endpoint(
-            endpointPath(ROOT_ROUTE).withDescription(String.format("Log controller with type:%s", clazz)),
+            endpointPath(ROOT_ROUTE).withDescription("Interface for retrieving API logs from AWS."),
             (q, a) -> LOG.info("Received request for 'logs' Rest API")
         );
         apiEndpoint
-            // Important: Unlike what the method name suggests,
-            // withResponseAsCollection does not generate an array of the specified class,
-            // although it generates the type for that class in the swagger output.
-            .get(path(ROOT_ROUTE).withResponseAsCollection(clazz),
+            .get(path(ROOT_ROUTE)
+                    .withDescription("Gets a list of all API usage logs.")
+                    .withQueryParam().withName("keyId").withDescription("If specified, restricts the search to the specified AWS API key ID.").and()
+                    .withQueryParam().withName("startDate").withDescription("If specified, the earliest date (format yyyy-MM-dd) for which usage logs are retrieved. Defaults to 30 days prior to the current dates").and()
+                    .withQueryParam().withName("endDate").withDescription("If specified, the latest date (format yyyy-MM-dd) for which usage logs are retrieved. Defaults to the current date.").and()
+                    .withProduces(MIMETYPES_JSONONLY)
+                    // Note: unlike the name suggests, withResponseAsCollection does not generate an array
+                    // as the return type for this method. (It does generate the type for that class nonetheless.)
+                    .withResponseAsCollection(clazz),
                 LogController::getUsageLogs, JsonUtils::toJson)
 
             // Options response for CORS
@@ -61,6 +66,8 @@ public class LogController implements Endpoint {
      * plans. Defaults to the last 30 days for all API keys in the AWS account.
      */
     private static List<GetUsageResult> getUsageLogs(Request req, Response res) {
+        res.type(APPLICATION_JSON);
+
         // keyId param is optional (if not provided, all API keys will be included in response).
         String keyId = req.queryParamOrDefault("keyId", null);
         LocalDateTime now = LocalDateTime.now();

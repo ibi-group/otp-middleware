@@ -14,8 +14,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
@@ -23,6 +25,8 @@ public class HttpUtils {
     public enum REQUEST_METHOD {GET, POST}
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
+
+    public static final List<String> MIMETYPES_JSONONLY = List.of(APPLICATION_JSON);
 
     /**
      * Constructs a url based on the uri.  endpoint and query params if provided
