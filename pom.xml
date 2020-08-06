@@ -258,13 +258,6 @@
             <version>7.54.1</version>
         </dependency>
 
-        <!-- Web Socket client (can safely remove with WebSocketClient.java) -->
-        <dependency>
-            <groupId>org.java-websocket</groupId>
-            <artifactId>Java-WebSocket</artifactId>
-            <version>1.5.0</version>
-        </dependency>
-
         <!-- Used for application database -->
         <dependency>
             <groupId>org.mongodb</groupId>
