@@ -95,7 +95,7 @@ public class OtpMiddlewareMain {
 
         // Return "application/json" and set gzip header for all API routes.
         spark.before(API_PREFIX + "*", (request, response) -> {
-            response.type(APPLICATION_JSON); // Handled by API response documentation. If specified, "Try it out" feature in API docs fails.
+            response.type(APPLICATION_JSON);
             response.header("Content-Encoding", "gzip");
         });
 

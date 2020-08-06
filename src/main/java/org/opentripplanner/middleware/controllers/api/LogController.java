@@ -59,7 +59,7 @@ public class LogController implements Endpoint {
                         .withDefaultValue("The current date")
                         .withDescription("If specified, the latest date (format yyyy-MM-dd) for which usage logs are retrieved.").and()
                     .withProduces(MIMETYPES_JSONONLY)
-                    // Note: unlike the name suggests, withResponseAsCollection does not generate an array
+                    // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
                     // as the return type for this method. (It does generate the type for that class nonetheless.)
                     .withResponseAsCollection(GetUsageResult.class),
                 LogController::getUsageLogs, JsonUtils::toJson)

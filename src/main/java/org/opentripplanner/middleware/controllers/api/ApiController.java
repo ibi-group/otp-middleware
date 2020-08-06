@@ -65,7 +65,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
-     * This method is called on each object deriving from Endpoint by {@link SparkSwagger}
+     * This method is called by {@link SparkSwagger} on each object that implements Endpoint
      * to register endpoints and generate the swagger documentation.
      * In this method, we add the different API paths and methods (e.g. the CRUD methods)
      * to the restApi parameter for the applicable controller.
@@ -107,6 +107,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             .get(path(ROOT_ROUTE)
                     .withDescription("Gets a list of all '" + classToLowercase + "' entities.")
                     .withProduces(MIMETYPES_JSONONLY)
+                    // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
+                    // as the return type for this method. (It does generate the type for that class nonetheless.)
                     .withResponseAsCollection(clazz),
                     this::getMany, JsonUtils::toJson
             )

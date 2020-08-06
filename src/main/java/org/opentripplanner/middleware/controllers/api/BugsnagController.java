@@ -52,7 +52,7 @@ public class BugsnagController implements Endpoint {
             .get(path(ROOT_ROUTE)
                     .withDescription("Gets a list of all Bugsnag event summaries.")
                     .withProduces(MIMETYPES_JSONONLY)
-                    // Note: unlike the name suggests, withResponseAsCollection does not generate an array
+                    // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
                     // as the return type for this method. (It does generate the type for that class nonetheless.)
                     .withResponseAsCollection(BugsnagEvent.class),
                 BugsnagController::getEventSummary, JsonUtils::toJson)
