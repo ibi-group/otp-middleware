@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Date;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -30,6 +31,18 @@ public class Place {
     public Set<String> networks;
     public String address;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Place place = (Place) o;
+        return lon.equals(place.lon) &&
+            lat.equals(place.lat) &&
+            Objects.equals(stopId, place.stopId);
+    }
 
-
+    @Override
+    public int hashCode() {
+        return Objects.hash(lon, lat, stopId);
+    }
 }

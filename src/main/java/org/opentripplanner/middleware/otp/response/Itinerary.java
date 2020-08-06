@@ -99,6 +99,22 @@ public class Itinerary {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Itinerary itinerary = (Itinerary) o;
+        return startTime.equals(itinerary.startTime) &&
+            endTime.equals(itinerary.endTime) &&
+            Objects.equals(transfers, itinerary.transfers) &&
+            legs.equals(itinerary.legs);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(startTime, endTime, transfers, legs);
+    }
+
+    @Override
     public String toString() {
         return "Itinerary{" +
             "duration=" + duration +

@@ -1,10 +1,13 @@
 package org.opentripplanner.middleware.trip_monitor.jobs;
 
+import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -13,17 +16,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static org.opentripplanner.middleware.trip_monitor.jobs.NotificationType.ARRIVAL_DELAY;
+import static org.opentripplanner.middleware.trip_monitor.jobs.NotificationType.DEPARTURE_DELAY;
 import static org.opentripplanner.middleware.utils.DateUtils.getZoneIdForCoordinates;
 
 /**
@@ -35,12 +37,32 @@ import static org.opentripplanner.middleware.utils.DateUtils.getZoneIdForCoordin
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
     private final MonitoredTrip trip;
+    public int departureDelay;
+    public int arrivalDelay;
     /**
      * This is only used during testing to inject a mock OTP response for comparison against a monitored trip.
      */
     private OtpDispatcherResponse injectedOtpResponseForTesting;
-    public final List<TripMonitorNotification> notifications = new ArrayList<>();
+    /**
+     * Used to track the various check trip notifications and construct email/SMS messages.
+     */
+    public final Set<TripMonitorNotification> notifications = new HashSet<>();
+    /**
+     * Whether the check was skipped based on time/date criteria.
+     */
     public boolean checkSkipped;
+    /**
+     * The index of the matching {@link Itinerary} as found in the OTP {@link Response} planned as part of this check.
+     */
+    public int matchingItineraryIndex = -1;
+    /**
+     * The OTP response planned to check the stored {@link Itinerary} against.
+     */
+    public Response otpResponse;
+    /**
+     * Tracks the time the notification was sent to the user.
+     */
+    public long notificationTimestamp = -1;
 
     public CheckMonitoredTrip(MonitoredTrip trip) {
         this.trip = trip;
@@ -73,40 +95,65 @@ public class CheckMonitoredTrip implements Runnable {
             LOG.error("Could not reach OTP server. status={}", otpDispatcherResponse.statusCode);
             return;
         }
-        Response otpResponse = otpDispatcherResponse.getResponse();
+        otpResponse = otpDispatcherResponse.getResponse();
+        // Check monitored trip.
+        runCheckLogic();
+        // Send notifications to user. This should happen before updating the journey state so that we can check the
+        // last notification sent.
+        sendNotifications();
+        // Update journey state.
+        JourneyState journeyState = trip.retrieveJourneyState();
+        journeyState.update(this);
+    }
+
+    private void runCheckLogic() {
         // TODO: Should null tripRequestId be fixed?
         // TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan, otpDispatcherResponse.response.error, null);
-        // TODO: BIG - Actually find the specific itinerary to compare against. For now, just choose the first itin.
-        Itinerary itinerary = findComparisonItinerary(trip, otpResponse);
-        // BEGIN CHECKS
-        // Check for notifications related to service alerts.
-        checkTripForNewAlerts(trip, itinerary);
-        // Check for notifications related to delays
-        checkTripForDelays(trip, itinerary);
-        // Check for notifications related to itinerary changes
-        checkTripForItineraryChanges(trip, itinerary);
-        // Add latest OTP response.
-        trip.addResponse(otpResponse);
-        Persistence.monitoredTrips.replace(trip.id, trip);
-        // Send notification to user.
-        sendNotification();
-    }
-
-    private Itinerary findComparisonItinerary(MonitoredTrip trip, Response otpResponse) {
-        // TODO: BIG - Find the specific itinerary to compare against. For now, just choose the first itin.
-        return otpResponse.plan.itineraries.get(0);
-    }
-
-    private void checkTripForNewAlerts(MonitoredTrip trip, Itinerary itinerary) {
-        if (!trip.notifyOnAlert) {
-            LOG.debug("Notify on alert is disabled for trip {}. Skipping check.", trip.id);
+        matchingItineraryIndex = findMatchingItineraryIndex(trip, otpResponse);
+        if (matchingItineraryIndex == -1) {
+            // No matching itinerary was found.
+            enqueueNotification(TripMonitorNotification.createItineraryNotFoundNotification());
+            // TODO: Try some fancy things to construct a matching itinerary (e.g., transit index?).
             return;
         }
-        // FIXME: Need to somehow determine how to get last itinerary from responses in journey state.
+        // Matching itinerary found in OTP response. Run real-time checks.
+        Itinerary itinerary = otpResponse.plan.itineraries.get(matchingItineraryIndex);
+        enqueueNotification(
+            // Check for notifications related to service alerts.
+            checkTripForNewAlerts(trip, itinerary),
+            // Check for notifications related to delays.
+            checkTripForDepartureDelay(trip, itinerary),
+            checkTripForArrivalDelay(trip, itinerary)
+        );
+    }
+
+    /**
+     * Find an itinerary from the OTP response that matches the monitored trip's stored itinerary.
+     */
+    private static int findMatchingItineraryIndex(MonitoredTrip trip, Response otpResponse) {
+        for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
+            // TODO: BIG - Find the specific itinerary to compare against. For now, use equals, but this may need some
+            //  tweaking
+            Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
+            if (candidateItinerary.equals(trip.itinerary)) return i;
+        }
+        LOG.warn("No comparison itinerary found in otp response for trip {}", trip.id);
+        return -1;
+    }
+
+    private TripMonitorNotification checkTripForNewAlerts(MonitoredTrip trip, Itinerary itinerary) {
+        if (!trip.notifyOnAlert) {
+            LOG.debug("Notify on alert is disabled for trip {}. Skipping check.", trip.id);
+            return null;
+        }
+        // Get the previously checked itinerary/alerts from the journey state (i.e., the response from OTP the most
+        // recent the trip check was run). If no check has yet been run, this will be null.
         Itinerary latestItinerary = trip.latestItinerary();
+        Set<LocalizedAlert> previousAlerts = latestItinerary == null
+            ? Collections.EMPTY_SET
+            : new HashSet<>(latestItinerary.getAlerts());
         // Construct set from new alerts.
         Set<LocalizedAlert> newAlerts = new HashSet<>(itinerary.getAlerts());
-        Set<LocalizedAlert> previousAlerts = new HashSet<>(latestItinerary.getAlerts());
         // Unseen alerts consists of all new alerts that we did not previously track.
         Set<LocalizedAlert> unseenAlerts = new HashSet<>(newAlerts);
         unseenAlerts.removeAll(previousAlerts);
@@ -115,22 +162,37 @@ public class CheckMonitoredTrip implements Runnable {
         resolvedAlerts.removeAll(newAlerts);
         // If journey state is already tracking alerts from previous checks, see if they have changed.
         if (unseenAlerts.size() > 0 || resolvedAlerts.size() > 0) {
-            enqueueNotification(TripMonitorNotification.createAlertNotification(unseenAlerts, resolvedAlerts));
-        } else {
-            // TODO: Change log level
-            LOG.info("No unseen/resolved alerts found for trip {}", trip.id);
+            return TripMonitorNotification.createAlertNotification(unseenAlerts, resolvedAlerts);
         }
+        // TODO: Change log level
+        LOG.info("No unseen/resolved alerts found for trip {}", trip.id);
+        return null;
     }
 
-    private void checkTripForDelays(MonitoredTrip trip, Itinerary itinerary) {
-        // TODO
+    private TripMonitorNotification checkTripForDepartureDelay(MonitoredTrip trip, Itinerary itinerary) {
+        long departureDelayInMinutes = TimeUnit.SECONDS.toMinutes(itinerary.legs.get(0).departureDelay);
+        // First leg departure time should not exceed variance allowed.
+        if (departureDelayInMinutes >= trip.departureVarianceMinutesThreshold) {
+            return TripMonitorNotification.createDelayNotification(departureDelayInMinutes, trip.departureVarianceMinutesThreshold, DEPARTURE_DELAY);
+        }
+        return null;
     }
 
-    private void checkTripForItineraryChanges(MonitoredTrip trip, Itinerary itinerary) {
-        // TODO
+    private TripMonitorNotification checkTripForArrivalDelay(MonitoredTrip trip, Itinerary itinerary) {
+        Leg lastLeg = itinerary.legs.get(itinerary.legs.size() - 1);
+        long arrivalDelayInMinutes = TimeUnit.SECONDS.toMinutes(lastLeg.arrivalDelay);
+        // Last leg arrival time should not exceed variance allowed.
+        if (arrivalDelayInMinutes >= trip.arrivalVarianceMinutesThreshold) {
+            return TripMonitorNotification.createDelayNotification(arrivalDelayInMinutes, trip.arrivalVarianceMinutesThreshold, ARRIVAL_DELAY);
+        }
+        return null;
     }
 
-    private void sendNotification() {
+    /**
+     * Compose a message for any enqueued notifications and send to {@link OtpUser} based on their notification
+     * preferences.
+     */
+    private void sendNotifications() {
         if (notifications.size() == 0) {
             // FIXME: Change log level
             LOG.info("No notifications queued for trip {}. Skipping notify.", trip.id);
@@ -142,6 +204,13 @@ public class CheckMonitoredTrip implements Runnable {
             // TODO: Bugsnag / delete monitored trip?
             return;
         }
+        // If the same notifications were just sent, there is no need to send the same notification.
+        // TODO: Should there be some time threshold check here based on lastNotificationTime?
+        JourneyState journeyState = trip.retrieveJourneyState();
+        if (journeyState.lastNotifications.containsAll(notifications)) {
+            LOG.info("Trip {} last notifications match current ones. Skipping notify.", trip.id);
+            return;
+        }
         String name = trip.tripName != null ? trip.tripName : "Trip for " + otpUser.email;
         String subject = name + " Notification";
         StringBuilder body = new StringBuilder();
@@ -150,14 +219,15 @@ public class CheckMonitoredTrip implements Runnable {
         }
         // FIXME: Change log level
         LOG.info("Sending notification '{}' to user {}", subject, trip.userId);
+        boolean success = false;
         // FIXME: This needs to be an enum.
         switch (otpUser.notificationChannel.toLowerCase()) {
             // TODO: Use medium-specific messages (i.e., SMS body should be shorter/phone friendly)
             case "sms":
-                NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString());
+                success = NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString()) != null;
                 break;
             case "email":
-                NotificationUtils.sendEmail(otpUser.email, subject, body.toString(), null);
+                success = NotificationUtils.sendEmail(otpUser.email, subject, body.toString(), null);
                 break;
             case "all":
                 NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString());
@@ -166,10 +236,15 @@ public class CheckMonitoredTrip implements Runnable {
             default:
                 break;
         }
+        if (success) {
+            notificationTimestamp = System.currentTimeMillis();
+        }
     }
 
-    private void enqueueNotification(TripMonitorNotification tripMonitorNotification) {
-        notifications.add(tripMonitorNotification);
+    private void enqueueNotification(TripMonitorNotification ...tripMonitorNotifications) {
+        for (TripMonitorNotification notification : tripMonitorNotifications) {
+            if (notification != null) notifications.add(notification);
+        }
     }
 
     /**
@@ -219,7 +294,8 @@ public class CheckMonitoredTrip implements Runnable {
         if (tripHasEnded) {
             // TODO: Change log level.
             LOG.info("Trip {} has cleared.", trip.id);
-            trip.clearJourneyState();
+            // TODO: If we decide to stack up responses, we should clear them here.
+//            trip.clearJourneyState();
             return true;
         }
         // If last check was more than an hour ago and trip doesn't occur until an hour from now, check trip.

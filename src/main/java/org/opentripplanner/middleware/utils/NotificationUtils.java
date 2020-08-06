@@ -9,6 +9,7 @@ import com.sendgrid.SendGrid;
 import com.sparkpost.Client;
 import com.sparkpost.model.responses.Response;
 import com.twilio.Twilio;
+import com.twilio.exception.AuthenticationException;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
 import org.slf4j.Logger;

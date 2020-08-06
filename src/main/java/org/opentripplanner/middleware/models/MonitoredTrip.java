@@ -219,31 +219,20 @@ public class MonitoredTrip extends Model {
     }
 
     /**
-     * Get the latest itinerary that was tracked in the journey state.
+     * Get the latest itinerary that was tracked in the journey state or null if the check has never been performed (or
+     * a matching itinerary has never been found).
      */
     public Itinerary latestItinerary() {
         JourneyState journeyState = retrieveJourneyState();
-        if (journeyState.responses.size() > 0) {
-            // FIXME: we need to be more intentional about which itinerary we are fetching from the response.
-            return journeyState.responses.get(0).plan.itineraries.get(0);
+        if (journeyState.lastResponse != null && journeyState.matchingItineraryIndex != -1) {
+            return journeyState.lastResponse.plan.itineraries.get(journeyState.matchingItineraryIndex);
         }
-        return itinerary;
+        // If there is no last response, return null.
+        return null;
     }
 
     /**
-     * Add OTP response to the trip's journey state.
-     */
-    public void addResponse(Response response) {
-        JourneyState journeyState = retrieveJourneyState();
-        journeyState.lastChecked = System.currentTimeMillis();
-        // FIXME: we may need to be more selective about which itinerary we are storing from the response (e.g., clear
-        //  the unused itins).
-        journeyState.responses.add(0, response);
-        Persistence.journeyStates.replace(journeyState.id, journeyState);
-    }
-
-    /**
-     * Clear journey state for the trip.
+     * Clear journey state for the trip. TODO: remove?
      */
     public boolean clearJourneyState() {
         return Persistence.journeyStates.removeFiltered(tripIdFilter());

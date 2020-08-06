@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Plan response, itinerary leg information. Produced using http://www.jsonschema2pojo.org/
@@ -45,4 +46,28 @@ public class Leg {
     public String routeShortName;
     public String routeLongName;
     public List<LocalizedAlert> alerts = null;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Leg leg = (Leg) o;
+        return startTime.equals(leg.startTime) &&
+            endTime.equals(leg.endTime) &&
+            mode.equals(leg.mode) &&
+            from.equals(leg.from) &&
+            to.equals(leg.to) &&
+            Objects.equals(rentedBike, leg.rentedBike) &&
+            Objects.equals(rentedCar, leg.rentedCar) &&
+            Objects.equals(rentedVehicle, leg.rentedVehicle) &&
+            Objects.equals(hailedCar, leg.hailedCar) &&
+            Objects.equals(transitLeg, leg.transitLeg) &&
+            Objects.equals(routeType, leg.routeType) &&
+            Objects.equals(routeId, leg.routeId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(startTime, endTime, mode, from, to, rentedBike, rentedCar, rentedVehicle, hailedCar, transitLeg, routeType, routeId);
+    }
 }
