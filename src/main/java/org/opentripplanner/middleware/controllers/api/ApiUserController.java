@@ -41,9 +41,6 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         LOG.info("Registering path {}.", ROOT_ROUTE + API_KEY_PATH);
 
         // Add the api key route BEFORE the regular CRUD methods
-        // TODO: Define usage plan id as an optional parameter under Spark Swagger. 'withParam' method does not register
-        //  the parameter and 'withPathParam' is not optional (even with 'withRequired(false))'. For the time being
-        //  appending '?usagePlanId=<id>' works.
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Reveal the actual API key value for the key ID
             .get(path(ROOT_ROUTE + API_KEY_PATH + API_KEY_ID_PARAM)
@@ -54,7 +51,9 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             )
             // Create API key
             .post(path(API_KEY_PATH)
-                    .withDescription("Creates API key for ApiUser (with optional usagePlanId)")
+                    .withDescription("Creates API key for ApiUser (with optional AWS API Gateway usage plan ID and user ID.)")
+                    .withQueryParam().withName("usagePlanId").withDescription("Optional AWS API Gateway usage plan ID.").and()
+                    .withQueryParam().withName("userId").withDescription("Optional user ID.").and()
                     .withResponseType(persistence.clazz),
                 this::createApiKeyForApiUser, JsonUtils::toJson
             )
@@ -62,12 +61,14 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             .delete(path(API_KEY_PATH + API_KEY_ID_PARAM)
                     .withDescription("Deletes API key for ApiUser")
                     .withPathParam().withName("apiKeyId").withDescription("The ID of the API key.").and()
+                    .withQueryParam().withName("userId").withDescription("Optional user ID.").and()
                     .withResponseType(persistence.clazz),
                 this::deleteApiKeyForApiUser, JsonUtils::toJson
             )
 
-            // Options response for CORS for the api key path
-            .options(path(API_KEY_PATH), (req, res) -> "");
+            // Options response for CORS for the api key paths
+            .options(path(API_KEY_PATH), (req, res) -> "")
+            .options(path(API_KEY_PATH + API_KEY_ID_PARAM), (req, res) -> "");
 
         // Add the regular CRUD methods after defining the /apikey route.
         super.buildEndpoint(modifiedEndpoint);
@@ -82,7 +83,11 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
 
         // User must be admin or have the key in order to view key details.
         if (isUserAdmin(requestingUser) || userHasKey(requestingUser.apiUser, apiKeyId)) {
-            return new ApiKey(ApiGatewayUtils.getApiKey(apiKeyId));
+            try {
+                return new ApiKey(ApiGatewayUtils.getApiKey(apiKeyId));
+            } catch (Exception e) {
+                logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Unknown API key ID.");
+            }
         }
         logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "User not permitted to view API key.");
         return null;
@@ -95,9 +100,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         return user != null &&
             user.apiKeys
                 .stream()
-                .filter(ApiKey -> apiKeyId.equals(ApiKey.id))
-                .findAny()
-                .orElse(null) != null;
+                .anyMatch(apiKey -> apiKeyId.equals(apiKey.id));
     }
 
     /**
@@ -121,7 +124,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         if (apiKeyResult == null || apiKeyResult.getId() == null) {
             logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
-                String.format("Unable to get AWS api key for user (%s)", targetUser),
+                String.format("Unable to get AWS API key for user id (%s) and usage plan id (%s)", targetUser.id, usagePlanId),
                 null
             );
             return null;
@@ -155,7 +158,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         boolean success = ApiGatewayUtils.deleteApiKeys(Collections.singletonList(new ApiKey(apiKeyId)));
         if (success) {
             // Delete api key from user and persist
-            targetUser.apiKeys.remove(new ApiKey(apiKeyId));
+            targetUser.apiKeys.removeIf(apiKey -> apiKeyId.equals(apiKey.id));
             Persistence.apiUsers.replace(targetUser.id, targetUser);
             return Persistence.apiUsers.getById(targetUser.id);
         } else {
@@ -235,7 +238,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 logMessageAndHalt(
                     req,
                     HttpStatus.BAD_REQUEST_400,
-                    "A user id is required to create an api key",
+                    "The userId is required to perform this operation.",
                     null
                 );
             }

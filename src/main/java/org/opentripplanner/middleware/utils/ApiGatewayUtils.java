@@ -107,12 +107,10 @@ public class ApiGatewayUtils {
             GetApiKeyRequest getApiKeyRequest = new GetApiKeyRequest()
                 .withIncludeValue(true)
                 .withApiKey(apiKeyId);
-            GetApiKeyResult apiKey = gateway.getApiKey(getApiKeyRequest);
-            LOG.info("API key: {}", apiKey.getValue());
-            return apiKey;
+            return gateway.getApiKey(getApiKeyRequest);
         } catch (Exception e) {
-            LOG.error("Error encountered while fetching API Key", e);
-            return null;
+            BugsnagReporter.reportErrorToBugsnag("Error encountered while fetching API Key", e);
+            throw e;
         }
     }
 
@@ -162,7 +160,7 @@ public class ApiGatewayUtils {
                 usageResults.add(gateway.getUsage(getUsageRequest));
             } catch (Exception e) {
                 // Catch any issues with bad request parameters (e.g., invalid API keyId or bad date format).
-                String message = String.format("Unable to get usage results for key id (%s) with start date (%s) and end date (%s)",
+                String message = String.format("Unable to get usage results for key id (%s) between (%s) and (%s)",
                     keyId,
                     startDate,
                     endDate);
@@ -170,7 +168,7 @@ public class ApiGatewayUtils {
                 throw e;
             }
         }
-        LOG.debug("Retrieving usage logs an api key took {} msec", System.currentTimeMillis() - startTime);
+        LOG.debug("Retrieving usage logs for api key took {} msec", System.currentTimeMillis() - startTime);
         return usageResults;
     }
 

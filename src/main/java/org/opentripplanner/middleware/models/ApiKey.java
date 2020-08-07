@@ -3,8 +3,6 @@ package org.opentripplanner.middleware.models;
 import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
 import com.amazonaws.services.apigateway.model.GetApiKeyResult;
 
-import java.util.Objects;
-
 /**
  * Represents a subset of an AWS API Gateway API key.
  */
@@ -55,18 +53,5 @@ public class ApiKey {
         id = apiKeyResult.getId();
         name = apiKeyResult.getName();
         value = apiKeyResult.getValue();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ApiKey apiKey = (ApiKey) o;
-        return id.equals(apiKey.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 }
