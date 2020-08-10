@@ -97,12 +97,12 @@ public class TripMonitorNotification extends Model {
     }
 
     private static String listFromAlerts(Set<LocalizedAlert> alerts, boolean resolved) {
-        return alerts.stream()
-            .map(alert -> alert.alertDescriptionText)
-            .collect(Collectors.joining(
-                String.format("\n-%s ", resolved ? " (RESOLVED)" : ""),
-                "\n",
-                ""
-            ));
+        StringBuilder list = new StringBuilder();
+        for (LocalizedAlert alert : alerts) {
+            list.append("\n- ");
+            if (resolved) list.append("(RESOLVED) ");
+            list.append(alert.alertDescriptionText);
+        }
+        return list.toString();
     }
 }
