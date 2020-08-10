@@ -53,13 +53,15 @@ public class OtpMiddlewareMain {
 
         // Schedule recurring Monitor All Trips Job.
         // TODO: Determine whether this should go in some other process.
-        MonitorAllTripsJob monitorAllTripsJob = new MonitorAllTripsJob();
-        Scheduler.scheduleJob(
-            monitorAllTripsJob,
-            0,
-            1,
-            TimeUnit.MINUTES
-        );
+        if (!inTestEnvironment) {
+            MonitorAllTripsJob monitorAllTripsJob = new MonitorAllTripsJob();
+            Scheduler.scheduleJob(
+                monitorAllTripsJob,
+                0,
+                1,
+                TimeUnit.MINUTES
+            );
+        }
     }
 
     private static void initializeHttpEndpoints() throws IOException {

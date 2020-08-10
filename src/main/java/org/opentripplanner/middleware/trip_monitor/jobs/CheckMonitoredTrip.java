@@ -141,7 +141,7 @@ public class CheckMonitoredTrip implements Runnable {
         return -1;
     }
 
-    private TripMonitorNotification checkTripForNewAlerts(MonitoredTrip trip, Itinerary itinerary) {
+    public static TripMonitorNotification checkTripForNewAlerts(MonitoredTrip trip, Itinerary itinerary) {
         if (!trip.notifyOnAlert) {
             LOG.debug("Notify on alert is disabled for trip {}. Skipping check.", trip.id);
             return null;
@@ -154,22 +154,15 @@ public class CheckMonitoredTrip implements Runnable {
             : new HashSet<>(latestItinerary.getAlerts());
         // Construct set from new alerts.
         Set<LocalizedAlert> newAlerts = new HashSet<>(itinerary.getAlerts());
-        // Unseen alerts consists of all new alerts that we did not previously track.
-        Set<LocalizedAlert> unseenAlerts = new HashSet<>(newAlerts);
-        unseenAlerts.removeAll(previousAlerts);
-        // Resolved alerts consists of all previous alerts that no longer exist.
-        Set<LocalizedAlert> resolvedAlerts = new HashSet<>(previousAlerts);
-        resolvedAlerts.removeAll(newAlerts);
-        // If journey state is already tracking alerts from previous checks, see if they have changed.
-        if (unseenAlerts.size() > 0 || resolvedAlerts.size() > 0) {
-            return TripMonitorNotification.createAlertNotification(unseenAlerts, resolvedAlerts);
+        TripMonitorNotification notification = TripMonitorNotification.createAlertNotification(previousAlerts, newAlerts);
+        if (notification == null) {
+            // TODO: Change log level
+            LOG.info("No unseen/resolved alerts found for trip {}", trip.id);
         }
-        // TODO: Change log level
-        LOG.info("No unseen/resolved alerts found for trip {}", trip.id);
-        return null;
+        return notification;
     }
 
-    private TripMonitorNotification checkTripForDepartureDelay(MonitoredTrip trip, Itinerary itinerary) {
+    public static TripMonitorNotification checkTripForDepartureDelay(MonitoredTrip trip, Itinerary itinerary) {
         long departureDelayInMinutes = TimeUnit.SECONDS.toMinutes(itinerary.legs.get(0).departureDelay);
         // First leg departure time should not exceed variance allowed.
         if (departureDelayInMinutes >= trip.departureVarianceMinutesThreshold) {
@@ -178,7 +171,7 @@ public class CheckMonitoredTrip implements Runnable {
         return null;
     }
 
-    private TripMonitorNotification checkTripForArrivalDelay(MonitoredTrip trip, Itinerary itinerary) {
+    public static TripMonitorNotification checkTripForArrivalDelay(MonitoredTrip trip, Itinerary itinerary) {
         Leg lastLeg = itinerary.legs.get(itinerary.legs.size() - 1);
         long arrivalDelayInMinutes = TimeUnit.SECONDS.toMinutes(lastLeg.arrivalDelay);
         // Last leg arrival time should not exceed variance allowed.
