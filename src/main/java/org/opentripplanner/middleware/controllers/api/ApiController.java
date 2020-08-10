@@ -38,7 +38,8 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * @param <T> One of the {@link Model} classes (extracted from {@link TypedPersistence})
  */
 public abstract class ApiController<T extends Model> implements Endpoint {
-    private static final String ID_PARAM = "/:id";
+    protected static final String ID_PARAM = "id";
+    protected static final String ID_PATH = "/:" + ID_PARAM;
     protected final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
     protected static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
@@ -110,12 +111,12 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             )
 
             // Get one entity.
-            .get(path(ROOT_ROUTE + ID_PARAM)
+            .get(path(ROOT_ROUTE + ID_PATH)
                     .withDescription("Returns a '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
-                    .withPathParam().withName("id").withDescription("The id of the entity to search.").and()
+                    .withPathParam().withName(ID_PARAM).withDescription("The id of the entity to search.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
                     .withResponseType(clazz),
-                    this::getOne, JsonUtils::toJson
+                    this::getEntityForId, JsonUtils::toJson
             )
 
             // Options response for CORS
@@ -130,9 +131,9 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             )
 
             // Update entity request
-            .put(path(ID_PARAM)
+            .put(path(ID_PATH)
                     .withDescription("Updates and returns the '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
-                    .withPathParam().withName("id").withDescription("The id of the entity to update.").and()
+                    .withPathParam().withName(ID_PARAM).withDescription("The id of the entity to update.").and()
                     // FIXME: The Swagger UI embedded in spark-swagger doesn't work for this request.
                     //  (Embed or link a more recent Swagger UI version?)
                     .withRequestType(clazz)
@@ -144,9 +145,9 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             )
 
             // Delete entity request
-            .delete(path(ID_PARAM)
+            .delete(path(ID_PATH)
                     .withDescription("Deletes the '" + classToLowercase + "' entity with the specified id if it exists.")
-                    .withPathParam().withName("id").withDescription("The id of the entity to delete.").and()
+                    .withPathParam().withName(ID_PARAM).withDescription("The id of the entity to delete.").and()
                     .withGenericResponse(),
                     this::deleteOne, JsonUtils::toJson
             );
@@ -190,7 +191,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * object. The default behaviour is defined in {@link Model#canBeManagedBy} and may have too restrictive access
      * (must be admin) than is desired.
      */
-    private T getOne(Request req, Response res) {
+    protected T getEntityForId(Request req, Response res) {
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         String id = getIdFromRequest(req);
         T object = getObjectForId(req, id);
@@ -280,11 +281,11 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         long startTime = System.currentTimeMillis();
         // Check if an update or create operation depending on presence of id param
         // This needs to be final because it is used in a lambda operation below.
-        if (req.params("id") == null && req.requestMethod().equals("PUT")) {
+        if (req.params(ID_PARAM) == null && req.requestMethod().equals("PUT")) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
         }
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
-        final boolean isCreating = req.params("id") == null;
+        final boolean isCreating = req.params(ID_PARAM) == null;
         // Save or update to database
         try {
             // Validate fields by deserializing into POJO.

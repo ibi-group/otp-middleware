@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.trip_monitor;
 
+import com.twilio.rest.verify.v2.service.Verification;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -29,7 +30,7 @@ import static org.opentripplanner.middleware.persistence.PersistenceUtil.createM
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
 
 /**
- * This class contains tests for the {@link CheckMonitoredTrip} job and the {@link NotificationUtils} it uses.
+ * This class contains tests for the {@link CheckMonitoredTrip} job.
  */
 public class TripMonitorTest extends OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(TripMonitorTest.class);
@@ -41,12 +42,7 @@ public class TripMonitorTest extends OtpMiddlewareTest {
 
     @BeforeAll
     public static void setup() {
-        // Note: In order to run the notification tests, these values must be provided in in system
-        // environment variables, which can be defined in a run configuration in your IDE.
-        String email = System.getenv("TEST_TO_EMAIL");
-        // Phone must be in the form "+15551234" and must be verified first in order to send notifications
-        String phone = System.getenv("TEST_TO_PHONE");
-        user = createUser(email, phone);
+        user = createUser("user@example.com");
     }
 
     @AfterAll
@@ -136,37 +132,5 @@ public class TripMonitorTest extends OtpMiddlewareTest {
         TripMonitorNotification notification = CheckMonitoredTrip.checkTripForDepartureDelay(monitoredTrip, simulatedItinerary);
         LOG.info("Departure delay notification (should be null): {}", notification);
         Assertions.assertNull(notification);
-    }
-
-    @Test
-    public void canSendSparkpostEmailNotification() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
-        boolean success = NotificationUtils.sendEmail(user.email, "Hi there", "This is the body", null);
-        Assertions.assertTrue(success);
-    }
-
-    @Test
-    public void canSendSendGridEmailNotification() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
-        boolean success = NotificationUtils.sendSendGridEmail(
-            user.email,
-            "Hi there",
-            "This is the body",
-            null
-        );
-        Assertions.assertTrue(success);
-    }
-
-    @Test
-    public void canSendTwilioSmsNotification() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
-        // Note: toPhone must be verified.
-        String messageId = NotificationUtils.sendSMS(
-            // Note: phone number is configured in setup method above.
-            user.phoneNumber,
-            "This is the ship that made the Kessel Run in fourteen parsecs?"
-        );
-        LOG.info("Notification (id={}) successfully sent to {}", messageId, user.phoneNumber);
-        Assertions.assertNotNull(messageId);
     }
 }

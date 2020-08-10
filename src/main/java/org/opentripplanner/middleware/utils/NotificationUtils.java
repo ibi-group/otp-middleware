@@ -9,8 +9,10 @@ import com.sendgrid.SendGrid;
 import com.sparkpost.Client;
 import com.sparkpost.model.responses.Response;
 import com.twilio.Twilio;
-import com.twilio.exception.AuthenticationException;
 import com.twilio.rest.api.v2010.account.Message;
+import com.twilio.rest.verify.v2.service.Verification;
+import com.twilio.rest.verify.v2.service.VerificationCheck;
+import com.twilio.rest.verify.v2.service.VerificationCreator;
 import com.twilio.type.PhoneNumber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +32,7 @@ public class NotificationUtils {
     // Find your Account Sid and Token at https://twilio.com/user/account
     public static final String TWILIO_ACCOUNT_SID = getConfigPropertyAsText("TWILIO_ACCOUNT_SID");
     public static final String TWILIO_AUTH_TOKEN = getConfigPropertyAsText("TWILIO_AUTH_TOKEN");
+    public static final String TWILIO_VERIFICATION_SERVICE_SID = getConfigPropertyAsText("TWILIO_VERIFICATION_SERVICE_SID");
     // From phone must be registered with Twilio account.
     public static final String FROM_PHONE = getConfigPropertyAsText("NOTIFICATION_FROM_PHONE");
     private static final String SPARKPOST_KEY = getConfigPropertyAsText("SPARKPOST_KEY");
@@ -65,9 +68,44 @@ public class NotificationUtils {
         }
     }
 
+    public static Verification sendVerificationText(String phoneNumber) {
+        if (TWILIO_ACCOUNT_SID == null || TWILIO_AUTH_TOKEN == null) {
+            LOG.error("SMS notifications not configured correctly.");
+            return null;
+        }
+        try {
+            Twilio.init(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+            VerificationCreator smsVerifier = Verification.creator(TWILIO_VERIFICATION_SERVICE_SID, phoneNumber, "sms");
+            Verification verification = smsVerifier.create();
+            LOG.info("SMS verification ({}) sent successfully", verification.getSid());
+            return verification;
+            // TODO: Is there a more specific exception we're ok with here?
+        } catch (Exception e) {
+            LOG.error("Could not send SMS verification", e);
+            return null;
+            // FIXME bugsnag
+        }
+    }
+
+    /**
+     * Check that an SMS verification code (e.g., 123456) is valid for the given phone number (+15551234).
+     */
+    public static VerificationCheck checkSmsVerificationCode(String phoneNumber, String code) {
+        try {
+            Twilio.init(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+            VerificationCheck check = VerificationCheck.creator(TWILIO_VERIFICATION_SERVICE_SID, code)
+                .setTo(phoneNumber)
+                .create();
+            return check;
+        } catch (Exception e) {
+            LOG.error("Could not check status of SMS verification code", e);
+            return null;
+        }
+    }
+
     /**
      * Send notification email using Sparkpost.
-     * TODO: determin if we should use sparkpost or sendgrid.
+     * TODO: determine if we should use sparkpost or sendgrid.
      */
     public static boolean sendEmail(String toEmail, String subject, String text, String html) {
         if (SPARKPOST_KEY == null || FROM_EMAIL == null) {
