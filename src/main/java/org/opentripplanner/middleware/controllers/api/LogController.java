@@ -18,6 +18,7 @@ import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.utils.DateUtils.STD_DATE_PATTERN;
 import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -50,14 +51,18 @@ public class LogController implements Endpoint {
                         .withDescription("If specified, restricts the search to the specified AWS API key ID.").and()
                     .withQueryParam()
                         .withName("startDate")
-                        .withPattern("yyyy-MM-dd")
+                        .withPattern(STD_DATE_PATTERN)
                         .withDefaultValue("30 days prior to the current date")
-                        .withDescription("If specified, the earliest date (format yyyy-MM-dd) for which usage logs are retrieved.").and()
+                        .withDescription(String.format(
+                            "If specified, the earliest date (format %s) for which usage logs are retrieved.", STD_DATE_PATTERN
+                        )).and()
                     .withQueryParam()
                         .withName("endDate")
-                        .withPattern("yyyy-MM-dd")
+                        .withPattern(STD_DATE_PATTERN)
                         .withDefaultValue("The current date")
-                        .withDescription("If specified, the latest date (format yyyy-MM-dd) for which usage logs are retrieved.").and()
+                        .withDescription(String.format(
+                            "If specified, the latest date (format %s) for which usage logs are retrieved.", STD_DATE_PATTERN
+                        )).and()
                     .withProduces(MIMETYPES_JSONONLY)
                     // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
                     // as the return type for this method. (It does generate the type for that class nonetheless.)
@@ -78,7 +83,7 @@ public class LogController implements Endpoint {
         LocalDateTime now = LocalDateTime.now();
         // TODO: Future work might modify this so that we accept multiple API key IDs for a single request (depends on
         //  how third party developer accounts are structured).
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(STD_DATE_PATTERN);
         String startDate = req.queryParamOrDefault("startDate", formatter.format(now.minusDays(30)));
         String endDate = req.queryParamOrDefault("endDate", formatter.format(now));
         try {

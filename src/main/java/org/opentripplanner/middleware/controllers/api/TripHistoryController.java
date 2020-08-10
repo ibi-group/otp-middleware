@@ -32,6 +32,7 @@ import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.gte;
 import static com.mongodb.client.model.Filters.lte;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
+import static org.opentripplanner.middleware.utils.DateUtils.STD_DATE_PATTERN;
 import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -77,14 +78,18 @@ public class TripHistoryController implements Endpoint {
                         .withDescription("If specified, the maximum number of trip requests to return, starting from the most recent.").and()
                     .withQueryParam()
                         .withName(FROM_DATE_PARAM_NAME)
-                        .withPattern("yyyy-MM-dd")
+                        .withPattern(STD_DATE_PATTERN)
                         .withDefaultValue("The current date")
-                        .withDescription("If specified, the earliest date (format yyyy-MM-dd) for which trip requests are retrieved.").and()
+                        .withDescription(String.format(
+                            "If specified, the earliest date (format %s) for which trip requests are retrieved.", STD_DATE_PATTERN
+                        )).and()
                     .withQueryParam()
                         .withName(TO_DATE_PARAM_NAME)
-                        .withPattern("yyyy-MM-dd")
+                        .withPattern(STD_DATE_PATTERN)
                         .withDefaultValue("The current date")
-                        .withDescription("If specified, the latest date (format yyyy-MM-dd) for which usage logs are retrieved.").and()
+                        .withDescription(String.format(
+                            "If specified, the latest date (format %s) for which usage logs are retrieved.", STD_DATE_PATTERN
+                        )).and()
                     .withProduces(MIMETYPES_JSONONLY)
                     // Note: unlike the name suggests, withResponseAsCollection does not generate an array
                     // as the return type for this method. (It does generate the type for that class nonetheless.)
@@ -173,14 +178,13 @@ public class TripHistoryController implements Endpoint {
             return null;
         }
 
-        String expectedDatePattern = "yyyy-MM-dd";
         LocalDate localDate = null;
         try {
-            localDate = DateUtils.getDateFromParam(paramName, paramValue, expectedDatePattern);
+            localDate = DateUtils.getDateFromParam(paramName, paramValue, STD_DATE_PATTERN);
         } catch (DateTimeParseException e) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400,
                 String.format("%s value: %s is not a valid date. Must be in the format: %s", paramName, paramValue,
-                    expectedDatePattern));
+                    STD_DATE_PATTERN));
         }
 
         if (localDate == null) {

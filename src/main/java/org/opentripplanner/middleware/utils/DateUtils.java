@@ -1,8 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -16,7 +14,7 @@ import java.time.temporal.ChronoField;
  */
 public class DateUtils {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DateUtils.class);
+    public static final String STD_DATE_PATTERN = "yyyy-MM-dd";
 
     /**
      * Get {@Link java.time.LocalDate} from provided value base on expected date format. The date conversion
