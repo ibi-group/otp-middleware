@@ -4,6 +4,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
@@ -105,6 +106,14 @@ public class PersistenceUtil {
 
         monitoredTrip.itinerary = createItinerary();
 
+        Persistence.monitoredTrips.create(monitoredTrip);
+        return monitoredTrip;
+    }
+
+    public static MonitoredTrip createMonitoredTrip(String userId, OtpDispatcherResponse otpDispatcherResponse) {
+        MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
+        monitoredTrip.userId = userId;
+        monitoredTrip.tripName = "My Sunday drive";
         Persistence.monitoredTrips.create(monitoredTrip);
         return monitoredTrip;
     }

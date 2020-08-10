@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -21,8 +22,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 
+import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
+import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
 
 /**
@@ -31,6 +34,10 @@ import static org.opentripplanner.middleware.persistence.PersistenceUtil.createU
 public class TripMonitorTest extends OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(TripMonitorTest.class);
     private static OtpUser user;
+    private static final String mockResponse = FileUtils.getFileContents(
+        "src/test/resources/org/opentripplanner/middleware/planResponse.json"
+    );
+    private static final OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse);
 
     @BeforeAll
     public static void setup() {
@@ -45,6 +52,7 @@ public class TripMonitorTest extends OtpMiddlewareTest {
     @AfterAll
     public static void tearDown() {
         Persistence.otpUsers.removeById(user.id);
+        Persistence.monitoredTrips.removeFiltered(eq("userId", user.id));
     }
 
     /**
@@ -88,15 +96,7 @@ public class TripMonitorTest extends OtpMiddlewareTest {
 
     @Test
     public void willSkipMonitoredTripCheck() {
-        String mockResponse = FileUtils.getFileContents(
-            "src/test/resources/org/opentripplanner/middleware/planResponse.json"
-        );
-        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse);
-        MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
-        monitoredTrip.userId = user.id;
-        monitoredTrip.sunday = true;
-        monitoredTrip.tripName = "My Sunday drive";
-        Persistence.monitoredTrips.create(monitoredTrip);
+        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
         // TODO: Set clock with TestUtils.clock: https://stackoverflow.com/questions/24491260/mocking-time-in-java-8s-java-time-api/29360514#29360514
         // Should skip if today is not sunday. FIXME: Don't run this on a Sunday!
         Assertions.assertTrue(CheckMonitoredTrip.shouldSkipMonitoredTripCheck(monitoredTrip));
@@ -110,6 +110,32 @@ public class TripMonitorTest extends OtpMiddlewareTest {
         // - Returns false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
         // - Returns false if trip is starting in 10 minutes and the last time checked was 2 minutes ago
         // - Returns true if trip has ended 3 minutes ago
+    }
+
+    @Test
+    public void willGenerateDepartureDelayNotification() {
+        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
+        Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
+        // Set departure time to twenty minutes (in seconds). Default departure time variance threshold is 15 minutes.
+        simulatedItinerary.legs.get(0).departureDelay = 60 * 20;
+        // Run isolated departure time check for simulated itinerary.
+        TripMonitorNotification notification = CheckMonitoredTrip.checkTripForDepartureDelay(monitoredTrip, simulatedItinerary);
+        LOG.info("Departure delay notification: {}", notification.body);
+        Assertions.assertNotNull(notification);
+    }
+
+    @Test
+    public void willSkipDepartureDelayNotification() {
+        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
+        Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
+        // Set departure time to ten minutes (in seconds). Default departure time variance threshold is 15 minutes.
+        simulatedItinerary.legs.get(0).departureDelay = 60 * 10;
+        // Run isolated departure time check for simulated itinerary.
+        TripMonitorNotification notification = CheckMonitoredTrip.checkTripForDepartureDelay(monitoredTrip, simulatedItinerary);
+        LOG.info("Departure delay notification (should be null): {}", notification);
+        Assertions.assertNull(notification);
     }
 
     @Test
