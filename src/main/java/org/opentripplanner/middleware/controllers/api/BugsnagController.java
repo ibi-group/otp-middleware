@@ -64,7 +64,7 @@ public class BugsnagController implements Endpoint {
     /**
      * Get all Bugsnag events from Mongo and replace the project id with the project name and return
      */
-    public static List<EventSummary> getEventSummary(Request request, Response response) {
+    private static List<EventSummary> getEventSummary(Request request, Response response) {
         List<EventSummary> eventSummaries = new ArrayList<>();
         List<BugsnagEvent> events = bugsnagEvents.getAll();
 

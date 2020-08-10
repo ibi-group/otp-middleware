@@ -104,7 +104,7 @@ public class TripHistoryController implements Endpoint {
      * Return a user's trip request history based on provided parameters.
      * An authorized user (Auth0) and user id are required.
      */
-    public static List<TripRequest> getTripRequests(Request request, Response response) {
+    private static List<TripRequest> getTripRequests(Request request, Response response) {
 
         TypedPersistence<TripRequest> tripRequest = Persistence.tripRequests;
 
