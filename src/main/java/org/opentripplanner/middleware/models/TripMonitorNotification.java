@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Contains information about the type and details of messages to be sent to users about their {@link MonitoredTrip}s.
