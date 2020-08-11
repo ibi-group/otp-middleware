@@ -28,7 +28,7 @@ public class OtpRequestProcessor {
      * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
      * return OTP version info.
      */
-    private static final String OTP_SERVER = getConfigPropertyAsText("OTP_SERVER");
+    private static final String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
     /**
      * Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse}
      */
@@ -54,13 +54,12 @@ public class OtpRequestProcessor {
      * status) is passed back to the requester.
      */
     private static String proxy(Request request, spark.Response response) {
-        if (OTP_SERVER == null) {
+        if (OTP_API_ROOT == null) {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
             return null;
         }
-
-        // Remove the /otp portion of the middleware OTP proxy endpoint
-        String otpRequestPath = stripFirstOtpPathPrefix(request.uri());
+        // Get request path intended for OTP API by removing the proxy endpoint (/otp).
+        String otpRequestPath = request.uri().replace(OTP_PROXY_ENDPOINT, "");
 
         // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
@@ -76,15 +75,6 @@ public class OtpRequestProcessor {
         response.type("application/json");
         response.status(otpDispatcherResponse.statusCode);
         return otpDispatcherResponse.responseBody;
-    }
-
-    /**
-     * Get request path intended for OTP API by removing the proxy endpoint (/otp).
-     */
-    static String stripFirstOtpPathPrefix(String uri) {
-        // Only remove the first /otp proxy endpoint.
-        // The other one, if any, is part of the OTP router path on the OTP server.
-        return uri.replaceFirst(OTP_PROXY_ENDPOINT, "");
     }
 
     /**
