@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.persistence;
 
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.TestUtils;
+import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -116,7 +117,8 @@ public class PersistenceUtil {
     public static MonitoredTrip createMonitoredTrip(String userId, OtpDispatcherResponse otpDispatcherResponse) {
         MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
         monitoredTrip.userId = userId;
-        monitoredTrip.tripName = "My Sunday drive";
+        monitoredTrip.tripName = "test trip";
+        monitoredTrip.leadTimeInMinutes = 30;
         Persistence.monitoredTrips.create(monitoredTrip);
         return monitoredTrip;
     }
@@ -156,6 +158,11 @@ public class PersistenceUtil {
         legs.add(leg);
         itinerary.legs = legs;
         return itinerary;
+    }
+
+    public static void deleteMonitoredTripAndJourney(MonitoredTrip trip) {
+        trip.clearJourneyState();
+        Persistence.monitoredTrips.removeById(trip.id);
     }
 
     /**

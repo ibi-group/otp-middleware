@@ -6,7 +6,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
-import org.opentripplanner.middleware.utils.DateUtils;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -16,7 +16,6 @@ import spark.Response;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.HashSet;
@@ -122,7 +121,7 @@ public class TripHistoryController {
         String expectedDatePattern = "yyyy-MM-dd";
         LocalDate localDate = null;
         try {
-            localDate = DateUtils.getDateFromParam(paramName, paramValue, expectedDatePattern);
+            localDate = DateTimeUtils.getDateFromParam(paramName, paramValue, expectedDatePattern);
         } catch (DateTimeParseException e) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400,
                 String.format("%s value: %s is not a valid date. Must be in the format: %s", paramName, paramValue,
@@ -134,7 +133,7 @@ public class TripHistoryController {
         }
 
         return Date.from(localDate.atTime(timeOfDay)
-            .atZone(ZoneId.systemDefault())
+            .atZone(DateTimeUtils.getSystemZoneId())
             .toInstant());
     }
 }

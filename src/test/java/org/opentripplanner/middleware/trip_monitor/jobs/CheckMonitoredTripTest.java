@@ -3,11 +3,11 @@ package org.opentripplanner.middleware.trip_monitor.jobs;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
@@ -17,10 +17,13 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +33,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
+import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTripAndJourney;
 import static org.opentripplanner.middleware.trip_monitor.jobs.CheckMonitoredTrip.shouldSkipMonitoredTripCheck;
 
 /**
@@ -38,6 +42,17 @@ import static org.opentripplanner.middleware.trip_monitor.jobs.CheckMonitoredTri
 public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTripTest.class);
     private static OtpUser user;
+
+    /**
+     * The mockResponse contains an itinerary with a request with the following request parameters:
+     * - arriveBy: false
+     * - date: 2020-06-09 (a Tuesday)
+     * - desired start time: 08:35
+     * - itinerary start time: 08:40:10
+     * - fromPlace: 1709 NW Irving St, Portland 97209::45.527817334203,-122.68865964147231
+     * - toPlace: Uncharted Realities, SW 3rd Ave, Downtown - Portland 97204::45.51639151281627,-122.67681483620306
+     * - first itinerary end time: 8:58:44am
+     */
     private static final String mockResponse = FileUtils.getFileContents(
         "src/test/resources/org/opentripplanner/middleware/persistence/planResponse.json"
     );
@@ -51,7 +66,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     @AfterAll
     public static void tearDown() {
         Persistence.otpUsers.removeById(user.id);
-        Persistence.monitoredTrips.removeFiltered(eq("userId", user.id));
+        for (MonitoredTrip trip : Persistence.monitoredTrips.getFiltered(eq("userId", user.id))) {
+            deleteMonitoredTripAndJourney(trip);
+        }
     }
 
     /**
@@ -125,40 +142,147 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      */
     @ParameterizedTest
     @MethodSource("createSkipTripTestCases")
-    @Disabled // TODO enable once createSkipTripTestCases has at least one test case
     void testSkipMonitoredTripCheck(ShouldSkipTripTestCase testCase) {
-        assertEquals(testCase.shouldSkipTrip, shouldSkipMonitoredTripCheck(testCase.trip), testCase.message);
+        DateTimeUtils.useFixedClockAt(testCase.mockTime);
+        try {
+            assertEquals(testCase.shouldSkipTrip, shouldSkipMonitoredTripCheck(testCase.trip), testCase.message);
+        } finally {
+            DateTimeUtils.useSystemDefaultClockAndTimezone();
+        }
     }
 
     private static List<ShouldSkipTripTestCase> createSkipTripTestCases() {
         List<ShouldSkipTripTestCase> testCases = new ArrayList<>();
 
-        // - Returns false for weekend trip when current time is on a weekday.
+        // June 10, 2020 (Wednesday)
+        LocalDateTime exemplarDate = DateTimeUtils.nowAsLocalDateTime().withYear(2020).withMonth(6).withDayOfMonth(10);
+
+        // - Return true for weekend trip when current time is on a weekday.
         MonitoredTrip weekendTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
-        // - Returns false for weekday trip when current time is on a weekend.
-        // - Returns true if trip is starting in greater than 1 hr, but the last time checked was 2 hours ago
-        // - Returns false if trip is starting in greater than 1 hr, but the last time checked was 2 minutes ago
-        // - Returns false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
-        // - Returns true if trip is starting in 45 minutes and the last time checked was 2 minutes ago
-        // - Returns false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
-        // - Returns false if trip is starting in 10 minutes and the last time checked was 2 minutes ago
-        // - Returns true if trip has ended 3 minutes ago
+        weekendTrip.saturday = true;
+        weekendTrip.sunday = true;
+        testCases.add(new ShouldSkipTripTestCase(
+            "should return true for a weekend trip when current time is on a weekday",
+            exemplarDate, // June 10, 2020 (Wednesday)
+            true,
+            weekendTrip
+        ));
+
+        // - Return true for weekday trip when current time is on a weekend.
+        MonitoredTrip weekdayTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        weekdayTrip.updateWeekdays(true);
+        testCases.add(new ShouldSkipTripTestCase(
+            "should return true for weekday trip when current time is on a weekend",
+            exemplarDate.withDayOfMonth(13), // June 13, 2020 (Saturday)
+            true,
+            weekdayTrip
+        ));
+
+        // - Return false if trip is starting in greater than 1 hr, but the last time checked was 2 hours ago
+        MonitoredTrip laterTodayTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        laterTodayTrip.updateWeekdays(true);
+        // last checked at 1am
+        setLastCheckedTimeForTripJourneyState(laterTodayTrip, exemplarDate.withHour(1).withMinute(0));
+        testCases.add(new ShouldSkipTripTestCase(
+            "should return false if trip is starting in greater than 1 hr, but the last time checked was 2 hours ago",
+            exemplarDate.withHour(3).withMinute(0), // 3am
+            false,
+            laterTodayTrip
+        ));
+
+        // - Return true if trip is starting in greater than 1 hr, but the last time checked was 2 minutes ago
+        MonitoredTrip laterTodayTrip2 = createMonitoredTrip(user.id, otpDispatcherResponse);
+        laterTodayTrip2.updateWeekdays(true);
+        // last checked at 2:58am
+        setLastCheckedTimeForTripJourneyState(laterTodayTrip2, exemplarDate.withHour(2).withMinute(58));
+        testCases.add(new ShouldSkipTripTestCase(
+            "should return true if trip is starting in greater than 1 hr, but the last time checked was 2 minutes ago",
+            exemplarDate.withHour(3).withMinute(0), // 3am
+            true,
+            laterTodayTrip2
+        ));
+
+        // - Return false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
+        MonitoredTrip laterTodayTrip3 = createMonitoredTrip(user.id, otpDispatcherResponse);
+        laterTodayTrip3.updateWeekdays(true);
+        // last checked at 7:35am
+        setLastCheckedTimeForTripJourneyState(laterTodayTrip3, exemplarDate.withHour(7).withMinute(35));
+        testCases.add(new ShouldSkipTripTestCase(
+            "should return false if trip is starting in 45 minutes and the last time checked was 20 minutes ago",
+            exemplarDate.withHour(7).withMinute(55), // 7:55am
+            false,
+            laterTodayTrip3
+        ));
+
+        // - Return true if trip is starting in 45 minutes and the last time checked was 2 minutes ago
+        MonitoredTrip laterTodayTrip4 = createMonitoredTrip(user.id, otpDispatcherResponse);
+        laterTodayTrip4.updateWeekdays(true);
+        // last checked at 7:53am
+        setLastCheckedTimeForTripJourneyState(laterTodayTrip4, exemplarDate.withHour(7).withMinute(53));
+        testCases.add(new ShouldSkipTripTestCase(
+            "should return true if trip is starting in 45 minutes and the last time checked was 2 minutes ago",
+            exemplarDate.withHour(7).withMinute(55), // 7:55am
+            true,
+            laterTodayTrip4
+        ));
+
+        // - Return false if trip is starting in 10 minutes and the last time checked was 2 minutes ago
+        // The monitored trip lead time is 30 minutes, so check every minute
+        MonitoredTrip laterTodayTrip5 = createMonitoredTrip(user.id, otpDispatcherResponse);
+        laterTodayTrip5.updateWeekdays(true);
+        // last checked at 8:23am
+        setLastCheckedTimeForTripJourneyState(laterTodayTrip5, exemplarDate.withHour(8).withMinute(28));
+        testCases.add(new ShouldSkipTripTestCase(
+            "should return false if trip is starting in 10 minutes and the last time checked was 2 minutes ago",
+            exemplarDate.withHour(8).withMinute(30), // 8:30am
+            false,
+            laterTodayTrip5
+        ));
+
+        // - Return true if trip has started 3 minutes ago
+        MonitoredTrip tripThatJustStarted = createMonitoredTrip(user.id, otpDispatcherResponse);
+        tripThatJustStarted.updateWeekdays(true);
+        // last checked at 8:39am
+        setLastCheckedTimeForTripJourneyState(tripThatJustStarted, exemplarDate.withHour(8).withMinute(39));
+        testCases.add(new ShouldSkipTripTestCase(
+            "should return true if trip has started 3 minutes ago",
+            exemplarDate.withHour(8).withMinute(43), // 8:43am
+            true,
+            tripThatJustStarted
+        ));
 
         return testCases;
     }
 
+    private static void setLastCheckedTimeForTripJourneyState(MonitoredTrip trip, LocalDateTime dateTime) {
+        JourneyState journeyState = trip.retrieveJourneyState();
+        journeyState.lastChecked = Timestamp.valueOf(dateTime).getTime();
+        Persistence.journeyStates.replace(journeyState.id, journeyState);
+    }
+
     private static class ShouldSkipTripTestCase {
         /* a helpful message describing the particular test case */
-        public String message;
+        public final String message;
+        /* The time to mock for this test case */
+        public final LocalDateTime mockTime;
         /**
          * if true, it is expected that the {@link CheckMonitoredTripTest#createSkipTripTestCases()} method should
          * calculate that the given trip should be skipped.
          */
-        public boolean shouldSkipTrip;
+        public final boolean shouldSkipTrip;
         /**
          * The trip for the {@link CheckMonitoredTripTest#createSkipTripTestCases()} method to calculate whether
          * skipping trip analysis should occur.
          */
-        public MonitoredTrip trip;
+        public final MonitoredTrip trip;
+
+        private ShouldSkipTripTestCase(
+            String message, LocalDateTime mockTime, boolean shouldSkipTrip, MonitoredTrip trip
+        ) {
+            this.message = message;
+            this.mockTime = mockTime;
+            this.shouldSkipTrip = shouldSkipTrip;
+            this.trip = trip;
+        }
     }
 }

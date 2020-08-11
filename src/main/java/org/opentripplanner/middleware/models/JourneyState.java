@@ -4,6 +4,7 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.trip_monitor.jobs.CheckMonitoredTrip;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -69,13 +70,15 @@ public class JourneyState extends Model {
      *   E.g., should a previous journey state be overwritten by a failed check?
      */
     public void update(CheckMonitoredTrip checkMonitoredTripJob) {
-        this.lastChecked = System.currentTimeMillis();
+        this.lastChecked = DateTimeUtils.currentTimeMillis();
         this.matchingItineraryIndex = checkMonitoredTripJob.matchingItineraryIndex;
         this.lastResponse = checkMonitoredTripJob.otpResponse;
         this.lastDepartureDelay = checkMonitoredTripJob.departureDelay;
         this.lastArrivalDelay = checkMonitoredTripJob.arrivalDelay;
         // Update notification time if notification successfully sent.
-        if (checkMonitoredTripJob.notificationTimestamp != -1) this.lastNotificationTime = checkMonitoredTripJob.notificationTimestamp;
+        if (checkMonitoredTripJob.notificationTimestamp != -1) {
+            this.lastNotificationTime = checkMonitoredTripJob.notificationTimestamp;
+        }
         Persistence.journeyStates.replace(this.id, this);
     }
 }

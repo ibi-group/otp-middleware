@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.opentripplanner.middleware.trip_monitor.jobs.NotificationType.ARRIVAL_DELAY;
 import static org.opentripplanner.middleware.trip_monitor.jobs.NotificationType.DEPARTURE_DELAY;
-import static org.opentripplanner.middleware.utils.DateUtils.getZoneIdForCoordinates;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -230,7 +231,7 @@ public class CheckMonitoredTrip implements Runnable {
                 break;
         }
         if (success) {
-            notificationTimestamp = System.currentTimeMillis();
+            notificationTimestamp = DateTimeUtils.currentTimeMillis();
         }
     }
 
@@ -259,7 +260,7 @@ public class CheckMonitoredTrip implements Runnable {
             zoneId = fromZoneId.get();
         }
         // Get current time and trip time (with the time offset to today) for comparison.
-        LocalDateTime now = LocalDateTime.now(zoneId);
+        LocalDateTime now = DateTimeUtils.nowAsLocalDateTime(zoneId);
         // TODO: Determine whether we want to monitor trips during the length of the trip.
         //  If we do this, we will want to use the itinerary end time (and destination zoneId) to determine this time
         //  value. Also, we may want to use the start time leading up to the trip (for periodic monitoring) and once
@@ -292,7 +293,7 @@ public class CheckMonitoredTrip implements Runnable {
             return true;
         }
         // If last check was more than an hour ago and trip doesn't occur until an hour from now, check trip.
-        long millisSinceLastCheck = System.currentTimeMillis() - trip.retrieveJourneyState().lastChecked;
+        long millisSinceLastCheck = DateTimeUtils.currentTimeMillis() - trip.retrieveJourneyState().lastChecked;
         long minutesSinceLastCheck = TimeUnit.MILLISECONDS.toMinutes(millisSinceLastCheck);
         long minutesUntilTrip = Duration.between(now, tripTime).toMinutes();
         LOG.info("Trip {} starts in {} minutes", trip.id, minutesUntilTrip);

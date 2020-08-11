@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.util.HashMap;
 
@@ -17,7 +18,7 @@ public class Response {
     public TripPlan plan;
     public PlannerError error = null;
     /** A timestamp representing when the response was received */
-    public long timestamp = System.currentTimeMillis();
+    public long timestamp = DateTimeUtils.currentTimeMillis();
 
     @Override
     public String toString() {

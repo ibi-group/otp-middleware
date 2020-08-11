@@ -8,12 +8,11 @@ import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
@@ -84,17 +83,17 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
 
         List<TripRequest> tripRequests = createTripRequests(limit, user.id);
 
-        LocalDateTime fromStartOfDay = LocalDate.now().atTime(LocalTime.MIN);
-        LocalDateTime toEndOfDay = LocalDate.now().atTime(LocalTime.MAX);
+        LocalDateTime fromStartOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MIN);
+        LocalDateTime toEndOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MAX);
 
         Bson filter = Filters.and(
             gte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
                 Date.from(fromStartOfDay
-                    .atZone(ZoneId.systemDefault())
+                    .atZone(DateTimeUtils.getSystemZoneId())
                     .toInstant())),
             lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
                 Date.from(toEndOfDay
-                    .atZone(ZoneId.systemDefault())
+                    .atZone(DateTimeUtils.getSystemZoneId())
                     .toInstant())),
             eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
 
@@ -112,10 +111,15 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
 
         List<TripRequest> tripRequests = createTripRequests(limit, user.id);
 
-        LocalDateTime fromStartOfDay = LocalDate.now().atTime(LocalTime.MIN);
+        LocalDateTime fromStartOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MIN);
 
-        Bson filter = Filters.and(gte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(fromStartOfDay.atZone(ZoneId.systemDefault()).toInstant())),
-            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
+        Bson filter = Filters.and(
+            gte(
+                TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
+                Date.from(fromStartOfDay.atZone(DateTimeUtils.getSystemZoneId()).toInstant())
+            ),
+            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id)
+        );
 
         List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
         assertEquals(result.size(), tripRequests.size());
@@ -131,11 +135,15 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
 
         tripRequests = createTripRequests(limit, user.id);
 
-        LocalDateTime toEndOfDay = LocalDate.now().atTime(LocalTime.MAX);
+        LocalDateTime toEndOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MAX);
 
         Bson filter = Filters.and(
-            lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME, Date.from(toEndOfDay.atZone(ZoneId.systemDefault()).toInstant())),
-            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
+            lte(
+                TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
+                Date.from(toEndOfDay.atZone(DateTimeUtils.getSystemZoneId()).toInstant())
+            ),
+            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id)
+        );
 
         List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
         assertEquals(result.size(), tripRequests.size());

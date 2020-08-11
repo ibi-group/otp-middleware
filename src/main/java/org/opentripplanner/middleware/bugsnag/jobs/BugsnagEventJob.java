@@ -8,10 +8,10 @@ import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -95,13 +95,13 @@ public class BugsnagEventJob implements Runnable {
      * Remove events that are older than the reporting window.
      */
     private void removeStaleEvents() {
-        LocalDate startOfReportingWindow = LocalDate
-            .now()
+        LocalDate startOfReportingWindow = DateTimeUtils
+            .nowAsLocalDate()
             .minusDays(BUGSNAG_REPORTING_WINDOW_IN_DAYS + 1);
         startOfReportingWindow.atTime(LocalTime.MIDNIGHT);
 
         Date date = Date.from(startOfReportingWindow.atTime(LocalTime.MIDNIGHT)
-            .atZone(ZoneId.systemDefault())
+            .atZone(DateTimeUtils.getSystemZoneId())
             .toInstant());
 
         Bson filter = Filters.lte("receivedAt", date);

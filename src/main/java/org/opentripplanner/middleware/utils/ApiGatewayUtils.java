@@ -37,7 +37,7 @@ public class ApiGatewayUtils {
      * Create connection to AWS api gateway.
      */
     private static AmazonApiGateway getAmazonApiGateway() {
-        long startTime = System.currentTimeMillis();
+        long startTime = DateTimeUtils.currentTimeMillis();
 
         AmazonApiGatewayClientBuilder gatewayBuilder = AmazonApiGatewayClient.builder();
         if (hasConfigProperty("AWS_PROFILE")) {
@@ -45,7 +45,7 @@ public class ApiGatewayUtils {
         }
         AmazonApiGateway gateway = gatewayBuilder.build();
 
-        LOG.debug("Connection to AWS api gateway took {} msec", System.currentTimeMillis() - startTime);
+        LOG.debug("Connection to AWS api gateway took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
         return gateway;
     }
 
@@ -53,7 +53,7 @@ public class ApiGatewayUtils {
      * Request an API key from AWS api gateway and assign it to an existing usage plan.
      */
     public static CreateApiKeyResult createApiKey(String userId, String usagePlanId) {
-        long startTime = System.currentTimeMillis();
+        long startTime = DateTimeUtils.currentTimeMillis();
 
         try {
             AmazonApiGateway gateway = getAmazonApiGateway();
@@ -85,7 +85,7 @@ public class ApiGatewayUtils {
             LOG.error("Unable to get api key from AWS", e);
             //FIXME add bugsnag
         } finally {
-            LOG.debug("Get api key and assign to usage plan took {} msec", System.currentTimeMillis() - startTime);
+            LOG.debug("Get api key and assign to usage plan took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
         }
         return null;
     }
@@ -94,7 +94,7 @@ public class ApiGatewayUtils {
      * Delete api keys from AWS api gateway.
      */
     public static void deleteApiKeys(List<String> apiKeyIds) {
-        long startTime = System.currentTimeMillis();
+        long startTime = DateTimeUtils.currentTimeMillis();
 
         AmazonApiGateway gateway = getAmazonApiGateway();
 
@@ -111,14 +111,14 @@ public class ApiGatewayUtils {
                 //FIXME add bugsnag
             }
         }
-        LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
+        LOG.debug("Deleting Api keys took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
     }
 
     /**
      * Get usage logs from AWS api gateway for a given key id, start and end date
      */
     public static List<GetUsageResult> getUsageLogs(String keyId, String startDate, String endDate) {
-        long startTime = System.currentTimeMillis();
+        long startTime = DateTimeUtils.currentTimeMillis();
 
         AmazonApiGateway gateway = getAmazonApiGateway();
 
@@ -145,7 +145,7 @@ public class ApiGatewayUtils {
                 throw e;
             }
         }
-        LOG.debug("Retrieving usage logs took {} msec", System.currentTimeMillis() - startTime);
+        LOG.debug("Retrieving usage logs took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
         return usageResults;
     }
 }

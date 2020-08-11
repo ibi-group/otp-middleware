@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import com.amazonaws.services.apigateway.model.GetUsageResult;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
 import spark.Response;
@@ -33,7 +34,7 @@ public class LogController {
     private static List<GetUsageResult> getUsageLogs(Request req, Response res) {
         // keyId param is optional (if not provided, all API keys will be included in response).
         String keyId = req.queryParamOrDefault("keyId", null);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = DateTimeUtils.nowAsLocalDateTime();
         // TODO: Future work might modify this so that we accept multiple API key IDs for a single request (depends on
         //  how third party developer accounts are structured).
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
