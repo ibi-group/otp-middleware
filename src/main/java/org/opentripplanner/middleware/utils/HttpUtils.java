@@ -14,8 +14,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
@@ -23,6 +25,8 @@ public class HttpUtils {
     public enum REQUEST_METHOD {GET, POST, DELETE}
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
+
+    public static final List<String> MIMETYPES_JSONONLY = List.of(APPLICATION_JSON);
 
     /**
      * Constructs a url based on the uri.  endpoint and query params if provided
@@ -99,7 +103,9 @@ public class HttpUtils {
     public static String getRequiredQueryParamFromRequest(Request req, String paramName, boolean allowNull) {
         String paramValue = req.queryParams(paramName);
         if (paramValue == null && !allowNull) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "The parameter name " + paramName + " must be provided.");
+            logMessageAndHalt(req,
+                HttpStatus.BAD_REQUEST_400,
+                String.format("The parameter name (%s) must be provided.", paramName));
         }
         return paramValue;
     }
@@ -111,7 +117,9 @@ public class HttpUtils {
     public static String getRequiredParamFromRequest(Request req, String paramName) {
         String paramValue = req.params(paramName);
         if (paramValue == null) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide parameter name.");
+            logMessageAndHalt(req,
+                HttpStatus.BAD_REQUEST_400,
+                String.format("The parameter name (%s) must be provided.", paramName));
         }
         return paramValue;
     }
