@@ -14,7 +14,7 @@ import java.time.temporal.ChronoField;
  */
 public class DateUtils {
 
-    public static final String STD_DATE_PATTERN = "yyyy-MM-dd";
+    public static final String YYYY_MM_DD = "yyyy-MM-dd";
 
     /**
      * Get {@Link java.time.LocalDate} from provided value base on expected date format. The date conversion
