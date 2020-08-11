@@ -20,6 +20,7 @@ import java.util.Collections;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
+import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -31,6 +32,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     private static final String API_KEY_PATH = "/apikey";
     private static final int API_KEY_LIMIT_PER_USER = 2;
     private static final String API_KEY_ID_PARAM = "/:apiKeyId";
+    private static final String USER_ID_PARAM = "/:userId";
 
     public ApiUserController(String apiPrefix) {
         super(apiPrefix, Persistence.apiUsers, "secure/application");
@@ -41,51 +43,38 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         LOG.info("Registering path {}.", ROOT_ROUTE + API_KEY_PATH);
 
         // Add the api key route BEFORE the regular CRUD methods
-        // TODO: Define usage plan id as an optional parameter under Spark Swagger. 'withParam' method does not register
-        //  the parameter and 'withPathParam' is not optional (even with 'withRequired(false))'. For the time being
-        //  appending '?usagePlanId=<id>' works.
         ApiEndpoint modifiedEndpoint = baseEndpoint
-            // Reveal the actual API key value for the key ID
-            .get(path(ROOT_ROUTE + API_KEY_PATH + API_KEY_ID_PARAM)
-                    .withDescription("Gets the API key value for a given api key ID")
-                    .withPathParam().withName("apiKeyId").withDescription("The api key ID of the API key.").and()
-                    .withResponseType(ApiKey.class),
-                this::getApiKey, JsonUtils::toJson
-            )
             // Create API key
-            .post(path(API_KEY_PATH)
-                    .withDescription("Creates API key for ApiUser (with optional usagePlanId)")
+            .post(path(USER_ID_PARAM + API_KEY_PATH)
+                    .withDescription("Creates API key for ApiUser (with optional AWS API Gateway usage plan ID).")
+                    .withConsumes(MIMETYPES_JSONONLY)
+                    .withPathParam().withName("userId").withRequired(true).withDescription("The user ID")
+                    .and()
+                    .withQueryParam().withName("usagePlanId").withRequired(false).withDescription("Optional AWS API Gateway usage plan ID.")
+                    .and()
+                    .withProduces(MIMETYPES_JSONONLY)
                     .withResponseType(persistence.clazz),
                 this::createApiKeyForApiUser, JsonUtils::toJson
             )
             // Delete API key
-            .delete(path(API_KEY_PATH + API_KEY_ID_PARAM)
-                    .withDescription("Deletes API key for ApiUser")
-                    .withPathParam().withName("apiKeyId").withDescription("The ID of the API key.").and()
+            .delete(path(USER_ID_PARAM + API_KEY_PATH + API_KEY_ID_PARAM)
+                    .withDescription("Deletes API key for ApiUser.")
+                    .withConsumes(MIMETYPES_JSONONLY)
+                    .withPathParam().withName("userId").withDescription("The user ID.")
+                    .and()
+                    .withPathParam().withName("apiKeyId").withDescription("The ID of the API key.")
+                    .and()
+                    .withProduces(MIMETYPES_JSONONLY)
                     .withResponseType(persistence.clazz),
                 this::deleteApiKeyForApiUser, JsonUtils::toJson
             )
 
-            // Options response for CORS for the api key path
-            .options(path(API_KEY_PATH), (req, res) -> "");
+            // Options response for CORS for the api key paths
+            .options(path(USER_ID_PARAM + API_KEY_PATH), (req, res) -> "")
+            .options(path(USER_ID_PARAM + API_KEY_PATH + API_KEY_ID_PARAM), (req, res) -> "");
 
         // Add the regular CRUD methods after defining the /apikey route.
         super.buildEndpoint(modifiedEndpoint);
-    }
-
-    /**
-     * HTTP endpoint that reveals the actual API Key value for a given apiKeyId.
-     */
-    private ApiKey getApiKey(Request req, Response res) {
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
-        String apiKeyId = HttpUtils.getRequiredParamFromRequest(req, "apiKeyId");
-
-        // User must be admin or have the key in order to view key details.
-        if (isUserAdmin(requestingUser) || userHasKey(requestingUser.apiUser, apiKeyId)) {
-            return new ApiKey(ApiGatewayUtils.getApiKey(apiKeyId));
-        }
-        logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "User not permitted to view API key.");
-        return null;
     }
 
     /**
@@ -95,9 +84,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         return user != null &&
             user.apiKeys
                 .stream()
-                .filter(ApiKey -> apiKeyId.equals(ApiKey.id))
-                .findAny()
-                .orElse(null) != null;
+                .anyMatch(apiKey -> apiKeyId.equals(apiKey.id));
     }
 
     /**
@@ -121,7 +108,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         if (apiKeyResult == null || apiKeyResult.getId() == null) {
             logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
-                String.format("Unable to get AWS api key for user (%s)", targetUser),
+                String.format("Unable to get AWS API key for user id (%s) and usage plan id (%s)", targetUser.id, usagePlanId),
                 null
             );
             return null;
@@ -155,7 +142,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         boolean success = ApiGatewayUtils.deleteApiKeys(Collections.singletonList(new ApiKey(apiKeyId)));
         if (success) {
             // Delete api key from user and persist
-            targetUser.apiKeys.remove(new ApiKey(apiKeyId));
+            targetUser.apiKeys.removeIf(apiKey -> apiKeyId.equals(apiKey.id));
             Persistence.apiUsers.replace(targetUser.id, targetUser);
             return Persistence.apiUsers.getById(targetUser.id);
         } else {
@@ -206,41 +193,25 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     }
 
     /**
-     * Get an Api user from Mongo DB based on the provided user id. If no user id is provided, attempt to get user from
-     * request auth token.
+     * Get an Api user from Mongo DB based on the provided user id. Make sure user is admin or managing self.
      */
     private static ApiUser getApiUser(Request req) {
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
-        ApiUser user;
-        String userId = req.queryParamOrDefault("userId", null);
-        if (userId != null) {
-            // If user Id is provided, assumption is that the requester is an AdminUser, with permission to modify an API
-            // user.
-            if (!isUserAdmin(requestingUser)) {
-                logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to perform this operation.");
-            }
-            user = Persistence.apiUsers.getById(userId);
-            if (user == null) {
-                logMessageAndHalt(
-                    req,
-                    HttpStatus.NOT_FOUND_404,
-                    String.format("No Api user matching the given user id (%s)", userId),
-                    null
-                );
-            }
-        } else {
-            // User Id is null, API user should be obtained from token.
-            user = requestingUser.apiUser;
-            if (user == null) {
-                logMessageAndHalt(
-                    req,
-                    HttpStatus.BAD_REQUEST_400,
-                    "A user id is required to create an api key",
-                    null
-                );
-            }
+        String userId = HttpUtils.getRequiredParamFromRequest(req, "userId");
+        ApiUser apiUser = Persistence.apiUsers.getById(userId);
+        if (apiUser == null) {
+            logMessageAndHalt(
+                req,
+                HttpStatus.NOT_FOUND_404,
+                String.format("No Api user matching the given user id (%s)", userId),
+                null
+            );
         }
-        return user;
-    }
 
+        if (!apiUser.canBeManagedBy(requestingUser)) {
+            logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to perform this operation.");
+        }
+
+        return apiUser;
+    }
 }

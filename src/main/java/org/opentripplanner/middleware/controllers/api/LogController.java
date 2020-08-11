@@ -36,7 +36,6 @@ public class LogController {
      * plans. Defaults to the last 30 days for all API keys in the AWS account.
      */
     private static List<GetUsageResult> getUsageLogs(Request req, Response res) {
-        // keyId param is optional (if not provided, all API keys will be included in response).
         List<ApiKey> apiKeys = getApiKeyIdsFromRequest(req);
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         if (!isUserAdmin(requestingUser)) {
@@ -51,6 +50,7 @@ public class LogController {
         String endDate = req.queryParamOrDefault("endDate", formatter.format(now));
         try {
             if (apiKeys.isEmpty()) {
+                // keyId param is optional (if not provided, all API keys will be included in response).
                 return ApiGatewayUtils.getUsageLogsForKey(null, startDate, endDate);
             }
             return ApiGatewayUtils.getUsageLogsForKeys(apiKeys, startDate, endDate);

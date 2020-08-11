@@ -1,9 +1,6 @@
 package org.opentripplanner.middleware.models;
 
 import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
-import com.amazonaws.services.apigateway.model.GetApiKeyResult;
-
-import java.util.Objects;
 
 /**
  * Represents a subset of an AWS API Gateway API key.
@@ -21,7 +18,7 @@ public class ApiKey {
     public String name;
 
     /**
-     * The api key value. Can not be transient as it is excluded from the Spark response.
+     * The api key value as provided by AWS API Gateway.
      */
     public String value;
 
@@ -44,29 +41,6 @@ public class ApiKey {
     public ApiKey(CreateApiKeyResult apiKeyResult) {
         id = apiKeyResult.getId();
         name = apiKeyResult.getName();
-        // value excluded so it's not saved to Mongo DB
-    }
-
-    /**
-     * Construct ApiKey from AWS api gateway get api key result. Used only for providing a response to the caller as it
-     * contains the actual api key value.
-     */
-    public ApiKey(GetApiKeyResult apiKeyResult) {
-        id = apiKeyResult.getId();
-        name = apiKeyResult.getName();
         value = apiKeyResult.getValue();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ApiKey apiKey = (ApiKey) o;
-        return id.equals(apiKey.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 }

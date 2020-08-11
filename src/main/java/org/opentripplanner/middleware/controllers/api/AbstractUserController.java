@@ -51,7 +51,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
                     .withResponseType(persistence.clazz),
                 this::getUserFromRequest, JsonUtils::toJson
             )
-
+            // Resend verification email
             .get(path(ROOT_ROUTE + VERIFICATION_EMAIL_PATH)
                     .withDescription("Triggers a job to resend the Auth0 verification email.")
                     .withResponseType(Job.class),
