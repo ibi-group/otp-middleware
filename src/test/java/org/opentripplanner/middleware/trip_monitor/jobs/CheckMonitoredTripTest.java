@@ -1,10 +1,12 @@
-package org.opentripplanner.middleware.trip_monitor;
+package org.opentripplanner.middleware.trip_monitor.jobs;
 
-import com.twilio.rest.verify.v2.service.Verification;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -15,28 +17,29 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.trip_monitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.utils.FileUtils;
-import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
+import static org.opentripplanner.middleware.trip_monitor.jobs.CheckMonitoredTrip.shouldSkipMonitoredTripCheck;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
  */
-public class TripMonitorTest extends OtpMiddlewareTest {
-    private static final Logger LOG = LoggerFactory.getLogger(TripMonitorTest.class);
+public class CheckMonitoredTripTest extends OtpMiddlewareTest {
+    private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTripTest.class);
     private static OtpUser user;
     private static final String mockResponse = FileUtils.getFileContents(
-        "src/test/resources/org/opentripplanner/middleware/planResponse.json"
+        "src/test/resources/org/opentripplanner/middleware/persistence/planResponse.json"
     );
     private static final OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse);
 
@@ -91,24 +94,6 @@ public class TripMonitorTest extends OtpMiddlewareTest {
     }
 
     @Test
-    public void willSkipMonitoredTripCheck() {
-        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
-        // TODO: Set clock with TestUtils.clock: https://stackoverflow.com/questions/24491260/mocking-time-in-java-8s-java-time-api/29360514#29360514
-        // Should skip if today is not sunday. FIXME: Don't run this on a Sunday!
-        Assertions.assertTrue(CheckMonitoredTrip.shouldSkipMonitoredTripCheck(monitoredTrip));
-        //TODO:
-        // - Returns false for weekend trip when current time is on a weekday.
-        // - Returns false for weekday trip when current time is on a weekend.
-        // - Returns true if trip is starting in greater than 1 hr, but the last time checked was 2 hours ago
-        // - Returns false if trip is starting in greater than 1 hr, but the last time checked was 2 minutes ago
-        // - Returns false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
-        // - Returns true if trip is starting in 45 minutes and the last time checked was 2 minutes ago
-        // - Returns false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
-        // - Returns false if trip is starting in 10 minutes and the last time checked was 2 minutes ago
-        // - Returns true if trip has ended 3 minutes ago
-    }
-
-    @Test
     public void willGenerateDepartureDelayNotification() {
         MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
         OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
@@ -132,5 +117,48 @@ public class TripMonitorTest extends OtpMiddlewareTest {
         TripMonitorNotification notification = CheckMonitoredTrip.checkTripForDepartureDelay(monitoredTrip, simulatedItinerary);
         LOG.info("Departure delay notification (should be null): {}", notification);
         Assertions.assertNull(notification);
+    }
+
+    /**
+     * Run a parameterized test to check if the shouldSkipMonitoredTripCheck works properly for the test cases generated
+     * in the {@link CheckMonitoredTripTest#createSkipTripTestCases()} method.
+     */
+    @ParameterizedTest
+    @MethodSource("createSkipTripTestCases")
+    @Disabled // TODO enable once createSkipTripTestCases has at least one test case
+    void testSkipMonitoredTripCheck(ShouldSkipTripTestCase testCase) {
+        assertEquals(testCase.shouldSkipTrip, shouldSkipMonitoredTripCheck(testCase.trip), testCase.message);
+    }
+
+    private static List<ShouldSkipTripTestCase> createSkipTripTestCases() {
+        List<ShouldSkipTripTestCase> testCases = new ArrayList<>();
+
+        // - Returns false for weekend trip when current time is on a weekday.
+        MonitoredTrip weekendTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        // - Returns false for weekday trip when current time is on a weekend.
+        // - Returns true if trip is starting in greater than 1 hr, but the last time checked was 2 hours ago
+        // - Returns false if trip is starting in greater than 1 hr, but the last time checked was 2 minutes ago
+        // - Returns false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
+        // - Returns true if trip is starting in 45 minutes and the last time checked was 2 minutes ago
+        // - Returns false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
+        // - Returns false if trip is starting in 10 minutes and the last time checked was 2 minutes ago
+        // - Returns true if trip has ended 3 minutes ago
+
+        return testCases;
+    }
+
+    private static class ShouldSkipTripTestCase {
+        /* a helpful message describing the particular test case */
+        public String message;
+        /**
+         * if true, it is expected that the {@link CheckMonitoredTripTest#createSkipTripTestCases()} method should
+         * calculate that the given trip should be skipped.
+         */
+        public boolean shouldSkipTrip;
+        /**
+         * The trip for the {@link CheckMonitoredTripTest#createSkipTripTestCases()} method to calculate whether
+         * skipping trip analysis should occur.
+         */
+        public MonitoredTrip trip;
     }
 }

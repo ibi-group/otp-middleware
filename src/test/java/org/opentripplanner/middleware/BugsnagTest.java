@@ -9,6 +9,8 @@ import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.FileUtils;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BugsnagTest extends OtpMiddlewareTest {
@@ -18,7 +20,7 @@ public class BugsnagTest extends OtpMiddlewareTest {
     private static BugsnagProject BUGSNAG_PROJECT = null;
 
     @BeforeAll
-    public static void setup() {
+    public static void setup() throws IOException {
         createBugsnagObjects();
     }
 
@@ -62,11 +64,11 @@ public class BugsnagTest extends OtpMiddlewareTest {
     /**
      * Create Bugsnag objects from static JSON representations.
      */
-    private static void createBugsnagObjects() {
-        final String filePath = "src/test/resources/org/opentripplanner/middleware/";
-        BUGSNAG_EVENT = FileUtils.getFileContentsAsJSON(filePath + "bugsnagEvent.json", BugsnagEvent.class);
-        BUGSNAG_EVENT_REQUEST = FileUtils.getFileContentsAsJSON(filePath + "bugsnagEventRequest.json", BugsnagEventRequest.class);
-        BUGSNAG_PROJECT = FileUtils.getFileContentsAsJSON(filePath + "bugsnagProject.json", BugsnagProject.class);
+    private static void createBugsnagObjects() throws IOException {
+        final String resourceFilePath = "bugsnag/";
+        BUGSNAG_EVENT = TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "bugsnagEvent.json", BugsnagEvent.class);
+        BUGSNAG_EVENT_REQUEST = TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "bugsnagEventRequest.json", BugsnagEventRequest.class);
+        BUGSNAG_PROJECT = TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "bugsnagProject.json", BugsnagProject.class);
     }
 
 }

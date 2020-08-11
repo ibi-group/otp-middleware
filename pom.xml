@@ -213,6 +213,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Used for parameterized tests -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>5.6.2</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Used to look up timezones based on lat/lng coordinates -->
         <dependency>
             <groupId>net.iakovlev</groupId>

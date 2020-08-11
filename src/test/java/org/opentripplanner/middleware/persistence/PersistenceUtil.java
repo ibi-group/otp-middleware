@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.persistence;
 
+import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -11,6 +13,7 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.utils.FileUtils;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -21,7 +24,7 @@ public class PersistenceUtil {
     private static final String BATCH_ID = "783726";
     private static final String TRIP_REQUEST_ID = "59382";
 
-    private static final String filePath = "src/test/resources/org/opentripplanner/middleware/";
+    private static final String resourceFilePath = "persistence/";
 
 
     /**
@@ -55,7 +58,7 @@ public class PersistenceUtil {
     /**
      * Create trip summary from static plan response file and store in database.
      */
-    public static TripSummary createTripSummary() {
+    public static TripSummary createTripSummary() throws IOException {
         Response planResponse = getPlanResponse();
         TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, TRIP_REQUEST_ID);
         Persistence.tripSummaries.create(tripSummary);
@@ -65,7 +68,7 @@ public class PersistenceUtil {
     /**
      * Create trip summary from static plan error response file and store in database.
      */
-    public static TripSummary createTripSummaryWithError() {
+    public static TripSummary createTripSummaryWithError() throws IOException {
         Response planErrorResponse = getPlanErrorResponse();
         TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, TRIP_REQUEST_ID);
         Persistence.tripSummaries.create(tripSummary);
@@ -158,14 +161,14 @@ public class PersistenceUtil {
     /**
      * Get successful plan response from file for creating trip summaries.
      */
-    public static Response getPlanResponse() {
-        return FileUtils.getFileContentsAsJSON(filePath + "planResponse.json", Response.class);
+    public static Response getPlanResponse() throws IOException {
+        return TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "planResponse.json", Response.class);
     }
 
     /**
      * Get error plan response from file for creating trip summaries.
      */
-    public static Response getPlanErrorResponse() {
-        return FileUtils.getFileContentsAsJSON(filePath + "planErrorResponse.json", Response.class);
+    public static Response getPlanErrorResponse() throws IOException {
+        return TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "planErrorResponse.json", Response.class);
     }
 }

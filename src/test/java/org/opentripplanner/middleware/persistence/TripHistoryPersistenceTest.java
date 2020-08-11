@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -52,21 +53,21 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
     }
 
     @Test
-    public void canCreateTripSummaryWithError() {
+    public void canCreateTripSummaryWithError() throws IOException {
         tripSummary = createTripSummaryWithError();
         TripSummary retrieved = Persistence.tripSummaries.getById(tripSummary.id);
         assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
     }
 
     @Test
-    public void canCreateTripSummary() {
+    public void canCreateTripSummary() throws IOException {
         tripSummary = createTripSummary();
         TripSummary retrieved = Persistence.tripSummaries.getById(tripSummary.id);
         assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
     }
 
     @Test
-    public void canDeleteTripSummary() {
+    public void canDeleteTripSummary() throws IOException {
         TripSummary tripSummaryToDelete = createTripSummary();
         Persistence.tripSummaries.removeById(tripSummaryToDelete.id);
         TripSummary tripSummary = Persistence.tripSummaries.getById(tripSummaryToDelete.id);
