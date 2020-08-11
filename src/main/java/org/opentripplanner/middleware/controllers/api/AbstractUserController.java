@@ -46,10 +46,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
                 .withDescription("Retrieves an " + persistence.clazz.getSimpleName() + " entity using an Auth0 access token passed in an Authorization header.")
                 .withResponseType(persistence.clazz),
                 this::getUserFromRequest, JsonUtils::toJson
-            )
-
-            // Options response for CORS for the token path
-            .options(path(TOKEN_PATH), (req, res) -> "");
+            );
 
         // Add the regular CRUD methods after defining the /fromtoken route.
         super.buildEndpoint(modifiedEndpoint);

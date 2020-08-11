@@ -118,9 +118,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     this::getOne, JsonUtils::toJson
             )
 
-            // Options response for CORS
-            .options(path(""), (req, res) -> "")
-
             // Create entity request
             .post(path("")
                     .withDescription("Creates a '" + classToLowercase + "' entity.")
