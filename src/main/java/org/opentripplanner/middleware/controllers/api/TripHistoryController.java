@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import com.mongodb.client.model.Filters;
@@ -33,7 +32,7 @@ import static com.mongodb.client.model.Filters.gte;
 import static com.mongodb.client.model.Filters.lte;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
 import static org.opentripplanner.middleware.utils.DateUtils.YYYY_MM_DD;
-import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
+import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -61,43 +60,38 @@ public class TripHistoryController implements Endpoint {
      */
     @Override
     public void bind(final SparkSwagger restApi) {
-        ApiEndpoint apiEndpoint = restApi.endpoint(
+       restApi.endpoint(
             endpointPath(ROOT_ROUTE).withDescription("Interface for retrieving trip requests."),
             (q, a) -> LOG.info("Received request for 'triprequests' Rest API")
-        );
-        apiEndpoint
-            .get(path(ROOT_ROUTE)
-                    .withDescription("Gets a list of all trip requests for a user.")
-                    .withQueryParam()
-                        .withName("userId")
-                        .withRequired(true)
-                        .withDescription("The OTP user for which to retrieve trip requests.").and()
-                    .withQueryParam()
-                        .withName(LIMIT_PARAM_NAME)
-                        .withDefaultValue(String.valueOf(DEFAULT_LIMIT))
-                        .withDescription("If specified, the maximum number of trip requests to return, starting from the most recent.").and()
-                    .withQueryParam()
-                        .withName(FROM_DATE_PARAM_NAME)
-                        .withPattern(YYYY_MM_DD)
-                        .withDefaultValue("The current date")
-                        .withDescription(String.format(
-                            "If specified, the earliest date (format %s) for which trip requests are retrieved.", YYYY_MM_DD
-                        )).and()
-                    .withQueryParam()
-                        .withName(TO_DATE_PARAM_NAME)
-                        .withPattern(YYYY_MM_DD)
-                        .withDefaultValue("The current date")
-                        .withDescription(String.format(
-                            "If specified, the latest date (format %s) for which usage logs are retrieved.", YYYY_MM_DD
-                        )).and()
-                    .withProduces(MIMETYPES_JSONONLY)
-                    // Note: unlike the name suggests, withResponseAsCollection does not generate an array
-                    // as the return type for this method. (It does generate the type for that class nonetheless.)
-                    .withResponseAsCollection(TripRequest.class),
-                TripHistoryController::getTripRequests, JsonUtils::toJson)
-
-            // Options response for CORS
-            .options(path(""), (req, res) -> "");
+       ).get(path(ROOT_ROUTE)
+                .withDescription("Gets a list of all trip requests for a user.")
+                .withQueryParam()
+                    .withName("userId")
+                    .withRequired(true)
+                    .withDescription("The OTP user for which to retrieve trip requests.").and()
+                .withQueryParam()
+                    .withName(LIMIT_PARAM_NAME)
+                    .withDefaultValue(String.valueOf(DEFAULT_LIMIT))
+                    .withDescription("If specified, the maximum number of trip requests to return, starting from the most recent.").and()
+                .withQueryParam()
+                    .withName(FROM_DATE_PARAM_NAME)
+                    .withPattern(YYYY_MM_DD)
+                    .withDefaultValue("The current date")
+                    .withDescription(String.format(
+                        "If specified, the earliest date (format %s) for which trip requests are retrieved.", YYYY_MM_DD
+                    )).and()
+                .withQueryParam()
+                    .withName(TO_DATE_PARAM_NAME)
+                    .withPattern(YYYY_MM_DD)
+                    .withDefaultValue("The current date")
+                    .withDescription(String.format(
+                        "If specified, the latest date (format %s) for which usage logs are retrieved.", YYYY_MM_DD
+                    )).and()
+                .withProduces(JSON_ONLY)
+                // Note: unlike the name suggests, withResponseAsCollection does not generate an array
+                // as the return type for this method. (It does generate the type for that class nonetheless.)
+                .withResponseAsCollection(TripRequest.class),
+            TripHistoryController::getTripRequests, JsonUtils::toJson);
     }
 
     /**

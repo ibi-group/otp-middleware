@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import com.mongodb.client.model.Filters;
@@ -21,7 +20,7 @@ import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
+import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 
 /**
  * Responsible for providing the current set of Bugsnag events to the calling service
@@ -44,21 +43,16 @@ public class BugsnagController implements Endpoint {
      */
     @Override
     public void bind(final SparkSwagger restApi) {
-        ApiEndpoint apiEndpoint = restApi.endpoint(
+        restApi.endpoint(
             endpointPath(ROOT_ROUTE).withDescription("Interface for reporting and retrieving application errors using Bugsnag."),
             (q, a) -> LOG.info("Received request for 'bugsnag' Rest API")
-        );
-        apiEndpoint
-            .get(path(ROOT_ROUTE)
-                    .withDescription("Gets a list of all Bugsnag event summaries.")
-                    .withProduces(MIMETYPES_JSONONLY)
-                    // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
-                    // as the return type for this method. (It does generate the type for that class nonetheless.)
-                    .withResponseAsCollection(BugsnagEvent.class),
-                BugsnagController::getEventSummary, JsonUtils::toJson)
-
-            // Options response for CORS
-            .options(path(""), (req, res) -> "");
+        ).get(path(ROOT_ROUTE)
+                .withDescription("Gets a list of all Bugsnag event summaries.")
+                .withProduces(JSON_ONLY)
+                // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
+                // as the return type for this method. (It does generate the type for that class nonetheless.)
+                .withResponseAsCollection(BugsnagEvent.class),
+            BugsnagController::getEventSummary, JsonUtils::toJson);
     }
 
     /**

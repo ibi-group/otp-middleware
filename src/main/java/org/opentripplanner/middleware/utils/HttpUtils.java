@@ -22,7 +22,7 @@ public class HttpUtils {
 
     public enum REQUEST_METHOD {GET, POST}
 
-    public static final List<String> MIMETYPES_JSONONLY = List.of(APPLICATION_JSON);
+    public static final List<String> JSON_ONLY = List.of(APPLICATION_JSON);
 
     /**
      * Constructs a url based on the uri.  endpoint and query params if provided

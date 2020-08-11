@@ -25,7 +25,7 @@ import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
-import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
+import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -106,7 +106,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // Get multiple entities.
             .get(path(ROOT_ROUTE)
                     .withDescription("Gets a list of all '" + classToLowercase + "' entities.")
-                    .withProduces(MIMETYPES_JSONONLY)
+                    .withProduces(JSON_ONLY)
                     // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
                     // as the return type for this method. (It does generate the type for that class nonetheless.)
                     .withResponseAsCollection(clazz),
@@ -121,20 +121,17 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                         .withRequired(true)
                         .withDescription("The id of the entity to search.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
-                    .withProduces(MIMETYPES_JSONONLY)
+                    .withProduces(JSON_ONLY)
                     .withResponseType(clazz),
                     this::getOne, JsonUtils::toJson
             )
 
-            // Options response for CORS
-            .options(path(""), (req, res) -> "")
-
             // Create entity request
             .post(path("")
                     .withDescription("Creates a '" + classToLowercase + "' entity.")
-                    .withConsumes(MIMETYPES_JSONONLY)
+                    .withConsumes(JSON_ONLY)
                     .withRequestType(clazz) // FIXME: Embedded Swagger UI doesn't work for this request. (Embed or link a more recent version?)
-                    .withProduces(MIMETYPES_JSONONLY)
+                    .withProduces(JSON_ONLY)
                     .withResponseType(clazz),
                     this::createOrUpdate, JsonUtils::toJson
             )
@@ -148,9 +145,9 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                         .withDescription("The id of the entity to update.").and()
                     // FIXME: The Swagger UI embedded in spark-swagger doesn't work for this request.
                     //  (Embed or link a more recent Swagger UI version?)
-                    .withConsumes(MIMETYPES_JSONONLY)
+                    .withConsumes(JSON_ONLY)
                     .withRequestType(clazz)
-                    .withProduces(MIMETYPES_JSONONLY)
+                    .withProduces(JSON_ONLY)
                     // FIXME: `withResponses` is supposed to document the expected HTTP responses (200, 403, 404)...
                     //  but that doesn't appear to be implemented in spark-swagger.
                     // .withResponses(...)

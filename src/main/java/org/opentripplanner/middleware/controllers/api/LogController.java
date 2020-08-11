@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.amazonaws.services.apigateway.model.GetUsageResult;
-import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
@@ -19,7 +18,7 @@ import java.util.List;
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.DateUtils.YYYY_MM_DD;
-import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
+import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -39,38 +38,33 @@ public class LogController implements Endpoint {
      */
     @Override
     public void bind(final SparkSwagger restApi) {
-        ApiEndpoint apiEndpoint = restApi.endpoint(
+        restApi.endpoint(
             endpointPath(ROOT_ROUTE).withDescription("Interface for retrieving API logs from AWS."),
             (q, a) -> LOG.info("Received request for 'logs' Rest API")
-        );
-        apiEndpoint
-            .get(path(ROOT_ROUTE)
-                    .withDescription("Gets a list of all API usage logs.")
-                    .withQueryParam()
-                        .withName("keyId")
-                        .withDescription("If specified, restricts the search to the specified AWS API key ID.").and()
-                    .withQueryParam()
-                        .withName("startDate")
-                        .withPattern(YYYY_MM_DD)
-                        .withDefaultValue("30 days prior to the current date")
-                        .withDescription(String.format(
-                            "If specified, the earliest date (format %s) for which usage logs are retrieved.", YYYY_MM_DD
-                        )).and()
-                    .withQueryParam()
-                        .withName("endDate")
-                        .withPattern(YYYY_MM_DD)
-                        .withDefaultValue("The current date")
-                        .withDescription(String.format(
-                            "If specified, the latest date (format %s) for which usage logs are retrieved.", YYYY_MM_DD
-                        )).and()
-                    .withProduces(MIMETYPES_JSONONLY)
-                    // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
-                    // as the return type for this method. (It does generate the type for that class nonetheless.)
-                    .withResponseAsCollection(GetUsageResult.class),
-                LogController::getUsageLogs, JsonUtils::toJson)
-
-            // Options response for CORS
-            .options(path(""), (req, res) -> "");
+        ).get(path(ROOT_ROUTE)
+                .withDescription("Gets a list of all API usage logs.")
+                .withQueryParam()
+                    .withName("keyId")
+                    .withDescription("If specified, restricts the search to the specified AWS API key ID.").and()
+                .withQueryParam()
+                    .withName("startDate")
+                    .withPattern(YYYY_MM_DD)
+                    .withDefaultValue("30 days prior to the current date")
+                    .withDescription(String.format(
+                        "If specified, the earliest date (format %s) for which usage logs are retrieved.", YYYY_MM_DD
+                    )).and()
+                .withQueryParam()
+                    .withName("endDate")
+                    .withPattern(YYYY_MM_DD)
+                    .withDefaultValue("The current date")
+                    .withDescription(String.format(
+                        "If specified, the latest date (format %s) for which usage logs are retrieved.", YYYY_MM_DD
+                    )).and()
+                .withProduces(JSON_ONLY)
+                // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
+                // as the return type for this method. (It does generate the type for that class nonetheless.)
+                .withResponseAsCollection(GetUsageResult.class),
+            LogController::getUsageLogs, JsonUtils::toJson);
     }
 
     /**
