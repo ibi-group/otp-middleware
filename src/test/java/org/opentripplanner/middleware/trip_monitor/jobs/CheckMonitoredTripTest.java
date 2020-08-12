@@ -22,8 +22,8 @@ import org.opentripplanner.middleware.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -137,8 +137,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     }
 
     /**
-     * Run a parameterized test to check if the shouldSkipMonitoredTripCheck works properly for the test cases generated
-     * in the {@link CheckMonitoredTripTest#createSkipTripTestCases()} method.
+     * Run a parameterized test to check if the {@link CheckMonitoredTrip#shouldSkipMonitoredTripCheck) works properly
+     * for the test cases generated in the {@link CheckMonitoredTripTest#createSkipTripTestCases()} method.
      */
     @ParameterizedTest
     @MethodSource("createSkipTripTestCases")
@@ -155,7 +155,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         List<ShouldSkipTripTestCase> testCases = new ArrayList<>();
 
         // June 10, 2020 (Wednesday) at noon
-        LocalDateTime exemplarDateTime = DateTimeUtils.nowAsLocalDateTime()
+        ZonedDateTime exemplarDateTime = DateTimeUtils.nowAsZonedDateTime(ZoneId.of("America/Los_Angeles"))
             .withYear(2020)
             .withMonth(6)
             .withDayOfMonth(10)
@@ -259,9 +259,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         return testCases;
     }
 
-    private static void setLastCheckedTimeForTripJourneyState(MonitoredTrip trip, LocalDateTime dateTime) {
+    private static void setLastCheckedTimeForTripJourneyState(MonitoredTrip trip, ZonedDateTime dateTime) {
         JourneyState journeyState = trip.retrieveJourneyState();
-        journeyState.lastChecked = Timestamp.valueOf(dateTime).getTime();
+        journeyState.lastChecked = dateTime.toInstant().toEpochMilli();
         Persistence.journeyStates.replace(journeyState.id, journeyState);
     }
 
@@ -269,7 +269,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         /* a helpful message describing the particular test case */
         public final String message;
         /* The time to mock for this test case */
-        public final LocalDateTime mockTime;
+        public final ZonedDateTime mockTime;
         /**
          * if true, it is expected that the {@link CheckMonitoredTripTest#createSkipTripTestCases()} method should
          * calculate that the given trip should be skipped.
@@ -282,7 +282,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         public final MonitoredTrip trip;
 
         private ShouldSkipTripTestCase(
-            String message, LocalDateTime mockTime, boolean shouldSkipTrip, MonitoredTrip trip
+            String message, ZonedDateTime mockTime, boolean shouldSkipTrip, MonitoredTrip trip
         ) {
             this.message = message;
             this.mockTime = mockTime;

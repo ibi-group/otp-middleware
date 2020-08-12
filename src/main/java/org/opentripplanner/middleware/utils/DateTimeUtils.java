@@ -111,16 +111,9 @@ public class DateTimeUtils {
     /**
      * Mocks the current time using the provided dateTime and internally set timezone
      */
-    public static void useFixedClockAt(LocalDateTime dateTime) {
-        useFixedClockAt(dateTime, zoneId);
-    }
-
-    /**
-     * Mocks the current time using the provided dateTime and timezone.
-     */
-    public static void useFixedClockAt(LocalDateTime date, ZoneId newZoneId){
-        zoneId = newZoneId;
-        clock = Clock.fixed(date.atZone(newZoneId).toInstant(), newZoneId);
+    public static void useFixedClockAt(ZonedDateTime zonedDateTime) {
+        zoneId = zonedDateTime.getZone();
+        clock = Clock.fixed(zonedDateTime.toInstant(), zonedDateTime.getZone());
         logCurrentTimeAndZone("Internal clock is now using a fixed clock time!");
     }
 
