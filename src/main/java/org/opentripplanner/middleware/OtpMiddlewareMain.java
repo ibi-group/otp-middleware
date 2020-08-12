@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 import static org.opentripplanner.middleware.utils.YamlUtils.yamlMapper;
 
@@ -67,18 +68,15 @@ public class OtpMiddlewareMain {
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
                     new MonitoredTripController(API_PREFIX),
-                    new OtpUserController(API_PREFIX)
+                    new OtpUserController(API_PREFIX),
+                    new LogController(API_PREFIX),
+                    new BugsnagController(API_PREFIX),
+                    new TripHistoryController(API_PREFIX)
                     // TODO Add other models.
                 ))
                 .generateDoc();
 
             OtpRequestProcessor.register(spark);
-            // Add log controller HTTP endpoints
-            // TODO: We should determine whether we want to use Spark Swagger for these endpoints too.
-            LogController.register(spark, API_PREFIX);
-
-            // Add Bugsnag controller HTTP endpoints
-            BugsnagController.register(spark, API_PREFIX);
         } catch (RuntimeException e) {
             LOG.error("Error initializing API controllers", e);
             System.exit(1);
@@ -88,9 +86,6 @@ public class OtpMiddlewareMain {
                 logMessageAndHalt(request, HttpStatus.OK_200, "OK");
                 return "OK";
             });
-
-        // available at http://localhost:4567/api/secure/triprequests
-        spark.get(API_PREFIX + "/secure/triprequests", TripHistoryController::getTripRequests);
 
         spark.before(API_PREFIX + "/secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
@@ -103,7 +98,7 @@ public class OtpMiddlewareMain {
 
         // Return "application/json" and set gzip header for all API routes.
         spark.before(API_PREFIX + "*", (request, response) -> {
-            response.type("application/json"); // Handled by API response documentation. If specified, "Try it out" feature in API docs fails.
+            response.type(APPLICATION_JSON);
             response.header("Content-Encoding", "gzip");
         });
 
