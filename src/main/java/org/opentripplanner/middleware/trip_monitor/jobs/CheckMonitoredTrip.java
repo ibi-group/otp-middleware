@@ -1,5 +1,8 @@
 package org.opentripplanner.middleware.trip_monitor.jobs;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.message.BasicNameValuePair;
 import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -16,15 +19,20 @@ import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.trip_monitor.jobs.NotificationType.ARRIVAL_DELAY;
 import static org.opentripplanner.middleware.trip_monitor.jobs.NotificationType.DEPARTURE_DELAY;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
@@ -87,13 +95,20 @@ public class CheckMonitoredTrip implements Runnable {
         }
         // Make a request to OTP with the monitored trip params or if this is in a test environment use the injected OTP
         // response.
-        OtpDispatcherResponse otpDispatcherResponse = injectedOtpResponseForTesting != null
-            ? injectedOtpResponseForTesting
-            : OtpDispatcher.sendOtpPlanRequest(trip.queryParams);
+        OtpDispatcherResponse otpDispatcherResponse = null;
+        try {
+            otpDispatcherResponse = injectedOtpResponseForTesting != null
+                ? injectedOtpResponseForTesting
+                : OtpDispatcher.sendOtpPlanRequest(generateTripPlanQueryParams(trip));
+        } catch (Exception e) {
+            // TODO: report bugsnag
+            LOG.error("Encountered an error while making a request ot the OTP server. error={}", e);
+            return;
+        }
 
         if (otpDispatcherResponse.statusCode >= 400) {
             // TODO: report bugsnag
-            LOG.error("Could not reach OTP server. status={}", otpDispatcherResponse.statusCode);
+            LOG.error("Received an error from the OTP server. status={}", otpDispatcherResponse.statusCode);
             return;
         }
         otpResponse = otpDispatcherResponse.getResponse();
@@ -332,5 +347,45 @@ public class CheckMonitoredTrip implements Runnable {
         // TODO: Change log level.
         LOG.info("Trip {} criteria not met to check. Skipping.", trip.id);
         return true;
+    }
+
+    /**
+     * Generate the appropriate OTP query params for the trip for the current check. This currently involves replacing
+     * the date query parameter with the appropriate date.
+     *
+     * TODO: finish implementation
+     */
+    public static String generateTripPlanQueryParams(MonitoredTrip trip) throws URISyntaxException {
+        // parse query params
+        List<NameValuePair> params = URLEncodedUtils.parse(
+            new URI(String.format("http://example.com/%s", trip.queryParams)),
+            UTF_8
+        );
+
+        // begin building a new list and along the way and figure out if this trip is a depart at or arrive by trip
+        List<NameValuePair> newParams = new ArrayList<>();
+        boolean tripIsDepartAt = true;
+        for (NameValuePair param : params) {
+            if (param.getName().equals("arriveBy") && param.getValue().equals("true")) tripIsDepartAt = false;
+            if (!param.getName().equals("date")) {
+                newParams.add(param);
+            } else { newParams.add(param); } // TODO delete this else block once below target date TODOs are implemented
+        }
+
+        // replace target date with appropriate date for making an OTP query
+        String newDate;
+        if (tripIsDepartAt) {
+            // TODO: check if trip's itinerary has a desired start time of today, but would start tomorrow given the
+            //  starting time in the itinerary
+            newDate = "";
+        } else {
+            // TODO: check if trip's itinerary starts on a previous day, but has an arriveBy date that is actually
+            //  tomorrow
+            newDate = "";
+        }
+        // newParams.add(new BasicNameValuePair("date", newDate)); TODO uncomment once above TODOs are implemented
+
+        // convert object to string
+        return URLEncodedUtils.format(newParams, UTF_8);
     }
 }

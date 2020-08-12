@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.trip_monitor.jobs;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -22,6 +23,7 @@ import org.opentripplanner.middleware.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URISyntaxException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -34,6 +36,7 @@ import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTripAndJourney;
+import static org.opentripplanner.middleware.trip_monitor.jobs.CheckMonitoredTrip.generateTripPlanQueryParams;
 import static org.opentripplanner.middleware.trip_monitor.jobs.CheckMonitoredTrip.shouldSkipMonitoredTripCheck;
 
 /**
@@ -287,6 +290,81 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
             this.message = message;
             this.mockTime = mockTime;
             this.shouldSkipTrip = shouldSkipTrip;
+            this.trip = trip;
+        }
+    }
+
+    /**
+     * Run a parameterized test to make sure the {@link CheckMonitoredTrip#generateTripPlanQueryParams} method
+     * generates correct query params for the test cases generated in the
+     * {@link CheckMonitoredTripTest#createQueryParamsTestCases()} method.
+     */
+    @ParameterizedTest
+    @MethodSource("createQueryParamsTestCases")
+    @Disabled // TODO remove decorator once test cases have been added
+    public void canGenerateTripPlanQueryParams(QueryParamsTestCase testCase) throws URISyntaxException {
+        DateTimeUtils.useFixedClockAt(testCase.mockTime);
+        try {
+            assertEquals(testCase.expectedQueryParams, generateTripPlanQueryParams(testCase.trip), testCase.message);
+        } finally {
+            DateTimeUtils.useSystemDefaultClockAndTimezone();
+        }
+    }
+
+    private static List<QueryParamsTestCase> createQueryParamsTestCases() {
+        List<QueryParamsTestCase> testCases = new ArrayList<>();
+
+        // TODO implement below test cases (minus the daylight savings tests)
+
+        // should use current date for a trip saved today
+
+        // should use the current date (current date is Wednesday) for a weekday depart at trip starting at noon that
+        // was originally planned on a Friday
+
+        // should use the current date (current date is Wednesday) for a weekday depart at trip that has a requested
+        // start time of 11:55pm, but has an itinerary start time at 12:01am on Thursday and was originally planned on a
+        // Friday
+
+        // should use tomorrow's date (current date is Wednesday) for a weekday depart at trip that has a requested
+        // start time of 12:01am, but has an itinerary start time at 12:30am on Thursday and was originally planned on
+        // a Friday
+
+        // should use the current date (current date is Wednesday) for a weekday arrive by trip starting at noon that
+        // has an itinerary duration of 40 minutes that was originally planned on a Friday
+
+        // should use the tomorrow's date (current date is Wednesday) for a weekday arrive by trip that is requested to
+        // arrive by 12:01am that was originally planned on a Friday
+
+        // should use the tomorrow's date (current date is Wednesday) for a weekday arrive by trip that is requested to
+        // arrive by 1:01am that has an itinerary duration of 40 minutes that was originally planned on a Friday
+
+        // TODO dream up of some daylight savings time test cases
+
+        return testCases;
+    }
+
+    private static class QueryParamsTestCase {
+        /* a helpful message describing the particular test case */
+        public final String message;
+        /**
+         * the expected string that the {@link CheckMonitoredTrip#generateTripPlanQueryParams} method should
+         * generate for the given trip.
+         */
+        public final String expectedQueryParams;
+        /* The time to mock for this test case */
+        public final ZonedDateTime mockTime;
+        /**
+         * The trip for the {@link CheckMonitoredTrip#generateTripPlanQueryParams} method to generate OTP query params
+         * for
+         */
+        public final MonitoredTrip trip;
+
+        private QueryParamsTestCase(
+            String message, String expectedQueryParams, ZonedDateTime mockTime, MonitoredTrip trip
+        ) {
+            this.message = message;
+            this.expectedQueryParams = expectedQueryParams;
+            this.mockTime = mockTime;
             this.trip = trip;
         }
     }
