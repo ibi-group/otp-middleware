@@ -29,7 +29,7 @@ public class OtpRequestProcessor {
      * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
      * return OTP version info.
      */
-    private static final String OTP_SERVER = getConfigPropertyAsText("OTP_SERVER");
+    private static final String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
     /**
      * Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse}
      */
@@ -55,7 +55,7 @@ public class OtpRequestProcessor {
      * status) is passed back to the requester.
      */
     private static String proxy(Request request, spark.Response response) {
-        if (OTP_SERVER == null) {
+        if (OTP_API_ROOT == null) {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
             return null;
         }
