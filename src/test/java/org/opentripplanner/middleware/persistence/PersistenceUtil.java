@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import spark.Request;
 
 /**
  * Utility class to aid with creating and storing objects in Mongo.
@@ -130,7 +132,7 @@ public class PersistenceUtil {
      * Delete multiple trip requests from database.
      */
     public static void deleteTripRequests(List<TripRequest> tripRequests) {
-        for (TripRequest tripRequest: tripRequests) {
+        for (TripRequest tripRequest : tripRequests) {
             Persistence.tripRequests.removeById(tripRequest.id);
         }
     }
@@ -198,12 +200,19 @@ public class PersistenceUtil {
         PLAN_ERROR_RESPONSE = FileUtils.getFileContentsAsJSON(filePath + "planErrorResponse.json", Response.class);
     }
 
-    public static int getStatusCodeFromResponse(String url, HttpUtils.REQUEST_METHOD requestMethod) {
+    /**
+     * Send request to provided URL placing the Auth0 user id in the headers so that {@link Auth0UserProfile} can check
+     * the database for a matching user. Returns the response status code.
+      */
+    public static int getStatusCodeFromResponse(String url, HttpUtils.REQUEST_METHOD requestMethod, String auth0UserId) {
+        HashMap<String, String> headers = new HashMap<>();
+        headers.put("Authorization", auth0UserId);
+
         HttpResponse<String> stringHttpResponse = HttpUtils.httpRequestRawResponse(
             URI.create(url),
             1000,
             requestMethod,
-            new HashMap<>(),
+            headers,
             ""
         );
 
