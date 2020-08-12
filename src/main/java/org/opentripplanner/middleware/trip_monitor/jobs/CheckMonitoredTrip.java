@@ -293,6 +293,7 @@ public class CheckMonitoredTrip implements Runnable {
         // If last check was more than an hour ago and trip doesn't occur until an hour from now, check trip.
         long millisSinceLastCheck = DateTimeUtils.currentTimeMillis() - trip.retrieveJourneyState().lastChecked;
         long minutesSinceLastCheck = TimeUnit.MILLISECONDS.toMinutes(millisSinceLastCheck);
+        LOG.info("{} minutes since last check", minutesSinceLastCheck);
         long minutesUntilTrip = Duration.between(now, tripTime).toMinutes();
         LOG.info("Trip {} starts in {} minutes", trip.id, minutesUntilTrip);
         // TODO: Refine these frequency intervals for monitor checks.

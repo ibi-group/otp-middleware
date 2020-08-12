@@ -105,7 +105,7 @@ public class DateTimeUtils {
      * Returns the current time in milliseconds according the the current set Clock.
      */
     public static long currentTimeMillis() {
-        return Timestamp.valueOf(nowAsLocalDateTime()).getTime();
+        return clock.millis();
     }
 
     /**
