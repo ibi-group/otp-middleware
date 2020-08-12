@@ -6,13 +6,11 @@ import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 
 import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -160,8 +158,8 @@ public class MonitoredTrip extends Model {
         return this;
     }
 
-    public boolean isActiveOnDate(LocalDateTime date) {
-        DayOfWeek dayOfWeek = date.getDayOfWeek();
+    public boolean isActiveOnDate(ZonedDateTime zonedDateTime) {
+        DayOfWeek dayOfWeek = zonedDateTime.getDayOfWeek();
         // TODO: Maybe we should just refactor DOW to be a list of ints (TIntList).
         return isActive &&
             (

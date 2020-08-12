@@ -17,8 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
@@ -260,14 +260,12 @@ public class CheckMonitoredTrip implements Runnable {
             zoneId = fromZoneId.get();
         }
         // Get current time and trip time (with the time offset to today) for comparison.
-        LocalDateTime now = DateTimeUtils.nowAsLocalDateTime(zoneId);
+        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(zoneId);
         // TODO: Determine whether we want to monitor trips during the length of the trip.
         //  If we do this, we will want to use the itinerary end time (and destination zoneId) to determine this time
         //  value. Also, we may want to use the start time leading up to the trip (for periodic monitoring) and once
         //  the trip has started, switch to some other monitoring interval while the trip is in progress.
-        LocalDateTime tripTime = trip.itinerary.startTime.toInstant()
-            .atZone(zoneId)
-            .toLocalDateTime()
+        ZonedDateTime tripTime = ZonedDateTime.ofInstant(trip.itinerary.startTime.toInstant(), zoneId)
             // Offset the trip time to today's date.
             .withYear(now.getYear())
             .withMonth(now.getMonthValue())

@@ -10,6 +10,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
@@ -91,6 +92,13 @@ public class DateTimeUtils {
      */
     public static LocalDateTime nowAsLocalDateTime(ZoneId zoneId) {
         return LocalDateTime.now(clock.withZone(zoneId));
+    }
+
+    /**
+     * Returns the current time as a ZonedDateTime instance in the given timezone
+     */
+    public static ZonedDateTime nowAsZonedDateTime(ZoneId zoneId) {
+        return ZonedDateTime.now(clock).withZoneSameInstant(zoneId);
     }
 
     /**
