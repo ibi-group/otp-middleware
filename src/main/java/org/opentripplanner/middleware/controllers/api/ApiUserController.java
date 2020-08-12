@@ -19,7 +19,7 @@ import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
 import static org.opentripplanner.middleware.utils.ApiGatewayUtils.deleteApiKey;
-import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
+import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -45,24 +45,24 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             // Create API key
             .post(path(ID_PATH + API_KEY_PATH)
                     .withDescription("Creates API key for ApiUser (with optional AWS API Gateway usage plan ID).")
-                    .withConsumes(MIMETYPES_JSONONLY)
+                    .withConsumes(JSON_ONLY)
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The user ID")
                     .and()
                     .withQueryParam().withName("usagePlanId").withRequired(false).withDescription("Optional AWS API Gateway usage plan ID.")
                     .and()
-                    .withProduces(MIMETYPES_JSONONLY)
+                    .withProduces(JSON_ONLY)
                     .withResponseType(persistence.clazz),
                 this::createApiKeyForApiUser, JsonUtils::toJson
             )
             // Delete API key
             .delete(path(ID_PATH + API_KEY_PATH + API_KEY_ID_PARAM)
                     .withDescription("Deletes API key for ApiUser.")
-                    .withConsumes(MIMETYPES_JSONONLY)
+                    .withConsumes(JSON_ONLY)
                     .withPathParam().withName(ID_PARAM).withDescription("The user ID.")
                     .and()
                     .withPathParam().withName("apiKeyId").withDescription("The ID of the API key.")
                     .and()
-                    .withProduces(MIMETYPES_JSONONLY)
+                    .withProduces(JSON_ONLY)
                     .withResponseType(persistence.clazz),
                 this::deleteApiKeyForApiUser, JsonUtils::toJson
             );
