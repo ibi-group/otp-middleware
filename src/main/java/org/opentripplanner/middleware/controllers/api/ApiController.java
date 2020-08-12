@@ -33,7 +33,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 /**
  * Generic API controller abstract class. This class provides CRUD methods using {@link spark.Spark} HTTP request
  * methods. This will identify the MongoDB collection on which to operate based on the provided {@link Model} class.
- * <p>
+ *
  * TODO: Add hooks so that validation can be performed on certain methods (e.g., validating fields on create/update,
  * checking user permissions to perform certain actions, checking whether an entity can be deleted due to references
  * that exist in other collection).
@@ -51,7 +51,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private final Class<T> clazz;
 
     /**
-     * @param apiPrefix   string prefix to use in determining the resource location
+     * @param apiPrefix string prefix to use in determining the resource location
      * @param persistence {@link TypedPersistence} persistence for the entity to set up CRUD endpoints for
      */
     public ApiController(String apiPrefix, TypedPersistence<T> persistence) {
@@ -89,7 +89,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * (e.g., getOne, getMany, delete) for CRUD operations.
      * It can optionally be overridden by child classes to add any supplemental methods to the baseEndpoint.
      * Either before or after(*) supplemental methods are added, be sure to call the super method to add CRUD operations.
-     * <p>
+     *
      * (*) Note: spark-java will resolve methods in the order they are added to the baseEndpoint parameter.
      * For instance, if /path and /path/subpath are added in this order, then
      * a request with /path/subpath will be treated as /path, and the method for /path/subpath will be ignored.
