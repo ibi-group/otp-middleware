@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.persistence;
 
+import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
-import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -10,8 +10,15 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.middleware.utils.FileUtils;
+import org.opentripplanner.middleware.utils.HttpUtils;
 
-import java.util.*;
+import java.net.URI;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Utility class to aid with creating and storing objects in Mongo.
@@ -45,6 +52,36 @@ public class PersistenceUtil {
         return user;
     }
 
+    /**
+     * Create Admin user and store in database.
+     */
+    public static AdminUser createAdminUser(String email) {
+        AdminUser user = new AdminUser();
+        user.email = email;
+        Persistence.adminUsers.create(user);
+        return user;
+    }
+
+    /**
+     * Get Api user from database
+     */
+    public static ApiUser getApiUser(String id) {
+        return Persistence.apiUsers.getById(id);
+    }
+
+    /**
+     * Remove Api user from database
+     */
+    public static void removeApiUser(String id) {
+        Persistence.apiUsers.removeById(id);
+    }
+
+    /**
+     * Remove Admin user from database
+     */
+    public static void removeAdminUser(String id) {
+        Persistence.adminUsers.removeById(id);
+    }
 
     /**
      * Create trip request and store in database.
@@ -159,5 +196,17 @@ public class PersistenceUtil {
         final String filePath = "src/test/resources/org/opentripplanner/middleware/";
         PLAN_RESPONSE = FileUtils.getFileContentsAsJSON(filePath + "planResponse.json", Response.class);
         PLAN_ERROR_RESPONSE = FileUtils.getFileContentsAsJSON(filePath + "planErrorResponse.json", Response.class);
+    }
+
+    public static int getStatusCodeFromResponse(String url, HttpUtils.REQUEST_METHOD requestMethod) {
+        HttpResponse<String> stringHttpResponse = HttpUtils.httpRequestRawResponse(
+            URI.create(url),
+            1000,
+            requestMethod,
+            new HashMap<>(),
+            ""
+        );
+
+        return stringHttpResponse.statusCode();
     }
 }
