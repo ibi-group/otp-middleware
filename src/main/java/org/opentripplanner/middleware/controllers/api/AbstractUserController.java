@@ -16,6 +16,7 @@ import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
 import static org.opentripplanner.middleware.auth.Auth0Users.validateExistingUser;
+import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -43,13 +44,11 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Get user from token.
             .get(path(ROOT_ROUTE + TOKEN_PATH)
-                .withDescription("Retrieves an " + persistence.clazz.getSimpleName() + " entity using an Auth0 access token passed in an Authorization header.")
-                .withResponseType(persistence.clazz),
+                    .withDescription("Retrieves an " + persistence.clazz.getSimpleName() + " entity using an Auth0 access token passed in an Authorization header.")
+                    .withProduces(JSON_ONLY)
+                    .withResponseType(persistence.clazz),
                 this::getUserFromRequest, JsonUtils::toJson
-            )
-
-            // Options response for CORS for the token path
-            .options(path(TOKEN_PATH), (req, res) -> "");
+            );
 
         // Add the regular CRUD methods after defining the /fromtoken route.
         super.buildEndpoint(modifiedEndpoint);

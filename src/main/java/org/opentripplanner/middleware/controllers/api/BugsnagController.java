@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.rest.Endpoint;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.bugsnag.EventSummary;
@@ -8,35 +10,55 @@ import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
-import spark.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
+
 /**
  * Responsible for providing the current set of Bugsnag events to the calling service
  */
-public class BugsnagController {
+public class BugsnagController implements Endpoint {
 
     private static TypedPersistence<BugsnagEvent> bugsnagEvents = Persistence.bugsnagEvents;
     private static TypedPersistence<BugsnagProject> bugsnagProjects = Persistence.bugsnagProjects;
+    private static final Logger LOG = LoggerFactory.getLogger(LogController.class);
+
+    private final String ROOT_ROUTE;
+
+    public BugsnagController(String apiPrefix) {
+        this.ROOT_ROUTE = apiPrefix + "admin/bugsnag/eventsummary";
+    }
 
     /**
-     * Register http endpoints with {@link spark.Spark} instance at the provided API prefix.
+     * Register the API endpoint and GET resource to retrieve Bugsnag event summaries
+     * when spark-swagger calls this function with the target API instance.
      */
-    public static void register (Service spark, String apiPrefix) {
-        // available at http://localhost:4567/api/admin/bugsnag/eventsummary
-        spark.get(apiPrefix + "admin/bugsnag/eventsummary", BugsnagController::getEventSummary);
+    @Override
+    public void bind(final SparkSwagger restApi) {
+        restApi.endpoint(
+            endpointPath(ROOT_ROUTE).withDescription("Interface for reporting and retrieving application errors using Bugsnag."),
+            (q, a) -> LOG.info("Received request for 'bugsnag' Rest API")
+        ).get(path(ROOT_ROUTE)
+                .withDescription("Gets a list of all Bugsnag event summaries.")
+                .withProduces(JSON_ONLY)
+                // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
+                // as the return type for this method. (It does generate the type for that class nonetheless.)
+                .withResponseAsCollection(BugsnagEvent.class),
+            BugsnagController::getEventSummary, JsonUtils::toJson);
     }
 
     /**
      * Get all Bugsnag events from Mongo and replace the project id with the project name and return
      */
-    public static String getEventSummary(Request request, Response response) {
-        response.type("application/json");
-
+    private static List<EventSummary> getEventSummary(Request request, Response response) {
         List<EventSummary> eventSummaries = new ArrayList<>();
         List<BugsnagEvent> events = bugsnagEvents.getAll();
 
@@ -47,7 +69,6 @@ public class BugsnagController {
             eventSummaries.add(new EventSummary(project, event));
         }
 
-        return JsonUtils.toJson(eventSummaries);
+        return eventSummaries;
     }
-
 }
