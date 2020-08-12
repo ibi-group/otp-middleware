@@ -8,8 +8,6 @@ import com.amazonaws.services.apigateway.model.CreateApiKeyRequest;
 import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
 import com.amazonaws.services.apigateway.model.CreateUsagePlanKeyRequest;
 import com.amazonaws.services.apigateway.model.DeleteApiKeyRequest;
-import com.amazonaws.services.apigateway.model.GetApiKeyRequest;
-import com.amazonaws.services.apigateway.model.GetApiKeyResult;
 import com.amazonaws.services.apigateway.model.GetUsagePlanRequest;
 import com.amazonaws.services.apigateway.model.GetUsagePlanResult;
 import com.amazonaws.services.apigateway.model.GetUsagePlansRequest;
@@ -99,43 +97,26 @@ public class ApiGatewayUtils {
     }
 
     /**
-     * Get API key (with key value) for the provided id.
+     * Delete an API key from AWS API gateway.
      */
-    public static GetApiKeyResult getApiKey(String apiKeyId) {
-        AmazonApiGateway gateway = getAmazonApiGateway();
-        try {
-            GetApiKeyRequest getApiKeyRequest = new GetApiKeyRequest()
-                .withIncludeValue(true)
-                .withApiKey(apiKeyId);
-            return gateway.getApiKey(getApiKeyRequest);
-        } catch (Exception e) {
-            BugsnagReporter.reportErrorToBugsnag("Error encountered while fetching API Key", e);
-            throw e;
-        }
-    }
-
-    /**
-     * Delete api keys from AWS api gateway.
-     */
-    public static boolean deleteApiKeys(List<ApiKey> apiKeys) {
+    public static boolean deleteApiKey(ApiKey apiKey) {
         long startTime = System.currentTimeMillis();
         AmazonApiGateway gateway = getAmazonApiGateway();
-        for (ApiKey apiKey : apiKeys) {
-            try {
-                DeleteApiKeyRequest deleteApiKeyRequest = new DeleteApiKeyRequest();
-                deleteApiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
-                deleteApiKeyRequest.setApiKey(apiKey.id);
-                gateway.deleteApiKey(deleteApiKeyRequest);
-                LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
-                return true;
-            } catch (NotFoundException e) {
-                LOG.warn("Api key ({}) not found, unable to delete", apiKey.id, e);
-            } catch (Exception e) {
-                String message = String.format("Unable to delete api key (%s)", apiKey.id);
-                BugsnagReporter.reportErrorToBugsnag(message, e);
-            }
+        boolean success = true;
+        try {
+            DeleteApiKeyRequest deleteApiKeyRequest = new DeleteApiKeyRequest();
+            deleteApiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
+            deleteApiKeyRequest.setApiKey(apiKey.id);
+            gateway.deleteApiKey(deleteApiKeyRequest);
+            LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
+        } catch (NotFoundException e) {
+            LOG.warn("Api key ({}) not found, unable to delete", apiKey.id, e);
+        } catch (Exception e) {
+            String message = String.format("Unable to delete api key (%s)", apiKey.id);
+            BugsnagReporter.reportErrorToBugsnag(message, e);
+            success = false;
         }
-        return false;
+        return success;
     }
 
     /**

@@ -56,11 +56,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
                     .withDescription("Triggers a job to resend the Auth0 verification email.")
                     .withResponseType(Job.class),
                 this::resendVerificationEmail, JsonUtils::toJson
-            )
-
-            // Options response for CORS for the token and verification email paths
-            .options(path(TOKEN_PATH), (req, res) -> "")
-            .options(path(VERIFICATION_EMAIL_PATH), (req, res) -> "");
+            );
 
         // Add the regular CRUD methods after defining the /fromtoken route.
         super.buildEndpoint(modifiedEndpoint);

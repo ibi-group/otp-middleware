@@ -15,11 +15,10 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
-import java.util.Collections;
-
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
+import static org.opentripplanner.middleware.utils.ApiGatewayUtils.deleteApiKey;
 import static org.opentripplanner.middleware.utils.HttpUtils.MIMETYPES_JSONONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -32,7 +31,6 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     private static final String API_KEY_PATH = "/apikey";
     private static final int API_KEY_LIMIT_PER_USER = 2;
     private static final String API_KEY_ID_PARAM = "/:apiKeyId";
-    private static final String USER_ID_PARAM = "/:userId";
 
     public ApiUserController(String apiPrefix) {
         super(apiPrefix, Persistence.apiUsers, "secure/application");
@@ -45,10 +43,10 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         // Add the api key route BEFORE the regular CRUD methods
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Create API key
-            .post(path(USER_ID_PARAM + API_KEY_PATH)
+            .post(path(ID_PATH + API_KEY_PATH)
                     .withDescription("Creates API key for ApiUser (with optional AWS API Gateway usage plan ID).")
                     .withConsumes(MIMETYPES_JSONONLY)
-                    .withPathParam().withName("userId").withRequired(true).withDescription("The user ID")
+                    .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The user ID")
                     .and()
                     .withQueryParam().withName("usagePlanId").withRequired(false).withDescription("Optional AWS API Gateway usage plan ID.")
                     .and()
@@ -57,21 +55,18 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 this::createApiKeyForApiUser, JsonUtils::toJson
             )
             // Delete API key
-            .delete(path(USER_ID_PARAM + API_KEY_PATH + API_KEY_ID_PARAM)
+            .delete(path(ID_PATH + API_KEY_PATH + API_KEY_ID_PARAM)
                     .withDescription("Deletes API key for ApiUser.")
                     .withConsumes(MIMETYPES_JSONONLY)
-                    .withPathParam().withName("userId").withDescription("The user ID.")
+                    .withPathParam().withName(ID_PARAM).withDescription("The user ID.")
                     .and()
                     .withPathParam().withName("apiKeyId").withDescription("The ID of the API key.")
                     .and()
                     .withProduces(MIMETYPES_JSONONLY)
                     .withResponseType(persistence.clazz),
                 this::deleteApiKeyForApiUser, JsonUtils::toJson
-            )
+            );
 
-            // Options response for CORS for the api key paths
-            .options(path(USER_ID_PARAM + API_KEY_PATH), (req, res) -> "")
-            .options(path(USER_ID_PARAM + API_KEY_PATH + API_KEY_ID_PARAM), (req, res) -> "");
 
         // Add the regular CRUD methods after defining the /apikey route.
         super.buildEndpoint(modifiedEndpoint);
@@ -138,8 +133,8 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 null);
         }
 
-        // Delete api key from AWS.
-        boolean success = ApiGatewayUtils.deleteApiKeys(Collections.singletonList(new ApiKey(apiKeyId)));
+        // Delete API key from AWS.
+        boolean success = deleteApiKey(new ApiKey(apiKeyId));
         if (success) {
             // Delete api key from user and persist
             targetUser.apiKeys.removeIf(apiKey -> apiKeyId.equals(apiKey.id));
@@ -171,13 +166,15 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 null);
         }
 
-        // store api key id (not the actual api key)
-        user.apiKeys.add(new ApiKey(apiKeyResult));
+        ApiKey apiKey = new ApiKey(apiKeyResult);
+
+        // store api key id including the actual api key (value)
+        user.apiKeys.add(apiKey);
 
         try {
             return super.preCreateHook(user, req);
         } catch (HaltException e) {
-            ApiGatewayUtils.deleteApiKeys(user.apiKeys);
+            deleteApiKey(apiKey);
             throw e;
         }
     }
@@ -188,7 +185,9 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     @Override
     boolean preDeleteHook(ApiUser user, Request req) {
-        ApiGatewayUtils.deleteApiKeys(user.apiKeys);
+        for (ApiKey apiKey : user.apiKeys) {
+            deleteApiKey(apiKey);
+        }
         return true;
     }
 
@@ -197,7 +196,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     private static ApiUser getApiUser(Request req) {
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
-        String userId = HttpUtils.getRequiredParamFromRequest(req, "userId");
+        String userId = HttpUtils.getRequiredParamFromRequest(req, ID_PARAM);
         ApiUser apiUser = Persistence.apiUsers.getById(userId);
         if (apiUser == null) {
             logMessageAndHalt(
