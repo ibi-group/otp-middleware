@@ -19,7 +19,7 @@ import static org.opentripplanner.middleware.persistence.PersistenceUtil.removeA
 
 /**
  * Tests for creating and deleting api keys. The following config parameters are required for these tests to run:
- * <p>
+ *
  * DISABLE_AUTH set to true to bypass auth checks and use users defined here.
  * DEFAULT_USAGE_PLAN_ID set to a valid usage plan id. AWS requires this to create an api key.
  */
