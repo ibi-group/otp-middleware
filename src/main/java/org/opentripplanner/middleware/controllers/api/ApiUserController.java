@@ -45,10 +45,9 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             // Create API key
             .post(path(ID_PATH + API_KEY_PATH)
                     .withDescription("Creates API key for ApiUser (with optional AWS API Gateway usage plan ID).")
-                    .withConsumes(JSON_ONLY)
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The user ID")
                     .and()
-                    .withQueryParam().withName("usagePlanId").withRequired(false).withDescription("Optional AWS API Gateway usage plan ID.")
+                    .withQueryParam().withName("usagePlanId").withDescription("Optional AWS API Gateway usage plan ID.")
                     .and()
                     .withProduces(JSON_ONLY)
                     .withResponseType(persistence.clazz),
@@ -57,7 +56,6 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             // Delete API key
             .delete(path(ID_PATH + API_KEY_PATH + API_KEY_ID_PARAM)
                     .withDescription("Deletes API key for ApiUser.")
-                    .withConsumes(JSON_ONLY)
                     .withPathParam().withName(ID_PARAM).withDescription("The user ID.")
                     .and()
                     .withPathParam().withName("apiKeyId").withDescription("The ID of the API key.")
