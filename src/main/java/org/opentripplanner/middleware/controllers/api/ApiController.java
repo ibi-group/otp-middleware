@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,12 +35,14 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * methods. This will identify the MongoDB collection on which to operate based on the provided {@link Model} class.
  *
  * TODO: Add hooks so that validation can be performed on certain methods (e.g., validating fields on create/update,
- *  checking user permissions to perform certain actions, checking whether an entity can be deleted due to references
- *  that exist in other collection).
+ * checking user permissions to perform certain actions, checking whether an entity can be deleted due to references
+ * that exist in other collection).
+ *
  * @param <T> One of the {@link Model} classes (extracted from {@link TypedPersistence})
  */
 public abstract class ApiController<T extends Model> implements Endpoint {
-    private static final String ID_PARAM = "/:id";
+    protected static final String ID_PARAM = "id";
+    protected static final String ID_PATH = "/:" + ID_PARAM;
     protected final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
     protected static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
@@ -51,11 +54,11 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * @param apiPrefix string prefix to use in determining the resource location
      * @param persistence {@link TypedPersistence} persistence for the entity to set up CRUD endpoints for
      */
-    public ApiController (String apiPrefix, TypedPersistence<T> persistence) {
+    public ApiController(String apiPrefix, TypedPersistence<T> persistence) {
         this(apiPrefix, persistence, null);
     }
 
-    public ApiController (String apiPrefix, TypedPersistence<T> persistence, String resource) {
+    public ApiController(String apiPrefix, TypedPersistence<T> persistence, String resource) {
         this.clazz = persistence.clazz;
         this.persistence = persistence;
         this.classToLowercase = persistence.clazz.getSimpleName().toLowerCase();
@@ -69,6 +72,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * to register endpoints and generate the swagger documentation.
      * In this method, we add the different API paths and methods (e.g. the CRUD methods)
      * to the restApi parameter for the applicable controller.
+     *
      * @param restApi The object to which to attach the documentation.
      */
     @Override
@@ -91,6 +95,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * a request with /path/subpath will be treated as /path, and the method for /path/subpath will be ignored.
      * Conversely, if /path/subpath and /path are added in this order, then
      * a request with /path/subpath will be handled by the method for /path/subpath.
+     *
      * @param baseEndpoint The end point to which to add the methods.
      */
     protected void buildEndpoint(ApiEndpoint baseEndpoint) {
@@ -110,20 +115,17 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
                     // as the return type for this method. (It does generate the type for that class nonetheless.)
                     .withResponseAsCollection(clazz),
-                    this::getMany, JsonUtils::toJson
+                this::getMany, JsonUtils::toJson
             )
 
             // Get one entity.
-            .get(path(ROOT_ROUTE + ID_PARAM)
+            .get(path(ROOT_ROUTE + ID_PATH)
                     .withDescription("Returns a '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
-                    .withPathParam()
-                        .withName("id")
-                        .withRequired(true)
-                        .withDescription("The id of the entity to search.").and()
+                    .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to search.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
                     .withProduces(JSON_ONLY)
                     .withResponseType(clazz),
-                    this::getOne, JsonUtils::toJson
+                this::getOne, JsonUtils::toJson
             )
 
             // Create entity request
@@ -133,16 +135,13 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     .withRequestType(clazz) // FIXME: Embedded Swagger UI doesn't work for this request. (Embed or link a more recent version?)
                     .withProduces(JSON_ONLY)
                     .withResponseType(clazz),
-                    this::createOrUpdate, JsonUtils::toJson
+                this::createOrUpdate, JsonUtils::toJson
             )
 
             // Update entity request
-            .put(path(ID_PARAM)
+            .put(path(ID_PATH)
                     .withDescription("Updates and returns the '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
-                    .withPathParam()
-                        .withName("id")
-                        .withRequired(true)
-                        .withDescription("The id of the entity to update.").and()
+                    .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to update.").and()
                     // FIXME: The Swagger UI embedded in spark-swagger doesn't work for this request.
                     //  (Embed or link a more recent Swagger UI version?)
                     .withConsumes(JSON_ONLY)
@@ -152,18 +151,15 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     //  but that doesn't appear to be implemented in spark-swagger.
                     // .withResponses(...)
                     .withResponseType(clazz),
-                    this::createOrUpdate, JsonUtils::toJson
+                this::createOrUpdate, JsonUtils::toJson
             )
 
             // Delete entity request
-            .delete(path(ID_PARAM)
+            .delete(path(ID_PATH)
                     .withDescription("Deletes the '" + classToLowercase + "' entity with the specified id if it exists.")
-                    .withPathParam()
-                        .withName("id")
-                        .withRequired(true)
-                        .withDescription("The id of the entity to delete.").and()
+                    .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to delete.").and()
                     .withGenericResponse(),
-                    this::deleteOne, JsonUtils::toJson
+                this::deleteOne, JsonUtils::toJson
             );
     }
 
@@ -352,18 +348,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Get entity ID from request.
      */
     private String getIdFromRequest(Request req) {
-        return getRequiredParamFromRequest(req, "id");
-    }
-
-    /**
-     * Get a request parameter value.
-     * This method will halt the request if paramName is not provided in the request.
-     */
-    private String getRequiredParamFromRequest(Request req, String paramName) {
-        String paramValue = req.params(paramName);
-        if (paramValue == null) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide parameter name.");
-        }
-        return paramValue;
+        return HttpUtils.getRequiredParamFromRequest(req, "id");
     }
 }

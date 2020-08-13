@@ -16,6 +16,8 @@ import com.amazonaws.services.apigateway.model.GetUsageRequest;
 import com.amazonaws.services.apigateway.model.GetUsageResult;
 import com.amazonaws.services.apigateway.model.NotFoundException;
 import com.amazonaws.services.apigateway.model.UsagePlan;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.models.ApiKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +64,8 @@ public class ApiGatewayUtils {
             CreateApiKeyRequest apiKeyRequest = new CreateApiKeyRequest();
             apiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
             apiKeyRequest
+                //FIXME This may need to include stage key(s). Not sure what impact that places on the calling
+                // services though?
                 .withName(userId)
                 .withCustomerId(userId)
                 .withEnabled(true);
@@ -82,8 +86,10 @@ public class ApiGatewayUtils {
 
             return apiKeyResult;
         } catch (Exception e) {
-            LOG.error("Unable to get api key from AWS", e);
-            //FIXME add bugsnag
+            String message = String.format("Unable to get api key from AWS for user id (%s) and usage plan id (%s)",
+                userId,
+                usagePlanId);
+            BugsnagReporter.reportErrorToBugsnag(message, e);
         } finally {
             LOG.debug("Get api key and assign to usage plan took {} msec", System.currentTimeMillis() - startTime);
         }
@@ -91,33 +97,32 @@ public class ApiGatewayUtils {
     }
 
     /**
-     * Delete api keys from AWS api gateway.
+     * Delete an API key from AWS API gateway.
      */
-    public static void deleteApiKeys(List<String> apiKeyIds) {
+    public static boolean deleteApiKey(ApiKey apiKey) {
         long startTime = System.currentTimeMillis();
-
         AmazonApiGateway gateway = getAmazonApiGateway();
-
-        for (String apiKeyId : apiKeyIds) {
-            try {
-                DeleteApiKeyRequest deleteApiKeyRequest = new DeleteApiKeyRequest();
-                deleteApiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
-                deleteApiKeyRequest.setApiKey(apiKeyId);
-                gateway.deleteApiKey(deleteApiKeyRequest);
-            } catch (NotFoundException e) {
-                LOG.warn("Api key ({}) not found, unable to delete", apiKeyId, e);
-            } catch (Exception e) {
-                LOG.error("Unable to delete api key ({})", apiKeyId, e);
-                //FIXME add bugsnag
-            }
+        boolean success = true;
+        try {
+            DeleteApiKeyRequest deleteApiKeyRequest = new DeleteApiKeyRequest();
+            deleteApiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
+            deleteApiKeyRequest.setApiKey(apiKey.id);
+            gateway.deleteApiKey(deleteApiKeyRequest);
+            LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
+        } catch (NotFoundException e) {
+            LOG.warn("Api key ({}) not found, unable to delete", apiKey.id, e);
+        } catch (Exception e) {
+            String message = String.format("Unable to delete api key (%s)", apiKey.id);
+            BugsnagReporter.reportErrorToBugsnag(message, e);
+            success = false;
         }
-        LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
+        return success;
     }
 
     /**
      * Get usage logs from AWS api gateway for a given key id, start and end date
      */
-    public static List<GetUsageResult> getUsageLogs(String keyId, String startDate, String endDate) {
+    public static List<GetUsageResult> getUsageLogsForKey(String keyId, String startDate, String endDate) {
         long startTime = System.currentTimeMillis();
 
         AmazonApiGateway gateway = getAmazonApiGateway();
@@ -136,16 +141,30 @@ public class ApiGatewayUtils {
                 usageResults.add(gateway.getUsage(getUsageRequest));
             } catch (Exception e) {
                 // Catch any issues with bad request parameters (e.g., invalid API keyId or bad date format).
-                LOG.error("Unable to get usage results for key id ({}) with start date ({}) and end date ({})",
+                String message = String.format("Unable to get usage results for key id (%s) between (%s) and (%s)",
                     keyId,
                     startDate,
-                    endDate,
-                    e);
-                //FIXME add bugsnag
+                    endDate);
+                BugsnagReporter.reportErrorToBugsnag(message, e);
                 throw e;
             }
         }
-        LOG.debug("Retrieving usage logs took {} msec", System.currentTimeMillis() - startTime);
+        LOG.debug("Retrieving usage logs for api key took {} msec", System.currentTimeMillis() - startTime);
+        return usageResults;
+    }
+
+    /**
+     * Get usage logs from AWS api gateway for a given list of api keys, start and end date
+     */
+    public static List<GetUsageResult> getUsageLogsForKeys(List<ApiKey> apiKeys, String startDate, String endDate) {
+        long startTime = System.currentTimeMillis();
+
+        List<GetUsageResult> usageResults = new ArrayList<>();
+        for (ApiKey apiKey : apiKeys) {
+            usageResults.addAll(getUsageLogsForKey(apiKey.id, startDate, endDate));
+        }
+
+        LOG.debug("Retrieving usage logs for a list of api keys took {} msec", System.currentTimeMillis() - startTime);
         return usageResults;
     }
 }

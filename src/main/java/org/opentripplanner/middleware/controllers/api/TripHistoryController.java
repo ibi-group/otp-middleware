@@ -102,7 +102,7 @@ public class TripHistoryController implements Endpoint {
 
         TypedPersistence<TripRequest> tripRequest = Persistence.tripRequests;
 
-        final String userId = HttpUtils.getRequiredParamFromRequest(request, "userId", false);
+        final String userId = HttpUtils.getRequiredQueryParamFromRequest(request, "userId", false);
 
         isAuthorized(userId, request);
 
@@ -110,7 +110,7 @@ public class TripHistoryController implements Endpoint {
 
         String paramLimit = null;
         try {
-            paramLimit = HttpUtils.getRequiredParamFromRequest(request, LIMIT_PARAM_NAME, true);
+            paramLimit = HttpUtils.getRequiredQueryParamFromRequest(request, LIMIT_PARAM_NAME, true);
             if (paramLimit != null) {
                 limit = Integer.parseInt(paramLimit);
                 if (limit <= 0) {
@@ -122,10 +122,10 @@ public class TripHistoryController implements Endpoint {
                 paramLimit, DEFAULT_LIMIT, e);
         }
 
-        String paramFromDate = HttpUtils.getRequiredParamFromRequest(request, FROM_DATE_PARAM_NAME, true);
+        String paramFromDate = HttpUtils.getRequiredQueryParamFromRequest(request, FROM_DATE_PARAM_NAME, true);
         Date fromDate = getDate(request, FROM_DATE_PARAM_NAME, paramFromDate, LocalTime.MIDNIGHT);
 
-        String paramToDate = HttpUtils.getRequiredParamFromRequest(request, TO_DATE_PARAM_NAME, true);
+        String paramToDate = HttpUtils.getRequiredQueryParamFromRequest(request, TO_DATE_PARAM_NAME, true);
         Date toDate = getDate(request, TO_DATE_PARAM_NAME, paramToDate, LocalTime.MAX);
 
         if (fromDate != null && toDate != null && toDate.before(fromDate)) {

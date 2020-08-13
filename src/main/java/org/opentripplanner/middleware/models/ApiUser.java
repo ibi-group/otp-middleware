@@ -9,7 +9,7 @@ import java.util.List;
  */
 public class ApiUser extends AbstractUser {
     /** Holds the API keys assigned to the user. */
-    public List<String> apiKeyIds = new ArrayList<>();
+    public List<ApiKey> apiKeys = new ArrayList<>();
 
     /** The name of the application built by this user. */
     public String appName;
