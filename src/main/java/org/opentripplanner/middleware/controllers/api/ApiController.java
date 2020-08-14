@@ -19,6 +19,7 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
+import java.lang.reflect.Array;
 import java.util.Date;
 import java.util.List;
 
@@ -49,6 +50,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private final String className;
     final TypedPersistence<T> persistence;
     private final Class<T> clazz;
+    private final T[] typedArray;
 
     /**
      * @param apiPrefix string prefix to use in determining the resource location
@@ -65,6 +67,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         // Default resource to class name.
         if (resource == null) resource = SECURE + className.toLowerCase();
         this.ROOT_ROUTE = apiPrefix + resource;
+        this.typedArray = (T[]) Array.newInstance(clazz, 0);
     }
 
     /**
@@ -112,9 +115,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             .get(path(ROOT_ROUTE)
                     .withDescription("Gets a list of all '" + className + "' entities.")
                     .withProduces(JSON_ONLY)
-                    // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
-                    // as the return type for this method. (It does generate the type for that class nonetheless.)
-                    .withResponseAsCollection(clazz),
+                    // Set the return type as the array of clazz objects.
+                    // Note: there exists a method withResponseAsCollection, but unlike what its name suggests,
+                    // it does exactly the same as .withResponseType and does not generate a return type array.
+                    .withResponseType(typedArray.getClass()),
                 this::getMany, JsonUtils::toJson
             )
 
@@ -132,7 +136,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             .post(path("")
                     .withDescription("Creates a '" + className + "' entity.")
                     .withConsumes(JSON_ONLY)
-                    .withRequestType(clazz) // FIXME: Embedded Swagger UI doesn't work for this request. (Embed or link a more recent version?)
+                    .withRequestType(clazz)
                     .withProduces(JSON_ONLY)
                     .withResponseType(clazz),
                 this::createOrUpdate, JsonUtils::toJson
@@ -142,8 +146,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             .put(path(ID_PATH)
                     .withDescription("Updates and returns the '" + className + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to update.").and()
-                    // FIXME: The Swagger UI embedded in spark-swagger doesn't work for this request.
-                    //  (Embed or link a more recent Swagger UI version?)
                     .withConsumes(JSON_ONLY)
                     .withRequestType(clazz)
                     .withProduces(JSON_ONLY)

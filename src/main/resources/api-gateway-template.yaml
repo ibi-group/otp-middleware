@@ -2,9 +2,15 @@ info:
   version: 0.0.3
 securityDefinitions:
   api_key:
-    type: "apiKey"
-    name: "x-api-key"
+    description: "API key header authentication."
     in: "header"
+    name: "x-api-key"
+    type: "apiKey"
+  bearer_token:
+    description: "Bearer token authentication using Auth0."
+    in: "header"
+    name: "Authorization"
+    type: "apiKey"
 definitions:
   AbstractUser:
     type: "object"
