@@ -1,0 +1,24 @@
+info:
+  version: 0.0.3
+securityDefinitions:
+  api_key:
+    type: "apiKey"
+    name: "x-api-key"
+    in: "header"
+definitions:
+  AbstractUser:
+    type: "object"
+    required:
+      - "auth0UserId"
+      - "email"
+    properties:
+      email:
+        type: "string"
+        description: "Email address for contact. This must be unique in the collection."
+      auth0UserId:
+        type: "string"
+        description: "Auth0 user name."
+      isDataToolsUser:
+        type: "boolean"
+        description: "Determines whether this user has access to OTP Data Tools."
+    description: "An abstract user."
