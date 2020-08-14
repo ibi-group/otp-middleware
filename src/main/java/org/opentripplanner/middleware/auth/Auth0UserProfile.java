@@ -23,7 +23,8 @@ public class Auth0UserProfile {
     public final String auth0UserId;
 
     /**
-     * Constructor is only used for creating a test user
+     * Constructor is only used for creating a test user. If an Auth0 user id is provided check persistence for matching
+     * user else create default user.
      */
     private Auth0UserProfile(String auth0UserId) {
         if (auth0UserId == null) {
@@ -52,12 +53,14 @@ public class Auth0UserProfile {
     }
 
     /**
-     * Utility method for creating a test user. If auth0 user Id is defined check persistence for matching user else
-     * create default user.
+     * Utility method for creating a test user. If a Auth0 user Id is defined within the Authorization header param
+     * define test user based on this.
      */
     static Auth0UserProfile createTestUser(Request req) {
         String auth0UserId = null;
         if (isAuthHeaderPresent(req)) {
+            // If the auth header has been provided get the Auth0 user id from it. This is different from normal
+            // operation as the parameter will only contain the Auth0 user id and not "Bearer token".
             auth0UserId = req.headers("Authorization");
         }
         return new Auth0UserProfile(auth0UserId);

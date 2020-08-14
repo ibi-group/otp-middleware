@@ -11,16 +11,10 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.utils.FileUtils;
-import org.opentripplanner.middleware.utils.HttpUtils;
 
-import java.net.URI;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
-import spark.Request;
 
 /**
  * Utility class to aid with creating and storing objects in Mongo.
@@ -62,27 +56,6 @@ public class PersistenceUtil {
         user.email = email;
         Persistence.adminUsers.create(user);
         return user;
-    }
-
-    /**
-     * Get Api user from database
-     */
-    public static ApiUser getApiUser(String id) {
-        return Persistence.apiUsers.getById(id);
-    }
-
-    /**
-     * Remove Api user from database
-     */
-    public static void removeApiUser(String id) {
-        Persistence.apiUsers.removeById(id);
-    }
-
-    /**
-     * Remove Admin user from database
-     */
-    public static void removeAdminUser(String id) {
-        Persistence.adminUsers.removeById(id);
     }
 
     /**
@@ -198,24 +171,5 @@ public class PersistenceUtil {
         final String filePath = "src/test/resources/org/opentripplanner/middleware/";
         PLAN_RESPONSE = FileUtils.getFileContentsAsJSON(filePath + "planResponse.json", Response.class);
         PLAN_ERROR_RESPONSE = FileUtils.getFileContentsAsJSON(filePath + "planErrorResponse.json", Response.class);
-    }
-
-    /**
-     * Send request to provided URL placing the Auth0 user id in the headers so that {@link Auth0UserProfile} can check
-     * the database for a matching user. Returns the response status code.
-      */
-    public static int getStatusCodeFromResponse(String url, HttpUtils.REQUEST_METHOD requestMethod, String auth0UserId) {
-        HashMap<String, String> headers = new HashMap<>();
-        headers.put("Authorization", auth0UserId);
-
-        HttpResponse<String> stringHttpResponse = HttpUtils.httpRequestRawResponse(
-            URI.create(url),
-            1000,
-            requestMethod,
-            headers,
-            ""
-        );
-
-        return stringHttpResponse.statusCode();
     }
 }
