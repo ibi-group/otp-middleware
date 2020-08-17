@@ -54,12 +54,14 @@ public class ApiGatewayUtils {
     /**
      * Request an API key from AWS api gateway and assign it to an existing usage plan.
      */
-    public static CreateApiKeyResult createApiKey(String userId, String usagePlanId) {
+    public static ApiKey createApiKey(String userId, String usagePlanId) {
+        if (userId == null || usagePlanId == null) {
+            LOG.error("All required input parameters must be provided.");
+            return null;
+        }
         long startTime = System.currentTimeMillis();
-
         try {
             AmazonApiGateway gateway = getAmazonApiGateway();
-
             // create API key
             CreateApiKeyRequest apiKeyRequest = new CreateApiKeyRequest();
             apiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
@@ -83,8 +85,7 @@ public class ApiGatewayUtils {
                 .withKeyId(apiKeyResult.getId())
                 .withKeyType("API_KEY");
             gateway.createUsagePlanKey(usagePlanKeyRequest);
-
-            return apiKeyResult;
+            return new ApiKey(apiKeyResult);
         } catch (Exception e) {
             String message = String.format("Unable to get api key from AWS for user id (%s) and usage plan id (%s)",
                 userId,

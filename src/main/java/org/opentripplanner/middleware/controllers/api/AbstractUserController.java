@@ -11,6 +11,8 @@ import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
@@ -27,6 +29,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * services using the hooks provided by {@link ApiController}.
  */
 public abstract class AbstractUserController<U extends AbstractUser> extends ApiController<U> {
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractUserController.class);
     static final String NO_USER_WITH_AUTH0_ID_MESSAGE = "No user with auth0UserID=%s found.";
     private static final String TOKEN_PATH = "/fromtoken";
     private static final String VERIFICATION_EMAIL_PATH = "/verification-email";
