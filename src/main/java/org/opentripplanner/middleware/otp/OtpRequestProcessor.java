@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.otp;
 
+import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
@@ -11,9 +13,13 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
-import spark.Service;
 
+import java.util.List;
+
+import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.APPLICATION_XML;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -23,7 +29,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * is of interest the response is intercepted and processed. In all cases, the response from OTP (content and HTTP status)
  * is passed back to the requester.
  */
-public class OtpRequestProcessor {
+public class OtpRequestProcessor implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
     /**
      * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
@@ -38,14 +44,24 @@ public class OtpRequestProcessor {
      * Endpoint for the OTP Middleware's OTP proxy
      */
     private static final String OTP_PROXY_ENDPOINT = "/otp";
+    /**
+     * Text that links to OTP's documentation for more info.
+     */
+    private static final String OTP_DOC_MOREINFO = "Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's API documentation</a> for OTP's supported API resources.";
 
     /**
      * Register http endpoint with {@link spark.Spark} instance based on the OTP root endpoint. An OTP root endpoint is
      * required to distinguish between OTP and other middleware requests.
      */
-    public static void register(Service spark) {
-        // available at http://localhost:4567/otp/*
-        spark.get(OTP_PROXY_ENDPOINT + "/*", OtpRequestProcessor::proxy);
+    @Override
+    public void bind(final SparkSwagger restApi) {
+        restApi.endpoint(
+            endpointPath(OTP_PROXY_ENDPOINT).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_MOREINFO),
+            (q, a) -> LOG.info("Received request for the OTP proxy endpoint.")
+        ).get(path("/*")
+                .withDescription("Forwards any GET request to OTP. " + OTP_DOC_MOREINFO)
+                .withProduces(List.of(APPLICATION_JSON, APPLICATION_XML)),
+            OtpRequestProcessor::proxy);
     }
 
     /**

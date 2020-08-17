@@ -68,15 +68,14 @@ public class OtpMiddlewareMain {
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
                     new MonitoredTripController(API_PREFIX),
+                    new TripHistoryController(API_PREFIX),
                     new OtpUserController(API_PREFIX),
                     new LogController(API_PREFIX),
                     new BugsnagController(API_PREFIX),
-                    new TripHistoryController(API_PREFIX)
+                    new OtpRequestProcessor()
                     // TODO Add other models.
                 ))
                 .generateDoc();
-
-            OtpRequestProcessor.register(spark);
         } catch (RuntimeException e) {
             LOG.error("Error initializing API controllers", e);
             System.exit(1);
