@@ -79,7 +79,7 @@ public class SwaggerTest extends OtpMiddlewareTest {
 
         // TODO: Add description to the fields of generated types?
 
-        // TODO: Add Pelias under this API? (ext link?)
+        insertPeliasGeocoderLink(swaggerJson, templateJson.get("paths"));
 
         insertMethodResponses(swaggerJson, templateJson.get("responses"));
 
@@ -91,6 +91,7 @@ public class SwaggerTest extends OtpMiddlewareTest {
         removeUnusedTypes(swaggerJson);
         alphabetizeEntries((ObjectNode) swaggerJson.get("definitions"));
 
+
         // Insert version (the version attribute in spark-swagger.conf is not read by spark-swagger.)
         ((ObjectNode)swaggerJson.get("info"))
             .put("version", templateJson.at("/info/version").asText());
@@ -100,6 +101,26 @@ public class SwaggerTest extends OtpMiddlewareTest {
         String yamlOutput = YamlUtils.yamlMapper.writer().writeValueAsString(swaggerJson);
         Files.writeString(outputPath, yamlOutput);
         LOG.info("Wrote API Gateway enhanced Swagger docs to: {}", outputPath);
+    }
+
+    /**
+     * Inserts a link placeholder to Pelias Geocoder documentation.
+     * FIXME: Determine where Pelias API should live and update this method accordingly.
+     */
+    private void insertPeliasGeocoderLink(ObjectNode rootNode, JsonNode templatePathsNode) {
+        String geocoderPath = getFieldNames(templatePathsNode, path -> path.contains("geocoder")).get(0);
+        JsonNode peliasTemplate = templatePathsNode.get(geocoderPath);
+        String geocoderTag = peliasTemplate.at("/get/tags").get(0).asText();
+
+        // Insert geocoder tag.
+        ((ArrayNode)rootNode.get("tags")).add(JsonNodeFactory.instance.objectNode()
+            .put("name", geocoderTag)
+            .put("description", "Pelias Geocoder interface. Refer to <a href='https://github.com/pelias/documentation/#endpoint-descriptions'>Pelias Geocoder Documentation</a> for Pelias supported API resources.")
+        );
+
+        // Insert Pelias geocoder template in the paths.
+        ObjectNode pathsNode = (ObjectNode) rootNode.get("paths");
+        pathsNode.set(geocoderPath, peliasTemplate);
     }
 
     /**
