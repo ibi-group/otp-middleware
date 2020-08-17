@@ -119,7 +119,6 @@ public class SwaggerTest extends OtpMiddlewareTest {
         addAuthorizationParams(swaggerJson, templateJson.get("securityDefinitions"));
 
         // Add description to the fields of generated types?
-        // Add OTP proxy (ext link?)
         // Add Pelias (ext link?)
 
         modifyPathEntries(swaggerJson);
@@ -127,6 +126,7 @@ public class SwaggerTest extends OtpMiddlewareTest {
         inlineArrayDefinitions(swaggerJson);
         generateMissingTypes(swaggerJson);
         removeUnusedTypes(swaggerJson);
+        alphabetizeEntries((ObjectNode) swaggerJson.get("definitions"));
 
         // Insert version (the version attribute in spark-swagger.conf is not read by spark-swagger.)
         ((ObjectNode)swaggerJson.get("info"))
@@ -137,6 +137,22 @@ public class SwaggerTest extends OtpMiddlewareTest {
         String yamlOutput = YamlUtils.yamlMapper.writer().writeValueAsString(swaggerJson);
         Files.writeString(outputPath, yamlOutput);
         LOG.info("Wrote API Gateway enhanced Swagger docs to: {}", outputPath);
+    }
+
+    /**
+     * Reorders entries under the provided node alphabetically.
+     */
+    private void alphabetizeEntries(ObjectNode node) {
+        List<String> sortedFields = getFieldNames(node);
+        sortedFields.sort(String::compareTo);
+
+        ObjectNode newNode = JsonNodeFactory.instance.objectNode();
+        for (String field : sortedFields) {
+            newNode.set(field, node.get(field));
+        }
+
+        node.removeAll();
+        node.setAll(newNode);
     }
 
     /**
