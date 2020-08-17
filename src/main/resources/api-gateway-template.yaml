@@ -44,13 +44,13 @@ definitions:
         description: "Determines whether this user has access to OTP Data Tools."
     description: "An abstract user."
 paths:
-  /geocoder_placeholder:
+  /pelias:
     get:
       tags:
-        - "geocoder"
-      description: "This is a placeholder for linking to the
-      <a href='https://github.com/pelias/documentation/#endpoint-descriptions'>Pelias Geocoder Documentation</a>
-      (The geocoder API is under a different API ID)."
+        - "pelias"
+      description: "Forwards any GET request to Pelias Geocoder.
+      Refer to <a href='https://github.com/pelias/documentation/#endpoint-descriptions'>Pelias Geocoder Documentation</a>
+      for API resources supported by Pelias Geocoder."
       produces:
         - "application/json"
       parameters: []
