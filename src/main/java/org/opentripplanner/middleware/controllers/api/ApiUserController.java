@@ -40,9 +40,9 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
 
     @Override
     protected void buildEndpoint(ApiEndpoint baseEndpoint) {
-        LOG.info("Registering path {}.", ROOT_ROUTE + API_KEY_PATH);
-
         // Add the api key route BEFORE the regular CRUD methods
+        // (to avoid interference with "get API user by ID" route)
+        LOG.info("Registering path {}.", ROOT_ROUTE + ID_PATH + API_KEY_PATH);
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Create API key
             .post(path(ID_PATH + API_KEY_PATH)
