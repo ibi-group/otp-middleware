@@ -37,6 +37,9 @@ public class SwaggerTest extends OtpMiddlewareTest {
     private static final HttpClient client = HttpClient.newBuilder().build();
     private static final Path versionControlledSwaggerFile = new File("src/main/resources/doc.yaml").toPath();
     private static final File apiGatewayDefinitionsFile = new File("src/main/resources/api-gateway-template.yaml");
+    private static final String[] RESTRICTED_PATHS = new String[] {
+        "^/?api/admin/.*", "^/?api/secure/application.*", "^/?api/secure/logs.*"
+    };
 
     /**
      * Run this test to update the Swagger docs file located at {@link #versionControlledSwaggerFile}. This is disabled
@@ -113,7 +116,7 @@ public class SwaggerTest extends OtpMiddlewareTest {
 
         // Do the modifications for creating a public API documentation.
 
-        removeNonPublicPathsAndTags(swaggerJson);
+        removeRestrictedPathsAndTags(swaggerJson);
 
         // Insert security definitions.
         addAuthorizationParams(swaggerJson, templateJson.get("securityDefinitions"));
@@ -237,14 +240,14 @@ public class SwaggerTest extends OtpMiddlewareTest {
     }
 
     /**
-     * Remove non-public paths and tags (e.g. api/admin/user).
-     * See method isNonPublic for non-public paths.
+     * Remove restricted paths and tags (e.g. api/admin/user).
+     * See method isRestricted for non-public paths.
      */
-    private void removeNonPublicPathsAndTags(ObjectNode swaggerJson) {
+    private void removeRestrictedPathsAndTags(ObjectNode swaggerJson) {
         ObjectNode pathsNode = (ObjectNode) swaggerJson.get("paths");
         ArrayNode tagsNode = (ArrayNode) swaggerJson.get("tags");
 
-        List<String> pathsToRemove = getFieldNames(pathsNode, this::isNonPublic);
+        List<String> pathsToRemove = getFieldNames(pathsNode, this::isRestricted);
         pathsNode.remove(pathsToRemove);
 
         List<Integer> tagIndexesToRemove = new ArrayList<>();
@@ -252,7 +255,7 @@ public class SwaggerTest extends OtpMiddlewareTest {
         for (Iterator<JsonNode> it = tagsNode.elements(); it.hasNext(); index++) {
             JsonNode tagNode = it.next();
             String pathName = tagNode.get("name").asText();
-            if (isNonPublic(pathName)) {
+            if (isRestricted(pathName)) {
                 // Insert indices in reverse order to properly remove them afterwards.
                 tagIndexesToRemove.add(0, index);
 
@@ -264,9 +267,16 @@ public class SwaggerTest extends OtpMiddlewareTest {
         }
     }
 
-    private boolean isNonPublic(String pathName) {
-        return pathName.startsWith("/api/admin/") || pathName.startsWith("/api/secure/application") || pathName.startsWith("/api/secure/logs")
-            || pathName.startsWith("api/admin/") || pathName.startsWith("api/secure/application") || pathName.startsWith("api/secure/logs");
+    /**
+     * Determines whether a given path is restricted (non-public).
+     */
+    private boolean isRestricted(String pathName) {
+        for (String restrictedPath: RESTRICTED_PATHS) {
+            if (pathName.matches(restrictedPath)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
