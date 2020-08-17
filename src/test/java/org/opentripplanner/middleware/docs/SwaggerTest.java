@@ -298,7 +298,7 @@ public class SwaggerTest extends OtpMiddlewareTest {
             LinkedHashSet<String> typeReferences = new LinkedHashSet<>();
             for (JsonNode refNode : rootNode.findValues($REF_FIELD)) {
                 // The reference is typically in the form "#/definitions/TypeName".
-                // Extract the "raw" type from the definition string.
+                // Extract the "raw" type (TypeName in example above) from the definition string.
                 String typeName = refNode.asText().substring(DEFINITIONS_REF.length());
                 typeReferences.add(typeName);
             }
