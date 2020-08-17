@@ -97,7 +97,7 @@ public class SwaggerTest extends OtpMiddlewareTest {
             .put("version", templateJson.at("/info/version").asText());
 
         // Generate output file.
-        Path outputPath = new File("target/doc-api-gateway.yaml").toPath();
+        Path outputPath = new File("target/otp-middleware-swagger.yaml").toPath();
         String yamlOutput = YamlUtils.yamlMapper.writer().writeValueAsString(swaggerJson);
         Files.writeString(outputPath, yamlOutput);
         LOG.info("Wrote API Gateway enhanced Swagger docs to: {}", outputPath);

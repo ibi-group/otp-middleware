@@ -52,6 +52,8 @@ before_deploy:
 - echo otp-middleware-$JAR_VERSION.jar > deploy/$BRANCH_CLEAN/latest.txt
 # Add the JAR file.
 - cp target/otp-middleware.jar "deploy/$BRANCH_CLEAN/otp-middleware-$JAR_VERSION.jar"
+# Add the swagger documentation file, use fixed name so that documentation clients have the most current.
+- cp target/otp-middleware-swagger.yaml "deploy/$BRANCH_CLEAN/otp-middleware-swagger.yaml"
 # Deploy to S3.
 deploy:
   provider: s3
