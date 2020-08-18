@@ -44,7 +44,7 @@ definitions:
         description: "Determines whether this user has access to OTP Data Tools."
     description: "An abstract user."
 paths:
-  /pelias:
+  /pelias/*:
     get:
       tags:
         - "pelias"
