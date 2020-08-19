@@ -96,7 +96,7 @@ paths:
     get:
       tags:
       - "api/admin/user"
-      description: "Returns a 'AdminUser' entity with the specified id, or 404 if\
+      description: "Returns the 'AdminUser' entity with the specified id, or 404 if\
         \ not found."
       produces:
       - "application/json"
@@ -259,8 +259,8 @@ paths:
     get:
       tags:
       - "api/secure/application"
-      description: "Returns a 'ApiUser' entity with the specified id, or 404 if not\
-        \ found."
+      description: "Returns the 'ApiUser' entity with the specified id, or 404 if\
+        \ not found."
       produces:
       - "application/json"
       parameters:
@@ -350,7 +350,7 @@ paths:
     get:
       tags:
       - "api/secure/monitoredtrip"
-      description: "Returns a 'MonitoredTrip' entity with the specified id, or 404\
+      description: "Returns the 'MonitoredTrip' entity with the specified id, or 404\
         \ if not found."
       produces:
       - "application/json"
@@ -508,8 +508,8 @@ paths:
     get:
       tags:
       - "api/secure/user"
-      description: "Returns a 'OtpUser' entity with the specified id, or 404 if not\
-        \ found."
+      description: "Returns the 'OtpUser' entity with the specified id, or 404 if\
+        \ not found."
       produces:
       - "application/json"
       parameters:
