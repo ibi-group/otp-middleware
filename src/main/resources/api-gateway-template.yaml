@@ -44,6 +44,8 @@ definitions:
         description: "Determines whether this user has access to OTP Data Tools."
     description: "An abstract user."
 paths:
+  # Note to implementers:
+  # This path corresponds to a proxy route that must be configured in AWS API Gateway.
   /pelias/*:
     get:
       tags:
@@ -57,3 +59,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
+tags:
+  - name: "pelias"
+    description: "Proxy interface for Pelias geocoder.
+    Refer to <a href='https://github.com/pelias/documentation/#endpoint-descriptions'>Pelias Geocoder Documentation</a>
+    for API resources supported by Pelias Geocoder."
+

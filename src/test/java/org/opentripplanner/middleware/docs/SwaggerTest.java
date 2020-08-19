@@ -69,7 +69,7 @@ public class SwaggerTest extends OtpMiddlewareTest {
         JsonNode templateJson = YamlUtils.yamlMapper.readTree(apiGatewayDefinitionsFile);
 
         // Do the modifications for creating a public API documentation.
-        insertPeliasGeocoderEndpoint(swaggerJson, templateJson.get("paths"));
+        insertPeliasGeocoderEndpoint(swaggerJson, templateJson);
         removeRestrictedPathsAndTags(swaggerJson);
         addAuthorizationParams(swaggerJson, templateJson.get("securityDefinitions"));
         insertMethodResponses(swaggerJson, templateJson.get("responses"));
@@ -97,20 +97,21 @@ public class SwaggerTest extends OtpMiddlewareTest {
      * Inserts a link placeholder to Pelias Geocoder documentation.
      * FIXME: Determine where Pelias API should live and update this method accordingly.
      */
-    private void insertPeliasGeocoderEndpoint(ObjectNode rootNode, JsonNode templatePathsNode) {
-        String geocoderPath = getFieldNames(templatePathsNode, path -> path.contains("pelias")).get(0);
-        JsonNode peliasTemplate = templatePathsNode.get(geocoderPath);
-        String geocoderTag = peliasTemplate.at("/get/tags").get(0).asText();
-
-        // Insert geocoder tag.
-        ((ArrayNode)rootNode.get("tags")).add(JsonNodeFactory.instance.objectNode()
-            .put("name", geocoderTag)
-            .put("description", "The Pelias Geocoder interface. Refer to <a href='https://github.com/pelias/documentation/#endpoint-descriptions'>Pelias Geocoder Documentation</a> for API resources supported by Pelias Geocoder.")
-        );
+    private void insertPeliasGeocoderEndpoint(ObjectNode rootNode, JsonNode templateNode) {
+        final String PELIAS = "pelias";
+        JsonNode templatePathsNode = templateNode.get("paths");
 
         // Insert Pelias geocoder template in the paths.
+        String geocoderPath = getFieldNames(templatePathsNode, path -> path.contains(PELIAS)).get(0);
         ObjectNode pathsNode = (ObjectNode) rootNode.get("paths");
-        pathsNode.set(geocoderPath, peliasTemplate);
+        pathsNode.set(geocoderPath, templatePathsNode.get(geocoderPath));
+
+        // Insert geocoder tag.
+        for (JsonNode tagNode : templateNode.get("tags")) {
+            if (tagNode.get("name").asText().equals(PELIAS)) {
+                ((ArrayNode) rootNode.get("tags")).add(tagNode);
+            }
+        }
     }
 
     /**
