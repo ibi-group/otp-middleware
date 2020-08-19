@@ -37,8 +37,8 @@ public class SwaggerTest extends OtpMiddlewareTest {
     private static final HttpClient client = HttpClient.newBuilder().build();
     private static final Path versionControlledSwaggerFile = new File("src/main/resources/doc.yaml").toPath();
     private static final File apiGatewayDefinitionsFile = new File("src/main/resources/api-gateway-template.yaml");
-    private static final String[] RESTRICTED_PATHS = new String[] {
-        "api/admin/", "api/secure/application", "api/secure/logs"
+    private static final String[] PUBLIC_PATHS = new String[] {
+        "api/secure/monitoredtrip", "api/secure/triprequests", "api/secure/user", "otp", "pelias"
     };
     public static final String DEFINITIONS_REF = "#/definitions/";
     public static final String $REF_FIELD = "$ref";
@@ -210,7 +210,7 @@ public class SwaggerTest extends OtpMiddlewareTest {
 
     /**
      * Remove restricted paths and tags (e.g. api/admin/user).
-     * See method isRestricted for non-public paths.
+     * See methods isRestricted/isPublic for restricted and public paths.
      */
     private void removeRestrictedPathsAndTags(ObjectNode rootNode) {
         // Remove restricted paths.
@@ -225,7 +225,7 @@ public class SwaggerTest extends OtpMiddlewareTest {
         HashMap<String, JsonNode> remainingTags = new HashMap<>();
         for (JsonNode tagNode : tagsNode) {
             String tagName = tagNode.get("name").asText();
-            if (!isRestricted(tagName)) {
+            if (isPublic(tagName)) {
                 remainingTags.put(tagName, tagNode.deepCopy());
             }
         }
@@ -241,15 +241,21 @@ public class SwaggerTest extends OtpMiddlewareTest {
     }
 
     /**
-     * Determines whether a given path is restricted (non-public).
+     * Determines whether a given path is public.
      */
-    private boolean isRestricted(String pathName) {
-        for (String restrictedPath: RESTRICTED_PATHS) {
-            if (pathName.matches("^/?" + restrictedPath + ".*")) {
+    private boolean isPublic(String pathName) {
+        for (String publicPath : PUBLIC_PATHS) {
+            if (pathName.matches("^/?" + publicPath + ".*")) {
                 return true;
             }
         }
         return false;
+    }
+    /**
+     * Determines whether a given path is restricted (non-public).
+     */
+    private boolean isRestricted(String pathName) {
+        return !isPublic(pathName);
     }
 
     /**
