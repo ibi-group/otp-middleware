@@ -124,7 +124,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
 
             // Get one entity.
             .get(path(ROOT_ROUTE + ID_PATH)
-                    .withDescription("Returns a '" + className + "' entity with the specified id, or 404 if not found.")
+                    .withDescription("Returns the '" + className + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to search.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
                     .withProduces(JSON_ONLY)
