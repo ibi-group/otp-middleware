@@ -82,7 +82,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     public void bind(final SparkSwagger restApi) {
         ApiEndpoint apiEndpoint = restApi.endpoint(
             endpointPath(ROOT_ROUTE).withDescription("Interface for querying and managing '" + className + "' entities."),
-            (q, a) -> LOG.info("Received request for '{}' Rest API", className)
+            HttpUtils.NO_FILTER
         );
         buildEndpoint(apiEndpoint);
     }

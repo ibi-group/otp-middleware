@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +46,16 @@ public class OtpRequestProcessor implements Endpoint {
      */
     private static final String OTP_PROXY_ENDPOINT = "/otp";
     /**
+     * URL to OTP's documentation.
+     */
+    private static final String OTP_DOC_URL = "http://otp-docs.ibi-transit.com/api/index.html";
+    /**
      * Text that links to OTP's documentation for more info.
      */
-    private static final String OTP_DOC_MOREINFO = "Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's API documentation</a> for OTP's supported API resources.";
+    private static final String OTP_DOC_LINK = String.format(
+        "Refer to <a href='%s'>OTP's API documentation</a> for OTP's supported API resources.",
+        OTP_DOC_URL
+    );
 
     /**
      * Register http endpoint with {@link spark.Spark} instance based on the OTP root endpoint. An OTP root endpoint is
@@ -56,12 +64,14 @@ public class OtpRequestProcessor implements Endpoint {
     @Override
     public void bind(final SparkSwagger restApi) {
         restApi.endpoint(
-            endpointPath(OTP_PROXY_ENDPOINT).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_MOREINFO),
-            (q, a) -> LOG.info("Received request for the OTP proxy endpoint.")
-        ).get(path("/*")
-                .withDescription("Forwards any GET request to OTP. " + OTP_DOC_MOREINFO)
+            endpointPath(OTP_PROXY_ENDPOINT).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_LINK),
+            HttpUtils.NO_FILTER
+        ).get(
+            path("/*")
+                .withDescription("Forwards any GET request to OTP. " + OTP_DOC_LINK)
                 .withProduces(List.of(APPLICATION_JSON, APPLICATION_XML)),
-            OtpRequestProcessor::proxy);
+            OtpRequestProcessor::proxy
+        );
     }
 
     /**

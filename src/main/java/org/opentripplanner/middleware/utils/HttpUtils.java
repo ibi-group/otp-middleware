@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.utils;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import spark.Filter;
 import spark.Request;
 
 import javax.ws.rs.core.UriBuilder;
@@ -23,6 +24,8 @@ public class HttpUtils {
     public enum REQUEST_METHOD {GET, POST, DELETE}
 
     public static final List<String> JSON_ONLY = List.of(APPLICATION_JSON);
+
+    public static final Filter NO_FILTER = (q, a) -> {};
 
     /**
      * Constructs a url based on the uri.  endpoint and query params if provided
