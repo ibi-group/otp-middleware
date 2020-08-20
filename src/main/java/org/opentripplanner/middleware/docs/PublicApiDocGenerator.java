@@ -111,9 +111,12 @@ public class PublicApiDocGenerator {
 
         // Generate output file.
         Path outputPath = new File(OUTPUT_FILE).toPath();
+        LOG.info("About to write public API documentation to: {}", outputPath);
+
         String yamlOutput = YamlUtils.yamlMapper.writer().writeValueAsString(rootNode);
         Files.writeString(outputPath, yamlOutput);
-        LOG.info("Wrote API Gateway enhanced Swagger docs to: {}", outputPath);
+
+        LOG.info("Wrote public API documentation to: {}", outputPath);
 
         return outputPath;
     }
