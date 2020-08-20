@@ -23,8 +23,15 @@ public class HttpUtils {
 
     public enum REQUEST_METHOD {GET, POST, DELETE}
 
+    /**
+     * A constant for a list of MIME types containing application/json only.
+     */
     public static final List<String> JSON_ONLY = List.of(APPLICATION_JSON);
 
+    /**
+     * A constant method compliant with spark.Filter that does nothing,
+     * but that is needed as a parameter for the spark-swagger endpoint definition method.
+     */
     public static final Filter NO_FILTER = (q, a) -> {};
 
     /**
