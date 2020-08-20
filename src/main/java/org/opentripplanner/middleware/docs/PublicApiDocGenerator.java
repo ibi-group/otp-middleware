@@ -106,8 +106,12 @@ public class PublicApiDocGenerator {
         rootNode.put("basePath", "/" + AWS_API_STAGE);
         ((ObjectNode) rootNode.get("info")).put("version", getVersionFromJar());
 
-        // Generate output file.
+        // Create output directory if needed.
         Path outputPath = new File(OUTPUT_FILE).toPath();
+        Path outputDir = outputPath.getParent();
+        Files.createDirectory(outputDir);
+
+        // Generate output file.
         String yamlOutput = YamlUtils.yamlMapper.writer().writeValueAsString(rootNode);
         Files.writeString(outputPath, yamlOutput);
         LOG.info("Wrote API Gateway enhanced Swagger docs to: {}", outputPath);

@@ -89,7 +89,7 @@ public class OtpMiddlewareMain {
         // Generate the public facing API docs after startup,
         // and create an undocumented endpoint to serve the document.
         Path publicDocPath = new PublicApiDocGenerator().generatePublicApiDocs();
-        spark.get("/publicapi.yaml", (request, response) -> {
+        spark.get("/publicapi", (request, response) -> {
             response.type("text/yaml");
             return Files.readString(publicDocPath);
         });
