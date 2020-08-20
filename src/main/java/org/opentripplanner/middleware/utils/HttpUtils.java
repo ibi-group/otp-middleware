@@ -29,10 +29,10 @@ public class HttpUtils {
     public static final List<String> JSON_ONLY = List.of(APPLICATION_JSON);
 
     /**
-     * A constant method compliant with spark.Filter that does nothing,
+     * A constant method compliant with {@link:spark.Filter} that does nothing,
      * but that is needed as a parameter for the spark-swagger endpoint definition method.
      */
-    public static final Filter NO_FILTER = (q, a) -> {};
+    public static final Filter NO_FILTER = (request, response) -> {};
 
     /**
      * Constructs a url based on the uri.  endpoint and query params if provided

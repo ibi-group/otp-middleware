@@ -67,6 +67,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         // Default resource to class name.
         if (resource == null) resource = SECURE + className.toLowerCase();
         this.ROOT_ROUTE = apiPrefix + resource;
+
+        // This empty typed array is solely to hold the response type for the GET-all method.
         this.typedArray = (T[]) Array.newInstance(clazz, 0);
     }
 

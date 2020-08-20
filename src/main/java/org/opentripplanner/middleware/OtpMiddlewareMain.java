@@ -79,15 +79,15 @@ public class OtpMiddlewareMain {
                     // TODO Add other models.
                 ))
                 // Spark-swagger auto-generates a swagger document at localhost:4567/doc.yaml.
-                // (That URL is not configurable.)
+                // (That path is not configurable.)
                 .generateDoc();
         } catch (RuntimeException e) {
             LOG.error("Error initializing API controllers", e);
             System.exit(1);
         }
 
-        // Generate the public facing API docs after startup.
-        // Create an undocumented endpoint that serves the public-facing API document.
+        // Generate the public facing API docs after startup,
+        // and create an undocumented endpoint to serve the document.
         Path publicDocPath = new PublicApiDocGenerator().generatePublicApiDocs();
         spark.get("/publicapi.yaml", (request, response) -> {
             response.type("text/yaml");
