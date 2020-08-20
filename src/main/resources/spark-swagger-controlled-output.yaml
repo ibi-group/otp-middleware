@@ -12,8 +12,8 @@ info:
   license:
     name: "MIT License"
     url: "https://opensource.org/licenses/MIT"
-host: "w7tqwg7j5a.execute-api.us-east-1.amazonaws.com"
-basePath: "/dev1"
+host: "AWS_API_SERVER"
+basePath: "/AWS_API_STAGE"
 tags:
 - name: "api/admin/user"
   description: "Interface for querying and managing 'AdminUser' entities."

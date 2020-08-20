@@ -1,5 +1,3 @@
-info:
-  version: 0.0.3
 securityDefinitions:
   api_key:
     description: "API key header authentication."
