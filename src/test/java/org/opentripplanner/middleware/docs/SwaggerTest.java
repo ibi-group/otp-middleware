@@ -36,14 +36,6 @@ public class SwaggerTest extends OtpMiddlewareTest {
     }
 
     /**
-     * Convenience test to generate the docs.
-     */
-    @Test
-    public void generatePublicApiDocs() throws IOException, InterruptedException {
-        new PublicApiDocGenerator().generatePublicApiDocs();
-    }
-
-    /**
      * Verify that version-controlled doc.yaml file is up to date with the latest changes to swagger file auto-generated
      * from the spark-swagger library (available at {@link PublicApiDocGenerator#getSwaggerDocs()}.
      */
