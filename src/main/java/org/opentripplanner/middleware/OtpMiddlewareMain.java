@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.LogController;
 import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
+import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
 import org.opentripplanner.middleware.otp.OtpRequestProcessor;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -22,6 +23,8 @@ import spark.Service;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -39,7 +42,7 @@ public class OtpMiddlewareMain {
     private static final String API_PREFIX = "/api/";
     public static boolean inTestEnvironment = false;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         // Load configuration.
         loadConfig(args);
 
@@ -57,7 +60,7 @@ public class OtpMiddlewareMain {
         }
     }
 
-    private static void initializeHttpEndpoints() throws IOException {
+    private static void initializeHttpEndpoints() throws IOException, InterruptedException {
         // Must start spark explicitly to use spark-swagger.
         // https://github.com/manusant/spark-swagger#endpoints-binding
         Service spark = Service.ignite().port(Service.SPARK_DEFAULT_PORT);
@@ -75,17 +78,30 @@ public class OtpMiddlewareMain {
                     new OtpRequestProcessor()
                     // TODO Add other models.
                 ))
+                // Spark-swagger auto-generates a swagger document at localhost:4567/doc.yaml.
+                // (That URL is not configurable.)
                 .generateDoc();
         } catch (RuntimeException e) {
             LOG.error("Error initializing API controllers", e);
             System.exit(1);
         }
+
+        // Generate the public facing API docs after startup.
+        // Create an undocumented endpoint that serves the public-facing API document.
+        Path publicDocPath = new PublicApiDocGenerator().generatePublicApiDocs();
+        spark.get("/publicapi.yaml", (request, response) -> {
+            response.type("text/yaml");
+            return Files.readString(publicDocPath);
+        });
+
+        // Generic response for all OPTIONS requests on all endpoint paths.
         spark.options("/*",
             (request, response) -> {
                 logMessageAndHalt(request, HttpStatus.OK_200, "OK");
                 return "OK";
             });
 
+        // Security checks for admin and /secure/ endpoints.
         spark.before(API_PREFIX + "/secure/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
         }));

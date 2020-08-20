@@ -21,7 +21,7 @@ public abstract class OtpMiddlewareTest {
      * method to be invoked before all other tests.)
      */
     @BeforeAll
-    public static void setUp() throws RuntimeException, IOException {
+    public static void setUp() throws RuntimeException, IOException, InterruptedException {
         if (setUpIsDone) {
             return;
         }
