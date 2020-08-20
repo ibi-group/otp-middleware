@@ -109,7 +109,9 @@ public class PublicApiDocGenerator {
         // Create output directory if needed.
         Path outputPath = new File(OUTPUT_FILE).toPath();
         Path outputDir = outputPath.getParent();
-        Files.createDirectory(outputDir);
+        if (!outputDir.toFile().exists()) {
+            Files.createDirectory(outputDir);
+        }
 
         // Generate output file.
         String yamlOutput = YamlUtils.yamlMapper.writer().writeValueAsString(rootNode);
