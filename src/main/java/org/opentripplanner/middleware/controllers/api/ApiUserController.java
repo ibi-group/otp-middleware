@@ -29,7 +29,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public class ApiUserController extends AbstractUserController<ApiUser> {
     private static final Logger LOG = LoggerFactory.getLogger(ApiUserController.class);
-    private static final String DEFAULT_USAGE_PLAN_ID = getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
+    public static final String DEFAULT_USAGE_PLAN_ID = getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
     private static final String API_KEY_PATH = "/apikey";
     private static final int API_KEY_LIMIT_PER_USER = 2;
     private static final String API_KEY_ID_PARAM = "/:apiKeyId";
@@ -99,17 +99,16 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             }
         }
         // FIXME Should an Api user be limited to one api key per usage plan (and perhaps stage)?
-        ApiKey apiKey = ApiGatewayUtils.createApiKey(targetUser.id, usagePlanId);
-        if (apiKey == null || apiKey.id == null) {
+        // Add new API key to user and persist
+        boolean success = targetUser.createApiKey(usagePlanId, true);
+        if (!success) {
             logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
-                String.format("Unable to get AWS API key for user id (%s) and usage plan id (%s)", targetUser.id, usagePlanId),
+                String.format("Unable to create AWS API key for user id (%s) and usage plan id (%s)", targetUser.id, usagePlanId),
                 null
             );
             return null;
         }
-        // Add new API key to user and persist
-        targetUser.apiKeys.add(apiKey);
         Persistence.apiUsers.replace(targetUser.id, targetUser);
         return Persistence.apiUsers.getById(targetUser.id);
     }
@@ -158,20 +157,18 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     @Override
     ApiUser preCreateHook(ApiUser user, Request req) {
-        ApiKey apiKey = ApiGatewayUtils.createApiKey(user.id, DEFAULT_USAGE_PLAN_ID);
-        if (apiKey == null) {
+        boolean success = user.createApiKey(DEFAULT_USAGE_PLAN_ID, false);
+        if (!success) {
             logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
                 String.format("Unable to get AWS api key for user %s", user),
                 null);
         }
-        // store api key id including the actual api key (value)
-        user.apiKeys.add(apiKey);
         // Call AbstractUserController#preCreateHook and delete api key in case something goes wrong.
         try {
             return super.preCreateHook(user, req);
         } catch (HaltException e) {
-            deleteApiKey(apiKey);
+            user.delete();
             throw e;
         }
     }
@@ -182,10 +179,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     @Override
     boolean preDeleteHook(ApiUser user, Request req) {
-        // TODO: Create method for deleting user's API keys?
-        for (ApiKey apiKey : user.apiKeys) {
-            deleteApiKey(apiKey);
-        }
+        // Note: API keys deleted in ApiUser#delete
         return true;
     }
 

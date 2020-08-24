@@ -1,11 +1,14 @@
 package org.opentripplanner.middleware.models;
 
+import com.auth0.exception.Auth0Exception;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+
+import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 
 /**
  * This is an abstract user class that {@link OtpUser}, {@link AdminUser}, and {@link ApiUser} extend.
@@ -50,5 +53,13 @@ public abstract class AbstractUser extends Model {
         }
         // Fallback to Model#userCanManage.
         return super.canBeManagedBy(user);
+    }
+
+    @Override
+    public boolean delete() throws Auth0Exception {
+        // If the user subclass is the only user in existence for the
+        // Delete Auth0User.
+        deleteAuth0User(this.auth0UserId);
+        return true;
     }
 }

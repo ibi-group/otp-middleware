@@ -1,11 +1,22 @@
 package org.opentripplanner.middleware.models;
 
+import org.opentripplanner.middleware.persistence.Persistence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Date;
+import java.util.List;
+
+import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.persistence.TypedPersistence.buildFilter;
+
 /**
  * A trip request represents an OTP UI trip request (initiated by a user) destined for an OpenTripPlanner instance.
  * otp-middleware stores these trip requests for reporting purposes.
  */
 public class TripRequest extends Model {
     private static final long serialVersionUID = 1L;
+    private static final Logger LOG = LoggerFactory.getLogger(TripRequest.class);
 
     /**
      * User Id. {@link OtpUser#id} of user making trip request.
@@ -57,5 +68,22 @@ public class TripRequest extends Model {
             ", lastUpdated=" + lastUpdated +
             ", dateCreated=" + dateCreated +
             '}';
+    }
+
+    public static List<TripRequest> requestsForUser(String userId) {
+        return Persistence.tripRequests.getFiltered(buildFilter(userId));
+    }
+
+    public static List<TripRequest> requestsForUser(String userId, Date fromDate, Date toDate, int limit) {
+        return Persistence.tripRequests.getFilteredWithLimit(buildFilter(userId, fromDate, toDate), limit);
+    }
+
+    @Override
+    public boolean delete() {
+        boolean summariesDeleted = Persistence.tripSummaries.removeFiltered(eq("tripRequestId", this.id));
+        if (!summariesDeleted) {
+            LOG.error("Could not delete linked trip summary for request ID {}", this.id);
+        }
+        return Persistence.tripRequests.removeById(this.id);
     }
 }

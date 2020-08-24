@@ -3,11 +3,14 @@ package org.opentripplanner.middleware.controllers.api;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -26,15 +29,12 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
-        isAuthorized(monitoredTrip.userId, req);
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
-
         return monitoredTrip;
     }
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        isAuthorized(monitoredTrip.userId, req);
         return monitoredTrip;
     }
 

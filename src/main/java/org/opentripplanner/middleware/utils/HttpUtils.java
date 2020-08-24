@@ -44,7 +44,7 @@ public class HttpUtils {
      * Makes an http get/post request and returns the response body. The request is based on the provided params.
      */
     public static String httpRequest(URI uri, int connectionTimeout, REQUEST_METHOD method,
-                                     HashMap<String, String> headers, String bodyContent) {
+                                     Map<String, String> headers, String bodyContent) {
 
         return httpRequestRawResponse(uri, connectionTimeout, method, headers, bodyContent).body();
     }
@@ -53,7 +53,7 @@ public class HttpUtils {
      * Makes an http get/post request and returns the response. The request is based on the provided params.
      */
     public static HttpResponse<String> httpRequestRawResponse(URI uri, int connectionTimeout, REQUEST_METHOD method,
-                                                              HashMap<String, String> headers, String bodyContent) {
+                                                              Map<String, String> headers, String bodyContent) {
 
 
         HttpClient client = HttpClient.newHttpClient();

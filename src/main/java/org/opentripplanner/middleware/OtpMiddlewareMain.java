@@ -36,7 +36,7 @@ public class OtpMiddlewareMain {
     private static final Logger LOG = LoggerFactory.getLogger(OtpMiddlewareMain.class);
     private static final String DEFAULT_ENV = "configurations/default/env.yml";
     private static JsonNode envConfig;
-    private static final String API_PREFIX = "/api/";
+    public static final String API_PREFIX = "/api/";
     public static boolean inTestEnvironment = false;
 
     public static void main(String[] args) throws IOException {
@@ -203,12 +203,12 @@ public class OtpMiddlewareMain {
      * value if the config value is not defined (null) or cannot be converted to an int.
      */
     public static int getConfigPropertyAsInt(String name, int defaultValue) {
-
         int value = defaultValue;
-
         try {
             JsonNode node = getConfigProperty(name);
-            value = Integer.parseInt(node.asText());
+            if (node != null) {
+                value = Integer.parseInt(node.asText());
+            }
         } catch (NumberFormatException | NullPointerException e) {
             LOG.warn("Unable to parse {}. Using default: {}", name, defaultValue, e);
         }

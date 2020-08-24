@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
@@ -216,7 +217,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     /**
      * HTTP endpoint to delete one entity specified by ID.
      */
-    private String deleteOne(Request req, Response res) {
+    private T deleteOne(Request req, Response res) {
         long startTime = System.currentTimeMillis();
         String id = getIdFromRequest(req);
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
@@ -230,12 +231,17 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             if (!preDeleteHook(object, req)) {
                 logMessageAndHalt(req, 500, "Unknown error occurred during delete attempt.");
             }
-            boolean success = persistence.removeById(id);
-            int code = success ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500;
-            String message = success
-                ? String.format("Successfully deleted %s.", classToLowercase)
-                : String.format("Failed to delete %s", classToLowercase);
-            logMessageAndHalt(req, code, message, null);
+            boolean success = object.delete();
+            if (success) {
+                return object;
+            } else {
+                logMessageAndHalt(
+                    req,
+                    HttpStatus.INTERNAL_SERVER_ERROR_500,
+                    String.format("Unknown error encountered. Failed to delete %s", classToLowercase),
+                    null
+                );
+            }
         } catch (HaltException e) {
             throw e;
         } catch (Exception e) {
@@ -335,6 +341,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             return persistence.getById(object.id);
         } catch (HaltException e) {
             throw e;
+        } catch (JsonProcessingException e) {
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for " + clazz.getSimpleName(), e);
         } catch (Exception e) {
             logMessageAndHalt(req, 500, "An error was encountered while trying to save to the database", e);
         } finally {

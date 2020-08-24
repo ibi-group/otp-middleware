@@ -118,13 +118,6 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
      */
     @Override
     boolean preDeleteHook(U user, Request req) {
-        try {
-            deleteAuth0User(user.auth0UserId);
-        } catch (Auth0Exception e) {
-            // FIXME: Add Bugsnag error report.
-            logMessageAndHalt(req, 500, "Error deleting user.", e);
-            return false;
-        }
         return true;
     }
 }

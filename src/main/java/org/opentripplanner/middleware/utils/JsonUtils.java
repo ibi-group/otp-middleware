@@ -11,7 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
+
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.joining;
 import static spark.Spark.halt;
 
 public class JsonUtils {
@@ -44,16 +49,8 @@ public class JsonUtils {
     }
 
     /** Utility method to parse generic object from Spark request body. */
-    public static <T> T getPOJOFromRequestBody(Request req, Class<T> clazz) {
-        try {
-            // This Gson call throws an error processing OTP itineraries sent from saving a trip.
-            //     gson.fromJson(req.body(), clazz);
-            // Jackson seems to process those objects correctly.
-            return mapper.readValue(req.body(), clazz);
-        } catch (JsonProcessingException e) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for " + clazz.getSimpleName(), e);
-        }
-        return null;
+    public static <T> T getPOJOFromRequestBody(Request req, Class<T> clazz) throws JsonProcessingException {
+        return mapper.readValue(req.body(), clazz);
     }
 
     /** Utility method to parse generic object from JSON String. */
@@ -98,9 +95,20 @@ public class JsonUtils {
         String message,
         Exception e
     ) throws HaltException {
+        int index = e == null ? 3 : 2;
         // Note that halting occurred, also print error stacktrace if applicable
-        if (e != null) e.printStackTrace();
-        LOG.error("Halting {} with status code {}.  Error message: {}", request.uri(), statusCode, message);
+        LOG.error(
+            "Halting {} with status code {}.  Error message: {}\n halt originated at {}",
+            request != null ? request.uri() : "[unknown URI]",
+            statusCode,
+            message,
+            // Log a stack trace for the method calling logMessageAndHalt.
+            Arrays.stream(Thread.currentThread().getStackTrace())
+                .map(StackTraceElement::toString)
+                .limit(8)
+                .collect(joining("\n")),
+            e
+        );
 
         if (statusCode >= 500) {
             BugsnagReporter.reportErrorToBugsnag(message, e);

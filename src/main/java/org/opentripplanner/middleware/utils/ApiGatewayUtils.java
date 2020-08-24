@@ -8,6 +8,7 @@ import com.amazonaws.services.apigateway.model.CreateApiKeyRequest;
 import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
 import com.amazonaws.services.apigateway.model.CreateUsagePlanKeyRequest;
 import com.amazonaws.services.apigateway.model.DeleteApiKeyRequest;
+import com.amazonaws.services.apigateway.model.GetApiKeyRequest;
 import com.amazonaws.services.apigateway.model.GetUsagePlanRequest;
 import com.amazonaws.services.apigateway.model.GetUsagePlanResult;
 import com.amazonaws.services.apigateway.model.GetUsagePlansRequest;
@@ -16,6 +17,7 @@ import com.amazonaws.services.apigateway.model.GetUsageRequest;
 import com.amazonaws.services.apigateway.model.GetUsageResult;
 import com.amazonaws.services.apigateway.model.NotFoundException;
 import com.amazonaws.services.apigateway.model.UsagePlan;
+import com.amazonaws.services.apigateway.model.transform.ApiKeyMarshaller;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.ApiKey;
 import org.slf4j.Logger;
@@ -85,6 +87,7 @@ public class ApiGatewayUtils {
                 .withKeyId(apiKeyResult.getId())
                 .withKeyType("API_KEY");
             gateway.createUsagePlanKey(usagePlanKeyRequest);
+            LOG.info("Created new API key {}", apiKeyResult.getId());
             return new ApiKey(apiKeyResult);
         } catch (Exception e) {
             String message = String.format("Unable to get api key from AWS for user id (%s) and usage plan id (%s)",
@@ -109,7 +112,7 @@ public class ApiGatewayUtils {
             deleteApiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
             deleteApiKeyRequest.setApiKey(apiKey.id);
             gateway.deleteApiKey(deleteApiKeyRequest);
-            LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
+            LOG.info("Deleting Api key {} took {} msec", apiKey.id, System.currentTimeMillis() - startTime);
         } catch (NotFoundException e) {
             LOG.warn("Api key ({}) not found, unable to delete", apiKey.id, e);
         } catch (Exception e) {

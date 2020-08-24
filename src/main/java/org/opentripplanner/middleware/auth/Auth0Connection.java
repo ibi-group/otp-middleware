@@ -12,6 +12,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
@@ -53,12 +54,17 @@ public class Auth0Connection {
         try {
             DecodedJWT jwt = verifier.verify(token);
             Auth0UserProfile profile = new Auth0UserProfile(jwt);
+            if (!isValidUser(profile)) {
+                logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Unknown user.");
+            }
             // The user attribute is used on the server side to check user permissions and does not have all of the
             // fields that the raw Auth0 profile string does.
             addUserToRequest(req, profile);
         } catch (JWTVerificationException e) {
             // Invalid signature/claims
             logMessageAndHalt(req, 401, "Login failed to verify with our authorization provider.", e);
+        } catch (HaltException e) {
+            throw e;
         } catch (Exception e) {
             LOG.warn("Login failed to verify with our authorization provider.", e);
             logMessageAndHalt(req, 401, "Could not verify user's token");
@@ -169,40 +175,30 @@ public class Auth0Connection {
     }
 
     /**
-     * Confirm that the user exists
+     * Confirm that the user exists in at least one of the MongoDB user collections.
      */
-    private static Auth0UserProfile isValidUser(Request request) {
-
-        Auth0UserProfile profile = getUserFromRequest(request);
-        if (profile == null || (profile.adminUser == null && profile.otpUser == null && profile.apiUser == null)) {
-            logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "Unknown user.");
-        }
-
-        return profile;
+    private static boolean isValidUser(Auth0UserProfile profile) {
+        return profile != null && (profile.adminUser != null || profile.otpUser != null || profile.apiUser != null);
     }
 
     /**
      * Confirm that the user's actions are on their items if not admin.
      */
     public static void isAuthorized(String userId, Request request) {
-
-        Auth0UserProfile profile = isValidUser(request);
-
+        Auth0UserProfile profile = getUserFromRequest(request);
         // let admin do anything
         if (profile.adminUser != null) {
             return;
         }
-
+        // If userId is defined, it must be set to a value associated with the user.
         if (userId != null) {
             if (profile.otpUser != null && profile.otpUser.id.equals(userId)) {
                 return;
             }
-
             if (profile.apiUser != null && profile.apiUser.id.equals(userId)) {
                 return;
             }
         }
-
         logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
     }
 

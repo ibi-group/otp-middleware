@@ -11,16 +11,22 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.HttpUtils.httpRequest;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -28,7 +34,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * searchable fields and query syntax are here: https://auth0.com/docs/api/management/v2/user-search
  */
 public class Auth0Users {
-    private static final String AUTH0_DOMAIN = getConfigPropertyAsText("AUTH0_DOMAIN");
+    public static final String AUTH0_DOMAIN = getConfigPropertyAsText("AUTH0_DOMAIN");
     // This client/secret pair is for making requests for an API access token used with the Management API.
     private static final String AUTH0_API_CLIENT = getConfigPropertyAsText("AUTH0_API_CLIENT");
     private static final String AUTH0_API_SECRET = getConfigPropertyAsText("AUTH0_API_SECRET");
@@ -48,11 +54,15 @@ public class Auth0Users {
      * of {@link #DEFAULT_CONNECTION_TYPE}.
      */
     public static User createAuth0UserForEmail(String email) throws Auth0Exception {
+        return createAuth0UserForEmail(email, UUID.randomUUID().toString());
+    }
+
+    public static User createAuth0UserForEmail(String email, String password) throws Auth0Exception {
         // Create user object and assign properties.
         User user = new User();
         user.setEmail(email);
         // TODO set name? phone? other Auth0 properties?
-        user.setPassword(UUID.randomUUID().toString());
+        user.setPassword(password);
         user.setConnection(DEFAULT_CONNECTION_TYPE);
         return getManagementAPI()
             .users()
@@ -176,6 +186,7 @@ public class Auth0Users {
         // Ensure no user with email exists in MongoDB.
         U userWithEmail = userStore.getOneFiltered(eq("email", user.email));
         if (userWithEmail != null) {
+            // TODO: Does this need to change to allow multiple applications to create otpuser's with the same email?
             logMessageAndHalt(req, 400, "User with email already exists in database!");
         }
         // Check for pre-existing user in Auth0 and create if not exists.
@@ -183,6 +194,7 @@ public class Auth0Users {
         if (auth0UserProfile == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Error creating user for email " + user.email);
         }
+        LOG.info("Created new Auth0 user ({}) for user {}", auth0UserProfile.getId(), user.id);
         return auth0UserProfile;
     }
 
@@ -223,5 +235,24 @@ public class Auth0Users {
         return "your-auth0-domain".equals(AUTH0_DOMAIN)
             ? "http://locahost:8089"
             : "https://" + AUTH0_DOMAIN;
+    }
+
+    public static String getOAuthToken(String user, String password) throws UnsupportedEncodingException {
+        String body = String.format(
+            "grant_type=password&username=%s&password=%s&audience=%s&scope=&client_id=%s&client_secret=%s",
+            user,
+            password,
+            "https://otp-middleware",
+            AUTH0_API_CLIENT, // FIXME clientid?
+            AUTH0_API_SECRET // FIXME clientsecret?
+            );
+        String encodedBody = URLEncoder.encode(body, "UTF-8");
+        return httpRequest(
+            URI.create("https://YOUR_DOMAIN/oauth/token"),
+            1000,
+            HttpUtils.REQUEST_METHOD.POST,
+            Collections.singletonMap("content-type", "application/x-www-form-urlencoded"),
+            encodedBody
+        );
     }
 }

@@ -1,7 +1,11 @@
 package org.opentripplanner.middleware.models;
 
+import com.auth0.exception.Auth0Exception;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
+import org.opentripplanner.middleware.persistence.Persistence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
 
@@ -9,6 +13,7 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
  * Represents an administrative user of the OTP Admin Dashboard (otp-admin-ui).
  */
 public class AdminUser extends AbstractUser {
+    private static final Logger LOG = LoggerFactory.getLogger(AdminUser.class);
     // TODO: Add admin-specific fields
 
     /**
@@ -29,5 +34,16 @@ public class AdminUser extends AbstractUser {
     @Override
     public boolean canBeCreatedBy(Auth0UserProfile user) {
         return isUserAdmin(user);
+    }
+
+    @Override
+    public boolean delete() {
+        try {
+            super.delete();
+        } catch (Auth0Exception e) {
+            LOG.error("Could not delete Auth0 user. Aborting delete user.", e);
+            return false;
+        }
+        return Persistence.adminUsers.removeById(this.id);
     }
 }

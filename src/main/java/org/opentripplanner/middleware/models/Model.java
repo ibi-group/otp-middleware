@@ -38,4 +38,8 @@ public class Model implements Serializable {
         // TODO: Check if user has application administrator permission?
         return isUserAdmin(user);
     }
+
+    public boolean delete() throws Exception {
+        return false;
+    }
 }

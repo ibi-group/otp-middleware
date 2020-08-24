@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.persistence;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.result.DeleteResult;
@@ -15,9 +16,13 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.gte;
+import static com.mongodb.client.model.Filters.lte;
 
 /**
  * This provides some abstraction over the Mongo Java driver for storing a particular kind of POJO.
@@ -148,6 +153,34 @@ public class TypedPersistence<T extends Model> {
      */
     public List<T> getFilteredWithLimit(Bson filter, int maximum) {
         return mongoCollection.find(filter).limit(maximum).into(new ArrayList<>());
+    }
+
+    /**
+     * Build a filter for querying Mongo based on userId and from/to dates.
+     */
+    public static Bson buildFilter(String userId, Date fromDate, Date toDate) {
+        Set<Bson> clauses = new HashSet<>();
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required to be non-null.");
+        }
+        // user id is required, so as a minimum return all entities for user.
+        clauses.add(eq("userId", userId));
+        // Get all entities created since the supplied "from date".
+        if (fromDate != null) {
+            clauses.add(gte("dateCreated", fromDate));
+        }
+        // Get all entities created until the supplied "to date".
+        if (toDate != null) {
+            clauses.add(lte("dateCreated", toDate));
+        }
+        return Filters.and(clauses);
+    }
+
+    /**
+     * Build a filter for querying Mongo based on userId.
+     */
+    public static Bson buildFilter(String userId) {
+        return buildFilter(userId, null, null);
     }
 
     /**
