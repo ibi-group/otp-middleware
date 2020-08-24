@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.models.AdminUser;
@@ -18,13 +17,16 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 
 /**
- * Tests for creating and deleting api keys. The following config parameters are required for these tests to run:
+ * Tests for creating and deleting api keys. The following config parameters are must be set in
+ * configurations/default/env.yml for these end-to-end tests to run:
  *  - RUN_E2E=true the end-to-end environment variable must be set (NOTE: this is not a config value)
  *  - An AWS_PROFILE is required, or AWS access has been configured for your operating environment e.g.
  *    C:\Users\<username>\.aws\credentials in Windows or Mac OS equivalent.
@@ -73,12 +75,12 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     public void canCreateApiKeyForSelf() {
         assumeTrue(getBooleanEnvVar("RUN_E2E"));
         HttpResponse<String> response = createApiKeyRequest(apiUser.id, apiUser.auth0UserId);
-        Assertions.assertEquals(200, response.statusCode());
+        assertEquals(200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
         LOG.info("API user successfully created API key id {}", userFromResponse.apiKeys.get(0).id);
-        Assertions.assertEquals(userFromDb.apiKeys, userFromResponse.apiKeys);
+        assertEquals(userFromDb.apiKeys, userFromResponse.apiKeys);
     }
 
     /**
@@ -88,12 +90,12 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     public void adminCanCreateApiKeyForApiUser() {
         assumeTrue(getBooleanEnvVar("RUN_E2E"));
         HttpResponse<String> response = createApiKeyRequest(apiUser.id, adminUser.auth0UserId);
-        Assertions.assertEquals(200, response.statusCode());
+        assertEquals(200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
         LOG.info("Admin user successfully created API key id {}", userFromResponse.apiKeys.get(0).id);
-        Assertions.assertEquals(userFromDb.apiKeys, userFromResponse.apiKeys);
+        assertEquals(userFromDb.apiKeys, userFromResponse.apiKeys);
     }
 
     /**
@@ -106,13 +108,13 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         // delete key
         String keyId = apiUser.apiKeys.get(0).id;
         HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, apiUser.auth0UserId);
-        Assertions.assertEquals(200, response.statusCode());
+        assertEquals(200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
-        Assertions.assertTrue(userFromResponse.apiKeys.isEmpty());
+        assertTrue(userFromResponse.apiKeys.isEmpty());
         LOG.info("API user successfully deleted API key id {}", keyId);
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
-        Assertions.assertTrue(userFromDb.apiKeys.isEmpty());
+        assertTrue(userFromDb.apiKeys.isEmpty());
     }
 
     /**
@@ -125,13 +127,13 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         // delete key
         String keyId = apiUser.apiKeys.get(0).id;
         HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, adminUser.auth0UserId);
-        Assertions.assertEquals(response.statusCode(), 200);
+        assertEquals(200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
-        Assertions.assertTrue(userFromResponse.apiKeys.isEmpty());
+        assertTrue(userFromResponse.apiKeys.isEmpty());
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
         LOG.info("Admin user successfully deleted API key id {}", keyId);
-        Assertions.assertTrue(userFromDb.apiKeys.isEmpty());
+        assertTrue(userFromDb.apiKeys.isEmpty());
     }
 
     /**
