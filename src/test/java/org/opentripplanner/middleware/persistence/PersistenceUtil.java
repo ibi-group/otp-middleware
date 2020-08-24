@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.persistence;
 
+import com.auth0.exception.Auth0Exception;
+import com.auth0.json.mgmt.users.User;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -15,6 +17,9 @@ import org.opentripplanner.middleware.utils.FileUtils;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
+import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
 
 /**
  * Utility class to aid with creating and storing objects in Mongo.

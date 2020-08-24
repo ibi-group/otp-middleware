@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
@@ -22,6 +23,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 
 /**
  * Tests for creating and deleting api keys. The following config parameters are required for these tests to run:
@@ -35,7 +37,6 @@ import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
  */
 public class ApiKeyManagementTest extends OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(ApiKeyManagementTest.class);
-    private static String DEFAULT_USAGE_PLAN_ID;
     private static ApiUser apiUser;
     private static AdminUser adminUser;
 
@@ -45,7 +46,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     @BeforeAll
     public static void setUp() throws IOException {
         OtpMiddlewareTest.setUp();
-        DEFAULT_USAGE_PLAN_ID = getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
         apiUser = PersistenceUtil.createApiUser("test@example.com");
         adminUser = PersistenceUtil.createAdminUser("test@example.com");
     }
@@ -57,13 +57,9 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     public static void tearDown() {
         // Delete admin user.
         Persistence.adminUsers.removeById(adminUser.id);
-        // Delete api keys for user.
+        // Refresh api keys for user.
         apiUser = Persistence.apiUsers.getById(apiUser.id);
-        for (ApiKey apiKey : apiUser.apiKeys) {
-            ApiGatewayUtils.deleteApiKey(apiKey);
-        }
-        // Delete api user. TODO: combine delete user/api keys into single method?
-        Persistence.apiUsers.removeById(apiUser.id);
+        apiUser.delete();
     }
 
     /**
@@ -72,7 +68,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     @Test
     public void canCreateApiKeyForSelf() {
         assumeTrue(getBooleanEnvVar("RUN_E2E"));
-        HttpResponse<String> response = createApiKeyRequest(apiUser.id, apiUser.auth0UserId);
+        HttpResponse<String> response = createApiKeyRequest(apiUser.id, apiUser);
         Assertions.assertEquals(200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
         // refresh API key
@@ -87,7 +83,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     @Test
     public void adminCanCreateApiKeyForApiUser() {
         assumeTrue(getBooleanEnvVar("RUN_E2E"));
-        HttpResponse<String> response = createApiKeyRequest(apiUser.id, adminUser.auth0UserId);
+        HttpResponse<String> response = createApiKeyRequest(apiUser.id, adminUser);
         Assertions.assertEquals(200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
         // refresh API key
@@ -105,7 +101,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         ensureAtLeastOneApiKeyIsAvailable();
         // delete key
         String keyId = apiUser.apiKeys.get(0).id;
-        HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, apiUser.auth0UserId);
+        HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, apiUser);
         Assertions.assertEquals(200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
         Assertions.assertTrue(userFromResponse.apiKeys.isEmpty());
@@ -124,7 +120,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         ensureAtLeastOneApiKeyIsAvailable();
         // delete key
         String keyId = apiUser.apiKeys.get(0).id;
-        HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, adminUser.auth0UserId);
+        HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, adminUser);
         Assertions.assertEquals(response.statusCode(), 200);
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
         Assertions.assertTrue(userFromResponse.apiKeys.isEmpty());
@@ -142,26 +138,23 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         apiUser = Persistence.apiUsers.getById(apiUser.id);
 
         if (apiUser.apiKeys.isEmpty()) {
-            ApiKey apiKey = ApiGatewayUtils.createApiKey(apiUser.id, DEFAULT_USAGE_PLAN_ID);
-            apiUser.apiKeys.add(apiKey);
-            // Save update so the API key delete endpoint is aware of the new API key.
-            Persistence.apiUsers.replace(apiUser.id, apiUser);
+            apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
         }
     }
 
     /**
      * Create API key for target user based on authorization of requesting user
      */
-    private HttpResponse<String> createApiKeyRequest(String targetUserId, String requestingAuth0UserId) {
+    private HttpResponse<String> createApiKeyRequest(String targetUserId, AbstractUser requestingUser) {
         String path = String.format("api/secure/application/%s/apikey", targetUserId);
-        return mockAuthenticatedRequest(path, HttpUtils.REQUEST_METHOD.POST, requestingAuth0UserId);
+        return mockAuthenticatedRequest(path, HttpUtils.REQUEST_METHOD.POST, requestingUser);
     }
 
     /**
      * Delete API key for target user based on authorization of requesting user
      */
-    private HttpResponse<String> deleteApiKeyRequest(String targetUserId, String apiKeyId, String requestingAuth0UserId) {
+    private HttpResponse<String> deleteApiKeyRequest(String targetUserId, String apiKeyId, AbstractUser requestingUser) {
         String path = String.format("api/secure/application/%s/apikey/%s", targetUserId, apiKeyId);
-        return mockAuthenticatedRequest(path, HttpUtils.REQUEST_METHOD.DELETE, requestingAuth0UserId);
+        return mockAuthenticatedRequest(path, HttpUtils.REQUEST_METHOD.DELETE, requestingUser);
     }
 }
