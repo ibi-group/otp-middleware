@@ -107,13 +107,13 @@ public class ApiGatewayUtils {
         try {
             DeleteApiKeyRequest deleteApiKeyRequest = new DeleteApiKeyRequest();
             deleteApiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
-            deleteApiKeyRequest.setApiKey(apiKey.id);
+            deleteApiKeyRequest.setApiKey(apiKey.keyId);
             gateway.deleteApiKey(deleteApiKeyRequest);
             LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
         } catch (NotFoundException e) {
-            LOG.warn("Api key ({}) not found, unable to delete", apiKey.id, e);
+            LOG.warn("Api key ({}) not found, unable to delete", apiKey.keyId, e);
         } catch (Exception e) {
-            String message = String.format("Unable to delete api key (%s)", apiKey.id);
+            String message = String.format("Unable to delete api key (%s)", apiKey.keyId);
             BugsnagReporter.reportErrorToBugsnag(message, e);
             success = false;
         }
@@ -121,7 +121,8 @@ public class ApiGatewayUtils {
     }
 
     /**
-     * Get usage logs from AWS api gateway for a given key id, start and end date
+     * Get usage logs from AWS api gateway for a given key id, start and end date. Note: a null key id will return usage
+     * for all usage plans and API keys.
      */
     public static List<GetUsageResult> getUsageLogsForKey(String keyId, String startDate, String endDate) {
         long startTime = System.currentTimeMillis();
@@ -133,7 +134,6 @@ public class ApiGatewayUtils {
         List<GetUsageResult> usageResults = new ArrayList<>();
         for (UsagePlan usagePlan : usagePlansResult.getItems()) {
             GetUsageRequest getUsageRequest = new GetUsageRequest()
-                // TODO: Once third party dev accounts are fleshed out, this query param might go away?
                 .withKeyId(keyId)
                 .withStartDate(startDate)
                 .withEndDate(endDate)
@@ -162,7 +162,7 @@ public class ApiGatewayUtils {
 
         List<GetUsageResult> usageResults = new ArrayList<>();
         for (ApiKey apiKey : apiKeys) {
-            usageResults.addAll(getUsageLogsForKey(apiKey.id, startDate, endDate));
+            usageResults.addAll(getUsageLogsForKey(apiKey.keyId, startDate, endDate));
         }
 
         LOG.debug("Retrieving usage logs for a list of api keys took {} msec", System.currentTimeMillis() - startTime);

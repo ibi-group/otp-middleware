@@ -7,6 +7,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.ApiKey;
+import org.opentripplanner.middleware.models.ApiUsageResult;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
@@ -68,7 +70,7 @@ public class LogController implements Endpoint {
                 .withProduces(JSON_ONLY)
                 // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
                 // as the return type for this method. (It does generate the type for that class nonetheless.)
-                .withResponseAsCollection(GetUsageResult.class),
+                .withResponseAsCollection(ApiUsageResult.class),
             LogController::getUsageLogs, JsonUtils::toJson);
     }
 
@@ -76,14 +78,21 @@ public class LogController implements Endpoint {
      * HTTP endpoint to return the usage (number of requests made/requests remaining) for the AWS API Gateway usage
      * plans. Defaults to the last 30 days for all API keys in the AWS account.
      */
-    private static List<GetUsageResult> getUsageLogs(Request req, Response res) {
+    private static List<ApiUsageResult> getUsageLogs(Request req, Response res) {
+        // Get list of API keys (if present) from request.
         List<ApiKey> apiKeys = getApiKeyIdsFromRequest(req);
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        // If the user is not an admin, the list of API keys is defaulted to their keys.
         if (!isUserAdmin(requestingUser)) {
             if (requestingUser.apiUser == null) {
                 logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Action is not permitted for user.");
+                return null;
             }
             apiKeys = requestingUser.apiUser.apiKeys;
+            // If the requesting API user has no keys, return an empty list (to avoid returning the full set below).
+            if (apiKeys.isEmpty()) {
+                return new ArrayList<>();
+            }
         }
         LocalDateTime now = LocalDateTime.now();
         // TODO: Future work might modify this so that we accept multiple API key IDs for a single request (depends on
@@ -92,11 +101,16 @@ public class LogController implements Endpoint {
         String startDate = req.queryParamOrDefault("startDate", formatter.format(now.minusDays(30)));
         String endDate = req.queryParamOrDefault("endDate", formatter.format(now));
         try {
+            List<GetUsageResult> usageLogs;
             if (apiKeys.isEmpty()) {
                 // keyId param is optional (if not provided, all API keys will be included in response).
-                return ApiGatewayUtils.getUsageLogsForKey(null, startDate, endDate);
+                usageLogs = ApiGatewayUtils.getUsageLogsForKey(null, startDate, endDate);
+            } else {
+                usageLogs = ApiGatewayUtils.getUsageLogsForKeys(apiKeys, startDate, endDate);
             }
-            return ApiGatewayUtils.getUsageLogsForKeys(apiKeys, startDate, endDate);
+            return usageLogs.stream()
+                .map(ApiUsageResult::new)
+                .collect(Collectors.toList());
         } catch (Exception e) {
             // Catch any issues with bad request parameters (e.g., invalid API keyId or bad date format).
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error requesting usage results", e);
@@ -114,11 +128,9 @@ public class LogController implements Endpoint {
         if (keyIdParam.isEmpty()) {
             return apiKeys;
         }
-
         for (String keyId : keyIdParam.split(",")) {
             apiKeys.add(new ApiKey(keyId));
         }
-
         return apiKeys;
     }
 }
