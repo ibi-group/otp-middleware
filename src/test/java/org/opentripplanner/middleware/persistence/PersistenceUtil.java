@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.persistence;
 
+import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
-import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -10,8 +10,11 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.middleware.utils.FileUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Utility class to aid with creating and storing objects in Mongo.
@@ -45,6 +48,15 @@ public class PersistenceUtil {
         return user;
     }
 
+    /**
+     * Create Admin user and store in database.
+     */
+    public static AdminUser createAdminUser(String email) {
+        AdminUser user = new AdminUser();
+        user.email = email;
+        Persistence.adminUsers.create(user);
+        return user;
+    }
 
     /**
      * Create trip request and store in database.
@@ -93,7 +105,7 @@ public class PersistenceUtil {
      * Delete multiple trip requests from database.
      */
     public static void deleteTripRequests(List<TripRequest> tripRequests) {
-        for (TripRequest tripRequest: tripRequests) {
+        for (TripRequest tripRequest : tripRequests) {
             Persistence.tripRequests.removeById(tripRequest.id);
         }
     }

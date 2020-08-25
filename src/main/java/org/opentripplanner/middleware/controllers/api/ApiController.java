@@ -46,8 +46,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     protected static final String ID_PATH = "/:" + ID_PARAM;
     protected final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
-    protected static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     private final String className;
+    private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     final TypedPersistence<T> persistence;
     private final Class<T> clazz;
     private final T[] typedArray;

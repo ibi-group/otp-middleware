@@ -100,7 +100,7 @@ public class JsonUtils {
     ) throws HaltException {
         // Note that halting occurred, also print error stacktrace if applicable
         if (e != null) e.printStackTrace();
-        LOG.info("Halting with status code {}.  Error message: {}", statusCode, message);
+        LOG.error("Halting {} with status code {}.  Error message: {}", request.uri(), statusCode, message);
 
         if (statusCode >= 500) {
             BugsnagReporter.reportErrorToBugsnag(message, e);

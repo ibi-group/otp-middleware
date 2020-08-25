@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
 import com.beerboy.ss.ApiEndpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
@@ -11,6 +10,8 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
 import spark.Response;
@@ -27,6 +28,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * managing an {@link ApiUser}'s API keys.
  */
 public class ApiUserController extends AbstractUserController<ApiUser> {
+    private static final Logger LOG = LoggerFactory.getLogger(ApiUserController.class);
     private static final String DEFAULT_USAGE_PLAN_ID = getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
     private static final String API_KEY_PATH = "/apikey";
     private static final int API_KEY_LIMIT_PER_USER = 2;
@@ -38,9 +40,9 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
 
     @Override
     protected void buildEndpoint(ApiEndpoint baseEndpoint) {
-        LOG.info("Registering path {}.", ROOT_ROUTE + API_KEY_PATH);
-
         // Add the api key route BEFORE the regular CRUD methods
+        // (to avoid interference with "get API user by ID" route)
+        LOG.info("Registering path {}.", ROOT_ROUTE + ID_PATH + API_KEY_PATH);
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Create API key
             .post(path(ID_PATH + API_KEY_PATH)
@@ -97,8 +99,8 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             }
         }
         // FIXME Should an Api user be limited to one api key per usage plan (and perhaps stage)?
-        CreateApiKeyResult apiKeyResult = ApiGatewayUtils.createApiKey(targetUser.id, usagePlanId);
-        if (apiKeyResult == null || apiKeyResult.getId() == null) {
+        ApiKey apiKey = ApiGatewayUtils.createApiKey(targetUser.id, usagePlanId);
+        if (apiKey == null || apiKey.id == null) {
             logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
                 String.format("Unable to get AWS API key for user id (%s) and usage plan id (%s)", targetUser.id, usagePlanId),
@@ -107,7 +109,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             return null;
         }
         // Add new API key to user and persist
-        targetUser.apiKeys.add(new ApiKey(apiKeyResult));
+        targetUser.apiKeys.add(apiKey);
         Persistence.apiUsers.replace(targetUser.id, targetUser);
         return Persistence.apiUsers.getById(targetUser.id);
     }
@@ -156,19 +158,16 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     @Override
     ApiUser preCreateHook(ApiUser user, Request req) {
-        CreateApiKeyResult apiKeyResult = ApiGatewayUtils.createApiKey(user.id, DEFAULT_USAGE_PLAN_ID);
-        if (apiKeyResult == null) {
+        ApiKey apiKey = ApiGatewayUtils.createApiKey(user.id, DEFAULT_USAGE_PLAN_ID);
+        if (apiKey == null) {
             logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
                 String.format("Unable to get AWS api key for user %s", user),
                 null);
         }
-
-        ApiKey apiKey = new ApiKey(apiKeyResult);
-
         // store api key id including the actual api key (value)
         user.apiKeys.add(apiKey);
-
+        // Call AbstractUserController#preCreateHook and delete api key in case something goes wrong.
         try {
             return super.preCreateHook(user, req);
         } catch (HaltException e) {
@@ -183,6 +182,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     @Override
     boolean preDeleteHook(ApiUser user, Request req) {
+        // TODO: Create method for deleting user's API keys?
         for (ApiKey apiKey : user.apiKeys) {
             deleteApiKey(apiKey);
         }
