@@ -79,7 +79,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
-        LOG.info("API user successfully created API key id {}", userFromResponse.apiKeys.get(0).id);
+        LOG.info("API user successfully created API key id {}", userFromResponse.apiKeys.get(0).keyId);
         assertEquals(userFromDb.apiKeys, userFromResponse.apiKeys);
     }
 
@@ -94,7 +94,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
-        LOG.info("Admin user successfully created API key id {}", userFromResponse.apiKeys.get(0).id);
+        LOG.info("Admin user successfully created API key id {}", userFromResponse.apiKeys.get(0).keyId);
         assertEquals(userFromDb.apiKeys, userFromResponse.apiKeys);
     }
 
@@ -106,7 +106,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         assumeTrue(getBooleanEnvVar("RUN_E2E"));
         ensureAtLeastOneApiKeyIsAvailable();
         // delete key
-        String keyId = apiUser.apiKeys.get(0).id;
+        String keyId = apiUser.apiKeys.get(0).keyId;
         HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, apiUser.auth0UserId);
         assertEquals(200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
@@ -125,7 +125,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         assumeTrue(getBooleanEnvVar("RUN_E2E"));
         ensureAtLeastOneApiKeyIsAvailable();
         // delete key
-        String keyId = apiUser.apiKeys.get(0).id;
+        String keyId = apiUser.apiKeys.get(0).keyId;
         HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, adminUser.auth0UserId);
         assertEquals(200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
