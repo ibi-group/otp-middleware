@@ -34,6 +34,10 @@ public class ApiUser extends AbstractUser {
     /** The name of this user */
     public String name;
 
+    /**
+     * @return the first {@link ApiUser} found with an {@link ApiKey#keyId} in {@link #apiKeys} that matches the
+     * provided apiKeyId.
+     */
     public static ApiUser userForApiKey(String apiKeyId) {
         return Persistence.apiUsers.getOneFiltered(Filters.elemMatch("apiKeys", Filters.eq("keyId", apiKeyId)));
     }
