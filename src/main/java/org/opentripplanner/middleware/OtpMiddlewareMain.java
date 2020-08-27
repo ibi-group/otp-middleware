@@ -9,9 +9,9 @@ import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.BugsnagController;
-import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.LogController;
 import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
+import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.otp.OtpRequestProcessor;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -117,8 +117,8 @@ public class OtpMiddlewareMain {
     }
 
     /**
-     * Load config files from either program arguments or (if no args specified) from
-     * default configuration file locations. Config fields are retrieved with getConfigProperty.
+     * Load config files from either program arguments or (if no args specified) from default configuration file
+     * locations. Config fields are retrieved with getConfigProperty.
      */
     private static void loadConfig(String[] args) throws IOException {
         FileInputStream envConfigStream;
@@ -215,4 +215,11 @@ public class OtpMiddlewareMain {
         return value;
     }
 
+    /**
+     * Returns true only if an environment variable exists and is set to "true".
+     */
+    public static boolean getBooleanEnvVar(String var) {
+        String variable = System.getenv(var);
+        return variable != null && variable.equals("true");
+    }
 }

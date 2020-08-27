@@ -1,40 +1,29 @@
 package org.opentripplanner.middleware;
 
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
-import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.AbstractUser;
-import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.utils.HttpUtils;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpResponse;
-import java.util.Collections;
 import java.util.HashMap;
 
-import static org.opentripplanner.middleware.auth.Auth0Users.AUTH0_DOMAIN;
-import static org.opentripplanner.middleware.auth.Auth0Users.getOAuthToken;
-import static org.opentripplanner.middleware.utils.HttpUtils.httpRequest;
+import static org.opentripplanner.middleware.auth.Auth0Users.get0AuthToken;
 
 public class TestUtils {
 
     /**
-     * Returns true only if an environment variable exists and is set to "true".
+     * Password used to create and validate temporary Auth0 users
      */
-    public static boolean getBooleanEnvVar(String var) {
-        String variable = System.getenv(var);
-        return variable != null && variable.equals("true");
-    }
+    static final String TEMP_AUTH0_USER_PASSWORD = "t3mp-pa$$w0rd";
 
     /**
      * Send request to provided URL placing the Auth0 user id in the headers so that {@link Auth0UserProfile} can check
      * the database for a matching user. Returns the response.
      */
-    public static HttpResponse<String> mockAuthenticatedRequest(String path, HttpUtils.REQUEST_METHOD requestMethod, AbstractUser requestingUser) {
+    public static HttpResponse<String> mockAuthenticatedRequest(String path, AbstractUser requestingUser, HttpUtils.REQUEST_METHOD requestMethod) {
         HashMap<String, String> headers = getMockHeaders(requestingUser);
-        headers.put("Authorization", requestingUser.auth0UserId);
         // If requester is an API user, add API key value as x-api-key header to simulate request over API Gateway.
         if (requestingUser instanceof ApiUser) {
             ApiUser apiUser = (ApiUser) requestingUser;
@@ -53,13 +42,10 @@ public class TestUtils {
     }
 
     /**
-     * FIXME: Need to do this:
-     *  - https://auth0.com/docs/dev-lifecycle/work-with-auth0-locally
-     *  - https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
-     * @param requestingUser
-     * @return
+     * Construct http header values based on user type and status of DISABLE_AUTH config parameter. If authorization is
+     * disabled, use Auth0 user ID to authenticate else attempt to get a valid 0auth token from Auth0 and use this.
      */
-    private static HashMap<String, String> getMockHeaders(AbstractUser requestingUser) throws UnsupportedEncodingException {
+    private static HashMap<String, String> getMockHeaders(AbstractUser requestingUser) {
         HashMap<String, String> headers = new HashMap<>();
         // If auth is disabled, simply place the Auth0 user ID in the authorization header, which will be extracted from
         // the request when received.
@@ -67,8 +53,7 @@ public class TestUtils {
             headers.put("Authorization", requestingUser.auth0UserId);
         } else {
             // Otherwise, get a valid oauth token for the user
-            String password = System.getenv("password");
-            String token = getOAuthToken(requestingUser.email, password);
+            String token = get0AuthToken(requestingUser.email, TEMP_AUTH0_USER_PASSWORD);
             headers.put("Authorization", "Bearer " + token);
         }
         // If requester is an API user, add API key value as x-api-key header to simulate request over API Gateway.
@@ -96,5 +81,4 @@ public class TestUtils {
             body
         );
     }
-
 }

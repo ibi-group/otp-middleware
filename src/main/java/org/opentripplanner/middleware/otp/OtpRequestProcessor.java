@@ -7,6 +7,7 @@ import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,26 +15,41 @@ import spark.Request;
 import spark.Service;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
+import static org.opentripplanner.middleware.OtpMiddlewareMain.getBooleanEnvVar;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Responsible for getting a response from OTP based on the parameters provided by the requester. If the target service
- * is of interest the response is intercepted and processed. In all cases, the response from OTP (content and HTTP status)
- * is passed back to the requester.
+ * is of interest the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
+ * status) is passed back to the requester.
  */
 public class OtpRequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
+
+    /**
+     * If running end to end tests, return mock response from OTP for plan requests. TODO: Replace with local live OTP
+     * instance.
+     */
+    private static final boolean runE2E = getBooleanEnvVar("RUN_E2E");
+
+    /**
+     * Holds a mock plan response for use when 'RUN_E2E' is enabled
+     */
+    private static String PLAN_RESPONSE = null;
+
     /**
      * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
      * return OTP version info.
      */
     private static final String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
+
     /**
      * Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse}
      */
     private static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
+
     /**
      * Endpoint for the OTP Middleware's OTP proxy
      */
@@ -61,11 +77,18 @@ public class OtpRequestProcessor {
         }
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replace(OTP_PROXY_ENDPOINT, "");
-        // attempt to get response from OTP server based on requester's query parameters
-        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
-        if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
-            logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
-            return null;
+
+        OtpDispatcherResponse otpDispatcherResponse;
+        // If the request is to the plan end point and E2E is enabled mock the plan response
+        if (otpRequestPath.endsWith(OTP_PLAN_ENDPOINT) && runE2E) {
+            otpDispatcherResponse = getMockPlanResponse();
+        } else {
+            // attempt to get response from OTP server based on requester's query parameters
+            otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
+            if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
+                logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
+                return null;
+            }
         }
 
         // If the request path ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
@@ -128,5 +151,21 @@ public class OtpRequestProcessor {
             }
         }
         LOG.debug("Trip storage added {} ms", System.currentTimeMillis() - tripStorageStartTime);
+    }
+
+    /**
+     * Get mock OTP plan response from file for use when 'RUN_E2E' is enabled. TODO: Replace with local live OTP
+     * instance.
+     */
+    private static OtpDispatcherResponse getMockPlanResponse() {
+        final String filePath = "src/test/resources/org/opentripplanner/middleware/";
+        if (PLAN_RESPONSE == null) {
+            PLAN_RESPONSE = FileUtils.getFileContents(filePath + "planResponse.json");
+        }
+        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
+        otpDispatcherResponse.statusCode = HttpStatus.OK_200;
+        otpDispatcherResponse.responseBody = PLAN_RESPONSE;
+
+        return otpDispatcherResponse;
     }
 }

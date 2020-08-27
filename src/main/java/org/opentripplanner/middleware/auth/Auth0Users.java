@@ -16,9 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URLEncoder;
+import java.net.http.HttpResponse;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,8 @@ import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.utils.HttpUtils.httpRequest;
+import static org.opentripplanner.middleware.utils.HttpUtils.httpRequestRawResponse;
+import static org.opentripplanner.middleware.utils.JsonUtils.getSingleNodeValueFromJSON;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -50,8 +50,8 @@ public class Auth0Users {
     private static final AuthAPI authAPI = new AuthAPI(AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET);
 
     /**
-     * Creates a standard user for the provided email address. Defaults to a random UUID password and connection type
-     * of {@link #DEFAULT_CONNECTION_TYPE}.
+     * Creates a standard user for the provided email address. Defaults to a random UUID password and connection type of
+     * {@link #DEFAULT_CONNECTION_TYPE}.
      */
     public static User createAuth0UserForEmail(String email) throws Auth0Exception {
         return createAuth0UserForEmail(email, UUID.randomUUID().toString());
@@ -89,8 +89,8 @@ public class Auth0Users {
     }
 
     /**
-     * Gets an Auth0 API access token for authenticating requests to the Auth0 Management API. This will either create
-     * a new token using the oauth token endpoint or grab a cached token that it has already created (if it has not
+     * Gets an Auth0 API access token for authenticating requests to the Auth0 Management API. This will either create a
+     * new token using the oauth token endpoint or grab a cached token that it has already created (if it has not
      * expired). More information on setting this up is here: https://auth0.com/docs/api/management/v2/get-access-tokens-for-production
      */
     public static String getApiToken() {
@@ -136,9 +136,9 @@ public class Auth0Users {
     }
 
     /**
-     * Method to trigger an Auth0 job to resend a verification email. Returns an Auth0 {@link Job} which can be
-     * used to monitor the progress of the job (using job ID). Typically the verification email goes out pretty quickly
-     * so there shouldn't be too much of a need to monitor the result.
+     * Method to trigger an Auth0 job to resend a verification email. Returns an Auth0 {@link Job} which can be used to
+     * monitor the progress of the job (using job ID). Typically the verification email goes out pretty quickly so there
+     * shouldn't be too much of a need to monitor the result.
      */
     public static Job resendVerificationEmail(String userId) {
         try {
@@ -237,22 +237,32 @@ public class Auth0Users {
             : "https://" + AUTH0_DOMAIN;
     }
 
-    public static String getOAuthToken(String user, String password) throws UnsupportedEncodingException {
+    /**
+     * Get an 0Auth token by using the Auth0 'Call Your API Using Resource Owner Password Flow' approach. Auth0 setup
+     * can be reviewed here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow. If the user
+     * is successfully validated by Auth0 a bearer access token is returned, which is extracted and returned to the
+     * caller. In all other cases, null is returned.
+     */
+    public static String get0AuthToken(String username, String password) {
         String body = String.format(
-            "grant_type=password&username=%s&password=%s&audience=%s&scope=&client_id=%s&client_secret=%s",
-            user,
+            "grant_type=password&username=%s&password=%s&audience=%s&scope=read:sample&client_id=%s&client_secret=%s",
+            username,
             password,
-            "https://otp-middleware",
-            AUTH0_API_CLIENT, // FIXME clientid?
-            AUTH0_API_SECRET // FIXME clientsecret?
-            );
-        String encodedBody = URLEncoder.encode(body, "UTF-8");
-        return httpRequest(
-            URI.create("https://YOUR_DOMAIN/oauth/token"),
+            "https://otp-middleware", // must match an API identifier
+            AUTH0_API_CLIENT, // Auth0 application client ID
+            AUTH0_API_SECRET // Auth0 application client secret
+        );
+
+        HttpResponse<String> response = httpRequestRawResponse(
+            URI.create(String.format("https://%s/oauth/token", AUTH0_DOMAIN)),
             1000,
             HttpUtils.REQUEST_METHOD.POST,
             Collections.singletonMap("content-type", "application/x-www-form-urlencoded"),
-            encodedBody
+            body
         );
+
+        return (response == null || response.statusCode() != HttpStatus.OK_200)
+            ? null
+            : getSingleNodeValueFromJSON("access_token", response.body());
     }
 }
