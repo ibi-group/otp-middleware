@@ -79,7 +79,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         return user != null &&
             user.apiKeys
                 .stream()
-                .anyMatch(apiKey -> apiKeyId.equals(apiKey.id));
+                .anyMatch(apiKey -> apiKeyId.equals(apiKey.keyId));
     }
 
     /**
@@ -99,9 +99,8 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             }
         }
         // FIXME Should an Api user be limited to one api key per usage plan (and perhaps stage)?
-        // Add new API key to user and persist
-        boolean success = targetUser.createApiKey(usagePlanId, true);
-        if (!success) {
+        ApiKey apiKey = ApiGatewayUtils.createApiKey(targetUser.id, usagePlanId);
+        if (apiKey == null || apiKey.keyId == null) {
             logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
                 String.format("Unable to create AWS API key for user id (%s) and usage plan id (%s)", targetUser.id, usagePlanId),
@@ -136,7 +135,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         boolean success = deleteApiKey(new ApiKey(apiKeyId));
         if (success) {
             // Delete api key from user and persist
-            targetUser.apiKeys.removeIf(apiKey -> apiKeyId.equals(apiKey.id));
+            targetUser.apiKeys.removeIf(apiKey -> apiKeyId.equals(apiKey.keyId));
             Persistence.apiUsers.replace(targetUser.id, targetUser);
             return Persistence.apiUsers.getById(targetUser.id);
         } else {

@@ -5,6 +5,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.mongodb.client.model.Filters;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +46,7 @@ public class ApiUser extends AbstractUser {
     public boolean delete() {
         for (ApiKey apiKey : apiKeys) {
             if (!ApiGatewayUtils.deleteApiKey(apiKey)) {
-                LOG.error("Could not delete API key for user {}. Aborting delete user.", apiKey.id);
+                LOG.error("Could not delete API key for user {}. Aborting delete user.", apiKey.keyId);
                 return false;
             }
         }
@@ -66,5 +67,13 @@ public class ApiUser extends AbstractUser {
             return true;
         }
         return false;
+    }
+
+    /**
+     * @return the first {@link ApiUser} found with an {@link ApiKey#keyId} in {@link #apiKeys} that matches the
+     * provided apiKeyId.
+     */
+    public static ApiUser userForApiKey(String apiKeyId) {
+        return Persistence.apiUsers.getOneFiltered(Filters.elemMatch("apiKeys", Filters.eq("keyId", apiKeyId)));
     }
 }
