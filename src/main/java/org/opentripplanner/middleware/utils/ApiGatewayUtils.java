@@ -18,11 +18,13 @@ import com.amazonaws.services.apigateway.model.NotFoundException;
 import com.amazonaws.services.apigateway.model.UsagePlan;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.ApiKey;
+import org.opentripplanner.middleware.models.ApiUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.hasConfigProperty;
@@ -54,29 +56,35 @@ public class ApiGatewayUtils {
     /**
      * Request an API key from AWS api gateway and assign it to an existing usage plan.
      */
-    public static ApiKey createApiKey(String userId, String usagePlanId) {
-        if (userId == null || usagePlanId == null) {
+    public static ApiKey createApiKey(ApiUser user, String usagePlanId) {
+        if (user == null || user.id == null || usagePlanId == null) {
             LOG.error("All required input parameters must be provided.");
             return null;
         }
         long startTime = System.currentTimeMillis();
         try {
             AmazonApiGateway gateway = getAmazonApiGateway();
-            // create API key
-            CreateApiKeyRequest apiKeyRequest = new CreateApiKeyRequest();
-            apiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
-            apiKeyRequest
-                //FIXME This may need to include stage key(s). Not sure what impact that places on the calling
-                // services though?
-                .withName(userId)
-                .withCustomerId(userId)
-                .withEnabled(true);
-            CreateApiKeyResult apiKeyResult = gateway.createApiKey(apiKeyRequest);
-
-            // get usage plan
+            // Before creating key, verify usage plan exists.
             GetUsagePlanRequest usagePlanRequest = new GetUsagePlanRequest();
             usagePlanRequest.withUsagePlanId(usagePlanId);
             GetUsagePlanResult usagePlanResult = gateway.getUsagePlan(usagePlanRequest);
+
+            // Create API key with descriptive fields (for tracing back to users).
+            CreateApiKeyRequest apiKeyRequest = new CreateApiKeyRequest();
+            apiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
+            // Construct key name in the form email-planname-shortId (e.g., user@email.com-Unlimited-2). Note: shortId is
+            // not intended to be unique, just for a bit of differentiation in the AWS console.
+            String shortId = UUID.randomUUID().toString().substring(0, 7);
+            String keyName = String.join("-", user.email, usagePlanResult.getName(), shortId);
+            apiKeyRequest
+                //FIXME This may need to include stage key(s). Not sure what impact that places on the calling
+                // services though?
+                .withName(keyName)
+                // TODO: On deleting am ApiUser, it might be worth doing a query on customerId to make sure the keys
+                //  have been cleared.
+                .withCustomerId(user.id)
+                .withEnabled(true);
+            CreateApiKeyResult apiKeyResult = gateway.createApiKey(apiKeyRequest);
 
             // add API key to usage plan
             CreateUsagePlanKeyRequest usagePlanKeyRequest = new CreateUsagePlanKeyRequest();
@@ -88,7 +96,7 @@ public class ApiGatewayUtils {
             return new ApiKey(apiKeyResult);
         } catch (Exception e) {
             String message = String.format("Unable to get api key from AWS for user id (%s) and usage plan id (%s)",
-                userId,
+                user.id,
                 usagePlanId);
             BugsnagReporter.reportErrorToBugsnag(message, e);
         } finally {

@@ -144,7 +144,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         apiUser = Persistence.apiUsers.getById(apiUser.id);
 
         if (apiUser.apiKeys.isEmpty()) {
-            ApiKey apiKey = ApiGatewayUtils.createApiKey(apiUser.id, DEFAULT_USAGE_PLAN_ID);
+            ApiKey apiKey = ApiGatewayUtils.createApiKey(apiUser, DEFAULT_USAGE_PLAN_ID);
             apiUser.apiKeys.add(apiKey);
             // Save update so the API key delete endpoint is aware of the new API key.
             Persistence.apiUsers.replace(apiUser.id, apiUser);
