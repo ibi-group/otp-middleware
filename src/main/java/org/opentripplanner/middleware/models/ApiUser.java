@@ -1,5 +1,8 @@
 package org.opentripplanner.middleware.models;
 
+import com.mongodb.client.model.Filters;
+import org.opentripplanner.middleware.persistence.Persistence;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,4 +33,12 @@ public class ApiUser extends AbstractUser {
     // FIXME: Move this member to AbstractUser?
     /** The name of this user */
     public String name;
+
+    /**
+     * @return the first {@link ApiUser} found with an {@link ApiKey#keyId} in {@link #apiKeys} that matches the
+     * provided apiKeyId.
+     */
+    public static ApiUser userForApiKey(String apiKeyId) {
+        return Persistence.apiUsers.getOneFiltered(Filters.elemMatch("apiKeys", Filters.eq("keyId", apiKeyId)));
+    }
 }
