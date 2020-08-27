@@ -18,9 +18,9 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -356,7 +356,7 @@ public class PublicApiDocGenerator {
         // Execute until there are no unused types.
         do {
             // Find return type references anywhere (only store one instance of each).
-            LinkedHashSet<String> typeReferences = new LinkedHashSet<>();
+            HashSet<String> typeReferences = new HashSet<>();
             for (JsonNode refNode : rootNode.findValues(REF_FIELD)) {
                 // The reference is typically in the form "#/definitions/TypeName".
                 // Extract the "raw" type (TypeName in example above) from the definition string.
