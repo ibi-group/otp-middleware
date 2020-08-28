@@ -103,11 +103,13 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         if (apiKey == null || apiKey.keyId == null) {
             logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
-                String.format("Unable to create AWS API key for user id (%s) and usage plan id (%s)", targetUser.id, usagePlanId),
+                String.format("Unable to get AWS API key for user id (%s) and usage plan id (%s)", targetUser.id, usagePlanId),
                 null
             );
             return null;
         }
+        // Add new API key to user and persist
+        targetUser.apiKeys.add(apiKey);
         Persistence.apiUsers.replace(targetUser.id, targetUser);
         return Persistence.apiUsers.getById(targetUser.id);
     }
