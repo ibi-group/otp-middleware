@@ -1,17 +1,36 @@
 package org.opentripplanner.middleware;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
+import spark.Request;
+import spark.Response;
+import spark.Service;
 
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 
-import static org.opentripplanner.middleware.auth.Auth0Users.get0AuthToken;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
+import static spark.Service.ignite;
+
 
 public class TestUtils {
+
+    /**
+     * Prevents the mock OTP server being initialized more than once
+     */
+    private static boolean mockOtpServerSetUpIsDone = false;
+
+    /**
+     * Mock plan endpoint used by the mock OTP server.
+     */
+    static final String MOCK_OTP_PLAN_ENDPOINT = "otp/plan";
 
     /**
      * Password used to create and validate temporary Auth0 users
@@ -53,7 +72,7 @@ public class TestUtils {
             headers.put("Authorization", requestingUser.auth0UserId);
         } else {
             // Otherwise, get a valid oauth token for the user
-            String token = get0AuthToken(requestingUser.email, TEMP_AUTH0_USER_PASSWORD);
+            String token = getAuth0Token(requestingUser.email, TEMP_AUTH0_USER_PASSWORD);
             headers.put("Authorization", "Bearer " + token);
         }
         // If requester is an API user, add API key value as x-api-key header to simulate request over API Gateway.
@@ -80,5 +99,30 @@ public class TestUtils {
             headers,
             body
         );
+    }
+
+    /**
+     * Configure a mock OTP server for providing mock OTP responses.
+     */
+    static void mockOtpServer() {
+        if (mockOtpServerSetUpIsDone) {
+            return;
+        }
+        Service http = ignite().port(8080);
+        http.get(MOCK_OTP_PLAN_ENDPOINT, TestUtils::mockOtpPlanResponse);
+    }
+
+    /**
+     * Mock an OTP server plan response by provide a static response from file.
+     */
+    private static String mockOtpPlanResponse(Request request, Response response) {
+        final String filePath = "src/test/resources/org/opentripplanner/middleware/";
+        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
+        otpDispatcherResponse.statusCode = HttpStatus.OK_200;
+        otpDispatcherResponse.responseBody = FileUtils.getFileContents(filePath + "planResponse.json");
+
+        response.type(APPLICATION_JSON);
+        response.status(otpDispatcherResponse.statusCode);
+        return otpDispatcherResponse.responseBody;
     }
 }

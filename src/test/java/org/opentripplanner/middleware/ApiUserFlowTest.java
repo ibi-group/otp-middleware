@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getBooleanEnvVar;
+import static org.opentripplanner.middleware.TestUtils.MOCK_OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedPost;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
@@ -35,9 +36,9 @@ import static org.opentripplanner.middleware.controllers.api.ApiUserController.D
  * Tests to simulate API user flow. The following config parameters must be set in configurations/default/env.yml for
  * these end-to-end tests to run: - AUTH0_DOMAIN set to a valid Auth0 domain - AUTH0_API_CLIENT set to a valid Auth0
  * application client id - AUTH0_API_SECRET set to a valid Auth0 application client secret - DEFAULT_USAGE_PLAN_ID set
- * to a valid usage plan id (AWS requires this to create an api key). - An AWS_PROFILE is required, or AWS access has
- * been configured for your operating environment e.g. C:\Users\<username>\.aws\credentials in Windows or Mac OS
- * equivalent.
+ * to a valid usage plan id (AWS requires this to create an api key) - OTP_API_ROOT set to http://localhost:8080/otp so
+ * the mock OTP server is used - OTP_PLAN_ENDPOINT set to /plan - An AWS_PROFILE is required, or AWS access has been
+ * configured for your operating environment e.g. C:\Users\<username>\.aws\credentials in Windows or Mac OS equivalent.
  *
  * The following environment variable must be set for these tests to run: - RUN_E2E=true
  *
@@ -52,7 +53,9 @@ public class ApiUserFlowTest {
      */
     @BeforeAll
     public static void setUp() throws IOException {
+        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         OtpMiddlewareTest.setUp();
+        TestUtils.mockOtpServer();
         // As a pre-condition, create an API User with API key.
         apiUser = PersistenceUtil.createApiUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
         apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
@@ -84,6 +87,7 @@ public class ApiUserFlowTest {
      */
     @AfterAll
     public static void tearDown() {
+        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         apiUser = Persistence.apiUsers.getById(apiUser.id);
         if (apiUser != null) apiUser.delete();
         otpUser = Persistence.otpUsers.getById(otpUser.id);
@@ -118,8 +122,7 @@ public class ApiUserFlowTest {
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(createTripResponse.body(), MonitoredTrip.class);
 
         // Plan trip with OTP proxy. Mock plan response will be returned
-        // TODO: Replace with local live OTP instance
-        HttpResponse<String> planTripResponse = mockAuthenticatedRequest("otp/plan",
+        HttpResponse<String> planTripResponse = mockAuthenticatedRequest(MOCK_OTP_PLAN_ENDPOINT,
             otpUserResponse,
             HttpUtils.REQUEST_METHOD.GET
         );

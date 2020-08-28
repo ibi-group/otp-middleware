@@ -8,7 +8,8 @@ import java.util.Date;
 import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.persistence.TypedPersistence.buildFilter;
+import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserAndDateRange;
+import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
 
 /**
  * A trip request represents an OTP UI trip request (initiated by a user) destined for an OpenTripPlanner instance.
@@ -44,7 +45,9 @@ public class TripRequest extends Model {
     //TODO: This could be the request parameters returned as part of the plan response. Would be POJO based instead of just text.
     public String queryParams;
 
-    /** This no-arg constructor exists to make MongoDB happy. */
+    /**
+     * This no-arg constructor exists to make MongoDB happy.
+     */
     public TripRequest() {
     }
 
@@ -71,11 +74,11 @@ public class TripRequest extends Model {
     }
 
     public static List<TripRequest> requestsForUser(String userId) {
-        return Persistence.tripRequests.getFiltered(buildFilter(userId));
+        return Persistence.tripRequests.getFiltered(filterByUserId(userId));
     }
 
     public static List<TripRequest> requestsForUser(String userId, Date fromDate, Date toDate, int limit) {
-        return Persistence.tripRequests.getFilteredWithLimit(buildFilter(userId, fromDate, toDate), limit);
+        return Persistence.tripRequests.getFilteredWithLimit(filterByUserAndDateRange(userId, fromDate, toDate), limit);
     }
 
     @Override

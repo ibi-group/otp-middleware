@@ -43,6 +43,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @BeforeAll
     public static void setUp() throws IOException {
+        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         OtpMiddlewareTest.setUp();
         apiUser = PersistenceUtil.createApiUser("test@example.com");
         adminUser = PersistenceUtil.createAdminUser("test@example.com");
@@ -53,6 +54,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @AfterAll
     public static void tearDown() {
+        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         // Delete admin user.
         Persistence.adminUsers.removeById(adminUser.id);
         // Refresh api keys for user.

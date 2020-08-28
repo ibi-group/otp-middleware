@@ -238,12 +238,12 @@ public class Auth0Users {
     }
 
     /**
-     * Get an 0Auth token by using the Auth0 'Call Your API Using Resource Owner Password Flow' approach. Auth0 setup
+     * Get an Auth0 token by using the Auth0 'Call Your API Using Resource Owner Password Flow' approach. Auth0 setup
      * can be reviewed here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow. If the user
      * is successfully validated by Auth0 a bearer access token is returned, which is extracted and returned to the
      * caller. In all other cases, null is returned.
      */
-    public static String get0AuthToken(String username, String password) {
+    public static String getAuth0Token(String username, String password) {
         String body = String.format(
             "grant_type=password&username=%s&password=%s&audience=%s&scope=read:sample&client_id=%s&client_secret=%s",
             username,

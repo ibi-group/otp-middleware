@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.models;
 
-import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -9,11 +8,9 @@ import org.opentripplanner.middleware.persistence.TypedPersistence;
 
 import java.util.List;
 
-import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
-
 /**
- * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or
- * route change.
+ * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
+ * change.
  */
 public class MonitoredTrip extends Model {
 
@@ -28,9 +25,9 @@ public class MonitoredTrip extends Model {
     public String tripName;
 
     /**
-     * The time at which the trip takes place. This will be in the format HH:mm and is extracted (or provided separately)
-     * to the date and time within the query parameters. The reasoning is so that it doesn't have to be extracted every
-     * time the trip requires checking.
+     * The time at which the trip takes place. This will be in the format HH:mm and is extracted (or provided
+     * separately) to the date and time within the query parameters. The reasoning is so that it doesn't have to be
+     * extracted every time the trip requires checking.
      */
     public String tripTime;
 
@@ -96,13 +93,12 @@ public class MonitoredTrip extends Model {
     public Itinerary itinerary;
 
     //TODO, agree on and implement these parameters
+
     /**
-    notificationThresholds
-    notifyRouteChange (true/false) - Instead of notificationThresholds
-    arrivalDelayMinutesThreshold (int minutes) - Instead of notificationThresholds
-    departureDelayMinutesThreshold (int minutes) - Instead of notificationThresholds
-    notifyDelayToTrip (true/false)
-    */
+     * notificationThresholds notifyRouteChange (true/false) - Instead of notificationThresholds
+     * arrivalDelayMinutesThreshold (int minutes) - Instead of notificationThresholds departureDelayMinutesThreshold
+     * (int minutes) - Instead of notificationThresholds notifyDelayToTrip (true/false)
+     */
 
     public MonitoredTrip() {
     }
@@ -155,7 +151,7 @@ public class MonitoredTrip extends Model {
      * Get monitored trips for the specified {@link OtpUser} user Id.
      */
     public static List<MonitoredTrip> tripsForUser(String userId) {
-        return Persistence.monitoredTrips.getFiltered(TypedPersistence.buildFilter(userId));
+        return Persistence.monitoredTrips.getFiltered(TypedPersistence.filterByUserId(userId));
     }
 
     @Override
