@@ -10,6 +10,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+/**
+ * Util methods for obtaining information from the YAML configuration file for otp-middleware
+ */
 public class ConfigUtils {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
 
@@ -30,8 +33,7 @@ public class ConfigUtils {
         if (args.length == 0) {
             LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
             envConfigStream = new FileInputStream(new File(DEFAULT_ENV));
-        }
-        else {
+        } else {
             LOG.info("Loading env.yml: {}", args[0]);
             envConfigStream = new FileInputStream(new File(args[0]));
         }
