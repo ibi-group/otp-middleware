@@ -10,6 +10,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+/**
+ * Util methods for obtaining information from the YAML configuration file for otp-middleware
+ */
 public class ConfigUtils {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
 
@@ -30,8 +33,7 @@ public class ConfigUtils {
         if (args.length == 0) {
             LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
             envConfigStream = new FileInputStream(new File(DEFAULT_ENV));
-        }
-        else {
+        } else {
             LOG.info("Loading env.yml: {}", args[0]);
             envConfigStream = new FileInputStream(new File(args[0]));
         }
@@ -57,13 +59,19 @@ public class ConfigUtils {
 
     /**
      * Convenience function to check existence of a config property (nested fields defined by dot notation
-     * "data.use_s3_storage") in either server.yml or env.yml.
+     * "data.use_s3_storage") in env.yml.
      */
     public static boolean hasConfigProperty(String name) {
         // try the server config first, then the main config
         return hasConfigProperty(envConfig, name);
     }
 
+    /**
+     * Returns true if the given config has the requested property.
+     *
+     * @param config The root config object
+     * @param name The desired property in dot notation (ex: "data.use_s3_storage")
+     */
     private static boolean hasConfigProperty(JsonNode config, String name) {
         String[] parts = name.split("\\.");
         JsonNode node = config;
