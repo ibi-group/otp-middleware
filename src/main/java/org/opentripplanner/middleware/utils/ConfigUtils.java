@@ -57,13 +57,19 @@ public class ConfigUtils {
 
     /**
      * Convenience function to check existence of a config property (nested fields defined by dot notation
-     * "data.use_s3_storage") in either server.yml or env.yml.
+     * "data.use_s3_storage") in env.yml.
      */
     public static boolean hasConfigProperty(String name) {
         // try the server config first, then the main config
         return hasConfigProperty(envConfig, name);
     }
 
+    /**
+     * Returns true if the given config has the requested property.
+     *
+     * @param config The root config object
+     * @param name The desired property in dot notation (ex: "data.use_s3_storage")
+     */
     private static boolean hasConfigProperty(JsonNode config, String name) {
         String[] parts = name.split("\\.");
         JsonNode node = config;
