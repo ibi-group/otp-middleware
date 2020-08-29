@@ -9,6 +9,8 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
@@ -20,6 +22,8 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * OtpUser-specific endpoints for verifying the user's phone number by SMS.
  */
 public class OtpUserController extends AbstractUserController<OtpUser> {
+    private static final Logger LOG = LoggerFactory.getLogger(OtpUserController.class);
+
     private static final String CODE_PARAM = "code";
     protected static final String CODE_PATH = "/:" + CODE_PARAM;
     private static final String VERIFY_ROUTE = "/verify_sms";
