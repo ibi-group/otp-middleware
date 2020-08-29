@@ -32,6 +32,8 @@ public class OtpDispatcher {
      */
     public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
 
+    private static String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
+
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
     /**
@@ -62,7 +64,7 @@ public class OtpDispatcher {
      * parameters.
      */
     private static URI buildOtpUri(String params, String path) {
-        UriBuilder uriBuilder = UriBuilder.fromUri(OTP_SERVER)
+        UriBuilder uriBuilder = UriBuilder.fromUri(OTP_API_ROOT)
             .path(path)
             .replaceQuery(params);
         URI uri = URI.create(uriBuilder.toString());

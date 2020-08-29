@@ -1,13 +1,18 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
+import com.auth0.json.mgmt.jobs.Job;
+import com.auth0.json.mgmt.users.User;
 import com.beerboy.ss.ApiEndpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
@@ -16,6 +21,7 @@ import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
 import static org.opentripplanner.middleware.auth.Auth0Users.validateExistingUser;
+import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -23,8 +29,10 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * services using the hooks provided by {@link ApiController}.
  */
 public abstract class AbstractUserController<U extends AbstractUser> extends ApiController<U> {
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractUserController.class);
     static final String NO_USER_WITH_AUTH0_ID_MESSAGE = "No user with auth0UserID=%s found.";
     private static final String TOKEN_PATH = "/fromtoken";
+    private static final String VERIFICATION_EMAIL_PATH = "/verification-email";
 
     /**
      * Constructor that child classes can access to setup persistence and API route.
@@ -43,13 +51,17 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Get user from token.
             .get(path(ROOT_ROUTE + TOKEN_PATH)
-                .withDescription("Retrieves an " + persistence.clazz.getSimpleName() + " entity using an Auth0 access token passed in an Authorization header.")
-                .withResponseType(persistence.clazz),
+                    .withDescription("Retrieves an " + persistence.clazz.getSimpleName() + " entity using an Auth0 access token passed in an Authorization header.")
+                    .withProduces(JSON_ONLY)
+                    .withResponseType(persistence.clazz),
                 this::getUserFromRequest, JsonUtils::toJson
             )
-
-            // Options response for CORS for the token path
-            .options(path(TOKEN_PATH), (req, res) -> "");
+            // Resend verification email
+            .get(path(ROOT_ROUTE + VERIFICATION_EMAIL_PATH)
+                    .withDescription("Triggers a job to resend the Auth0 verification email.")
+                    .withResponseType(Job.class),
+                this::resendVerificationEmail, JsonUtils::toJson
+            );
 
         // Add the regular CRUD methods after defining the /fromtoken route.
         super.buildEndpoint(modifiedEndpoint);
@@ -79,13 +91,19 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         return user;
     }
 
+
+    private Job resendVerificationEmail(Request req, Response res) {
+        Auth0UserProfile profile = Auth0Connection.getUserFromRequest(req);
+        return Auth0Users.resendVerificationEmail(profile.auth0UserId);
+    }
+
     /**
      * Before creating/storing a user in MongoDB, create the user in Auth0 and update the {@link U#auth0UserId}
      * with the value from Auth0.
      */
     @Override
     U preCreateHook(U user, Request req) {
-        com.auth0.json.mgmt.users.User auth0UserProfile = createNewAuth0User(user, req, this.persistence);
+        User auth0UserProfile = createNewAuth0User(user, req, this.persistence);
         return updateAuthFieldsForUser(user, auth0UserProfile);
     }
 

@@ -8,15 +8,10 @@
     <artifactId>otp-middleware</artifactId>
     <version>1.0-SNAPSHOT</version>
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson.version>2.10.1</jackson.version>
         <awsjavasdk.version>1.11.728</awsjavasdk.version>
     </properties>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.2.4.RELEASE</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
     <repositories>
         <!-- To create Swagger API docs with spark-java -->
         <repository>
@@ -37,6 +32,10 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -72,20 +71,6 @@
                         <configuration>
                             <finalName>otp-middleware</finalName>
                             <transformers>
-                                <!-- The three below are for Spring, need to be placed above geotools. -->
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                                    <resource>META-INF/spring.handlers</resource>
-                                </transformer>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                                    <resource>META-INF/spring.schemas</resource>
-                                </transformer>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                                    <resource>META-INF/spring.factories</resource>
-                                </transformer>
-
                                 <!-- files overwrite each other and geotools does not function without this.
                                          http://docs.geotools.org/latest/userguide/faq.html#how-do-i-create-an-executable-jar-for-my-geotools-app -->
                                 <transformer
@@ -135,6 +120,19 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>2.7</version>
+        </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
         </dependency>
 
         <!-- Required to construct URI (UriBuilder) -->
@@ -197,12 +195,6 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <version>${jackson.version}</version>
-        </dependency>
-
-        <!--  Turn Java objects into JSON responses -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
         </dependency>
 
         <!-- Used for unit testing -->

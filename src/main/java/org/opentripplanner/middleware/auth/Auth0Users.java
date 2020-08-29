@@ -3,10 +3,12 @@ package org.opentripplanner.middleware.auth;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.client.mgmt.ManagementAPI;
 import com.auth0.exception.Auth0Exception;
+import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.slf4j.Logger;
@@ -34,7 +36,9 @@ public class Auth0Users {
     private static final String MANAGEMENT_API_VERSION = "v2";
     private static final String SEARCH_API_VERSION = "v3";
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
-    /** Cached API token so that we do not have to request a new one each time a Management API request is made. */
+    /**
+     * Cached API token so that we do not have to request a new one each time a Management API request is made.
+     */
     private static TokenCache cachedToken = null;
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Users.class);
     private static final AuthAPI authAPI = new AuthAPI(AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET);
@@ -108,7 +112,7 @@ public class Auth0Users {
                 .execute();
             if (users.size() > 0) return users.get(0);
         } catch (Auth0Exception e) {
-            LOG.error("Could not perform user search by email", e);
+            BugsnagReporter.reportErrorToBugsnag("Could not perform user search by email", e);
             return null;
         }
         if (createIfNotExists) {
@@ -119,6 +123,24 @@ public class Auth0Users {
             }
         }
         return null;
+    }
+
+    /**
+     * Method to trigger an Auth0 job to resend a verification email. Returns an Auth0 {@link Job} which can be
+     * used to monitor the progress of the job (using job ID). Typically the verification email goes out pretty quickly
+     * so there shouldn't be too much of a need to monitor the result.
+     */
+    public static Job resendVerificationEmail(String userId) {
+        try {
+            return getManagementAPI()
+                .jobs()
+                // FIXME: This may need to be the otp-admin client_id instead.
+                .sendVerificationEmail(userId, AUTH0_API_CLIENT)
+                .execute();
+        } catch (Auth0Exception e) {
+            BugsnagReporter.reportErrorToBugsnag("Could not send verification email", e);
+            return null;
+        }
     }
 
     /**
@@ -139,7 +161,9 @@ public class Auth0Users {
         return user;
     }
 
-    /** Wrapper method for getting a new instance of the Auth0 {@link ManagementAPI} */
+    /**
+     * Wrapper method for getting a new instance of the Auth0 {@link ManagementAPI}
+     */
     private static ManagementAPI getManagementAPI() {
         return new ManagementAPI(AUTH0_DOMAIN, getApiToken());
     }

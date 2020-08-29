@@ -5,7 +5,6 @@ import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,6 +21,8 @@ import java.util.Optional;
  */
 public class DateTimeUtils {
     private static final Logger LOG = LoggerFactory.getLogger(DateTimeUtils.class);
+
+    public static final String YYYY_MM_DD = "yyyy-MM-dd";
 
     /**
      * These are internal variables that can be used to mock dates and times in tests

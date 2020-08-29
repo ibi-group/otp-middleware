@@ -41,7 +41,7 @@ public class Auth0Connection {
         if (authDisabled()) {
             // If in a development or testing environment, assign a mock profile of an admin user to the request
             // attribute and skip authentication.
-            addUserToRequest(req, Auth0UserProfile.createTestAdminUser());
+            addUserToRequest(req, Auth0UserProfile.createTestUser(req));
             return;
         }
         String token = getTokenFromRequest(req);

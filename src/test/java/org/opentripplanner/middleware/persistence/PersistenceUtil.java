@@ -1,8 +1,8 @@
 package org.opentripplanner.middleware.persistence;
 
-import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.TestUtils;
-import org.opentripplanner.middleware.models.JourneyState;
+import org.opentripplanner.middleware.models.AdminUser;
+import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -12,7 +12,6 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Response;
-import org.opentripplanner.middleware.utils.FileUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -29,7 +28,7 @@ public class PersistenceUtil {
 
 
     /**
-     * Create user and store in database.
+     * Create Otp user and store in database.
      */
     public static OtpUser createUser(String email) {
         return createUser(email, null);
@@ -41,6 +40,26 @@ public class PersistenceUtil {
         user.phoneNumber = phoneNumber;
         user.notificationChannel = "email";
         Persistence.otpUsers.create(user);
+        return user;
+    }
+
+    /**
+     * Create Api user and store in database.
+     */
+    public static ApiUser createApiUser(String email) {
+        ApiUser user = new ApiUser();
+        user.email = email;
+        Persistence.apiUsers.create(user);
+        return user;
+    }
+
+    /**
+     * Create Admin user and store in database.
+     */
+    public static AdminUser createAdminUser(String email) {
+        AdminUser user = new AdminUser();
+        user.email = email;
+        Persistence.adminUsers.create(user);
         return user;
     }
 
@@ -93,7 +112,7 @@ public class PersistenceUtil {
      * Delete multiple trip requests from database.
      */
     public static void deleteTripRequests(List<TripRequest> tripRequests) {
-        for (TripRequest tripRequest: tripRequests) {
+        for (TripRequest tripRequest : tripRequests) {
             Persistence.tripRequests.removeById(tripRequest.id);
         }
     }

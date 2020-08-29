@@ -13,9 +13,9 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Service;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
-import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
-import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_SERVER;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -25,6 +25,16 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public class OtpRequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
+
+    /**
+     * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
+     * return OTP version info.
+     */
+    private static final String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
+    /**
+     * Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse}
+     */
+    private static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
 
     /**
      * Endpoint for the OTP Middleware's OTP proxy
@@ -47,7 +57,7 @@ public class OtpRequestProcessor {
      * status) is passed back to the requester.
      */
     private static String proxy(Request request, spark.Response response) {
-        if (OTP_SERVER == null) {
+        if (OTP_API_ROOT == null) {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
             return null;
         }
@@ -64,7 +74,7 @@ public class OtpRequestProcessor {
         if (otpRequestPath.endsWith(OTP_PLAN_ENDPOINT)) handlePlanTripResponse(request, otpDispatcherResponse);
 
         // provide response to requester as received from OTP server
-        response.type("application/json");
+        response.type(APPLICATION_JSON);
         response.status(otpDispatcherResponse.statusCode);
         return otpDispatcherResponse.responseBody;
     }
