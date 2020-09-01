@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.mongodb.client.model.Filters;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -18,10 +19,21 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
 
     @Override
     OtpUser preCreateHook(OtpUser user, Request req) {
-        // Check API key and assign user to appropriate collection.
+        // Check API key and assign user to appropriate collection. Note: this is only relevant for instances of
+        // otp-middleware running behind API Gateway.
         String apiKey = req.headers("x-api-key");
         ApiUser apiUser = Persistence.apiUsers.getOneFiltered(Filters.eq("apiKeys.value", apiKey));
-        user.applicationId = apiUser.id;
+        if (apiUser != null) {
+            // If API user found, assign to new OTP user.
+            user.applicationId = apiUser.id;
+        } else {
+            // If API user not found, report to Bugsnag for further investigation.
+            BugsnagReporter.reportErrorToBugsnag(
+                "OTP user created with API key that is not linked to any API user",
+                apiKey,
+                null
+            );
+        }
         return super.preCreateHook(user, req);
     }
 
