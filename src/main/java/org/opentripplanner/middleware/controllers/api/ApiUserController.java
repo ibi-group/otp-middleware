@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
+import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -99,18 +100,18 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             }
         }
         // FIXME Should an Api user be limited to one api key per usage plan (and perhaps stage)?
-        ApiKey apiKey = ApiGatewayUtils.createApiKey(targetUser, usagePlanId);
-        if (apiKey == null || apiKey.keyId == null) {
+        try {
+            ApiKey apiKey = ApiGatewayUtils.createApiKey(targetUser, usagePlanId);
+            // Add new API key to user and persist
+            targetUser.apiKeys.add(apiKey);
+            Persistence.apiUsers.replace(targetUser.id, targetUser);
+        } catch (CreateApiKeyException e) {
             logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
-                String.format("Unable to get AWS API key for user id (%s) and usage plan id (%s)", targetUser.id, usagePlanId),
-                null
+                "Error creating API key",
+                e
             );
-            return null;
         }
-        // Add new API key to user and persist
-        targetUser.apiKeys.add(apiKey);
-        Persistence.apiUsers.replace(targetUser.id, targetUser);
         return Persistence.apiUsers.getById(targetUser.id);
     }
 
@@ -163,12 +164,17 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     @Override
     ApiUser preCreateHook(ApiUser user, Request req) {
-        ApiKey apiKey = ApiGatewayUtils.createApiKey(user, DEFAULT_USAGE_PLAN_ID);
-        if (apiKey == null) {
-            logMessageAndHalt(req,
+        ApiKey apiKey;
+        try {
+            apiKey = ApiGatewayUtils.createApiKey(user, DEFAULT_USAGE_PLAN_ID);
+        } catch (CreateApiKeyException e) {
+            logMessageAndHalt(
+                req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
-                String.format("Unable to get AWS api key for user %s", user),
-                null);
+                "Error creating API key",
+                e
+            );
+            return null;
         }
         // store api key id including the actual api key (value)
         user.apiKeys.add(apiKey);

@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
+import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -144,10 +145,15 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         apiUser = Persistence.apiUsers.getById(apiUser.id);
 
         if (apiUser.apiKeys.isEmpty()) {
-            ApiKey apiKey = ApiGatewayUtils.createApiKey(apiUser, DEFAULT_USAGE_PLAN_ID);
-            apiUser.apiKeys.add(apiKey);
-            // Save update so the API key delete endpoint is aware of the new API key.
-            Persistence.apiUsers.replace(apiUser.id, apiUser);
+            ApiKey apiKey;
+            try {
+                apiKey = ApiGatewayUtils.createApiKey(apiUser, DEFAULT_USAGE_PLAN_ID);
+                apiUser.apiKeys.add(apiKey);
+                // Save update so the API key delete endpoint is aware of the new API key.
+                Persistence.apiUsers.replace(apiUser.id, apiUser);
+            } catch (CreateApiKeyException e) {
+                LOG.error("Could not create API key", e);
+            }
         }
     }
 

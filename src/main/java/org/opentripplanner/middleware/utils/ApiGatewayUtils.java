@@ -56,7 +56,7 @@ public class ApiGatewayUtils {
     /**
      * Request an API key from AWS api gateway and assign it to an existing usage plan.
      */
-    public static ApiKey createApiKey(ApiUser user, String usagePlanId) {
+    public static ApiKey createApiKey(ApiUser user, String usagePlanId) throws CreateApiKeyException {
         if (user == null || user.id == null || usagePlanId == null) {
             LOG.error("All required input parameters must be provided.");
             return null;
@@ -64,7 +64,7 @@ public class ApiGatewayUtils {
         long startTime = System.currentTimeMillis();
         try {
             AmazonApiGateway gateway = getAmazonApiGateway();
-            // Before creating key, verify usage plan exists.
+            // Before creating key, verify usage plan exists (if not an exception will be thrown and caught below).
             GetUsagePlanRequest usagePlanRequest = new GetUsagePlanRequest();
             usagePlanRequest.withUsagePlanId(usagePlanId);
             GetUsagePlanResult usagePlanResult = gateway.getUsagePlan(usagePlanRequest);
@@ -95,14 +95,12 @@ public class ApiGatewayUtils {
             gateway.createUsagePlanKey(usagePlanKeyRequest);
             return new ApiKey(apiKeyResult);
         } catch (Exception e) {
-            String message = String.format("Unable to get api key from AWS for user id (%s) and usage plan id (%s)",
-                user.id,
-                usagePlanId);
-            BugsnagReporter.reportErrorToBugsnag(message, e);
+            CreateApiKeyException createApiKeyException = new CreateApiKeyException(user.id, usagePlanId, e);
+            BugsnagReporter.reportErrorToBugsnag("Error creating API key", createApiKeyException);
+            throw createApiKeyException;
         } finally {
             LOG.debug("Get api key and assign to usage plan took {} msec", System.currentTimeMillis() - startTime);
         }
-        return null;
     }
 
     /**
