@@ -9,9 +9,10 @@ public class CreateApiKeyException extends Exception {
     public CreateApiKeyException(String userId, String usagePlanId, Exception cause) {
         super(
             String.format(
-                "Unable to create API key for user id (%s) and usage plan id (%s)",
+                "Unable to create API key for user id (%s) and usage plan id (%s) (cause: %s)",
                 userId,
-                usagePlanId
+                usagePlanId,
+                cause.toString()
             ),
             cause
         );
