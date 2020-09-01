@@ -9,7 +9,9 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.models.AbstractUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
@@ -20,6 +22,9 @@ import java.security.interfaces.RSAPublicKey;
 
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.hasConfigProperty;
+import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
+import static org.opentripplanner.middleware.controllers.api.OtpUserController.OTP_USER_PATH;
+import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -55,7 +60,12 @@ public class Auth0Connection {
             DecodedJWT jwt = verifier.verify(token);
             Auth0UserProfile profile = new Auth0UserProfile(jwt);
             if (!isValidUser(profile)) {
-                logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Unknown user.");
+                // If not a valid user (and not creating an OTP/API user for self), halt the request. Note: creating an
+                // admin user requires that the requester is an admin (checkUserIsAdmin must be passed), so this is not
+                // a concern for that method/controller.
+                if (!isCreatingSelf(req, profile)) {
+                    logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Unknown user.");
+                }
             }
             // The user attribute is used on the server side to check user permissions and does not have all of the
             // fields that the raw Auth0 profile string does.
@@ -69,6 +79,26 @@ public class Auth0Connection {
             LOG.warn("Login failed to verify with our authorization provider.", e);
             logMessageAndHalt(req, 401, "Could not verify user's token");
         }
+    }
+
+    /**
+     * Check for POST requests that are creating an {@link AbstractUser} (a proxy for OTP/API users).
+     */
+    private static boolean isCreatingSelf(Request req, Auth0UserProfile profile) {
+        // First, check the request method/path.
+        String uri = req.uri();
+        String method = req.requestMethod();
+        if (method.equalsIgnoreCase("POST") && (uri.endsWith(OTP_USER_PATH) || uri.endsWith(API_USER_PATH))) {
+            // Next, get the user object from the request body, verifying that the Auth0UserId matches.
+            try {
+                AbstractUser user = getPOJOFromRequestBody(req, AbstractUser.class);
+                return profile.auth0UserId.equals(user.auth0UserId);
+            } catch (JsonProcessingException e) {
+                LOG.warn("Could not parse user object from request.");
+                return false;
+            }
+        }
+        return false;
     }
 
     public static boolean isAuthHeaderPresent(Request req) {
@@ -112,7 +142,7 @@ public class Auth0Connection {
      * Get user profile from Spark Request object
      */
     public static Auth0UserProfile getUserFromRequest(Request req) {
-        return (Auth0UserProfile) req.attribute("user");
+        return req.attribute("user");
     }
 
     /**
