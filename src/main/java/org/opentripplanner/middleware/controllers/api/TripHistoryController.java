@@ -2,12 +2,8 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
-import com.mongodb.client.model.Filters;
-import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TripRequest;
-import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.DateUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -21,15 +17,10 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Filters.gte;
-import static com.mongodb.client.model.Filters.lte;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
 import static org.opentripplanner.middleware.utils.DateUtils.YYYY_MM_DD;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
@@ -100,7 +91,7 @@ public class TripHistoryController implements Endpoint {
      */
     private static List<TripRequest> getTripRequests(Request request, Response response) {
         final String userId = HttpUtils.getRequiredQueryParamFromRequest(request, "userId", false);
-
+        // Check that the user is authorized (otherwise a halt is thrown).
         isAuthorized(userId, request);
 
         int limit = DEFAULT_LIMIT;

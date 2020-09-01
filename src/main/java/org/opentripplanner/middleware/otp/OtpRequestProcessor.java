@@ -16,6 +16,7 @@ import spark.Service;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_API_ROOT;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -27,20 +28,14 @@ public class OtpRequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
 
     /**
-     * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
-     * return OTP version info.
-     */
-    private static final String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
-
-    /**
      * Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse}
      */
-    private static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
+    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
 
     /**
      * Endpoint for the OTP Middleware's OTP proxy
      */
-    private static final String OTP_PROXY_ENDPOINT = "/otp";
+    public static final String OTP_PROXY_ENDPOINT = "/otp";
 
     /**
      * Register http endpoint with {@link spark.Spark} instance based on the OTP root endpoint. An OTP root endpoint is

@@ -15,6 +15,8 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
@@ -23,14 +25,16 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getBooleanEnvVar;
-import static org.opentripplanner.middleware.TestUtils.MOCK_OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedPost;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
+import static org.opentripplanner.middleware.otp.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
+import static org.opentripplanner.middleware.otp.OtpRequestProcessor.OTP_PROXY_ENDPOINT;
 
 /**
  * Tests to simulate API user flow. The following config parameters must be set in configurations/default/env.yml for
@@ -45,40 +49,40 @@ import static org.opentripplanner.middleware.controllers.api.ApiUserController.D
  * Auth0 must be correctly configured as described here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
  */
 public class ApiUserFlowTest {
+    private static final Logger LOG = LoggerFactory.getLogger(ApiUserFlowTest.class);
     private static ApiUser apiUser;
     private static OtpUser otpUser;
+    private static boolean testsShouldRun = getBooleanEnvVar("RUN_E2E") && !authDisabled();
 
     /**
      * Create an {@link ApiUser} and an {@link AdminUser} prior to unit tests
      */
     @BeforeAll
     public static void setUp() throws IOException {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        assumeTrue(testsShouldRun);
         OtpMiddlewareTest.setUp();
+        // Mock the OTP server TODO: Run a live OTP instance?
         TestUtils.mockOtpServer();
         // As a pre-condition, create an API User with API key.
         apiUser = PersistenceUtil.createApiUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
         apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
-
+        // Create, but do not persist, an OTP user. Also
         otpUser = new OtpUser();
         otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
         otpUser.hasConsentedToTerms = true;
         otpUser.storeTripHistory = true;
+        // create Auth0 users for apiUser and optUser.
+        try {
+            User auth0User = createAuth0UserForEmail(apiUser.email, TestUtils.TEMP_AUTH0_USER_PASSWORD);
+            // update api user with valid auth0 user ID (so the Auth0 delete works)
+            apiUser.auth0UserId = auth0User.getId();
+            Persistence.apiUsers.replace(apiUser.id, apiUser);
 
-        if (!authDisabled()) {
-            // create Auth0 users for apiUser and optUser.
-            try {
-                User auth0User = createAuth0UserForEmail(apiUser.email, TestUtils.TEMP_AUTH0_USER_PASSWORD);
-                // update api user with valid auth0 user ID (so the Auth0 delete works)
-                apiUser.auth0UserId = auth0User.getId();
-                Persistence.apiUsers.replace(apiUser.id, apiUser);
-
-                auth0User = createAuth0UserForEmail(otpUser.email, TestUtils.TEMP_AUTH0_USER_PASSWORD);
-                // update otp user with valid auth0 user ID (so the Auth0 delete works)
-                otpUser.auth0UserId = auth0User.getId();
-            } catch (Auth0Exception e) {
-                throw new RuntimeException(e);
-            }
+            auth0User = createAuth0UserForEmail(otpUser.email, TestUtils.TEMP_AUTH0_USER_PASSWORD);
+            // update otp user with valid auth0 user ID (so the Auth0 delete works)
+            otpUser.auth0UserId = auth0User.getId();
+        } catch (Auth0Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -87,7 +91,7 @@ public class ApiUserFlowTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        assumeTrue(testsShouldRun);
         apiUser = Persistence.apiUsers.getById(apiUser.id);
         if (apiUser != null) apiUser.delete();
         otpUser = Persistence.otpUsers.getById(otpUser.id);
@@ -122,10 +126,12 @@ public class ApiUserFlowTest {
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(createTripResponse.body(), MonitoredTrip.class);
 
         // Plan trip with OTP proxy. Mock plan response will be returned
-        HttpResponse<String> planTripResponse = mockAuthenticatedRequest(MOCK_OTP_PLAN_ENDPOINT,
+        String otpQuery = OTP_PROXY_ENDPOINT + OTP_PLAN_ENDPOINT + "?fromPlace=34,-87&toPlace=33.-87";
+        HttpResponse<String> planTripResponse = mockAuthenticatedRequest(otpQuery,
             otpUserResponse,
             HttpUtils.REQUEST_METHOD.GET
         );
+        LOG.info("Plan trip response: {}\n....", planTripResponse.body().substring(0, 300));
         assertEquals(HttpStatus.OK_200, planTripResponse.statusCode());
 
         // Get trip for user, before it is deleted

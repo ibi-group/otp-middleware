@@ -11,8 +11,9 @@ import spark.Request;
  * Implementation of the {@link AbstractUserController} for {@link OtpUser}.
  */
 public class OtpUserController extends AbstractUserController<OtpUser> {
+    public static final String OTP_USER_PATH = "secure/user";
     public OtpUserController(String apiPrefix) {
-        super(apiPrefix, Persistence.otpUsers, "secure/user");
+        super(apiPrefix, Persistence.otpUsers, OTP_USER_PATH);
     }
 
     @Override

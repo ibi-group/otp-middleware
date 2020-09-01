@@ -151,15 +151,8 @@ public class JsonUtils {
     /**
      * Get a single node value from JSON if present, else return null
      */
-    public static String getSingleNodeValueFromJSON(String nodeName, String json) {
-        try {
-            final ObjectNode objectNode = mapper.readValue(json, ObjectNode.class);
-            if (objectNode.has(nodeName)) {
-                return objectNode.get(nodeName).textValue();
-            }
-        } catch (JsonProcessingException e) {
-            LOG.error(String.format("Unable to get value for node name (%s) from json (%s)", nodeName, json), e);
-        }
-        return null;
+    public static String getSingleNodeValueFromJSON(String nodeName, String json) throws JsonProcessingException {
+        final ObjectNode objectNode = mapper.readValue(json, ObjectNode.class);
+        return objectNode.get(nodeName).textValue();
     }
 }

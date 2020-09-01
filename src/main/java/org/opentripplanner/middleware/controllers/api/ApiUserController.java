@@ -33,9 +33,10 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     private static final String API_KEY_PATH = "/apikey";
     private static final int API_KEY_LIMIT_PER_USER = 2;
     private static final String API_KEY_ID_PARAM = "/:apiKeyId";
+    public static final String API_USER_PATH = "secure/application";
 
     public ApiUserController(String apiPrefix) {
-        super(apiPrefix, Persistence.apiUsers, "secure/application");
+        super(apiPrefix, Persistence.apiUsers, API_USER_PATH);
     }
 
     @Override

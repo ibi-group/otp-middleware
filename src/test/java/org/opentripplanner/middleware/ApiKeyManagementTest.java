@@ -22,28 +22,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.OtpMiddlewareMain.getBooleanEnvVar;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 
 /**
  * Tests for creating and deleting api keys. The following config parameters must be set in
- * configurations/default/env.yml for these end-to-end tests to run: - RUN_E2E=true the end-to-end environment variable
- * must be set (NOTE: this is not a config value) - An AWS_PROFILE is required, or AWS access has been configured for
- * your operating environment e.g. C:\Users\<username>\.aws\credentials in Windows or Mac OS equivalent. - DISABLE_AUTH
- * set to true to bypass auth checks and use users defined here. DEFAULT_USAGE_PLAN_ID set to a valid usage plan id. AWS
- * requires this to create an api key. - TODO: It might be useful to allow this to run without DISABLE_AUTH set to true
- * (in an end-to-end environment using real tokens from Auth0.
+ * configurations/default/env.yml for these end-to-end tests to run:
+ * - RUN_E2E=true the end-to-end environment variable must be set (NOTE: this is not a config value)
+ * - An AWS_PROFILE is required, or AWS access has been configured for your operating environment. E.g.,
+ *      C:\Users\<username>\.aws\credentials in Windows or Mac OS equivalent.
+ * - DISABLE_AUTH set to true to bypass auth checks and use users defined here.
+ * - DEFAULT_USAGE_PLAN_ID set to a valid usage plan id. AWS requires this to create an api key.
  */
 public class ApiKeyManagementTest extends OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(ApiKeyManagementTest.class);
     private static ApiUser apiUser;
     private static AdminUser adminUser;
+    // TODO: It might be useful to allow this to run without DISABLE_AUTH set to true (in an end-to-end environment
+    //  using real tokens from Auth0.
+    private static boolean testsShouldRun = getBooleanEnvVar("RUN_E2E") && authDisabled();
 
     /**
      * Create an {@link ApiUser} and an {@link AdminUser} prior to unit tests
      */
     @BeforeAll
     public static void setUp() throws IOException {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        assumeTrue(testsShouldRun);
         OtpMiddlewareTest.setUp();
         apiUser = PersistenceUtil.createApiUser("test@example.com");
         adminUser = PersistenceUtil.createAdminUser("test@example.com");
@@ -54,7 +58,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        assumeTrue(testsShouldRun);
         // Delete admin user.
         Persistence.adminUsers.removeById(adminUser.id);
         // Refresh api keys for user.
@@ -117,6 +121,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     @Test
     public void adminCanDeleteApiKeyForApiUser() {
         assumeTrue(getBooleanEnvVar("RUN_E2E"));
+//        assumeFalse()
         ensureAtLeastOneApiKeyIsAvailable();
         // delete key
         String keyId = apiUser.apiKeys.get(0).keyId;

@@ -20,7 +20,11 @@ import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigProperty
  */
 public class OtpDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcher.class);
-    private static String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
+    /**
+     * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
+     * return OTP version info.
+     */
+    public static String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
     /**

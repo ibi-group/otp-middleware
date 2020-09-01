@@ -6,6 +6,7 @@ import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
@@ -38,6 +39,8 @@ public class Auth0Users {
     // This client/secret pair is for making requests for an API access token used with the Management API.
     private static final String AUTH0_API_CLIENT = getConfigPropertyAsText("AUTH0_API_CLIENT");
     private static final String AUTH0_API_SECRET = getConfigPropertyAsText("AUTH0_API_SECRET");
+    private static final String AUTH0_CLIENT_ID = getConfigPropertyAsText("AUTH0_CLIENT_ID");
+    private static final String AUTH0_CLIENT_SECRET = getConfigPropertyAsText("AUTH0_CLIENT_SECRET");
     private static final String DEFAULT_CONNECTION_TYPE = "Username-Password-Authentication";
     private static final String MANAGEMENT_API_VERSION = "v2";
     private static final String SEARCH_API_VERSION = "v3";
@@ -74,6 +77,7 @@ public class Auth0Users {
      * Delete Auth0 user by Auth0 user ID using the Management API.
      */
     public static void deleteAuth0User(String userId) throws Auth0Exception {
+        LOG.info("Deleting Auth0 user for {}", userId);
         getManagementAPI()
             .users()
             .delete(userId)
@@ -243,14 +247,14 @@ public class Auth0Users {
      * is successfully validated by Auth0 a bearer access token is returned, which is extracted and returned to the
      * caller. In all other cases, null is returned.
      */
-    public static String getAuth0Token(String username, String password) {
+    public static String getAuth0Token(String username, String password) throws JsonProcessingException {
         String body = String.format(
-            "grant_type=password&username=%s&password=%s&audience=%s&scope=read:sample&client_id=%s&client_secret=%s",
+            "grant_type=password&username=%s&password=%s&audience=%s&scope=&client_id=%s&client_secret=%s",
             username,
             password,
             "https://otp-middleware", // must match an API identifier
-            AUTH0_API_CLIENT, // Auth0 application client ID
-            AUTH0_API_SECRET // Auth0 application client secret
+            AUTH0_CLIENT_ID, // Auth0 application client ID
+            AUTH0_CLIENT_SECRET // Auth0 application client secret
         );
 
         HttpResponse<String> response = httpRequestRawResponse(
@@ -260,9 +264,10 @@ public class Auth0Users {
             Collections.singletonMap("content-type", "application/x-www-form-urlencoded"),
             body
         );
-
-        return (response == null || response.statusCode() != HttpStatus.OK_200)
-            ? null
-            : getSingleNodeValueFromJSON("access_token", response.body());
+        if (response == null || response.statusCode() != HttpStatus.OK_200) {
+            LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}", username, response.statusCode(), response.body());
+            return null;
+        }
+        return getSingleNodeValueFromJSON("access_token", response.body());
     }
 }

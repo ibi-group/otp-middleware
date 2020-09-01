@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.AbstractUser;
@@ -7,6 +8,8 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -14,13 +17,16 @@ import spark.Service;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
+import java.util.UUID;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
+import static org.opentripplanner.middleware.otp.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
 import static spark.Service.ignite;
 
 
 public class TestUtils {
+    private static final Logger LOG = LoggerFactory.getLogger(TestUtils.class);
 
     /**
      * Prevents the mock OTP server being initialized more than once
@@ -28,14 +34,9 @@ public class TestUtils {
     private static boolean mockOtpServerSetUpIsDone = false;
 
     /**
-     * Mock plan endpoint used by the mock OTP server.
-     */
-    static final String MOCK_OTP_PLAN_ENDPOINT = "otp/plan";
-
-    /**
      * Password used to create and validate temporary Auth0 users
      */
-    static final String TEMP_AUTH0_USER_PASSWORD = "t3mp-pa$$w0rd";
+    static final String TEMP_AUTH0_USER_PASSWORD = UUID.randomUUID().toString();
 
     /**
      * Send request to provided URL placing the Auth0 user id in the headers so that {@link Auth0UserProfile} can check
@@ -72,7 +73,12 @@ public class TestUtils {
             headers.put("Authorization", requestingUser.auth0UserId);
         } else {
             // Otherwise, get a valid oauth token for the user
-            String token = getAuth0Token(requestingUser.email, TEMP_AUTH0_USER_PASSWORD);
+            String token = null;
+            try {
+                token = getAuth0Token(requestingUser.email, TEMP_AUTH0_USER_PASSWORD);
+            } catch (JsonProcessingException e) {
+                LOG.error("Cannot obtain Auth0 token for user {}", requestingUser.email, e);
+            }
             headers.put("Authorization", "Bearer " + token);
         }
         // If requester is an API user, add API key value as x-api-key header to simulate request over API Gateway.
@@ -103,13 +109,14 @@ public class TestUtils {
 
     /**
      * Configure a mock OTP server for providing mock OTP responses.
+     * Note: this expects the config value OTP_API_ROOT=http://localhost:8080/otp
      */
     static void mockOtpServer() {
         if (mockOtpServerSetUpIsDone) {
             return;
         }
         Service http = ignite().port(8080);
-        http.get(MOCK_OTP_PLAN_ENDPOINT, TestUtils::mockOtpPlanResponse);
+        http.get("/otp" + OTP_PLAN_ENDPOINT, TestUtils::mockOtpPlanResponse);
     }
 
     /**
