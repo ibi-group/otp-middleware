@@ -159,7 +159,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             .delete(path(ID_PATH)
                     .withDescription("Deletes the '" + classToLowercase + "' entity with the specified id if it exists.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to delete.").and()
-                    .withGenericResponse(),
+                    .withProduces(JSON_ONLY)
+                    .withResponseType(clazz),
                 this::deleteOne, JsonUtils::toJson
             );
     }
