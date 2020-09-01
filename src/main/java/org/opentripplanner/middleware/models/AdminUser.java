@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.models;
 
-import com.auth0.exception.Auth0Exception;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -38,12 +37,12 @@ public class AdminUser extends AbstractUser {
 
     @Override
     public boolean delete() {
-        try {
-            super.delete();
-        } catch (Auth0Exception e) {
-            LOG.error("Could not delete Auth0 user. Aborting delete user.", e);
+        boolean auth0UserDeleted = super.delete();
+        if (auth0UserDeleted) {
+            return Persistence.adminUsers.removeById(this.id);
+        } else {
+            LOG.warn("Aborting user deletion for {}", this.email);
             return false;
         }
-        return Persistence.adminUsers.removeById(this.id);
     }
 }

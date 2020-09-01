@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.models;
 
-import com.auth0.exception.Auth0Exception;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -61,13 +60,12 @@ public class OtpUser extends AbstractUser {
                 return false;
             }
         }
-        try {
-            super.delete();
-        } catch (Auth0Exception e) {
-            LOG.error("Could not delete Auth0 user. Aborting delete user.", e);
+        boolean auth0UserDeleted = super.delete();
+        if (auth0UserDeleted) {
+            return Persistence.otpUsers.removeById(this.id);
+        } else {
+            LOG.warn("Aborting user deletion for {}", this.email);
             return false;
         }
-        // Finally, delete otp user.
-        return Persistence.otpUsers.removeById(this.id);
     }
 }

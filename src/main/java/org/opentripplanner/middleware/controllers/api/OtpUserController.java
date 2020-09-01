@@ -19,8 +19,8 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
 
     @Override
     OtpUser preCreateHook(OtpUser user, Request req) {
-        // Check API key and assign user to appropriate collection. Note: this is only relevant for instances of
-        // otp-middleware running behind API Gateway.
+        // Check API key and assign user to appropriate third-party application. Note: this is only relevant for
+        // instances of otp-middleware running behind API Gateway.
         String apiKey = req.headers("x-api-key");
         ApiUser apiUser = Persistence.apiUsers.getOneFiltered(Filters.eq("apiKeys.value", apiKey));
         if (apiUser != null) {
