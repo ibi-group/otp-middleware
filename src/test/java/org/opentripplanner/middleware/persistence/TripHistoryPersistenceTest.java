@@ -31,6 +31,7 @@ import static org.opentripplanner.middleware.persistence.PersistenceUtil.*;
 public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
     private static final String TEST_EMAIL = "john.doe@example.com";
 
+    OtpUser user = null;
     TripRequest tripRequest = null;
     TripSummary tripSummary = null;
     List<TripRequest> tripRequests = null;
@@ -86,7 +87,7 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
         String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
         String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
-        OtpUser user = createUser(TEST_EMAIL);
+        user = createUser(TEST_EMAIL);
 
         List<TripRequest> tripRequests = createTripRequests(limit, user.id);
 
@@ -114,7 +115,7 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
         String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
         String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
-        OtpUser user = createUser(TEST_EMAIL);
+        user = createUser(TEST_EMAIL);
 
         List<TripRequest> tripRequests = createTripRequests(limit, user.id);
 
@@ -137,7 +138,7 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
         String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
         String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
-        OtpUser user = createUser(TEST_EMAIL);
+        user = createUser(TEST_EMAIL);
 
         tripRequests = createTripRequests(limit, user.id);
 
@@ -159,7 +160,7 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
         int limit = 3;
         String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
-        OtpUser user = createUser(TEST_EMAIL);
+        user = createUser(TEST_EMAIL);
 
         tripRequests = createTripRequests(limit, user.id);
 
@@ -175,7 +176,7 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
         int max = 5;
         String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
-        OtpUser user = createUser(TEST_EMAIL);
+        user = createUser(TEST_EMAIL);
 
         tripRequests = createTripRequests(limit, user.id);
 
@@ -187,16 +188,9 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
 
     @AfterEach
     public void remove() {
-        if (tripRequest != null) {
-            Persistence.tripRequests.removeById(tripRequest.id);
-        }
-
-        if (tripSummary != null) {
-            Persistence.tripSummaries.removeById(tripSummary.id);
-        }
-
-        if (tripRequests != null) {
-            deleteTripRequests(tripRequests);
-        }
+        if (user != null) Persistence.otpUsers.removeById(user.id);
+        if (tripRequest != null) Persistence.tripRequests.removeById(tripRequest.id);
+        if (tripSummary != null) Persistence.tripSummaries.removeById(tripSummary.id);
+        if (tripRequests != null) deleteTripRequests(tripRequests);
     }
 }

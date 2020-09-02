@@ -4,6 +4,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -16,6 +18,7 @@ import static org.opentripplanner.middleware.persistence.PersistenceUtil.createU
  */
 public class PersistenceTest extends OtpMiddlewareTest {
     private static final String TEST_EMAIL = "john.doe@example.com";
+    private static final Logger LOG = LoggerFactory.getLogger(PersistenceTest.class);
 
     OtpUser user = null;
 
@@ -49,6 +52,7 @@ public class PersistenceTest extends OtpMiddlewareTest {
     @AfterEach
     public void remove() {
         if (user != null) {
+            LOG.info("Deleting user {}", user.id);
             Persistence.otpUsers.removeById(user.id);
         }
     }
