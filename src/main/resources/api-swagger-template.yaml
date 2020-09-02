@@ -1,3 +1,6 @@
+# This file contains snippets that are included in the
+# public-facing API documentation for ApiUsers.
+
 securityDefinitions:
   api_key:
     description: "API key header authentication."

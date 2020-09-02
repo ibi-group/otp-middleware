@@ -51,7 +51,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     final TypedPersistence<T> persistence;
     private final Class<T> clazz;
-    private final T[] typedArray;
 
     /**
      * @param apiPrefix string prefix to use in determining the resource location
@@ -68,9 +67,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         // Default resource to class name.
         if (resource == null) resource = SECURE + className.toLowerCase();
         this.ROOT_ROUTE = apiPrefix + resource;
-
-        // This empty typed array is solely to hold the response type for the GET-all method.
-        this.typedArray = (T[]) Array.newInstance(clazz, 0);
     }
 
     /**
@@ -121,7 +117,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     // Set the return type as the array of clazz objects.
                     // Note: there exists a method withResponseAsCollection, but unlike what its name suggests,
                     // it does exactly the same as .withResponseType and does not generate a return type array.
-                    .withResponseType(typedArray.getClass()),
+                    // See issue https://github.com/manusant/spark-swagger/issues/12.
+                    .withResponseType(Array.newInstance(clazz, 0).getClass()),
                 this::getMany, JsonUtils::toJson
             )
 
