@@ -8,7 +8,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**

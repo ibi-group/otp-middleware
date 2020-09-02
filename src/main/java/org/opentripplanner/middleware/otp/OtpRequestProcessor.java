@@ -7,6 +7,7 @@ import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,7 @@ import spark.Request;
 import spark.Service;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_API_ROOT;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -96,7 +97,7 @@ public class OtpRequestProcessor {
         }
 
         // Dispatch request to OTP and store request/response summary if user elected to store trip history.
-        long tripStorageStartTime = System.currentTimeMillis();
+        long tripStorageStartTime = DateTimeUtils.currentTimeMillis();
 
         Auth0Connection.checkUser(request);
         Auth0UserProfile profile = Auth0Connection.getUserFromRequest(request);
@@ -126,6 +127,6 @@ public class OtpRequestProcessor {
                 }
             }
         }
-        LOG.debug("Trip storage added {} ms", System.currentTimeMillis() - tripStorageStartTime);
+        LOG.debug("Trip storage added {} ms", DateTimeUtils.currentTimeMillis() - tripStorageStartTime);
     }
 }

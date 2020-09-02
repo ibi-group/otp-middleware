@@ -22,6 +22,7 @@ import java.util.UUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
 import static org.opentripplanner.middleware.otp.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static spark.Service.ignite;
 
 
@@ -37,6 +38,15 @@ public class TestUtils {
      * Password used to create and validate temporary Auth0 users
      */
     static final String TEMP_AUTH0_USER_PASSWORD = UUID.randomUUID().toString();
+
+    /**
+     * Returns true only if an environment variable exists and is set to "true".
+     */
+    public static boolean getBooleanEnvVar(String var) {
+        String variable = System.getenv(var);
+        return variable != null && variable.equals("true");
+    }
+
 
     /**
      * Send request to provided URL placing the Auth0 user id in the headers so that {@link Auth0UserProfile} can check
@@ -69,7 +79,7 @@ public class TestUtils {
         HashMap<String, String> headers = new HashMap<>();
         // If auth is disabled, simply place the Auth0 user ID in the authorization header, which will be extracted from
         // the request when received.
-        if ("true".equals(OtpMiddlewareMain.getConfigPropertyAsText("DISABLE_AUTH"))) {
+        if ("true".equals(getConfigPropertyAsText("DISABLE_AUTH"))) {
             headers.put("Authorization", requestingUser.auth0UserId);
         } else {
             // Otherwise, get a valid oauth token for the user

@@ -16,8 +16,8 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsInt;
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
  * Responsible for getting {@link BugsnagEvent} information from Bugsnag. This is done by making calls to Bugsnag's API

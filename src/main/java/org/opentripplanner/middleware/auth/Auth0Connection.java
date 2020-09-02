@@ -22,10 +22,10 @@ import spark.Response;
 
 import java.security.interfaces.RSAPublicKey;
 
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.OtpMiddlewareMain.hasConfigProperty;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.OtpUserController.OTP_USER_PATH;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.hasConfigProperty;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 

@@ -25,9 +25,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getBooleanEnvVar;
+import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedPost;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;

@@ -20,7 +20,7 @@ import java.net.http.HttpResponse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getBooleanEnvVar;
+import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;

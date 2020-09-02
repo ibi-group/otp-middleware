@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUsageResult;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
-import static org.opentripplanner.middleware.utils.DateUtils.YYYY_MM_DD;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.YYYY_MM_DD;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -94,7 +95,7 @@ public class LogController implements Endpoint {
                 return new ArrayList<>();
             }
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = DateTimeUtils.nowAsLocalDateTime();
         // TODO: Future work might modify this so that we accept multiple API key IDs for a single request (depends on
         //  how third party developer accounts are structured).
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(YYYY_MM_DD);

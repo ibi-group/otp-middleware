@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.auth;
 
 import com.auth0.json.auth.TokenHolder;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +24,7 @@ public class TokenCache {
     public TokenCache(TokenHolder tokenHolder) {
         this.tokenHolder = tokenHolder;
         // Compute expiration time from current time + token duration in seconds.
-        expirationDate = new Date(System.currentTimeMillis() + tokenHolder.getExpiresIn() * 1000);
+        expirationDate = new Date(DateTimeUtils.currentTimeMillis() + tokenHolder.getExpiresIn() * 1000);
     }
 
     /**
@@ -34,7 +35,7 @@ public class TokenCache {
     }
 
     public long millisecondsUntilExpiration() {
-        return expirationDate.getTime() - System.currentTimeMillis();
+        return expirationDate.getTime() - DateTimeUtils.currentTimeMillis();
     }
 
     public long secondsUntilExpiration() {

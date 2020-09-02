@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.HttpUtils.httpRequestRawResponse;
 import static org.opentripplanner.middleware.utils.JsonUtils.getSingleNodeValueFromJSON;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;

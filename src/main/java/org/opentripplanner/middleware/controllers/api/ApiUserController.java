@@ -17,9 +17,9 @@ import spark.Request;
 import spark.Response;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
 import static org.opentripplanner.middleware.utils.ApiGatewayUtils.deleteApiKey;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 

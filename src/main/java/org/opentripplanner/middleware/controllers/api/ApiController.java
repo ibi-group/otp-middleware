@@ -12,6 +12,7 @@ import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -253,7 +254,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 e
             );
         } finally {
-            LOG.info("Delete operation took {} msec", System.currentTimeMillis() - startTime);
+            LOG.info("Delete operation took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
         }
         return null;
     }
@@ -295,7 +296,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Otherwise, a new entity will be created.
      */
     private T createOrUpdate(Request req, Response res) {
-        long startTime = System.currentTimeMillis();
+        long startTime = DateTimeUtils.currentTimeMillis();
         // Check if an update or create operation depending on presence of id param
         // This needs to be final because it is used in a lambda operation below.
         if (req.params("id") == null && req.requestMethod().equals("PUT")) {
@@ -348,7 +349,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             logMessageAndHalt(req, 500, "An error was encountered while trying to save to the database", e);
         } finally {
             String operation = isCreating ? "Create" : "Update";
-            LOG.info("{} {} operation took {} msec", operation, classToLowercase, System.currentTimeMillis() - startTime);
+            LOG.info("{} {} operation took {} msec", operation, classToLowercase, DateTimeUtils.currentTimeMillis() - startTime);
         }
         return null;
     }
