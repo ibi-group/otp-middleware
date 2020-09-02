@@ -11,7 +11,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
  * Responsible for constructing requests to an elected OTP server end point using original query parameters provided by
