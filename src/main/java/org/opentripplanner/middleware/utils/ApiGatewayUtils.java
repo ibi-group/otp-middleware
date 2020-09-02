@@ -112,7 +112,7 @@ public class ApiGatewayUtils {
             deleteApiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
             deleteApiKeyRequest.setApiKey(apiKey.keyId);
             gateway.deleteApiKey(deleteApiKeyRequest);
-            LOG.info("Deleting Api key {} took {} msec", apiKey.keyId, System.currentTimeMillis() - startTime);
+            LOG.info("Deleting Api key {} took {} msec", apiKey.keyId, DateTimeUtils.currentTimeMillis() - startTime);
         } catch (NotFoundException e) {
             LOG.warn("Api key ({}) not found, unable to delete", apiKey.keyId, e);
         } catch (Exception e) {

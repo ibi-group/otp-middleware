@@ -220,7 +220,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * HTTP endpoint to delete one entity specified by ID.
      */
     private T deleteOne(Request req, Response res) {
-        long startTime = System.currentTimeMillis();
+        long startTime = DateTimeUtils.currentTimeMillis();
         String id = getIdFromRequest(req);
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         try {
