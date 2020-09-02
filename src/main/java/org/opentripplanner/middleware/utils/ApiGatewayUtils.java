@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.OtpMiddlewareMain.hasConfigProperty;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.hasConfigProperty;
 
 /**
  * Manages all interactions with AWS api gateway.
@@ -39,7 +39,7 @@ public class ApiGatewayUtils {
      * Create connection to AWS api gateway.
      */
     private static AmazonApiGateway getAmazonApiGateway() {
-        long startTime = System.currentTimeMillis();
+        long startTime = DateTimeUtils.currentTimeMillis();
 
         AmazonApiGatewayClientBuilder gatewayBuilder = AmazonApiGatewayClient.builder();
         if (hasConfigProperty("AWS_PROFILE")) {
@@ -47,7 +47,7 @@ public class ApiGatewayUtils {
         }
         AmazonApiGateway gateway = gatewayBuilder.build();
 
-        LOG.debug("Connection to AWS api gateway took {} msec", System.currentTimeMillis() - startTime);
+        LOG.debug("Connection to AWS api gateway took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
         return gateway;
     }
 
@@ -59,7 +59,7 @@ public class ApiGatewayUtils {
             LOG.error("All required input parameters must be provided.");
             return null;
         }
-        long startTime = System.currentTimeMillis();
+        long startTime = DateTimeUtils.currentTimeMillis();
         try {
             AmazonApiGateway gateway = getAmazonApiGateway();
             // create API key
@@ -92,7 +92,7 @@ public class ApiGatewayUtils {
                 usagePlanId);
             BugsnagReporter.reportErrorToBugsnag(message, e);
         } finally {
-            LOG.debug("Get api key and assign to usage plan took {} msec", System.currentTimeMillis() - startTime);
+            LOG.debug("Get api key and assign to usage plan took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
         }
         return null;
     }
@@ -101,7 +101,7 @@ public class ApiGatewayUtils {
      * Delete an API key from AWS API gateway.
      */
     public static boolean deleteApiKey(ApiKey apiKey) {
-        long startTime = System.currentTimeMillis();
+        long startTime = DateTimeUtils.currentTimeMillis();
         AmazonApiGateway gateway = getAmazonApiGateway();
         boolean success = true;
         try {
@@ -109,7 +109,7 @@ public class ApiGatewayUtils {
             deleteApiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
             deleteApiKeyRequest.setApiKey(apiKey.keyId);
             gateway.deleteApiKey(deleteApiKeyRequest);
-            LOG.debug("Deleting Api keys took {} msec", System.currentTimeMillis() - startTime);
+            LOG.debug("Deleting Api keys took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
         } catch (NotFoundException e) {
             LOG.warn("Api key ({}) not found, unable to delete", apiKey.keyId, e);
         } catch (Exception e) {
@@ -125,7 +125,7 @@ public class ApiGatewayUtils {
      * for all usage plans and API keys.
      */
     public static List<GetUsageResult> getUsageLogsForKey(String keyId, String startDate, String endDate) {
-        long startTime = System.currentTimeMillis();
+        long startTime = DateTimeUtils.currentTimeMillis();
 
         AmazonApiGateway gateway = getAmazonApiGateway();
 
@@ -150,7 +150,7 @@ public class ApiGatewayUtils {
                 throw e;
             }
         }
-        LOG.debug("Retrieving usage logs for api key took {} msec", System.currentTimeMillis() - startTime);
+        LOG.debug("Retrieving usage logs for api key took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
         return usageResults;
     }
 
@@ -158,14 +158,14 @@ public class ApiGatewayUtils {
      * Get usage logs from AWS api gateway for a given list of api keys, start and end date
      */
     public static List<GetUsageResult> getUsageLogsForKeys(List<ApiKey> apiKeys, String startDate, String endDate) {
-        long startTime = System.currentTimeMillis();
+        long startTime = DateTimeUtils.currentTimeMillis();
 
         List<GetUsageResult> usageResults = new ArrayList<>();
         for (ApiKey apiKey : apiKeys) {
             usageResults.addAll(getUsageLogsForKey(apiKey.keyId, startDate, endDate));
         }
 
-        LOG.debug("Retrieving usage logs for a list of api keys took {} msec", System.currentTimeMillis() - startTime);
+        LOG.debug("Retrieving usage logs for a list of api keys took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
         return usageResults;
     }
 }

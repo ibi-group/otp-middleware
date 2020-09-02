@@ -8,7 +8,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
-import org.opentripplanner.middleware.utils.DateUtils;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.gte;
 import static com.mongodb.client.model.Filters.lte;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
-import static org.opentripplanner.middleware.utils.DateUtils.YYYY_MM_DD;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.YYYY_MM_DD;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -175,7 +175,7 @@ public class TripHistoryController implements Endpoint {
 
         LocalDate localDate = null;
         try {
-            localDate = DateUtils.getDateFromParam(paramName, paramValue, YYYY_MM_DD);
+            localDate = DateTimeUtils.getDateFromParam(paramName, paramValue, YYYY_MM_DD);
         } catch (DateTimeParseException e) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400,
                 String.format("%s value: %s is not a valid date. Must be in the format: %s", paramName, paramValue,
@@ -187,7 +187,7 @@ public class TripHistoryController implements Endpoint {
         }
 
         return Date.from(localDate.atTime(timeOfDay)
-            .atZone(ZoneId.systemDefault())
+            .atZone(DateTimeUtils.getSystemZoneId())
             .toInstant());
     }
 }

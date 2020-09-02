@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.OtpMiddlewareMain.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 
 /**
  * This job is responsible for maintaining Bugsnag event data. This is achieved by managing the event request jobs
@@ -95,13 +96,13 @@ public class BugsnagEventJob implements Runnable {
      * Remove events that are older than the reporting window.
      */
     private void removeStaleEvents() {
-        LocalDate startOfReportingWindow = LocalDate
-            .now()
+        LocalDate startOfReportingWindow = DateTimeUtils
+            .nowAsLocalDate()
             .minusDays(BUGSNAG_REPORTING_WINDOW_IN_DAYS + 1);
         startOfReportingWindow.atTime(LocalTime.MIDNIGHT);
 
         Date date = Date.from(startOfReportingWindow.atTime(LocalTime.MIDNIGHT)
-            .atZone(ZoneId.systemDefault())
+            .atZone(DateTimeUtils.getSystemZoneId())
             .toInstant());
 
         Bson filter = Filters.lte("receivedAt", date);
