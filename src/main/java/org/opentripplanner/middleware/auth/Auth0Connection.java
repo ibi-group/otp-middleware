@@ -12,6 +12,8 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.AbstractUser;
+import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
@@ -60,10 +62,13 @@ public class Auth0Connection {
             DecodedJWT jwt = verifier.verify(token);
             Auth0UserProfile profile = new Auth0UserProfile(jwt);
             if (!isValidUser(profile)) {
-                // If not a valid user (and not creating an OTP/API user for self), halt the request. Note: creating an
-                // admin user requires that the requester is an admin (checkUserIsAdmin must be passed), so this is not
-                // a concern for that method/controller.
-                if (!isCreatingSelf(req, profile)) {
+                if (isCreatingSelf(req, profile)) {
+                    // If creating self, no user account is required (it does not exist yet!). Note: creating an
+                    // admin user requires that the requester is an admin (checkUserIsAdmin must be passed), so this
+                    // is not a concern for that method/controller.
+                    LOG.info("New user is creating self. OK to proceed without existing user object for auth0UserId");
+                } else {
+                    // Otherwise, if no valid user is found, halt the request.
                     logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Unknown user.");
                 }
             }
@@ -85,17 +90,25 @@ public class Auth0Connection {
      * Check for POST requests that are creating an {@link AbstractUser} (a proxy for OTP/API users).
      */
     private static boolean isCreatingSelf(Request req, Auth0UserProfile profile) {
-        // First, check the request method/path.
         String uri = req.uri();
         String method = req.requestMethod();
-        if (method.equalsIgnoreCase("POST") && (uri.endsWith(OTP_USER_PATH) || uri.endsWith(API_USER_PATH))) {
-            // Next, get the user object from the request body, verifying that the Auth0UserId matches.
-            try {
-                AbstractUser user = getPOJOFromRequestBody(req, AbstractUser.class);
-                return profile.auth0UserId.equals(user.auth0UserId);
-            } catch (JsonProcessingException e) {
-                LOG.warn("Could not parse user object from request.");
-                return false;
+        // Check that this is a POST request.
+        if (method.equalsIgnoreCase("POST")) {
+            // Next, check that an OtpUser or ApiUser is being created (an admin must rely on another admin to create
+            // them).
+            boolean creatingOtpUser = uri.endsWith(OTP_USER_PATH);
+            boolean creatingApiUser = uri.endsWith(API_USER_PATH);
+            if (creatingApiUser || creatingOtpUser) {
+                // Get the correct user class depending on request path.
+                Class<? extends AbstractUser> userClass = creatingApiUser ? ApiUser.class : OtpUser.class;
+                try {
+                    // Next, get the user object from the request body, verifying that the Auth0UserId matches between
+                    // requester and the new user object.
+                    AbstractUser user = getPOJOFromRequestBody(req, userClass);
+                    return profile.auth0UserId.equals(user.auth0UserId);
+                } catch (JsonProcessingException e) {
+                    LOG.warn("Could not parse user object from request.", e);
+                }
             }
         }
         return false;

@@ -39,10 +39,17 @@ public class BugsnagReporter {
     }
 
     /**
-     * If Bugsnag has been configured, report error based on provided information.
+     * If Bugsnag has been configured, report error based on provided information. Note: throwable must be non-null.
      */
     public static boolean reportErrorToBugsnag(String message, Object badEntity, Throwable throwable) {
+        // If no throwable provided, create a new UnknownError exception so that Bugsnag will accept the error report.
+        if (throwable == null) {
+            LOG.warn("No exception provided for this error report (message: {}). New UnknownError used instead.", message);
+            throwable = new UnknownError("Exception type is unknown! Please add exception where report method is called.");
+        }
+        // Log error to otp-middleware logs.
         LOG.error(message, throwable);
+        // If bugsnag is disabled, make sure to report full error to otp-middleware logs.
         if (bugsnag == null) {
             LOG.warn("Bugsnag error reporting is disabled. Unable to report to Bugsnag this message: {} for this bad entity: {}",
                 message,
@@ -50,14 +57,7 @@ public class BugsnagReporter {
                 throwable);
             return false;
         }
-
-        if (throwable == null) {
-            LOG.warn("This error is not an exception and cannot be reported to Bugsnag. This message: {} for this bad entity: {}",
-                message,
-                badEntity);
-            return false;
-        }
-
+        // Finally, construct report and send to bugsnag.
         Report report = bugsnag.buildReport(throwable);
         report.setContext(message);
         report.setAppInfo("entity", badEntity != null ? badEntity.toString() : "N/A");

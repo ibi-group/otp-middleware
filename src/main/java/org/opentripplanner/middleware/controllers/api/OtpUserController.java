@@ -31,7 +31,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             BugsnagReporter.reportErrorToBugsnag(
                 "OTP user created with API key that is not linked to any API user",
                 apiKey,
-                null
+                new IllegalArgumentException("API key not linked to API user.")
             );
         }
         return super.preCreateHook(user, req);
