@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
+import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.mongodb.client.model.Filters;
@@ -58,14 +59,15 @@ public class ApiUser extends AbstractUser {
         }
     }
 
-    public boolean createApiKey(String usagePlanId, boolean persist) {
-        ApiKey apiKey = ApiGatewayUtils.createApiKey(this.id, usagePlanId);
-        if (apiKey != null) {
+    public void createApiKey(String usagePlanId, boolean persist) throws CreateApiKeyException {
+        try {
+            ApiKey apiKey = ApiGatewayUtils.createApiKey(this, usagePlanId);
             apiKeys.add(apiKey);
             if (persist) Persistence.apiUsers.replace(this.id, this);
-            return true;
+        } catch (CreateApiKeyException e) {
+            LOG.error("Could not create API key for user {}", email, e);
+            throw e;
         }
-        return false;
     }
 
     /**

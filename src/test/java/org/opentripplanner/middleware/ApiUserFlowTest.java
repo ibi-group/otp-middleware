@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
+import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -56,7 +57,7 @@ public class ApiUserFlowTest {
      * Create an {@link ApiUser} and an {@link AdminUser} prior to unit tests
      */
     @BeforeAll
-    public static void setUp() throws IOException, InterruptedException {
+    public static void setUp() throws IOException, InterruptedException, CreateApiKeyException {
         // Load config before checking if tests should run (otherwise authDisabled will always evaluate to false).
         OtpMiddlewareTest.setUp();
         assumeTrue(isEndToEndAndAuthIsDisabled());

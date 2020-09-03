@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
+import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -97,22 +98,23 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     }
 
     /**
-     * Ensure that an {@link ApiUser} can delete an API key for self.
+     * Ensure that an {@link ApiUser} is unable to delete an API key for self (to prevent delete/create abuse of request
+     * limits).
      */
     @Test
-    public void canDeleteApiKeyForSelf() {
+    public void cannotDeleteApiKeyForSelf() {
         assumeTrue(getBooleanEnvVar("RUN_E2E"));
-        ensureAtLeastOneApiKeyIsAvailable();
+        ensureApiKeyExists();
+        int initialKeyCount = apiUser.apiKeys.size();
         // delete key
         String keyId = apiUser.apiKeys.get(0).keyId;
         HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, apiUser);
-        assertEquals(HttpStatus.OK_200, response.statusCode());
-        ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
-        assertTrue(userFromResponse.apiKeys.isEmpty());
-        LOG.info("API user successfully deleted API key id {}", keyId);
-        // refresh API key
+        int status = response.statusCode();
+        assertEquals(HttpStatus.FORBIDDEN_403, status);
+        LOG.info("Delete key request status: {}", status);
+        // Ensure key count is the same after delete request.
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
-        assertTrue(userFromDb.apiKeys.isEmpty());
+        assertEquals(initialKeyCount, userFromDb.apiKeys.size());
     }
 
     /**
@@ -121,8 +123,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     @Test
     public void adminCanDeleteApiKeyForApiUser() {
         assumeTrue(getBooleanEnvVar("RUN_E2E"));
-//        assumeFalse()
-        ensureAtLeastOneApiKeyIsAvailable();
+        ensureApiKeyExists();
         // delete key
         String keyId = apiUser.apiKeys.get(0).keyId;
         HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, adminUser);
@@ -138,13 +139,21 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     /**
      * Make sure that at least one API key exists.
      */
-    private void ensureAtLeastOneApiKeyIsAvailable() {
+    private boolean ensureApiKeyExists() {
         // Refresh API keys.
         apiUser = Persistence.apiUsers.getById(apiUser.id);
-
         if (apiUser.apiKeys.isEmpty()) {
-            apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
+            // Create key if there are none.
+            try {
+                apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
+                LOG.info("Successfully created API key");
+                return true;
+            } catch (CreateApiKeyException e) {
+                LOG.error("Could not create API key", e);
+                return false;
+            }
         }
+        return true;
     }
 
     /**
