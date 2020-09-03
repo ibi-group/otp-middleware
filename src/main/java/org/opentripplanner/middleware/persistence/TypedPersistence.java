@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.persistence;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.result.DeleteResult;
@@ -15,33 +16,32 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.gte;
+import static com.mongodb.client.model.Filters.lte;
 
 /**
  * This provides some abstraction over the Mongo Java driver for storing a particular kind of POJO.
  *
- * When performing an update (in our case with findOneAndUpdate) the Document of updates
- * may contain extra fields beyond those in the Java model class, or values of a type that
- * do not match the Java model class. The update will nonetheless add these extra fields
- * and wrong-typed values to MongoDB, which is not shocking considering its schemaless
- * nature. Of course a retrieved Java object will not contain these extra values
- * because it simply doesn't have a field to hold the values. If a value of the wrong
- * type has been stored in the database, deserialization will just fail with
- * "org.bson.codecs.configuration.CodecConfigurationException: Failed to decode X."
+ * When performing an update (in our case with findOneAndUpdate) the Document of updates may contain extra fields beyond
+ * those in the Java model class, or values of a type that do not match the Java model class. The update will
+ * nonetheless add these extra fields and wrong-typed values to MongoDB, which is not shocking considering its
+ * schemaless nature. Of course a retrieved Java object will not contain these extra values because it simply doesn't
+ * have a field to hold the values. If a value of the wrong type has been stored in the database, deserialization will
+ * just fail with "org.bson.codecs.configuration.CodecConfigurationException: Failed to decode X."
  *
- * This means clients have the potential to stuff any amount of garbage in our MongoDB
- * and trigger deserialization errors during application execution unless we perform
- * type checking and clean the incoming documents. There is probably a configuration
- * option to force schema adherence, which would prevent long-term compatibility but
- * would give us more safety in the short term.
+ * This means clients have the potential to stuff any amount of garbage in our MongoDB and trigger deserialization
+ * errors during application execution unless we perform type checking and clean the incoming documents. There is
+ * probably a configuration option to force schema adherence, which would prevent long-term compatibility but would give
+ * us more safety in the short term.
  *
- * PojoCodecImpl does not seem to have any hooks to throw errors when unexpected fields
- * are encountered (see else clause of
- * org.bson.codecs.pojo.PojoCodecImpl#decodePropertyModel). We could make our own
- * function to imitate the PropertyModel checking and fail early when unexpected fields
- * are present in a document.
+ * PojoCodecImpl does not seem to have any hooks to throw errors when unexpected fields are encountered (see else clause
+ * of org.bson.codecs.pojo.PojoCodecImpl#decodePropertyModel). We could make our own function to imitate the
+ * PropertyModel checking and fail early when unexpected fields are present in a document.
  */
 public class TypedPersistence<T extends Model> {
 
@@ -107,7 +107,8 @@ public class TypedPersistence<T extends Model> {
     }
 
     /**
-     * Primary method to update Mongo object with provided document. This sets the lastUpdated field to the current time.
+     * Primary method to update Mongo object with provided document. This sets the lastUpdated field to the current
+     * time.
      */
     public T update(String id, Document updateDocument) {
         // Set last updated.
@@ -134,53 +135,76 @@ public class TypedPersistence<T extends Model> {
     }
 
     /**
-     * This is not memory efficient.
-     * TODO: Always use iterators / streams, always perform selection of subsets on the Mongo server side ("where clause").
+     * This is not memory efficient. TODO: Always use iterators / streams, always perform selection of subsets on the
+     * Mongo server side ("where clause").
      */
     public List<T> getAll() {
         return mongoCollection.find().into(new ArrayList<>());
     }
 
     /**
-     * Get objects satisfying the supplied Mongo filter, limited to the specified maximum.
-     * This ties our persistence directly to Mongo for now but is expedient.
-     * We should really have a bit more abstraction here.
+     * Get objects satisfying the supplied Mongo filter, limited to the specified maximum. This ties our persistence
+     * directly to Mongo for now but is expedient. We should really have a bit more abstraction here.
      */
     public List<T> getFilteredWithLimit(Bson filter, int maximum) {
         return mongoCollection.find(filter).limit(maximum).into(new ArrayList<>());
     }
 
     /**
+     * Build a filter for querying Mongo based on userId and from/to dates.
+     */
+    public static Bson filterByUserAndDateRange(String userId, Date fromDate, Date toDate) {
+        Set<Bson> clauses = new HashSet<>();
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required to be non-null.");
+        }
+        // user id is required, so as a minimum return all entities for user.
+        clauses.add(eq("userId", userId));
+        // Get all entities created since the supplied "from date".
+        if (fromDate != null) {
+            clauses.add(gte("dateCreated", fromDate));
+        }
+        // Get all entities created until the supplied "to date".
+        if (toDate != null) {
+            clauses.add(lte("dateCreated", toDate));
+        }
+        return Filters.and(clauses);
+    }
+
+    /**
+     * Build a filter for querying Mongo based on userId.
+     */
+    public static Bson filterByUserId(String userId) {
+        return filterByUserAndDateRange(userId, null, null);
+    }
+
+    /**
      * Return the number of items based on the supplied Mongo filter
-     *
      */
     public long getCountFiltered(Bson filter) {
         return mongoCollection.countDocuments(filter);
     }
 
     /**
-     * Get all objects satisfying the supplied Mongo filter.
-     * This ties our persistence directly to Mongo for now but is expedient.
-     * We should really have a bit more abstraction here.
+     * Get all objects satisfying the supplied Mongo filter. This ties our persistence directly to Mongo for now but is
+     * expedient. We should really have a bit more abstraction here.
      */
     public List<T> getFiltered(Bson filter) {
         return mongoCollection.find(filter).into(new ArrayList<>());
     }
 
     /**
-     * Expose the internal MongoCollection to the caller.
-     * This ties our persistence directly to Mongo for now but is expedient.
-     * We will write all the queries we need in the calling methods, then make an abstraction here on TypedPersistence
-     * once we see everything we need to support.
+     * Expose the internal MongoCollection to the caller. This ties our persistence directly to Mongo for now but is
+     * expedient. We will write all the queries we need in the calling methods, then make an abstraction here on
+     * TypedPersistence once we see everything we need to support.
      */
     public MongoCollection<T> getMongoCollection() {
         return this.mongoCollection;
     }
 
     /**
-     * Get all objects satisfying the supplied Mongo filter.
-     * This ties our persistence directly to Mongo for now but is expedient.
-     * We should really have a bit more abstraction here.
+     * Get all objects satisfying the supplied Mongo filter. This ties our persistence directly to Mongo for now but is
+     * expedient. We should really have a bit more abstraction here.
      */
     public T getOneFiltered(Bson filter, Bson sortBy) {
         if (sortBy != null) {
@@ -190,7 +214,9 @@ public class TypedPersistence<T extends Model> {
         }
     }
 
-    /** Convenience wrapper for #getOneFiltered that supplies null for sortBy arg. */
+    /**
+     * Convenience wrapper for #getOneFiltered that supplies null for sortBy arg.
+     */
     public T getOneFiltered(Bson filter) {
         return getOneFiltered(filter, null);
     }

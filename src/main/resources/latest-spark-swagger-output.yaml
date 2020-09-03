@@ -140,6 +140,8 @@ paths:
       tags:
       - "api/admin/user"
       description: "Deletes the 'AdminUser' entity with the specified id if it exists."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -150,7 +152,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/RestResponse"
+            $ref: "#/definitions/AdminUser"
   /api/secure/application/{id}/apikey:
     post:
       tags:
@@ -303,6 +305,8 @@ paths:
       tags:
       - "api/secure/application"
       description: "Deletes the 'ApiUser' entity with the specified id if it exists."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -313,7 +317,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/RestResponse"
+            $ref: "#/definitions/ApiUser"
   /api/secure/monitoredtrip:
     get:
       tags:
@@ -395,6 +399,8 @@ paths:
       - "api/secure/monitoredtrip"
       description: "Deletes the 'MonitoredTrip' entity with the specified id if it\
         \ exists."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -405,7 +411,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/RestResponse"
+            $ref: "#/definitions/MonitoredTrip"
   /api/secure/triprequests:
     get:
       tags:
@@ -552,6 +558,8 @@ paths:
       tags:
       - "api/secure/user"
       description: "Deletes the 'OtpUser' entity with the specified id if it exists."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -562,7 +570,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/RestResponse"
+            $ref: "#/definitions/OtpUser"
   /api/secure/logs:
     get:
       tags:
@@ -641,14 +649,6 @@ definitions:
         type: "string"
   AdminUser[]:
     type: "object"
-  RestResponse:
-    type: "object"
-    properties:
-      statusCode:
-        type: "integer"
-        format: "int32"
-      body:
-        type: "string"
   ApiKey:
     type: "object"
     properties:
@@ -1038,6 +1038,8 @@ definitions:
           $ref: "#/definitions/UserLocation"
       storeTripHistory:
         type: "boolean"
+      applicationId:
+        type: "string"
   OtpUser[]:
     type: "object"
   GetUsageResult:

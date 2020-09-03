@@ -17,4 +17,8 @@ public class CreateApiKeyException extends Exception {
             cause
         );
     }
+
+    public CreateApiKeyException(String message) {
+        super(message);
+    }
 }

@@ -8,9 +8,9 @@ import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.BugsnagController;
-import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.LogController;
 import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
+import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
 import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
@@ -34,7 +34,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public class OtpMiddlewareMain {
     private static final Logger LOG = LoggerFactory.getLogger(OtpMiddlewareMain.class);
-    private static final String API_PREFIX = "/api/";
+    public static final String API_PREFIX = "/api/";
     public static boolean inTestEnvironment = false;
 
     public static void main(String[] args) throws IOException, InterruptedException {

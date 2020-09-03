@@ -1,5 +1,10 @@
 package org.opentripplanner.middleware.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.opentripplanner.middleware.persistence.Persistence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,6 +15,7 @@ import java.util.List;
  */
 public class OtpUser extends AbstractUser {
     private static final long serialVersionUID = 1L;
+    private static final Logger LOG = LoggerFactory.getLogger(OtpUser.class);
 
     /** Whether the user has consented to terms of use. */
     public boolean hasConsentedToTerms;
@@ -32,4 +38,34 @@ public class OtpUser extends AbstractUser {
 
     /** Whether to store the user's trip history (user must opt in). */
     public boolean storeTripHistory;
+
+    @JsonIgnore
+    public String applicationId;
+
+    @Override
+    public boolean delete() {
+        // Delete trip request history (related trip summaries are deleted in TripRequest#delete)
+        for (TripRequest request : TripRequest.requestsForUser(this.id)) {
+            boolean success = request.delete();
+            if (!success) {
+                LOG.error("Error deleting user's ({}) trip request {}", this.id, request.id);
+                return false;
+            }
+        }
+        // Delete monitored trips.
+        for (MonitoredTrip trip : MonitoredTrip.tripsForUser(this.id)) {
+            boolean success = trip.delete();
+            if (!success) {
+                LOG.error("Error deleting user's ({}) monitored trip {}", this.id, trip.id);
+                return false;
+            }
+        }
+        boolean auth0UserDeleted = super.delete();
+        if (auth0UserDeleted) {
+            return Persistence.otpUsers.removeById(this.id);
+        } else {
+            LOG.warn("Aborting user deletion for {}", this.email);
+            return false;
+        }
+    }
 }

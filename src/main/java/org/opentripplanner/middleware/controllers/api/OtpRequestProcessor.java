@@ -26,28 +26,26 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_XML;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_API_ROOT;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Responsible for getting a response from OTP based on the parameters provided by the requester. If the target service
- * is of interest the response is intercepted and processed. In all cases, the response from OTP (content and HTTP status)
- * is passed back to the requester.
+ * is of interest the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
+ * status) is passed back to the requester.
  */
 public class OtpRequestProcessor implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
-    /**
-     * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
-     * return OTP version info.
-     */
-    private static final String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
+
     /**
      * Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse}
      */
-    private static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
+    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
+
     /**
      * Endpoint for the OTP Middleware's OTP proxy
      */
-    private static final String OTP_PROXY_ENDPOINT = "/otp";
+    public static final String OTP_PROXY_ENDPOINT = "/otp";
     /**
      * URL to OTP's documentation.
      */
@@ -90,6 +88,7 @@ public class OtpRequestProcessor implements Endpoint {
         }
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replace(OTP_PROXY_ENDPOINT, "");
+
         // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {

@@ -9,16 +9,24 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.models.AbstractUser;
+import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
 import java.security.interfaces.RSAPublicKey;
 
+import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
+import static org.opentripplanner.middleware.controllers.api.OtpUserController.OTP_USER_PATH;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.ConfigUtils.hasConfigProperty;
+import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -53,16 +61,57 @@ public class Auth0Connection {
         try {
             DecodedJWT jwt = verifier.verify(token);
             Auth0UserProfile profile = new Auth0UserProfile(jwt);
+            if (!isValidUser(profile)) {
+                if (isCreatingSelf(req, profile)) {
+                    // If creating self, no user account is required (it does not exist yet!). Note: creating an
+                    // admin user requires that the requester is an admin (checkUserIsAdmin must be passed), so this
+                    // is not a concern for that method/controller.
+                    LOG.info("New user is creating self. OK to proceed without existing user object for auth0UserId");
+                } else {
+                    // Otherwise, if no valid user is found, halt the request.
+                    logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Unknown user.");
+                }
+            }
             // The user attribute is used on the server side to check user permissions and does not have all of the
             // fields that the raw Auth0 profile string does.
             addUserToRequest(req, profile);
         } catch (JWTVerificationException e) {
             // Invalid signature/claims
             logMessageAndHalt(req, 401, "Login failed to verify with our authorization provider.", e);
+        } catch (HaltException e) {
+            throw e;
         } catch (Exception e) {
             LOG.warn("Login failed to verify with our authorization provider.", e);
             logMessageAndHalt(req, 401, "Could not verify user's token");
         }
+    }
+
+    /**
+     * Check for POST requests that are creating an {@link AbstractUser} (a proxy for OTP/API users).
+     */
+    private static boolean isCreatingSelf(Request req, Auth0UserProfile profile) {
+        String uri = req.uri();
+        String method = req.requestMethod();
+        // Check that this is a POST request.
+        if (method.equalsIgnoreCase("POST")) {
+            // Next, check that an OtpUser or ApiUser is being created (an admin must rely on another admin to create
+            // them).
+            boolean creatingOtpUser = uri.endsWith(OTP_USER_PATH);
+            boolean creatingApiUser = uri.endsWith(API_USER_PATH);
+            if (creatingApiUser || creatingOtpUser) {
+                // Get the correct user class depending on request path.
+                Class<? extends AbstractUser> userClass = creatingApiUser ? ApiUser.class : OtpUser.class;
+                try {
+                    // Next, get the user object from the request body, verifying that the Auth0UserId matches between
+                    // requester and the new user object.
+                    AbstractUser user = getPOJOFromRequestBody(req, userClass);
+                    return profile.auth0UserId.equals(user.auth0UserId);
+                } catch (JsonProcessingException e) {
+                    LOG.warn("Could not parse user object from request.", e);
+                }
+            }
+        }
+        return false;
     }
 
     public static boolean isAuthHeaderPresent(Request req) {
@@ -106,7 +155,7 @@ public class Auth0Connection {
      * Get user profile from Spark Request object
      */
     public static Auth0UserProfile getUserFromRequest(Request req) {
-        return (Auth0UserProfile) req.attribute("user");
+        return req.attribute("user");
     }
 
     /**
@@ -169,40 +218,30 @@ public class Auth0Connection {
     }
 
     /**
-     * Confirm that the user exists
+     * Confirm that the user exists in at least one of the MongoDB user collections.
      */
-    private static Auth0UserProfile isValidUser(Request request) {
-
-        Auth0UserProfile profile = getUserFromRequest(request);
-        if (profile == null || (profile.adminUser == null && profile.otpUser == null && profile.apiUser == null)) {
-            logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "Unknown user.");
-        }
-
-        return profile;
+    private static boolean isValidUser(Auth0UserProfile profile) {
+        return profile != null && (profile.adminUser != null || profile.otpUser != null || profile.apiUser != null);
     }
 
     /**
      * Confirm that the user's actions are on their items if not admin.
      */
     public static void isAuthorized(String userId, Request request) {
-
-        Auth0UserProfile profile = isValidUser(request);
-
+        Auth0UserProfile profile = getUserFromRequest(request);
         // let admin do anything
         if (profile.adminUser != null) {
             return;
         }
-
+        // If userId is defined, it must be set to a value associated with the user.
         if (userId != null) {
             if (profile.otpUser != null && profile.otpUser.id.equals(userId)) {
                 return;
             }
-
             if (profile.apiUser != null && profile.apiUser.id.equals(userId)) {
                 return;
             }
         }
-
         logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
     }
 

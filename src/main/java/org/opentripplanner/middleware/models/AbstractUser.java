@@ -1,11 +1,16 @@
 package org.opentripplanner.middleware.models;
 
+import com.auth0.exception.Auth0Exception;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+
+import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 
 /**
  * This is an abstract user class that {@link OtpUser}, {@link AdminUser}, and {@link ApiUser} extend.
@@ -14,6 +19,7 @@ import java.util.UUID;
  * authorization check {@link #canBeManagedBy}.
  */
 public abstract class AbstractUser extends Model {
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractUser.class);
     private static final long serialVersionUID = 1L;
     /** Email address for contact. This must be unique in the collection. */
     public String email;
@@ -50,5 +56,18 @@ public abstract class AbstractUser extends Model {
         }
         // Fallback to Model#userCanManage.
         return super.canBeManagedBy(user);
+    }
+
+    @Override
+    public boolean delete() {
+        // FIXME: Check that the Auth0 user ID being deleted does not exist as a different child class?
+        try {
+            // Delete Auth0User.
+            deleteAuth0User(this.auth0UserId);
+            return true;
+        } catch (Auth0Exception e) {
+            LOG.error("Could not delete Auth0 user {}.", this.auth0UserId, e);
+            return false;
+        }
     }
 }
