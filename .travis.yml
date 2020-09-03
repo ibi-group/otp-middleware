@@ -16,8 +16,11 @@ install: true
 before_script:
 - yarn global add @conveyal/maven-semantic-release semantic-release@15
 script:
-#- mvn package FIXME: re-enable
-- echo $AUTH0_DOMAIN # test that env variable not logged
+# Package app and run unit tests.
+- mvn package
+# Run E2E tests (skip packaging).
+# TODO: Should this only run on certain builds (e.g., PRs to master)? Perhaps not,
+#       unless it begins to take a very long time.
 - RUN_E2E=true mvn test
 after_success:
 # this first codecov run will upload a report associated with the commit set through Travis CI environment variables
