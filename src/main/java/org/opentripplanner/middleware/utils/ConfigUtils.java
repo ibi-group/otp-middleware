@@ -34,6 +34,10 @@ public class ConfigUtils {
         return variable != null && variable.equals("true");
     }
 
+    /**
+     * Check if running in Travis CI. A list of default environment variables from Travis is here:
+     * https://docs.travis-ci.com/user/environment-variables/#default-environment-variables
+     */
     public static boolean isRunningCi() {
         return getBooleanEnvVar("TRAVIS") && getBooleanEnvVar("CONTINUOUS_INTEGRATION");
     }
