@@ -1,0 +1,70 @@
+# This file contains supplemental snippets that are included in the
+# public-facing API documentation for ApiUsers.
+
+securityDefinitions:
+  api_key:
+    description: "API key header authentication."
+    in: "header"
+    name: "x-api-key"
+    type: "apiKey"
+  bearer_token:
+    description: "Bearer token authentication using Auth0."
+    in: "header"
+    name: "Authorization"
+    type: "apiKey"
+responses:
+  400:
+    description: "The request was not formed properly (e.g., some required parameters may be missing).
+    See the details of the returned response to determine the exact issue."
+  401:
+    description: "The server was not able to authenticate the request.
+    This can happen if authentication headers are missing or malformed, or the authentication server cannot be reached."
+  403:
+    description: "The requesting user is not allowed to perform the request."
+  404:
+    description: "The requested item was not found."
+  500:
+    description: "An error occurred while performing the request. Contact an API administrator for more information."
+  default:
+    description: "An unexpected error occurred."
+definitions:
+  AbstractUser:
+    type: "object"
+    required:
+      - "auth0UserId"
+      - "email"
+    properties:
+      email:
+        type: "string"
+        description: "Email address for contact. This must be unique in the collection."
+      auth0UserId:
+        type: "string"
+        description: "Auth0 user name."
+      isDataToolsUser:
+        type: "boolean"
+        description: "Determines whether this user has access to OTP Data Tools."
+    description: "An abstract user."
+paths:
+  # Note to implementers:
+  # This path corresponds to a proxy route that must be configured in AWS API Gateway.
+  /pelias/*:
+    get:
+      tags:
+        - "pelias"
+      description: "Forwards any GET request to Pelias Geocoder.
+      Refer to <a href='https://github.com/pelias/documentation/#endpoint-descriptions'>Pelias Geocoder Documentation</a>
+      for API resources supported by Pelias Geocoder."
+      produces:
+        - "application/json"
+      parameters: []
+      security:
+        - api_key: []
+      responses:
+        "200":
+          description: "successful operation"
+tags:
+  - name: "pelias"
+    description: "Proxy interface for Pelias geocoder.
+    Refer to <a href='https://github.com/pelias/documentation/#endpoint-descriptions'>Pelias Geocoder Documentation</a>
+    for API resources supported by Pelias Geocoder."
+
