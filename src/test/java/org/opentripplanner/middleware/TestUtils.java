@@ -23,6 +23,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static spark.Service.ignite;
 

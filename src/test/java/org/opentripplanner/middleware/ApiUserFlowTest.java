@@ -27,7 +27,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.TestUtils.isEndToEndAndAuthIsDisabled;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedPost;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
@@ -35,6 +34,7 @@ import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForE
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PROXY_ENDPOINT;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 
 /**
  * Tests to simulate API user flow. The following config parameters must be set in configurations/default/env.yml for

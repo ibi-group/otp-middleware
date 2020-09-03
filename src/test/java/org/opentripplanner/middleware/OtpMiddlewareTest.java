@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 
-import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 
 /**
  * This abstract class is used to start a test instance of otp-middleware that other tests can use to perform various
