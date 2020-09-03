@@ -41,14 +41,6 @@ public class TestUtils {
     static final String TEMP_AUTH0_USER_PASSWORD = UUID.randomUUID().toString();
 
     /**
-     * Returns true only if an environment variable exists and is set to "true".
-     */
-    public static boolean getBooleanEnvVar(String var) {
-        String variable = System.getenv(var);
-        return variable != null && variable.equals("true");
-    }
-
-    /**
      * Helper method to determine if end to end is enabled and auth is disabled. (Used for checking if tests should run.)
      */
     public static boolean isEndToEndAndAuthIsDisabled() {

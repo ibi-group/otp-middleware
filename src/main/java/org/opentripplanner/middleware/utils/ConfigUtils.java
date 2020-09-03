@@ -26,13 +26,25 @@ public class ConfigUtils {
 
     private static JsonNode envConfig;
 
+    private static final boolean isRunningCi = getBooleanEnvVar("TRAVIS") && getBooleanEnvVar("CONTINUOUS_INTEGRATION");
+
+    /**
+     * Returns true only if an environment variable exists and is set to "true".
+     */
+    public static boolean getBooleanEnvVar(String var) {
+        String variable = System.getenv(var);
+        return variable != null && variable.equals("true");
+    }
+
     /**
      * Load config files from either program arguments or (if no args specified) from
      * default configuration file locations. Config fields are retrieved with getConfigProperty.
      */
     public static void loadConfig(String[] args) throws IOException {
         FileInputStream envConfigStream;
-
+        if (isRunningCi) {
+            return;
+        }
         if (args.length == 0) {
             LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
             envConfigStream = new FileInputStream(new File(DEFAULT_ENV));
@@ -65,6 +77,7 @@ public class ConfigUtils {
      * "data.use_s3_storage") in env.yml.
      */
     public static boolean hasConfigProperty(String name) {
+        if (isRunningCi) return System.getenv(name) != null;
         // try the server config first, then the main config
         return hasConfigProperty(envConfig, name);
     }
@@ -91,6 +104,7 @@ public class ConfigUtils {
      * Get a config property (nested fields defined by dot notation "data.use_s3_storage") as text.
      */
     public static String getConfigPropertyAsText(String name) {
+        if (isRunningCi) return System.getenv(name);
         JsonNode node = getConfigProperty(name);
         if (node != null) {
             return node.asText();
@@ -105,6 +119,10 @@ public class ConfigUtils {
      * if the config value is not defined (null).
      */
     public static String getConfigPropertyAsText(String name, String defaultValue) {
+        if (isRunningCi) {
+            String value = System.getenv(name);
+            return value == null ? defaultValue : value;
+        }
         JsonNode node = getConfigProperty(name);
         if (node != null) {
             return node.asText();
@@ -119,12 +137,10 @@ public class ConfigUtils {
      * value if the config value is not defined (null) or cannot be converted to an int.
      */
     public static int getConfigPropertyAsInt(String name, int defaultValue) {
-
         int value = defaultValue;
-
         try {
-            JsonNode node = getConfigProperty(name);
-            value = Integer.parseInt(node.asText());
+            String string = getConfigPropertyAsText(name);
+            value = Integer.parseInt(string);
         } catch (NumberFormatException | NullPointerException e) {
             LOG.error("Unable to parse {}. Using default: {}", name, defaultValue, e);
         }
