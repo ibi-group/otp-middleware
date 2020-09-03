@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
@@ -47,6 +48,12 @@ public class TestUtils {
         return variable != null && variable.equals("true");
     }
 
+    /**
+     * Helper method to determine if end to end is enabled and auth is disabled. (Used for checking if tests should run.)
+     */
+    public static boolean isEndToEndAndAuthIsDisabled() {
+        return getBooleanEnvVar("RUN_E2E") && authDisabled();
+    }
 
     /**
      * Send request to provided URL placing the Auth0 user id in the headers so that {@link Auth0UserProfile} can check

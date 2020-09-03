@@ -27,9 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
+import static org.opentripplanner.middleware.TestUtils.isEndToEndAndAuthIsDisabled;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedPost;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
@@ -51,15 +51,15 @@ public class ApiUserFlowTest {
     private static final Logger LOG = LoggerFactory.getLogger(ApiUserFlowTest.class);
     private static ApiUser apiUser;
     private static OtpUser otpUser;
-    private static boolean testsShouldRun = getBooleanEnvVar("RUN_E2E") && !authDisabled();
 
     /**
      * Create an {@link ApiUser} and an {@link AdminUser} prior to unit tests
      */
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException {
-        assumeTrue(testsShouldRun);
+        // Load config before checking if tests should run (otherwise authDisabled will always evaluate to false).
         OtpMiddlewareTest.setUp();
+        assumeTrue(isEndToEndAndAuthIsDisabled());
         // Mock the OTP server TODO: Run a live OTP instance?
         TestUtils.mockOtpServer();
         // As a pre-condition, create an API User with API key.
@@ -90,7 +90,7 @@ public class ApiUserFlowTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(testsShouldRun);
+        assumeTrue(isEndToEndAndAuthIsDisabled());
         apiUser = Persistence.apiUsers.getById(apiUser.id);
         if (apiUser != null) apiUser.delete();
         otpUser = Persistence.otpUsers.getById(otpUser.id);

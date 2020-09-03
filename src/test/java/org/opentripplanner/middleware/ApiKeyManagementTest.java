@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
+import static org.opentripplanner.middleware.TestUtils.isEndToEndAndAuthIsDisabled;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 
 /**
@@ -38,17 +38,17 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(ApiKeyManagementTest.class);
     private static ApiUser apiUser;
     private static AdminUser adminUser;
-    // TODO: It might be useful to allow this to run without DISABLE_AUTH set to true (in an end-to-end environment
-    //  using real tokens from Auth0.
-    private static boolean testsShouldRun = getBooleanEnvVar("RUN_E2E") && authDisabled();
 
     /**
      * Create an {@link ApiUser} and an {@link AdminUser} prior to unit tests
      */
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException {
-        assumeTrue(testsShouldRun);
+        // Load config before checking if tests should run (otherwise authDisabled will always evaluate to false).
         OtpMiddlewareTest.setUp();
+        // TODO: It might be useful to allow this to run without DISABLE_AUTH set to true (in an end-to-end environment
+        //  using real tokens from Auth0.
+        assumeTrue(isEndToEndAndAuthIsDisabled());
         apiUser = PersistenceUtil.createApiUser("test@example.com");
         adminUser = PersistenceUtil.createAdminUser("test@example.com");
     }
@@ -58,7 +58,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(testsShouldRun);
+        assumeTrue(isEndToEndAndAuthIsDisabled());
         // Delete admin user.
         Persistence.adminUsers.removeById(adminUser.id);
         // Refresh api keys for user.
