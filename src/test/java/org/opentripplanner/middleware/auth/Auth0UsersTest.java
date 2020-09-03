@@ -21,7 +21,7 @@ public class Auth0UsersTest extends OtpMiddlewareTest {
     private static ObjectMapper mapper = new ObjectMapper();
 
     @BeforeAll
-    public static void setUp() throws IOException {
+    public static void setUp() throws IOException, InterruptedException {
         OtpMiddlewareTest.setUp();
         LOG.info("Setting up Auth0UsersTest");
         // Construct simplified token POJO that just contains expiration duration in seconds (one day).

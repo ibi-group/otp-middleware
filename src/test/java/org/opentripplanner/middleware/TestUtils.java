@@ -21,7 +21,7 @@ import java.util.UUID;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
-import static org.opentripplanner.middleware.otp.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
+import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static spark.Service.ignite;
 

@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.utils;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import spark.Filter;
 import spark.Request;
 
 import javax.ws.rs.core.UriBuilder;
@@ -22,7 +23,16 @@ public class HttpUtils {
 
     public enum REQUEST_METHOD {GET, POST, DELETE}
 
+    /**
+     * A constant for a list of MIME types containing application/json only.
+     */
     public static final List<String> JSON_ONLY = List.of(APPLICATION_JSON);
+
+    /**
+     * A constant method compliant with {@link spark.Filter} that does nothing,
+     * but that is needed as a parameter for the spark-swagger endpoint definition method.
+     */
+    public static final Filter NO_FILTER = (request, response) -> {};
 
     /**
      * Constructs a url based on the uri.  endpoint and query params if provided

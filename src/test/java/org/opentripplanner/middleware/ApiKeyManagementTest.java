@@ -46,7 +46,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      * Create an {@link ApiUser} and an {@link AdminUser} prior to unit tests
      */
     @BeforeAll
-    public static void setUp() throws IOException {
+    public static void setUp() throws IOException, InterruptedException {
         assumeTrue(testsShouldRun);
         OtpMiddlewareTest.setUp();
         apiUser = PersistenceUtil.createApiUser("test@example.com");

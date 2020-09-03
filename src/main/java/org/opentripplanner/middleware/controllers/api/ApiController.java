@@ -21,6 +21,7 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
+import java.lang.reflect.Array;
 import java.util.Date;
 import java.util.List;
 
@@ -47,8 +48,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     protected static final String ID_PATH = "/:" + ID_PARAM;
     protected final String ROOT_ROUTE;
     private static final String SECURE = "secure/";
+    private final String className;
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
-    private final String classToLowercase;
     final TypedPersistence<T> persistence;
     private final Class<T> clazz;
 
@@ -63,9 +64,9 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     public ApiController(String apiPrefix, TypedPersistence<T> persistence, String resource) {
         this.clazz = persistence.clazz;
         this.persistence = persistence;
-        this.classToLowercase = persistence.clazz.getSimpleName().toLowerCase();
+        this.className = persistence.clazz.getSimpleName();
         // Default resource to class name.
-        if (resource == null) resource = SECURE + persistence.clazz.getSimpleName().toLowerCase();
+        if (resource == null) resource = SECURE + className.toLowerCase();
         this.ROOT_ROUTE = apiPrefix + resource;
     }
 
@@ -80,8 +81,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     @Override
     public void bind(final SparkSwagger restApi) {
         ApiEndpoint apiEndpoint = restApi.endpoint(
-            endpointPath(ROOT_ROUTE).withDescription("Interface for querying and managing '" + classToLowercase + "' entities."),
-            (q, a) -> LOG.info("Received request for '{}' Rest API", classToLowercase)
+            endpointPath(ROOT_ROUTE).withDescription("Interface for querying and managing '" + className + "' entities."),
+            HttpUtils.NO_FILTER
         );
         buildEndpoint(apiEndpoint);
     }
@@ -112,17 +113,19 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         baseEndpoint
             // Get multiple entities.
             .get(path(ROOT_ROUTE)
-                    .withDescription("Gets a list of all '" + classToLowercase + "' entities.")
+                    .withDescription("Gets a list of all '" + className + "' entities.")
                     .withProduces(JSON_ONLY)
-                    // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
-                    // as the return type for this method. (It does generate the type for that class nonetheless.)
-                    .withResponseAsCollection(clazz),
+                    // Set the return type as the array of clazz objects.
+                    // Note: there exists a method withResponseAsCollection, but unlike what its name suggests,
+                    // it does exactly the same as .withResponseType and does not generate a return type array.
+                    // See issue https://github.com/manusant/spark-swagger/issues/12.
+                    .withResponseType(Array.newInstance(clazz, 0).getClass()),
                 this::getMany, JsonUtils::toJson
             )
 
             // Get one entity.
             .get(path(ROOT_ROUTE + ID_PATH)
-                    .withDescription("Returns a '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
+                    .withDescription("Returns the '" + className + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to search.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
                     .withProduces(JSON_ONLY)
@@ -132,9 +135,9 @@ public abstract class ApiController<T extends Model> implements Endpoint {
 
             // Create entity request
             .post(path("")
-                    .withDescription("Creates a '" + classToLowercase + "' entity.")
+                    .withDescription("Creates a '" + className + "' entity.")
                     .withConsumes(JSON_ONLY)
-                    .withRequestType(clazz) // FIXME: Embedded Swagger UI doesn't work for this request. (Embed or link a more recent version?)
+                    .withRequestType(clazz)
                     .withProduces(JSON_ONLY)
                     .withResponseType(clazz),
                 this::createOrUpdate, JsonUtils::toJson
@@ -142,10 +145,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
 
             // Update entity request
             .put(path(ID_PATH)
-                    .withDescription("Updates and returns the '" + classToLowercase + "' entity with the specified id, or 404 if not found.")
+                    .withDescription("Updates and returns the '" + className + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to update.").and()
-                    // FIXME: The Swagger UI embedded in spark-swagger doesn't work for this request.
-                    //  (Embed or link a more recent Swagger UI version?)
                     .withConsumes(JSON_ONLY)
                     .withRequestType(clazz)
                     .withProduces(JSON_ONLY)
@@ -158,7 +159,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
 
             // Delete entity request
             .delete(path(ID_PATH)
-                    .withDescription("Deletes the '" + classToLowercase + "' entity with the specified id if it exists.")
+                    .withDescription("Deletes the '" + className + "' entity with the specified id if it exists.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to delete.").and()
                     .withProduces(JSON_ONLY)
                     .withResponseType(clazz),
@@ -210,7 +211,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         T object = getObjectForId(req, id);
 
         if (!object.canBeManagedBy(requestingUser)) {
-            logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to get %s.", classToLowercase));
+            logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to get %s.", className));
         }
 
         return object;
@@ -227,7 +228,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             T object = getObjectForId(req, id);
             // Check that requesting user can manage entity.
             if (!object.canBeManagedBy(requestingUser)) {
-                logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to delete %s.", classToLowercase));
+                logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to delete %s.", className));
             }
             // Run pre-delete hook. If return value is false, abort.
             if (!preDeleteHook(object, req)) {
@@ -240,7 +241,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 logMessageAndHalt(
                     req,
                     HttpStatus.INTERNAL_SERVER_ERROR_500,
-                    String.format("Unknown error encountered. Failed to delete %s", classToLowercase),
+                    String.format("Unknown error encountered. Failed to delete %s", className),
                     null
                 );
             }
@@ -250,7 +251,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             logMessageAndHalt(
                 req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
-                String.format("Error deleting %s", classToLowercase),
+                String.format("Error deleting %s", className),
                 e
             );
         } finally {
@@ -268,7 +269,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             logMessageAndHalt(
                 req,
                 HttpStatus.NOT_FOUND_404,
-                String.format("No %s with id=%s found.", classToLowercase, id),
+                String.format("No %s with id=%s found.", className, id),
                 null
             );
         }
@@ -311,7 +312,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             if (isCreating) {
                 // Verify that the requesting user can create object.
                 if (!object.canBeCreatedBy(requestingUser)) {
-                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to create %s.", classToLowercase));
+                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to create %s.", className));
                 }
                 // Run pre-create hook and use updated object (with potentially modified values) in create operation.
                 T updatedObject = preCreateHook(object, req);
@@ -325,7 +326,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 }
                 // Check that requesting user can manage entity.
                 if (!preExistingObject.canBeManagedBy(requestingUser)) {
-                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to update %s.", classToLowercase));
+                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to update %s.", className));
                 }
                 // Update last updated value.
                 object.lastUpdated = new Date();
@@ -349,7 +350,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             logMessageAndHalt(req, 500, "An error was encountered while trying to save to the database", e);
         } finally {
             String operation = isCreating ? "Create" : "Update";
-            LOG.info("{} {} operation took {} msec", operation, classToLowercase, DateTimeUtils.currentTimeMillis() - startTime);
+            LOG.info("{} {} operation took {} msec", operation, className, DateTimeUtils.currentTimeMillis() - startTime);
         }
         return null;
     }

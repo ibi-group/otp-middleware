@@ -32,8 +32,8 @@ import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
-import static org.opentripplanner.middleware.otp.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
-import static org.opentripplanner.middleware.otp.OtpRequestProcessor.OTP_PROXY_ENDPOINT;
+import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
+import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PROXY_ENDPOINT;
 
 /**
  * Tests to simulate API user flow. The following config parameters must be set in configurations/default/env.yml for
@@ -57,7 +57,7 @@ public class ApiUserFlowTest {
      * Create an {@link ApiUser} and an {@link AdminUser} prior to unit tests
      */
     @BeforeAll
-    public static void setUp() throws IOException {
+    public static void setUp() throws IOException, InterruptedException {
         assumeTrue(testsShouldRun);
         OtpMiddlewareTest.setUp();
         // Mock the OTP server TODO: Run a live OTP instance?

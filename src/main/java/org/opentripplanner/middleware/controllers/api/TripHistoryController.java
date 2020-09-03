@@ -52,8 +52,9 @@ public class TripHistoryController implements Endpoint {
     public void bind(final SparkSwagger restApi) {
        restApi.endpoint(
             endpointPath(ROOT_ROUTE).withDescription("Interface for retrieving trip requests."),
-            (q, a) -> LOG.info("Received request for 'triprequests' Rest API")
-       ).get(path(ROOT_ROUTE)
+           HttpUtils.NO_FILTER
+       ).get(
+           path(ROOT_ROUTE)
                 .withDescription("Gets a list of all trip requests for a user.")
                 .withQueryParam()
                     .withName("userId")
@@ -81,7 +82,7 @@ public class TripHistoryController implements Endpoint {
                 // Note: unlike the name suggests, withResponseAsCollection does not generate an array
                 // as the return type for this method. (It does generate the type for that class nonetheless.)
                 .withResponseAsCollection(TripRequest.class),
-            TripHistoryController::getTripRequests, JsonUtils::toJson);
+           TripHistoryController::getTripRequests, JsonUtils::toJson);
     }
 
     /**
