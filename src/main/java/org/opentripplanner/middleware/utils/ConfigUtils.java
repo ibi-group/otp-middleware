@@ -26,8 +26,6 @@ public class ConfigUtils {
 
     private static JsonNode envConfig;
 
-    private static final boolean isRunningCi = getBooleanEnvVar("TRAVIS") && getBooleanEnvVar("CONTINUOUS_INTEGRATION");
-
     /**
      * Returns true only if an environment variable exists and is set to "true".
      */
@@ -36,13 +34,17 @@ public class ConfigUtils {
         return variable != null && variable.equals("true");
     }
 
+    public static boolean isRunningCi() {
+        return getBooleanEnvVar("TRAVIS") && getBooleanEnvVar("CONTINUOUS_INTEGRATION");
+    }
+
     /**
      * Load config files from either program arguments or (if no args specified) from
      * default configuration file locations. Config fields are retrieved with getConfigProperty.
      */
     public static void loadConfig(String[] args) throws IOException {
         FileInputStream envConfigStream;
-        if (isRunningCi) {
+        if (isRunningCi()) {
             return;
         }
         if (args.length == 0) {
@@ -77,7 +79,7 @@ public class ConfigUtils {
      * "data.use_s3_storage") in env.yml.
      */
     public static boolean hasConfigProperty(String name) {
-        if (isRunningCi) return System.getenv(name) != null;
+        if (isRunningCi()) return System.getenv(name) != null;
         // try the server config first, then the main config
         return hasConfigProperty(envConfig, name);
     }
@@ -104,7 +106,7 @@ public class ConfigUtils {
      * Get a config property (nested fields defined by dot notation "data.use_s3_storage") as text.
      */
     public static String getConfigPropertyAsText(String name) {
-        if (isRunningCi) return System.getenv(name);
+        if (isRunningCi()) return System.getenv(name);
         JsonNode node = getConfigProperty(name);
         if (node != null) {
             return node.asText();
@@ -119,7 +121,7 @@ public class ConfigUtils {
      * if the config value is not defined (null).
      */
     public static String getConfigPropertyAsText(String name, String defaultValue) {
-        if (isRunningCi) {
+        if (isRunningCi()) {
             String value = System.getenv(name);
             return value == null ? defaultValue : value;
         }
