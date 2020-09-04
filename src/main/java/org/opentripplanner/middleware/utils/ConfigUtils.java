@@ -15,7 +15,11 @@ import static org.opentripplanner.middleware.utils.YamlUtils.yamlMapper;
  */
 public class ConfigUtils {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
+
     public static final String DEFAULT_ENV = "configurations/default/env.yml";
+
+    private static final String JAR_PREFIX = "otp-middleware-";
+
     private static JsonNode envConfig;
 
     /**
@@ -117,5 +121,28 @@ public class ConfigUtils {
             LOG.error("Unable to parse {}. Using default: {}", name, defaultValue, e);
         }
         return value;
+    }
+
+    /**
+     * Extracts the version number from the JAR file name
+     * (modified from https://stackoverflow.com/questions/14189162/get-name-of-running-jar-or-exe#19045510).
+     * TODO: Extract git properties from JAR, see
+     * https://github.com/ibi-group/datatools-server/blob/9f74b821cf351efcdaf7c9c93a3ae8b694d3c3b1/src/main/java/com/conveyal/datatools/manager/DataManager.java#L181-L212.
+     */
+    public static String getVersionFromJar() {
+        String path = OtpMiddlewareMain.class.getResource(OtpMiddlewareMain.class.getSimpleName() + ".class").getFile();
+        // Detect if this is run from a compiled JAR or loose class files from an IDE.
+        boolean isUnpackagedClass = path.startsWith(File.separator);
+
+        if (isUnpackagedClass) {
+            return "Local Build";
+        } else {
+            String jarPath = path.substring(0, path.lastIndexOf('!'));
+            String jarName = jarPath.substring(jarPath.lastIndexOf(File.separatorChar) + 1);
+            String version = jarName.substring(JAR_PREFIX.length(), jarName.lastIndexOf(".jar"));
+            if (version.length() == 0) version = "No Version Info";
+
+            return version;
+        }
     }
 }

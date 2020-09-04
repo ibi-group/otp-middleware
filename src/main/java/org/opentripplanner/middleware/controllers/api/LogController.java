@@ -10,9 +10,8 @@ import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUsageResult;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
@@ -33,7 +32,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * Sets up HTTP endpoints for getting logging and request summary information from AWS Cloudwatch and API Gateway.
  */
 public class LogController implements Endpoint {
-    private static final Logger LOG = LoggerFactory.getLogger(LogController.class);
     private final String ROOT_ROUTE;
 
     public LogController(String apiPrefix) {
@@ -48,7 +46,7 @@ public class LogController implements Endpoint {
     public void bind(final SparkSwagger restApi) {
         restApi.endpoint(
             endpointPath(ROOT_ROUTE).withDescription("Interface for retrieving API logs from AWS."),
-            (q, a) -> LOG.info("Received request for 'logs' Rest API")
+            HttpUtils.NO_FILTER
         ).get(path(ROOT_ROUTE)
                 .withDescription("Gets a list of all API usage logs.")
                 .withQueryParam()

@@ -9,9 +9,8 @@ import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
@@ -27,9 +26,8 @@ import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
  */
 public class BugsnagController implements Endpoint {
 
-    private static TypedPersistence<BugsnagEvent> bugsnagEvents = Persistence.bugsnagEvents;
-    private static TypedPersistence<BugsnagProject> bugsnagProjects = Persistence.bugsnagProjects;
-    private static final Logger LOG = LoggerFactory.getLogger(LogController.class);
+    private static final TypedPersistence<BugsnagEvent> bugsnagEvents = Persistence.bugsnagEvents;
+    private static final TypedPersistence<BugsnagProject> bugsnagProjects = Persistence.bugsnagProjects;
 
     private final String ROOT_ROUTE;
 
@@ -45,7 +43,7 @@ public class BugsnagController implements Endpoint {
     public void bind(final SparkSwagger restApi) {
         restApi.endpoint(
             endpointPath(ROOT_ROUTE).withDescription("Interface for reporting and retrieving application errors using Bugsnag."),
-            (q, a) -> LOG.info("Received request for 'bugsnag' Rest API")
+            HttpUtils.NO_FILTER
         ).get(path(ROOT_ROUTE)
                 .withDescription("Gets a list of all Bugsnag event summaries.")
                 .withProduces(JSON_ONLY)

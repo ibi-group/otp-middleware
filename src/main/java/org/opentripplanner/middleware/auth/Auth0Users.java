@@ -6,21 +6,28 @@ import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
+import java.net.URI;
+import java.net.http.HttpResponse;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.HttpUtils.httpRequestRawResponse;
+import static org.opentripplanner.middleware.utils.JsonUtils.getSingleNodeValueFromJSON;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -28,10 +35,12 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * searchable fields and query syntax are here: https://auth0.com/docs/api/management/v2/user-search
  */
 public class Auth0Users {
-    private static final String AUTH0_DOMAIN = getConfigPropertyAsText("AUTH0_DOMAIN");
+    public static final String AUTH0_DOMAIN = getConfigPropertyAsText("AUTH0_DOMAIN");
     // This client/secret pair is for making requests for an API access token used with the Management API.
     private static final String AUTH0_API_CLIENT = getConfigPropertyAsText("AUTH0_API_CLIENT");
     private static final String AUTH0_API_SECRET = getConfigPropertyAsText("AUTH0_API_SECRET");
+    private static final String AUTH0_CLIENT_ID = getConfigPropertyAsText("AUTH0_CLIENT_ID");
+    private static final String AUTH0_CLIENT_SECRET = getConfigPropertyAsText("AUTH0_CLIENT_SECRET");
     private static final String DEFAULT_CONNECTION_TYPE = "Username-Password-Authentication";
     private static final String MANAGEMENT_API_VERSION = "v2";
     private static final String SEARCH_API_VERSION = "v3";
@@ -44,15 +53,19 @@ public class Auth0Users {
     private static final AuthAPI authAPI = new AuthAPI(AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET);
 
     /**
-     * Creates a standard user for the provided email address. Defaults to a random UUID password and connection type
-     * of {@link #DEFAULT_CONNECTION_TYPE}.
+     * Creates a standard user for the provided email address. Defaults to a random UUID password and connection type of
+     * {@link #DEFAULT_CONNECTION_TYPE}.
      */
     public static User createAuth0UserForEmail(String email) throws Auth0Exception {
+        return createAuth0UserForEmail(email, UUID.randomUUID().toString());
+    }
+
+    public static User createAuth0UserForEmail(String email, String password) throws Auth0Exception {
         // Create user object and assign properties.
         User user = new User();
         user.setEmail(email);
         // TODO set name? phone? other Auth0 properties?
-        user.setPassword(UUID.randomUUID().toString());
+        user.setPassword(password);
         user.setConnection(DEFAULT_CONNECTION_TYPE);
         return getManagementAPI()
             .users()
@@ -64,6 +77,7 @@ public class Auth0Users {
      * Delete Auth0 user by Auth0 user ID using the Management API.
      */
     public static void deleteAuth0User(String userId) throws Auth0Exception {
+        LOG.info("Deleting Auth0 user for {}", userId);
         getManagementAPI()
             .users()
             .delete(userId)
@@ -79,8 +93,8 @@ public class Auth0Users {
     }
 
     /**
-     * Gets an Auth0 API access token for authenticating requests to the Auth0 Management API. This will either create
-     * a new token using the oauth token endpoint or grab a cached token that it has already created (if it has not
+     * Gets an Auth0 API access token for authenticating requests to the Auth0 Management API. This will either create a
+     * new token using the oauth token endpoint or grab a cached token that it has already created (if it has not
      * expired). More information on setting this up is here: https://auth0.com/docs/api/management/v2/get-access-tokens-for-production
      */
     public static String getApiToken() {
@@ -126,9 +140,9 @@ public class Auth0Users {
     }
 
     /**
-     * Method to trigger an Auth0 job to resend a verification email. Returns an Auth0 {@link Job} which can be
-     * used to monitor the progress of the job (using job ID). Typically the verification email goes out pretty quickly
-     * so there shouldn't be too much of a need to monitor the result.
+     * Method to trigger an Auth0 job to resend a verification email. Returns an Auth0 {@link Job} which can be used to
+     * monitor the progress of the job (using job ID). Typically the verification email goes out pretty quickly so there
+     * shouldn't be too much of a need to monitor the result.
      */
     public static Job resendVerificationEmail(String userId) {
         try {
@@ -176,6 +190,7 @@ public class Auth0Users {
         // Ensure no user with email exists in MongoDB.
         U userWithEmail = userStore.getOneFiltered(eq("email", user.email));
         if (userWithEmail != null) {
+            // TODO: Does this need to change to allow multiple applications to create otpuser's with the same email?
             logMessageAndHalt(req, 400, "User with email already exists in database!");
         }
         // Check for pre-existing user in Auth0 and create if not exists.
@@ -183,6 +198,7 @@ public class Auth0Users {
         if (auth0UserProfile == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Error creating user for email " + user.email);
         }
+        LOG.info("Created new Auth0 user ({}) for user {}", auth0UserProfile.getId(), user.id);
         return auth0UserProfile;
     }
 
@@ -223,5 +239,35 @@ public class Auth0Users {
         return "your-auth0-domain".equals(AUTH0_DOMAIN)
             ? "http://locahost:8089"
             : "https://" + AUTH0_DOMAIN;
+    }
+
+    /**
+     * Get an Auth0 oauth token for use in mocking user requests by using the Auth0 'Call Your API Using Resource Owner
+     * Password Flow' approach. Auth0 setup can be reviewed here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow.
+     * If the user is successfully validated by Auth0 a bearer access token is returned, which is extracted and returned
+     * to the caller. In all other cases, null is returned.
+     */
+    public static String getAuth0Token(String username, String password) throws JsonProcessingException {
+        String body = String.format(
+            "grant_type=password&username=%s&password=%s&audience=%s&scope=&client_id=%s&client_secret=%s",
+            username,
+            password,
+            "https://otp-middleware", // must match an API identifier
+            AUTH0_CLIENT_ID, // Auth0 application client ID
+            AUTH0_CLIENT_SECRET // Auth0 application client secret
+        );
+
+        HttpResponse<String> response = httpRequestRawResponse(
+            URI.create(String.format("https://%s/oauth/token", AUTH0_DOMAIN)),
+            1000,
+            HttpUtils.REQUEST_METHOD.POST,
+            Collections.singletonMap("content-type", "application/x-www-form-urlencoded"),
+            body
+        );
+        if (response == null || response.statusCode() != HttpStatus.OK_200) {
+            LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}", username, response.statusCode(), response.body());
+            return null;
+        }
+        return getSingleNodeValueFromJSON("access_token", response.body());
     }
 }

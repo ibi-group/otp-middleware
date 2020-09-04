@@ -32,6 +32,11 @@
             </resource>
         </resources>
         <plugins>
+            <!-- maven-surefire-plugin is needed to run unit tests. -->
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+            </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.2</version>

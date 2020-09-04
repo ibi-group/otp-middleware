@@ -16,34 +16,71 @@ host: "localhost:4567"
 basePath: "/"
 tags:
 - name: "api/admin/user"
-  description: "Interface for querying and managing 'adminuser' entities."
+  description: "Interface for querying and managing 'AdminUser' entities."
 - name: "api/secure/application"
-  description: "Interface for querying and managing 'apiuser' entities."
+  description: "Interface for querying and managing 'ApiUser' entities."
 - name: "api/secure/monitoredtrip"
-  description: "Interface for querying and managing 'monitoredtrip' entities."
+  description: "Interface for querying and managing 'MonitoredTrip' entities."
+- name: "api/secure/triprequests"
+  description: "Interface for retrieving trip requests."
 - name: "api/secure/user"
-  description: "Interface for querying and managing 'otpuser' entities."
+  description: "Interface for querying and managing 'OtpUser' entities."
+- name: "api/secure/logs"
+  description: "Interface for retrieving API logs from AWS."
+- name: "api/admin/bugsnag/eventsummary"
+  description: "Interface for reporting and retrieving application errors using Bugsnag."
+- name: "otp"
+  description: "Proxy interface for OTP endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+    \ API documentation</a> for OTP's supported API resources."
 schemes:
-- "http"
 - "https"
-- "ws"
-- "wss"
 paths:
+  /api/admin/user/fromtoken:
+    get:
+      tags:
+      - "api/admin/user"
+      description: "Retrieves an AdminUser entity using an Auth0 access token passed\
+        \ in an Authorization header."
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/AdminUser"
+  /api/admin/user/verification-email:
+    get:
+      tags:
+      - "api/admin/user"
+      description: "Triggers a job to resend the Auth0 verification email."
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Job"
   /api/admin/user:
     get:
       tags:
       - "api/admin/user"
-      description: "Gets a list of all 'adminuser' entities."
+      description: "Gets a list of all 'AdminUser' entities."
+      produces:
+      - "application/json"
       parameters: []
       responses:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/AdminUser"
+            $ref: "#/definitions/AdminUser[]"
     post:
       tags:
       - "api/admin/user"
-      description: "Creates a 'adminuser' entity."
+      description: "Creates a 'AdminUser' entity."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
       parameters:
       - in: "body"
         description: "Body object description"
@@ -55,19 +92,14 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/AdminUser"
-    options:
-      tags:
-      - "api/admin/user"
-      parameters: []
-      responses:
-        "200":
-          description: "successful operation"
   /api/admin/user/{id}:
     get:
       tags:
       - "api/admin/user"
-      description: "Returns a 'adminuser' entity with the specified id, or 404 if\
+      description: "Returns the 'AdminUser' entity with the specified id, or 404 if\
         \ not found."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -82,8 +114,12 @@ paths:
     put:
       tags:
       - "api/admin/user"
-      description: "Updates and returns the 'adminuser' entity with the specified\
+      description: "Updates and returns the 'AdminUser' entity with the specified\
         \ id, or 404 if not found."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -103,7 +139,9 @@ paths:
     delete:
       tags:
       - "api/admin/user"
-      description: "Deletes the 'adminuser' entity with the specified id if it exists."
+      description: "Deletes the 'AdminUser' entity with the specified id if it exists."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -114,22 +152,100 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/RestResponse"
+            $ref: "#/definitions/AdminUser"
+  /api/secure/application/{id}/apikey:
+    post:
+      tags:
+      - "api/secure/application"
+      description: "Creates API key for ApiUser (with optional AWS API Gateway usage\
+        \ plan ID)."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The user ID"
+        required: true
+        type: "string"
+      - name: "usagePlanId"
+        in: "query"
+        description: "Optional AWS API Gateway usage plan ID."
+        required: false
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiUser"
+  /api/secure/application/{id}/apikey/{apiKeyId}:
+    delete:
+      tags:
+      - "api/secure/application"
+      description: "Deletes API key for ApiUser."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The user ID."
+        required: true
+        type: "string"
+      - name: "apiKeyId"
+        in: "path"
+        description: "The ID of the API key."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiUser"
+  /api/secure/application/fromtoken:
+    get:
+      tags:
+      - "api/secure/application"
+      description: "Retrieves an ApiUser entity using an Auth0 access token passed\
+        \ in an Authorization header."
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiUser"
+  /api/secure/application/verification-email:
+    get:
+      tags:
+      - "api/secure/application"
+      description: "Triggers a job to resend the Auth0 verification email."
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Job"
   /api/secure/application:
     get:
       tags:
       - "api/secure/application"
-      description: "Gets a list of all 'apiuser' entities."
+      description: "Gets a list of all 'ApiUser' entities."
+      produces:
+      - "application/json"
       parameters: []
       responses:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/ApiUser"
+            $ref: "#/definitions/ApiUser[]"
     post:
       tags:
       - "api/secure/application"
-      description: "Creates a 'apiuser' entity."
+      description: "Creates a 'ApiUser' entity."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
       parameters:
       - in: "body"
         description: "Body object description"
@@ -141,19 +257,14 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ApiUser"
-    options:
-      tags:
-      - "api/secure/application"
-      parameters: []
-      responses:
-        "200":
-          description: "successful operation"
   /api/secure/application/{id}:
     get:
       tags:
       - "api/secure/application"
-      description: "Returns a 'apiuser' entity with the specified id, or 404 if not\
-        \ found."
+      description: "Returns the 'ApiUser' entity with the specified id, or 404 if\
+        \ not found."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -168,8 +279,12 @@ paths:
     put:
       tags:
       - "api/secure/application"
-      description: "Updates and returns the 'apiuser' entity with the specified id,\
+      description: "Updates and returns the 'ApiUser' entity with the specified id,\
         \ or 404 if not found."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -189,7 +304,9 @@ paths:
     delete:
       tags:
       - "api/secure/application"
-      description: "Deletes the 'apiuser' entity with the specified id if it exists."
+      description: "Deletes the 'ApiUser' entity with the specified id if it exists."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -200,22 +317,28 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/RestResponse"
+            $ref: "#/definitions/ApiUser"
   /api/secure/monitoredtrip:
     get:
       tags:
       - "api/secure/monitoredtrip"
-      description: "Gets a list of all 'monitoredtrip' entities."
+      description: "Gets a list of all 'MonitoredTrip' entities."
+      produces:
+      - "application/json"
       parameters: []
       responses:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/MonitoredTrip"
+            $ref: "#/definitions/MonitoredTrip[]"
     post:
       tags:
       - "api/secure/monitoredtrip"
-      description: "Creates a 'monitoredtrip' entity."
+      description: "Creates a 'MonitoredTrip' entity."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
       parameters:
       - in: "body"
         description: "Body object description"
@@ -227,19 +350,14 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/MonitoredTrip"
-    options:
-      tags:
-      - "api/secure/monitoredtrip"
-      parameters: []
-      responses:
-        "200":
-          description: "successful operation"
   /api/secure/monitoredtrip/{id}:
     get:
       tags:
       - "api/secure/monitoredtrip"
-      description: "Returns a 'monitoredtrip' entity with the specified id, or 404\
+      description: "Returns the 'MonitoredTrip' entity with the specified id, or 404\
         \ if not found."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -254,8 +372,12 @@ paths:
     put:
       tags:
       - "api/secure/monitoredtrip"
-      description: "Updates and returns the 'monitoredtrip' entity with the specified\
+      description: "Updates and returns the 'MonitoredTrip' entity with the specified\
         \ id, or 404 if not found."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -275,8 +397,10 @@ paths:
     delete:
       tags:
       - "api/secure/monitoredtrip"
-      description: "Deletes the 'monitoredtrip' entity with the specified id if it\
+      description: "Deletes the 'MonitoredTrip' entity with the specified id if it\
         \ exists."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -287,41 +411,94 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/RestResponse"
+            $ref: "#/definitions/MonitoredTrip"
+  /api/secure/triprequests:
+    get:
+      tags:
+      - "api/secure/triprequests"
+      description: "Gets a list of all trip requests for a user."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "userId"
+        in: "query"
+        description: "The OTP user for which to retrieve trip requests."
+        required: false
+        type: "string"
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of trip requests to return,\
+          \ starting from the most recent."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "fromDate"
+        in: "query"
+        description: "If specified, the earliest date (format yyyy-MM-dd) for which\
+          \ trip requests are retrieved."
+        required: false
+        type: "string"
+        default: "The current date"
+        pattern: "yyyy-MM-dd"
+      - name: "toDate"
+        in: "query"
+        description: "If specified, the latest date (format yyyy-MM-dd) for which\
+          \ usage logs are retrieved."
+        required: false
+        type: "string"
+        default: "The current date"
+        pattern: "yyyy-MM-dd"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/TripRequest"
   /api/secure/user/fromtoken:
     get:
       tags:
       - "api/secure/user"
       description: "Retrieves an OtpUser entity using an Auth0 access token passed\
         \ in an Authorization header."
+      produces:
+      - "application/json"
       parameters: []
       responses:
         "200":
           description: "successful operation"
           schema:
             $ref: "#/definitions/OtpUser"
-    options:
+  /api/secure/user/verification-email:
+    get:
       tags:
       - "api/secure/user"
+      description: "Triggers a job to resend the Auth0 verification email."
       parameters: []
       responses:
         "200":
           description: "successful operation"
+          schema:
+            $ref: "#/definitions/Job"
   /api/secure/user:
     get:
       tags:
       - "api/secure/user"
-      description: "Gets a list of all 'otpuser' entities."
+      description: "Gets a list of all 'OtpUser' entities."
+      produces:
+      - "application/json"
       parameters: []
       responses:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/OtpUser"
+            $ref: "#/definitions/OtpUser[]"
     post:
       tags:
       - "api/secure/user"
-      description: "Creates a 'otpuser' entity."
+      description: "Creates a 'OtpUser' entity."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
       parameters:
       - in: "body"
         description: "Body object description"
@@ -333,19 +510,14 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/OtpUser"
-    options:
-      tags:
-      - "api/secure/user"
-      parameters: []
-      responses:
-        "200":
-          description: "successful operation"
   /api/secure/user/{id}:
     get:
       tags:
       - "api/secure/user"
-      description: "Returns a 'otpuser' entity with the specified id, or 404 if not\
-        \ found."
+      description: "Returns the 'OtpUser' entity with the specified id, or 404 if\
+        \ not found."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -360,8 +532,12 @@ paths:
     put:
       tags:
       - "api/secure/user"
-      description: "Updates and returns the 'otpuser' entity with the specified id,\
+      description: "Updates and returns the 'OtpUser' entity with the specified id,\
         \ or 404 if not found."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -381,7 +557,9 @@ paths:
     delete:
       tags:
       - "api/secure/user"
-      description: "Deletes the 'otpuser' entity with the specified id if it exists."
+      description: "Deletes the 'OtpUser' entity with the specified id if it exists."
+      produces:
+      - "application/json"
       parameters:
       - name: "id"
         in: "path"
@@ -392,25 +570,117 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/RestResponse"
+            $ref: "#/definitions/OtpUser"
+  /api/secure/logs:
+    get:
+      tags:
+      - "api/secure/logs"
+      description: "Gets a list of all API usage logs."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "keyId"
+        in: "query"
+        description: "If specified, restricts the search to the specified AWS API\
+          \ key ID."
+        required: false
+        type: "string"
+      - name: "startDate"
+        in: "query"
+        description: "If specified, the earliest date (format yyyy-MM-dd) for which\
+          \ usage logs are retrieved."
+        required: false
+        type: "string"
+        default: "30 days prior to the current date"
+        pattern: "yyyy-MM-dd"
+      - name: "endDate"
+        in: "query"
+        description: "If specified, the latest date (format yyyy-MM-dd) for which\
+          \ usage logs are retrieved."
+        required: false
+        type: "string"
+        default: "The current date"
+        pattern: "yyyy-MM-dd"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiUsageResult"
+  /api/admin/bugsnag/eventsummary:
+    get:
+      tags:
+      - "api/admin/bugsnag/eventsummary"
+      description: "Gets a list of all Bugsnag event summaries."
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/BugsnagEvent"
+  /otp/*:
+    get:
+      tags:
+      - "otp"
+      description: "Forwards any GET request to OTP. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+        \ API documentation</a> for OTP's supported API resources."
+      produces:
+      - "application/json"
+      - "application/xml"
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
 definitions:
   AdminUser:
     type: "object"
-  RestResponse:
+  Job:
     type: "object"
     properties:
-      statusCode:
-        type: "integer"
-        format: "int32"
-      body:
+      status:
+        type: "string"
+      type:
+        type: "string"
+      createdAt:
+        type: "string"
+        format: "date"
+      id:
+        type: "string"
+  AdminUser[]:
+    type: "object"
+  ApiKey:
+    type: "object"
+    properties:
+      keyId:
+        type: "string"
+      name:
+        type: "string"
+      value:
         type: "string"
   ApiUser:
     type: "object"
     properties:
-      apiKeyIds:
+      apiKeys:
         type: "array"
         items:
-          type: "string"
+          $ref: "#/definitions/ApiKey"
+      appName:
+        type: "string"
+      appPurpose:
+        type: "string"
+      appUrl:
+        type: "string"
+      company:
+        type: "string"
+      hasConsentedToTerms:
+        type: "boolean"
+      name:
+        type: "string"
+  ApiUser[]:
+    type: "object"
+  MonitoredTrip[]:
+    type: "object"
   Price:
     type: "object"
     properties:
@@ -721,6 +991,19 @@ definitions:
         type: "string"
       routeLongName:
         type: "string"
+  TripRequest:
+    type: "object"
+    properties:
+      userId:
+        type: "string"
+      batchId:
+        type: "string"
+      fromPlace:
+        type: "string"
+      toPlace:
+        type: "string"
+      queryParams:
+        type: "string"
   UserLocation:
     type: "object"
     properties:
@@ -755,6 +1038,66 @@ definitions:
           $ref: "#/definitions/UserLocation"
       storeTripHistory:
         type: "boolean"
+      applicationId:
+        type: "string"
+  OtpUser[]:
+    type: "object"
+  GetUsageResult:
+    type: "object"
+    properties:
+      usagePlanId:
+        type: "string"
+      startDate:
+        type: "string"
+      endDate:
+        type: "string"
+      position:
+        type: "string"
+      items:
+        $ref: "#/definitions/Map"
+  ApiUsageResult:
+    type: "object"
+    properties:
+      result:
+        $ref: "#/definitions/GetUsageResult"
+      apiUsers:
+        $ref: "#/definitions/Map"
+  App:
+    type: "object"
+    properties:
+      releaseStage:
+        type: "string"
+  BugsnagEvent:
+    type: "object"
+    properties:
+      eventDataId:
+        type: "string"
+      projectId:
+        type: "string"
+      errorId:
+        type: "string"
+      receivedAt:
+        type: "string"
+        format: "date"
+      exceptions:
+        type: "array"
+        items:
+          $ref: "#/definitions/EventException"
+      severity:
+        type: "string"
+      context:
+        type: "string"
+      unhandled:
+        type: "boolean"
+      app:
+        $ref: "#/definitions/App"
+  EventException:
+    type: "object"
+    properties:
+      errorClass:
+        type: "string"
+      message:
+        type: "string"
 externalDocs:
   description: ""
   url: ""

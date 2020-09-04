@@ -11,8 +11,8 @@ import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.utils.ConfigUtils.DEFAULT_ENV;
 
 /**
- * This abstract class is used to start a test instance of otp-middleware that other tests can use to perform
- * various tests.
+ * This abstract class is used to start a test instance of otp-middleware that other tests can use to perform various
+ * tests.
  */
 public abstract class OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(OtpMiddlewareTest.class);
@@ -25,7 +25,7 @@ public abstract class OtpMiddlewareTest {
      * method to be invoked before all other tests.)
      */
     @BeforeAll
-    public static void setUp() throws RuntimeException, IOException {
+    public static void setUp() throws RuntimeException, IOException, InterruptedException {
         if (setUpIsDone) {
             return;
         }

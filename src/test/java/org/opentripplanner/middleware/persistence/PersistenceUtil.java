@@ -16,6 +16,9 @@ import org.opentripplanner.middleware.otp.response.Response;
 import java.io.IOException;
 import java.util.*;
 
+import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
+import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
+
 /**
  * Utility class to aid with creating and storing objects in Mongo.
  */

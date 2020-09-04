@@ -54,4 +54,8 @@ public class Model implements Serializable {
     public int hashCode() {
         return Objects.hash(id);
     }
+
+    public boolean delete() throws Exception {
+        return false;
+    }
 }

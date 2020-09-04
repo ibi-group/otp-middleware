@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.auth;
 import com.auth0.json.auth.TokenHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
@@ -20,7 +21,7 @@ public class Auth0UsersTest extends OtpMiddlewareTest {
     private static ObjectMapper mapper = new ObjectMapper();
 
     @BeforeAll
-    public static void setUp() throws IOException {
+    public static void setUp() throws IOException, InterruptedException {
         OtpMiddlewareTest.setUp();
         LOG.info("Setting up Auth0UsersTest");
         // Construct simplified token POJO that just contains expiration duration in seconds (one day).
@@ -29,6 +30,13 @@ public class Auth0UsersTest extends OtpMiddlewareTest {
         TokenHolder tokenHolder = mapper.treeToValue(fakeToken, TokenHolder.class);
         // Set new cached token.
         Auth0Users.setCachedToken(new TokenCache(tokenHolder));
+    }
+
+    @AfterAll
+    public static void tearDown() throws IOException {
+        LOG.info("Clearing Auth0UsersTest fake token");
+        // Set new cached token.
+        Auth0Users.setCachedToken(null);
     }
 
     /**

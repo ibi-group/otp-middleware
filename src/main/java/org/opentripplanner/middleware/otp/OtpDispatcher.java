@@ -32,7 +32,7 @@ public class OtpDispatcher {
      */
     public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
 
-    private static String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
+    public static String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
 
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 

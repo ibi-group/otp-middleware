@@ -5,15 +5,16 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
 
+import java.util.Arrays;
 import java.util.List;
 
+import static java.util.stream.Collectors.joining;
 import static spark.Spark.halt;
 
 public class JsonUtils {
@@ -45,20 +46,16 @@ public class JsonUtils {
         logMessageAndHalt(request, statusCode, message, null);
     }
 
-    /** Utility method to parse generic object from Spark request body. */
-    public static <T> T getPOJOFromRequestBody(Request req, Class<T> clazz) {
-        try {
-            // This Gson call throws an error processing OTP itineraries sent from saving a trip.
-            //     gson.fromJson(req.body(), clazz);
-            // Jackson seems to process those objects correctly.
-            return mapper.readValue(req.body(), clazz);
-        } catch (JsonProcessingException e) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for " + clazz.getSimpleName(), e);
-        }
-        return null;
+    /**
+     * Utility method to parse generic object from Spark request body.
+     */
+    public static <T> T getPOJOFromRequestBody(Request req, Class<T> clazz) throws JsonProcessingException {
+        return mapper.readValue(req.body(), clazz);
     }
 
-    /** Utility method to parse generic object from JSON String. */
+    /**
+     * Utility method to parse generic object from JSON String.
+     */
     public static <T> T getPOJOFromJSON(String json, Class<T> clazz) {
         try {
             return mapper.readValue(json, clazz);
@@ -90,9 +87,8 @@ public class JsonUtils {
     }
 
     /**
-     * Wrapper around Spark halt method that formats message as JSON using {@link #formatJSON}.
-     * Extra logic occurs for when the status code is >= 500.  A Bugsnag report is created if
-     * Bugsnag is configured.
+     * Wrapper around Spark halt method that formats message as JSON using {@link #formatJSON}. Extra logic occurs for
+     * when the status code is >= 500.  A Bugsnag report is created if Bugsnag is configured.
      */
     public static void logMessageAndHalt(
         Request request,
@@ -100,9 +96,20 @@ public class JsonUtils {
         String message,
         Exception e
     ) throws HaltException {
+        int index = e == null ? 3 : 2;
         // Note that halting occurred, also print error stacktrace if applicable
-        if (e != null) e.printStackTrace();
-        LOG.error("Halting {} with status code {}.  Error message: {}", request.uri(), statusCode, message);
+        LOG.error(
+            "Halting {} with status code {}.  Error message: {}\n halt originated at {}",
+            request != null ? request.uri() : "[unknown URI]",
+            statusCode,
+            message,
+            // Log a stack trace for the method calling logMessageAndHalt.
+            Arrays.stream(Thread.currentThread().getStackTrace())
+                .map(StackTraceElement::toString)
+                .limit(8)
+                .collect(joining("\n")),
+            e
+        );
 
         if (statusCode >= 500) {
             BugsnagReporter.reportErrorToBugsnag(message, e);
@@ -122,7 +129,7 @@ public class JsonUtils {
     /**
      * Constructs a JSON string containing the provided key/value pair.
      */
-    public static String formatJSON (String key, String value) {
+    public static String formatJSON(String key, String value) {
         return mapper.createObjectNode()
             .put(key, value)
             .toString();
@@ -139,5 +146,12 @@ public class JsonUtils {
             .put("message", message)
             .put("code", code)
             .put("detail", detail);
+    }
+
+    /**
+     * Get a single node value from JSON if present, else return null
+     */
+    public static String getSingleNodeValueFromJSON(String nodeName, String json) throws JsonProcessingException {
+        return mapper.readTree(json).get(nodeName).textValue();
     }
 }

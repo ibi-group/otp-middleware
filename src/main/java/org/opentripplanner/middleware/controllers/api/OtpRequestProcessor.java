@@ -1,29 +1,39 @@
-package org.opentripplanner.middleware.otp;
+package org.opentripplanner.middleware.controllers.api;
 
+import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.OtpDispatcher;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
-import spark.Service;
 
+import java.util.List;
+
+import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.APPLICATION_XML;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_API_ROOT;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Responsible for getting a response from OTP based on the parameters provided by the requester. If the target service
- * is of interest the response is intercepted and processed. In all cases, the response from OTP (content and HTTP status)
- * is passed back to the requester.
+ * is of interest the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
+ * status) is passed back to the requester.
  */
-public class OtpRequestProcessor {
+public class OtpRequestProcessor implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
 
     /**
@@ -34,20 +44,39 @@ public class OtpRequestProcessor {
     /**
      * Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse}
      */
-    private static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
+    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
 
     /**
      * Endpoint for the OTP Middleware's OTP proxy
      */
-    private static final String OTP_PROXY_ENDPOINT = "/otp";
+    public static final String OTP_PROXY_ENDPOINT = "/otp";
+    /**
+     * URL to OTP's documentation.
+     */
+    private static final String OTP_DOC_URL = "http://otp-docs.ibi-transit.com/api/index.html";
+    /**
+     * Text that links to OTP's documentation for more info.
+     */
+    private static final String OTP_DOC_LINK = String.format(
+        "Refer to <a href='%s'>OTP's API documentation</a> for OTP's supported API resources.",
+        OTP_DOC_URL
+    );
 
     /**
      * Register http endpoint with {@link spark.Spark} instance based on the OTP root endpoint. An OTP root endpoint is
      * required to distinguish between OTP and other middleware requests.
      */
-    public static void register(Service spark) {
-        // available at http://localhost:4567/otp/*
-        spark.get(OTP_PROXY_ENDPOINT + "/*", OtpRequestProcessor::proxy);
+    @Override
+    public void bind(final SparkSwagger restApi) {
+        restApi.endpoint(
+            endpointPath(OTP_PROXY_ENDPOINT).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_LINK),
+            HttpUtils.NO_FILTER
+        ).get(
+            path("/*")
+                .withDescription("Forwards any GET request to OTP. " + OTP_DOC_LINK)
+                .withProduces(List.of(APPLICATION_JSON, APPLICATION_XML)),
+            OtpRequestProcessor::proxy
+        );
     }
 
     /**
@@ -63,6 +92,7 @@ public class OtpRequestProcessor {
         }
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replace(OTP_PROXY_ENDPOINT, "");
+
         // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
