@@ -21,8 +21,10 @@ import java.net.http.HttpResponse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.isEndToEndAndAuthIsDisabled;
+import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.auth.Auth0Connection.getDefaultAuthDisabled;
+import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 
@@ -45,11 +47,12 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException {
-        // Load config before checking if tests should run (otherwise authDisabled will always evaluate to false).
+        setAuthDisabled(true);
+        // Load config before checking if tests should run.
         OtpMiddlewareTest.setUp();
         // TODO: It might be useful to allow this to run without DISABLE_AUTH set to true (in an end-to-end environment
         //  using real tokens from Auth0.
-        assumeTrue(isEndToEndAndAuthIsDisabled());
+        assumeTrue(isEndToEnd());
         apiUser = PersistenceUtil.createApiUser("test@example.com");
         adminUser = PersistenceUtil.createAdminUser("test@example.com");
     }
@@ -59,7 +62,8 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(isEndToEndAndAuthIsDisabled());
+        assumeTrue(isEndToEnd());
+        setAuthDisabled(getDefaultAuthDisabled());
         // Delete admin user.
         Persistence.adminUsers.removeById(adminUser.id);
         // Refresh api keys for user.

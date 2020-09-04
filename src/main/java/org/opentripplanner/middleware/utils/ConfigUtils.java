@@ -148,7 +148,7 @@ public class ConfigUtils {
             String string = getConfigPropertyAsText(name);
             value = Integer.parseInt(string);
         } catch (NumberFormatException | NullPointerException e) {
-            LOG.error("Unable to parse {}. Using default: {}", name, defaultValue, e);
+            LOG.warn("Unable to parse {}. Using default: {}", name, defaultValue);
         }
         return value;
     }

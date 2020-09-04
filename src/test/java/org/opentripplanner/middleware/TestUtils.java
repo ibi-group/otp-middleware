@@ -2,6 +2,7 @@ package org.opentripplanner.middleware;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
@@ -20,7 +21,6 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
@@ -44,8 +44,8 @@ public class TestUtils {
     /**
      * Helper method to determine if end to end is enabled and auth is disabled. (Used for checking if tests should run.)
      */
-    public static boolean isEndToEndAndAuthIsDisabled() {
-        return getBooleanEnvVar("RUN_E2E") && authDisabled();
+    public static boolean isEndToEnd() {
+        return getBooleanEnvVar("RUN_E2E");
     }
 
     /**
@@ -79,7 +79,7 @@ public class TestUtils {
         HashMap<String, String> headers = new HashMap<>();
         // If auth is disabled, simply place the Auth0 user ID in the authorization header, which will be extracted from
         // the request when received.
-        if ("true".equals(getConfigPropertyAsText("DISABLE_AUTH"))) {
+        if (Auth0Connection.isAuthDisabled()) {
             headers.put("Authorization", requestingUser.auth0UserId);
         } else {
             // Otherwise, get a valid oauth token for the user
