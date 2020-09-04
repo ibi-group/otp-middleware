@@ -55,13 +55,22 @@ public class ApiUserFlowTest {
     private static OtpUser otpUser;
 
     /**
+     * Whether tests for this class should run. End to End must be enabled and Auth must NOT be disabled. This should be
+     * evaluated after the middleware application starts up (to ensure default disableAuth value has been applied from
+     * config).
+     */
+    private static boolean testsShouldRun() {
+        return isEndToEnd() && !isAuthDisabled();
+    }
+
+    /**
      * Create an {@link ApiUser} and an {@link AdminUser} prior to unit tests
      */
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException, CreateApiKeyException {
         // Load config before checking if tests should run.
         OtpMiddlewareTest.setUp();
-        assumeTrue(isEndToEnd() && isAuthDisabled());
+        assumeTrue(testsShouldRun());
         // Mock the OTP server TODO: Run a live OTP instance?
         TestUtils.mockOtpServer();
         // As a pre-condition, create an API User with API key.
@@ -92,7 +101,7 @@ public class ApiUserFlowTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(isEndToEnd());
+        assumeTrue(testsShouldRun());
         apiUser = Persistence.apiUsers.getById(apiUser.id);
         if (apiUser != null) apiUser.delete();
         otpUser = Persistence.otpUsers.getById(otpUser.id);
@@ -105,8 +114,6 @@ public class ApiUserFlowTest {
      */
     @Test
     public void canSimulateApiUserFlow() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
-
         // create otp user as api user
         HttpResponse<String> createUserResponse = mockAuthenticatedPost("api/secure/user",
             apiUser,
