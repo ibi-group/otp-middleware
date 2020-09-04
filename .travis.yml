@@ -16,13 +16,7 @@ install: true
 before_script:
 - yarn global add @conveyal/maven-semantic-release semantic-release@15
 # Create AWS credentials file (required for E2E tests).
-- |
-  mkdir -p ~/.aws
-  cat > ~/.aws/credentials << EOL
-  [default]
-  aws_access_key_id = ${AWS_ACCESS_KEY_ID}
-  aws_secret_access_key = ${AWS_SECRET_ACCESS_KEY}
-  EOL
+- ./add_aws_credentials.sh
 script:
 # Package app and run unit tests.
 - mvn package
