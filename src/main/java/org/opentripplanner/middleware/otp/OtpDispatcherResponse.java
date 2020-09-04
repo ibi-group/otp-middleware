@@ -19,7 +19,7 @@ public class OtpDispatcherResponse implements Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcherResponse.class);
 
     /** Empty constructor used for testing */
-    private OtpDispatcherResponse() {}
+    public OtpDispatcherResponse() {}
 
     public OtpDispatcherResponse(HttpResponse<String> otpResponse) {
         requestUri = otpResponse.uri();

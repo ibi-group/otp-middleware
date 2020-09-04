@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
