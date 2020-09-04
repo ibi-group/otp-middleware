@@ -453,6 +453,43 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/TripRequest"
+  /api/secure/user/{id}/verify_sms:
+    get:
+      tags:
+      - "api/secure/user"
+      description: "Request an SMS verification to be sent to an OtpUser's phone number."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the OtpUser."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/VerificationResult"
+  /api/secure/user/api/secure/user/{id}/verify_sms/{code}:
+    post:
+      tags:
+      - "api/secure/user"
+      description: "Verify an OtpUser's phone number with a verification code."
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the OtpUser."
+        required: true
+        type: "string"
+      - name: "code"
+        in: "path"
+        description: "The SMS verification code."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/VerificationResult"
   /api/secure/user/fromtoken:
     get:
       tags:
@@ -681,67 +718,6 @@ definitions:
     type: "object"
   MonitoredTrip[]:
     type: "object"
-  Price:
-    type: "object"
-    properties:
-      currency:
-        $ref: "#/definitions/Currency"
-      cents:
-        type: "integer"
-        format: "int32"
-  Currency:
-    type: "object"
-    properties:
-      symbol:
-        type: "string"
-      currency:
-        type: "string"
-      defaultFractionDigits:
-        type: "integer"
-        format: "int32"
-      currencyCode:
-        type: "string"
-  Itinerary:
-    type: "object"
-    properties:
-      duration:
-        type: "integer"
-        format: "int64"
-      startTime:
-        type: "string"
-        format: "date"
-      endTime:
-        type: "string"
-        format: "date"
-      walkTime:
-        type: "integer"
-        format: "int64"
-      transitTime:
-        type: "integer"
-        format: "int64"
-      waitingTime:
-        type: "integer"
-        format: "int64"
-      walkDistance:
-        type: "number"
-        format: "double"
-      walkLimitExceeded:
-        type: "boolean"
-      elevationLost:
-        type: "number"
-        format: "double"
-      elevationGained:
-        type: "number"
-        format: "double"
-      transfers:
-        type: "integer"
-        format: "int32"
-      fare:
-        $ref: "#/definitions/FareWrapper"
-      legs:
-        type: "array"
-        items:
-          $ref: "#/definitions/Leg"
   EncodedPolyline:
     type: "object"
     properties:
@@ -779,24 +755,6 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/FareComponent"
-  FareComponent:
-    type: "object"
-    properties:
-      fareId:
-        type: "string"
-      price:
-        $ref: "#/definitions/Price"
-      routes:
-        type: "array"
-        items:
-          type: "string"
-  FareWrapper:
-    type: "object"
-    properties:
-      fare:
-        $ref: "#/definitions/Fare"
-      details:
-        $ref: "#/definitions/FareDetails"
   Step:
     type: "object"
     properties:
@@ -821,83 +779,6 @@ definitions:
       lat:
         type: "number"
         format: "double"
-  Place:
-    type: "object"
-    properties:
-      name:
-        type: "string"
-      lon:
-        type: "number"
-        format: "double"
-      lat:
-        type: "number"
-        format: "double"
-      departure:
-        type: "string"
-        format: "date"
-      orig:
-        type: "string"
-      vertexType:
-        type: "string"
-      stopId:
-        type: "string"
-      arrival:
-        type: "string"
-        format: "date"
-      stopIndex:
-        type: "integer"
-        format: "int32"
-      stopSequence:
-        type: "integer"
-        format: "int32"
-      stopCode:
-        type: "string"
-      platformCode:
-        type: "string"
-      zoneId:
-        type: "string"
-      bikeShareId:
-        type: "string"
-      networks:
-        type: "array"
-        items:
-          type: "string"
-      address:
-        type: "string"
-  MonitoredTrip:
-    type: "object"
-    properties:
-      userId:
-        type: "string"
-      tripName:
-        type: "string"
-      tripTime:
-        type: "string"
-      leadTimeInMinutes:
-        type: "integer"
-        format: "int32"
-      monday:
-        type: "boolean"
-      tuesday:
-        type: "boolean"
-      wednesday:
-        type: "boolean"
-      thursday:
-        type: "boolean"
-      friday:
-        type: "boolean"
-      saturday:
-        type: "boolean"
-      sunday:
-        type: "boolean"
-      excludeFederalHolidays:
-        type: "boolean"
-      isActive:
-        type: "boolean"
-      queryParams:
-        type: "string"
-      itinerary:
-        $ref: "#/definitions/Itinerary"
   Fare:
     type: "object"
     properties:
@@ -991,6 +872,192 @@ definitions:
         type: "string"
       routeLongName:
         type: "string"
+      alerts:
+        type: "array"
+        items:
+          $ref: "#/definitions/LocalizedAlert"
+  Price:
+    type: "object"
+    properties:
+      currency:
+        $ref: "#/definitions/Currency"
+      cents:
+        type: "integer"
+        format: "int32"
+  Currency:
+    type: "object"
+    properties:
+      symbol:
+        type: "string"
+      currency:
+        type: "string"
+      defaultFractionDigits:
+        type: "integer"
+        format: "int32"
+      currencyCode:
+        type: "string"
+  Itinerary:
+    type: "object"
+    properties:
+      duration:
+        type: "integer"
+        format: "int64"
+      startTime:
+        type: "string"
+        format: "date"
+      endTime:
+        type: "string"
+        format: "date"
+      walkTime:
+        type: "integer"
+        format: "int64"
+      transitTime:
+        type: "integer"
+        format: "int64"
+      waitingTime:
+        type: "integer"
+        format: "int64"
+      walkDistance:
+        type: "number"
+        format: "double"
+      walkLimitExceeded:
+        type: "boolean"
+      elevationLost:
+        type: "number"
+        format: "double"
+      elevationGained:
+        type: "number"
+        format: "double"
+      transfers:
+        type: "integer"
+        format: "int32"
+      fare:
+        $ref: "#/definitions/FareWrapper"
+      legs:
+        type: "array"
+        items:
+          $ref: "#/definitions/Leg"
+  FareComponent:
+    type: "object"
+    properties:
+      fareId:
+        type: "string"
+      price:
+        $ref: "#/definitions/Price"
+      routes:
+        type: "array"
+        items:
+          type: "string"
+  FareWrapper:
+    type: "object"
+    properties:
+      fare:
+        $ref: "#/definitions/Fare"
+      details:
+        $ref: "#/definitions/FareDetails"
+  Place:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      lon:
+        type: "number"
+        format: "double"
+      lat:
+        type: "number"
+        format: "double"
+      departure:
+        type: "string"
+        format: "date"
+      orig:
+        type: "string"
+      vertexType:
+        type: "string"
+      stopId:
+        type: "string"
+      arrival:
+        type: "string"
+        format: "date"
+      stopIndex:
+        type: "integer"
+        format: "int32"
+      stopSequence:
+        type: "integer"
+        format: "int32"
+      stopCode:
+        type: "string"
+      platformCode:
+        type: "string"
+      zoneId:
+        type: "string"
+      bikeShareId:
+        type: "string"
+      networks:
+        type: "array"
+        items:
+          type: "string"
+      address:
+        type: "string"
+  LocalizedAlert:
+    type: "object"
+    properties:
+      alertHeaderText:
+        type: "string"
+      alertDescriptionText:
+        type: "string"
+      alertUrl:
+        type: "string"
+      effectiveStartDate:
+        type: "string"
+        format: "date"
+  MonitoredTrip:
+    type: "object"
+    properties:
+      userId:
+        type: "string"
+      tripName:
+        type: "string"
+      tripTime:
+        type: "string"
+      from:
+        $ref: "#/definitions/Place"
+      to:
+        $ref: "#/definitions/Place"
+      leadTimeInMinutes:
+        type: "integer"
+        format: "int32"
+      monday:
+        type: "boolean"
+      tuesday:
+        type: "boolean"
+      wednesday:
+        type: "boolean"
+      thursday:
+        type: "boolean"
+      friday:
+        type: "boolean"
+      saturday:
+        type: "boolean"
+      sunday:
+        type: "boolean"
+      excludeFederalHolidays:
+        type: "boolean"
+      isActive:
+        type: "boolean"
+      queryParams:
+        type: "string"
+      itinerary:
+        $ref: "#/definitions/Itinerary"
+      notifyOnAlert:
+        type: "boolean"
+      departureVarianceMinutesThreshold:
+        type: "integer"
+        format: "int32"
+      arrivalVarianceMinutesThreshold:
+        type: "integer"
+        format: "int32"
+      notifyOnItineraryChange:
+        type: "boolean"
   TripRequest:
     type: "object"
     properties:
@@ -1004,6 +1071,15 @@ definitions:
         type: "string"
       queryParams:
         type: "string"
+  VerificationResult:
+    type: "object"
+    properties:
+      sid:
+        type: "string"
+      status:
+        type: "string"
+      valid:
+        type: "boolean"
   UserLocation:
     type: "object"
     properties:
