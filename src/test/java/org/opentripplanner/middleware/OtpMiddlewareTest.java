@@ -37,7 +37,7 @@ public abstract class OtpMiddlewareTest {
         // TODO: When ran on Travis CI, this file will automatically be setup.
         String[] args;
         if (getBooleanEnvVar("RUN_E2E")) {
-            // If running E2E on CI, rely on system env variables. Otherwise, use env.yml
+            // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
             args = isRunningCi() ? new String[]{} : new String[]{"configurations/default/env.yml"};
         } else {
             // If not running E2E, use test env.yml.

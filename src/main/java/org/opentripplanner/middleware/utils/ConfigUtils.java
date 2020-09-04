@@ -48,9 +48,8 @@ public class ConfigUtils {
      */
     public static void loadConfig(String[] args) throws IOException {
         FileInputStream envConfigStream;
-        if (isRunningCi()) {
-            return;
-        }
+        // Check if running in Travis CI. If so, skip loading config (CI uses Travis environment variables).
+        if (isRunningCi()) return;
         if (args.length == 0) {
             LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
             envConfigStream = new FileInputStream(new File(DEFAULT_ENV));
@@ -83,6 +82,7 @@ public class ConfigUtils {
      * "data.use_s3_storage") in env.yml.
      */
     public static boolean hasConfigProperty(String name) {
+        // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
         if (isRunningCi()) return System.getenv(name) != null;
         // try the server config first, then the main config
         return hasConfigProperty(envConfig, name);
@@ -110,6 +110,7 @@ public class ConfigUtils {
      * Get a config property (nested fields defined by dot notation "data.use_s3_storage") as text.
      */
     public static String getConfigPropertyAsText(String name) {
+        // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
         if (isRunningCi()) return System.getenv(name);
         JsonNode node = getConfigProperty(name);
         if (node != null) {
@@ -125,6 +126,7 @@ public class ConfigUtils {
      * if the config value is not defined (null).
      */
     public static String getConfigPropertyAsText(String name, String defaultValue) {
+        // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
         if (isRunningCi()) {
             String value = System.getenv(name);
             return value == null ? defaultValue : value;
