@@ -24,7 +24,7 @@ import java.util.List;
 public class MonitoredTrip extends Model {
 
     /**
-     * Mongo Id of the {@link OtpUser} monitoring trip.
+     * Mongo Id of the {@link OtpUser} who owns this monitored trip.
      */
     public String userId;
 
@@ -114,13 +114,13 @@ public class MonitoredTrip extends Model {
 
     /**
      * Threshold in minutes for a departure time variance (absolute value) to trigger a notification.
-     * -1 indicates that notifications are not enabled.
+     * -1 indicates that a change in the departure time will not trigger a notification.
      */
     public int departureVarianceMinutesThreshold = 15;
 
     /**
      * Threshold in minutes for an arrival time variance (absolute value) to trigger a notification.
-     * -1 indicates that notifications are not enabled.
+     * -1 indicates that a change in the arrival time will not trigger a notification.
      */
     public int arrivalVarianceMinutesThreshold = 15;
 
@@ -136,12 +136,15 @@ public class MonitoredTrip extends Model {
         queryParams = otpDispatcherResponse.requestUri.getQuery();
         TripPlan plan = otpDispatcherResponse.getResponse().plan;
         itinerary = plan.itineraries.get(0);
-        from = plan.from;
-        to = plan.to;
-        // FIXME: Should we clear any realtime alerts/info here? How to handle trips planned with realtime enabled?
-        itinerary.clearAlerts();
-        // FIXME: set trip time other params?
-//        tripTime = otpDispatcherResponse.response.plan.date
+        initializeFromItinerary();
+    }
+
+    public void initializeFromItinerary() {
+        int lastLegIndex = itinerary.legs.size() - 1;
+        from = itinerary.legs.get(0).from;
+        to = itinerary.legs.get(lastLegIndex).to;
+        // Ensure the itinerary we store does not contain any realtime info.
+        clearRealtimeInfo();
     }
 
     public MonitoredTrip updateAllDaysOfWeek(boolean value) {

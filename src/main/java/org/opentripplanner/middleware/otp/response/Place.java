@@ -43,7 +43,8 @@ public class Place implements Cloneable {
         // FIXME account for slight stop repositioning by calculating equality based off of proximity to previous stop
         return lon.equals(place.lon) &&
             lat.equals(place.lat) &&
-            Objects.equals(name, place.name);
+            Objects.equals(stopId, place.stopId) &&
+            Objects.equals(vertexType, place.vertexType);
     }
 
     /**
@@ -53,7 +54,7 @@ public class Place implements Cloneable {
     @Override
     public int hashCode() {
         // FIXME account for slight stop repositioning by calculating hashCode based off of proximity to previous stop
-        return Objects.hash(lon, lat, name);
+        return Objects.hash(lon, lat, stopId, vertexType);
     }
 
     protected Place clone() throws CloneNotSupportedException {

@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.trip_monitor.jobs;
+package org.opentripplanner.middleware.tripMonitor.jobs;
 
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.slf4j.Logger;
@@ -8,7 +8,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.opentripplanner.middleware.trip_monitor.jobs.MonitorAllTripsJob.monitoredTripLocks;
+import static org.opentripplanner.middleware.tripMonitor.jobs.MonitorAllTripsJob.monitoredTripLocks;
 
 public class TripAnalyzer implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TripAnalyzer.class);

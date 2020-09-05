@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.trip_monitor.jobs;
+package org.opentripplanner.middleware.tripMonitor.jobs;
 
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 

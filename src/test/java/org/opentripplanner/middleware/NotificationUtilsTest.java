@@ -25,6 +25,7 @@ public class NotificationUtilsTest extends OtpMiddlewareTest {
 
     @BeforeAll
     public static void setup() {
+        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         // Note: In order to run the notification tests, these values must be provided in in system
         // environment variables, which can be defined in a run configuration in your IDE.
         String email = System.getenv("TEST_TO_EMAIL");
@@ -35,15 +36,14 @@ public class NotificationUtilsTest extends OtpMiddlewareTest {
 
     @Test
     public void canSendSparkpostEmailNotification() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
-        boolean success = NotificationUtils.sendEmail(user.email, "Hi there", "This is the body", null);
+        boolean success = NotificationUtils.sendEmailViaSparkpost(user.email, "Hi there", "This is the body", null);
         Assertions.assertTrue(success);
     }
 
     @Test
     public void canSendSendGridEmailNotification() {
         assumeTrue(getBooleanEnvVar("RUN_E2E"));
-        boolean success = NotificationUtils.sendSendGridEmail(
+        boolean success = NotificationUtils.sendEmailViaSendGrid(
             user.email,
             "Hi there",
             "This is the body",

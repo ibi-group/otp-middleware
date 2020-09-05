@@ -15,7 +15,7 @@ import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
 import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.trip_monitor.jobs.MonitorAllTripsJob;
+import org.opentripplanner.middleware.tripMonitor.jobs.MonitorAllTripsJob;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;

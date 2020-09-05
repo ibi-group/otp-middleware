@@ -68,7 +68,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
                     .withResponseType(VerificationResult.class),
                 this::sendVerificationText, JsonUtils::toJson
             )
-            .post(path(ROOT_ROUTE + ID_PATH + VERIFY_ROUTE + CODE_PATH)
+            .post(path(ID_PATH + VERIFY_ROUTE + CODE_PATH)
                     .withDescription("Verify an OtpUser's phone number with a verification code.")
                     .withPathParam().withName(ID_PARAM).withDescription("The id of the OtpUser.").and()
                     .withPathParam().withName(CODE_PARAM).withDescription("The SMS verification code.").and()
@@ -93,12 +93,10 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         OtpUser otpUser = getEntityForId(req, res);
         if (otpUser.phoneNumber == null) {
             logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "User must have valid phone number to verify.");
-            return null;
         }
         Verification verification = NotificationUtils.sendVerificationText(otpUser.phoneNumber);
         if (verification == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Unknown error sending verification text");
-            return null;
         }
         // Verification result will show "pending" status if verification text is successfully sent.
         return new VerificationResult(verification);
@@ -117,7 +115,6 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         }
         if (otpUser.phoneNumber == null) {
             logMessageAndHalt(req, 404, "User must have valid phone number for SMS verification.");
-            return null;
         }
         // Check verification code with SMS service.
         VerificationCheck check = NotificationUtils.checkSmsVerificationCode(otpUser.phoneNumber, code);
@@ -127,7 +124,6 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
                 "Unknown error encountered while checking SMS verification code"
             );
-            return null;
         }
         // If the check is successful, status will be "approved"
         return new VerificationResult(check);

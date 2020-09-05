@@ -1,8 +1,8 @@
 package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
-import org.opentripplanner.middleware.trip_monitor.jobs.CheckMonitoredTrip;
-import org.opentripplanner.middleware.trip_monitor.jobs.NotificationType;
+import org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip;
+import org.opentripplanner.middleware.tripMonitor.jobs.NotificationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +13,7 @@ import java.util.Set;
  * Contains information about the type and details of messages to be sent to users about their {@link MonitoredTrip}s.
  */
 public class TripMonitorNotification extends Model {
-    private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TripMonitorNotification.class);
     public NotificationType type;
     public String body;
 

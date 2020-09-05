@@ -26,12 +26,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
-        int lastLegIndex = monitoredTrip.itinerary.legs.size() - 1;
-        // Set some fields from the itinerary.
-        monitoredTrip.from = monitoredTrip.itinerary.legs.get(0).from;
-        monitoredTrip.to = monitoredTrip.itinerary.legs.get(lastLegIndex).to;
-        // Ensure the itinerary we store does not contain any realtime info.
-        monitoredTrip.clearRealtimeInfo();
+        monitoredTrip.initializeFromItinerary();
         return monitoredTrip;
     }
 

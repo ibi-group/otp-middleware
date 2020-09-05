@@ -469,7 +469,7 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/VerificationResult"
-  /api/secure/user/api/secure/user/{id}/verify_sms/{code}:
+  /api/secure/user/{id}/verify_sms/{code}:
     post:
       tags:
       - "api/secure/user"

@@ -98,6 +98,7 @@ public class NotificationUtils {
                 .create();
             return check;
         } catch (Exception e) {
+            // FIXME bugsnag
             LOG.error("Could not check status of SMS verification code", e);
             return null;
         }
@@ -107,7 +108,7 @@ public class NotificationUtils {
      * Send notification email using Sparkpost.
      * TODO: determine if we should use sparkpost or sendgrid.
      */
-    public static boolean sendEmail(String toEmail, String subject, String text, String html) {
+    public static boolean sendEmailViaSparkpost(String toEmail, String subject, String text, String html) {
         if (SPARKPOST_KEY == null || FROM_EMAIL == null) {
             LOG.error("Notifications disabled due to invalid config. Skipping message to {} SUBJECT: {}", toEmail, subject);
             return false;
@@ -129,7 +130,7 @@ public class NotificationUtils {
      * Send notification email using Sendgrid.
      * TODO: determine if we should use sparkpost or sendgrid.
      */
-    public static boolean sendSendGridEmail(String toEmail, String subject, String text, String html) {
+    public static boolean sendEmailViaSendGrid(String toEmail, String subject, String text, String html) {
         String SENDGRID_API_KEY = getConfigPropertyAsText("SENDGRID_API_KEY");
         if (SENDGRID_API_KEY == null || FROM_EMAIL == null) {
             LOG.error("Notifications disabled due to invalid config. Skipping message to {} SUBJECT: {}", toEmail, subject);

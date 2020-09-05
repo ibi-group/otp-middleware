@@ -3,7 +3,7 @@ package org.opentripplanner.middleware.models;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.trip_monitor.jobs.CheckMonitoredTrip;
+import org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.util.HashSet;

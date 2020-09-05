@@ -26,15 +26,8 @@ public class FileUtils {
     /**
      * Extract the file contents from the provided path and file name
      */
-    public static String getFileContents(String pathAndFileName) {
-        String fileContents = null;
-        try {
-            FileInputStream fileInputStream = new FileInputStream(pathAndFileName);
-            fileContents = IOUtils.toString(fileInputStream, "UTF-8");
-        } catch (IOException e) {
-            LOG.error("Error reading file at {}", pathAndFileName, e);
-        }
-
-        return fileContents;
+    public static String getFileContents(String pathAndFileName) throws IOException {
+        FileInputStream fileInputStream = new FileInputStream(pathAndFileName);
+        return IOUtils.toString(fileInputStream, "UTF-8");
     }
 }

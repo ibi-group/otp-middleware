@@ -1,8 +1,7 @@
-package org.opentripplanner.middleware.trip_monitor.jobs;
+package org.opentripplanner.middleware.tripMonitor.jobs;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.message.BasicNameValuePair;
 import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -33,8 +32,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.opentripplanner.middleware.trip_monitor.jobs.NotificationType.ARRIVAL_DELAY;
-import static org.opentripplanner.middleware.trip_monitor.jobs.NotificationType.DEPARTURE_DELAY;
+import static org.opentripplanner.middleware.tripMonitor.jobs.NotificationType.ARRIVAL_DELAY;
+import static org.opentripplanner.middleware.tripMonitor.jobs.NotificationType.DEPARTURE_DELAY;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
 
 /**
@@ -236,11 +235,12 @@ public class CheckMonitoredTrip implements Runnable {
                 success = NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString()) != null;
                 break;
             case "email":
-                success = NotificationUtils.sendEmail(otpUser.email, subject, body.toString(), null);
+                success = NotificationUtils.sendEmailViaSparkpost(otpUser.email, subject, body.toString(), null);
                 break;
             case "all":
-                NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString());
-                NotificationUtils.sendEmail(otpUser.email, subject, body.toString(), null);
+                // TOOD better handle below when one of the following fails
+                success = NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString()) != null &&
+                    NotificationUtils.sendEmailViaSparkpost(otpUser.email, subject, body.toString(), null);
                 break;
             default:
                 break;

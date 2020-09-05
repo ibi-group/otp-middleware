@@ -62,9 +62,6 @@ public class Leg implements Cloneable {
             mode.equals(leg.mode) &&
             from.equals(leg.from) &&
             to.equals(leg.to) &&
-            // FIXME account for slight changes to steps that are equivalently the same journey (eg some OSM editor
-            //   added sidewalks as separate ways that are now being used)
-            steps.equals(leg.steps) &&
             Objects.equals(rentedBike, leg.rentedBike) &&
             Objects.equals(rentedCar, leg.rentedCar) &&
             Objects.equals(rentedVehicle, leg.rentedVehicle) &&
@@ -87,9 +84,6 @@ public class Leg implements Cloneable {
             mode,
             from,
             to,
-            // FIXME account for slight changes to steps that are equivalently the same journey (eg some OSM editor
-            //   added sidewalks as separate ways that are now being used)
-            steps,
             rentedBike,
             rentedCar,
             rentedVehicle,
