@@ -3,15 +3,17 @@ package org.opentripplanner.middleware.otp.response;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Plan response, itinerary leg information. Produced using http://www.jsonschema2pojo.org/
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Leg {
+public class Leg implements Cloneable {
 
     public Date startTime;
     public Date endTime;
@@ -44,4 +46,65 @@ public class Leg {
     public List<EncodedPolyline> interStopGeometry = null;
     public String routeShortName;
     public String routeLongName;
+    public List<LocalizedAlert> alerts = null;
+
+    /**
+     * This method calculates equality in the context of trip monitoring in order to analyzing equality when
+     * checking if itineraries are the same.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Leg leg = (Leg) o;
+        return startTime.equals(leg.startTime) &&
+            endTime.equals(leg.endTime) &&
+            mode.equals(leg.mode) &&
+            from.equals(leg.from) &&
+            to.equals(leg.to) &&
+            Objects.equals(rentedBike, leg.rentedBike) &&
+            Objects.equals(rentedCar, leg.rentedCar) &&
+            Objects.equals(rentedVehicle, leg.rentedVehicle) &&
+            Objects.equals(hailedCar, leg.hailedCar) &&
+            Objects.equals(transitLeg, leg.transitLeg) &&
+            Objects.equals(routeType, leg.routeType) &&
+            Objects.equals(route, leg.route);
+        // also include headsign?
+    }
+
+    /**
+     * This method calculates equality in the context of trip monitoring in order to analyzing equality when
+     * checking if itineraries are the same.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+            startTime,
+            endTime,
+            mode,
+            from,
+            to,
+            rentedBike,
+            rentedCar,
+            rentedVehicle,
+            hailedCar,
+            transitLeg,
+            routeType,
+            route
+            // also include headsign?
+        );
+    }
+
+    @Override
+    protected Leg clone() throws CloneNotSupportedException {
+        Leg cloned = (Leg) super.clone();
+        cloned.from = this.from.clone();
+        cloned.to = this.to.clone();
+        cloned.steps = new ArrayList<>();
+        for (Step step : this.steps) {
+            cloned.steps.add(step.clone());
+        }
+        cloned.legGeometry = this.legGeometry.clone();
+        return cloned;
+    }
 }

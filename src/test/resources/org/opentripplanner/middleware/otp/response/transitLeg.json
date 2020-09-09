@@ -1,0 +1,79 @@
+{
+  "startTime": 1597106580000,
+  "endTime": 1597107180000,
+  "departureDelay": 0,
+  "arrivalDelay": 0,
+  "realTime": false,
+  "distance": 9727.083770078447,
+  "pathway": false,
+  "mode": "RAIL",
+  "route": "WES Commuter Rail",
+  "agencyName": "TriMet",
+  "agencyUrl": "https://trimet.org/",
+  "agencyTimeZoneOffset": -25200000,
+  "routeColor": "000000",
+  "routeType": 2,
+  "routeId": "TriMet:203",
+  "routeTextColor": "FFFFFF",
+  "interlineWithPreviousLeg": false,
+  "tripBlockId": "2840",
+  "headsign": "Beaverton",
+  "agencyId": "TRIMET",
+  "tripId": "TriMet:10122171",
+  "serviceDate": "20200810",
+  "from": {
+    "name": "Wilsonville WES Station",
+    "stopId": "TriMet:13070",
+    "stopCode": "13070",
+    "lon": -122.775303,
+    "lat": 45.311358,
+    "arrival": 1597106579000,
+    "departure": 1597106580000,
+    "zoneId": "R",
+    "stopIndex": 0,
+    "stopSequence": 1,
+    "vertexType": "TRANSIT",
+    "boardAlightType": "DEFAULT"
+  },
+  "to": {
+    "name": "Tualatin WES Station",
+    "stopId": "TriMet:13069",
+    "stopCode": "13069",
+    "lon": -122.764504,
+    "lat": 45.383621,
+    "arrival": 1597107180000,
+    "departure": 1597107181000,
+    "zoneId": "R",
+    "stopIndex": 1,
+    "stopSequence": 2,
+    "vertexType": "TRANSIT",
+    "boardAlightType": "DEFAULT"
+  },
+  "legGeometry": {
+    "points": "}zpsGhpjlVeC?uB?uE?K?_E?aA@gE?o@?s@By@DoALWDO@ODs@N]H[HWHWFSHSFYJQHWJWLUJQHUL_@ROJOHSLg@\\c@\\aAx@i@b@q@j@aCpBu@n@iB|A_@ZuC`CKLKHeDfCs@j@UPc@^qBbBy@r@eBxAiA`A]XqBdBMJa@\\WTg@b@e@d@_@`@ORg@j@U\\ORKLEHIHk@~@k@~@g@x@g@z@e@v@i@`A{AdCe@x@]j@Yf@Y`@c@p@U\\U\\Yb@a@p@yDrGMTOTQVMTe@n@UVQTSRQRURUPSPSNUPs@b@KFMFOHe@RSJa@La@No@R{Ab@mMtDsDhAsF~AoDbA_@J[HWFKB]FYDSBSBUBk@BS@U?U?U?]A]COA_@EOAWEk@KWE{A[wDy@qFiAw@Oa@IQCQCWEUEWCo@EWC[ASAi@A]?]?_@@]@[@S@WBUBo@F]FOBYDUFYFUF_@J_@J_D|@aBd@iBh@i@N[FOD[DSDSBQ@Q@U@U?U@WAWAWAYCYCUEKCMCYGWIa@MKEo@Wc@SSIiDyAiEiBiSuI}g@oTwCqAmAg@oAm@{BaAsD}Ae@SWKs@]i@WoAu@IE]Wi@_@[WWWc@_@a@a@UW[]m@s@g@q@U]Ya@U]Q]OUc@y@_@w@]u@g@mAy@wBEKwEcMkCeH]aAWu@IYI[IYI[I[I[G[G_@G[G_@E[G]E]C]E]Ea@C_@Ca@AYASCYKwBM{B]}G]yGO_DK{BUgEEk@Ee@Ks@Mu@Kk@Mg@IYM_@M_@Se@Sa@S_@Wc@SW]a@]_@[Y]WYSWMQKWK[KSG[Ik@Iq@E[AS?yF?U?kD?",
+    "length": 296
+  },
+  "interStopGeometry": [{
+    "points": "}zpsGhpjlVeC?uB?uE?K?_E?aA@gE?o@?s@By@DoALWDO@ODs@N]H[HWHWFSHSFYJQHWJWLUJQHUL_@ROJOHSLg@\\c@\\aAx@i@b@q@j@aCpBu@n@iB|A_@ZuC`CKLKHeDfCs@j@UPc@^qBbBy@r@eBxAiA`A]XqBdBMJa@\\WTg@b@e@d@_@`@ORg@j@U\\ORKLEHIHk@~@k@~@g@x@g@z@e@v@i@`A{AdCe@x@]j@Yf@Y`@c@p@U\\U\\Yb@a@p@yDrGMTOTQVMTe@n@UVQTSRQRURUPSPSNUPs@b@KFMFOHe@RSJa@La@No@R{Ab@mMtDsDhAsF~AoDbA_@J[HWFKB]FYDSBSBUBk@BS@U?U?U?]A]COA_@EOAWEk@KWE{A[wDy@qFiAw@Oa@IQCQCWEUEWCo@EWC[ASAi@A]?]?_@@]@[@S@WBUBo@F]FOBYDUFYFUF_@J_@J_D|@aBd@iBh@i@N[FOD[DSDSBQ@Q@U@U?U@WAWAWAYCYCUEKCMCYGWIa@MKEo@Wc@SSIiDyAiEiBiSuI}g@oTwCqAmAg@oAm@{BaAsD}Ae@SWKs@]i@WoAu@IE]Wi@_@[WWWc@_@a@a@UW[]m@s@g@q@U]Ya@U]Q]OUc@y@_@w@]u@g@mAy@wBEKwEcMkCeH]aAWu@IYI[IYI[I[I[G[G_@G[G_@E[G]E]C]E]Ea@C_@Ca@AYASCYKwBM{B]}G]yGO_DK{BUgEEk@Ee@Ks@Mu@Kk@Mg@IYM_@M_@Se@Sa@S_@Wc@SW]a@]_@[Y]WYSWMQKWK[KSG[Ik@Iq@E[AS?yF?U?kD?",
+    "length": 296
+  }],
+  "alerts": [{
+    "alertUrl": "http://trimet.org/alerts/",
+    "alertDescriptionText": "Due to COVID-19 service reductions, beginning Sunday, April 5th, trains will be running every 45 minutes. For arrivals and trip planning, see trimet.org.",
+    "effectiveStartDate": 1585879911000
+  }, {
+    "alertUrl": "http://trimet.org/health",
+    "alertDescriptionText": "A scarf, bandanna or fabric mask works, as long as it covers your nose and mouth.",
+    "effectiveStartDate": 1595845860000
+  }],
+  "routeLongName": "WES Commuter Rail",
+  "rentedBike": false,
+  "rentedCar": false,
+  "rentedVehicle": false,
+  "hailedCar": false,
+  "flexDrtAdvanceBookMin": 0,
+  "transitLeg": true,
+  "duration": 600,
+  "intermediateStops": [],
+  "steps": []
+}

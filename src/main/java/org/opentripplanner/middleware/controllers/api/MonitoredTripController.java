@@ -26,6 +26,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
+        monitoredTrip.initializeFromItinerary();
         return monitoredTrip;
     }
 

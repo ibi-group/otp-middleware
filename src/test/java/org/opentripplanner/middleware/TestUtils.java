@@ -14,6 +14,7 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
@@ -46,6 +47,13 @@ public class TestUtils {
     public static boolean getBooleanEnvVar(String var) {
         String variable = System.getenv(var);
         return variable != null && variable.equals("true");
+    }
+
+    public static <T> T getResourceFileContentsAsJSON (String resourcePathName, Class<T> clazz) throws IOException {
+        return FileUtils.getFileContentsAsJSON(
+            String.format("src/test/resources/org/opentripplanner/middleware/%s", resourcePathName),
+            clazz
+        );
     }
 
     /**
@@ -139,7 +147,7 @@ public class TestUtils {
     /**
      * Mock an OTP server plan response by provide a static response from file.
      */
-    private static String mockOtpPlanResponse(Request request, Response response) {
+    private static String mockOtpPlanResponse(Request request, Response response) throws IOException {
         final String filePath = "src/test/resources/org/opentripplanner/middleware/";
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
         otpDispatcherResponse.statusCode = HttpStatus.OK_200;

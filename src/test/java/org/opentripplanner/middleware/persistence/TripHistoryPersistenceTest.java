@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.persistence;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -11,10 +10,9 @@ import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
-import java.time.LocalDate;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
@@ -36,11 +34,6 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
     TripSummary tripSummary = null;
     List<TripRequest> tripRequests = null;
 
-    @BeforeAll
-    public static void setup() {
-        stagePlanResponses();
-    }
-
     @Test
     public void canCreateTripRequest() {
         String userId = "123456";
@@ -60,21 +53,21 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
     }
 
     @Test
-    public void canCreateTripSummaryWithError() {
+    public void canCreateTripSummaryWithError() throws IOException {
         tripSummary = createTripSummaryWithError();
         TripSummary retrieved = Persistence.tripSummaries.getById(tripSummary.id);
         assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
     }
 
     @Test
-    public void canCreateTripSummary() {
+    public void canCreateTripSummary() throws IOException {
         tripSummary = createTripSummary();
         TripSummary retrieved = Persistence.tripSummaries.getById(tripSummary.id);
         assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
     }
 
     @Test
-    public void canDeleteTripSummary() {
+    public void canDeleteTripSummary() throws IOException {
         TripSummary tripSummaryToDelete = createTripSummary();
         Persistence.tripSummaries.removeById(tripSummaryToDelete.id);
         TripSummary tripSummary = Persistence.tripSummaries.getById(tripSummaryToDelete.id);
@@ -126,7 +119,8 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
                 TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
                 Date.from(fromStartOfDay.atZone(DateTimeUtils.getSystemZoneId()).toInstant())
             ),
-            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
+            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id)
+        );
 
         List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
         assertEquals(result.size(), tripRequests.size());
@@ -149,7 +143,8 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
                 TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
                 Date.from(toEndOfDay.atZone(DateTimeUtils.getSystemZoneId()).toInstant())
             ),
-            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id));
+            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, user.id)
+        );
 
         List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, limit);
         assertEquals(result.size(), tripRequests.size());

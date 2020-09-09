@@ -1,8 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,18 +9,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import static org.opentripplanner.middleware.utils.YamlUtils.yamlMapper;
+
 /**
  * Util methods for obtaining information from the YAML configuration file for otp-middleware
  */
 public class ConfigUtils {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
 
-    private static final String DEFAULT_ENV = "configurations/default/env.yml";
+    public static final String DEFAULT_ENV = "configurations/default/env.yml";
 
     private static final String JAR_PREFIX = "otp-middleware-";
-
-    // ObjectMapper that loads in YAML config files
-    private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 
     private static JsonNode envConfig;
 
@@ -32,7 +29,6 @@ public class ConfigUtils {
      */
     public static void loadConfig(String[] args) throws IOException {
         FileInputStream envConfigStream;
-
         if (args.length == 0) {
             LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
             envConfigStream = new FileInputStream(new File(DEFAULT_ENV));
@@ -40,7 +36,6 @@ public class ConfigUtils {
             LOG.info("Loading env.yml: {}", args[0]);
             envConfigStream = new FileInputStream(new File(args[0]));
         }
-
         envConfig = yamlMapper.readTree(envConfigStream);
     }
 
@@ -119,9 +114,7 @@ public class ConfigUtils {
      * value if the config value is not defined (null) or cannot be converted to an int.
      */
     public static int getConfigPropertyAsInt(String name, int defaultValue) {
-
         int value = defaultValue;
-
         try {
             JsonNode node = getConfigProperty(name);
             value = Integer.parseInt(node.asText());

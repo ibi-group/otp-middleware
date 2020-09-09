@@ -13,7 +13,6 @@ import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
-import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -37,6 +36,11 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public class OtpRequestProcessor implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
 
+    /**
+     * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
+     * return OTP version info.
+     */
+    private static final String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
     /**
      * Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse}
      */
@@ -135,11 +139,8 @@ public class OtpRequestProcessor implements Endpoint {
         if (!storeTripHistory) {
             LOG.debug("User does not want trip history stored");
         } else {
-            // convert plan response into concrete POJOs
-            otpDispatcherResponse.response = JsonUtils.getPOJOFromJSON(otpDispatcherResponse.responseBody, Response.class);
-            LOG.debug("OTP server response as POJOs: {}", otpDispatcherResponse.response);
-
-            if (otpDispatcherResponse.response == null) {
+            Response otpResponse = otpDispatcherResponse.getResponse();
+            if (otpResponse == null) {
                 LOG.warn("OTP response is null, cannot save trip history for user!");
             } else {
                 TripRequest tripRequest = new TripRequest(profile.otpUser.id, batchId, request.queryParams("fromPlace"),
@@ -147,8 +148,7 @@ public class OtpRequestProcessor implements Endpoint {
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
                 if (tripRequestSaved) {
-                    TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan,
-                        otpDispatcherResponse.response.error, tripRequest.id);
+                    TripSummary tripSummary = new TripSummary(otpResponse.plan, otpResponse.error, tripRequest.id);
                     Persistence.tripSummaries.create(tripSummary);
                 } else {
                     LOG.warn("Unable to save trip request, orphaned trip summary not saved");

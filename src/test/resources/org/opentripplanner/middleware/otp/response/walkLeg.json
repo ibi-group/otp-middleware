@@ -1,0 +1,148 @@
+{
+  "startTime": 1597098240000,
+  "endTime": 1597098397000,
+  "departureDelay": 0,
+  "arrivalDelay": 0,
+  "realTime": false,
+  "distance": 177.43399999999997,
+  "pathway": false,
+  "mode": "WALK",
+  "route": "",
+  "agencyTimeZoneOffset": -25200000,
+  "interlineWithPreviousLeg": false,
+  "from": {
+    "name": "1445 NW 26th Ave, Portland 97210",
+    "lon": -122.70474778646017,
+    "lat": 45.53336403435026,
+    "departure": 1597098240000,
+    "orig": "1445 NW 26th Ave, Portland 97210",
+    "vertexType": "NORMAL"
+  },
+  "to": {
+    "name": "2487 NW Quimby St, Portland 97210",
+    "lon": -122.70258503938052,
+    "lat": 45.53328478411062,
+    "arrival": 1597098397000,
+    "orig": "2487 NW Quimby St, Portland 97210",
+    "vertexType": "NORMAL"
+  },
+  "legGeometry": {
+    "points": "mf|tGtw|kVASEk@@G?a@AqE?I@GL]FK@C@A?C@A?C@AAC?CAAAA??AAA?AG?O",
+    "length": 25
+  },
+  "rentedBike": false,
+  "rentedCar": false,
+  "rentedVehicle": false,
+  "hailedCar": false,
+  "flexDrtAdvanceBookMin": 0,
+  "transitLeg": false,
+  "duration": 157,
+  "intermediateStops": [],
+  "steps": [{
+    "distance": 153.07999999999998,
+    "relativeDirection": "DEPART",
+    "streetName": "path",
+    "absoluteDirection": "EAST",
+    "stayOn": false,
+    "area": false,
+    "bogusName": true,
+    "lon": -122.70474631963813,
+    "lat": 45.533353160875016,
+    "elevation": [{
+      "first": 0,
+      "second": 33.8628442735816
+    }, {
+      "first": 10,
+      "second": 33.592844273581605
+    }, {
+      "first": 20,
+      "second": 33.312844273581604
+    }, {
+      "first": 30,
+      "second": 33.122844273581606
+    }, {
+      "first": 40,
+      "second": 32.982844273581605
+    }, {
+      "first": 41.66,
+      "second": 32.9728442735816
+    }, {
+      "first": 41.66,
+      "second": 32.9228442735816
+    }, {
+      "first": 51.66,
+      "second": 32.76284427358161
+    }, {
+      "first": 61.66,
+      "second": 32.562844273581604
+    }, {
+      "first": 71.66,
+      "second": 32.5028442735816
+    }, {
+      "first": 81.66,
+      "second": 32.3628442735816
+    }, {
+      "first": 91.66,
+      "second": 32.132844273581604
+    }, {
+      "first": 101.66,
+      "second": 31.912844273581605
+    }, {
+      "first": 111.66,
+      "second": 31.722844273581604
+    }, {
+      "first": 121.66,
+      "second": 31.422844273581603
+    }, {
+      "first": 131.66,
+      "second": 31.142844273581602
+    }, {
+      "first": 141.66,
+      "second": 30.942844273581606
+    }, {
+      "first": 153.09,
+      "second": 30.912844273581605
+    }]
+  }, {
+    "distance": 14.832999999999998,
+    "relativeDirection": "CIRCLE_CLOCKWISE",
+    "streetName": "road",
+    "absoluteDirection": "SOUTHEAST",
+    "exit": "2",
+    "stayOn": false,
+    "area": false,
+    "bogusName": true,
+    "lon": -122.7028407,
+    "lat": 45.5332682,
+    "elevation": [{
+      "first": 0,
+      "second": 30.912844273581605
+    }, {
+      "first": 6.32,
+      "second": 30.892844273581602
+    }, {
+      "first": 6.316,
+      "second": 30.892844273581602
+    }, {
+      "first": 14.835999999999999,
+      "second": 30.612844273581604
+    }]
+  }, {
+    "distance": 9.521,
+    "relativeDirection": "RIGHT",
+    "streetName": "NW Quimby St",
+    "absoluteDirection": "EAST",
+    "stayOn": false,
+    "area": false,
+    "bogusName": false,
+    "lon": -122.7027075,
+    "lat": 45.5332894,
+    "elevation": [{
+      "first": 0,
+      "second": 30.612844273581604
+    }, {
+      "first": 9.52,
+      "second": 30.592844273581605
+    }]
+  }]
+}

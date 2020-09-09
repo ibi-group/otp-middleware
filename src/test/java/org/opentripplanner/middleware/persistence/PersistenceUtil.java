@@ -1,22 +1,20 @@
 package org.opentripplanner.middleware.persistence;
 
-import com.auth0.exception.Auth0Exception;
-import com.auth0.json.mgmt.users.User;
+import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Response;
-import org.opentripplanner.middleware.utils.FileUtils;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
 import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
@@ -29,16 +27,21 @@ public class PersistenceUtil {
     private static final String BATCH_ID = "783726";
     private static final String TRIP_REQUEST_ID = "59382";
 
-    private static Response PLAN_RESPONSE = null;
-    private static Response PLAN_ERROR_RESPONSE = null;
+    private static final String resourceFilePath = "persistence/";
 
 
     /**
      * Create Otp user and store in database.
      */
     public static OtpUser createUser(String email) {
+        return createUser(email, null);
+    }
+
+    public static OtpUser createUser(String email, String phoneNumber) {
         OtpUser user = new OtpUser();
         user.email = email;
+        user.phoneNumber = phoneNumber;
+        user.notificationChannel = "email";
         Persistence.otpUsers.create(user);
         return user;
     }
@@ -78,8 +81,9 @@ public class PersistenceUtil {
     /**
      * Create trip summary from static plan response file and store in database.
      */
-    public static TripSummary createTripSummary() {
-        TripSummary tripSummary = new TripSummary(PLAN_RESPONSE.plan, PLAN_RESPONSE.error, TRIP_REQUEST_ID);
+    public static TripSummary createTripSummary() throws IOException {
+        Response planResponse = getPlanResponse();
+        TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, TRIP_REQUEST_ID);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
     }
@@ -87,8 +91,9 @@ public class PersistenceUtil {
     /**
      * Create trip summary from static plan error response file and store in database.
      */
-    public static TripSummary createTripSummaryWithError() {
-        TripSummary tripSummary = new TripSummary(null, PLAN_ERROR_RESPONSE.error, TRIP_REQUEST_ID);
+    public static TripSummary createTripSummaryWithError() throws IOException {
+        Response planErrorResponse = getPlanErrorResponse();
+        TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, TRIP_REQUEST_ID);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
     }
@@ -121,14 +126,26 @@ public class PersistenceUtil {
         monitoredTrip.tripName = "Commute to work";
         monitoredTrip.tripTime = "07:30";
         monitoredTrip.leadTimeInMinutes = 30;
-        monitoredTrip.monday = true;
-        monitoredTrip.tuesday = true;
-        monitoredTrip.wednesday = true;
-        monitoredTrip.thursday = true;
-        monitoredTrip.friday = true;
+        monitoredTrip.updateWeekdays(true);
         monitoredTrip.excludeFederalHolidays = true;
         monitoredTrip.queryParams = "fromPlace=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
 
+        monitoredTrip.itinerary = createItinerary();
+
+        Persistence.monitoredTrips.create(monitoredTrip);
+        return monitoredTrip;
+    }
+
+    public static MonitoredTrip createMonitoredTrip(String userId, OtpDispatcherResponse otpDispatcherResponse) {
+        MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
+        monitoredTrip.userId = userId;
+        monitoredTrip.tripName = "test trip";
+        monitoredTrip.leadTimeInMinutes = 30;
+        Persistence.monitoredTrips.create(monitoredTrip);
+        return monitoredTrip;
+    }
+
+    private static Itinerary createItinerary() {
         Itinerary itinerary = new Itinerary();
         itinerary.duration = 1350L;
         itinerary.elevationGained = 0.0;
@@ -162,19 +179,25 @@ public class PersistenceUtil {
         List<Leg> legs = new ArrayList<>();
         legs.add(leg);
         itinerary.legs = legs;
+        return itinerary;
+    }
 
-        monitoredTrip.itinerary = itinerary;
-
-        Persistence.monitoredTrips.create(monitoredTrip);
-        return monitoredTrip;
+    public static void deleteMonitoredTripAndJourney(MonitoredTrip trip) {
+        trip.clearJourneyState();
+        Persistence.monitoredTrips.removeById(trip.id);
     }
 
     /**
-     * Get plan responses from file for creating trip summaries.
+     * Get successful plan response from file for creating trip summaries.
      */
-    public static void stagePlanResponses() {
-        final String filePath = "src/test/resources/org/opentripplanner/middleware/";
-        PLAN_RESPONSE = FileUtils.getFileContentsAsJSON(filePath + "planResponse.json", Response.class);
-        PLAN_ERROR_RESPONSE = FileUtils.getFileContentsAsJSON(filePath + "planErrorResponse.json", Response.class);
+    public static Response getPlanResponse() throws IOException {
+        return TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "planResponse.json", Response.class);
+    }
+
+    /**
+     * Get error plan response from file for creating trip summaries.
+     */
+    public static Response getPlanErrorResponse() throws IOException {
+        return TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "planErrorResponse.json", Response.class);
     }
 }
