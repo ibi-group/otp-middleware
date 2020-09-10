@@ -125,7 +125,7 @@ public class TestUtils {
      * Configure a mock OTP server for providing mock OTP responses.
      * Note: this expects the config value OTP_API_ROOT=http://localhost:8080/otp
      */
-    static void mockOtpServer() {
+    public static void mockOtpServer() {
         if (mockOtpServerSetUpIsDone) {
             return;
         }

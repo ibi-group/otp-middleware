@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -39,6 +40,7 @@ import static org.opentripplanner.middleware.persistence.PersistenceUtil.createU
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTripAndJourney;
 import static org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip.generateTripPlanQueryParams;
 import static org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip.shouldSkipMonitoredTripCheck;
+import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
@@ -83,7 +85,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      */
     @Test
     public void canMonitorTrip() {
-        assumeTrue(isEndToEnd);
+        // Do not run this test on Travis CI because it requires a live OTP server
+        // FIXME: Add live otp server to e2e tests.
+        assumeTrue(!isRunningCi && isEndToEnd);
         // Submit a query to the OTP server.
         // From P&R to Downtown Orlando
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(
