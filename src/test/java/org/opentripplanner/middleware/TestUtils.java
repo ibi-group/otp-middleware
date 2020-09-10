@@ -45,16 +45,6 @@ public class TestUtils {
      */
     static final String TEMP_AUTH0_USER_PASSWORD = UUID.randomUUID().toString();
 
-    /**
-<<<<<<< HEAD
-=======
-     * Returns true only if an environment variable exists and is set to "true".
-     */
-    public static boolean getBooleanEnvVar(String var) {
-        String variable = System.getenv(var);
-        return variable != null && variable.equals("true");
-    }
-
     public static <T> T getResourceFileContentsAsJSON (String resourcePathName, Class<T> clazz) throws IOException {
         return FileUtils.getFileContentsAsJSON(
             String.format("src/test/resources/org/opentripplanner/middleware/%s", resourcePathName),
@@ -63,14 +53,6 @@ public class TestUtils {
     }
 
     /**
-     * Helper method to determine if end to end is enabled and auth is disabled. (Used for checking if tests should run.)
-     */
-    public static boolean isEndToEndAndAuthIsDisabled() {
-        return getBooleanEnvVar("RUN_E2E") && authDisabled();
-    }
-
-    /**
->>>>>>> dev
      * Send request to provided URL placing the Auth0 user id in the headers so that {@link Auth0UserProfile} can check
      * the database for a matching user. Returns the response.
      */
