@@ -33,6 +33,7 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTripAndJourney;
@@ -83,7 +84,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      */
     @Test
     public void canMonitorTrip() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        assumeTrue(isEndToEnd);
         // Submit a query to the OTP server.
         // From P&R to Downtown Orlando
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(
