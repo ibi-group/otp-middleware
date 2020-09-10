@@ -62,17 +62,17 @@ public abstract class AbstractUser extends Model {
     @Override
     public boolean delete() {
         if (Auth0Connection.isAuthDisabled()) {
-            LOG.warn("Skipping delete user call (Auth is disabled).");
-            return true;
+            LOG.warn("Skipping call to delete Auth0 user (Auth is disabled).");
+        } else {
+            // FIXME: Check that the Auth0 user ID being deleted does not exist as a different child class?
+            try {
+                // Delete Auth0User.
+                deleteAuth0User(this.auth0UserId);
+            } catch (Auth0Exception e) {
+                LOG.error("Could not delete Auth0 user {}.", this.auth0UserId, e);
+                return false;
+            }
         }
-        // FIXME: Check that the Auth0 user ID being deleted does not exist as a different child class?
-        try {
-            // Delete Auth0User.
-            deleteAuth0User(this.auth0UserId);
-            return true;
-        } catch (Auth0Exception e) {
-            LOG.error("Could not delete Auth0 user {}.", this.auth0UserId, e);
-            return false;
-        }
+        return true;
     }
 }

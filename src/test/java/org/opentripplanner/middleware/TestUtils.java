@@ -24,12 +24,15 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static spark.Service.ignite;
 
 
 public class TestUtils {
     private static final Logger LOG = LoggerFactory.getLogger(TestUtils.class);
+    /**
+     * Whether the end-to-end environment variable is enabled.
+     */
+    public static final boolean isEndToEnd = getBooleanEnvVar("RUN_E2E");
 
     /**
      * Prevents the mock OTP server being initialized more than once
@@ -40,13 +43,6 @@ public class TestUtils {
      * Password used to create and validate temporary Auth0 users
      */
     static final String TEMP_AUTH0_USER_PASSWORD = UUID.randomUUID().toString();
-
-    /**
-     * Helper method to determine if end to end is enabled and auth is disabled. (Used for checking if tests should run.)
-     */
-    public static boolean isEndToEnd() {
-        return getBooleanEnvVar("RUN_E2E");
-    }
 
     /**
      * Send request to provided URL placing the Auth0 user id in the headers so that {@link Auth0UserProfile} can check

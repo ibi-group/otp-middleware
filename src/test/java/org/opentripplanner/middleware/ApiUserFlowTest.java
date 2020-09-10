@@ -60,7 +60,7 @@ public class ApiUserFlowTest {
      * config).
      */
     private static boolean testsShouldRun() {
-        return isEndToEnd() && !isAuthDisabled();
+        return isEndToEnd && !isAuthDisabled();
     }
 
     /**

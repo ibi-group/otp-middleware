@@ -52,7 +52,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         OtpMiddlewareTest.setUp();
         // TODO: It might be useful to allow this to run without DISABLE_AUTH set to true (in an end-to-end environment
         //  using real tokens from Auth0.
-        assumeTrue(isEndToEnd());
+        assumeTrue(isEndToEnd);
         apiUser = PersistenceUtil.createApiUser("test@example.com");
         adminUser = PersistenceUtil.createAdminUser("test@example.com");
     }
@@ -62,7 +62,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(isEndToEnd());
+        assumeTrue(isEndToEnd);
         setAuthDisabled(getDefaultAuthDisabled());
         // Delete admin user.
         Persistence.adminUsers.removeById(adminUser.id);
@@ -76,7 +76,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void canCreateApiKeyForSelf() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        assumeTrue(isEndToEnd);
         HttpResponse<String> response = createApiKeyRequest(apiUser.id, apiUser);
         assertEquals(HttpStatus.OK_200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
@@ -91,7 +91,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void adminCanCreateApiKeyForApiUser() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        assumeTrue(isEndToEnd);
         HttpResponse<String> response = createApiKeyRequest(apiUser.id, adminUser);
         assertEquals(HttpStatus.OK_200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
@@ -107,7 +107,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void cannotDeleteApiKeyForSelf() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        assumeTrue(isEndToEnd);
         ensureApiKeyExists();
         int initialKeyCount = apiUser.apiKeys.size();
         // delete key
@@ -126,7 +126,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void adminCanDeleteApiKeyForApiUser() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        assumeTrue(isEndToEnd);
         ensureApiKeyExists();
         // delete key
         String keyId = apiUser.apiKeys.get(0).keyId;

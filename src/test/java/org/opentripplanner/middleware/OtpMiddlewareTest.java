@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 
+import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
@@ -36,9 +37,9 @@ public abstract class OtpMiddlewareTest {
         // If in the e2e environment, use the secret env.yml file to start the server.
         // TODO: When ran on Travis CI, this file will automatically be setup.
         String[] args;
-        if (getBooleanEnvVar("RUN_E2E")) {
+        if (isEndToEnd) {
             // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
-            args = isRunningCi() ? new String[]{} : new String[]{"configurations/default/env.yml"};
+            args = isRunningCi ? new String[]{} : new String[]{"configurations/default/env.yml"};
         } else {
             // If not running E2E, use test env.yml.
             args = new String[]{"configurations/test/env.yml"};
