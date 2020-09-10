@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**

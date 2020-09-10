@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.BugsnagProject;
+import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -39,15 +40,20 @@ public class Persistence {
     private static MongoClient mongoClient;
     private static MongoDatabase mongoDatabase;
     // One abstracted Mongo collection for each class of persisted objects
+
+    // end-user collections
     public static TypedPersistence<OtpUser> otpUsers;
     public static TypedPersistence<AdminUser> adminUsers;
     public static TypedPersistence<ApiUser> apiUsers;
     public static TypedPersistence<TripRequest> tripRequests;
     public static TypedPersistence<TripSummary> tripSummaries;
+    public static TypedPersistence<MonitoredTrip> monitoredTrips;
+    public static TypedPersistence<JourneyState> journeyStates;
+
+    // admin and system reliability collections
     public static TypedPersistence<BugsnagEventRequest> bugsnagEventRequests;
     public static TypedPersistence<BugsnagEvent> bugsnagEvents;
     public static TypedPersistence<BugsnagProject> bugsnagProjects;
-    public static TypedPersistence<MonitoredTrip> monitoredTrips;
 
     public static void initialize () {
         // TODO Add custom codec libraries
@@ -81,16 +87,20 @@ public class Persistence {
         LOG.info("Connecting to MongoDB instance at {}://{}", MONGO_PROTOCOL, MONGO_URI);
         mongoClient = MongoClients.create(settings);
         mongoDatabase = mongoClient.getDatabase(MONGO_DB_NAME);
+
+        // end user persistence items
         otpUsers = new TypedPersistence(mongoDatabase, OtpUser.class);
         adminUsers = new TypedPersistence(mongoDatabase, AdminUser.class);
         apiUsers = new TypedPersistence(mongoDatabase, ApiUser.class);
         tripRequests = new TypedPersistence(mongoDatabase, TripRequest.class);
         tripSummaries = new TypedPersistence(mongoDatabase, TripSummary.class);
+        monitoredTrips = new TypedPersistence(mongoDatabase, MonitoredTrip.class);
+        journeyStates = new TypedPersistence(mongoDatabase, JourneyState.class);
+
+        // admin and system reliability items
         bugsnagEventRequests = new TypedPersistence(mongoDatabase, BugsnagEventRequest.class);
         bugsnagEvents = new TypedPersistence(mongoDatabase, BugsnagEvent.class);
         bugsnagProjects = new TypedPersistence(mongoDatabase, BugsnagProject.class);
-        monitoredTrips = new TypedPersistence(mongoDatabase, MonitoredTrip.class);
-        // TODO Add other models...
     }
 
 }

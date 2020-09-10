@@ -130,7 +130,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     // .withResponses(...) // FIXME: not implemented (requires source change).
                     .withProduces(JSON_ONLY)
                     .withResponseType(clazz),
-                this::getOne, JsonUtils::toJson
+                this::getEntityForId, JsonUtils::toJson
             )
 
             // Create entity request
@@ -205,7 +205,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * object. The default behaviour is defined in {@link Model#canBeManagedBy} and may have too restrictive access
      * (must be admin) than is desired.
      */
-    private T getOne(Request req, Response res) {
+    protected T getEntityForId(Request req, Response res) {
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
         String id = getIdFromRequest(req);
         T object = getObjectForId(req, id);
@@ -300,11 +300,11 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         long startTime = DateTimeUtils.currentTimeMillis();
         // Check if an update or create operation depending on presence of id param
         // This needs to be final because it is used in a lambda operation below.
-        if (req.params("id") == null && req.requestMethod().equals("PUT")) {
+        if (req.params(ID_PARAM) == null && req.requestMethod().equals("PUT")) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
         }
         Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
-        final boolean isCreating = req.params("id") == null;
+        final boolean isCreating = req.params(ID_PARAM) == null;
         // Save or update to database
         try {
             // Validate fields by deserializing into POJO.

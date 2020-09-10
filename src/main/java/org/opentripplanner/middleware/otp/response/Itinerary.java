@@ -2,8 +2,12 @@ package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * An Itinerary is one complete way of getting from the start location to the end location.
@@ -75,6 +79,40 @@ public class Itinerary {
      * Leg information for this itinerary.
      */
     public List<Leg> legs = null;
+
+    /**
+     * OTP-middleware specific function to aid in collecting alerts from legs.
+     */
+    public List<LocalizedAlert> getAlerts() {
+        if (legs == null) return Collections.emptyList();
+        return legs.stream()
+            .map(leg -> leg.alerts)
+            .filter(Objects::nonNull)
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
+    }
+
+    public void clearAlerts() {
+        for (Leg leg : legs) {
+            leg.alerts = null;
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Itinerary itinerary = (Itinerary) o;
+        return startTime.equals(itinerary.startTime) &&
+            endTime.equals(itinerary.endTime) &&
+            Objects.equals(transfers, itinerary.transfers) &&
+            legs.equals(itinerary.legs);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(startTime, endTime, transfers, legs);
+    }
 
     @Override
     public String toString() {

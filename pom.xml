@@ -210,6 +210,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Used for parameterized tests -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>5.6.2</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Used to look up timezones based on lat/lng coordinates -->
         <dependency>
             <groupId>net.iakovlev</groupId>
@@ -222,6 +230,37 @@
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>
             <version>2.7.2</version>
+        </dependency>
+
+        <!--
+            Used to send email notifications for users monitoring trips.
+            TODO: decide between sendgrid/sparkpost
+        -->
+        <dependency>
+            <groupId>com.sparkpost</groupId>
+            <artifactId>sparkpost-lib</artifactId>
+            <version>0.22</version>
+        </dependency>
+
+        <!-- Used for logging -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+
+        <!-- Used to send email notifications for users monitoring trips. TODO: decide between sendgrid/sparkpost -->
+        <dependency>
+            <groupId>com.sendgrid</groupId>
+            <artifactId>sendgrid-java</artifactId>
+            <version>4.0.1</version>
+        </dependency>
+
+        <!-- Used to send SMS notifications for users monitoring trips. -->
+        <dependency>
+            <groupId>com.twilio.sdk</groupId>
+            <artifactId>twilio</artifactId>
+            <version>7.54.1</version>
         </dependency>
 
         <!-- Used for application database -->

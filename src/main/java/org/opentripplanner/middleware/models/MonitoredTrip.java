@@ -1,9 +1,18 @@
 package org.opentripplanner.middleware.models;
 
+import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
+
+import java.time.DayOfWeek;
+import java.time.ZonedDateTime;
+
+import static com.mongodb.client.model.Filters.eq;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 
 import java.util.List;
@@ -15,7 +24,7 @@ import java.util.List;
 public class MonitoredTrip extends Model {
 
     /**
-     * Mongo Id of user monitoring trip.
+     * Mongo Id of the {@link OtpUser} who owns this monitored trip.
      */
     public String userId;
 
@@ -30,6 +39,12 @@ public class MonitoredTrip extends Model {
      * extracted every time the trip requires checking.
      */
     public String tripTime;
+
+    /**
+     * From and to locations for the stored trip.
+     */
+    public Place from;
+    public Place to;
 
     /**
      * The number of minutes prior to a trip taking place that the status should be checked.
@@ -92,15 +107,75 @@ public class MonitoredTrip extends Model {
      */
     public Itinerary itinerary;
 
-    //TODO, agree on and implement these parameters
+    /**
+     * Whether to notify the user if an alert is present on monitored trip.
+     */
+    public boolean notifyOnAlert = true;
 
     /**
-     * notificationThresholds notifyRouteChange (true/false) - Instead of notificationThresholds
-     * arrivalDelayMinutesThreshold (int minutes) - Instead of notificationThresholds departureDelayMinutesThreshold
-     * (int minutes) - Instead of notificationThresholds notifyDelayToTrip (true/false)
+     * Threshold in minutes for a departure time variance (absolute value) to trigger a notification.
+     * -1 indicates that a change in the departure time will not trigger a notification.
      */
+    public int departureVarianceMinutesThreshold = 15;
+
+    /**
+     * Threshold in minutes for an arrival time variance (absolute value) to trigger a notification.
+     * -1 indicates that a change in the arrival time will not trigger a notification.
+     */
+    public int arrivalVarianceMinutesThreshold = 15;
+
+    /**
+     * Whether to notify the user if the itinerary details (routes or stops used) change for monitored trip.
+     */
+    public boolean notifyOnItineraryChange = true;
 
     public MonitoredTrip() {
+    }
+
+    public MonitoredTrip(OtpDispatcherResponse otpDispatcherResponse) {
+        queryParams = otpDispatcherResponse.requestUri.getQuery();
+        TripPlan plan = otpDispatcherResponse.getResponse().plan;
+        itinerary = plan.itineraries.get(0);
+        initializeFromItinerary();
+    }
+
+    public void initializeFromItinerary() {
+        int lastLegIndex = itinerary.legs.size() - 1;
+        from = itinerary.legs.get(0).from;
+        to = itinerary.legs.get(lastLegIndex).to;
+        // Ensure the itinerary we store does not contain any realtime info.
+        clearRealtimeInfo();
+    }
+
+    public MonitoredTrip updateAllDaysOfWeek(boolean value) {
+        updateWeekdays(value);
+        saturday = value;
+        sunday = value;
+        return this;
+    }
+
+    public MonitoredTrip updateWeekdays(boolean value) {
+        monday = value;
+        tuesday = value;
+        wednesday = value;
+        thursday = value;
+        friday = value;
+        return this;
+    }
+
+    public boolean isActiveOnDate(ZonedDateTime zonedDateTime) {
+        DayOfWeek dayOfWeek = zonedDateTime.getDayOfWeek();
+        // TODO: Maybe we should just refactor DOW to be a list of ints (TIntList).
+        return isActive &&
+            (
+                monday && dayOfWeek == DayOfWeek.MONDAY ||
+                tuesday && dayOfWeek == DayOfWeek.TUESDAY ||
+                wednesday && dayOfWeek == DayOfWeek.WEDNESDAY ||
+                thursday && dayOfWeek == DayOfWeek.THURSDAY ||
+                friday && dayOfWeek == DayOfWeek.FRIDAY ||
+                saturday && dayOfWeek == DayOfWeek.SATURDAY ||
+                sunday && dayOfWeek == DayOfWeek.SUNDAY
+            );
     }
 
     @Override
@@ -145,6 +220,51 @@ public class MonitoredTrip extends Model {
         }
         // Fallback to Model#userCanManage.
         return super.canBeManagedBy(user);
+    }
+
+    private Bson tripIdFilter() {
+        return eq("monitoredTripId", this.id);
+    }
+
+    /**
+     * Get the journey state for this trip.
+     */
+    public JourneyState retrieveJourneyState() {
+        JourneyState journeyState = Persistence.journeyStates.getOneFiltered(tripIdFilter());
+        // If journey state does not exist, create and persist.
+        if (journeyState == null) {
+            journeyState = new JourneyState(this);
+            Persistence.journeyStates.create(journeyState);
+        }
+        return journeyState;
+    }
+
+    /**
+     * Get the latest itinerary that was tracked in the journey state or null if the check has never been performed (or
+     * a matching itinerary has never been found).
+     */
+    public Itinerary latestItinerary() {
+        JourneyState journeyState = retrieveJourneyState();
+        if (journeyState.lastResponse != null && journeyState.matchingItineraryIndex != -1) {
+            return journeyState.lastResponse.plan.itineraries.get(journeyState.matchingItineraryIndex);
+        }
+        // If there is no last response, return null.
+        return null;
+    }
+
+    /**
+     * Clear journey state for the trip. TODO: remove?
+     */
+    public boolean clearJourneyState() {
+        return Persistence.journeyStates.removeFiltered(tripIdFilter());
+    }
+
+    /**
+     * Clear real-time info from itinerary to store.
+     * FIXME: Do we need to clear more than the alerts?
+     */
+    public void clearRealtimeInfo() {
+        itinerary.clearAlerts();
     }
 
     /**

@@ -17,7 +17,9 @@ import java.time.temporal.ChronoField;
 import java.util.Optional;
 
 /**
- * Date and time specific utils
+ * Date and time specific utils. All timing in this application should be obtained by using this method in order to
+ * ensure that the correct system clock is used. During testing, the internal clock is often set to a fixed instant to
+ * test time-dependent code.
  */
 public class DateTimeUtils {
     private static final Logger LOG = LoggerFactory.getLogger(DateTimeUtils.class);

@@ -1,8 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,18 +9,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import static org.opentripplanner.middleware.utils.YamlUtils.yamlMapper;
+
 /**
  * Util methods for obtaining information from the YAML configuration file for otp-middleware
  */
 public class ConfigUtils {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
 
-    private static final String DEFAULT_ENV = "configurations/default/env.yml";
+    public static final String DEFAULT_ENV = "configurations/default/env.yml";
 
     private static final String JAR_PREFIX = "otp-middleware-";
-
-    // ObjectMapper that loads in YAML config files
-    private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 
     /**
      * Check if running in Travis CI. A list of default environment variables from Travis is here:
@@ -55,7 +52,6 @@ public class ConfigUtils {
             LOG.info("Loading env.yml: {}", args[0]);
             envConfigStream = new FileInputStream(new File(args[0]));
         }
-
         envConfig = yamlMapper.readTree(envConfigStream);
     }
 
