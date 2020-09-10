@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**

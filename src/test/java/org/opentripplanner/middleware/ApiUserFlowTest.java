@@ -11,9 +11,11 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
+import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -35,7 +37,7 @@ import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForE
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PROXY_ENDPOINT;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
+import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 
 /**
  * Tests to simulate API user flow. The following config parameters must be set in configurations/default/env.yml for
@@ -113,7 +115,7 @@ public class ApiUserFlowTest {
      * records. This also includes Auth0 users if auth is enabled.
      */
     @Test
-    public void canSimulateApiUserFlow() {
+    public void canSimulateApiUserFlow() throws IOException {
         // create otp user as api user
         HttpResponse<String> createUserResponse = mockAuthenticatedPost("api/secure/user",
             apiUser,
@@ -121,11 +123,14 @@ public class ApiUserFlowTest {
         );
         assertEquals(HttpStatus.OK_200, createUserResponse.statusCode());
         OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.body(), OtpUser.class);
-
+        // Generate mock response to create monitored trip
+        // FIXME: Refactor once the method to store monitored trip is refactored.
+        String mockResponse = FileUtils.getFileContents(
+            "src/test/resources/org/opentripplanner/middleware/persistence/planResponse.json"
+        );
+        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse);
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
-        // TODO use utils from trip monitoring PR.
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.monday = true;
+        MonitoredTrip trip = createMonitoredTrip(otpUserResponse.id, otpDispatcherResponse, false);
         HttpResponse<String> createTripResponse = mockAuthenticatedPost("api/secure/monitoredtrip",
             otpUserResponse,
             JsonUtils.toJson(trip)

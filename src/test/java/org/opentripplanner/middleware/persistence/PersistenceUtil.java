@@ -136,12 +136,12 @@ public class PersistenceUtil {
         return monitoredTrip;
     }
 
-    public static MonitoredTrip createMonitoredTrip(String userId, OtpDispatcherResponse otpDispatcherResponse) {
+    public static MonitoredTrip createMonitoredTrip(String userId, OtpDispatcherResponse otpDispatcherResponse, boolean persist) {
         MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "test trip";
         monitoredTrip.leadTimeInMinutes = 30;
-        Persistence.monitoredTrips.create(monitoredTrip);
+        if (persist) Persistence.monitoredTrips.create(monitoredTrip);
         return monitoredTrip;
     }
 

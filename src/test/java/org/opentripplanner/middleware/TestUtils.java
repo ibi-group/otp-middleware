@@ -137,7 +137,7 @@ public class TestUtils {
      * Mock an OTP server plan response by provide a static response from file.
      */
     private static String mockOtpPlanResponse(Request request, Response response) throws IOException {
-        final String filePath = "src/test/resources/org/opentripplanner/middleware/";
+        final String filePath = "src/test/resources/org/opentripplanner/middleware/persistence/";
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
         otpDispatcherResponse.statusCode = HttpStatus.OK_200;
         otpDispatcherResponse.responseBody = FileUtils.getFileContents(filePath + "planResponse.json");

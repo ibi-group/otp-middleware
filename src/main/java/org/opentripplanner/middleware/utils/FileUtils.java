@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * File utility class for extracting and parsing file content
@@ -28,6 +29,6 @@ public class FileUtils {
      */
     public static String getFileContents(String pathAndFileName) throws IOException {
         FileInputStream fileInputStream = new FileInputStream(pathAndFileName);
-        return IOUtils.toString(fileInputStream, "UTF-8");
+        return IOUtils.toString(fileInputStream, StandardCharsets.UTF_8);
     }
 }
