@@ -5,6 +5,7 @@ import com.beerboy.ss.rest.Endpoint;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.bugsnag.EventSummary;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -15,7 +16,9 @@ import spark.Request;
 import spark.Response;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
@@ -56,9 +59,11 @@ public class BugsnagController implements Endpoint {
     /**
      * Get all Bugsnag events from Mongo and replace the project id with the project name and return
      */
-    private static List<EventSummary> getEventSummary(Request request, Response response) {
+    private static ResponseList<EventSummary> getEventSummary(Request req, Response res) {
         List<EventSummary> eventSummaries = new ArrayList<>();
         List<BugsnagEvent> events = bugsnagEvents.getAll();
+        int limit = Integer.parseInt(req.queryParamOrDefault("limit", "10"));
+        int page = Integer.parseInt(req.queryParamOrDefault("page", "0"));
 
         // FIXME: Group by error/project type?
         for (BugsnagEvent event : events) {
@@ -66,7 +71,10 @@ public class BugsnagController implements Endpoint {
             BugsnagProject project = bugsnagProjects.getOneFiltered(filter);
             eventSummaries.add(new EventSummary(project, event));
         }
-
-        return eventSummaries;
+        List<EventSummary> sorted = eventSummaries.stream()
+            .sorted(Comparator.comparing(eventSummary -> eventSummary.received))
+            .collect(Collectors.toList());
+        // For now return first 100 events. Otherwise, this list could grow to thousands of items and cause a request timeout.
+        return new ResponseList<>(sorted, page, limit);
     }
 }

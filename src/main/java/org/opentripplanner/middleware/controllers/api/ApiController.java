@@ -9,6 +9,7 @@ import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
@@ -119,7 +120,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     // Note: there exists a method withResponseAsCollection, but unlike what its name suggests,
                     // it does exactly the same as .withResponseType and does not generate a return type array.
                     // See issue https://github.com/manusant/spark-swagger/issues/12.
-                    .withResponseType(Array.newInstance(clazz, 0).getClass()),
+                    .withResponseType(ResponseList.class),
                 this::getMany, JsonUtils::toJson
             )
 
@@ -172,23 +173,26 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      */
     // FIXME Maybe better if the user check (and filtering) was done in a pre hook?
     // FIXME Will require further granularity for admin
-    private List<T> getMany(Request req, Response res) {
-
+    private ResponseList<T> getMany(Request req, Response res) {
+        List<T> list;
+        int limit = Integer.parseInt(req.queryParamOrDefault("limit", "10"));
+        int page = Integer.parseInt(req.queryParamOrDefault("page", "0"));
         Auth0UserProfile requestingUser = getUserFromRequest(req);
         if (isUserAdmin(requestingUser)) {
             // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
             // management or review without restriction.
-            return persistence.getAll();
+            list = persistence.getAll();
         } else if (persistence.clazz == OtpUser.class) {
             // If the required entity is of type 'OtpUser' the assumption is that a call is being made via the
             // OtpUserController. Therefore, the request should be limited to return just the entity matching the
             // requesting user.
-            return getObjectsFiltered("_id", requestingUser.otpUser.id);
+            list = getObjectsFiltered("_id", requestingUser.otpUser.id);
         } else {
             // For all other cases the assumption is that the request is being made by an Otp user and the requested
             // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
-            return getObjectsFiltered("userId", requestingUser.otpUser.id);
+            list = getObjectsFiltered("userId", requestingUser.otpUser.id);
         }
+        return new ResponseList<>(list, page, limit);
     }
 
     /**
