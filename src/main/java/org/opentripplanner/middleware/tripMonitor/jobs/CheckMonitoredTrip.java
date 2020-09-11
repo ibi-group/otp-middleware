@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.tripMonitor.jobs;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.message.BasicNameValuePair;
 import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -21,20 +22,21 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.tripMonitor.jobs.NotificationType.ARRIVAL_DELAY;
 import static org.opentripplanner.middleware.tripMonitor.jobs.NotificationType.DEPARTURE_DELAY;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -44,21 +46,16 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoo
  */
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN);
+
     private final MonitoredTrip trip;
     public int departureDelay;
     public int arrivalDelay;
     /**
-     * This is only used during testing to inject a mock OTP response for comparison against a monitored trip.
-     */
-    private OtpDispatcherResponse injectedOtpResponseForTesting;
-    /**
      * Used to track the various check trip notifications and construct email/SMS messages.
      */
     public final Set<TripMonitorNotification> notifications = new HashSet<>();
-    /**
-     * Whether the check was skipped based on time/date criteria.
-     */
-    public boolean checkSkipped;
     /**
      * The index of the matching {@link Itinerary} as found in the OTP {@link Response} planned as part of this check.
      */
@@ -72,45 +69,32 @@ public class CheckMonitoredTrip implements Runnable {
      */
     public long notificationTimestamp = -1;
 
+    public String targetDate;
+
     public CheckMonitoredTrip(MonitoredTrip trip) {
         this.trip = trip;
-    }
-
-    /**
-     * This constructor should only be used for testing when we need to inject a mock OTP response.
-     */
-    public CheckMonitoredTrip(MonitoredTrip trip, OtpDispatcherResponse injectedOtpResponseForTesting) {
-        this.trip = trip;
-        this.injectedOtpResponseForTesting = injectedOtpResponseForTesting;
     }
 
     @Override
     public void run() {
         // Check if the trip check should be skipped (based on time, day of week, etc.)
-        checkSkipped = shouldSkipMonitoredTripCheck(trip);
-        if (checkSkipped) {
-            LOG.debug("Skipping check for trip: {}", trip.id);
-            return;
-        }
-        // Make a request to OTP with the monitored trip params or if this is in a test environment use the injected OTP
-        // response.
-        OtpDispatcherResponse otpDispatcherResponse = null;
         try {
-            otpDispatcherResponse = injectedOtpResponseForTesting != null
-                ? injectedOtpResponseForTesting
-                : OtpDispatcher.sendOtpPlanRequest(generateTripPlanQueryParams(trip));
+            if (shouldSkipMonitoredTripCheck()) {
+                LOG.debug("Skipping check for trip: {}", trip.id);
+                return;
+            }
         } catch (Exception e) {
-            // TODO: report bugsnag
-            LOG.error("Encountered an error while making a request ot the OTP server. error={}", e);
+            // TODO: report to bugsnag
+            LOG.error("Encountered an error while checking the monitored trip. error={}", e);
             return;
         }
 
-        if (otpDispatcherResponse.statusCode >= 400) {
-            // TODO: report bugsnag
-            LOG.error("Received an error from the OTP server. status={}", otpDispatcherResponse.statusCode);
+        // Make a request to OTP with the monitored trip params if not already done in shouldSkipMonitoredTripCheck
+        if (otpResponse == null && !calculateOtpResponse()) {
+            // failed to calculate the OTP response, immediately end this job
             return;
         }
-        otpResponse = otpDispatcherResponse.getResponse();
+
         // Check monitored trip.
         runCheckLogic();
         // Send notifications to user. This should happen before updating the journey state so that we can check the
@@ -257,23 +241,66 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Check whether monitored trip check should be skipped.
-     * TODO: Should this be a method on {@link MonitoredTrip}?
+     * Determine whether to skip checking the monitored trip at this instant. The decision on whether to skip the check
+     * takes into account the current time, the lead time prior to the itinerary start and the last time that the trip
+     * was checked. Skipping the check should only occur if the previous trip has ended and the next trip meets the
+     * following criteria for skipping a check:
+     *
+     * - the current time is before when the lead time before the next itinerary starts
+     * - the current time is after the lead time before the next itinerary starts, but is over an hour until the
+     *     itinerary start time and the trip has already been checked within the last 60 minutes
+     * - the current time is after the lead time before the next itinerary starts and between 60-15 minutes prior to the
+     *     itinerary start time, but a check has occurred within the last 15 minutes
+     *
+     * These checks are done based off of the information in the trip's journey state's latest itinerary. If no such
+     * itinerary exists or a previous monitored trip's itinerary has completed, then the next possible itinerary will be
+     * calculated and updated in the monitored trip's journey state.
      */
-    public static boolean shouldSkipMonitoredTripCheck(MonitoredTrip trip) {
-        ZoneId zoneId;
-        Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(trip.from.lat, trip.from.lon);
-        if (fromZoneId.isEmpty()) {
-            String message = String.format(
-                "Could not find coordinate's (lat=%.6f, lon=%.6f) timezone for monitored trip %s",
-                trip.from.lat,
-                trip.from.lon,
-                trip.id
-            );
-            throw new RuntimeException(message);
+    public boolean shouldSkipMonitoredTripCheck() throws Exception {
+        // before anything else, return true if the trip is inactive
+        if (trip.isInActive()) return true;
+
+        // calculate the appropriate timezone to use for the target time based off of the appropriate trip end location
+        ZoneId targetZoneId = trip.getTimezoneForTargetLocation();
+
+        // get the most recent journey state and itinerary to see when the next monitored trip is supposed to occur
+        JourneyState latestJourneyState = trip.retrieveJourneyState();
+        Itinerary latestItinerary = trip.latestItinerary();
+        if (latestItinerary == null || latestItinerary.endTime.before(latestJourneyState.lastUpdated)) {
+            // Either the monitored trip hasn't ever checked on the next itinerary, or the most recent itinerary has
+            // completed and the next possible one needs to be fetched in order to determine the scheduled start time of
+            // the itinerary on the next possible day the monitored trip happens
+
+            // calculate target time for the next trip plan request
+            // find the next possible day the trip is active by initializing the the appropriate target time on today's
+            // date
+            ZonedDateTime targetZonedDateTime = DateTimeUtils.nowAsZonedDateTime(targetZoneId)
+                .withHour(trip.getHour())
+                .withMinute(trip.getMinute())
+                .withSecond(0);
+
+            // if the trip is not active on the current zoned date time, advance until a day is found when the trip is
+            // active. It is guaranteed that the trip will be active on a certain date because a call to
+            // {@link MonitoredTrip#isInactive} has already been made.
+            while (!trip.isActiveOnDate(targetZonedDateTime)) {
+                targetZonedDateTime = targetZonedDateTime.plusDays(1);
+            }
+            targetDate = targetZonedDateTime.format(DATE_FORMATTER);
+
+            // execute trip plan request for the target time
+            if (!calculateOtpResponse()) {
+                // failed to calculate, skip the trip check
+                return true;
+            }
+
+            // check if the
+            // save response in journey state
+            currentItineraryStartTime = trip.nextAnticipatedItineraryStartTime();
         } else {
-            zoneId = fromZoneId.get();
+            targetDate = latestJourneyState.targetDate;
         }
+        Instant currentItineraryStartTime = Instant.ofEpochSecond(latestItinerary.startTime.getTime());
+
         // Get current time and trip time (with the time offset to today) for comparison.
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(zoneId);
         // TODO: Determine whether we want to monitor trips during the length of the trip.
@@ -349,41 +376,43 @@ public class CheckMonitoredTrip implements Runnable {
         return true;
     }
 
+    private boolean calculateOtpResponse() {
+        OtpDispatcherResponse otpDispatcherResponse = null;
+        try {
+            otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(generateTripPlanQueryParams());
+        } catch (Exception e) {
+            // TODO: report bugsnag
+            LOG.error("Encountered an error while making a request ot the OTP server. error={}", e);
+            return false;
+        }
+
+        if (otpDispatcherResponse.statusCode >= 400) {
+            // TODO: report bugsnag
+            LOG.error("Received an error from the OTP server. status={}", otpDispatcherResponse.statusCode);
+            return false;
+        }
+        otpResponse = otpDispatcherResponse.getResponse();
+        return true;
+    }
+
     /**
-     * Generate the appropriate OTP query params for the trip for the current check. This currently involves replacing
+     * Generate the appropriate OTP query params for the trip for the current check by replacing
      * the date query parameter with the appropriate date.
-     *
-     * TODO: finish implementation
      */
-    public static String generateTripPlanQueryParams(MonitoredTrip trip) throws URISyntaxException {
+    public String generateTripPlanQueryParams() throws URISyntaxException {
         // parse query params
         List<NameValuePair> params = URLEncodedUtils.parse(
             new URI(String.format("http://example.com/%s", trip.queryParams)),
             UTF_8
         );
 
-        // begin building a new list and along the way and figure out if this trip is a depart at or arrive by trip
+        // building a new list by copying all values, except for the date which is set to the target date
         List<NameValuePair> newParams = new ArrayList<>();
-        boolean tripIsDepartAt = true;
         for (NameValuePair param : params) {
-            if (param.getName().equals("arriveBy") && param.getValue().equals("true")) tripIsDepartAt = false;
-            if (!param.getName().equals("date")) {
-                newParams.add(param);
-            } else { newParams.add(param); } // TODO delete this else block once below target date TODOs are implemented
+            if (param.getName().equals("date")) {
+                newParams.add(new BasicNameValuePair("date", targetDate));
+            } else { newParams.add(param); }
         }
-
-        // replace target date with appropriate date for making an OTP query
-        String newDate;
-        if (tripIsDepartAt) {
-            // TODO: check if trip's itinerary has a desired start time of today, but would start tomorrow given the
-            //  starting time in the itinerary
-            newDate = "";
-        } else {
-            // TODO: check if trip's itinerary starts on a previous day, but has an arriveBy date that is actually
-            //  tomorrow
-            newDate = "";
-        }
-        // newParams.add(new BasicNameValuePair("date", newDate)); TODO uncomment once above TODOs are implemented
 
         // convert object to string
         return URLEncodedUtils.format(newParams, UTF_8);

@@ -64,20 +64,23 @@ public class JourneyState extends Model {
 
     public int lastArrivalDelay;
 
+    public String targetDate;
+
     /**
      * Update journey state based on results from {@link CheckMonitoredTrip}.
      * TODO: This may need some tweaking depending on whether a check was successfully completed or not.
      *   E.g., should a previous journey state be overwritten by a failed check?
      */
     public void update(CheckMonitoredTrip checkMonitoredTripJob) {
-        this.lastChecked = DateTimeUtils.currentTimeMillis();
-        this.matchingItineraryIndex = checkMonitoredTripJob.matchingItineraryIndex;
-        this.lastResponse = checkMonitoredTripJob.otpResponse;
-        this.lastDepartureDelay = checkMonitoredTripJob.departureDelay;
-        this.lastArrivalDelay = checkMonitoredTripJob.arrivalDelay;
+        targetDate = checkMonitoredTripJob.targetDate;
+        lastChecked = DateTimeUtils.currentTimeMillis();
+        matchingItineraryIndex = checkMonitoredTripJob.matchingItineraryIndex;
+        lastResponse = checkMonitoredTripJob.otpResponse;
+        lastDepartureDelay = checkMonitoredTripJob.departureDelay;
+        lastArrivalDelay = checkMonitoredTripJob.arrivalDelay;
         // Update notification time if notification successfully sent.
         if (checkMonitoredTripJob.notificationTimestamp != -1) {
-            this.lastNotificationTime = checkMonitoredTripJob.notificationTimestamp;
+            lastNotificationTime = checkMonitoredTripJob.notificationTimestamp;
         }
         Persistence.journeyStates.replace(this.id, this);
     }

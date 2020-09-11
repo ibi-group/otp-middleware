@@ -37,8 +37,6 @@ import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTripAndJourney;
-import static org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip.generateTripPlanQueryParams;
-import static org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip.shouldSkipMonitoredTripCheck;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
@@ -148,10 +146,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      */
     @ParameterizedTest
     @MethodSource("createSkipTripTestCases")
-    void testSkipMonitoredTripCheck(ShouldSkipTripTestCase testCase) {
+    void testSkipMonitoredTripCheck(ShouldSkipTripTestCase testCase) throws Exception {
         DateTimeUtils.useFixedClockAt(testCase.mockTime);
+        CheckMonitoredTrip check = new CheckMonitoredTrip(testCase.trip);
         try {
-            assertEquals(testCase.shouldSkipTrip, shouldSkipMonitoredTripCheck(testCase.trip), testCase.message);
+            assertEquals(testCase.shouldSkipTrip, check.shouldSkipMonitoredTripCheck(), testCase.message);
         } finally {
             DateTimeUtils.useSystemDefaultClockAndTimezone();
         }

@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.models;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
@@ -8,14 +10,19 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
-
-import java.time.DayOfWeek;
-import java.time.ZonedDateTime;
-
-import static com.mongodb.client.model.Filters.eq;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.DayOfWeek;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
+
+import static com.mongodb.client.model.Filters.eq;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
@@ -129,6 +136,10 @@ public class MonitoredTrip extends Model {
      */
     public boolean notifyOnItineraryChange = true;
 
+    private transient JourneyState journeyState;
+
+    private transient List<NameValuePair> parsedParams;
+
     public MonitoredTrip() {
     }
 
@@ -161,6 +172,15 @@ public class MonitoredTrip extends Model {
         thursday = value;
         friday = value;
         return this;
+    }
+
+    /**
+     * Returns true if the trip is not active overall or if all days of the week are set to false
+     */
+    public boolean isInActive() {
+        return !isActive || (
+          !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday
+        );
     }
 
     public boolean isActiveOnDate(ZonedDateTime zonedDateTime) {
@@ -230,7 +250,10 @@ public class MonitoredTrip extends Model {
      * Get the journey state for this trip.
      */
     public JourneyState retrieveJourneyState() {
-        JourneyState journeyState = Persistence.journeyStates.getOneFiltered(tripIdFilter());
+        // first return the journeyState for this trip if it has already been fetched
+        if (journeyState != null) return journeyState;
+        // hasn't been fetched, attempt to retrieve from the db
+        journeyState = Persistence.journeyStates.getOneFiltered(tripIdFilter());
         // If journey state does not exist, create and persist.
         if (journeyState == null) {
             journeyState = new JourneyState(this);
@@ -278,6 +301,71 @@ public class MonitoredTrip extends Model {
     public boolean delete() {
         // TODO: Add journey state deletion.
         return Persistence.monitoredTrips.removeById(this.id);
+    }
+
+    public List<NameValuePair> getParsedParams() throws URISyntaxException {
+        // use the transient value of parsedParams if it is available
+        if (parsedParams != null) return parsedParams;
+
+        // need to parse the params
+        parsedParams = URLEncodedUtils.parse(
+            new URI(String.format("http://example.com/%s", queryParams)),
+            UTF_8
+        );
+        return parsedParams;
+    }
+
+    public boolean isArriveBy() throws URISyntaxException {
+        for (NameValuePair param : parsedParams) {
+            if (param.getName().equals("arriveBy")) {
+                return param.getValue().equals("true");
+            }
+        }
+
+        // if arriveBy is not included in query params, OTP will default to false, so initialize to false
+        return false;
+    }
+
+    /**
+     * Gets the timezone of the target location. When planning a trip, we either want to depart at a certain time or 
+     * arrive by a certain time. When departing, we use the local time present at the origin and when arriving by we 
+     * use the local time at the destination. Therefore, this method will return the timezone at the destination if this
+     * trip is an arriveBy trip, or the timezone at the origin if the trip is a depart at trip.
+     */
+    public ZoneId getTimezoneForTargetLocation() throws URISyntaxException {
+        double lat, lon;
+        if (isArriveBy()) {
+            lat = to.lat;
+            lon = to.lon;
+        } else {
+            lat = from.lat;
+            lon = from.lon;
+        }
+        Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(lat, lon);
+        if (fromZoneId.isEmpty()) {
+            String message = String.format(
+                "Could not find coordinate's (lat=%.6f, lon=%.6f) timezone for monitored trip %s",
+                lat,
+                lon,
+                id
+            );
+            throw new RuntimeException(message);
+        } 
+        return fromZoneId.get();
+    }
+
+    /**
+     * Returns the target hour of the day that the trip is either departing at or arriving by
+     */
+    public int getHour() {
+        return Integer.valueOf(tripTime.split(":")[0]);
+    }
+
+    /**
+     * Returns the target minute of the hour that the trip is either departing at or arriving by
+     */
+    public int getMinute() {
+        return Integer.valueOf(tripTime.split(":")[1]);
     }
 }
 
