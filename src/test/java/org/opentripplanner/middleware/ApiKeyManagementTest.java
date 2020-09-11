@@ -26,7 +26,6 @@ import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.getDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 
 /**
  * Tests for creating and deleting api keys. The following config parameters must be set in
@@ -47,12 +46,12 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException {
+        assumeTrue(isEndToEnd);
+        // TODO: It might be useful to allow this to run without DISABLE_AUTH set to true (in an end-to-end environment
+        //  using real tokens from Auth0.
         setAuthDisabled(true);
         // Load config before checking if tests should run.
         OtpMiddlewareTest.setUp();
-        // TODO: It might be useful to allow this to run without DISABLE_AUTH set to true (in an end-to-end environment
-        //  using real tokens from Auth0.
-        assumeTrue(isEndToEnd);
         apiUser = PersistenceUtil.createApiUser("test@example.com");
         adminUser = PersistenceUtil.createAdminUser("test@example.com");
     }
@@ -76,7 +75,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void canCreateApiKeyForSelf() {
-        assumeTrue(isEndToEnd);
         HttpResponse<String> response = createApiKeyRequest(apiUser.id, apiUser);
         assertEquals(HttpStatus.OK_200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
@@ -91,7 +89,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void adminCanCreateApiKeyForApiUser() {
-        assumeTrue(isEndToEnd);
         HttpResponse<String> response = createApiKeyRequest(apiUser.id, adminUser);
         assertEquals(HttpStatus.OK_200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
@@ -107,7 +104,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void cannotDeleteApiKeyForSelf() {
-        assumeTrue(isEndToEnd);
         ensureApiKeyExists();
         int initialKeyCount = apiUser.apiKeys.size();
         // delete key
@@ -126,7 +122,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void adminCanDeleteApiKeyForApiUser() {
-        assumeTrue(isEndToEnd);
         ensureApiKeyExists();
         // delete key
         String keyId = apiUser.apiKeys.get(0).keyId;
