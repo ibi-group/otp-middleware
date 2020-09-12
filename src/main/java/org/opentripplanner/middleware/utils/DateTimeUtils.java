@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
+import java.util.Date;
 import java.util.Optional;
 
 /**
@@ -77,6 +78,10 @@ public class DateTimeUtils {
             .toFormatter()
             .withZone(zoneId);
         return localDate.format(expectedDateFormat);
+    }
+
+    public static Date nowAsDate() {
+        return new Date(currentTimeMillis());
     }
 
     public static LocalDate nowAsLocalDate() {

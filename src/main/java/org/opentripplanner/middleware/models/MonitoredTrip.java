@@ -268,11 +268,7 @@ public class MonitoredTrip extends Model {
      */
     public Itinerary latestItinerary() {
         JourneyState journeyState = retrieveJourneyState();
-        if (journeyState.lastResponse != null && journeyState.matchingItineraryIndex != -1) {
-            return journeyState.lastResponse.plan.itineraries.get(journeyState.matchingItineraryIndex);
-        }
-        // If there is no last response, return null.
-        return null;
+        return journeyState.matchingItinerary;
     }
 
     /**

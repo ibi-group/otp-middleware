@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.models;
 
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
-import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -28,31 +28,14 @@ public class JourneyState extends Model {
         this.userId = monitoredTrip.userId;
     }
 
-    /**
-     * The {@link MonitoredTrip} id that this journey state is tracking.
-     */
-    public String monitoredTripId;
+    public int lastArrivalDelay;
 
-    /**
-     * User ID for {@link OtpUser} that owns the {@link MonitoredTrip}.
-     */
-    private String userId;
+    public int lastDepartureDelay;
 
     /**
      * Timestamp checking the last time a journey was checked.
      */
     public long lastChecked;
-
-    /**
-     * Store the recent plan requests made over the course of monitoring a trip. Note: these should be cleared once the
-     * monitored trip clears for the day (i.e., if the monitored trip occurs at 9am, responses will stack up as we check
-     * the trip. At 9:01am (or perhaps some later time in the day) this should be cleared.).
-     *
-     * FIXME: Should the type be string/responseBody instead?
-     */
-    public Response lastResponse;
-
-    public int matchingItineraryIndex;
 
     public Set<TripMonitorNotification> lastNotifications = new HashSet<>();
 
@@ -60,11 +43,22 @@ public class JourneyState extends Model {
 
     public Set<LocalizedAlert> lastSeenAlerts = new HashSet<>();
 
-    public int lastDepartureDelay;
+    /**
+     * The current or upcoming matching itinerary from plan requests made over the course of monitoring a trip.
+     */
+    public Itinerary matchingItinerary;
 
-    public int lastArrivalDelay;
+    /**
+     * The {@link MonitoredTrip} id that this journey state is tracking.
+     */
+    public String monitoredTripId;
 
     public String targetDate;
+
+    /**
+     * User ID for {@link OtpUser} that owns the {@link MonitoredTrip}.
+     */
+    private String userId;
 
     /**
      * Update journey state based on results from {@link CheckMonitoredTrip}.
@@ -74,8 +68,7 @@ public class JourneyState extends Model {
     public void update(CheckMonitoredTrip checkMonitoredTripJob) {
         targetDate = checkMonitoredTripJob.targetDate;
         lastChecked = DateTimeUtils.currentTimeMillis();
-        matchingItineraryIndex = checkMonitoredTripJob.matchingItineraryIndex;
-        lastResponse = checkMonitoredTripJob.otpResponse;
+        matchingItinerary = checkMonitoredTripJob.matchingItinerary;
         lastDepartureDelay = checkMonitoredTripJob.departureDelay;
         lastArrivalDelay = checkMonitoredTripJob.arrivalDelay;
         // Update notification time if notification successfully sent.

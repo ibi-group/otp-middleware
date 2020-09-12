@@ -28,6 +28,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -59,7 +60,7 @@ public class CheckMonitoredTrip implements Runnable {
     /**
      * The index of the matching {@link Itinerary} as found in the OTP {@link Response} planned as part of this check.
      */
-    public int matchingItineraryIndex = -1;
+    public Itinerary matchingItinerary;
     /**
      * The OTP response planned to check the stored {@link Itinerary} against.
      */
@@ -70,6 +71,8 @@ public class CheckMonitoredTrip implements Runnable {
     public long notificationTimestamp = -1;
 
     public String targetDate;
+
+    private ZonedDateTime targetZonedDateTime;
 
     public CheckMonitoredTrip(MonitoredTrip trip) {
         this.trip = trip;
@@ -108,39 +111,44 @@ public class CheckMonitoredTrip implements Runnable {
     private void runCheckLogic() {
         // TODO: Should null tripRequestId be fixed?
         // TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan, otpDispatcherResponse.response.error, null);
-        matchingItineraryIndex = findMatchingItineraryIndex(trip, otpResponse);
-        if (matchingItineraryIndex == -1) {
+        if (!findMatchingItinerary()) {
             // No matching itinerary was found.
             enqueueNotification(TripMonitorNotification.createItineraryNotFoundNotification());
-            // TODO: Try some fancy things to construct a matching itinerary (e.g., transit index?).
             return;
         }
         // Matching itinerary found in OTP response. Run real-time checks.
-        Itinerary itinerary = otpResponse.plan.itineraries.get(matchingItineraryIndex);
         enqueueNotification(
             // Check for notifications related to service alerts.
-            checkTripForNewAlerts(trip, itinerary),
+            checkTripForNewAlerts(),
             // Check for notifications related to delays.
-            checkTripForDepartureDelay(trip, itinerary),
-            checkTripForArrivalDelay(trip, itinerary)
+            checkTripForDepartureDelay(),
+            checkTripForArrivalDelay()
         );
     }
 
     /**
-     * Find an itinerary from the OTP response that matches the monitored trip's stored itinerary.
+     * Find and set the matching itinerary from the OTP response that matches the monitored trip's stored itinerary if a
+     * match exists.
+     *
+     * FIXME: the itinerary might actually still be possible, but for some reason the OTP plan didn't find the same
+     *          match. Some additional checks should be performed to make sure the itinerary really isn't possible by
+     *          verifying that the same transit schedule/routes exist and that the street network is the same
      */
-    private static int findMatchingItineraryIndex(MonitoredTrip trip, Response otpResponse) {
+    private boolean findMatchingItinerary() {
         for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
             // TODO: BIG - Find the specific itinerary to compare against. For now, use equals, but this may need some
             //  tweaking
             Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
-            if (candidateItinerary.equals(trip.itinerary)) return i;
+            if (candidateItinerary.equals(trip.itinerary)) {
+                matchingItinerary = candidateItinerary;
+                return true;
+            }
         }
         LOG.warn("No comparison itinerary found in otp response for trip {}", trip.id);
-        return -1;
+        return false;
     }
 
-    public static TripMonitorNotification checkTripForNewAlerts(MonitoredTrip trip, Itinerary itinerary) {
+    public TripMonitorNotification checkTripForNewAlerts() {
         if (!trip.notifyOnAlert) {
             LOG.debug("Notify on alert is disabled for trip {}. Skipping check.", trip.id);
             return null;
@@ -152,7 +160,7 @@ public class CheckMonitoredTrip implements Runnable {
             ? Collections.EMPTY_SET
             : new HashSet<>(latestItinerary.getAlerts());
         // Construct set from new alerts.
-        Set<LocalizedAlert> newAlerts = new HashSet<>(itinerary.getAlerts());
+        Set<LocalizedAlert> newAlerts = new HashSet<>(matchingItinerary.getAlerts());
         TripMonitorNotification notification = TripMonitorNotification.createAlertNotification(previousAlerts, newAlerts);
         if (notification == null) {
             // TODO: Change log level
@@ -161,8 +169,8 @@ public class CheckMonitoredTrip implements Runnable {
         return notification;
     }
 
-    public static TripMonitorNotification checkTripForDepartureDelay(MonitoredTrip trip, Itinerary itinerary) {
-        long departureDelayInMinutes = TimeUnit.SECONDS.toMinutes(itinerary.legs.get(0).departureDelay);
+    public TripMonitorNotification checkTripForDepartureDelay() {
+        long departureDelayInMinutes = TimeUnit.SECONDS.toMinutes(matchingItinerary.legs.get(0).departureDelay);
         // First leg departure time should not exceed variance allowed.
         if (departureDelayInMinutes >= trip.departureVarianceMinutesThreshold) {
             return TripMonitorNotification.createDelayNotification(departureDelayInMinutes, trip.departureVarianceMinutesThreshold, DEPARTURE_DELAY);
@@ -170,8 +178,8 @@ public class CheckMonitoredTrip implements Runnable {
         return null;
     }
 
-    public static TripMonitorNotification checkTripForArrivalDelay(MonitoredTrip trip, Itinerary itinerary) {
-        Leg lastLeg = itinerary.legs.get(itinerary.legs.size() - 1);
+    public TripMonitorNotification checkTripForArrivalDelay() {
+        Leg lastLeg = matchingItinerary.legs.get(matchingItinerary.legs.size() - 1);
         long arrivalDelayInMinutes = TimeUnit.SECONDS.toMinutes(lastLeg.arrivalDelay);
         // Last leg arrival time should not exceed variance allowed.
         if (arrivalDelayInMinutes >= trip.arrivalVarianceMinutesThreshold) {
@@ -264,9 +272,11 @@ public class CheckMonitoredTrip implements Runnable {
         ZoneId targetZoneId = trip.getTimezoneForTargetLocation();
 
         // get the most recent journey state and itinerary to see when the next monitored trip is supposed to occur
-        JourneyState latestJourneyState = trip.retrieveJourneyState();
-        Itinerary latestItinerary = trip.latestItinerary();
-        if (latestItinerary == null || latestItinerary.endTime.before(latestJourneyState.lastUpdated)) {
+        JourneyState journeyState = trip.retrieveJourneyState();
+        if (
+            journeyState.matchingItinerary == null ||
+                journeyState.matchingItinerary.endTime.before(journeyState.lastUpdated)
+        ) {
             // Either the monitored trip hasn't ever checked on the next itinerary, or the most recent itinerary has
             // completed and the next possible one needs to be fetched in order to determine the scheduled start time of
             // the itinerary on the next possible day the monitored trip happens
@@ -274,69 +284,37 @@ public class CheckMonitoredTrip implements Runnable {
             // calculate target time for the next trip plan request
             // find the next possible day the trip is active by initializing the the appropriate target time on today's
             // date
-            ZonedDateTime targetZonedDateTime = DateTimeUtils.nowAsZonedDateTime(targetZoneId)
+            targetZonedDateTime = DateTimeUtils.nowAsZonedDateTime(targetZoneId)
                 .withHour(trip.getHour())
                 .withMinute(trip.getMinute())
                 .withSecond(0);
 
-            // if the trip is not active on the current zoned date time, advance until a day is found when the trip is
-            // active. It is guaranteed that the trip will be active on a certain date because a call to
-            // {@link MonitoredTrip#isInactive} has already been made.
-            while (!trip.isActiveOnDate(targetZonedDateTime)) {
+            if (!calculateNextItinerary()) return true;
+
+            // check if the matching itinerary has already ended
+            if (matchingItinerary.endTime.before(DateTimeUtils.nowAsDate())) {
+                // itinerary is done today, advance to the next day and recheck
                 targetZonedDateTime = targetZonedDateTime.plusDays(1);
+                if (!calculateNextItinerary()) return true;
             }
-            targetDate = targetZonedDateTime.format(DATE_FORMATTER);
-
-            // execute trip plan request for the target time
-            if (!calculateOtpResponse()) {
-                // failed to calculate, skip the trip check
-                return true;
-            }
-
-            // check if the
-            // save response in journey state
-            currentItineraryStartTime = trip.nextAnticipatedItineraryStartTime();
+            // save journey state with updated matching itinerary and target date
+            journeyState.update(this);
         } else {
-            targetDate = latestJourneyState.targetDate;
+            matchingItinerary = journeyState.matchingItinerary;
+            targetDate = journeyState.targetDate;
         }
-        Instant currentItineraryStartTime = Instant.ofEpochSecond(latestItinerary.startTime.getTime());
+        Instant tripStartInstant = Instant.ofEpochSecond(matchingItinerary.startTime.getTime());
 
         // Get current time and trip time (with the time offset to today) for comparison.
-        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(zoneId);
-        // TODO: Determine whether we want to monitor trips during the length of the trip.
-        //  If we do this, we will want to use the itinerary end time (and destination zoneId) to determine this time
-        //  value. Also, we may want to use the start time leading up to the trip (for periodic monitoring) and once
-        //  the trip has started, switch to some other monitoring interval while the trip is in progress.
-        ZonedDateTime tripTime = ZonedDateTime.ofInstant(trip.itinerary.startTime.toInstant(), zoneId)
-            // Offset the trip time to today's date.
-            .withYear(now.getYear())
-            .withMonth(now.getMonthValue())
-            .withDayOfMonth(now.getDayOfMonth());
+        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(targetZoneId);
         // TODO: Change log level.
-        LOG.info("Trip {} starts at {} (now={})", trip.id, tripTime.toString(), now.toString());
-        // TODO: This check may eventually make use of endTime and be used in conjunction with tripInProgress check (see
-        //  above).
-        boolean tripHasEnded = now.isAfter(tripTime);
-        // Skip check if trip is not active today.
-        if (!trip.isActiveOnDate(now)) {
-            // TODO: Change log level.
-            LOG.info("Trip {} not active today.", trip.id);
-            return true;
-        }
-        // If the trip has already occurred, clear the journey state.
-        // TODO: Decide whether this should happen at some other time.
-        if (tripHasEnded) {
-            // TODO: Change log level.
-            LOG.info("Trip {} has cleared.", trip.id);
-            // TODO: If we decide to stack up responses, we should clear them here.
-//            trip.clearJourneyState();
-            return true;
-        }
+        LOG.info("Trip {} starts at {} (now={})", trip.id, tripStartInstant.toString(), now.toString());
+
         // If last check was more than an hour ago and trip doesn't occur until an hour from now, check trip.
-        long millisSinceLastCheck = DateTimeUtils.currentTimeMillis() - trip.retrieveJourneyState().lastChecked;
+        long millisSinceLastCheck = DateTimeUtils.currentTimeMillis() - journeyState.lastChecked;
         long minutesSinceLastCheck = TimeUnit.MILLISECONDS.toMinutes(millisSinceLastCheck);
         LOG.info("{} minutes since last check", minutesSinceLastCheck);
-        long minutesUntilTrip = Duration.between(now, tripTime).toMinutes();
+        long minutesUntilTrip = Duration.between(now, tripStartInstant).toMinutes();
         LOG.info("Trip {} starts in {} minutes", trip.id, minutesUntilTrip);
         // TODO: Refine these frequency intervals for monitor checks.
         // If time until trip is greater than 60 minutes, we only need to check once every hour.
@@ -373,6 +351,35 @@ public class CheckMonitoredTrip implements Runnable {
         // Default to skipping check.
         // TODO: Change log level.
         LOG.info("Trip {} criteria not met to check. Skipping.", trip.id);
+        return true;
+    }
+
+    /**
+     * Calculate the next possible time that the itinerary is possible, advancing the targetZonedDateTime and setting
+     * the targetZonedDateTime, targetDate, otpResponse and matchingItinerary. Returns false if an error occurs or a
+     * matching itinerary isn't found on the next possible date the trip should be monitored on.
+     */
+    private boolean calculateNextItinerary() {
+        // if the trip is not active on the current zoned date time, advance until a day is found when the trip is
+        // active. It is guaranteed that the trip will be active on a certain date because a call to
+        // {@link MonitoredTrip#isInactive} has already been made.
+        while (!trip.isActiveOnDate(targetZonedDateTime)) {
+            targetZonedDateTime = targetZonedDateTime.plusDays(1);
+        }
+        targetDate = targetZonedDateTime.format(DATE_FORMATTER);
+
+        // execute trip plan request for the target time
+        if (!calculateOtpResponse()) {
+            // failed to calculate, return false
+            return false;
+        }
+
+        // check if the resulting itinerary has a matching itinerary
+        if (!findMatchingItinerary()) {
+            // TODO: figure out how to notify the user that the itinerary is not possible anymore
+            // for now, just say the next itinerary couldn't be found
+            return false;
+        }
         return true;
     }
 
