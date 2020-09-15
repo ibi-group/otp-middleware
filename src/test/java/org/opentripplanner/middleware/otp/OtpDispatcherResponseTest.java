@@ -11,7 +11,7 @@ import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT
 
 public class OtpDispatcherResponseTest {
     @Test
-    public void toStringShouldExludeResponseFieldIfNotCallingPlan() throws IOException {
+    public void toStringShouldExcludeResponseFieldIfNotCallingPlan() throws IOException {
         String mockParkRideResponse = FileUtils.getFileContents(
             TEST_RESOURCE_PATH + "otp/parkRideResponse.json"
         );
