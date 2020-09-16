@@ -42,6 +42,8 @@ public class TestUtils {
      */
     static final String TEMP_AUTH0_USER_PASSWORD = UUID.randomUUID().toString();
 
+    public static final String TEST_RESOURCE_PATH = "src/test/resources/org/opentripplanner/middleware/";
+
     /**
      * Prevents the mock OTP server being initialized more than once
      */
@@ -65,7 +67,7 @@ public class TestUtils {
 
     public static <T> T getResourceFileContentsAsJSON (String resourcePathName, Class<T> clazz) throws IOException {
         return FileUtils.getFileContentsAsJSON(
-            String.format("src/test/resources/org/opentripplanner/middleware/%s", resourcePathName),
+            TEST_RESOURCE_PATH + resourcePathName,
             clazz
         );
     }
@@ -170,7 +172,6 @@ public class TestUtils {
      * Mock an OTP server plan response by serving defined mock responses or a static response from file.
      */
     private static String mockOtpPlanResponse(Request request, Response response) throws IOException {
-        final String filePath = "src/test/resources/org/opentripplanner/middleware/";
         LOG.info("Received mock OTP request: {}?{}", request.url(), request.queryString());
         // check if mock responses have been added
         if (mockResponseIndex > -1) {
@@ -188,7 +189,7 @@ public class TestUtils {
 
         // mocks not setup, simply return from a file every time
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
-        otpDispatcherResponse.responseBody = FileUtils.getFileContents(filePath + "planResponse.json");
+        otpDispatcherResponse.responseBody = FileUtils.getFileContents(TEST_RESOURCE_PATH + "planResponse.json");
         return otpDispatcherResponse.responseBody;
     }
 
