@@ -302,7 +302,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // - Returns false if trip still hadn't ended prior to the last checked time even though the current time is
         //   after the last known end time of the trip
         testCases.add(new ShouldSkipTripTestCase(
-            noonMonday8June2020.withHour(8).withMinute(58), // last checked at 8:58am
+            noonMonday8June2020.withHour(8).withMinute(58).withSecond(0), // last checked at 8:58am
             "should return false if trip hadn't ended the last time it was checked despite it being after the last known end time",
             noonMonday8June2020.withHour(8).withMinute(59), // mock time: 8:59am
             Collections.EMPTY_LIST, // no mocks because OTP request occurs after skip check
