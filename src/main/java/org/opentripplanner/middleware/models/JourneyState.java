@@ -35,11 +35,11 @@ public class JourneyState extends Model {
     /**
      * Timestamp checking the last time a journey was checked.
      */
-    public long lastChecked;
+    public long lastCheckedMillis;
 
     public Set<TripMonitorNotification> lastNotifications = new HashSet<>();
 
-    public long lastNotificationTime;
+    public long lastNotificationTimeMillis;
 
     public Set<LocalizedAlert> lastSeenAlerts = new HashSet<>();
 
@@ -67,13 +67,13 @@ public class JourneyState extends Model {
      */
     public void update(CheckMonitoredTrip checkMonitoredTripJob) {
         targetDate = checkMonitoredTripJob.targetDate;
-        lastChecked = DateTimeUtils.currentTimeMillis();
+        lastCheckedMillis = DateTimeUtils.currentTimeMillis();
         matchingItinerary = checkMonitoredTripJob.matchingItinerary;
         lastDepartureDelay = checkMonitoredTripJob.departureDelay;
         lastArrivalDelay = checkMonitoredTripJob.arrivalDelay;
         // Update notification time if notification successfully sent.
-        if (checkMonitoredTripJob.notificationTimestamp != -1) {
-            lastNotificationTime = checkMonitoredTripJob.notificationTimestamp;
+        if (checkMonitoredTripJob.notificationTimestampMillis != -1) {
+            lastNotificationTimeMillis = checkMonitoredTripJob.notificationTimestampMillis;
         }
         Persistence.journeyStates.replace(this.id, this);
     }

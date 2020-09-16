@@ -11,7 +11,7 @@ import java.util.HashMap;
  * Pare down version of class original produced for OpenTripPlanner.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Response {
+public class OtpResponse {
 
     /** A dictionary of the parameters provided in the request that triggered this response. */
     public HashMap<String, String> requestParameters;

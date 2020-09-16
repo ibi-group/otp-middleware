@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.models;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
@@ -136,17 +137,22 @@ public class MonitoredTrip extends Model {
      */
     public boolean notifyOnItineraryChange = true;
 
-    private transient JourneyState journeyState;
-
-    private transient List<NameValuePair> parsedParams;
-
     public MonitoredTrip() {
     }
 
-    public MonitoredTrip(OtpDispatcherResponse otpDispatcherResponse) {
+    public MonitoredTrip(OtpDispatcherResponse otpDispatcherResponse) throws URISyntaxException {
         queryParams = otpDispatcherResponse.requestUri.getQuery();
         TripPlan plan = otpDispatcherResponse.getResponse().plan;
         itinerary = plan.itineraries.get(0);
+
+        // extract trip time from parsed params
+        List<NameValuePair> parsedParams = getParsedParams();
+        for (NameValuePair parsedParam : parsedParams) {
+            if (parsedParam.getName().equals("time")) {
+                tripTime = parsedParam.getValue();
+                break;
+            }
+        }
         initializeFromItinerary();
     }
 
@@ -250,10 +256,8 @@ public class MonitoredTrip extends Model {
      * Get the journey state for this trip.
      */
     public JourneyState retrieveJourneyState() {
-        // first return the journeyState for this trip if it has already been fetched
-        if (journeyState != null) return journeyState;
-        // hasn't been fetched, attempt to retrieve from the db
-        journeyState = Persistence.journeyStates.getOneFiltered(tripIdFilter());
+        // attempt to retrieve from the db
+        JourneyState journeyState = Persistence.journeyStates.getOneFiltered(tripIdFilter());
         // If journey state does not exist, create and persist.
         if (journeyState == null) {
             journeyState = new JourneyState(this);
@@ -300,19 +304,14 @@ public class MonitoredTrip extends Model {
     }
 
     public List<NameValuePair> getParsedParams() throws URISyntaxException {
-        // use the transient value of parsedParams if it is available
-        if (parsedParams != null) return parsedParams;
-
-        // need to parse the params
-        parsedParams = URLEncodedUtils.parse(
+        return URLEncodedUtils.parse(
             new URI(String.format("http://example.com/%s", queryParams)),
             UTF_8
         );
-        return parsedParams;
     }
 
     public boolean isArriveBy() throws URISyntaxException {
-        for (NameValuePair param : parsedParams) {
+        for (NameValuePair param : getParsedParams()) {
             if (param.getName().equals("arriveBy")) {
                 return param.getValue().equals("true");
             }
@@ -328,6 +327,7 @@ public class MonitoredTrip extends Model {
      * use the local time at the destination. Therefore, this method will return the timezone at the destination if this
      * trip is an arriveBy trip, or the timezone at the origin if the trip is a depart at trip.
      */
+    @BsonIgnore
     public ZoneId getTimezoneForTargetLocation() throws URISyntaxException {
         double lat, lon;
         if (isArriveBy()) {
@@ -353,6 +353,7 @@ public class MonitoredTrip extends Model {
     /**
      * Returns the target hour of the day that the trip is either departing at or arriving by
      */
+    @BsonIgnore
     public int getHour() {
         return Integer.valueOf(tripTime.split(":")[0]);
     }
@@ -360,6 +361,7 @@ public class MonitoredTrip extends Model {
     /**
      * Returns the target minute of the hour that the trip is either departing at or arriving by
      */
+    @BsonIgnore
     public int getMinute() {
         return Integer.valueOf(tripTime.split(":")[1]);
     }

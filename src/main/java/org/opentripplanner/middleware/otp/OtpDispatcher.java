@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -87,10 +88,11 @@ public class OtpDispatcher {
         // Get response from OTP
         OtpDispatcherResponse otpDispatcherResponse = null;
         try {
+            LOG.info("Sending request to OTP: {}", uri.toString());
             HttpResponse<String> otpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
             otpDispatcherResponse = new OtpDispatcherResponse(otpResponse);
         } catch (InterruptedException | IOException e) {
-            LOG.error("Error requesting OTP data", e);
+            LOG.error("Error requesting OTP data from {}", uri, e);
         }
         return otpDispatcherResponse;
     }
