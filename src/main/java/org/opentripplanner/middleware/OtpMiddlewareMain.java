@@ -10,13 +10,14 @@ import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.BugsnagController;
 import org.opentripplanner.middleware.controllers.api.LogController;
 import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
+import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
 import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
-import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripMonitor.jobs.MonitorAllTripsJob;
 import org.opentripplanner.middleware.utils.ConfigUtils;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,6 +101,27 @@ public class OtpMiddlewareMain {
         spark.get("/docs", (request, response) -> {
             response.type("text/yaml");
             return Files.readString(publicDocPath);
+        });
+
+        /**
+         * End point to handle redirecting to the correct registration page from Auth0 as described here:
+         *
+         * https://auth0.com/docs/auth0-email-services/customize-email-templates#dynamic-redirect-to-urls
+         *
+         * Instead of defining just the redirect page (as suggested in the link) the route parameter must be the complete
+         * _encoded_ URL e.g. http://localhost:3000/#/register which allows for greater flexibility.
+         */
+        spark.get("/register", (request, response) -> {
+            String route = HttpUtils.getRequiredQueryParamFromRequest(request, "route", false);
+            if (route == null) {
+                logMessageAndHalt(request,
+                    HttpStatus.BAD_REQUEST_400,
+                    "A route redirect is required",
+                    null);
+            }
+
+            response.redirect(route);
+            return "";
         });
 
         // Generic response for all OPTIONS requests on all endpoint paths.
