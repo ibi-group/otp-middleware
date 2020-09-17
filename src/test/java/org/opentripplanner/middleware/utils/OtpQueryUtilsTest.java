@@ -11,12 +11,12 @@ import java.util.Map;
 
 public class OtpQueryUtilsTest {
     @Test
-    public void testMakeQueriesWithNewDates() throws URISyntaxException {
+    public void testQueriesFromDates() throws URISyntaxException {
         // Abbreviated query for this test.
         final String query = "?fromPlace=2418%20Dade%20Ave&toPlace=McDonald%27s&date=2020-08-13&time=11%3A23&arriveBy=false";
         List<String> newDates = List.of("2020-12-30", "2020-12-31", "2021-01-01");
 
-        List<String> result = OtpQueryUtils.makeQueryStringsWithNewDates(query, newDates);
+        List<String> result = OtpQueryUtils.queriesFromDates(query, newDates);
         Assertions.assertEquals(newDates.size(), result.size());
         for (int i = 0; i < newDates.size(); i++) {
             // Insert a '?' in order to parse.
@@ -26,7 +26,7 @@ public class OtpQueryUtilsTest {
     }
 
     @Test
-    public void testGetDatesForCheckingTripExistence() throws URISyntaxException {
+    public void testGetDatesToCheckItineraryExistence() throws URISyntaxException {
         // Abbreviated query for this test.
         final String query = "?fromPlace=2418%20Dade%20Ave&toPlace=McDonald%27s&date=2020-08-13&time=11%3A23&arriveBy=false";
 
@@ -46,11 +46,9 @@ public class OtpQueryUtilsTest {
         trip.saturday = true;
         trip.sunday = true;
 
-        // The days that are set to be monitored/checked will appear in the list
-        // starting from the day of the query and up to 7 days.
+        // The list includes dates to be monitored in a 7-day window starting from the query date.
         List<String> newDates = List.of("2020-08-13" /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18");
-        List<String> checkedDates = OtpQueryUtils.getDatesForCheckingTripExistence(trip);
-
+        List<String> checkedDates = OtpQueryUtils.getDatesToCheckItineraryExistence(trip);
         Assertions.assertEquals(newDates, checkedDates);
     }
 }

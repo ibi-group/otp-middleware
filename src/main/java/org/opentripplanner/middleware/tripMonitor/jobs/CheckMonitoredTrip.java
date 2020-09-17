@@ -27,14 +27,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.tripMonitor.jobs.NotificationType.ARRIVAL_DELAY;
 import static org.opentripplanner.middleware.tripMonitor.jobs.NotificationType.DEPARTURE_DELAY;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -261,19 +259,8 @@ public class CheckMonitoredTrip implements Runnable {
      * TODO: Should this be a method on {@link MonitoredTrip}?
      */
     public static boolean shouldSkipMonitoredTripCheck(MonitoredTrip trip) {
-        ZoneId zoneId;
-        Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(trip.from.lat, trip.from.lon);
-        if (fromZoneId.isEmpty()) {
-            String message = String.format(
-                "Could not find coordinate's (lat=%.6f, lon=%.6f) timezone for monitored trip %s",
-                trip.from.lat,
-                trip.from.lon,
-                trip.id
-            );
-            throw new RuntimeException(message);
-        } else {
-            zoneId = fromZoneId.get();
-        }
+        ZoneId zoneId = trip.tripZoneId();
+
         // Get current time and trip time (with the time offset to today) for comparison.
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(zoneId);
         // TODO: Determine whether we want to monitor trips during the length of the trip.

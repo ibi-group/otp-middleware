@@ -14,13 +14,17 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
 
+/**
+ * A utility class for dealing with OTP queries.
+ */
 public class OtpQueryUtils {
+    /**
+     * Converts query parameters to a {@link Map}.
+     */
     public static Map<String, String> getQueryParams(String queryParams) throws URISyntaxException {
         List<NameValuePair> params = URLEncodedUtils.parse(
             new URI(String.format("http://example.com/%s", queryParams)),
@@ -29,6 +33,9 @@ public class OtpQueryUtils {
         return params.stream().collect(Collectors.toMap(NameValuePair::getName,NameValuePair::getValue));
     }
 
+    /**
+     * Converts a parameter {@link Map} to a list of {@link NameValuePair} entries.
+     */
     public static List<NameValuePair> toNameValuePairs(Map<String, String> params) {
         return params.entrySet().stream()
             .map(e -> new BasicNameValuePair(e.getKey(), e.getValue()))
@@ -37,15 +44,15 @@ public class OtpQueryUtils {
 
     /**
      * Creates a new query string based on the one provided, with the date changed to the desired one.
-     * @param query the base query.
-     * @param newDates the desired dates.
+     * @param baseQuery the base OTP query.
+     * @param dates a list of the desired dates in YYYY-MM-DD format.
      * @return a list of query strings with one of the specified dates.
      */
-    public static List<String> makeQueryStringsWithNewDates(String query, List<String> newDates) throws URISyntaxException {
+    public static List<String> queriesFromDates(String baseQuery, List<String> dates) throws URISyntaxException {
         List<String> result = new ArrayList<>();
-        Map<String, String> params = getQueryParams(query);
+        Map<String, String> params = getQueryParams(baseQuery);
 
-        for (String newDate : newDates) {
+        for (String newDate : dates) {
             params.put("date", newDate);
             result.add(URLEncodedUtils.format(toNameValuePairs(params), UTF_8));
         }
@@ -54,32 +61,18 @@ public class OtpQueryUtils {
     }
 
     /**
-     * Obtains the days for checking trip existence, for each day the trip is set to be monitored,
-     * starting from the day of the query params up to 7 days.
+     * Obtains dates for which we should check that itineraries exist for the specified trip.
+     * The dates include each day is set to be monitored in a 7-day window starting from the query start date.
      * @param trip the {@link MonitoredTrip} to get the date for.
      * @return a list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor.
      */
-    public static List<String> getDatesForCheckingTripExistence(MonitoredTrip trip) throws URISyntaxException {
+    public static List<String> getDatesToCheckItineraryExistence(MonitoredTrip trip) throws URISyntaxException {
         List<String> result = new ArrayList<>();
-
-        // FIXME: Refactor this if block (Same as in CheckMonitoredTrip#shouldSkipMonitoredTripCheck)
-        ZoneId zoneId;
-        Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(trip.from.lat, trip.from.lon);
-        if (fromZoneId.isEmpty()) {
-            String message = String.format(
-                "Could not find coordinate's (lat=%.6f, lon=%.6f) timezone for monitored trip %s",
-                trip.from.lat,
-                trip.from.lon,
-                trip.id
-            );
-            throw new RuntimeException(message);
-        } else {
-            zoneId = fromZoneId.get();
-        }
+        ZoneId zoneId = trip.tripZoneId();
+        Map<String, String> queryParams = getQueryParams(trip.queryParams);
 
         // Start from the query date, if available.
-        // If not, start from today.
-        Map<String, String> queryParams = getQueryParams(trip.queryParams);
+        // If there is no query date, start from today.
         String queryDateString = queryParams.getOrDefault("date", DateTimeUtils.getStringFromDate(DateTimeUtils.nowAsLocalDate(), DateTimeUtils.YYYY_MM_DD));
         LocalDate queryDate = DateTimeUtils.getDateFromString(queryDateString, DateTimeUtils.YYYY_MM_DD);
 
@@ -91,7 +84,7 @@ public class OtpQueryUtils {
         ZonedDateTime queryZonedDateTime = ZonedDateTime.of(queryDate, LocalTime.of(tripHour, tripMinutes), zoneId);
 
 
-        // Check the dates starting from the query date, going through 7 days.
+        // Check the dates in a 7-day window starting from the query date.
         for (int i = 0; i < 7; i++) {
             ZonedDateTime probedDate = queryZonedDateTime.plusDays(i);
             if (trip.isActiveOnDate(probedDate)) {
@@ -100,5 +93,12 @@ public class OtpQueryUtils {
         }
 
         return result;
+    }
+
+    /**
+     * Gets OTP queries to check itinerary existence for the given trip.
+     */
+    public static List<String> getItineraryExistenceQueries(MonitoredTrip trip) throws URISyntaxException {
+        return queriesFromDates(trip.queryParams, getDatesToCheckItineraryExistence(trip));
     }
 }

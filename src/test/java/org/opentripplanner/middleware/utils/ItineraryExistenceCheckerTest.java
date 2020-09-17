@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Tests for checking the existence of trips from query strings.
  */
-public class TripExistenceCheckerTest {
+public class ItineraryExistenceCheckerTest {
     /** Map query strings to mock OTP responses */
     private static HashMap<String, OtpDispatcherResponse> queryToResponse;
 
@@ -36,18 +36,18 @@ public class TripExistenceCheckerTest {
 
     @Test
     public void testAllTripsExist() {
-        TripExistenceChecker tripChecker = new TripExistenceChecker(queryToResponse::get);
-        Assertions.assertTrue(tripChecker.checkExistenceOfAllTrips(List.of("exist1", "exist2", "exist3")));
+        ItineraryExistenceChecker tripChecker = new ItineraryExistenceChecker(queryToResponse::get);
+        Assertions.assertTrue(tripChecker.checkAll(List.of("exist1", "exist2", "exist3")));
     }
 
     @Test
     public void testAtLeastOneTripDoesNotExist() {
-        TripExistenceChecker tripChecker = new TripExistenceChecker(queryToResponse::get);
-        Assertions.assertFalse(tripChecker.checkExistenceOfAllTrips(List.of("exist1", "not found", "exist3")));
+        ItineraryExistenceChecker tripChecker = new ItineraryExistenceChecker(queryToResponse::get);
+        Assertions.assertFalse(tripChecker.checkAll(List.of("exist1", "not found", "exist3")));
     }
 
     @Test
     public void testNullFuncArgument() {
-        Assertions.assertThrows(NullPointerException.class, () ->  new TripExistenceChecker(null));
+        Assertions.assertThrows(NullPointerException.class, () ->  new ItineraryExistenceChecker(null));
     }
 }

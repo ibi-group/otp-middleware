@@ -7,7 +7,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.OtpQueryUtils;
-import org.opentripplanner.middleware.utils.TripExistenceChecker;
+import org.opentripplanner.middleware.utils.ItineraryExistenceChecker;
 import spark.Request;
 
 import java.net.URISyntaxException;
@@ -32,7 +32,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
         monitoredTrip.initializeFromItinerary();
-        checkTripExistence(monitoredTrip, req);
+        checkItineraryExistence(monitoredTrip, req);
         return monitoredTrip;
     }
 
@@ -66,25 +66,23 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     /**
      * Checks that itineraries exist for the days the specified monitored trip is active.
      */
-    private void checkTripExistence(MonitoredTrip trip, Request request) {
-        TripExistenceChecker tripChecker = new TripExistenceChecker(OtpDispatcher::sendOtpPlanRequest);
-        boolean tripsExist = false;
+    private void checkItineraryExistence(MonitoredTrip trip, Request request) {
+        ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker(OtpDispatcher::sendOtpPlanRequest);
         try {
-            tripsExist = tripChecker.checkExistenceOfAllTrips(OtpQueryUtils.makeQueryStringsWithNewDates(trip.queryParams, OtpQueryUtils.getDatesForCheckingTripExistence(trip)));
+            boolean itinerariesExist = itineraryChecker.checkAll(OtpQueryUtils.getItineraryExistenceQueries(trip));
+            if (!itinerariesExist) {
+                logMessageAndHalt(
+                    request,
+                    HttpStatus.BAD_REQUEST_400,
+                    "An itinerary does not exist for some of the monitored days for the requested trip."
+                );
+            }
         } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
             logMessageAndHalt(
                 request,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
                 "Error parsing the trip query parameters.",
                 e
-            );
-        }
-
-        if (!tripsExist) {
-            logMessageAndHalt(
-                request,
-                HttpStatus.BAD_REQUEST_400,
-                "An itinerary does not exist for some of the monitored days for the requested trip."
             );
         }
     }

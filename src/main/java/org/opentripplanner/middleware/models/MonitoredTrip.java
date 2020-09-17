@@ -10,12 +10,16 @@ import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 
 import java.time.DayOfWeek;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
+
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
@@ -278,6 +282,25 @@ public class MonitoredTrip extends Model {
     public boolean delete() {
         // TODO: Add journey state deletion.
         return Persistence.monitoredTrips.removeById(this.id);
+    }
+
+    /**
+     * @return the zone id from the trip 'from' location.
+     */
+    public ZoneId tripZoneId() {
+        // FIXME: Refactor this if block (Same as in CheckMonitoredTrip#shouldSkipMonitoredTripCheck)
+        Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(from.lat, from.lon);
+        if (fromZoneId.isEmpty()) {
+            String message = String.format(
+                "Could not find coordinate's (lat=%.6f, lon=%.6f) timezone for monitored trip %s",
+                from.lat,
+                from.lon,
+                id
+            );
+            throw new RuntimeException(message);
+        } else {
+            return fromZoneId.get();
+        }
     }
 }
 
