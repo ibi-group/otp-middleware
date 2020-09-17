@@ -100,6 +100,7 @@ public class OtpDispatcherResponse implements Serializable {
     public boolean containsAPlan() {
         try {
             JsonNode responseJson = YamlUtils.yamlMapper.readTree(responseBody);
+            // TODO/FIXME: Check that itineraries in the plan start on the same day (or until ~2-3am next day?) as the tripDate.
             if (responseJson.get("plan") == null) {
                 return false;
             }

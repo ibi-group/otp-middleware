@@ -45,4 +45,9 @@ public class TripExistenceCheckerTest {
         TripExistenceChecker tripChecker = new TripExistenceChecker(queryToResponse::get);
         Assertions.assertFalse(tripChecker.checkExistenceOfAllTrips(List.of("exist1", "not found", "exist3")));
     }
+
+    @Test
+    public void testNullFuncArgument() {
+        Assertions.assertThrows(NullPointerException.class, () ->  new TripExistenceChecker(null));
+    }
 }

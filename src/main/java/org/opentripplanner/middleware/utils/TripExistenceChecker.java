@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.utils;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Function;
 
@@ -18,6 +19,7 @@ public class TripExistenceChecker {
      *                              such as {@link OtpDispatcher#sendOtpPlanRequest}.
      */
     public TripExistenceChecker(Function<String, OtpDispatcherResponse> otpDispatcherFunction) {
+        if (otpDispatcherFunction == null) throw new NullPointerException();
         this.otpDispatherFunction = otpDispatcherFunction;
     }
 
