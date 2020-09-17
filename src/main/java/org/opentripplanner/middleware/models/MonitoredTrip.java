@@ -288,7 +288,6 @@ public class MonitoredTrip extends Model {
      * @return the zone id from the trip 'from' location.
      */
     public ZoneId tripZoneId() {
-        // FIXME: Refactor this if block (Same as in CheckMonitoredTrip#shouldSkipMonitoredTripCheck)
         Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(from.lat, from.lon);
         if (fromZoneId.isEmpty()) {
             String message = String.format(

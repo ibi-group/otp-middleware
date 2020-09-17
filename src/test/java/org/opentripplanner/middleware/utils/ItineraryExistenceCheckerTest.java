@@ -3,26 +3,37 @@ package org.opentripplanner.middleware.utils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+
+import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 
 /**
  * Tests for checking the existence of trips from query strings.
  */
 public class ItineraryExistenceCheckerTest {
-    /** Map query strings to mock OTP responses */
+    /**
+     * Map query strings to mock OTP responses.
+     * We use {@link HashMap#get} function to mock {@link OtpDispatcher#sendOtpPlanRequest}
+     * (both have the same signature).
+     */
     private static HashMap<String, OtpDispatcherResponse> queryToResponse;
 
-    /** Mock (significantly abbreviated) OTP responses for when a trip exist */
-    private final static String MOCK_RESPONSE_WITH_PLAN = "{\"requestParameters\":{},\"plan\":{\"date\":1600264260000,\"from\":{},\"to\":{},\"itineraries\":[{\"duration\":797},{\"duration\":801}]},\"debugOutput\":{}}";
+    /** Mock OTP responses for when itineraries exist for a query. */
+    private static String MOCK_RESPONSE_WITH_PLAN;
 
     /** Mock (significantly abbreviated) OTP response when an itinerary is not found. */
     private final static String MOCK_RESPONSE_WITH_ERROR = "{\"requestParameters\":{},\"error\":{\"id\":404,\"msg\":\"No trip found...\",\"message\":\"PATH_NOT_FOUND\",\"noPath\":true},\"debugOutput\":{}}";
 
     @BeforeAll
-    public static void setUp() {
+    public static void setUp() throws IOException {
+        MOCK_RESPONSE_WITH_PLAN = FileUtils.getFileContents(
+            TEST_RESOURCE_PATH + "persistence/planResponse.json"
+        );
         queryToResponse = new HashMap<>();
 
         // Queries for which an itinerary exists.
@@ -37,17 +48,19 @@ public class ItineraryExistenceCheckerTest {
     @Test
     public void testAllTripsExist() {
         ItineraryExistenceChecker tripChecker = new ItineraryExistenceChecker(queryToResponse::get);
-        Assertions.assertTrue(tripChecker.checkAll(List.of("exist1", "exist2", "exist3")));
+        ItineraryExistenceChecker.Result result = tripChecker.checkAll(List.of("exist1", "exist2", "exist3"));
+        Assertions.assertTrue(result.allItinerariesExist);
+        result.responses.forEach(Assertions::assertNotNull);
     }
 
     @Test
     public void testAtLeastOneTripDoesNotExist() {
         ItineraryExistenceChecker tripChecker = new ItineraryExistenceChecker(queryToResponse::get);
-        Assertions.assertFalse(tripChecker.checkAll(List.of("exist1", "not found", "exist3")));
+        Assertions.assertFalse(tripChecker.checkAll(List.of("exist1", "not found", "exist3")).allItinerariesExist);
     }
 
     @Test
-    public void testNullFuncArgument() {
+    public void testThrowIfNullArgument() {
         Assertions.assertThrows(NullPointerException.class, () ->  new ItineraryExistenceChecker(null));
     }
 }

@@ -4,7 +4,10 @@ package org.opentripplanner.middleware.otp;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.SerializationUtils;
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.middleware.otp.response.TripPlan;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.YamlUtils;
 import org.slf4j.Logger;
@@ -13,8 +16,12 @@ import org.slf4j.LoggerFactory;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.http.HttpResponse;
+import java.time.ZoneId;
+import java.util.Optional;
 
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 
 /**
  * An OTP dispatcher response represents the status code and body return from a call to an OTP end point e.g. plan
@@ -95,20 +102,37 @@ public class OtpDispatcherResponse implements Serializable {
     }
 
     /**
-     * @return true if the raw OTP response contains an OTP plan, false otherwise.
+     * @return true if the raw OTP response contains an OTP itinerary
+     * departing the same day as the request date parameter, false otherwise.
      */
-    public boolean containsAPlan() {
-        try {
-            JsonNode responseJson = YamlUtils.yamlMapper.readTree(responseBody);
-            // TODO/FIXME: Check that itineraries in the plan start on the same day (or until ~2-3am next day?) as the tripDate.
-            if (responseJson.get("plan") == null) {
-                return false;
+    public Itinerary findItineraryDepartingSameDay() {
+        Response response = this.getResponse();
+        TripPlan plan = response.plan;
+        if (response.requestParameters != null &&
+            response.requestParameters.get(DATE_PARAM) != null &&
+            plan != null &&
+            plan.itineraries != null) {
+
+            // Get the zone id for this plan.
+            // TODO: refactor this.
+            Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(plan.from.lat, plan.from.lon);
+            if (fromZoneId.isEmpty()) {
+                String message = String.format(
+                    "Could not find coordinate's (lat=%.6f, lon=%.6f) timezone for URI %s",
+                    plan.from.lat,
+                    plan.from.lon,
+                    requestUri
+                );
+                throw new RuntimeException(message);
             }
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            // TODO: Bugsnag
-            return false;
+
+            String requestDate = response.requestParameters.get(DATE_PARAM);
+            for (Itinerary itinerary : plan.itineraries) {
+                if (ItineraryUtils.itineraryDepartsSameDay(itinerary, requestDate, fromZoneId.get())) {
+                    return itinerary;
+                }
+            }
         }
-        return true;
+        return null;
     }
 }
