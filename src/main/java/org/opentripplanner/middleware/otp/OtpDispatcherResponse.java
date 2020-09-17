@@ -1,9 +1,12 @@
 package org.opentripplanner.middleware.otp;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.SerializationUtils;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.YamlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,5 +92,22 @@ public class OtpDispatcherResponse implements Serializable {
 //        clonedObject.requestUri = URI.create(this.requestUri.toString());
 //        clonedObject.responseBody = this.responseBody;
 //        return clonedObject;
+    }
+
+    /**
+     * @return true if the raw OTP response contains an OTP plan, false otherwise.
+     */
+    public boolean containsAPlan() {
+        try {
+            JsonNode responseJson = YamlUtils.yamlMapper.readTree(responseBody);
+            if (responseJson.get("plan") == null) {
+                return false;
+            }
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            // TODO: Bugsnag
+            return false;
+        }
+        return true;
     }
 }

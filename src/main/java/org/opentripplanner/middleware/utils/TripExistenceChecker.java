@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
+import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 
 import java.util.List;
@@ -13,6 +12,11 @@ import java.util.function.Function;
 public class TripExistenceChecker {
     private Function<String, OtpDispatcherResponse> otpDispatherFunction;
 
+    /**
+     * Class constructor.
+     * @param otpDispatcherFunction a function that takes String as input and returns {@link OtpDispatcherResponse},
+     *                              such as {@link OtpDispatcher#sendOtpPlanRequest}.
+     */
     public TripExistenceChecker(Function<String, OtpDispatcherResponse> otpDispatcherFunction) {
         this.otpDispatherFunction = otpDispatcherFunction;
     }
@@ -24,20 +28,10 @@ public class TripExistenceChecker {
      * @return false if at least one query does not result in an itinerary (or an error occurs), true otherwise.
      */
     public boolean checkExistenceOfAllTrips(List<String> queries) {
+        // TODO: Consider multi-threading
         for (String query : queries) {
             OtpDispatcherResponse response = otpDispatherFunction.apply(query);
-            JsonNode responseJson = null;
-            try {
-                responseJson = YamlUtils.yamlMapper.readTree(response.responseBody);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-                // TODO: Bugsnag
-                return false;
-            }
-
-            if (responseJson.get("plan") == null) {
-                return false;
-            }
+            if (!response.containsAPlan()) return false;
         }
         return true;
     }
