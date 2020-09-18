@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.AdminUser;
+import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
@@ -55,7 +56,8 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     }
 
     /**
-     * Remove the users {@link AdminUser} and {@link ApiUser} and any remaining API keys.
+     * Remove the users {@link AdminUser} and {@link ApiUser} and any remaining API keys. Note: apiUser.delete() cannot
+     * be used because no Auth0 user is created and it fails on attempting to delete this account from Auth0.
      */
     @AfterAll
     public static void tearDown() {
@@ -64,7 +66,14 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         Persistence.adminUsers.removeById(adminUser.id);
         // Refresh api keys for user.
         apiUser = Persistence.apiUsers.getById(apiUser.id);
-        apiUser.delete();
+        // remove remaining api keys if present
+        if (!apiUser.apiKeys.isEmpty()) {
+            for (ApiKey apiKey : apiUser.apiKeys) {
+                deleteApiKeyRequest(apiUser.id, apiKey.keyId, adminUser);
+            }
+        }
+        // Delete api user.
+        Persistence.apiUsers.removeById(apiUser.id);
     }
 
     /**
@@ -167,7 +176,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     /**
      * Delete API key for target user based on authorization of requesting user
      */
-    private HttpResponse<String> deleteApiKeyRequest(String targetUserId, String apiKeyId, AbstractUser requestingUser) {
+    private static HttpResponse<String> deleteApiKeyRequest(String targetUserId, String apiKeyId, AbstractUser requestingUser) {
         String path = String.format("api/secure/application/%s/apikey/%s", targetUserId, apiKeyId);
         return mockAuthenticatedRequest(path, requestingUser, HttpUtils.REQUEST_METHOD.DELETE);
     }

@@ -33,18 +33,29 @@ import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedPost;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
-import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PROXY_ENDPOINT;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 
 /**
  * Tests to simulate API user flow. The following config parameters must be set in configurations/default/env.yml for
- * these end-to-end tests to run: - AUTH0_DOMAIN set to a valid Auth0 domain - AUTH0_API_CLIENT set to a valid Auth0
- * application client id - AUTH0_API_SECRET set to a valid Auth0 application client secret - DEFAULT_USAGE_PLAN_ID set
- * to a valid usage plan id (AWS requires this to create an api key) - OTP_API_ROOT set to http://localhost:8080/otp so
- * the mock OTP server is used - OTP_PLAN_ENDPOINT set to /plan - An AWS_PROFILE is required, or AWS access has been
- * configured for your operating environment e.g. C:\Users\<username>\.aws\credentials in Windows or Mac OS equivalent.
+ * these end-to-end tests to run:
  *
- * The following environment variable must be set for these tests to run: - RUN_E2E=true
+ * AUTH0_DOMAIN set to a valid Auth0 domain.
+ *
+ * AUTH0_API_CLIENT set to a valid Auth0 application client id.
+ *
+ * AUTH0_API_SECRET set to a valid Auth0 application client secret.
+ *
+ * DEFAULT_USAGE_PLAN_ID set to a valid usage plan id (AWS requires this to create an api key).
+ *
+ * OTP_API_ROOT set to a live OTP instance (e.g. http://otp-server.example.com/otp).
+ *
+ * OTP_PLAN_ENDPOINT set to a live OTP plan endpoint (e.g. /routers/default/plan).
+ *
+ * An AWS_PROFILE is required, or AWS access has been configured for your operating environment e.g.
+ * C:\Users\<username>\.aws\credentials in Windows or Mac OS equivalent.
+ *
+ * The following environment variable must be set for these tests to run: - RUN_E2E=true.
  *
  * Auth0 must be correctly configured as described here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
  */
@@ -61,12 +72,10 @@ public class ApiUserFlowTest {
         // Load config before checking if tests should run (otherwise authDisabled will always evaluate to false).
         OtpMiddlewareTest.setUp();
         assumeTrue(isEndToEndAndAuthIsDisabled());
-        // Mock the OTP server TODO: Run a live OTP instance?
-        TestUtils.mockOtpServer();
         // As a pre-condition, create an API User with API key.
         apiUser = PersistenceUtil.createApiUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
         apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
-        // Create, but do not persist, an OTP user. Also
+        // Create, but do not persist, an OTP user.
         otpUser = new OtpUser();
         otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
         otpUser.hasConsentedToTerms = true;
@@ -115,9 +124,8 @@ public class ApiUserFlowTest {
         OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.body(), OtpUser.class);
 
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
-        // TODO use utils from trip monitoring PR.
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.monday = true;
+        MonitoredTrip trip = TestUtils.constructedMonitoredTripFromOtpResponse();
+        trip.userId = otpUser.id;
         HttpResponse<String> createTripResponse = mockAuthenticatedPost("api/secure/monitoredtrip",
             otpUserResponse,
             JsonUtils.toJson(trip)
@@ -126,7 +134,7 @@ public class ApiUserFlowTest {
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(createTripResponse.body(), MonitoredTrip.class);
 
         // Plan trip with OTP proxy. Mock plan response will be returned
-        String otpQuery = OTP_PROXY_ENDPOINT + OTP_PLAN_ENDPOINT + "?fromPlace=34,-87&toPlace=33.-87";
+        String otpQuery = OTP_PROXY_ENDPOINT + OTP_PLAN_ENDPOINT + "?fromPlace=28.45119,-81.36818&toPlace=28.54834,-81.37745";
         HttpResponse<String> planTripResponse = mockAuthenticatedRequest(otpQuery,
             otpUserResponse,
             HttpUtils.REQUEST_METHOD.GET

@@ -5,6 +5,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -23,7 +25,7 @@ import java.util.UUID;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
-import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static spark.Service.ignite;
 
@@ -50,7 +52,7 @@ public class TestUtils {
         return variable != null && variable.equals("true");
     }
 
-    public static <T> T getResourceFileContentsAsJSON (String resourcePathName, Class<T> clazz) throws IOException {
+    public static <T> T getResourceFileContentsAsJSON(String resourcePathName, Class<T> clazz) throws IOException {
         return FileUtils.getFileContentsAsJSON(
             TEST_RESOURCE_PATH + resourcePathName,
             clazz
@@ -58,7 +60,8 @@ public class TestUtils {
     }
 
     /**
-     * Helper method to determine if end to end is enabled and auth is disabled. (Used for checking if tests should run.)
+     * Helper method to determine if end to end is enabled and auth is disabled. (Used for checking if tests should
+     * run.)
      */
     public static boolean isEndToEndAndAuthIsDisabled() {
         return getBooleanEnvVar("RUN_E2E") && authDisabled();
@@ -134,8 +137,8 @@ public class TestUtils {
     }
 
     /**
-     * Configure a mock OTP server for providing mock OTP responses.
-     * Note: this expects the config value OTP_API_ROOT=http://localhost:8080/otp
+     * Configure a mock OTP server for providing mock OTP responses. Note: this expects the config value
+     * OTP_API_ROOT=http://localhost:8080/otp
      */
     static void mockOtpServer() {
         if (mockOtpServerSetUpIsDone) {
@@ -156,5 +159,19 @@ public class TestUtils {
         response.type(APPLICATION_JSON);
         response.status(otpDispatcherResponse.statusCode);
         return otpDispatcherResponse.responseBody;
+    }
+
+    /**
+     * Submit plan query to OTP server and construct a monitored trip from the response.
+     */
+    public static MonitoredTrip constructedMonitoredTripFromOtpResponse() {
+        // Submit a query to the OTP server.
+        // From P&R to Downtown Orlando
+        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(
+            "28.45119,-81.36818",
+            "28.54834,-81.37745"
+        );
+        // Construct a monitored trip from it.
+        return new MonitoredTrip(otpDispatcherResponse);
     }
 }
