@@ -160,14 +160,17 @@ public class ItineraryUtils {
         ZonedDateTime startDate = ZonedDateTime.ofInstant(itinerary.startTime.toInstant(), zoneId);
         ZonedDateTime startDateDayBefore = startDate.minusDays(1);
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(YYYY_MM_DD);
+
+        // TODO: Make SERVICEDAY_START_HOUR a config parameter.
         final int SERVICEDAY_START_HOUR = 3;
+
+        // TODO: Also add the time of the OTP request as argument and use it to determine the effective day of the request.
 
         return (
             date.equals(startDate.format(dateFormatter)) &&
                 startDate.getHour() >= SERVICEDAY_START_HOUR
         ) || (
             // Trips starting between 12am and 2:59am next day are considered same-day.
-            // TODO: Make SERVICEDAY_START_HOUR a config parameter.
             date.equals(startDateDayBefore.format(dateFormatter)) &&
                 startDateDayBefore.getHour() < SERVICEDAY_START_HOUR
         );
