@@ -14,6 +14,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.Optional;
 
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
@@ -27,6 +28,8 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
 
 public class OtpDispatcherResponse implements Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcherResponse.class);
+
+    private Response response;
 
     /** Empty constructor used for testing */
     public OtpDispatcherResponse() {}
@@ -66,7 +69,10 @@ public class OtpDispatcherResponse implements Serializable {
      * Do not persist in case these classes change. This should always be re-instantiated from responseBody if needed.
      */
     public Response getResponse() {
-        return JsonUtils.getPOJOFromJSON(responseBody, Response.class);
+        if (response == null) {
+            response = JsonUtils.getPOJOFromJSON(responseBody, Response.class);
+        }
+        return response;
     }
 
     public void setResponse(Response response) {
@@ -106,29 +112,32 @@ public class OtpDispatcherResponse implements Serializable {
     public Itinerary findItineraryDepartingSameDay() {
         Response response = this.getResponse();
         TripPlan plan = response.plan;
-        if (response.requestParameters != null &&
-            response.requestParameters.get(DATE_PARAM) != null &&
-            plan != null &&
-            plan.itineraries != null) {
+        HashMap<String, String> reqParams = response.requestParameters;
+        if (reqParams != null) {
+            String requestDate = reqParams.get(DATE_PARAM);
+            String requestTime = reqParams.get(TIME_PARAM);
+            if (requestDate != null &&
+                requestTime != null &&
+                plan != null &&
+                plan.itineraries != null) {
 
-            // Get the zone id for this plan.
-            // TODO: refactor this.
-            Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(plan.from.lat, plan.from.lon);
-            if (fromZoneId.isEmpty()) {
-                String message = String.format(
-                    "Could not find coordinate's (lat=%.6f, lon=%.6f) timezone for URI %s",
-                    plan.from.lat,
-                    plan.from.lon,
-                    requestUri
-                );
-                throw new RuntimeException(message);
-            }
+                // Get the zone id for this plan.
+                // TODO: refactor this.
+                Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(plan.from.lat, plan.from.lon);
+                if (fromZoneId.isEmpty()) {
+                    String message = String.format(
+                        "Could not find coordinate's (lat=%.6f, lon=%.6f) timezone for URI %s",
+                        plan.from.lat,
+                        plan.from.lon,
+                        requestUri
+                    );
+                    throw new RuntimeException(message);
+                }
 
-            String requestDate = response.requestParameters.get(DATE_PARAM);
-            String requestTime = response.requestParameters.get(TIME_PARAM);
-            for (Itinerary itinerary : plan.itineraries) {
-                if (ItineraryUtils.itineraryDepartsSameDay(itinerary, requestDate, requestTime, fromZoneId.get())) {
-                    return itinerary;
+                for (Itinerary itinerary : plan.itineraries) {
+                    if (ItineraryUtils.itineraryDepartsSameDay(itinerary, requestDate, requestTime, fromZoneId.get())) {
+                        return itinerary;
+                    }
                 }
             }
         }

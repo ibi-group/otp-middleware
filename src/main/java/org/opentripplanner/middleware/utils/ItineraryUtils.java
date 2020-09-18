@@ -148,6 +148,7 @@ public class ItineraryUtils {
 
         if (itinerary != null) {
             trip.itinerary = itinerary;
+            trip.initializeFromItinerary();
         }
     }
 

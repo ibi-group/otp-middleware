@@ -5,7 +5,6 @@ import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -49,7 +48,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      * Replace the itinerary provided with the monitored trip
      * with a non-real-time, verified itinerary from the responses provided.
      */
-    private static void updateTripWithVerifiedItinerary(MonitoredTrip monitoredTrip, Request request, Map<String, OtpDispatcherResponse> dispatcherResponsesByDate) {
+    private static void updateTripWithVerifiedItinerary(MonitoredTrip monitoredTrip, Request request, Map<String, Response> responsesByDate) {
         try {
             Map<String, String> params = ItineraryUtils.getQueryParams(monitoredTrip.queryParams);
             String queryDate = params.get(DATE_PARAM);
@@ -59,12 +58,11 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             //       on other days but not the day for which the plan request was originally made.
             //       In such cases, the actual itinerary can be different from the one we are looking to save.
             //       To address that, in the UI, we can, for instance, force the date for the plan request to be monitored.
-            OtpDispatcherResponse responseForDayOfQuery = dispatcherResponsesByDate.get(queryDate);
+            Response responseForDayOfQuery = responsesByDate.get(queryDate);
             if (responseForDayOfQuery != null) {
-                Response otpResponse = responseForDayOfQuery.getResponse();
-                if (otpResponse.plan != null && otpResponse.plan.itineraries != null) {
+                if (responseForDayOfQuery.plan != null && responseForDayOfQuery.plan.itineraries != null) {
                     // TODO/FIXME: need a trip resemblance check to supplement the ui_activeItinerary param used in this function.
-                    ItineraryUtils.updateTripWithVerifiedItinerary(monitoredTrip, otpResponse.plan.itineraries);
+                    ItineraryUtils.updateTripWithVerifiedItinerary(monitoredTrip, responseForDayOfQuery.plan.itineraries);
                 }
             }
         } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
