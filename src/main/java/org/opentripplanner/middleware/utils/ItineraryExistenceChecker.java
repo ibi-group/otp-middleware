@@ -4,8 +4,8 @@ import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -26,17 +26,17 @@ public class ItineraryExistenceChecker {
 
     /**
      * Checks that, for each query provided, an itinerary exists.
-     * @param queries the list of queries to check.
-     * @return false if at least one query does not result in an itinerary (or an error occurs), true otherwise.
+     * @param labeledQueries a map with all the queries to check.
+     * @return An object with a map of results and summary of itinerary existence.
      */
-    public Result checkAll(List<String> queries) {
+    public Result checkAll(Map<String, String> labeledQueries) {
         // TODO: Consider multi-threading?
-        List<OtpDispatcherResponse> responses = new ArrayList<>();
+        Map<String, OtpDispatcherResponse> responses = new HashMap<>();
         boolean allItinerariesExist = true;
 
-        for (String query : queries) {
-            OtpDispatcherResponse response = otpDispatcherFunction.apply(query);
-            responses.add(response);
+        for (Map.Entry<String, String> entry : labeledQueries.entrySet()) {
+            OtpDispatcherResponse response = otpDispatcherFunction.apply(entry.getValue());
+            responses.put(entry.getKey(), response);
 
             Itinerary sameDayItinerary = response.findItineraryDepartingSameDay();
             if (sameDayItinerary == null) allItinerariesExist = false;
@@ -48,13 +48,13 @@ public class ItineraryExistenceChecker {
     /**
      * Class to pass the results of the OTP itinerary checks.
      */
-    public class Result {
+    public static class Result {
         public final boolean allItinerariesExist;
-        public final List<OtpDispatcherResponse> responses; // TODO: Map??
+        public final Map<String, OtpDispatcherResponse> labeledResponses;
 
-        private Result(boolean itinerariesExist, List<OtpDispatcherResponse> responses) {
+        private Result(boolean itinerariesExist, Map<String, OtpDispatcherResponse> labeledResponses) {
             this.allItinerariesExist = itinerariesExist;
-            this.responses = responses;
+            this.labeledResponses = labeledResponses;
         }
     }
 }

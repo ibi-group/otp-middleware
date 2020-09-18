@@ -5,7 +5,6 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Response;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -15,6 +14,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -52,19 +52,19 @@ public class ItineraryUtils {
     }
 
     /**
-     * Creates a new query string based on the one provided,
+     * Creates a map of new query strings based on the one provided,
      * with the date changed to the desired one and ignoring realtime updates.
      * @param baseQueryParams the base OTP query.
      * @param dates a list of the desired dates in YYYY-MM-DD format.
-     * @return a list of query strings with one of the specified dates.
+     * @return a map of query strings with, and indexed by the specified dates.
      */
-    public static List<String> queriesFromDates(String baseQueryParams, List<String> dates) throws URISyntaxException {
-        List<String> result = new ArrayList<>();
+    public static Map<String, String> getQueriesFromDates(String baseQueryParams, List<String> dates) throws URISyntaxException {
+        Map<String, String> result = new HashMap<>();
         Map<String, String> params = getQueryParams(baseQueryParams);
 
         for (String newDate : dates) {
             params.put(DATE_PARAM, newDate);
-            result.add(toQueryString(params));
+            result.put(newDate, toQueryString(params));
         }
 
         return result;
@@ -108,8 +108,8 @@ public class ItineraryUtils {
     /**
      * Gets OTP queries to check non-realtime itinerary existence for the given trip.
      */
-    public static List<String> getItineraryExistenceQueries(MonitoredTrip trip) throws URISyntaxException {
-        return queriesFromDates(
+    public static Map<String, String> getItineraryExistenceQueries(MonitoredTrip trip) throws URISyntaxException {
+        return getQueriesFromDates(
             excludeRealtime(trip.queryParams),
             getDatesToCheckItineraryExistence(trip)
         );
@@ -133,7 +133,7 @@ public class ItineraryUtils {
      * The ui_activeItinerary query parameter is used to determine which itinerary to use,
      * TODO/FIXME: need a trip resemblance check to supplement the ui_activeItinerary param used in this function.
      */
-    public static void writeVerifiedItinerary(MonitoredTrip trip, List<Itinerary> verifiedItineraries) throws URISyntaxException {
+    public static void updateTripWithVerifiedItinerary(MonitoredTrip trip, List<Itinerary> verifiedItineraries) throws URISyntaxException {
         Map<String, String> params = getQueryParams(trip.queryParams);
         Itinerary itinerary = null;
         String itineraryIndexParam = params.get("ui_activeItinerary");
@@ -151,18 +151,6 @@ public class ItineraryUtils {
         if (itinerary != null) {
             trip.itinerary = itinerary;
         }
-    }
-
-    /**
-     * @return the response for which the request date parameter matches the desired date.
-     */
-    public static Response getResponseForDate(List<Response> responses, String desiredDate) {
-        for (Response response : responses) {
-            if (desiredDate.equals(response.requestParameters.get(DATE_PARAM))) {
-                return response;
-            }
-        }
-        return null;
     }
 
     /**

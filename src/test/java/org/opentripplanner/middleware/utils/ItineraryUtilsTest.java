@@ -6,16 +6,13 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.otp.response.Response;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,16 +26,16 @@ public class ItineraryUtilsTest {
     public static final String QUERY_DATE = "2020-08-13";
 
     @Test
-    public void testQueriesFromDates() throws URISyntaxException {
+    public void testGetQueriesFromDates() throws URISyntaxException {
         // Abbreviated query for this test.
         List<String> newDates = List.of("2020-12-30", "2020-12-31", "2021-01-01");
-        List<String> queries = ItineraryUtils.queriesFromDates(BASE_QUERY, newDates);
-        Assertions.assertEquals(newDates.size(), queries.size());
+        Map<String, String> labeledQueries = ItineraryUtils.getQueriesFromDates(BASE_QUERY, newDates);
+        Assertions.assertEquals(newDates.size(), labeledQueries.size());
 
-        for (int i = 0; i < newDates.size(); i++) {
+        for (String date : newDates) {
             // Insert a '?' in order to parse.
-            Map<String, String> newParams = ItineraryUtils.getQueryParams("?" + queries.get(i));
-            Assertions.assertEquals(newDates.get(i), newParams.get(DATE_PARAM));
+            Map<String, String> newParams = ItineraryUtils.getQueryParams("?" + labeledQueries.get(date));
+            Assertions.assertEquals(date, newParams.get(DATE_PARAM));
         }
     }
 
@@ -72,7 +69,7 @@ public class ItineraryUtilsTest {
     }
 
     @Test
-    public void testWriteVerifiedNonRealTimeItinerary() throws IOException, URISyntaxException {
+    public void testUpdateTripWithVerifiedItinerary() throws IOException, URISyntaxException {
         String query = BASE_QUERY + "&ui_activeItinerary=1";
 
         String mockResponse = FileUtils.getFileContents(
@@ -82,30 +79,14 @@ public class ItineraryUtilsTest {
         List<Itinerary> itineraries = otpDispatcherResponse.getResponse().plan.itineraries;
 
         MonitoredTrip trip = new MonitoredTrip();
-        trip.id = "testWriteVerifiedNonRealTimeItinerary";
+        trip.id = "testUpdateTripWithVerifiedItinerary";
         trip.queryParams = query;
         // Write some itinerary that is not the one we want.
         trip.itinerary = itineraries.get(0);
 
-        ItineraryUtils.writeVerifiedItinerary(trip, itineraries);
+        ItineraryUtils.updateTripWithVerifiedItinerary(trip, itineraries);
 
         Assertions.assertEquals(itineraries.get(1), trip.itinerary);
-    }
-
-    @Test
-    public void testGetResponseForDate() {
-        String desiredDate = "2020-09-01";
-        List<String> dates = List.of("2020-08-12", "2021-02-10", "2020-09-01");
-
-        List<Response> responses = new ArrayList<>();
-        for (String date : dates) {
-            Response response = new Response();
-            response.requestParameters = new HashMap<>();
-            response.requestParameters.put(DATE_PARAM, date);
-            responses.add(response);
-        }
-
-        Assertions.assertEquals(responses.get(2), ItineraryUtils.getResponseForDate(responses, desiredDate));
     }
 
     private void testItineraryDepartsSameDay(boolean expected, Long... startTimes) {
@@ -113,6 +94,7 @@ public class ItineraryUtilsTest {
         MonitoredTrip trip = makeBarebonesTrip();
         ZoneId zoneId = trip.tripZoneId();
 
+        // startTimes are in US Eastern timezone.
         for (Long startTime : startTimes) {
             Itinerary itinerary = new Itinerary();
             Instant instant = Instant.ofEpochMilli(startTime);
