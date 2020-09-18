@@ -124,7 +124,7 @@ public class ItineraryUtils {
         Map<String, String> params = getQueryParams(queryParams);
         params.put(IGNORE_REALTIME_UPDATES_PARAM, "true");
 
-        // Insert '?' so others can parse the result.
+        // Insert '?' so others can parse the resulting query string.
         return "?" + toQueryString(params);
     }
 
@@ -169,9 +169,19 @@ public class ItineraryUtils {
      * @return true if the itinerary's startTime is one the same day as the specified date.
      */
     public static boolean itineraryDepartsSameDay(Itinerary itinerary, String date, ZoneId zoneId) {
-        ZonedDateTime itineraryStartDate = ZonedDateTime.ofInstant(itinerary.startTime.toInstant(), zoneId);
+        ZonedDateTime startDate = ZonedDateTime.ofInstant(itinerary.startTime.toInstant(), zoneId);
+        ZonedDateTime startDateDayBefore = startDate.minusDays(1);
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(YYYY_MM_DD);
+        final int SERVICEDAY_START_HOUR = 3;
 
-        // TODO: code so that trips starting between 12am and ~3am fall on the previous day.
-        return date.equals(itineraryStartDate.format(DateTimeFormatter.ofPattern(YYYY_MM_DD)));
+        return (
+            date.equals(startDate.format(dateFormatter)) &&
+                startDate.getHour() >= SERVICEDAY_START_HOUR
+        ) || (
+            // Trips starting between 12am and 2:59am next day are considered same-day.
+            // TODO: Make SERVICEDAY_START_HOUR a config parameter.
+            date.equals(startDateDayBefore.format(dateFormatter)) &&
+                startDateDayBefore.getHour() < SERVICEDAY_START_HOUR
+        );
     }
 }

@@ -12,21 +12,20 @@ import java.util.function.Function;
  * This utility class checks for existence of itineraries for given OTP queries.
  */
 public class ItineraryExistenceChecker {
-    private final Function<String, OtpDispatcherResponse> otpDispatherFunction;
+    private final Function<String, OtpDispatcherResponse> otpDispatcherFunction;
 
     /**
      * Class constructor.
      * @param otpDispatcherFunction a function that takes String as input and returns {@link OtpDispatcherResponse},
-     *                              such as {@link OtpDispatcher#sendOtpPlanRequest}.
+     *                              example: {@link OtpDispatcher#sendOtpPlanRequest}.
      */
     public ItineraryExistenceChecker(Function<String, OtpDispatcherResponse> otpDispatcherFunction) {
         if (otpDispatcherFunction == null) throw new NullPointerException();
-        this.otpDispatherFunction = otpDispatcherFunction;
+        this.otpDispatcherFunction = otpDispatcherFunction;
     }
 
     /**
-     * Checks that, for each query provided, an itinerary exists
-     * (that the OTP response contains a "plan" entry).
+     * Checks that, for each query provided, an itinerary exists.
      * @param queries the list of queries to check.
      * @return false if at least one query does not result in an itinerary (or an error occurs), true otherwise.
      */
@@ -36,7 +35,7 @@ public class ItineraryExistenceChecker {
         boolean allItinerariesExist = true;
 
         for (String query : queries) {
-            OtpDispatcherResponse response = otpDispatherFunction.apply(query);
+            OtpDispatcherResponse response = otpDispatcherFunction.apply(query);
             responses.add(response);
 
             Itinerary sameDayItinerary = response.findItineraryDepartingSameDay();
@@ -46,6 +45,9 @@ public class ItineraryExistenceChecker {
         return new Result(allItinerariesExist, responses);
     }
 
+    /**
+     * Class to pass the results of the OTP itinerary checks.
+     */
     public class Result {
         public final boolean allItinerariesExist;
         public final List<OtpDispatcherResponse> responses; // TODO: Map??

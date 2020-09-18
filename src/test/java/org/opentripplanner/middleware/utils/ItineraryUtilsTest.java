@@ -11,6 +11,8 @@ import org.opentripplanner.middleware.otp.response.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -24,21 +26,19 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIM
 public class ItineraryUtilsTest {
     /** Abbreviated query for the tests */
     public static final String BASE_QUERY = "?fromPlace=2418%20Dade%20Ave&toPlace=McDonald%27s&date=2020-08-13&time=11%3A23&arriveBy=false";
+    public static final String QUERY_DATE = "2020-08-13";
 
     @Test
     public void testQueriesFromDates() throws URISyntaxException {
         // Abbreviated query for this test.
         List<String> newDates = List.of("2020-12-30", "2020-12-31", "2021-01-01");
-        Map<String, String> baseParams = ItineraryUtils.getQueryParams("?" + BASE_QUERY);
+        List<String> queries = ItineraryUtils.queriesFromDates(BASE_QUERY, newDates);
+        Assertions.assertEquals(newDates.size(), queries.size());
 
-        List<String> result = ItineraryUtils.queriesFromDates(BASE_QUERY, newDates);
-        Assertions.assertEquals(newDates.size(), result.size());
         for (int i = 0; i < newDates.size(); i++) {
             // Insert a '?' in order to parse.
-            Map<String, String> newParams = ItineraryUtils.getQueryParams("?" + result.get(i));
+            Map<String, String> newParams = ItineraryUtils.getQueryParams("?" + queries.get(i));
             Assertions.assertEquals(newDates.get(i), newParams.get(DATE_PARAM));
-            // Also check other params are present (BASE_QUERY already contains the date param).
-            Assertions.assertEquals(baseParams.size(), newParams.size());
         }
     }
 
@@ -54,7 +54,7 @@ public class ItineraryUtilsTest {
         trip.sunday = true;
 
         // The list includes dates to be monitored in a 7-day window starting from the query date.
-        List<String> newDates = List.of("2020-08-13" /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18");
+        List<String> newDates = List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18");
         List<String> checkedDates = ItineraryUtils.getDatesToCheckItineraryExistence(trip);
         Assertions.assertEquals(newDates, checkedDates);
     }
@@ -65,8 +65,8 @@ public class ItineraryUtilsTest {
         List<String> queries = List.of(BASE_QUERY, queryWithRealtimeParam);
 
         for (String query : queries) {
-            String result = ItineraryUtils.excludeRealtime(query);
-            Map<String, String> params = ItineraryUtils.getQueryParams(result);
+            String queryExcludingRealtime = ItineraryUtils.excludeRealtime(query);
+            Map<String, String> params = ItineraryUtils.getQueryParams(queryExcludingRealtime);
             Assertions.assertEquals("true", params.get(IGNORE_REALTIME_UPDATES_PARAM));
         }
     }
@@ -108,32 +108,46 @@ public class ItineraryUtilsTest {
         Assertions.assertEquals(responses.get(2), ItineraryUtils.getResponseForDate(responses, desiredDate));
     }
 
-    @Test
-    public void testItineraryDepartsSameDay() {
-        // Trip is in US Eastern timezone.
+    private void testItineraryDepartsSameDay(boolean expected, Long... startTimes) {
+        // Trip is in US Eastern timezone per the place set in makeBarebonesTrip().
         MonitoredTrip trip = makeBarebonesTrip();
+        ZoneId zoneId = trip.tripZoneId();
 
-        // August 13, 2020 12:00:00 AM and 11:59:59 PM EDT (GMT-04:00)
-        List<Long> startTimes = List.of(1597291200000L, 1597377599000L);
         for (Long startTime : startTimes) {
             Itinerary itinerary = new Itinerary();
-            itinerary.startTime = Date.from(Instant.ofEpochMilli(startTime));
-            Assertions.assertTrue(ItineraryUtils.itineraryDepartsSameDay(itinerary, "2020-08-13", trip.tripZoneId()));
+            Instant instant = Instant.ofEpochMilli(startTime);
+            itinerary.startTime = Date.from(instant);
+            Assertions.assertEquals(
+                expected,
+                ItineraryUtils.itineraryDepartsSameDay(itinerary, QUERY_DATE, zoneId),
+                String.format(
+                    "%s %s be considered same day as %s",
+                    ZonedDateTime.ofInstant(instant, zoneId),
+                    expected ? "should" : "should not",
+                    QUERY_DATE
+                )
+            );
         }
     }
 
     @Test
-    public void testItineraryDoesNotDepartSameDay() {
-        // Trip is in US Eastern timezone.
-        MonitoredTrip trip = makeBarebonesTrip();
+    public void testItineraryDepartsSameDay() {
+        // All times EDT (GMT-04:00)
+        testItineraryDepartsSameDay(true,
+            1597302000000L, // August 13, 2020 3:00:00 AM
+            1597377599000L, // August 13, 2020 11:59:59 PM
+            1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
+        );
+    }
 
-        // August 12, 2020 11:59:59 PM EDT, August 14 2020 3:01 AM EDT
-        List<Long> startTimes = List.of(1597291199000L, 1597388460000L);
-        for (Long startTime : startTimes) {
-            Itinerary itinerary = new Itinerary();
-            itinerary.startTime = Date.from(Instant.ofEpochMilli(startTime));
-            Assertions.assertFalse(ItineraryUtils.itineraryDepartsSameDay(itinerary, "2020-08-13", trip.tripZoneId()));
-        }
+    @Test
+    public void testItineraryDoesNotDepartSameDay() {
+        // All times EDT (GMT-04:00)
+        testItineraryDepartsSameDay(false,
+            1597291199000L, // August 12, 2020 11:59:59 PM
+            1597291200000L, // August 13, 2020 2:59:59 AM
+            1597388400000L // August 14 2020 3:00:00 AM
+        );
     }
 
     private MonitoredTrip makeBarebonesTrip() {
