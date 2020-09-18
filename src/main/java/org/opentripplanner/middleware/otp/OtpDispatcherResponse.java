@@ -29,7 +29,8 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
 public class OtpDispatcherResponse implements Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcherResponse.class);
 
-    private Response response;
+    /** Caches the OTP response. */
+    private transient Response response;
 
     /** Empty constructor used for testing */
     public OtpDispatcherResponse() {}
@@ -76,6 +77,7 @@ public class OtpDispatcherResponse implements Serializable {
     }
 
     public void setResponse(Response response) {
+        this.response = response;
         responseBody = JsonUtils.toJson(response);
     }
 
