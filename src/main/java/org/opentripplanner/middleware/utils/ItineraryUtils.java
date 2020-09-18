@@ -32,7 +32,7 @@ public class ItineraryUtils {
     public static final String TIME_PARAM = "time";
 
     /**
-     * Converts query parameters that starts with '?' to a {@link Map}.
+     * Converts query strings that start with '?' to a {@link Map} of keys and values.
      */
     public static Map<String, String> getQueryParams(String queryParams) throws URISyntaxException {
         List<NameValuePair> nameValuePairs = URLEncodedUtils.parse(
@@ -73,8 +73,7 @@ public class ItineraryUtils {
 
     /**
      * Obtains dates for which we should check that itineraries exist for the specified trip.
-     * The dates include each day is set to be monitored in a 7-day window starting from the query start date.
-     * @param trip the {@link MonitoredTrip} to get the date for.
+     * The dates include each day to be monitored in a 7-day window starting from the trip's query start date.
      * @return a list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor.
      */
     public static List<String> getDatesToCheckItineraryExistence(MonitoredTrip trip) throws URISyntaxException {
@@ -87,7 +86,7 @@ public class ItineraryUtils {
         String queryDateString = params.getOrDefault(DATE_PARAM, DateTimeUtils.getStringFromDate(DateTimeUtils.nowAsLocalDate(), YYYY_MM_DD));
         LocalDate queryDate = DateTimeUtils.getDateFromString(queryDateString, YYYY_MM_DD);
 
-        // Get current time and trip time (with the time offset to today) for comparison.
+        // Get the trip time.
         // FIXME: replace this block with code from PR #75.
         String[] tripTimeSplit = params.get("time").split(":");
         int tripHour = Integer.parseInt(tripTimeSplit[0]);
@@ -117,9 +116,7 @@ public class ItineraryUtils {
     }
 
     /**
-     * Sets the ignoreRealtimeUpdates parameter to true.
-     * @param queryParams the query to modify.
-     * @return the modified query.
+     * @return a copy of the specified query, with ignoreRealtimeUpdates set to true.
      */
     public static String excludeRealtime(String queryParams) throws URISyntaxException {
         Map<String, String> params = getQueryParams(queryParams);

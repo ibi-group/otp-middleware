@@ -15,7 +15,6 @@ public class ItineraryExistenceChecker {
     private final Function<String, OtpDispatcherResponse> otpDispatcherFunction;
 
     /**
-     * Class constructor.
      * @param otpDispatcherFunction a function that takes String as input and returns {@link OtpDispatcherResponse},
      *                              example: {@link OtpDispatcher#sendOtpPlanRequest}.
      */
@@ -26,7 +25,8 @@ public class ItineraryExistenceChecker {
 
     /**
      * Checks that, for each query provided, an itinerary exists.
-     * @param labeledQueries a map with all the queries to check.
+     * @param labeledQueries a map containing the queries to check, each query having a key or label
+     *                      that will be used in Result.labeledResponses for easy identification.
      * @return An object with a map of results and summary of itinerary existence.
      */
     public Result checkAll(Map<String, String> labeledQueries) {
@@ -49,7 +49,12 @@ public class ItineraryExistenceChecker {
      * Class to pass the results of the OTP itinerary checks.
      */
     public static class Result {
+        /** Whether all itineraries checked exist. */
         public final boolean allItinerariesExist;
+        /**
+         * A map with the same keys as the input from checkAll,
+         * and values as OTP responses for the corresponding queries.
+         */
         public final Map<String, OtpDispatcherResponse> labeledResponses;
 
         private Result(boolean itinerariesExist, Map<String, OtpDispatcherResponse> labeledResponses) {

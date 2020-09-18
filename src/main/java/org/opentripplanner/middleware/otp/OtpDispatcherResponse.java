@@ -100,8 +100,8 @@ public class OtpDispatcherResponse implements Serializable {
     }
 
     /**
-     * @return true if the raw OTP response contains an OTP itinerary
-     * departing the same day as the request date parameter, false otherwise.
+     * @return the first itinerary from the raw OTP response
+     * departing the same day as specified in the request date/time parameters, or null otherwise.
      */
     public Itinerary findItineraryDepartingSameDay() {
         Response response = this.getResponse();

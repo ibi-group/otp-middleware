@@ -127,7 +127,7 @@ public class ItineraryUtilsTest {
         testItineraryDepartsSameDay("1:23", true,
             1597215600000L, // August 12, 2020 3:00:00 AM
             1597291199000L, // August 12, 2020 11:59:59 PM
-            1597301999000L // August 13, 2020 02:59:59 AM
+            1597301999000L // August 13, 2020 02:59:59 AM, considered to be Aug 12.
         );
     }
 
