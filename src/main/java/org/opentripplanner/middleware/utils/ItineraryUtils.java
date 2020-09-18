@@ -29,6 +29,7 @@ public class ItineraryUtils {
 
     public static final String IGNORE_REALTIME_UPDATES_PARAM = "ignoreRealtimeUpdates";
     public static final String DATE_PARAM = "date";
+    public static final String TIME_PARAM = "time";
 
     /**
      * Converts query parameters that starts with '?' to a {@link Map}.
@@ -154,17 +155,25 @@ public class ItineraryUtils {
     }
 
     /**
-     * @return true if the itinerary's startTime is one the same day as the specified date.
+     * @return true if the itinerary's startTime is one the same day as the day of the specified date and time.
      */
-    public static boolean itineraryDepartsSameDay(Itinerary itinerary, String date, ZoneId zoneId) {
-        ZonedDateTime startDate = ZonedDateTime.ofInstant(itinerary.startTime.toInstant(), zoneId);
-        ZonedDateTime startDateDayBefore = startDate.minusDays(1);
+    public static boolean itineraryDepartsSameDay(Itinerary itinerary, String date, String time, ZoneId zoneId) {
+        // TODO: Make SERVICEDAY_START_HOUR an optional config parameter.
+        final int SERVICEDAY_START_HOUR = 3;
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(YYYY_MM_DD);
 
-        // TODO: Make SERVICEDAY_START_HOUR a config parameter.
-        final int SERVICEDAY_START_HOUR = 3;
+        ZonedDateTime startDate = ZonedDateTime.ofInstant(itinerary.startTime.toInstant(), zoneId);
 
-        // TODO: Also add the time of the OTP request as argument and use it to determine the effective day of the request.
+        // If the OTP request was made at a time before SERVICEDAY_START_HOUR,
+        // for instance, requesting a departure or arrival at 12:30 am,
+        // then consider the request to have been made the day before.
+        // To compensate, advance startDate by one day.
+        String hour = time.split(":")[0];
+        if (Integer.parseInt(hour) < SERVICEDAY_START_HOUR) {
+            startDate = startDate.plusDays(1);
+        }
+
+        ZonedDateTime startDateDayBefore = startDate.minusDays(1);
 
         return (
             date.equals(startDate.format(dateFormatter)) &&

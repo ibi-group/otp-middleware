@@ -1,15 +1,12 @@
 package org.opentripplanner.middleware.otp;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.SerializationUtils;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.opentripplanner.middleware.utils.YamlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +19,7 @@ import java.util.Optional;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
 
 /**
  * An OTP dispatcher response represents the status code and body return from a call to an OTP end point e.g. plan
@@ -127,8 +125,9 @@ public class OtpDispatcherResponse implements Serializable {
             }
 
             String requestDate = response.requestParameters.get(DATE_PARAM);
+            String requestTime = response.requestParameters.get(TIME_PARAM);
             for (Itinerary itinerary : plan.itineraries) {
-                if (ItineraryUtils.itineraryDepartsSameDay(itinerary, requestDate, fromZoneId.get())) {
+                if (ItineraryUtils.itineraryDepartsSameDay(itinerary, requestDate, requestTime, fromZoneId.get())) {
                     return itinerary;
                 }
             }

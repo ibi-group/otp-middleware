@@ -23,7 +23,10 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIM
 public class ItineraryUtilsTest {
     /** Abbreviated query for the tests */
     public static final String BASE_QUERY = "?fromPlace=2418%20Dade%20Ave&toPlace=McDonald%27s&date=2020-08-13&time=11%3A23&arriveBy=false";
+
+    // Date and time from the above query.
     public static final String QUERY_DATE = "2020-08-13";
+    public static final String QUERY_TIME = "11:23";
 
     @Test
     public void testGetQueriesFromDates() throws URISyntaxException {
@@ -89,7 +92,7 @@ public class ItineraryUtilsTest {
         Assertions.assertEquals(itineraries.get(1), trip.itinerary);
     }
 
-    private void testItineraryDepartsSameDay(boolean expected, Long... startTimes) {
+    private void testItineraryDepartsSameDay(String time, boolean expected, Long... startTimes) {
         // Trip is in US Eastern timezone per the place set in makeBarebonesTrip().
         MonitoredTrip trip = makeBarebonesTrip();
         ZoneId zoneId = trip.tripZoneId();
@@ -101,12 +104,13 @@ public class ItineraryUtilsTest {
             itinerary.startTime = Date.from(instant);
             Assertions.assertEquals(
                 expected,
-                ItineraryUtils.itineraryDepartsSameDay(itinerary, QUERY_DATE, zoneId),
+                ItineraryUtils.itineraryDepartsSameDay(itinerary, QUERY_DATE, time, zoneId),
                 String.format(
-                    "%s %s be considered same day as %s",
+                    "%s %s be considered same day as %s %s",
                     ZonedDateTime.ofInstant(instant, zoneId),
                     expected ? "should" : "should not",
-                    QUERY_DATE
+                    QUERY_DATE,
+                    time
                 )
             );
         }
@@ -115,20 +119,30 @@ public class ItineraryUtilsTest {
     @Test
     public void testItineraryDepartsSameDay() {
         // All times EDT (GMT-04:00)
-        testItineraryDepartsSameDay(true,
+        testItineraryDepartsSameDay(QUERY_TIME, true,
             1597302000000L, // August 13, 2020 3:00:00 AM
             1597377599000L, // August 13, 2020 11:59:59 PM
             1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
+        );
+        testItineraryDepartsSameDay("1:23", true,
+            1597215600000L, // August 12, 2020 3:00:00 AM
+            1597291199000L, // August 12, 2020 11:59:59 PM
+            1597301999000L // August 13, 2020 02:59:59 AM
         );
     }
 
     @Test
     public void testItineraryDoesNotDepartSameDay() {
         // All times EDT (GMT-04:00)
-        testItineraryDepartsSameDay(false,
+        testItineraryDepartsSameDay(QUERY_TIME, false,
             1597291199000L, // August 12, 2020 11:59:59 PM
             1597291200000L, // August 13, 2020 2:59:59 AM
             1597388400000L // August 14 2020 3:00:00 AM
+        );
+        testItineraryDepartsSameDay("1:23", false,
+            1597302000000L, // August 13, 2020 3:00:00 AM
+            1597377599000L, // August 13, 2020 11:59:59 PM
+            1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
         );
     }
 
