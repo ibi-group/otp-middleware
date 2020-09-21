@@ -92,10 +92,10 @@ public class ItineraryUtilsTest {
         Assertions.assertEquals(itineraries.get(1), trip.itinerary);
     }
 
-    private void testItineraryDepartsSameDay(String time, boolean expected, Long... startTimes) {
+    private void testItineraryDepartsSameDay(String time, boolean expected, Long... startTimes) throws URISyntaxException {
         // Trip is in US Eastern timezone per the place set in makeBarebonesTrip().
         MonitoredTrip trip = makeBarebonesTrip();
-        ZoneId zoneId = trip.tripZoneId();
+        ZoneId zoneId = trip.timezoneForTargetLocation();
 
         // startTimes are in US Eastern timezone.
         for (Long startTime : startTimes) {
@@ -117,7 +117,7 @@ public class ItineraryUtilsTest {
     }
 
     @Test
-    public void testItineraryDepartsSameDay() {
+    public void testItineraryDepartsSameDay() throws URISyntaxException {
         // All times EDT (GMT-04:00)
         testItineraryDepartsSameDay(QUERY_TIME, true,
             1597302000000L, // August 13, 2020 3:00:00 AM
@@ -132,7 +132,7 @@ public class ItineraryUtilsTest {
     }
 
     @Test
-    public void testItineraryDoesNotDepartSameDay() {
+    public void testItineraryDoesNotDepartSameDay() throws URISyntaxException {
         // All times EDT (GMT-04:00)
         testItineraryDepartsSameDay(QUERY_TIME, false,
             1597291199000L, // August 12, 2020 11:59:59 PM

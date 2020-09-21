@@ -85,7 +85,12 @@ public class CheckMonitoredTrip implements Runnable {
     @Override
     public void run() {
         // Check if the trip check should be skipped (based on time, day of week, etc.)
-        checkSkipped = shouldSkipMonitoredTripCheck(trip);
+        // TODO: Merge with code from #75.
+        try {
+            checkSkipped = shouldSkipMonitoredTripCheck(trip);
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
         if (checkSkipped) {
             LOG.debug("Skipping check for trip: {}", trip.id);
             return;
@@ -258,8 +263,9 @@ public class CheckMonitoredTrip implements Runnable {
      * Check whether monitored trip check should be skipped.
      * TODO: Should this be a method on {@link MonitoredTrip}?
      */
-    public static boolean shouldSkipMonitoredTripCheck(MonitoredTrip trip) {
-        ZoneId zoneId = trip.tripZoneId();
+    public static boolean shouldSkipMonitoredTripCheck(MonitoredTrip trip) throws URISyntaxException {
+        // TODO: Merge with code from #75.
+        ZoneId zoneId = trip.timezoneForTargetLocation();
 
         // Get current time and trip time (with the time offset to today) for comparison.
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(zoneId);

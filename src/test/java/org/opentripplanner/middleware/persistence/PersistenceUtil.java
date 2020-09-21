@@ -14,10 +14,8 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Response;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.*;
-
-import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
-import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
 
 /**
  * Utility class to aid with creating and storing objects in Mongo.
@@ -136,7 +134,7 @@ public class PersistenceUtil {
         return monitoredTrip;
     }
 
-    public static MonitoredTrip createMonitoredTrip(String userId, OtpDispatcherResponse otpDispatcherResponse) {
+    public static MonitoredTrip createMonitoredTrip(String userId, OtpDispatcherResponse otpDispatcherResponse) throws URISyntaxException {
         MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "test trip";

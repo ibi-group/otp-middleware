@@ -78,7 +78,7 @@ public class ItineraryUtils {
      */
     public static List<String> getDatesToCheckItineraryExistence(MonitoredTrip trip) throws URISyntaxException {
         List<String> result = new ArrayList<>();
-        ZoneId zoneId = trip.tripZoneId();
+        ZoneId zoneId = trip.timezoneForTargetLocation();
         Map<String, String> params = getQueryParams(trip.queryParams);
 
         // Start from the query date, if available.

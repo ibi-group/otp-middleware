@@ -83,7 +83,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      * (and OTP_PLAN_ENDPOINT) to a valid OTP server.
      */
     @Test
-    public void canMonitorTrip() {
+    public void canMonitorTrip() throws URISyntaxException {
         assumeTrue(getBooleanEnvVar("RUN_E2E"));
         // Submit a query to the OTP server.
         // From P&R to Downtown Orlando
@@ -118,7 +118,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     }
 
     @Test
-    public void willGenerateDepartureDelayNotification() {
+    public void willGenerateDepartureDelayNotification() throws URISyntaxException {
         MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
         OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
         Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
@@ -131,7 +131,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     }
 
     @Test
-    public void willSkipDepartureDelayNotification() {
+    public void willSkipDepartureDelayNotification() throws URISyntaxException {
         MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
         OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
         Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
@@ -149,7 +149,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      */
     @ParameterizedTest
     @MethodSource("createSkipTripTestCases")
-    void testSkipMonitoredTripCheck(ShouldSkipTripTestCase testCase) {
+    void testSkipMonitoredTripCheck(ShouldSkipTripTestCase testCase) throws URISyntaxException {
         DateTimeUtils.useFixedClockAt(testCase.mockTime);
         try {
             assertEquals(testCase.shouldSkipTrip, shouldSkipMonitoredTripCheck(testCase.trip), testCase.message);
@@ -158,7 +158,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         }
     }
 
-    private static List<ShouldSkipTripTestCase> createSkipTripTestCases() {
+    private static List<ShouldSkipTripTestCase> createSkipTripTestCases() throws URISyntaxException {
         List<ShouldSkipTripTestCase> testCases = new ArrayList<>();
 
         // June 10, 2020 (Wednesday) at noon
