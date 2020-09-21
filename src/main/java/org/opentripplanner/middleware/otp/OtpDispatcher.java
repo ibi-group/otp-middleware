@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.otp;
 
-import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

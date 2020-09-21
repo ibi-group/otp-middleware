@@ -114,7 +114,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     private static ItineraryExistenceChecker.Result checkItineraryExistence(MonitoredTrip trip, Request request) {
         ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker(OtpDispatcher::sendOtpPlanRequest);
         try {
-            ItineraryExistenceChecker.Result checkResult = itineraryChecker.checkAll(ItineraryUtils.getItineraryExistenceQueries(trip));
+            ItineraryExistenceChecker.Result checkResult = itineraryChecker.checkAll(ItineraryUtils.getItineraryExistenceQueries(trip), trip.isArriveBy());
             if (!checkResult.allItinerariesExist) {
                 logMessageAndHalt(
                     request,

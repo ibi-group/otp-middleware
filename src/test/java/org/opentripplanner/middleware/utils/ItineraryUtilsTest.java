@@ -44,7 +44,7 @@ public class ItineraryUtilsTest {
 
     @Test
     public void testGetDatesToCheckItineraryExistence() throws URISyntaxException {
-        MonitoredTrip trip = makeBarebonesTrip();
+        MonitoredTrip trip = makeTestTrip(false);
         trip.monday = true;
         trip.tuesday = true;
         trip.wednesday = false;
@@ -92,19 +92,19 @@ public class ItineraryUtilsTest {
         Assertions.assertEquals(itineraries.get(1), trip.itinerary);
     }
 
-    private void testItineraryDepartsSameDay(String time, boolean expected, Long... startTimes) throws URISyntaxException {
-        // Trip is in US Eastern timezone per the place set in makeBarebonesTrip().
-        MonitoredTrip trip = makeBarebonesTrip();
+    private void testIsSameDay(String time, boolean isArrival, boolean expected, Long... startTimes) throws URISyntaxException {
+        // Trip arrives in US Eastern timezone per the place set in makeTestTrip().
+        MonitoredTrip trip = makeTestTrip(isArrival);
         ZoneId zoneId = trip.timezoneForTargetLocation();
 
         // startTimes are in US Eastern timezone.
         for (Long startTime : startTimes) {
             Itinerary itinerary = new Itinerary();
             Instant instant = Instant.ofEpochMilli(startTime);
-            itinerary.startTime = Date.from(instant);
+            itinerary.setStartOrEndTime(Date.from(instant), isArrival);
             Assertions.assertEquals(
                 expected,
-                ItineraryUtils.itineraryDepartsSameDay(itinerary, QUERY_DATE, time, zoneId),
+                ItineraryUtils.isSameDay(itinerary, QUERY_DATE, time, zoneId, isArrival),
                 String.format(
                     "%s %s be considered same day as %s %s",
                     ZonedDateTime.ofInstant(instant, zoneId),
@@ -119,12 +119,12 @@ public class ItineraryUtilsTest {
     @Test
     public void testItineraryDepartsSameDay() throws URISyntaxException {
         // All times EDT (GMT-04:00)
-        testItineraryDepartsSameDay(QUERY_TIME, true,
+        testIsSameDay(QUERY_TIME, false, true,
             1597302000000L, // August 13, 2020 3:00:00 AM
             1597377599000L, // August 13, 2020 11:59:59 PM
             1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
         );
-        testItineraryDepartsSameDay("1:23", true,
+        testIsSameDay("1:23", false, true,
             1597215600000L, // August 12, 2020 3:00:00 AM
             1597291199000L, // August 12, 2020 11:59:59 PM
             1597301999000L // August 13, 2020 02:59:59 AM, considered to be Aug 12.
@@ -134,27 +134,73 @@ public class ItineraryUtilsTest {
     @Test
     public void testItineraryDoesNotDepartSameDay() throws URISyntaxException {
         // All times EDT (GMT-04:00)
-        testItineraryDepartsSameDay(QUERY_TIME, false,
+        testIsSameDay(QUERY_TIME, false, false,
             1597291199000L, // August 12, 2020 11:59:59 PM
             1597291200000L, // August 13, 2020 2:59:59 AM
             1597388400000L // August 14 2020 3:00:00 AM
         );
-        testItineraryDepartsSameDay("1:23", false,
+        testIsSameDay("1:23", false, false,
             1597302000000L, // August 13, 2020 3:00:00 AM
             1597377599000L, // August 13, 2020 11:59:59 PM
             1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
         );
     }
 
-    private MonitoredTrip makeBarebonesTrip() {
-        Place fromPlace = new Place();
-        fromPlace.lat = 33.80;
-        fromPlace.lon = -84.70;
+    @Test
+    public void testItineraryArrivesSameDay() throws URISyntaxException {
+        // All times EDT (GMT-04:00)
+        testIsSameDay(QUERY_TIME, true, true,
+            1597302000000L, // August 13, 2020 3:00:00 AM
+            1597377599000L, // August 13, 2020 11:59:59 PM
+            1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
+        );
+        testIsSameDay("1:23", true, true,
+            1597215600000L, // August 12, 2020 3:00:00 AM
+            1597291199000L, // August 12, 2020 11:59:59 PM
+            1597301999000L // August 13, 2020 02:59:59 AM, considered to be Aug 12.
+        );
+    }
+
+    @Test
+    public void testItineraryDoesNotArriveSameDay() throws URISyntaxException {
+        // All times EDT (GMT-04:00)
+        testIsSameDay(QUERY_TIME, true, false,
+            1597291199000L, // August 12, 2020 11:59:59 PM
+            1597291200000L, // August 13, 2020 2:59:59 AM
+            1597388400000L // August 14 2020 3:00:00 AM
+        );
+        testIsSameDay("1:23", true, false,
+            1597302000000L, // August 13, 2020 3:00:00 AM
+            1597377599000L, // August 13, 2020 11:59:59 PM
+            1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
+        );
+    }
+
+    private MonitoredTrip makeTestTrip(boolean arriveBy) throws URISyntaxException {
+        Place targetPlace = new Place();
+        targetPlace.lat = 33.80;
+        targetPlace.lon = -84.70; // America/NewYork
+
+        Place dummyPlace = new Place();
+        dummyPlace.lat = 33.90;
+        dummyPlace.lon = 0.0; // Africa/Algiers.
 
         MonitoredTrip trip = new MonitoredTrip();
         trip.id = "Test trip";
-        trip.from = fromPlace;
-        trip.queryParams = BASE_QUERY;
+
+        if (arriveBy) {
+            trip.from = dummyPlace;
+            trip.to = targetPlace;
+
+            Map<String, String> baseQueryParams = ItineraryUtils.getQueryParams(BASE_QUERY);
+            baseQueryParams.put("arriveBy", "true");
+            trip.queryParams = ItineraryUtils.toQueryString(baseQueryParams, true);
+        } else { // departBy
+            trip.from = targetPlace;
+            trip.to = dummyPlace;
+
+            trip.queryParams = BASE_QUERY;
+        }
         return trip;
     }
 }

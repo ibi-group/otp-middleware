@@ -97,6 +97,18 @@ public class Itinerary {
         }
     }
 
+    public Date getStartOrEndTime(boolean isArrival) {
+        return isArrival ? endTime : startTime;
+    }
+
+    public void setStartOrEndTime(Date startOrEnd, boolean isArrival) {
+        if (isArrival) {
+            endTime = startOrEnd;
+        } else {
+            startTime = startOrEnd;
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

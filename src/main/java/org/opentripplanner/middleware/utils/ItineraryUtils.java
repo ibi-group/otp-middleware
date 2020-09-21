@@ -39,24 +39,30 @@ public class ItineraryUtils {
             new URI(String.format("http://example.com/%s", queryParams)),
             UTF_8
         );
-        return nameValuePairs.stream().collect(Collectors.toMap(NameValuePair::getName,NameValuePair::getValue));
+        return nameValuePairs.stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
     }
 
     /**
-     * Converts a {@link Map} to a URL query string (not including '?').
+     * Converts a {@link Map} to a URL query string, with or without a leading '?'.
      */
-    public static String toQueryString(Map<String, String> params) {
+    public static String toQueryString(Map<String, String> params, boolean leadingQuestionMark) {
         List<BasicNameValuePair> nameValuePairs = params.entrySet().stream()
             .map(e -> new BasicNameValuePair(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
-        return URLEncodedUtils.format(nameValuePairs, UTF_8);
+        return (leadingQuestionMark ? "?" : "") +
+            URLEncodedUtils.format(nameValuePairs, UTF_8);
+    }
+
+    public static String toQueryString(Map<String, String> params) {
+        return toQueryString(params, false);
     }
 
     /**
      * Creates a map of new query strings based on the one provided,
      * with the date changed to the desired one and ignoring realtime updates.
+     *
      * @param baseQueryParams the base OTP query.
-     * @param dates a list of the desired dates in YYYY-MM-DD format.
+     * @param dates           a list of the desired dates in YYYY-MM-DD format.
      * @return a map of query strings with, and indexed by the specified dates.
      */
     public static Map<String, String> getQueriesFromDates(String baseQueryParams, List<String> dates) throws URISyntaxException {
@@ -74,6 +80,7 @@ public class ItineraryUtils {
     /**
      * Obtains dates for which we should check that itineraries exist for the specified trip.
      * The dates include each day to be monitored in a 7-day window starting from the trip's query start date.
+     *
      * @return a list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor.
      */
     public static List<String> getDatesToCheckItineraryExistence(MonitoredTrip trip) throws URISyntaxException {
@@ -123,7 +130,7 @@ public class ItineraryUtils {
         params.put(IGNORE_REALTIME_UPDATES_PARAM, "true");
 
         // Insert '?' so others can parse the resulting query string.
-        return "?" + toQueryString(params);
+        return toQueryString(params, true);
     }
 
     /**
@@ -153,17 +160,22 @@ public class ItineraryUtils {
     }
 
     /**
-     * @return true if the itinerary's startTime is one the same day as the day of the specified date and time.
+     * Checks that the specified itinerary is on the same day as the specified date/time.
+     * @param itinerary the itinerary to check.
+     * @param date the request date to check.
+     * @param time the request time to check.
+     * @param checkArrival true to check the itinerary endtime, false to check the startTime.
+     * @return true if the itinerary's startTime or endTime is one the same day as the day of the specified date and time.
      */
-    public static boolean itineraryDepartsSameDay(Itinerary itinerary, String date, String time, ZoneId zoneId) {
+    public static boolean isSameDay(Itinerary itinerary, String date, String time, ZoneId zoneId, boolean checkArrival) {
         // TODO: Make SERVICEDAY_START_HOUR an optional config parameter.
         final int SERVICEDAY_START_HOUR = 3;
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(YYYY_MM_DD);
 
-        ZonedDateTime startDate = ZonedDateTime.ofInstant(itinerary.startTime.toInstant(), zoneId);
+        ZonedDateTime startDate = ZonedDateTime.ofInstant(itinerary.getStartOrEndTime(checkArrival).toInstant(), zoneId);
 
-        // If the OTP request was made at a time before SERVICEDAY_START_HOUR,
-        // for instance, requesting a departure or arrival at 12:30 am,
+        // If the OTP request was made at a time before SERVICEDAY_START_HOUR
+        // (for instance, a request with a departure or arrival at 12:30 am),
         // then consider the request to have been made the day before.
         // To compensate, advance startDate by one day.
         String hour = time.split(":")[0];

@@ -111,7 +111,7 @@ public class OtpDispatcherResponse implements Serializable {
      * @return the first itinerary from the raw OTP response
      * departing the same day as specified in the request date/time parameters, or null otherwise.
      */
-    public Itinerary findItineraryDepartingSameDay() {
+    public Itinerary findItineraryDepartingSameDay(boolean checkArrival) {
         Response response = this.getResponse();
         TripPlan plan = response.plan;
         HashMap<String, String> reqParams = response.requestParameters;
@@ -137,7 +137,7 @@ public class OtpDispatcherResponse implements Serializable {
                 }
 
                 for (Itinerary itinerary : plan.itineraries) {
-                    if (ItineraryUtils.itineraryDepartsSameDay(itinerary, requestDate, requestTime, fromZoneId.get())) {
+                    if (ItineraryUtils.isSameDay(itinerary, requestDate, requestTime, fromZoneId.get(), checkArrival)) {
                         return itinerary;
                     }
                 }

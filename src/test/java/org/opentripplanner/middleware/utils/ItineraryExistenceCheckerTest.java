@@ -50,7 +50,7 @@ public class ItineraryExistenceCheckerTest {
         labeledQueries.put("label2", "exist2");
         labeledQueries.put("label3", "exist3");
 
-        ItineraryExistenceChecker.Result result = tripChecker.checkAll(labeledQueries);
+        ItineraryExistenceChecker.Result result = tripChecker.checkAll(labeledQueries, false);
         Assertions.assertTrue(result.allItinerariesExist);
 
         for (String label : labeledQueries.keySet()) {
@@ -66,7 +66,7 @@ public class ItineraryExistenceCheckerTest {
         labeledQueries.put("label2", "not found");
         labeledQueries.put("label3", "exist3");
 
-        ItineraryExistenceChecker.Result result = tripChecker.checkAll(labeledQueries);
+        ItineraryExistenceChecker.Result result = tripChecker.checkAll(labeledQueries, false);
         Assertions.assertFalse(result.allItinerariesExist);
     }
 
