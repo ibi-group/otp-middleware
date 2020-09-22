@@ -4,7 +4,7 @@ import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
@@ -25,7 +25,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_XML;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_API_ROOT;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -132,7 +131,7 @@ public class OtpRequestProcessor implements Endpoint {
         long tripStorageStartTime = DateTimeUtils.currentTimeMillis();
 
         Auth0Connection.checkUser(request);
-        Auth0UserProfile profile = Auth0Connection.getUserFromRequest(request);
+        RequestingUser profile = Auth0Connection.getUserFromRequest(request);
 
         final boolean storeTripHistory = profile != null && profile.otpUser != null && profile.otpUser.storeTripHistory;
         // only save trip details if the user has given consent and a response from OTP is provided

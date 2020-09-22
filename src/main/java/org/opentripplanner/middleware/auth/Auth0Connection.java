@@ -54,7 +54,7 @@ public class Auth0Connection {
         if (isAuthDisabled()) {
             // If in a development or testing environment, assign a mock profile of an admin user to the request
             // attribute and skip authentication.
-            addUserToRequest(req, Auth0UserProfile.createTestUser(req));
+            addUserToRequest(req, RequestingUser.createTestUser(req));
             return;
         }
         String token = getTokenFromRequest(req);
@@ -65,7 +65,7 @@ public class Auth0Connection {
         // for downstream controllers to check permissions.
         try {
             DecodedJWT jwt = verifier.verify(token);
-            Auth0UserProfile profile = new Auth0UserProfile(jwt);
+            RequestingUser profile = new RequestingUser(jwt);
             if (!isValidUser(profile)) {
                 if (isCreatingSelf(req, profile)) {
                     // If creating self, no user account is required (it does not exist yet!). Note: creating an
@@ -94,7 +94,7 @@ public class Auth0Connection {
     /**
      * Check for POST requests that are creating an {@link AbstractUser} (a proxy for OTP/API users).
      */
-    private static boolean isCreatingSelf(Request req, Auth0UserProfile profile) {
+    private static boolean isCreatingSelf(Request req, RequestingUser profile) {
         String uri = req.uri();
         String method = req.requestMethod();
         // Check that this is a POST request.
@@ -132,7 +132,7 @@ public class Auth0Connection {
         // Check auth token in request (and add user object to request).
         checkUser(req);
         // Check that user object is present and is admin.
-        Auth0UserProfile user = Auth0Connection.getUserFromRequest(req);
+        RequestingUser user = Auth0Connection.getUserFromRequest(req);
         if (!isUserAdmin(user)) {
             logMessageAndHalt(
                 req,
@@ -145,21 +145,21 @@ public class Auth0Connection {
     /**
      * Check if the incoming user is an admin user
      */
-    public static boolean isUserAdmin(Auth0UserProfile user) {
+    public static boolean isUserAdmin(RequestingUser user) {
         return user != null && user.adminUser != null;
     }
 
     /**
      * Add user profile to Spark Request object
      */
-    public static void addUserToRequest(Request req, Auth0UserProfile user) {
+    public static void addUserToRequest(Request req, RequestingUser user) {
         req.attribute("user", user);
     }
 
     /**
      * Get user profile from Spark Request object
      */
-    public static Auth0UserProfile getUserFromRequest(Request req) {
+    public static RequestingUser getUserFromRequest(Request req) {
         return req.attribute("user");
     }
 
@@ -236,7 +236,7 @@ public class Auth0Connection {
     /**
      * Confirm that the user exists in at least one of the MongoDB user collections.
      */
-    private static boolean isValidUser(Auth0UserProfile profile) {
+    private static boolean isValidUser(RequestingUser profile) {
         return profile != null && (profile.adminUser != null || profile.otpUser != null || profile.apiUser != null);
     }
 
@@ -244,7 +244,7 @@ public class Auth0Connection {
      * Confirm that the user's actions are on their items if not admin.
      */
     public static void isAuthorized(String userId, Request request) {
-        Auth0UserProfile profile = getUserFromRequest(request);
+        RequestingUser profile = getUserFromRequest(request);
         // let admin do anything
         if (profile.adminUser != null) {
             return;

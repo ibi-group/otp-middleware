@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import org.bson.conversions.Bson;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -179,7 +179,7 @@ public class MonitoredTrip extends Model {
     }
 
     @Override
-    public boolean canBeCreatedBy(Auth0UserProfile profile) {
+    public boolean canBeCreatedBy(RequestingUser profile) {
         OtpUser otpUser = profile.otpUser;
         if (userId == null) {
             if (otpUser == null) {
@@ -200,7 +200,7 @@ public class MonitoredTrip extends Model {
      * Confirm that the requesting user has the required permissions
      */
     @Override
-    public boolean canBeManagedBy(Auth0UserProfile user) {
+    public boolean canBeManagedBy(RequestingUser user) {
         // This should not be possible, but return false on a null userId just in case.
         if (userId == null) return false;
         // If the user is attempting to update someone else's monitored trip, they must be admin.

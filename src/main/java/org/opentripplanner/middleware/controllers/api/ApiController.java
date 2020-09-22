@@ -8,7 +8,7 @@ import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
@@ -174,7 +174,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     // FIXME Will require further granularity for admin
     private List<T> getMany(Request req, Response res) {
 
-        Auth0UserProfile requestingUser = getUserFromRequest(req);
+        RequestingUser requestingUser = getUserFromRequest(req);
         if (isUserAdmin(requestingUser)) {
             // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
             // management or review without restriction.
@@ -187,6 +187,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         } else {
             // For all other cases the assumption is that the request is being made by an Otp user and the requested
             // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
+            // FIXME: This needs to change so that third party API users must pass in an OtpUser id in order to get
+            //  filtered objects. This could be either a param (in path) or query param.
             return getObjectsFiltered("userId", requestingUser.otpUser.id);
         }
     }
@@ -206,7 +208,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * (must be admin) than is desired.
      */
     protected T getEntityForId(Request req, Response res) {
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         String id = getIdFromRequest(req);
         T object = getObjectForId(req, id);
 
@@ -223,7 +225,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private T deleteOne(Request req, Response res) {
         long startTime = DateTimeUtils.currentTimeMillis();
         String id = getIdFromRequest(req);
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         try {
             T object = getObjectForId(req, id);
             // Check that requesting user can manage entity.
@@ -303,7 +305,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         if (req.params(ID_PARAM) == null && req.requestMethod().equals("PUT")) {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
         }
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         final boolean isCreating = req.params(ID_PARAM) == null;
         // Save or update to database
         try {

@@ -5,7 +5,7 @@ import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUsageResult;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
@@ -80,7 +80,7 @@ public class LogController implements Endpoint {
     private static List<ApiUsageResult> getUsageLogs(Request req, Response res) {
         // Get list of API keys (if present) from request.
         List<ApiKey> apiKeys = getApiKeyIdsFromRequest(req);
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // If the user is not an admin, the list of API keys is defaulted to their keys.
         if (!isUserAdmin(requestingUser)) {
             if (requestingUser.apiUser == null) {

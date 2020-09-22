@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.models;
 
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ public class AdminUser extends AbstractUser {
      * TODO: Change to application admin?
      */
     @Override
-    public boolean canBeCreatedBy(Auth0UserProfile user) {
+    public boolean canBeCreatedBy(RequestingUser user) {
         return isUserAdmin(user);
     }
 

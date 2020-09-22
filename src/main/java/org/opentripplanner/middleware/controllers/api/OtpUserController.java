@@ -5,7 +5,7 @@ import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
 import org.eclipse.jetty.http.HttpStatus;
 import com.mongodb.client.model.Filters;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -80,7 +80,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
     }
 
     @Override
-    protected OtpUser getUserProfile(Auth0UserProfile profile) {
+    protected OtpUser getUserProfile(RequestingUser profile) {
         return profile.otpUser;
     }
 

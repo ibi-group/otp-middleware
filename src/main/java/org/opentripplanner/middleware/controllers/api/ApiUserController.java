@@ -3,7 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import com.beerboy.ss.ApiEndpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -90,7 +90,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     private ApiUser createApiKeyForApiUser(Request req, Response res) {
         ApiUser targetUser = getApiUser(req);
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         String usagePlanId = req.queryParamOrDefault("usagePlanId", DEFAULT_USAGE_PLAN_ID);
         // If requester is not an admin user, force the usage plan ID to the default and enforce key limit. A non-admin
         // user should not be able to create an API key for any usage plan.
@@ -120,7 +120,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      * Delete an api key from a given user's list of api keys (if present) and from AWS api gateway.
      */
     private ApiUser deleteApiKeyForApiUser(Request req, Response res) {
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // Do not permit key deletion unless user is an admin.
         if (!isUserAdmin(requestingUser)) {
             logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to delete an API key.");
@@ -155,7 +155,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     }
 
     @Override
-    protected ApiUser getUserProfile(Auth0UserProfile profile) {
+    protected ApiUser getUserProfile(RequestingUser profile) {
         return profile.apiUser;
     }
 
@@ -199,7 +199,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      * Get an Api user from Mongo DB based on the provided user id. Make sure user is admin or managing self.
      */
     private static ApiUser getApiUser(Request req) {
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         String userId = HttpUtils.getRequiredParamFromRequest(req, ID_PARAM);
         ApiUser apiUser = Persistence.apiUsers.getById(userId);
         if (apiUser == null) {

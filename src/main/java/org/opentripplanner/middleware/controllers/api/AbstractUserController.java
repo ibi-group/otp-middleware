@@ -5,9 +5,10 @@ import com.auth0.json.mgmt.users.User;
 import com.beerboy.ss.ApiEndpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.AbstractUser;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -69,14 +70,14 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
      * Obtains the correct AbstractUser-derived object from the Auth0UserProfile object.
      * (Used in getUserForRequest.)
      */
-    protected abstract U getUserProfile(Auth0UserProfile profile);
+    protected abstract U getUserProfile(RequestingUser profile);
 
     /**
-     * HTTP endpoint to get the {@link U} entity, if it exists, from an {@link Auth0UserProfile} attribute
+     * HTTP endpoint to get the {@link U} entity, if it exists, from an {@link RequestingUser} attribute
      * available from a {@link Request} (this is the case for '/api/secure/' endpoints).
      */
     private U getUserFromRequest(Request req, Response res) {
-        Auth0UserProfile profile = Auth0Connection.getUserFromRequest(req);
+        RequestingUser profile = Auth0Connection.getUserFromRequest(req);
         U user = getUserProfile(profile);
 
         // If the user object is null, it is most likely because it was not created yet,
@@ -91,7 +92,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
 
 
     private Job resendVerificationEmail(Request req, Response res) {
-        Auth0UserProfile profile = Auth0Connection.getUserFromRequest(req);
+        RequestingUser profile = Auth0Connection.getUserFromRequest(req);
         return Auth0Users.resendVerificationEmail(profile.auth0UserId);
     }
 
@@ -101,8 +102,17 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
      */
     @Override
     U preCreateHook(U user, Request req) {
-        User auth0UserProfile = createNewAuth0User(user, req, this.persistence);
-        return updateAuthFieldsForUser(user, auth0UserProfile);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
+        // TODO: If MOD UI is to be an ApiUser, we may want to do an additional check here to determine if this is a
+        //  first-party API user (MOD UI) or third party.
+        if (requestingUser.apiUser != null && user instanceof OtpUser) {
+            // Do not create Auth0 account for OtpUsers created on behalf of third party API users.
+            return user;
+        } else {
+            // For any other user account, create Auth0 account
+            User auth0UserProfile = createNewAuth0User(user, req, this.persistence);
+            return updateAuthFieldsForUser(user, auth0UserProfile);
+        }
     }
 
     @Override

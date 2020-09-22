@@ -3,7 +3,7 @@ package org.opentripplanner.middleware;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
@@ -54,7 +54,7 @@ public class TestUtils {
     }
 
     /**
-     * Send request to provided URL placing the Auth0 user id in the headers so that {@link Auth0UserProfile} can check
+     * Send request to provided URL placing the Auth0 user id in the headers so that {@link RequestingUser} can check
      * the database for a matching user. Returns the response.
      */
     public static HttpResponse<String> mockAuthenticatedRequest(String path, AbstractUser requestingUser, HttpUtils.REQUEST_METHOD requestMethod) {
@@ -107,7 +107,7 @@ public class TestUtils {
     }
 
     /**
-     * Send request to provided URL placing the Auth0 user id in the headers so that {@link Auth0UserProfile} can check
+     * Send request to provided URL placing the Auth0 user id in the headers so that {@link RequestingUser} can check
      * the database for a matching user. Returns the response.
      */
     public static HttpResponse<String> mockAuthenticatedPost(String path, AbstractUser requestingUser, String body) {
