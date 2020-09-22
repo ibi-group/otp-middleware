@@ -11,8 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
+import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
+import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
  * Contains tests for the various notification utilities to send SMS and email messages. Note: these tests require
@@ -23,14 +24,21 @@ public class NotificationUtilsTest extends OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationUtilsTest.class);
     private static OtpUser user;
 
+    /**
+     * Note: In order to run the notification tests, these values must be provided in in system
+     * environment variables, which can be defined in a run configuration in your IDE.
+     */
+    private static final String email = System.getenv("TEST_TO_EMAIL");
+    /** Phone must be in the form "+15551234" and must be verified first in order to send notifications */
+    private static final String phone = System.getenv("TEST_TO_PHONE");
+    /**
+     * Currently, since these tests require target email/SMS values, these tests should not run on CI.
+     */
+    private static final boolean shouldTestsRun = !isRunningCi && isEndToEnd && email != null && phone != null;
+
     @BeforeAll
     public static void setup() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
-        // Note: In order to run the notification tests, these values must be provided in in system
-        // environment variables, which can be defined in a run configuration in your IDE.
-        String email = System.getenv("TEST_TO_EMAIL");
-        // Phone must be in the form "+15551234" and must be verified first in order to send notifications
-        String phone = System.getenv("TEST_TO_PHONE");
+        assumeTrue(shouldTestsRun);
         user = createUser(email, phone);
     }
 
@@ -42,7 +50,6 @@ public class NotificationUtilsTest extends OtpMiddlewareTest {
 
     @Test
     public void canSendSendGridEmailNotification() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         boolean success = NotificationUtils.sendEmailViaSendGrid(
             user.email,
             "Hi there",
@@ -54,7 +61,6 @@ public class NotificationUtilsTest extends OtpMiddlewareTest {
 
     @Test
     public void canSendSmsNotification() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         // Note: toPhone must be verified.
         String messageId = NotificationUtils.sendSMS(
             // Note: phone number is configured in setup method above.
@@ -70,7 +76,6 @@ public class NotificationUtilsTest extends OtpMiddlewareTest {
      */
     @Test
     public void canSendTwilioVerificationText() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         Verification verification = NotificationUtils.sendVerificationText(
             // Note: phone number is configured in setup method above.
             user.phoneNumber
@@ -86,8 +91,6 @@ public class NotificationUtilsTest extends OtpMiddlewareTest {
      */
     @Test
     public void canCheckSmsVerificationCode() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
-
         VerificationCheck check = NotificationUtils.checkSmsVerificationCode(
             // Note: phone number is configured in setup method above.
             user.phoneNumber,

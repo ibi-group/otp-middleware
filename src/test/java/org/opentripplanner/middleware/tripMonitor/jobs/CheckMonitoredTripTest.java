@@ -34,12 +34,13 @@ import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
-import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
+import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTripAndJourney;
 import static org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip.generateTripPlanQueryParams;
 import static org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip.shouldSkipMonitoredTripCheck;
+import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
@@ -84,7 +85,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      */
     @Test
     public void canMonitorTrip() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        // Do not run this test on Travis CI because it requires a live OTP server
+        // FIXME: Add live otp server to e2e tests.
+        assumeTrue(!isRunningCi && isEndToEnd);
         // Submit a query to the OTP server.
         // From P&R to Downtown Orlando
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(
@@ -119,7 +122,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
 
     @Test
     public void willGenerateDepartureDelayNotification() {
-        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
         Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
         // Set departure time to twenty minutes (in seconds). Default departure time variance threshold is 15 minutes.
@@ -132,7 +135,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
 
     @Test
     public void willSkipDepartureDelayNotification() {
-        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
         Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
         // Set departure time to ten minutes (in seconds). Default departure time variance threshold is 15 minutes.
@@ -170,7 +173,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
             .withMinute(0);
 
         // - Return true for weekend trip when current time is on a weekday.
-        MonitoredTrip weekendTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip weekendTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         weekendTrip.saturday = true;
         weekendTrip.sunday = true;
         testCases.add(new ShouldSkipTripTestCase(
@@ -181,7 +184,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         ));
 
         // - Return true for weekday trip when current time is on a weekend.
-        MonitoredTrip weekdayTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip weekdayTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         weekdayTrip.updateWeekdays(true);
         testCases.add(new ShouldSkipTripTestCase(
             "should return true for weekday trip when current time is on a weekend",
@@ -191,7 +194,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         ));
 
         // - Return false if trip is starting in greater than 1 hr, but the last time checked was 2 hours ago
-        MonitoredTrip laterTodayTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip laterTodayTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         laterTodayTrip.updateWeekdays(true);
         testCases.add(new ShouldSkipTripTestCase(
             noon10June2020.withHour(1).withMinute(0), // last checked at 1am
@@ -202,7 +205,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         ));
 
         // - Return true if trip is starting in greater than 1 hr, but the last time checked was 2 minutes ago
-        MonitoredTrip laterTodayTrip2 = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip laterTodayTrip2 = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         laterTodayTrip2.updateWeekdays(true);
         testCases.add(new ShouldSkipTripTestCase(
             noon10June2020.withHour(2).withMinute(58), // last checked at 2:58am
@@ -213,7 +216,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         ));
 
         // - Return false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
-        MonitoredTrip laterTodayTrip3 = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip laterTodayTrip3 = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         laterTodayTrip3.updateWeekdays(true);
         testCases.add(new ShouldSkipTripTestCase(
             noon10June2020.withHour(7).withMinute(35), // last checked at 7:35am
@@ -224,7 +227,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         ));
 
         // - Return true if trip is starting in 45 minutes and the last time checked was 2 minutes ago
-        MonitoredTrip laterTodayTrip4 = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip laterTodayTrip4 = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         laterTodayTrip4.updateWeekdays(true);
         testCases.add(new ShouldSkipTripTestCase(
             noon10June2020.withHour(7).withMinute(53), // last checked at 7:53am
@@ -236,7 +239,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
 
         // - Return false if trip is starting in 10 minutes and the last time checked was 2 minutes ago
         // The monitored trip lead time is 30 minutes, so check every minute
-        MonitoredTrip laterTodayTrip5 = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip laterTodayTrip5 = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         laterTodayTrip5.updateWeekdays(true);
         testCases.add(new ShouldSkipTripTestCase(
             noon10June2020.withHour(8).withMinute(28), // last checked at 8:23am
@@ -247,7 +250,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         ));
 
         // - Return true if trip has started 3 minutes ago
-        MonitoredTrip tripThatJustStarted = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip tripThatJustStarted = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         tripThatJustStarted.updateWeekdays(true);
         testCases.add(new ShouldSkipTripTestCase(
             noon10June2020.withHour(8).withMinute(39), // last checked at 8:39am
