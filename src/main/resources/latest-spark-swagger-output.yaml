@@ -72,7 +72,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/AdminUser[]"
+            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/admin/user"
@@ -237,7 +237,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/ApiUser[]"
+            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/secure/application"
@@ -330,7 +330,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/MonitoredTrip[]"
+            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/secure/monitoredtrip"
@@ -527,7 +527,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/OtpUser[]"
+            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/secure/user"
@@ -684,8 +684,25 @@ definitions:
         format: "date"
       id:
         type: "string"
-  AdminUser[]:
+  ResponseList:
     type: "object"
+    properties:
+      data:
+        type: "array"
+        items:
+          type: "string"
+      page:
+        type: "integer"
+        format: "int32"
+      limit:
+        type: "integer"
+        format: "int32"
+      total:
+        type: "integer"
+        format: "int32"
+      timestamp:
+        type: "string"
+        format: "date"
   ApiKey:
     type: "object"
     properties:
@@ -714,10 +731,6 @@ definitions:
         type: "boolean"
       name:
         type: "string"
-  ApiUser[]:
-    type: "object"
-  MonitoredTrip[]:
-    type: "object"
   EncodedPolyline:
     type: "object"
     properties:
@@ -1116,8 +1129,6 @@ definitions:
         type: "boolean"
       applicationId:
         type: "string"
-  OtpUser[]:
-    type: "object"
   GetUsageResult:
     type: "object"
     properties:
