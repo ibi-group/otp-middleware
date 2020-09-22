@@ -154,11 +154,16 @@ public class ConfigUtils {
      * (modified from https://stackoverflow.com/questions/14189162/get-name-of-running-jar-or-exe#19045510).
      * TODO: Extract git properties from JAR, see
      * https://github.com/ibi-group/datatools-server/blob/9f74b821cf351efcdaf7c9c93a3ae8b694d3c3b1/src/main/java/com/conveyal/datatools/manager/DataManager.java#L181-L212.
+     *
+     * "/" is used instead of File.separator, see
+     * https://stackoverflow.com/questions/24749007/how-to-use-file-separator-for-a-jar-file-resource/24749976#24749976
+     *
+     * In a Windows environment the file separator is "\" which always fails when comparing to a resource which is "/".
      */
     public static String getVersionFromJar() {
         String path = OtpMiddlewareMain.class.getResource(OtpMiddlewareMain.class.getSimpleName() + ".class").getFile();
         // Detect if this is run from a compiled JAR or loose class files from an IDE.
-        boolean isUnpackagedClass = path.startsWith(File.separator);
+        boolean isUnpackagedClass = path.startsWith("/");
 
         if (isUnpackagedClass) {
             return "Local Build";

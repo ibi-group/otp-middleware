@@ -34,6 +34,7 @@ public class TestUtils {
      * Whether the end-to-end environment variable is enabled.
      */
     public static final boolean isEndToEnd = getBooleanEnvVar("RUN_E2E");
+    public static final String TEST_RESOURCE_PATH = "src/test/resources/org/opentripplanner/middleware/";
 
     /**
      * Prevents the mock OTP server being initialized more than once
@@ -47,7 +48,7 @@ public class TestUtils {
 
     public static <T> T getResourceFileContentsAsJSON (String resourcePathName, Class<T> clazz) throws IOException {
         return FileUtils.getFileContentsAsJSON(
-            String.format("src/test/resources/org/opentripplanner/middleware/%s", resourcePathName),
+            TEST_RESOURCE_PATH + resourcePathName,
             clazz
         );
     }
@@ -137,10 +138,9 @@ public class TestUtils {
      * Mock an OTP server plan response by provide a static response from file.
      */
     private static String mockOtpPlanResponse(Request request, Response response) throws IOException {
-        final String filePath = "src/test/resources/org/opentripplanner/middleware/persistence/";
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
         otpDispatcherResponse.statusCode = HttpStatus.OK_200;
-        otpDispatcherResponse.responseBody = FileUtils.getFileContents(filePath + "planResponse.json");
+        otpDispatcherResponse.responseBody = FileUtils.getFileContents(TEST_RESOURCE_PATH + "persistence/planResponse.json");
 
         response.type(APPLICATION_JSON);
         response.status(otpDispatcherResponse.statusCode);

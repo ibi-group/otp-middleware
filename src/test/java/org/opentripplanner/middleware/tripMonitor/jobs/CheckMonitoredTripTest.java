@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
-import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -34,6 +33,7 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
@@ -66,7 +66,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     public static void setup() throws IOException {
         user = createUser("user@example.com");
         mockResponse = FileUtils.getFileContents(
-            "src/test/resources/org/opentripplanner/middleware/persistence/planResponse.json"
+            TEST_RESOURCE_PATH + "persistence/planResponse.json"
         );
         otpDispatcherResponse = new OtpDispatcherResponse(mockResponse);
     }
