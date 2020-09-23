@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -32,6 +31,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -126,7 +126,7 @@ public class CheckMonitoredTrip implements Runnable {
     private void runCheckLogic() {
         // TODO: Should null tripRequestId be fixed?
         // TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan, otpDispatcherResponse.response.error, null);
-        if (!findMatchingItinerary()) {
+        if (!updateMatchingItinerary()) {
             // No matching itinerary was found.
             enqueueNotification(TripMonitorNotification.createItineraryNotFoundNotification());
             return;
@@ -149,7 +149,7 @@ public class CheckMonitoredTrip implements Runnable {
      *          match. Some additional checks should be performed to make sure the itinerary really isn't possible by
      *          verifying that the same transit schedule/routes exist and that the street network is the same
      */
-    private boolean findMatchingItinerary() {
+    private boolean updateMatchingItinerary() {
         for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
             // TODO: BIG - Find the specific itinerary to compare against. For now, use equals, but this may need some
             //  tweaking
@@ -280,10 +280,10 @@ public class CheckMonitoredTrip implements Runnable {
      */
     public boolean shouldSkipMonitoredTripCheck() throws Exception {
         // before anything else, return true if the trip is inactive
-        if (trip.isInActive()) return true;
+        if (trip.isInactive()) return true;
 
         // calculate the appropriate timezone to use for the target time based off of the appropriate trip end location
-        ZoneId targetZoneId = trip.getTimezoneForTargetLocation();
+        ZoneId targetZoneId = trip.timezoneForTargetLocation();
 
         // get the most recent journey state and itinerary to see when the next monitored trip is supposed to occur
         journeyState = trip.retrieveJourneyState();
@@ -300,8 +300,8 @@ public class CheckMonitoredTrip implements Runnable {
             // find the next possible day the trip is active by initializing the the appropriate target time. Start by
             // checking today's date at the earliest in case the user has paused trip monitoring for a while
             targetZonedDateTime = DateTimeUtils.nowAsZonedDateTime(targetZoneId)
-                .withHour(trip.getHour())
-                .withMinute(trip.getMinute())
+                .withHour(trip.tripTimeHour())
+                .withMinute(trip.tripTimeMinute())
                 .withSecond(0);
 
             // if a previous journeyState target date exists, check if the previous target date was today's date. If so,
@@ -353,7 +353,7 @@ public class CheckMonitoredTrip implements Runnable {
         // skip check if the time until the next trip starts is longer than the requested lead time
         if (minutesUntilTrip > trip.leadTimeInMinutes) {
             LOG.info(
-                "Next trip start time is greater than lead time of {} minute(s). Skipping trip.",
+                "The time until this trip begins again is more than the {}-minute lead time. Skipping trip.",
                 trip.leadTimeInMinutes
             );
             return true;
@@ -404,13 +404,14 @@ public class CheckMonitoredTrip implements Runnable {
         targetDate = targetZonedDateTime.format(DATE_FORMATTER);
 
         // execute trip plan request for the target time
+        LOG.info("Attempting to calculate next trip on target date {}", targetDate);
         if (!calculateOtpResponse()) {
             // failed to calculate, return false
             return false;
         }
 
         // check if the resulting itinerary has a matching itinerary
-        if (!findMatchingItinerary()) {
+        if (!updateMatchingItinerary()) {
             // TODO: figure out how to notify the user that the itinerary is not possible anymore
             // for now, just say the next itinerary couldn't be found
             return false;
@@ -445,17 +446,14 @@ public class CheckMonitoredTrip implements Runnable {
      */
     public String generateTripPlanQueryParams() throws URISyntaxException {
         // parse query params
-        List<NameValuePair> params = URLEncodedUtils.parse(
-            new URI(String.format("http://example.com/%s", trip.queryParams)),
-            UTF_8
-        );
+        Map<String, String> params = trip.parseQueryParams();
 
         // building a new list by copying all values, except for the date which is set to the target date
         List<NameValuePair> newParams = new ArrayList<>();
         newParams.add(new BasicNameValuePair("date", targetDate));
-        for (NameValuePair param : params) {
-            if (!param.getName().equals("date")) {
-                newParams.add(param);
+        for (Map.Entry<String, String> param : params.entrySet()) {
+            if (!param.getKey().equals("date")) {
+                newParams.add(new BasicNameValuePair(param.getKey(), param.getValue()));
             }
         }
 

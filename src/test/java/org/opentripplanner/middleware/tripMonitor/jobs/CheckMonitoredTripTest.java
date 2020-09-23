@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
+import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTripAndJourney;
@@ -71,7 +72,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         mockResponse = FileUtils.getFileContents(
             TEST_RESOURCE_PATH + "persistence/planResponse.json"
         );
-        otpDispatcherResponse = new OtpDispatcherResponse(mockResponse);
+        otpDispatcherResponse = new OtpDispatcherResponse(mockResponse, DEFAULT_PLAN_URI);
     }
 
     @AfterAll
@@ -100,7 +101,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // From P&R to Downtown Orlando
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(
             "28.45119,-81.36818",
-            "28.54834,-81.37745"
+            "28.54834,-81.37745",
+            "08:35"
         );
         // Construct a monitored trip from it.
         MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse)
@@ -123,7 +125,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         checkMonitoredTrip.run();
         // Assert that there is one notification generated during check.
         // TODO: Improve assertions to use snapshots.
-        Assertions.assertEquals(checkMonitoredTrip.notifications.size(), 1);
+        Assertions.assertEquals(checkMonitoredTrip.notifications.size(), 0);
         // Clear the created trip.
         Persistence.monitoredTrips.removeById(monitoredTrip.id);
     }

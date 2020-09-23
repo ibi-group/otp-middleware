@@ -54,10 +54,11 @@ public class OtpDispatcher {
     }
 
     /**
-     * Provides a response from the OTP server target service based on the query parameters provided.
+     * Provides a response from the OTP server target service based on the query parameters provided. This is used only
+     * during testing.
      */
-    public static OtpDispatcherResponse sendOtpPlanRequest(String from, String to) {
-        return sendOtpPlanRequest(String.format("fromPlace=%s&toPlace=%s", from, to));
+    public static OtpDispatcherResponse sendOtpPlanRequest(String from, String to, String time) {
+        return sendOtpPlanRequest(String.format("fromPlace=%s&toPlace=%s&time=%s", from, to, time));
     }
 
     /**

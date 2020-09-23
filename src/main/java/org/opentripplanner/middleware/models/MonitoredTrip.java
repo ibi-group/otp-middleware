@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
@@ -19,7 +20,9 @@ import java.time.DayOfWeek;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -29,6 +32,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoo
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
  * change.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MonitoredTrip extends Model {
 
     /**
@@ -146,12 +150,10 @@ public class MonitoredTrip extends Model {
         itinerary = plan.itineraries.get(0);
 
         // extract trip time from parsed params
-        List<NameValuePair> parsedParams = getParsedParams();
-        for (NameValuePair parsedParam : parsedParams) {
-            if (parsedParam.getName().equals("time")) {
-                tripTime = parsedParam.getValue();
-                break;
-            }
+        Map<String, String> params = parseQueryParams();
+        tripTime = params.get("time");
+        if (tripTime == null) {
+            throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
         }
         initializeFromItinerary();
     }
@@ -183,7 +185,7 @@ public class MonitoredTrip extends Model {
     /**
      * Returns true if the trip is not active overall or if all days of the week are set to false
      */
-    public boolean isInActive() {
+    public boolean isInactive() {
         return !isActive || (
           !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday
         );
@@ -303,22 +305,16 @@ public class MonitoredTrip extends Model {
         return Persistence.monitoredTrips.removeById(this.id);
     }
 
-    public List<NameValuePair> getParsedParams() throws URISyntaxException {
+    public Map<String, String> parseQueryParams() throws URISyntaxException {
         return URLEncodedUtils.parse(
-            new URI(String.format("http://example.com/%s", queryParams)),
+            new URI(String.format("http://example.com/plan?%s", queryParams)),
             UTF_8
-        );
+        ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
     }
 
     public boolean isArriveBy() throws URISyntaxException {
-        for (NameValuePair param : getParsedParams()) {
-            if (param.getName().equals("arriveBy")) {
-                return param.getValue().equals("true");
-            }
-        }
-
         // if arriveBy is not included in query params, OTP will default to false, so initialize to false
-        return false;
+        return parseQueryParams().getOrDefault("arriveBy", "false").equals("true");
     }
 
     /**
@@ -327,8 +323,7 @@ public class MonitoredTrip extends Model {
      * use the local time at the destination. Therefore, this method will return the timezone at the destination if this
      * trip is an arriveBy trip, or the timezone at the origin if the trip is a depart at trip.
      */
-    @BsonIgnore
-    public ZoneId getTimezoneForTargetLocation() throws URISyntaxException {
+    public ZoneId timezoneForTargetLocation() throws URISyntaxException {
         double lat, lon;
         if (isArriveBy()) {
             lat = to.lat;
@@ -354,7 +349,7 @@ public class MonitoredTrip extends Model {
      * Returns the target hour of the day that the trip is either departing at or arriving by
      */
     @BsonIgnore
-    public int getHour() {
+    public int tripTimeHour() {
         return Integer.valueOf(tripTime.split(":")[0]);
     }
 
@@ -362,7 +357,7 @@ public class MonitoredTrip extends Model {
      * Returns the target minute of the hour that the trip is either departing at or arriving by
      */
     @BsonIgnore
-    public int getMinute() {
+    public int tripTimeMinute() {
         return Integer.valueOf(tripTime.split(":")[1]);
     }
 }

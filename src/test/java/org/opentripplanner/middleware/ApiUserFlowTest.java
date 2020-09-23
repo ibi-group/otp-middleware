@@ -38,6 +38,7 @@ import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForE
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PROXY_ENDPOINT;
+import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 
 /**
@@ -129,7 +130,7 @@ public class ApiUserFlowTest {
         String mockResponse = FileUtils.getFileContents(
             "src/test/resources/org/opentripplanner/middleware/persistence/planResponse.json"
         );
-        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse);
+        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse, DEFAULT_PLAN_URI);
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
         MonitoredTrip trip = createMonitoredTrip(otpUserResponse.id, otpDispatcherResponse, false);
         HttpResponse<String> createTripResponse = mockAuthenticatedPost("api/secure/monitoredtrip",

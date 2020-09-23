@@ -156,6 +156,7 @@ public class TestUtils {
             );
             return null;
         });
+        mockOtpServerSetUpIsDone = true;
     }
 
     /**
@@ -171,6 +172,7 @@ public class TestUtils {
                 mockResponseIndex++;
                 throw new RuntimeException("Unmocked request to OTP received!");
             }
+            LOG.info("Returning mock response at index {}", mockResponseIndex);
             // send back response and increment response index
             String responseBody = mapper.writeValueAsString(mockResponses.get(mockResponseIndex));
             mockResponseIndex++;
@@ -178,6 +180,7 @@ public class TestUtils {
         }
 
         // mocks not setup, simply return from a file every time
+        LOG.info("Returning default mock response from file");
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
         otpDispatcherResponse.responseBody = FileUtils.getFileContents(TEST_RESOURCE_PATH + "persistence/planResponse.json");
         return otpDispatcherResponse.responseBody;

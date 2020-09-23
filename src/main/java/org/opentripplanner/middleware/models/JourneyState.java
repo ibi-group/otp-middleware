@@ -28,8 +28,10 @@ public class JourneyState extends Model {
         this.userId = monitoredTrip.userId;
     }
 
+    /**
+     * The arrival/departure delay seen in the latest monitored trip check.
+     */
     public int lastArrivalDelay;
-
     public int lastDepartureDelay;
 
     /**
@@ -37,11 +39,17 @@ public class JourneyState extends Model {
      */
     public long lastCheckedMillis;
 
+    /**
+     * The notifications already sent.
+     * FIXME this is never set, so it has no effect.
+     */
     public Set<TripMonitorNotification> lastNotifications = new HashSet<>();
 
+    /**
+     * The last time a notification was sent.
+     * FIXME this is never accessed anywhere and might not be worth persisting.
+     */
     public long lastNotificationTimeMillis;
-
-    public Set<LocalizedAlert> lastSeenAlerts = new HashSet<>();
 
     /**
      * The current or upcoming matching itinerary from plan requests made over the course of monitoring a trip.
@@ -53,6 +61,10 @@ public class JourneyState extends Model {
      */
     public String monitoredTripId;
 
+    /**
+     * The current targetDate for which the trip is being monitored. This can be either a trip currently happening or
+     * the next possible date a monitored trip would occur.
+     */
     public String targetDate;
 
     /**
