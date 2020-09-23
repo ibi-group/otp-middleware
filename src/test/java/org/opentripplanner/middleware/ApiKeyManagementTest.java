@@ -56,14 +56,15 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     }
 
     /**
-     * Remove the users {@link AdminUser} and {@link ApiUser} and any remaining API keys. Note: apiUser.delete() cannot
-     * be used because no Auth0 user is created and it fails on attempting to delete this account from Auth0.
+     * Remove the users {@link AdminUser} and {@link ApiUser} and any remaining API keys.
      */
     @AfterAll
     public static void tearDown() {
         assumeTrue(isEndToEndAndAuthIsDisabled());
-        // Delete admin user.
-        Persistence.adminUsers.removeById(adminUser.id);
+        // Note: apiUser.delete() cannot be used because no Auth0 user is created. The method fails on attempting to
+        // delete the random value assigned to the apiUser on initialization. This in turn prevents the apiUser from
+        // being delete from Mongo.
+
         // Refresh api keys for user.
         apiUser = Persistence.apiUsers.getById(apiUser.id);
         // remove remaining api keys if present
@@ -74,6 +75,8 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         }
         // Delete api user.
         Persistence.apiUsers.removeById(apiUser.id);
+        // Delete admin user.
+        Persistence.adminUsers.removeById(adminUser.id);
     }
 
     /**
