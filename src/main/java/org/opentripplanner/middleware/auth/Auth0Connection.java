@@ -36,6 +36,11 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public class Auth0Connection {
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Connection.class);
     private static JWTVerifier verifier;
+    /**
+     * Whether authentication is disabled for the HTTP endpoints. This defaults to the value in the config file, but can
+     * be overridden (e.g., in tests) with {@link #setAuthDisabled(boolean)}.
+     */
+    private static boolean authDisabled = getDefaultAuthDisabled();
 
     /**
      * Check the incoming API request for the user token (and verify it) and assign as the "user" attribute on the
@@ -46,7 +51,7 @@ public class Auth0Connection {
     public static void checkUser(Request req) {
         LOG.debug("Checking auth");
         // TODO Add check for testing environment
-        if (authDisabled()) {
+        if (isAuthDisabled()) {
             // If in a development or testing environment, assign a mock profile of an admin user to the request
             // attribute and skip authentication.
             addUserToRequest(req, Auth0UserProfile.createTestUser(req));
@@ -210,11 +215,22 @@ public class Auth0Connection {
         return verifier;
     }
 
-    /**
-     * Check whether authentication has been disabled via the DISABLE_AUTH config variable.
-     */
-    public static boolean authDisabled() {
+    public static boolean getDefaultAuthDisabled() {
         return hasConfigProperty("DISABLE_AUTH") && "true".equals(getConfigPropertyAsText("DISABLE_AUTH"));
+    }
+
+    /**
+     * Whether authentication is disabled for HTTP endpoints.
+     */
+    public static boolean isAuthDisabled() {
+        return authDisabled;
+    }
+
+    /**
+     * Override the current {@link #authDisabled} value.
+     */
+    public static void setAuthDisabled(boolean authDisabled) {
+        Auth0Connection.authDisabled = authDisabled;
     }
 
     /**
