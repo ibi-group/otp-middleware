@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.UUID;
@@ -115,7 +116,7 @@ public class ApiUserFlowTest {
      * records. This also includes Auth0 users if auth is enabled.
      */
     @Test
-    public void canSimulateApiUserFlow() throws IOException {
+    public void canSimulateApiUserFlow() throws IOException, URISyntaxException {
         // create otp user as api user
         HttpResponse<String> createUserResponse = mockAuthenticatedPost("api/secure/user",
             apiUser,

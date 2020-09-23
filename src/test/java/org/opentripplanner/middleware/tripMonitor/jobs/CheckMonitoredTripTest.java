@@ -184,7 +184,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         MonitoredTrip trip = testCase.trip;
         // if trip is null, create the default weekday trip
         if (trip == null) {
-            trip = createMonitoredTrip(user.id, otpDispatcherResponse);
+            trip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         }
 
         // if last checked time is not null, there is an assumption that the journey state has been created before.
