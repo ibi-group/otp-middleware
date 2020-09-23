@@ -38,10 +38,11 @@ import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
-import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
+import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTripAndJourney;
+import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
@@ -92,7 +93,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      */
     @Test
     public void canMonitorTrip() throws URISyntaxException {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
+        // Do not run this test on Travis CI because it requires a live OTP server
+        // FIXME: Add live otp server to e2e tests.
+        assumeTrue(!isRunningCi && isEndToEnd);
         // Submit a query to the OTP server.
         // From P&R to Downtown Orlando
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(
@@ -127,7 +130,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
 
     @Test
     public void willGenerateDepartureDelayNotification() throws URISyntaxException {
-        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
         Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
         // Set departure time to twenty minutes (in seconds). Default departure time variance threshold is 15 minutes.
@@ -143,7 +146,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
 
     @Test
     public void willSkipDepartureDelayNotification() throws URISyntaxException {
-        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
         Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
         // Set departure time to ten minutes (in seconds). Default departure time variance threshold is 15 minutes.
@@ -218,7 +221,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
             .withMinute(0);
 
         // - Return true for weekend trip when current time is on a weekday.
-        MonitoredTrip weekendTrip = createMonitoredTrip(user.id, otpDispatcherResponse);
+        MonitoredTrip weekendTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         weekendTrip.updateAllDaysOfWeek(false);
         weekendTrip.saturday = true;
         weekendTrip.sunday = true;

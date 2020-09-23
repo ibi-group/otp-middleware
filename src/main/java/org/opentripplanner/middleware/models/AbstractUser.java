@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import com.auth0.exception.Auth0Exception;
+import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
 import org.slf4j.Logger;
@@ -60,14 +61,18 @@ public abstract class AbstractUser extends Model {
 
     @Override
     public boolean delete() {
-        // FIXME: Check that the Auth0 user ID being deleted does not exist as a different child class?
-        try {
-            // Delete Auth0User.
-            deleteAuth0User(this.auth0UserId);
-            return true;
-        } catch (Auth0Exception e) {
-            LOG.error("Could not delete Auth0 user {}.", this.auth0UserId, e);
-            return false;
+        if (Auth0Connection.isAuthDisabled()) {
+            LOG.warn("Skipping call to delete Auth0 user (Auth is disabled).");
+        } else {
+            // FIXME: Check that the Auth0 user ID being deleted does not exist as a different child class?
+            try {
+                // Delete Auth0User.
+                deleteAuth0User(this.auth0UserId);
+            } catch (Auth0Exception e) {
+                LOG.error("Could not delete Auth0 user {}.", this.auth0UserId, e);
+                return false;
+            }
         }
+        return true;
     }
 }

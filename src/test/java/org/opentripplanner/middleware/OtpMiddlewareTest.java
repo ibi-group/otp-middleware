@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 
-import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
-import static org.opentripplanner.middleware.utils.ConfigUtils.DEFAULT_ENV;
+import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
+import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
  * This abstract class is used to start a test instance of otp-middleware that other tests can use to perform various
@@ -35,9 +35,14 @@ public abstract class OtpMiddlewareTest {
         OtpMiddlewareMain.inTestEnvironment = true;
         // If in the e2e environment, use the secret env.yml file to start the server.
         // TODO: When ran on Travis CI, this file will automatically be setup.
-        String[] args = getBooleanEnvVar("RUN_E2E")
-            ? new String[] { DEFAULT_ENV }
-            : new String[] { "configurations/test/env.yml"};
+        String[] args;
+        if (isEndToEnd) {
+            // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
+            args = isRunningCi ? new String[]{} : new String[]{"configurations/default/env.yml"};
+        } else {
+            // If not running E2E, use test env.yml.
+            args = new String[]{"configurations/test/env.yml"};
+        }
         // Fail this test and others if the above files do not exist.
         for (String arg : args) {
             File f = new File(arg);

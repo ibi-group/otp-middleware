@@ -136,8 +136,11 @@ public class PersistenceUtil {
         return monitoredTrip;
     }
 
-    public static MonitoredTrip createMonitoredTrip(String userId, OtpDispatcherResponse otpDispatcherResponse)
-        throws URISyntaxException {
+    public static MonitoredTrip createMonitoredTrip(
+        String userId,
+        OtpDispatcherResponse otpDispatcherResponse,
+        boolean persist
+    ) throws URISyntaxException {
         MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "test trip";
@@ -145,7 +148,7 @@ public class PersistenceUtil {
         // set trip time since otpDispatcherResponse doesn't have full query params in URI
         monitoredTrip.tripTime = "08:35";
         monitoredTrip.updateWeekdays(true);
-        Persistence.monitoredTrips.create(monitoredTrip);
+        if (persist) Persistence.monitoredTrips.create(monitoredTrip);
         return monitoredTrip;
     }
 

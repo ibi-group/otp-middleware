@@ -3,6 +3,7 @@ package org.opentripplanner.middleware;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
@@ -25,11 +26,10 @@ import java.util.List;
 import java.util.UUID;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.opentripplanner.middleware.auth.Auth0Connection.authDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 import static spark.Service.ignite;
 
 
@@ -41,6 +41,11 @@ public class TestUtils {
      * Password used to create and validate temporary Auth0 users
      */
     static final String TEMP_AUTH0_USER_PASSWORD = UUID.randomUUID().toString();
+
+    /**
+     * Whether the end-to-end environment variable is enabled.
+     */
+    public static final boolean isEndToEnd = getBooleanEnvVar("RUN_E2E");
 
     public static final String TEST_RESOURCE_PATH = "src/test/resources/org/opentripplanner/middleware/";
 
@@ -57,26 +62,11 @@ public class TestUtils {
     private static List<OtpResponse> mockResponses = Collections.EMPTY_LIST;
     private static int mockResponseIndex = -1;
 
-    /**
-     * Returns true only if an environment variable exists and is set to "true".
-     */
-    public static boolean getBooleanEnvVar(String var) {
-        String variable = System.getenv(var);
-        return variable != null && variable.equals("true");
-    }
-
     public static <T> T getResourceFileContentsAsJSON (String resourcePathName, Class<T> clazz) throws IOException {
         return FileUtils.getFileContentsAsJSON(
             TEST_RESOURCE_PATH + resourcePathName,
             clazz
         );
-    }
-
-    /**
-     * Helper method to determine if end to end is enabled and auth is disabled. (Used for checking if tests should run.)
-     */
-    public static boolean isEndToEndAndAuthIsDisabled() {
-        return getBooleanEnvVar("RUN_E2E") && authDisabled();
     }
 
     /**
@@ -110,7 +100,7 @@ public class TestUtils {
         HashMap<String, String> headers = new HashMap<>();
         // If auth is disabled, simply place the Auth0 user ID in the authorization header, which will be extracted from
         // the request when received.
-        if ("true".equals(getConfigPropertyAsText("DISABLE_AUTH"))) {
+        if (Auth0Connection.isAuthDisabled()) {
             headers.put("Authorization", requestingUser.auth0UserId);
         } else {
             // Otherwise, get a valid oauth token for the user
@@ -189,7 +179,7 @@ public class TestUtils {
 
         // mocks not setup, simply return from a file every time
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
-        otpDispatcherResponse.responseBody = FileUtils.getFileContents(TEST_RESOURCE_PATH + "planResponse.json");
+        otpDispatcherResponse.responseBody = FileUtils.getFileContents(TEST_RESOURCE_PATH + "persistence/planResponse.json");
         return otpDispatcherResponse.responseBody;
     }
 
