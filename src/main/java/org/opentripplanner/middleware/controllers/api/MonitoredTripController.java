@@ -4,7 +4,6 @@ import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -34,8 +33,17 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
-        monitoredTrip.initializeFromItinerary();
-        ItineraryExistenceChecker.Result checkResult = checkItineraryExistence(monitoredTrip, req);
+        try {
+            monitoredTrip.initializeFromItineraryAndQueryParams();
+        } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
+            logMessageAndHalt(
+                req,
+                HttpStatus.INTERNAL_SERVER_ERROR_500,
+                "Error parsing the trip query parameters.",
+                e
+            );
+        }
+        ItineraryExistenceChecker.Result checkResult = ItineraryExistenceChecker.checkItineraryExistence(monitoredTrip, false, req);
 
         // Replace the provided trip's itinerary with a verified, non-real-time version of it.
         if (checkResult != null) {
@@ -77,7 +85,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        ItineraryExistenceChecker.Result checkResult = checkItineraryExistence(monitoredTrip, req);
+        ItineraryExistenceChecker.Result checkResult = ItineraryExistenceChecker.checkItineraryExistence(monitoredTrip, false, req);
 
         // Replace the provided trip's itinerary with a verified, non-real-time version of it.
         if (checkResult != null) {
@@ -106,31 +114,5 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 "Maximum permitted saved monitored trips reached. Maximum = " + MAXIMUM_PERMITTED_MONITORED_TRIPS
             );
         }
-    }
-
-    /**
-     * Checks that non-realtime itineraries exist for the days the specified monitored trip is active.
-     */
-    private static ItineraryExistenceChecker.Result checkItineraryExistence(MonitoredTrip trip, Request request) {
-        ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker(OtpDispatcher::sendOtpPlanRequest);
-        try {
-            ItineraryExistenceChecker.Result checkResult = itineraryChecker.checkAll(ItineraryUtils.getItineraryExistenceQueries(trip), trip.isArriveBy());
-            if (!checkResult.allItinerariesExist) {
-                logMessageAndHalt(
-                    request,
-                    HttpStatus.BAD_REQUEST_400,
-                    "An itinerary does not exist for some of the monitored days for the requested trip."
-                );
-            }
-            return checkResult;
-        } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
-            logMessageAndHalt(
-                request,
-                HttpStatus.INTERNAL_SERVER_ERROR_500,
-                "Error parsing the trip query parameters.",
-                e
-            );
-        }
-        return null;
     }
 }

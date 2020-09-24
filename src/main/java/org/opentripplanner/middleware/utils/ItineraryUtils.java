@@ -49,10 +49,12 @@ public class ItineraryUtils {
         List<BasicNameValuePair> nameValuePairs = params.entrySet().stream()
             .map(e -> new BasicNameValuePair(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
+        // FIXME: Upon merging #75, do not add '?' and remove the question mark option entirely everywhere.
         return (leadingQuestionMark ? "?" : "") +
             URLEncodedUtils.format(nameValuePairs, UTF_8);
     }
 
+    // FIXME: Upon merging #75, remove this overload.
     public static String toQueryString(Map<String, String> params) {
         return toQueryString(params, false);
     }
@@ -69,9 +71,9 @@ public class ItineraryUtils {
         Map<String, String> result = new HashMap<>();
         Map<String, String> params = getQueryParams(baseQueryParams);
 
-        for (String newDate : dates) {
-            params.put(DATE_PARAM, newDate);
-            result.put(newDate, toQueryString(params));
+        for (String date : dates) {
+            params.put(DATE_PARAM, date);
+            result.put(date, toQueryString(params));
         }
 
         return result;
@@ -83,7 +85,7 @@ public class ItineraryUtils {
      *
      * @return a list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor.
      */
-    public static List<String> getDatesToCheckItineraryExistence(MonitoredTrip trip) throws URISyntaxException {
+    public static List<String> getDatesToCheckItineraryExistence(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
         List<String> result = new ArrayList<>();
         ZoneId zoneId = trip.timezoneForTargetLocation();
         Map<String, String> params = getQueryParams(trip.queryParams);
@@ -101,10 +103,11 @@ public class ItineraryUtils {
         ZonedDateTime queryZonedDateTime = ZonedDateTime.of(queryDate, LocalTime.of(tripHour, tripMinutes), zoneId);
 
 
-        // Check the dates in a 7-day window starting from the query date.
+        // Check the dates on days when a trip is active, or every day if checkAllDays is true,
+        // in a 7-day window starting from the query date.
         for (int i = 0; i < 7; i++) {
             ZonedDateTime probedDate = queryZonedDateTime.plusDays(i);
-            if (trip.isActiveOnDate(probedDate)) {
+            if (checkAllDays || trip.isActiveOnDate(probedDate)) {
                 result.add(DateTimeUtils.getStringFromDate(probedDate.toLocalDate(), YYYY_MM_DD));
             }
         }
@@ -115,10 +118,10 @@ public class ItineraryUtils {
     /**
      * Gets OTP queries to check non-realtime itinerary existence for the given trip.
      */
-    public static Map<String, String> getItineraryExistenceQueries(MonitoredTrip trip) throws URISyntaxException {
+    public static Map<String, String> getItineraryExistenceQueries(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
         return getQueriesFromDates(
             excludeRealtime(trip.queryParams),
-            getDatesToCheckItineraryExistence(trip)
+            getDatesToCheckItineraryExistence(trip, checkAllDays)
         );
     }
 
@@ -155,7 +158,7 @@ public class ItineraryUtils {
 
         if (itinerary != null) {
             trip.itinerary = itinerary;
-            trip.initializeFromItinerary();
+            trip.initializeFromItineraryAndQueryParams();
         }
     }
 
@@ -193,5 +196,19 @@ public class ItineraryUtils {
             date.equals(startDateDayBefore.format(dateFormatter)) &&
                 startDateDayBefore.getHour() < SERVICEDAY_START_HOUR
         );
+    }
+
+    public static List<Itinerary> getSameDayItineraries(List<Itinerary> itineraries, MonitoredTrip trip, String date) throws URISyntaxException {
+        List<Itinerary> result = new ArrayList<>();
+
+        if (itineraries != null) {
+            for (Itinerary itinerary : itineraries) {
+                if (isSameDay(itinerary, date, trip.tripTime, trip.timezoneForTargetLocation(), trip.isArriveBy())) {
+                    result.add(itinerary);
+                }
+            }
+        }
+
+        return result;
     }
 }

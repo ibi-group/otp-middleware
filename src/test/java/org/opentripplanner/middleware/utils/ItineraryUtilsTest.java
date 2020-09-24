@@ -12,6 +12,7 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -55,8 +56,13 @@ public class ItineraryUtilsTest {
 
         // The list includes dates to be monitored in a 7-day window starting from the query date.
         List<String> newDates = List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18");
-        List<String> checkedDates = ItineraryUtils.getDatesToCheckItineraryExistence(trip);
+        List<String> checkedDates = ItineraryUtils.getDatesToCheckItineraryExistence(trip, false);
         Assertions.assertEquals(newDates, checkedDates);
+
+        // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence, it should still return all dates.
+        List<String> allDates = List.of(QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19");
+        List<String> allCheckedDates = ItineraryUtils.getDatesToCheckItineraryExistence(trip, true);
+        Assertions.assertEquals(allDates, allCheckedDates);
     }
 
     @Test
@@ -174,6 +180,35 @@ public class ItineraryUtilsTest {
             1597377599000L, // August 13, 2020 11:59:59 PM
             1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
         );
+    }
+
+    @Test
+    public void testGetSameDayItineraries() throws URISyntaxException {
+        MonitoredTrip trip = makeTestTrip(false);
+        trip.tripTime = QUERY_TIME;
+
+        // Create itineraries, some being same-day, some not.
+        List<Itinerary> itineraries = new ArrayList<>();
+
+        List<Long> startTimes = List.of(
+            1597377599000L, // August 13, 2020 11:59:59 PM - same day
+            1597388399000L, // August 14, 2020 02:59:59 AM, considered to be Aug 13. - same day
+            1597388400000L // August 14 2020 3:00:00 AM - not same day
+        );
+
+        // startTimes are in US Eastern timezone.
+        for (Long startTime : startTimes) {
+            Itinerary itinerary = new Itinerary();
+            Instant instant = Instant.ofEpochMilli(startTime);
+            itinerary.setStartOrEndTime(Date.from(instant), false);
+
+            itineraries.add(itinerary);
+        }
+
+        List<Itinerary> processedItineraries = ItineraryUtils.getSameDayItineraries(itineraries, trip, QUERY_DATE);
+        Assertions.assertEquals(2, processedItineraries.size());
+        Assertions.assertTrue(processedItineraries.contains(itineraries.get(0)));
+        Assertions.assertTrue(processedItineraries.contains(itineraries.get(1)));
     }
 
     private MonitoredTrip makeTestTrip(boolean arriveBy) throws URISyntaxException {

@@ -29,6 +29,8 @@ tags:
   description: "Interface for retrieving API logs from AWS."
 - name: "api/admin/bugsnag/eventsummary"
   description: "Interface for reporting and retrieving application errors using Bugsnag."
+- name: "api/secure/itinerarycheck"
+  description: "Interface for checking itinerary existence."
 - name: "otp"
   description: "Proxy interface for OTP endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
@@ -656,6 +658,24 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/BugsnagEvent"
+  /api/secure/itinerarycheck:
+    post:
+      tags:
+      - "api/secure/itinerarycheck"
+      description: "Returns a map of day and OTP responses for the itinerary to check."
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredTrip"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ItineraryExistenceResult"
   /otp/*:
     get:
       tags:
@@ -1174,6 +1194,37 @@ definitions:
         type: "string"
       message:
         type: "string"
+  ItineraryExistenceResult:
+    type: "object"
+    properties:
+      monday:
+        type: "array"
+        items:
+          $ref: "#/definitions/Itinerary"
+      tuesday:
+        type: "array"
+        items:
+          $ref: "#/definitions/Itinerary"
+      wednesday:
+        type: "array"
+        items:
+          $ref: "#/definitions/Itinerary"
+      thursday:
+        type: "array"
+        items:
+          $ref: "#/definitions/Itinerary"
+      friday:
+        type: "array"
+        items:
+          $ref: "#/definitions/Itinerary"
+      saturday:
+        type: "array"
+        items:
+          $ref: "#/definitions/Itinerary"
+      sunday:
+        type: "array"
+        items:
+          $ref: "#/definitions/Itinerary"
 externalDocs:
   description: ""
   url: ""

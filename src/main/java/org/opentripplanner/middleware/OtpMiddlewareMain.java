@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.BugsnagController;
+import org.opentripplanner.middleware.controllers.api.ItineraryCheckController;
 import org.opentripplanner.middleware.controllers.api.LogController;
 import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
 import org.opentripplanner.middleware.controllers.api.OtpUserController;
@@ -83,6 +84,7 @@ public class OtpMiddlewareMain {
                     new OtpUserController(API_PREFIX),
                     new LogController(API_PREFIX),
                     new BugsnagController(API_PREFIX),
+                    new ItineraryCheckController(API_PREFIX),
                     new OtpRequestProcessor()
                     // TODO Add other models.
                 ))
