@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Place;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -94,7 +95,7 @@ public class ItineraryUtilsTest {
         String mockResponse = FileUtils.getFileContents(
             TEST_RESOURCE_PATH + "persistence/planResponse.json"
         );
-        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse);
+        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse, URI.create("http://www.example.com"));
         List<Itinerary> itineraries = otpDispatcherResponse.getResponse().plan.itineraries;
 
         MonitoredTrip trip = new MonitoredTrip();

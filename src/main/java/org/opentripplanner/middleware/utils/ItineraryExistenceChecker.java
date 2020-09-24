@@ -3,7 +3,7 @@ package org.opentripplanner.middleware.utils;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +32,7 @@ public class ItineraryExistenceChecker {
      */
     public Result checkAll(Map<String, String> labeledQueries, boolean checkArrival) {
         // TODO: Consider multi-threading?
-        Map<String, Response> responses = new HashMap<>();
+        Map<String, OtpResponse> responses = new HashMap<>();
         boolean allItinerariesExist = true;
 
         for (Map.Entry<String, String> entry : labeledQueries.entrySet()) {
@@ -56,9 +56,9 @@ public class ItineraryExistenceChecker {
          * A map with the same keys as the input from checkAll,
          * and values as OTP responses for the corresponding queries.
          */
-        public final Map<String, Response> labeledResponses;
+        public final Map<String, OtpResponse> labeledResponses;
 
-        private Result(boolean itinerariesExist, Map<String, Response> labeledResponses) {
+        private Result(boolean itinerariesExist, Map<String, OtpResponse> labeledResponses) {
             this.allItinerariesExist = itinerariesExist;
             this.labeledResponses = labeledResponses;
         }

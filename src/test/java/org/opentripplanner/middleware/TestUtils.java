@@ -1,12 +1,13 @@
 package org.opentripplanner.middleware;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.eclipse.jetty.http.HttpStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.slf4j.Logger;
@@ -18,22 +19,32 @@ import spark.Service;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 import static spark.Service.ignite;
 
 
 public class TestUtils {
     private static final Logger LOG = LoggerFactory.getLogger(TestUtils.class);
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    /**
+     * Password used to create and validate temporary Auth0 users
+     */
+    static final String TEMP_AUTH0_USER_PASSWORD = UUID.randomUUID().toString();
+
     /**
      * Whether the end-to-end environment variable is enabled.
      */
     public static final boolean isEndToEnd = getBooleanEnvVar("RUN_E2E");
+
     public static final String TEST_RESOURCE_PATH = "src/test/resources/org/opentripplanner/middleware/";
 
     /**
@@ -42,9 +53,12 @@ public class TestUtils {
     private static boolean mockOtpServerSetUpIsDone = false;
 
     /**
-     * Password used to create and validate temporary Auth0 users
+     * A list of mock responses for the mock OTP server to return whenever a request is made to the mock OTP server.
+     * These requests are returned in the order that they are entered here and the mockResponseIndex is incremented each
+     * time an OTP request is made.
      */
-    static final String TEMP_AUTH0_USER_PASSWORD = UUID.randomUUID().toString();
+    private static List<OtpResponse> mockResponses = Collections.EMPTY_LIST;
+    private static int mockResponseIndex = -1;
 
     public static <T> T getResourceFileContentsAsJSON (String resourcePathName, Class<T> clazz) throws IOException {
         return FileUtils.getFileContentsAsJSON(
@@ -132,18 +146,70 @@ public class TestUtils {
         }
         Service http = ignite().port(8080);
         http.get("/otp" + OTP_PLAN_ENDPOINT, TestUtils::mockOtpPlanResponse);
+        http.get("/*", (request, response) -> {
+            logMessageAndHalt(
+                request,
+                404,
+                String.format("No API route configured for path %s.", request.uri())
+            );
+            return null;
+        });
+        mockOtpServerSetUpIsDone = true;
     }
 
     /**
-     * Mock an OTP server plan response by provide a static response from file.
+     * Mock an OTP server plan response by serving defined mock responses or a static response from file.
      */
     private static String mockOtpPlanResponse(Request request, Response response) throws IOException {
-        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
-        otpDispatcherResponse.statusCode = HttpStatus.OK_200;
-        otpDispatcherResponse.responseBody = FileUtils.getFileContents(TEST_RESOURCE_PATH + "persistence/planResponse.json");
+        LOG.info("Received mock OTP request: {}?{}", request.url(), request.queryString());
+        // check if mock responses have been added
+        if (mockResponseIndex > -1) {
+            // mock responses added. Make sure there are enough left.
+            if (mockResponseIndex >= mockResponses.size()) {
+                // increment once more, to make sure the actual amount of OTP mocks equaled the expected amount
+                mockResponseIndex++;
+                throw new RuntimeException("Unmocked request to OTP received!");
+            }
+            LOG.info("Returning mock response at index {}", mockResponseIndex);
+            // send back response and increment response index
+            String responseBody = mapper.writeValueAsString(mockResponses.get(mockResponseIndex));
+            mockResponseIndex++;
+            return responseBody;
+        }
 
-        response.type(APPLICATION_JSON);
-        response.status(otpDispatcherResponse.statusCode);
+        // mocks not setup, simply return from a file every time
+        LOG.info("Returning default mock response from file");
+        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
+        otpDispatcherResponse.responseBody = FileUtils.getFileContents(TEST_RESOURCE_PATH + "persistence/planResponse.json");
         return otpDispatcherResponse.responseBody;
+    }
+
+    /**
+     * Provide a defined list of mock Otp Responses.
+     */
+    public static void setupOtpMocks(List<OtpResponse> responses) {
+        mockResponses = responses;
+        mockResponseIndex = 0;
+        LOG.info("Added {} Otp mocks", responses.size());
+    }
+
+    /**
+     * Helper method to reset the mocks and also make sure that the expected amount of requests were served
+     */
+    public static void resetOtpMocks() {
+        if (mockResponseIndex > -1) {
+            if (mockResponseIndex != mockResponses.size()) {
+                throw new RuntimeException(
+                    String.format(
+                        "Unexpected amount of mocked OTP responses was used. Expected=%d, Actual=%d",
+                        mockResponses.size(),
+                        mockResponseIndex
+                    )
+                );
+            }
+            LOG.info("Reset OTP mocks!");
+        }
+        mockResponses = Collections.EMPTY_LIST;
+        mockResponseIndex = -1;
     }
 }

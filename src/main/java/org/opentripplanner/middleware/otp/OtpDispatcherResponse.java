@@ -3,9 +3,9 @@ package org.opentripplanner.middleware.otp;
 
 import org.apache.commons.lang3.SerializationUtils;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +30,7 @@ public class OtpDispatcherResponse implements Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcherResponse.class);
 
     /** Caches the OTP response. */
-    private transient Response response;
+    private transient OtpResponse response;
 
     /** Empty constructor used for testing */
     public OtpDispatcherResponse() {}
@@ -45,8 +45,8 @@ public class OtpDispatcherResponse implements Serializable {
     /**
      * Constructor used only for testing.
      */
-    public OtpDispatcherResponse(String otpResponse) {
-        requestUri = URI.create("http://test.com");
+    public OtpDispatcherResponse(String otpResponse, URI requestUri) {
+        this.requestUri = requestUri;
         responseBody = otpResponse;
         statusCode = 200;
         LOG.debug("Response from OTP server: {}", toString());
@@ -69,14 +69,14 @@ public class OtpDispatcherResponse implements Serializable {
      * Response. POJO version of response from an OTP server.
      * Do not persist in case these classes change. This should always be re-instantiated from responseBody if needed.
      */
-    public Response getResponse() {
+    public OtpResponse getResponse() {
         if (response == null) {
-            response = JsonUtils.getPOJOFromJSON(responseBody, Response.class);
+            response = JsonUtils.getPOJOFromJSON(responseBody, OtpResponse.class);
         }
         return response;
     }
 
-    public void setResponse(Response response) {
+    public void setResponse(OtpResponse response) {
         this.response = response;
         responseBody = JsonUtils.toJson(response);
     }
@@ -112,7 +112,7 @@ public class OtpDispatcherResponse implements Serializable {
      * departing the same day as specified in the request date/time parameters, or null otherwise.
      */
     public Itinerary findItineraryDepartingSameDay(boolean checkArrival) {
-        Response response = this.getResponse();
+        OtpResponse response = this.getResponse();
         TripPlan plan = response.plan;
         HashMap<String, String> reqParams = response.requestParameters;
         if (reqParams != null) {

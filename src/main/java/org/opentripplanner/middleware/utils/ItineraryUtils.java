@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.YYYY_MM_DD;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
  * A utility class for dealing with OTP queries and itineraries.
@@ -92,8 +92,8 @@ public class ItineraryUtils {
 
         // Start from the query date, if available.
         // If there is no query date, start from today.
-        String queryDateString = params.getOrDefault(DATE_PARAM, DateTimeUtils.getStringFromDate(DateTimeUtils.nowAsLocalDate(), YYYY_MM_DD));
-        LocalDate queryDate = DateTimeUtils.getDateFromString(queryDateString, YYYY_MM_DD);
+        String queryDateString = params.getOrDefault(DATE_PARAM, DateTimeUtils.getStringFromDate(DateTimeUtils.nowAsLocalDate(), DEFAULT_DATE_FORMAT_PATTERN));
+        LocalDate queryDate = DateTimeUtils.getDateFromString(queryDateString, DEFAULT_DATE_FORMAT_PATTERN);
 
         // Get the trip time.
         // FIXME: replace this block with code from PR #75.
@@ -108,7 +108,7 @@ public class ItineraryUtils {
         for (int i = 0; i < 7; i++) {
             ZonedDateTime probedDate = queryZonedDateTime.plusDays(i);
             if (checkAllDays || trip.isActiveOnDate(probedDate)) {
-                result.add(DateTimeUtils.getStringFromDate(probedDate.toLocalDate(), YYYY_MM_DD));
+                result.add(DateTimeUtils.getStringFromDate(probedDate.toLocalDate(), DEFAULT_DATE_FORMAT_PATTERN));
             }
         }
 
@@ -173,7 +173,7 @@ public class ItineraryUtils {
     public static boolean isSameDay(Itinerary itinerary, String date, String time, ZoneId zoneId, boolean checkArrival) {
         // TODO: Make SERVICEDAY_START_HOUR an optional config parameter.
         final int SERVICEDAY_START_HOUR = 3;
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(YYYY_MM_DD);
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN);
 
         ZonedDateTime startDate = ZonedDateTime.ofInstant(itinerary.getStartOrEndTime(checkArrival).toInstant(), zoneId);
 

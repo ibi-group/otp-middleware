@@ -109,20 +109,31 @@ public class Itinerary {
         }
     }
 
+    /**
+     * This method calculates equality in the context of trip monitoring in order to analyzing equality when
+     * checking if itineraries match.
+     *
+     * FIXME: maybe don't check duration exactly as it might vary slightly in certain trips
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Itinerary itinerary = (Itinerary) o;
-        return startTime.equals(itinerary.startTime) &&
-            endTime.equals(itinerary.endTime) &&
+        return duration.equals(itinerary.duration) &&
             Objects.equals(transfers, itinerary.transfers) &&
             legs.equals(itinerary.legs);
     }
 
+    /**
+     * This method calculates the hash code in the context of trip monitoring in order to analyzing equality when
+     * checking if itineraries match.
+     *
+     * FIXME: maybe don't check duration exactly as it might vary slightly in certain trips
+     */
     @Override
     public int hashCode() {
-        return Objects.hash(startTime, endTime, transfers, legs);
+        return Objects.hash(duration, transfers, legs);
     }
 
     @Override

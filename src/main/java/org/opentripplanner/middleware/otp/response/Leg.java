@@ -51,14 +51,15 @@ public class Leg implements Cloneable {
     /**
      * This method calculates equality in the context of trip monitoring in order to analyzing equality when
      * checking if itineraries are the same.
+     *
+     * FIXME: maybe don't check duration exactly as it might vary slightly in certain trips
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Leg leg = (Leg) o;
-        return startTime.equals(leg.startTime) &&
-            endTime.equals(leg.endTime) &&
+        return duration.equals(leg.duration) &&
             mode.equals(leg.mode) &&
             from.equals(leg.from) &&
             to.equals(leg.to) &&
@@ -73,14 +74,15 @@ public class Leg implements Cloneable {
     }
 
     /**
-     * This method calculates equality in the context of trip monitoring in order to analyzing equality when
-     * checking if itineraries are the same.
+     * This method calculates the hash code in the context of trip monitoring in order to analyzing equality when
+     * checking if itineraries match.
+     *
+     * FIXME: maybe don't check duration exactly as it might vary slightly in certain trips
      */
     @Override
     public int hashCode() {
         return Objects.hash(
-            startTime,
-            endTime,
+            duration,
             mode,
             from,
             to,

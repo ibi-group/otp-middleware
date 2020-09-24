@@ -7,6 +7,7 @@ import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
@@ -32,14 +33,15 @@ public class ItineraryExistenceCheckerTest {
             TEST_RESOURCE_PATH + "persistence/planResponse.json"
         );
         queryToResponse = new HashMap<>();
+        URI uri = URI.create("http://www,example.com");
 
         // Queries for which an itinerary exists.
-        queryToResponse.put("exist1", new OtpDispatcherResponse(mockPlanResponse));
-        queryToResponse.put("exist2", new OtpDispatcherResponse(mockPlanResponse));
-        queryToResponse.put("exist3", new OtpDispatcherResponse(mockPlanResponse));
+        queryToResponse.put("exist1", new OtpDispatcherResponse(mockPlanResponse, uri));
+        queryToResponse.put("exist2", new OtpDispatcherResponse(mockPlanResponse, uri));
+        queryToResponse.put("exist3", new OtpDispatcherResponse(mockPlanResponse, uri));
 
         // Query for which an itinerary is not found.
-        queryToResponse.put("not found", new OtpDispatcherResponse(MOCK_RESPONSE_WITH_ERROR));
+        queryToResponse.put("not found", new OtpDispatcherResponse(MOCK_RESPONSE_WITH_ERROR, uri));
     }
 
     @Test

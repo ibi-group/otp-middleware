@@ -277,7 +277,7 @@ public class MonitoredTrip extends Model {
      */
     public Itinerary latestItinerary() {
         JourneyState journeyState = retrieveJourneyState();
-        return null; // FIXME: upon merging #75, use journeyState.matchingItineraryIndex.matchingItinerary;
+        return journeyState.matchingItinerary;
     }
 
     /**

@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.models.ItineraryExistenceResult;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.ItineraryExistenceChecker;
@@ -70,9 +71,9 @@ public class ItineraryCheckController implements Endpoint {
 
             // Convert the dates in the result to weekdays,
             // and fill the same-day itineraries in each day, if any.
-            for (Map.Entry<String, org.opentripplanner.middleware.otp.response.Response> r : checkResult.labeledResponses.entrySet()) {
+            for (Map.Entry<String, OtpResponse> r : checkResult.labeledResponses.entrySet()) {
                 String dateString = r.getKey();
-                LocalDate date = DateTimeUtils.getDateFromString(dateString, DateTimeUtils.YYYY_MM_DD);
+                LocalDate date = DateTimeUtils.getDateFromString(dateString, DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN);
                 if (r.getValue().plan != null) {
                     // Only keep same-day itineraries.
                     List<Itinerary> sameDayItineraries = ItineraryUtils.getSameDayItineraries(r.getValue().plan.itineraries, trip, dateString);

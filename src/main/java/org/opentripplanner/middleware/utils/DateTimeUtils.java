@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
+import java.util.Date;
 import java.util.Optional;
 
 /**
@@ -24,7 +25,7 @@ import java.util.Optional;
 public class DateTimeUtils {
     private static final Logger LOG = LoggerFactory.getLogger(DateTimeUtils.class);
 
-    public static final String YYYY_MM_DD = "yyyy-MM-dd";
+    public static final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
 
     /**
      * These are internal variables that can be used to mock dates and times in tests
@@ -77,6 +78,10 @@ public class DateTimeUtils {
             .toFormatter()
             .withZone(zoneId);
         return localDate.format(expectedDateFormat);
+    }
+
+    public static Date nowAsDate() {
+        return new Date(currentTimeMillis());
     }
 
     public static LocalDate nowAsLocalDate() {
