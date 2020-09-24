@@ -21,9 +21,10 @@ import java.net.http.HttpResponse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.getBooleanEnvVar;
-import static org.opentripplanner.middleware.TestUtils.isEndToEndAndAuthIsDisabled;
+import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.auth.Auth0Connection.getDefaultAuthDisabled;
+import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 
 /**
@@ -45,11 +46,12 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException {
-        // Load config before checking if tests should run (otherwise authDisabled will always evaluate to false).
-        OtpMiddlewareTest.setUp();
+        assumeTrue(isEndToEnd);
         // TODO: It might be useful to allow this to run without DISABLE_AUTH set to true (in an end-to-end environment
         //  using real tokens from Auth0.
-        assumeTrue(isEndToEndAndAuthIsDisabled());
+        setAuthDisabled(true);
+        // Load config before checking if tests should run.
+        OtpMiddlewareTest.setUp();
         apiUser = PersistenceUtil.createApiUser("test@example.com");
         adminUser = PersistenceUtil.createAdminUser("test@example.com");
     }
@@ -59,7 +61,8 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(isEndToEndAndAuthIsDisabled());
+        assumeTrue(isEndToEnd);
+        setAuthDisabled(getDefaultAuthDisabled());
         // Delete admin user.
         Persistence.adminUsers.removeById(adminUser.id);
         // Refresh api keys for user.
@@ -72,7 +75,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void canCreateApiKeyForSelf() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         HttpResponse<String> response = createApiKeyRequest(apiUser.id, apiUser);
         assertEquals(HttpStatus.OK_200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
@@ -87,7 +89,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void adminCanCreateApiKeyForApiUser() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         HttpResponse<String> response = createApiKeyRequest(apiUser.id, adminUser);
         assertEquals(HttpStatus.OK_200, response.statusCode());
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
@@ -103,7 +104,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void cannotDeleteApiKeyForSelf() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         ensureApiKeyExists();
         int initialKeyCount = apiUser.apiKeys.size();
         // delete key
@@ -122,7 +122,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @Test
     public void adminCanDeleteApiKeyForApiUser() {
-        assumeTrue(getBooleanEnvVar("RUN_E2E"));
         ensureApiKeyExists();
         // delete key
         String keyId = apiUser.apiKeys.get(0).keyId;
