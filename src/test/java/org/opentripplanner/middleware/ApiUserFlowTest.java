@@ -11,11 +11,9 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
-import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -134,11 +132,11 @@ public class ApiUserFlowTest {
         assertEquals(HttpStatus.OK_200, createUserResponse.statusCode());
         OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.body(), OtpUser.class);
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
-        MonitoredTrip trip = TestUtils.constructedMonitoredTripFromOtpResponse();
-        trip.userId = otpUser.id;
+        MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        monitoredTrip.userId = otpUser.id;
         HttpResponse<String> createTripResponse = mockAuthenticatedPost("api/secure/monitoredtrip",
             otpUserResponse,
-            JsonUtils.toJson(trip)
+            JsonUtils.toJson(monitoredTrip)
         );
         assertEquals(HttpStatus.OK_200, createTripResponse.statusCode());
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(createTripResponse.body(), MonitoredTrip.class);

@@ -6,7 +6,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.AdminUser;
-import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
@@ -23,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.TestUtils.isEndToEndAndAuthIsDisabled;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.getDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -63,21 +61,8 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(isEndToEndAndAuthIsDisabled());
-        // Note: apiUser.delete() cannot be used because no Auth0 user is created. The method fails on attempting to
-        // delete the random value assigned to the apiUser on initialization. This in turn prevents the apiUser from
-        // being delete from Mongo.
-
-        // Refresh api keys for user.
-        apiUser = Persistence.apiUsers.getById(apiUser.id);
-        // remove remaining api keys if present
-        if (!apiUser.apiKeys.isEmpty()) {
-            for (ApiKey apiKey : apiUser.apiKeys) {
-                deleteApiKeyRequest(apiUser.id, apiKey.keyId, adminUser);
-            }
-        }
-        // Delete api user.
-        Persistence.apiUsers.removeById(apiUser.id);
+        setAuthDisabled(getDefaultAuthDisabled());
+        apiUser.delete(false);
         // Delete admin user.
         Persistence.adminUsers.removeById(adminUser.id);
     }

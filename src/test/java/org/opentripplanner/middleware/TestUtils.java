@@ -166,9 +166,9 @@ public class TestUtils {
     }
 
     /**
-     * Submit plan query to OTP server and construct a monitored trip from the response.
+     * Submit plan query to OTP server and return the response.
      */
-    public static MonitoredTrip constructedMonitoredTripFromOtpResponse() {
+    public static OtpDispatcherResponse sendSamplePlanRequest() {
         // Submit a query to the OTP server.
         // From P&R to Downtown Orlando
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(
@@ -176,6 +176,6 @@ public class TestUtils {
             "28.54834,-81.37745"
         );
         // Construct a monitored trip from it.
-        return new MonitoredTrip(otpDispatcherResponse);
+        return otpDispatcherResponse;
     }
 }

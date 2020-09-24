@@ -29,7 +29,6 @@ import static org.opentripplanner.middleware.persistence.PersistenceUtil.*;
  */
 public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
     private static final int LIMIT = 3;
-    private static final String USER_ID = "123456";
     private static final String TEST_EMAIL = "john.doe@example.com";
     private static final String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
     private static final String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
@@ -43,27 +42,21 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
     @BeforeAll
     public static void setup() throws IOException {
         otpUser = createUser(TEST_EMAIL);
-        tripRequest = createTripRequest(USER_ID);
-        tripSummary = createTripSummary();
-        tripSummaryWithError = createTripSummaryWithError();
+        tripRequest = createTripRequest(otpUser.id);
         tripRequests = createTripRequests(LIMIT, otpUser.id);
+        tripSummary = createTripSummary(tripRequest.id);
+        tripSummaryWithError = createTripSummaryWithError(tripRequest.id);
     }
 
     @AfterAll
     public static void tearDown() {
-        // Note: otpUser.delete() cannot be used because no Auth0 user is created. The method fails on attempting to
-        // delete the random value assigned to the otpUser on initialization. This in turn prevents the otpUser from
-        // being delete from Mongo.
-        if (otpUser != null) Persistence.otpUsers.removeById(otpUser.id);
-        if (tripRequest != null) Persistence.tripRequests.removeById(tripRequest.id);
-        if (tripSummary != null) Persistence.tripSummaries.removeById(tripSummary.id);
+        if (otpUser != null) otpUser.delete(false);
         if (tripSummaryWithError != null) Persistence.tripSummaries.removeById(tripSummaryWithError.id);
-        if (tripRequests != null) deleteTripRequests(tripRequests);
     }
 
     @Test
     public void canCreateTripRequest() {
-        if (tripRequest == null) tripRequest = createTripRequest(USER_ID);
+        if (tripRequest == null) tripRequest = createTripRequest(otpUser.id);
         TripRequest retrieved = Persistence.tripRequests.getById(tripRequest.id);
         assertEquals(tripRequest.id, retrieved.id, "Found Trip request ID should equal inserted ID.");
     }

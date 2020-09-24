@@ -88,7 +88,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // Do not run this test on Travis CI because it requires a live OTP server
         // FIXME: Add live otp server to e2e tests.
         assumeTrue(!isRunningCi && isEndToEnd);
-        MonitoredTrip monitoredTrip = TestUtils.constructedMonitoredTripFromOtpResponse();
+        MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = user.id;
         monitoredTrip.tripName = "My Morning Commute";

@@ -44,19 +44,26 @@ public class ApiUser extends AbstractUser {
      */
     @Override
     public boolean delete() {
+        return delete(true);
+    }
+
+    public boolean delete(boolean deleteAuth0User) {
         for (ApiKey apiKey : apiKeys) {
             if (!ApiGatewayUtils.deleteApiKey(apiKey)) {
                 LOG.error("Could not delete API key for user {}. Aborting delete user.", apiKey.keyId);
                 return false;
             }
         }
-        boolean auth0UserDeleted = super.delete();
-        if (auth0UserDeleted) {
-            return Persistence.apiUsers.removeById(this.id);
-        } else {
-            LOG.warn("Aborting user deletion for {}", this.email);
-            return false;
+
+        if (deleteAuth0User) {
+            boolean auth0UserDeleted = super.delete();
+            if (!auth0UserDeleted) {
+                LOG.warn("Aborting user deletion for {}", this.email);
+                return false;
+            }
         }
+
+        return Persistence.apiUsers.removeById(this.id);
     }
 
     public void createApiKey(String usagePlanId, boolean persist) throws CreateApiKeyException {
