@@ -12,10 +12,10 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
@@ -28,6 +28,15 @@ public class ItineraryUtilsTest {
     // Date and time from the above query.
     public static final String QUERY_DATE = "2020-08-13";
     public static final String QUERY_TIME = "11:23";
+
+    // Timestamps (in EDT or GMT-4:00) to test whether an itinerary is same-day as QUERY_DATE.
+    public static final long _2020_08_12__03_00_00_EDT = 1597215600000L; // Aug 12, 2020 3:00:00 AM
+    public static final long _2020_08_12__23_59_59_EDT = 1597291199000L; // Aug 12, 2020 11:59:59 PM
+    public static final long _2020_08_13__02_59_59_EDT = 1597301999000L; // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
+    public static final long _2020_08_13__03_00_00_EDT = 1597302000000L; // Aug 13, 2020 3:00:00 AM
+    public static final long _2020_08_13__23_59_59_EDT = 1597377599000L; // Aug 13, 2020 11:59:59 PM
+    public static final long _2020_08_14__02_59_59_EDT = 1597388399000L; // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
+    public static final long _2020_08_14__03_00_00_EDT = 1597388400000L; // Aug 14, 2020 3:00:00 AM
 
     @Test
     public void testGetQueriesFromDates() throws URISyntaxException {
@@ -59,7 +68,8 @@ public class ItineraryUtilsTest {
         List<String> checkedDates = ItineraryUtils.getDatesToCheckItineraryExistence(trip, false);
         Assertions.assertEquals(newDates, checkedDates);
 
-        // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence, it should still return all dates.
+        // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence,
+        // it should return all dates regardless of the ones set in the monitored trip.
         List<String> allDates = List.of(QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19");
         List<String> allCheckedDates = ItineraryUtils.getDatesToCheckItineraryExistence(trip, true);
         Assertions.assertEquals(allDates, allCheckedDates);
@@ -90,8 +100,7 @@ public class ItineraryUtilsTest {
         MonitoredTrip trip = new MonitoredTrip();
         trip.id = "testUpdateTripWithVerifiedItinerary";
         trip.queryParams = query;
-        // Write some itinerary that is not the one we want.
-        trip.itinerary = itineraries.get(0);
+        trip.itinerary = null;
 
         ItineraryUtils.updateTripWithVerifiedItinerary(trip, itineraries);
 
@@ -105,15 +114,13 @@ public class ItineraryUtilsTest {
 
         // startTimes are in US Eastern timezone.
         for (Long startTime : startTimes) {
-            Itinerary itinerary = new Itinerary();
-            Instant instant = Instant.ofEpochMilli(startTime);
-            itinerary.setStartOrEndTime(Date.from(instant), isArrival);
+            Itinerary itinerary = simpleItinerary(startTime, isArrival);
             Assertions.assertEquals(
                 expected,
                 ItineraryUtils.isSameDay(itinerary, QUERY_DATE, time, zoneId, isArrival),
                 String.format(
                     "%s %s be considered same day as %s %s",
-                    ZonedDateTime.ofInstant(instant, zoneId),
+                    ZonedDateTime.ofInstant(Instant.ofEpochMilli(startTime), zoneId),
                     expected ? "should" : "should not",
                     QUERY_DATE,
                     time
@@ -126,14 +133,14 @@ public class ItineraryUtilsTest {
     public void testItineraryDepartsSameDay() throws URISyntaxException {
         // All times EDT (GMT-04:00)
         testIsSameDay(QUERY_TIME, false, true,
-            1597302000000L, // August 13, 2020 3:00:00 AM
-            1597377599000L, // August 13, 2020 11:59:59 PM
-            1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
+            _2020_08_13__03_00_00_EDT,
+            _2020_08_13__23_59_59_EDT,
+            _2020_08_14__02_59_59_EDT
         );
         testIsSameDay("1:23", false, true,
-            1597215600000L, // August 12, 2020 3:00:00 AM
-            1597291199000L, // August 12, 2020 11:59:59 PM
-            1597301999000L // August 13, 2020 02:59:59 AM, considered to be Aug 12.
+            _2020_08_12__03_00_00_EDT,
+            _2020_08_12__23_59_59_EDT,
+            _2020_08_13__02_59_59_EDT
         );
     }
 
@@ -141,14 +148,14 @@ public class ItineraryUtilsTest {
     public void testItineraryDoesNotDepartSameDay() throws URISyntaxException {
         // All times EDT (GMT-04:00)
         testIsSameDay(QUERY_TIME, false, false,
-            1597291199000L, // August 12, 2020 11:59:59 PM
-            1597291200000L, // August 13, 2020 2:59:59 AM
-            1597388400000L // August 14 2020 3:00:00 AM
+            _2020_08_12__23_59_59_EDT,
+            _2020_08_13__02_59_59_EDT,
+            _2020_08_14__03_00_00_EDT
         );
         testIsSameDay("1:23", false, false,
-            1597302000000L, // August 13, 2020 3:00:00 AM
-            1597377599000L, // August 13, 2020 11:59:59 PM
-            1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
+            _2020_08_13__03_00_00_EDT,
+            _2020_08_13__23_59_59_EDT,
+            _2020_08_14__02_59_59_EDT
         );
     }
 
@@ -156,14 +163,14 @@ public class ItineraryUtilsTest {
     public void testItineraryArrivesSameDay() throws URISyntaxException {
         // All times EDT (GMT-04:00)
         testIsSameDay(QUERY_TIME, true, true,
-            1597302000000L, // August 13, 2020 3:00:00 AM
-            1597377599000L, // August 13, 2020 11:59:59 PM
-            1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
+            _2020_08_13__03_00_00_EDT,
+            _2020_08_13__23_59_59_EDT,
+            _2020_08_14__02_59_59_EDT
         );
         testIsSameDay("1:23", true, true,
-            1597215600000L, // August 12, 2020 3:00:00 AM
-            1597291199000L, // August 12, 2020 11:59:59 PM
-            1597301999000L // August 13, 2020 02:59:59 AM, considered to be Aug 12.
+            _2020_08_12__03_00_00_EDT,
+            _2020_08_12__23_59_59_EDT,
+            _2020_08_13__02_59_59_EDT
         );
     }
 
@@ -171,14 +178,14 @@ public class ItineraryUtilsTest {
     public void testItineraryDoesNotArriveSameDay() throws URISyntaxException {
         // All times EDT (GMT-04:00)
         testIsSameDay(QUERY_TIME, true, false,
-            1597291199000L, // August 12, 2020 11:59:59 PM
-            1597291200000L, // August 13, 2020 2:59:59 AM
-            1597388400000L // August 14 2020 3:00:00 AM
+            _2020_08_12__23_59_59_EDT,
+            _2020_08_13__02_59_59_EDT,
+            _2020_08_14__03_00_00_EDT
         );
         testIsSameDay("1:23", true, false,
-            1597302000000L, // August 13, 2020 3:00:00 AM
-            1597377599000L, // August 13, 2020 11:59:59 PM
-            1597388399000L // August 14, 2020 02:59:59 AM, considered to be Aug 13.
+            _2020_08_13__03_00_00_EDT,
+            _2020_08_13__23_59_59_EDT,
+            _2020_08_14__02_59_59_EDT
         );
     }
 
@@ -188,27 +195,27 @@ public class ItineraryUtilsTest {
         trip.tripTime = QUERY_TIME;
 
         // Create itineraries, some being same-day, some not.
-        List<Itinerary> itineraries = new ArrayList<>();
-
         List<Long> startTimes = List.of(
-            1597377599000L, // August 13, 2020 11:59:59 PM - same day
-            1597388399000L, // August 14, 2020 02:59:59 AM, considered to be Aug 13. - same day
-            1597388400000L // August 14 2020 3:00:00 AM - not same day
+            _2020_08_13__23_59_59_EDT, // same day
+            _2020_08_14__02_59_59_EDT, // considered same day
+            _2020_08_14__03_00_00_EDT // not same day
         );
 
-        // startTimes are in US Eastern timezone.
-        for (Long startTime : startTimes) {
-            Itinerary itinerary = new Itinerary();
-            Instant instant = Instant.ofEpochMilli(startTime);
-            itinerary.setStartOrEndTime(Date.from(instant), false);
-
-            itineraries.add(itinerary);
-        }
+        List<Itinerary> itineraries = startTimes.stream()
+            .map(t -> simpleItinerary(t, false))
+            .collect(Collectors.toList());
 
         List<Itinerary> processedItineraries = ItineraryUtils.getSameDayItineraries(itineraries, trip, QUERY_DATE);
         Assertions.assertEquals(2, processedItineraries.size());
         Assertions.assertTrue(processedItineraries.contains(itineraries.get(0)));
         Assertions.assertTrue(processedItineraries.contains(itineraries.get(1)));
+    }
+
+    private Itinerary simpleItinerary(Long startTime, boolean isArrival) {
+        Itinerary itinerary = new Itinerary();
+        Instant instant = Instant.ofEpochMilli(startTime);
+        itinerary.setStartOrEndTime(Date.from(instant), isArrival);
+        return itinerary;
     }
 
     private MonitoredTrip makeTestTrip(boolean arriveBy) throws URISyntaxException {
