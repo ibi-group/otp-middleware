@@ -1,19 +1,13 @@
 package org.opentripplanner.middleware.utils;
 
-import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Response;
-import spark.Request;
 
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-
-import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * This utility class checks for existence of itineraries for given OTP queries.
@@ -50,32 +44,6 @@ public class ItineraryExistenceChecker {
         }
 
         return new Result(allItinerariesExist, responses);
-    }
-
-    /**
-     * Checks that non-realtime itineraries exist for the days the specified monitored trip is active.
-     */
-    public static Result checkItineraryExistence(MonitoredTrip trip, boolean checkAllDays, Request request) {
-        ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker(OtpDispatcher::sendOtpPlanRequest);
-        try {
-            Result checkResult = itineraryChecker.checkAll(ItineraryUtils.getItineraryExistenceQueries(trip, checkAllDays), trip.isArriveBy());
-            if (!checkResult.allItinerariesExist) {
-                logMessageAndHalt(
-                    request,
-                    HttpStatus.BAD_REQUEST_400,
-                    "An itinerary does not exist for some of the monitored days for the requested trip."
-                );
-            }
-            return checkResult;
-        } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
-            logMessageAndHalt(
-                request,
-                HttpStatus.INTERNAL_SERVER_ERROR_500,
-                "Error parsing the trip query parameters.",
-                e
-            );
-        }
-        return null;
     }
 
     /**

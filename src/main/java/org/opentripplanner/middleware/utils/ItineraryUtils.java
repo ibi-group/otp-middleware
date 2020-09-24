@@ -203,6 +203,8 @@ public class ItineraryUtils {
 
         if (itineraries != null) {
             for (Itinerary itinerary : itineraries) {
+                // TODO/FIXME: initialize the parameter map in the monitored trip in initializeFromItinerary etc.
+                // so we don't have to lug the URI exception around.
                 if (isSameDay(itinerary, date, trip.tripTime, trip.timezoneForTargetLocation(), trip.isArriveBy())) {
                     result.add(itinerary);
                 }

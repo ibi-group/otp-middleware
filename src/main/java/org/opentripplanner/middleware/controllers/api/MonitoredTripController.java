@@ -4,6 +4,7 @@ import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -43,13 +44,56 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 e
             );
         }
-        ItineraryExistenceChecker.Result checkResult = ItineraryExistenceChecker.checkItineraryExistence(monitoredTrip, false, req);
+        ItineraryExistenceChecker.Result checkResult = checkItineraryExistence(monitoredTrip, req);
 
         // Replace the provided trip's itinerary with a verified, non-real-time version of it.
         if (checkResult != null) {
             updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult.labeledResponses);
         }
         return monitoredTrip;
+    }
+
+    @Override
+    MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
+        ItineraryExistenceChecker.Result checkResult = checkItineraryExistence(monitoredTrip, req);
+
+        // Replace the provided trip's itinerary with a verified, non-real-time version of it.
+        if (checkResult != null) {
+            updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult.labeledResponses);
+        }
+        return monitoredTrip;
+    }
+
+    @Override
+    boolean preDeleteHook(MonitoredTrip monitoredTrip, Request req) {
+        // Authorization checks are done prior to this hook
+        return true;
+    }
+
+    /**
+     * Checks that non-realtime itineraries exist for the days the specified monitored trip is active.
+     */
+    private static ItineraryExistenceChecker.Result checkItineraryExistence(MonitoredTrip trip, Request request) {
+        ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker(OtpDispatcher::sendOtpPlanRequest);
+        try {
+            ItineraryExistenceChecker.Result checkResult = itineraryChecker.checkAll(ItineraryUtils.getItineraryExistenceQueries(trip, false), trip.isArriveBy());
+            if (!checkResult.allItinerariesExist) {
+                logMessageAndHalt(
+                    request,
+                    HttpStatus.BAD_REQUEST_400,
+                    "An itinerary does not exist for some of the monitored days for the requested trip."
+                );
+            }
+            return checkResult;
+        } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
+            logMessageAndHalt(
+                request,
+                HttpStatus.INTERNAL_SERVER_ERROR_500,
+                "Error parsing the trip query parameters.",
+                e
+            );
+        }
+        return null;
     }
 
     /**
@@ -81,23 +125,6 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 e
             );
         }
-    }
-
-    @Override
-    MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        ItineraryExistenceChecker.Result checkResult = ItineraryExistenceChecker.checkItineraryExistence(monitoredTrip, false, req);
-
-        // Replace the provided trip's itinerary with a verified, non-real-time version of it.
-        if (checkResult != null) {
-            updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult.labeledResponses);
-        }
-        return monitoredTrip;
-    }
-
-    @Override
-    boolean preDeleteHook(MonitoredTrip monitoredTrip, Request req) {
-        // Authorization checks are done prior to this hook
-        return true;
     }
 
     /**

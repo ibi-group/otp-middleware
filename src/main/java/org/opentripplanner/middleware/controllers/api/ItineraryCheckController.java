@@ -13,13 +13,11 @@ import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.ItineraryExistenceChecker;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
 import java.net.URISyntaxException;
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -70,12 +68,13 @@ public class ItineraryCheckController implements Endpoint {
             ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker(OtpDispatcher::sendOtpPlanRequest);
             ItineraryExistenceChecker.Result checkResult = itineraryChecker.checkAll(ItineraryUtils.getItineraryExistenceQueries(trip, true), trip.isArriveBy());
 
-            // Convert the dates in the result to weekdays, and fill the itineraries in each.
+            // Convert the dates in the result to weekdays,
+            // and fill the same-day itineraries in each day, if any.
             for (Map.Entry<String, org.opentripplanner.middleware.otp.response.Response> r : checkResult.labeledResponses.entrySet()) {
                 String dateString = r.getKey();
                 LocalDate date = DateTimeUtils.getDateFromString(dateString, DateTimeUtils.YYYY_MM_DD);
                 if (r.getValue().plan != null) {
-                    // Only keep same-day itineraries
+                    // Only keep same-day itineraries.
                     List<Itinerary> sameDayItineraries = ItineraryUtils.getSameDayItineraries(r.getValue().plan.itineraries, trip, dateString);
                     if (sameDayItineraries.size() != 0) {
                         switch (date.getDayOfWeek()) {
