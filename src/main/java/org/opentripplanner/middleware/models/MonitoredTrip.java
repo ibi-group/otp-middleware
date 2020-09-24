@@ -149,21 +149,24 @@ public class MonitoredTrip extends Model {
         TripPlan plan = otpDispatcherResponse.getResponse().plan;
         itinerary = plan.itineraries.get(0);
 
-        // extract trip time from parsed params
+        // extract trip time from parsed params and itinerary
+        initializeFromItineraryAndQueryParams();
+    }
+
+    public void initializeFromItineraryAndQueryParams() throws IllegalArgumentException, URISyntaxException {
+        int lastLegIndex = itinerary.legs.size() - 1;
+        from = itinerary.legs.get(0).from;
+        to = itinerary.legs.get(lastLegIndex).to;
+
+        // Ensure the itinerary we store does not contain any realtime info.
+        clearRealtimeInfo();
+
+        // set the trip time by parsing the query params
         Map<String, String> params = parseQueryParams();
         tripTime = params.get("time");
         if (tripTime == null) {
             throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
         }
-        initializeFromItinerary();
-    }
-
-    public void initializeFromItinerary() {
-        int lastLegIndex = itinerary.legs.size() - 1;
-        from = itinerary.legs.get(0).from;
-        to = itinerary.legs.get(lastLegIndex).to;
-        // Ensure the itinerary we store does not contain any realtime info.
-        clearRealtimeInfo();
     }
 
     public MonitoredTrip updateAllDaysOfWeek(boolean value) {
