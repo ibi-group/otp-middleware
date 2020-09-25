@@ -13,6 +13,7 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -216,6 +217,7 @@ public class ItineraryUtilsTest {
         Itinerary itinerary = new Itinerary();
         Instant instant = Instant.ofEpochMilli(startTime);
         itinerary.setStartOrEndTime(Date.from(instant), isArrival);
+        itinerary.legs = new ArrayList<>();
         return itinerary;
     }
 
