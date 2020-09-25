@@ -22,7 +22,6 @@ import spark.Request;
 import spark.Response;
 
 import java.lang.reflect.Array;
-import java.util.Date;
 import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;

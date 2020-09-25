@@ -112,7 +112,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      */
     private static void updateTripWithVerifiedItinerary(MonitoredTrip monitoredTrip, Request request, Map<String, OtpResponse> responsesByDate) {
         try {
-            Map<String, String> params = ItineraryUtils.getQueryParams(monitoredTrip.queryParams);
+            Map<String, String> params = monitoredTrip.parseQueryParams();
             String queryDate = params.get(DATE_PARAM);
 
             // Find the response corresponding to the day of the query.

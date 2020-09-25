@@ -1,12 +1,10 @@
 package org.opentripplanner.middleware.utils;
 
-import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -32,48 +30,31 @@ public class ItineraryUtils {
     public static final String TIME_PARAM = "time";
 
     /**
-     * Converts query strings that start with '?' to a {@link Map} of keys and values.
+     * Converts a {@link Map} to a URL query string, without a leading '?'.
      */
-    public static Map<String, String> getQueryParams(String queryParams) throws URISyntaxException {
-        List<NameValuePair> nameValuePairs = URLEncodedUtils.parse(
-            new URI(String.format("http://example.com/%s", queryParams)),
-            UTF_8
-        );
-        return nameValuePairs.stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
-    }
-
-    /**
-     * Converts a {@link Map} to a URL query string, with or without a leading '?'.
-     */
-    public static String toQueryString(Map<String, String> params, boolean leadingQuestionMark) {
+    public static String toQueryString(Map<String, String> params) {
         List<BasicNameValuePair> nameValuePairs = params.entrySet().stream()
             .map(e -> new BasicNameValuePair(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
-        // FIXME: Upon merging #75, do not add '?' and remove the question mark option entirely everywhere.
-        return (leadingQuestionMark ? "?" : "") +
-            URLEncodedUtils.format(nameValuePairs, UTF_8);
-    }
-
-    // FIXME: Upon merging #75, remove this overload.
-    public static String toQueryString(Map<String, String> params) {
-        return toQueryString(params, false);
+        return URLEncodedUtils.format(nameValuePairs, UTF_8);
     }
 
     /**
      * Creates a map of new query strings based on the one provided,
      * with the date changed to the desired one and ignoring realtime updates.
      *
-     * @param baseQueryParams the base OTP query.
-     * @param dates           a list of the desired dates in YYYY-MM-DD format.
+     * @param params a map of the base OTP query parameters.
+     * @param dates a list of the desired dates in YYYY-MM-DD format.
      * @return a map of query strings with, and indexed by the specified dates.
      */
-    public static Map<String, String> getQueriesFromDates(String baseQueryParams, List<String> dates) throws URISyntaxException {
+    public static Map<String, String> getQueriesFromDates(Map<String, String> params, List<String> dates) {
+        // Create a copy of the original params in which we change the date.
+        Map<String, String> paramsCopy = new HashMap<>(params);
         Map<String, String> result = new HashMap<>();
-        Map<String, String> params = getQueryParams(baseQueryParams);
 
         for (String date : dates) {
-            params.put(DATE_PARAM, date);
-            result.put(date, toQueryString(params));
+            paramsCopy.put(DATE_PARAM, date);
+            result.put(date, toQueryString(paramsCopy));
         }
 
         return result;
@@ -88,7 +69,7 @@ public class ItineraryUtils {
     public static List<String> getDatesToCheckItineraryExistence(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
         List<String> result = new ArrayList<>();
         ZoneId zoneId = trip.timezoneForTargetLocation();
-        Map<String, String> params = getQueryParams(trip.queryParams);
+        Map<String, String> params = trip.parseQueryParams();
 
         // Start from the query date, if available.
         // If there is no query date, start from today.
@@ -96,12 +77,7 @@ public class ItineraryUtils {
         LocalDate queryDate = DateTimeUtils.getDateFromString(queryDateString, DEFAULT_DATE_FORMAT_PATTERN);
 
         // Get the trip time.
-        // FIXME: replace this block with code from PR #75.
-        String[] tripTimeSplit = params.get("time").split(":");
-        int tripHour = Integer.parseInt(tripTimeSplit[0]);
-        int tripMinutes = Integer.parseInt(tripTimeSplit[1]);
-        ZonedDateTime queryZonedDateTime = ZonedDateTime.of(queryDate, LocalTime.of(tripHour, tripMinutes), zoneId);
-
+        ZonedDateTime queryZonedDateTime = ZonedDateTime.of(queryDate, LocalTime.of(trip.tripTimeHour(), trip.tripTimeMinute()), zoneId);
 
         // Check the dates on days when a trip is active, or every day if checkAllDays is true,
         // in a 7-day window starting from the query date.
@@ -120,7 +96,7 @@ public class ItineraryUtils {
      */
     public static Map<String, String> getItineraryExistenceQueries(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
         return getQueriesFromDates(
-            excludeRealtime(trip.queryParams),
+            excludeRealtime(trip.parseQueryParams()),
             getDatesToCheckItineraryExistence(trip, checkAllDays)
         );
     }
@@ -128,12 +104,10 @@ public class ItineraryUtils {
     /**
      * @return a copy of the specified query, with ignoreRealtimeUpdates set to true.
      */
-    public static String excludeRealtime(String queryParams) throws URISyntaxException {
-        Map<String, String> params = getQueryParams(queryParams);
-        params.put(IGNORE_REALTIME_UPDATES_PARAM, "true");
-
-        // Insert '?' so others can parse the resulting query string.
-        return toQueryString(params, true);
+    public static Map<String, String> excludeRealtime(Map<String, String> params) {
+        Map<String, String> result = new HashMap<>(params);
+        result.put(IGNORE_REALTIME_UPDATES_PARAM, "true");
+        return result;
     }
 
     /**
@@ -142,7 +116,7 @@ public class ItineraryUtils {
      * TODO/FIXME: need a trip resemblance check to supplement the ui_activeItinerary param used in this function.
      */
     public static void updateTripWithVerifiedItinerary(MonitoredTrip trip, List<Itinerary> verifiedItineraries) throws URISyntaxException {
-        Map<String, String> params = getQueryParams(trip.queryParams);
+        Map<String, String> params = trip.parseQueryParams();
         Itinerary itinerary = null;
         String itineraryIndexParam = params.get("ui_activeItinerary");
         if (itineraryIndexParam != null) {

@@ -42,14 +42,18 @@ public class ItineraryUtilsTest {
 
     @Test
     public void testGetQueriesFromDates() throws URISyntaxException {
-        // Abbreviated query for this test.
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.queryParams = BASE_QUERY;
+
         List<String> newDates = List.of("2020-12-30", "2020-12-31", "2021-01-01");
-        Map<String, String> labeledQueries = ItineraryUtils.getQueriesFromDates(BASE_QUERY, newDates);
+        Map<String, String> labeledQueries = ItineraryUtils.getQueriesFromDates(trip.parseQueryParams(), newDates);
         Assertions.assertEquals(newDates.size(), labeledQueries.size());
 
         for (String date : newDates) {
-            // Insert a '?' in order to parse.
-            Map<String, String> newParams = ItineraryUtils.getQueryParams("?" + labeledQueries.get(date));
+            MonitoredTrip newTrip = new MonitoredTrip();
+            newTrip.queryParams = labeledQueries.get(date);
+
+            Map<String, String> newParams = newTrip.parseQueryParams();
             Assertions.assertEquals(date, newParams.get(DATE_PARAM));
         }
     }
@@ -83,8 +87,9 @@ public class ItineraryUtilsTest {
         List<String> queries = List.of(BASE_QUERY, queryWithRealtimeParam);
 
         for (String query : queries) {
-            String queryExcludingRealtime = ItineraryUtils.excludeRealtime(query);
-            Map<String, String> params = ItineraryUtils.getQueryParams(queryExcludingRealtime);
+            MonitoredTrip trip = new MonitoredTrip();
+            trip.queryParams = query;
+            Map<String, String> params = ItineraryUtils.excludeRealtime(trip.parseQueryParams());
             Assertions.assertEquals("true", params.get(IGNORE_REALTIME_UPDATES_PARAM));
         }
     }
@@ -232,14 +237,16 @@ public class ItineraryUtilsTest {
 
         MonitoredTrip trip = new MonitoredTrip();
         trip.id = "Test trip";
+        trip.queryParams = BASE_QUERY;
+        trip.tripTime = QUERY_TIME;
 
         if (arriveBy) {
             trip.from = dummyPlace;
             trip.to = targetPlace;
 
-            Map<String, String> baseQueryParams = ItineraryUtils.getQueryParams(BASE_QUERY);
+            Map<String, String> baseQueryParams = trip.parseQueryParams();
             baseQueryParams.put("arriveBy", "true");
-            trip.queryParams = ItineraryUtils.toQueryString(baseQueryParams, true);
+            trip.queryParams = ItineraryUtils.toQueryString(baseQueryParams);
         } else { // departBy
             trip.from = targetPlace;
             trip.to = dummyPlace;
