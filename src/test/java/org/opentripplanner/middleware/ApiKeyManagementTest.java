@@ -62,9 +62,8 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     @AfterAll
     public static void tearDown() {
         setAuthDisabled(getDefaultAuthDisabled());
-        apiUser.delete(false);
-        // Delete admin user.
-        Persistence.adminUsers.removeById(adminUser.id);
+        if (apiUser != null) apiUser.delete(false);
+        if (adminUser != null) Persistence.adminUsers.removeById(adminUser.id);
     }
 
     /**
