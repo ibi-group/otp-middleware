@@ -11,6 +11,8 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.http.HttpResponse;
 
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
+
 /**
  * An OTP dispatcher response represents the status code and body return from a call to an OTP end point e.g. plan
  */
@@ -66,10 +68,16 @@ public class OtpDispatcherResponse implements Serializable {
 
     @Override
     public String toString() {
+        // Only include the plan response if requestUri.path ends with OTP_PLAN_ENDPOINT.
+        // Without this check, we are sending valid responses from non-plan OTP endpoints to Bugsnag as errors.
+        String planResponse = requestUri.getPath().endsWith(OTP_PLAN_ENDPOINT)
+                ? ", response=" + getResponse()
+                : "";
+
         return "OtpDispatcherResponse{" +
                 "statusCode=" + statusCode +
                 ", responseBody='" + responseBody + '\'' +
-                ", response=" + getResponse() +
+                planResponse +
                 '}';
     }
 

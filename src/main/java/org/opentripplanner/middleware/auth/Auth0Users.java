@@ -248,6 +248,7 @@ public class Auth0Users {
      * to the caller. In all other cases, null is returned.
      */
     public static String getAuth0Token(String username, String password) throws JsonProcessingException {
+        if (Auth0Connection.isAuthDisabled()) return null;
         String body = String.format(
             "grant_type=password&username=%s&password=%s&audience=%s&scope=&client_id=%s&client_secret=%s",
             username,
