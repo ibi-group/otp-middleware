@@ -6,6 +6,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -154,7 +155,7 @@ public class ApiUserFlowTest {
             HttpUtils.REQUEST_METHOD.GET
         );
         assertEquals(HttpStatus.OK_200, tripRequestResponse.statusCode());
-        List<TripRequest> tripRequests = JsonUtils.getPOJOFromJSONAsList(tripRequestResponse.body(), TripRequest.class);
+        ResponseList<TripRequest> tripRequests = JsonUtils.getPOJOFromJSON(tripRequestResponse.body(), ResponseList.class);
 
         // Delete otp user.
         HttpResponse<String> deleteUserResponse = mockAuthenticatedRequest(
@@ -173,7 +174,7 @@ public class ApiUserFlowTest {
         assertNull(deletedTrip);
 
         // Verify trip request no longer exists.
-        TripRequest tripRequest = Persistence.tripRequests.getById(tripRequests.get(0).id);
+        TripRequest tripRequest = Persistence.tripRequests.getById(tripRequests.data.get(0).id);
         assertNull(tripRequest);
 
         // Delete API user (this would happen through the OTP Admin portal).
