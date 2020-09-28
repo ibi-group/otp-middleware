@@ -57,12 +57,6 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
         try {
             monitoredTrip.initializeFromItineraryAndQueryParams();
-          ItineraryExistenceChecker.Result checkResult = checkItineraryExistence(monitoredTrip, req);
-
-          // Replace the provided trip's itinerary with a verified, non-real-time version of it.
-          if (checkResult != null) {
-              updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult.labeledResponses);
-          }
         } catch (Exception e) {
             logMessageAndHalt(
                 req,
@@ -70,6 +64,12 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 "Invalid input data received for monitored trip.",
                 e
             );
+        }
+        ItineraryExistenceChecker.Result checkResult = checkItineraryExistence(monitoredTrip, req);
+
+        // Replace the provided trip's itinerary with a verified, non-real-time version of it.
+        if (checkResult != null) {
+            updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult.labeledResponses);
         }
         return monitoredTrip;
     }
