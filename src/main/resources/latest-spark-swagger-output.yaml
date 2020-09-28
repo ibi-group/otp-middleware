@@ -74,14 +74,12 @@ paths:
         required: false
         type: "string"
         default: "10"
-        allowEmptyValue: true
       - name: "page"
         in: "query"
         description: "If specified, the page number to return."
         required: false
         type: "string"
         default: "0"
-        allowEmptyValue: true
       responses:
         "200":
           description: "successful operation"
@@ -253,14 +251,12 @@ paths:
         required: false
         type: "string"
         default: "10"
-        allowEmptyValue: true
       - name: "page"
         in: "query"
         description: "If specified, the page number to return."
         required: false
         type: "string"
         default: "0"
-        allowEmptyValue: true
       responses:
         "200":
           description: "successful operation"
@@ -360,14 +356,12 @@ paths:
         required: false
         type: "string"
         default: "10"
-        allowEmptyValue: true
       - name: "page"
         in: "query"
         description: "If specified, the page number to return."
         required: false
         type: "string"
         default: "0"
-        allowEmptyValue: true
       responses:
         "200":
           description: "successful operation"
@@ -473,14 +467,12 @@ paths:
         required: false
         type: "string"
         default: "10"
-        allowEmptyValue: true
       - name: "page"
         in: "query"
         description: "If specified, the page number to return."
         required: false
         type: "string"
         default: "0"
-        allowEmptyValue: true
       - name: "fromDate"
         in: "query"
         description: "If specified, the earliest date (format yyyy-MM-dd) for which\
@@ -578,14 +570,12 @@ paths:
         required: false
         type: "string"
         default: "10"
-        allowEmptyValue: true
       - name: "page"
         in: "query"
         description: "If specified, the page number to return."
         required: false
         type: "string"
         default: "0"
-        allowEmptyValue: true
       responses:
         "200":
           description: "successful operation"
