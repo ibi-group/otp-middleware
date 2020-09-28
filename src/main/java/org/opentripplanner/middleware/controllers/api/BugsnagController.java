@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
+import com.google.common.collect.Maps;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Sorts;
 import org.opentripplanner.middleware.bugsnag.EventSummary;
@@ -16,7 +17,6 @@ import spark.Request;
 import spark.Response;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -61,10 +61,9 @@ public class BugsnagController implements Endpoint {
     }
 
     /**
-     * Get all Bugsnag events from Mongo and replace the project id with the project name and return
+     * Get all Bugsnag events from Mongo and replace the project id with the project name and return.
      */
     private static ResponseList<EventSummary> getEventSummary(Request req, Response res) {
-        List<EventSummary> eventSummaries = new ArrayList<>();
         int limit = getQueryParamFromRequest(req, LIMIT_PARAM, true, 0, DEFAULT_LIMIT, 100);
         int page = getQueryParamFromRequest(req, PAGE_PARAM, true, 0, 0);
         // Get latest events from database.
@@ -73,18 +72,13 @@ public class BugsnagController implements Endpoint {
             page * limit,
             limit
         );
-        // Get projects from database to populate event summaries.
-        Map<String, BugsnagProject> projectsById = new HashMap<>();
-        for (BugsnagProject p : bugsnagProjects.getAll()) {
-            if (projectsById.put(p.projectId, p) != null) {
-                throw new IllegalStateException("Duplicate key");
-            }
-        }
+        // Get Bugsnag projects by id (avoid multiple queries to Mongo for the same project).
+        Map<String, BugsnagProject> projectsById = Maps.uniqueIndex(bugsnagProjects.getAll(), p -> p.projectId);
         // Construct event summaries from project map.
         // FIXME: Group by error/project type?
-        for (BugsnagEvent event : events) {
-            eventSummaries.add(new EventSummary(projectsById.get(event.projectId), event));
-        }
+        List<EventSummary> eventSummaries = events
+            .map(event -> new EventSummary(projectsById.get(event.projectId), event))
+            .into(new ArrayList<>());
         return new ResponseList<>(eventSummaries, page, limit, bugsnagEvents.getCount());
     }
 }
