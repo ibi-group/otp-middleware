@@ -6,10 +6,12 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.Sorts;
 import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,14 +138,9 @@ public class TypedPersistence<T extends Model> {
     }
 
     /**
-     * This is not memory efficient. TODO: Always use iterators / streams, always perform selection of subsets on the
-     * Mongo server side ("where clause").
+     * Get all as {@link FindIterable} (avoid getting all as {@link List} to avoid memory issues with large datasets).
      */
-    public List<T> getAll() {
-        return mongoCollection.find().into(new ArrayList<>());
-    }
-
-    public FindIterable<T> getAllAsFindIterable() {
+    public FindIterable<T> getAll() {
         return mongoCollection.find();
     }
 
@@ -151,8 +148,23 @@ public class TypedPersistence<T extends Model> {
      * Get objects satisfying the supplied Mongo filter, limited to the specified maximum. This ties our persistence
      * directly to Mongo for now but is expedient. We should really have a bit more abstraction here.
      */
-    public List<T> getFilteredWithLimit(Bson filter, int maximum) {
-        return mongoCollection.find(filter).limit(maximum).into(new ArrayList<>());
+    public List<T> getFilteredWithLimit(Bson filter, int limit) {
+        return mongoCollection.find(filter).limit(limit).into(new ArrayList<>());
+    }
+
+    public FindIterable<T> getFilteredIterableWithOffsetAndLimit(Bson filter, int offset, int limit) {
+        FindIterable<T> iterable;
+        if (filter == null) iterable = mongoCollection.find();
+        else iterable = mongoCollection.find(filter);
+        return iterable.skip(offset).limit(limit);
+    }
+
+    public ResponseList<T> getResponseList(int page, int limit) {
+        return new ResponseList<T>(mongoCollection, page, limit);
+    }
+
+    public ResponseList<T> getResponseList(Bson filter, int page, int limit) {
+        return new ResponseList<T>(mongoCollection, filter, page, limit);
     }
 
     /**
@@ -191,11 +203,18 @@ public class TypedPersistence<T extends Model> {
     }
 
     /**
+     * Return the number of items in the collection.
+     */
+    public long getCount() {
+        return mongoCollection.countDocuments();
+    }
+
+    /**
      * Get all objects satisfying the supplied Mongo filter. This ties our persistence directly to Mongo for now but is
      * expedient. We should really have a bit more abstraction here.
      */
-    public List<T> getFiltered(Bson filter) {
-        return mongoCollection.find(filter).into(new ArrayList<>());
+    public FindIterable<T> getFiltered(Bson filter) {
+        return mongoCollection.find(filter);
     }
 
     /**

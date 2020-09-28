@@ -50,7 +50,7 @@ public class MonitorAllTripsJob implements Runnable {
 
         try {
             // request all monitored trips from the mongo collection
-            for (MonitoredTrip monitoredTrip : Persistence.monitoredTrips.getAllAsFindIterable()) {
+            for (MonitoredTrip monitoredTrip : Persistence.monitoredTrips.getAll()) {
                 // attempt to add trip to tripAnalysisQueue until a spot opens up in the queue. If the timeout is
                 // exceeded, an InterruptedException is throw.
                 tripAnalysisQueue.offer(monitoredTrip, BLOCKING_QUEUE_INSERT_TIMEOUT_SECONDS, TimeUnit.SECONDS);

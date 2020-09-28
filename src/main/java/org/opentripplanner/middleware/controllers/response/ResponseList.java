@@ -1,5 +1,10 @@
 package org.opentripplanner.middleware.controllers.response;
 
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
+import org.bson.conversions.Bson;
+
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -10,20 +15,41 @@ public class ResponseList<T> {
     public final List<T> data;
     public final int page;
     public final int limit;
-    public final int total;
+    public final long total;
     public final Date timestamp;
 
     /**
-     * Constructor for generating a paginated response list.
-     * @param data - list of entities to limit
-     * @param page - from index to abbreviate data
-     * @param limit - number of entities to include in list
+     * Primary constructor for generating a paginated response list.
+     * @param collection - Mongo collection from which to construct the list
+     * @param filter - filter (query/sort) to apply to find operation (null is OK)
+     * @param page - page number to start from
+     * @param limit - number of results by which the response should be limited
      */
-    public ResponseList(List<T> data, int page, int limit){
+    public ResponseList(MongoCollection<T> collection, Bson filter, int page, int limit){
+        FindIterable<T> iterable = filter != null ? collection.find(filter) : collection.find();
+        this.data = iterable.skip(page * limit).limit(limit).into(new ArrayList<>());
         this.page = page;
         this.limit = limit;
-        this.total = data.size();
-        this.data = data.subList(page * limit, Math.min(this.total, (page + 1) * limit));
+        this.total = collection.countDocuments();
+        this.timestamp = new Date();
+    }
+
+    /**
+     * Shorthand constructor for generating an unfiltered response list.
+     */
+    public ResponseList(MongoCollection<T> collection, int page, int limit){
+        this(collection, null, page, limit);
+    }
+
+    /**
+     * Alternate constructor to generate paginated response when the data cannot be derived directly from a MongoDB
+     * collection (e.g., with {@link org.opentripplanner.middleware.bugsnag.EventSummary}).
+     */
+    public ResponseList(List<T> data, int page, int limit, long total){
+        this.data = data;
+        this.page = page;
+        this.limit = limit;
+        this.total = total;
         this.timestamp = new Date();
     }
 }

@@ -2,8 +2,8 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
-import com.mongodb.client.model.Filters;
-import org.bson.conversions.Bson;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.model.Sorts;
 import org.opentripplanner.middleware.bugsnag.EventSummary;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.BugsnagEvent;
@@ -16,13 +16,17 @@ import spark.Request;
 import spark.Response;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_LIMIT;
+import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT_PARAM;
+import static org.opentripplanner.middleware.controllers.api.ApiController.PAGE_PARAM;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
+import static org.opentripplanner.middleware.utils.HttpUtils.getQueryParamFromRequest;
 
 /**
  * Responsible for providing the current set of Bugsnag events to the calling service
@@ -61,20 +65,26 @@ public class BugsnagController implements Endpoint {
      */
     private static ResponseList<EventSummary> getEventSummary(Request req, Response res) {
         List<EventSummary> eventSummaries = new ArrayList<>();
-        List<BugsnagEvent> events = bugsnagEvents.getAll();
-        int limit = Integer.parseInt(req.queryParamOrDefault("limit", "10"));
-        int page = Integer.parseInt(req.queryParamOrDefault("page", "0"));
-
+        int limit = getQueryParamFromRequest(req, LIMIT_PARAM, true, 0, DEFAULT_LIMIT, 100);
+        int page = getQueryParamFromRequest(req, PAGE_PARAM, true, 0, 0);
+        // Get latest events from database.
+        FindIterable<BugsnagEvent> events = bugsnagEvents.getFilteredIterableWithOffsetAndLimit(
+            Sorts.descending("received"),
+            page * limit,
+            limit
+        );
+        // Get projects from database to populate event summaries.
+        Map<String, BugsnagProject> projectsById = new HashMap<>();
+        for (BugsnagProject p : bugsnagProjects.getAll()) {
+            if (projectsById.put(p.projectId, p) != null) {
+                throw new IllegalStateException("Duplicate key");
+            }
+        }
+        // Construct event summaries from project map.
         // FIXME: Group by error/project type?
         for (BugsnagEvent event : events) {
-            Bson filter = Filters.eq("projectId", event.projectId);
-            BugsnagProject project = bugsnagProjects.getOneFiltered(filter);
-            eventSummaries.add(new EventSummary(project, event));
+            eventSummaries.add(new EventSummary(projectsById.get(event.projectId), event));
         }
-        List<EventSummary> sorted = eventSummaries.stream()
-            .sorted(Comparator.comparing(eventSummary -> eventSummary.received))
-            .collect(Collectors.toList());
-        // For now return first 100 events. Otherwise, this list could grow to thousands of items and cause a request timeout.
-        return new ResponseList<>(sorted, page, limit);
+        return new ResponseList<>(eventSummaries, page, limit, bugsnagEvents.getCount());
     }
 }

@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
@@ -31,6 +32,7 @@ import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
+import static org.opentripplanner.middleware.utils.HttpUtils.getQueryParamFromRequest;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -53,6 +55,19 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
     final TypedPersistence<T> persistence;
     private final Class<T> clazz;
+    public static final String LIMIT_PARAM = "limit";
+    public static final int DEFAULT_LIMIT = 10;
+    public static final int DEFAULT_PAGE = 0;
+    public static final String PAGE_PARAM = "page";
+
+    public static final ParameterDescriptor LIMIT = ParameterDescriptor.newBuilder()
+        .withName(LIMIT_PARAM)
+        .withDefaultValue(String.valueOf(DEFAULT_LIMIT))
+        .withDescription("If specified, the maximum number of items to return.").build();
+    public static final ParameterDescriptor PAGE = ParameterDescriptor.newBuilder()
+        .withName(PAGE_PARAM)
+        .withDefaultValue(String.valueOf(DEFAULT_PAGE))
+        .withDescription("If specified, the page number to return.").build();
 
     /**
      * @param apiPrefix string prefix to use in determining the resource location
@@ -113,19 +128,19 @@ public abstract class ApiController<T extends Model> implements Endpoint {
 
         baseEndpoint
             // Get multiple entities.
-            .get(path(ROOT_ROUTE)
+            .get(
+                path(ROOT_ROUTE)
                     .withDescription("Gets a list of all '" + className + "' entities.")
+                    .withQueryParam(LIMIT)
+                    .withQueryParam(PAGE)
                     .withProduces(JSON_ONLY)
-                    // Set the return type as the array of clazz objects.
-                    // Note: there exists a method withResponseAsCollection, but unlike what its name suggests,
-                    // it does exactly the same as .withResponseType and does not generate a return type array.
-                    // See issue https://github.com/manusant/spark-swagger/issues/12.
                     .withResponseType(ResponseList.class),
                 this::getMany, JsonUtils::toJson
             )
 
             // Get one entity.
-            .get(path(ROOT_ROUTE + ID_PATH)
+            .get(
+                path(ROOT_ROUTE + ID_PATH)
                     .withDescription("Returns the '" + className + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to search.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
@@ -135,7 +150,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             )
 
             // Create entity request
-            .post(path("")
+            .post(
+                path("")
                     .withDescription("Creates a '" + className + "' entity.")
                     .withConsumes(JSON_ONLY)
                     .withRequestType(clazz)
@@ -145,7 +161,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             )
 
             // Update entity request
-            .put(path(ID_PATH)
+            .put(
+                path(ID_PATH)
                     .withDescription("Updates and returns the '" + className + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to update.").and()
                     .withConsumes(JSON_ONLY)
@@ -159,7 +176,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             )
 
             // Delete entity request
-            .delete(path(ID_PATH)
+            .delete(
+                path(ID_PATH)
                     .withDescription("Deletes the '" + className + "' entity with the specified id if it exists.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to delete.").and()
                     .withProduces(JSON_ONLY)
@@ -174,33 +192,23 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     // FIXME Maybe better if the user check (and filtering) was done in a pre hook?
     // FIXME Will require further granularity for admin
     private ResponseList<T> getMany(Request req, Response res) {
-        List<T> list;
-        int limit = Integer.parseInt(req.queryParamOrDefault("limit", "10"));
-        int page = Integer.parseInt(req.queryParamOrDefault("page", "0"));
+        int limit = getQueryParamFromRequest(req, LIMIT_PARAM, true, 0, DEFAULT_LIMIT, 100);
+        int page = getQueryParamFromRequest(req, PAGE_PARAM, true, 0, DEFAULT_PAGE);
         Auth0UserProfile requestingUser = getUserFromRequest(req);
         if (isUserAdmin(requestingUser)) {
             // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
             // management or review without restriction.
-            list = persistence.getAll();
+            return persistence.getResponseList(page, limit);
         } else if (persistence.clazz == OtpUser.class) {
             // If the required entity is of type 'OtpUser' the assumption is that a call is being made via the
             // OtpUserController. Therefore, the request should be limited to return just the entity matching the
             // requesting user.
-            list = getObjectsFiltered("_id", requestingUser.otpUser.id);
+            return persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), page, limit);
         } else {
             // For all other cases the assumption is that the request is being made by an Otp user and the requested
             // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
-            list = getObjectsFiltered("userId", requestingUser.otpUser.id);
+            return persistence.getResponseList(Filters.eq("userId", requestingUser.otpUser.id), page, limit);
         }
-        return new ResponseList<>(list, page, limit);
-    }
-
-    /**
-     * Get a list of objects filtered by the provided field name and value.
-     */
-    private List<T> getObjectsFiltered(String fieldName, String value) {
-        Bson filter = Filters.eq(fieldName, value);
-        return persistence.getFiltered(filter);
     }
 
     /**

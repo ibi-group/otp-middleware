@@ -2,13 +2,14 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
+import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.TripRequest;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
@@ -16,13 +17,20 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
-import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
+import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_LIMIT;
+import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_PAGE;
+import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT;
+import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT_PARAM;
+import static org.opentripplanner.middleware.controllers.api.ApiController.PAGE;
+import static org.opentripplanner.middleware.controllers.api.ApiController.PAGE_PARAM;
+import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserAndDateRange;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.YYYY_MM_DD;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
+import static org.opentripplanner.middleware.utils.HttpUtils.getQueryParamFromRequest;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -30,14 +38,8 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * To provide a response to the calling MOD UI in JSON based on the passed in parameters.
  */
 public class TripHistoryController implements Endpoint {
-
-    private static final Logger LOG = LoggerFactory.getLogger(TripHistoryController.class);
-
-    private static final String FROM_DATE_PARAM_NAME = "fromDate";
-    private static final String TO_DATE_PARAM_NAME = "toDate";
-    private static final String LIMIT_PARAM_NAME = "limit";
-    private static final int DEFAULT_LIMIT = 10;
-
+    private static final String FROM_DATE_PARAM = "fromDate";
+    private static final String TO_DATE_PARAM = "toDate";
     private final String ROOT_ROUTE;
 
     public TripHistoryController(String apiPrefix) {
@@ -60,28 +62,26 @@ public class TripHistoryController implements Endpoint {
                     .withName("userId")
                     .withRequired(true)
                     .withDescription("The OTP user for which to retrieve trip requests.").and()
-                .withQueryParam()
-                    .withName(LIMIT_PARAM_NAME)
-                    .withDefaultValue(String.valueOf(DEFAULT_LIMIT))
-                    .withDescription("If specified, the maximum number of trip requests to return, starting from the most recent.").and()
-                .withQueryParam()
-                    .withName(FROM_DATE_PARAM_NAME)
+               .withQueryParam(LIMIT)
+               .withQueryParam(PAGE)
+               .withQueryParam()
+                    .withName(FROM_DATE_PARAM)
                     .withPattern(YYYY_MM_DD)
                     .withDefaultValue("The current date")
                     .withDescription(String.format(
                         "If specified, the earliest date (format %s) for which trip requests are retrieved.", YYYY_MM_DD
                     )).and()
-                .withQueryParam()
-                    .withName(TO_DATE_PARAM_NAME)
+               .withQueryParam()
+               .withName(TO_DATE_PARAM)
                     .withPattern(YYYY_MM_DD)
                     .withDefaultValue("The current date")
                     .withDescription(String.format(
-                        "If specified, the latest date (format %s) for which usage logs are retrieved.", YYYY_MM_DD
+                        "If specified, the latest date (format %s) for which trip requests are retrieved.", YYYY_MM_DD
                     )).and()
-                .withProduces(JSON_ONLY)
-                // Note: unlike the name suggests, withResponseAsCollection does not generate an array
-                // as the return type for this method. (It does generate the type for that class nonetheless.)
-                .withResponseAsCollection(TripRequest.class),
+               .withProduces(JSON_ONLY)
+               // Note: unlike the name suggests, withResponseAsCollection does not generate an array
+               // as the return type for this method. (It does generate the type for that class nonetheless.)
+               .withResponseAsCollection(TripRequest.class),
            TripHistoryController::getTripRequests, JsonUtils::toJson);
     }
 
@@ -89,43 +89,29 @@ public class TripHistoryController implements Endpoint {
      * Return a user's trip request history based on provided parameters.
      * An authorized user (Auth0) and user id are required.
      */
-    private static List<TripRequest> getTripRequests(Request request, Response response) {
-        final String userId = HttpUtils.getRequiredQueryParamFromRequest(request, "userId", false);
+    private static ResponseList<TripRequest> getTripRequests(Request request, Response response) {
+        final String userId = getQueryParamFromRequest(request, "userId", false);
         // Check that the user is authorized (otherwise a halt is thrown).
         isAuthorized(userId, request);
-
-        int limit = DEFAULT_LIMIT;
-
-        String paramLimit = null;
-        try {
-            paramLimit = HttpUtils.getRequiredQueryParamFromRequest(request, LIMIT_PARAM_NAME, true);
-            if (paramLimit != null) {
-                limit = Integer.parseInt(paramLimit);
-                if (limit <= 0) {
-                    limit = DEFAULT_LIMIT;
-                }
-            }
-        } catch (NumberFormatException e) {
-            LOG.error("Unable to parse {} value of {}. Using default limit: {}", LIMIT_PARAM_NAME,
-                paramLimit, DEFAULT_LIMIT, e);
-        }
-
-        String paramFromDate = HttpUtils.getRequiredQueryParamFromRequest(request, FROM_DATE_PARAM_NAME, true);
-        Date fromDate = getDate(request, FROM_DATE_PARAM_NAME, paramFromDate, LocalTime.MIDNIGHT);
-
-        String paramToDate = HttpUtils.getRequiredQueryParamFromRequest(request, TO_DATE_PARAM_NAME, true);
-        Date toDate = getDate(request, TO_DATE_PARAM_NAME, paramToDate, LocalTime.MAX);
-
+        // Get params from request (or use defaults).
+        int limit = getQueryParamFromRequest(request, LIMIT_PARAM, true, 0, DEFAULT_LIMIT, 100);
+        int page = getQueryParamFromRequest(request, PAGE_PARAM, true, 0, DEFAULT_PAGE);
+        String paramFromDate = getQueryParamFromRequest(request, FROM_DATE_PARAM, true);
+        Date fromDate = getDate(request, FROM_DATE_PARAM, paramFromDate, LocalTime.MIDNIGHT);
+        String paramToDate = getQueryParamFromRequest(request, TO_DATE_PARAM, true);
+        Date toDate = getDate(request, TO_DATE_PARAM, paramToDate, LocalTime.MAX);
+        // Throw halt if the date params are bad.
         if (fromDate != null && toDate != null && toDate.before(fromDate)) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400,
-                String.format("%s (%s) before %s (%s)", TO_DATE_PARAM_NAME, paramToDate, FROM_DATE_PARAM_NAME,
+                String.format("%s (%s) before %s (%s)", TO_DATE_PARAM, paramToDate, FROM_DATE_PARAM,
                     paramFromDate));
         }
-        return TripRequest.requestsForUser(userId, fromDate, toDate, limit);
+        Bson filter = filterByUserAndDateRange(userId, fromDate, toDate);
+        return Persistence.tripRequests.getResponseList(filter, page, limit);
     }
 
     /**
-     * Get date from request parameter and convert to java.util.Date at a specific time of day. The date conversion
+     * Get date from request parameter and convert to {@link Date} at a specific time of day. The date conversion
      * is based on the system time zone.
      */
     private static Date getDate(Request request, String paramName, String paramValue, LocalTime timeOfDay) {

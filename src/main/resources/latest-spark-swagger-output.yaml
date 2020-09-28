@@ -67,7 +67,21 @@ paths:
       description: "Gets a list of all 'AdminUser' entities."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+        allowEmptyValue: true
+      - name: "page"
+        in: "query"
+        description: "If specified, the page number to return."
+        required: false
+        type: "string"
+        default: "0"
+        allowEmptyValue: true
       responses:
         "200":
           description: "successful operation"
@@ -232,7 +246,21 @@ paths:
       description: "Gets a list of all 'ApiUser' entities."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+        allowEmptyValue: true
+      - name: "page"
+        in: "query"
+        description: "If specified, the page number to return."
+        required: false
+        type: "string"
+        default: "0"
+        allowEmptyValue: true
       responses:
         "200":
           description: "successful operation"
@@ -325,7 +353,21 @@ paths:
       description: "Gets a list of all 'MonitoredTrip' entities."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+        allowEmptyValue: true
+      - name: "page"
+        in: "query"
+        description: "If specified, the page number to return."
+        required: false
+        type: "string"
+        default: "0"
+        allowEmptyValue: true
       responses:
         "200":
           description: "successful operation"
@@ -427,11 +469,18 @@ paths:
         type: "string"
       - name: "limit"
         in: "query"
-        description: "If specified, the maximum number of trip requests to return,\
-          \ starting from the most recent."
+        description: "If specified, the maximum number of items to return."
         required: false
         type: "string"
         default: "10"
+        allowEmptyValue: true
+      - name: "page"
+        in: "query"
+        description: "If specified, the page number to return."
+        required: false
+        type: "string"
+        default: "0"
+        allowEmptyValue: true
       - name: "fromDate"
         in: "query"
         description: "If specified, the earliest date (format yyyy-MM-dd) for which\
@@ -443,7 +492,7 @@ paths:
       - name: "toDate"
         in: "query"
         description: "If specified, the latest date (format yyyy-MM-dd) for which\
-          \ usage logs are retrieved."
+          \ trip requests are retrieved."
         required: false
         type: "string"
         default: "The current date"
@@ -522,7 +571,21 @@ paths:
       description: "Gets a list of all 'OtpUser' entities."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+        allowEmptyValue: true
+      - name: "page"
+        in: "query"
+        description: "If specified, the page number to return."
+        required: false
+        type: "string"
+        default: "0"
+        allowEmptyValue: true
       responses:
         "200":
           description: "successful operation"
@@ -699,7 +762,7 @@ definitions:
         format: "int32"
       total:
         type: "integer"
-        format: "int32"
+        format: "int64"
       timestamp:
         type: "string"
         format: "date"

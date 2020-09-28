@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.models;
 
+import com.mongodb.client.FindIterable;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
@@ -270,7 +271,7 @@ public class MonitoredTrip extends Model {
     /**
      * Get monitored trips for the specified {@link OtpUser} user Id.
      */
-    public static List<MonitoredTrip> tripsForUser(String userId) {
+    public static FindIterable<MonitoredTrip> tripsForUser(String userId) {
         return Persistence.monitoredTrips.getFiltered(TypedPersistence.filterByUserId(userId));
     }
 
