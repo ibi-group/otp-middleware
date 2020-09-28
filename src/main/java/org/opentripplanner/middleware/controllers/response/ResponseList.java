@@ -12,11 +12,16 @@ import java.util.List;
  * Generic class for wrapping a paginated list response for a 'get all' HTTP endpoint.
  */
 public class ResponseList<T> {
-    public final List<T> data;
-    public final int page;
-    public final int limit;
-    public final long total;
-    public final Date timestamp;
+    public List<T> data;
+    public int page;
+    public int limit;
+    public long total;
+    public Date timestamp;
+
+    /**
+     * No-arg constructor for de/serialization.
+     */
+    public ResponseList() { }
 
     /**
      * Primary constructor for generating a paginated response list.
