@@ -1,15 +1,11 @@
 package org.opentripplanner.middleware.models;
 
 import com.mongodb.client.FindIterable;
-import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserAndDateRange;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
 
 /**

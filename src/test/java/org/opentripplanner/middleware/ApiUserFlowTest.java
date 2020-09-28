@@ -2,6 +2,8 @@ package org.opentripplanner.middleware;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -155,7 +157,10 @@ public class ApiUserFlowTest {
             HttpUtils.REQUEST_METHOD.GET
         );
         assertEquals(HttpStatus.OK_200, tripRequestResponse.statusCode());
-        ResponseList<TripRequest> tripRequests = JsonUtils.getPOJOFromJSON(tripRequestResponse.body(), ResponseList.class);
+        // Special handling of deserialization for ResponseList to avoid class cast issues encountered with JsonUtils
+        // methods.
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseList<TripRequest> tripRequests = mapper.readValue(tripRequestResponse.body(), new TypeReference<>() {});
 
         // Delete otp user.
         HttpResponse<String> deleteUserResponse = mockAuthenticatedRequest(
