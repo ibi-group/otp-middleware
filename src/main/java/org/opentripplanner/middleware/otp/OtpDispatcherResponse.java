@@ -116,22 +116,13 @@ public class OtpDispatcherResponse implements Serializable {
                 plan != null &&
                 plan.itineraries != null) {
 
-                // Get the zone id for this plan.
-                // TODO: refactor this.
+                // Get the zone id for this plan. Don't search for itineraries in this plan if the zone cannot be determined.
                 Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(plan.from.lat, plan.from.lon);
-                if (fromZoneId.isEmpty()) {
-                    String message = String.format(
-                        "Could not find coordinate's (lat=%.6f, lon=%.6f) timezone for URI %s",
-                        plan.from.lat,
-                        plan.from.lon,
-                        requestUri
-                    );
-                    throw new RuntimeException(message);
-                }
-
-                for (Itinerary itinerary : plan.itineraries) {
-                    if (ItineraryUtils.isSameDay(itinerary, requestDate, requestTime, fromZoneId.get(), checkArrival)) {
-                        return itinerary;
+                if (fromZoneId.isPresent()) {
+                    for (Itinerary itinerary : plan.itineraries) {
+                        if (ItineraryUtils.isSameDay(itinerary, requestDate, requestTime, fromZoneId.get(), checkArrival)) {
+                            return itinerary;
+                        }
                     }
                 }
             }

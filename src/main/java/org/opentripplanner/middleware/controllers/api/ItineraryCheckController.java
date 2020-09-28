@@ -40,7 +40,7 @@ public class ItineraryCheckController implements Endpoint {
     }
 
     /**
-     * Register the API endpoint and GET resource to check itinerary existence
+     * Register the API endpoint and POST resource to check itinerary existence
      * when spark-swagger calls this function with the target API instance.
      */
     @Override
@@ -71,6 +71,7 @@ public class ItineraryCheckController implements Endpoint {
 
             // Convert the dates in the result to weekdays,
             // and fill the same-day itineraries in each day, if any.
+            // Note: At this time, the endpoint checks all days of the week at once before returning a response.
             for (Map.Entry<String, OtpResponse> r : checkResult.labeledResponses.entrySet()) {
                 String dateString = r.getKey();
                 LocalDate date = DateTimeUtils.getDateFromString(dateString, DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN);

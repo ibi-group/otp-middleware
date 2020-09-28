@@ -5,8 +5,9 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import java.util.List;
 
 /**
- * This class holds the OTP response for each day of the week,
- * so that clients can check on itinerary existence for
+ * This class holds a list of OTP itineraries for each day of the week,
+ * so that clients can check that itineraries exist
+ * or compare the returned itineraries with another one.
  */
 public class ItineraryExistenceResult {
     public List<Itinerary> monday;

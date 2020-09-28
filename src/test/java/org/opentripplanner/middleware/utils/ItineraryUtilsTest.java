@@ -32,6 +32,7 @@ public class ItineraryUtilsTest {
     public static final String QUERY_TIME = "11:23";
 
     // Timestamps (in EDT or GMT-4:00) to test whether an itinerary is same-day as QUERY_DATE.
+    // The timezone match the location time zone from makeTestTrip.
     public static final long _2020_08_12__03_00_00_EDT = 1597215600000L; // Aug 12, 2020 3:00:00 AM
     public static final long _2020_08_12__23_59_59_EDT = 1597291199000L; // Aug 12, 2020 11:59:59 PM
     public static final long _2020_08_13__02_59_59_EDT = 1597301999000L; // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
@@ -96,7 +97,10 @@ public class ItineraryUtilsTest {
 
     @Test
     public void testUpdateTripWithVerifiedItinerary() throws IOException, URISyntaxException {
-        String query = BASE_QUERY + "&ui_activeItinerary=1";
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.id = "testUpdateTripWithVerifiedItinerary";
+        trip.queryParams = BASE_QUERY + "&ui_activeItinerary=1";
+        trip.itinerary = null;
 
         String mockResponse = FileUtils.getFileContents(
             TEST_RESOURCE_PATH + "persistence/planResponse.json"
@@ -104,22 +108,16 @@ public class ItineraryUtilsTest {
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse, URI.create("http://www.example.com"));
         List<Itinerary> itineraries = otpDispatcherResponse.getResponse().plan.itineraries;
 
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.id = "testUpdateTripWithVerifiedItinerary";
-        trip.queryParams = query;
-        trip.itinerary = null;
-
         ItineraryUtils.updateTripWithVerifiedItinerary(trip, itineraries);
 
         Assertions.assertEquals(itineraries.get(1), trip.itinerary);
     }
 
     private void testIsSameDay(String time, boolean isArrival, boolean expected, Long... startTimes) throws URISyntaxException {
-        // Trip arrives in US Eastern timezone per the place set in makeTestTrip().
         MonitoredTrip trip = makeTestTrip(isArrival);
+        // The time zone for trip (and startTimes) is US ES Eastern per trip location.
         ZoneId zoneId = trip.timezoneForTargetLocation();
 
-        // startTimes are in US Eastern timezone.
         for (Long startTime : startTimes) {
             Itinerary itinerary = simpleItinerary(startTime, isArrival);
             Assertions.assertEquals(
@@ -138,7 +136,6 @@ public class ItineraryUtilsTest {
 
     @Test
     public void testItineraryDepartsSameDay() throws URISyntaxException {
-        // All times EDT (GMT-04:00)
         testIsSameDay(QUERY_TIME, false, true,
             _2020_08_13__03_00_00_EDT,
             _2020_08_13__23_59_59_EDT,
@@ -153,7 +150,6 @@ public class ItineraryUtilsTest {
 
     @Test
     public void testItineraryDoesNotDepartSameDay() throws URISyntaxException {
-        // All times EDT (GMT-04:00)
         testIsSameDay(QUERY_TIME, false, false,
             _2020_08_12__23_59_59_EDT,
             _2020_08_13__02_59_59_EDT,
@@ -168,7 +164,6 @@ public class ItineraryUtilsTest {
 
     @Test
     public void testItineraryArrivesSameDay() throws URISyntaxException {
-        // All times EDT (GMT-04:00)
         testIsSameDay(QUERY_TIME, true, true,
             _2020_08_13__03_00_00_EDT,
             _2020_08_13__23_59_59_EDT,
@@ -183,7 +178,6 @@ public class ItineraryUtilsTest {
 
     @Test
     public void testItineraryDoesNotArriveSameDay() throws URISyntaxException {
-        // All times EDT (GMT-04:00)
         testIsSameDay(QUERY_TIME, true, false,
             _2020_08_12__23_59_59_EDT,
             _2020_08_13__02_59_59_EDT,
@@ -201,13 +195,13 @@ public class ItineraryUtilsTest {
         MonitoredTrip trip = makeTestTrip(false);
         trip.tripTime = QUERY_TIME;
 
-        // Create itineraries, some being same-day, some not.
         List<Long> startTimes = List.of(
             _2020_08_13__23_59_59_EDT, // same day
             _2020_08_14__02_59_59_EDT, // considered same day
             _2020_08_14__03_00_00_EDT // not same day
         );
 
+        // Create itineraries, some being same-day, some not per the times above.
         List<Itinerary> itineraries = startTimes.stream()
             .map(t -> simpleItinerary(t, false))
             .collect(Collectors.toList());

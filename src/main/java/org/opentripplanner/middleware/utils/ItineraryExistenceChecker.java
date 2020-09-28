@@ -26,8 +26,8 @@ public class ItineraryExistenceChecker {
 
     /**
      * Checks that, for each query provided, an itinerary exists.
-     * @param labeledQueries a map containing the queries to check, each query having a key or label
-     *                      that will be used in Result.labeledResponses for easy identification.
+     * @param labeledQueries a map containing the queries to check, each query having a key or
+     *                       label that will be used in Result.labeledResponses for easy identification.
      * @return An object with a map of results and summary of itinerary existence.
      */
     public Result checkAll(Map<String, String> labeledQueries, boolean checkArrival) {

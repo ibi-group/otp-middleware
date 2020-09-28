@@ -30,7 +30,7 @@ public class ItineraryUtils {
     public static final String TIME_PARAM = "time";
 
     /**
-     * Converts a {@link Map} to a URL query string, without a leading '?'.
+     * Converts a {@link Map} to a URL query string (does not include a leading '?').
      */
     public static String toQueryString(Map<String, String> params) {
         List<BasicNameValuePair> nameValuePairs = params.entrySet().stream()
@@ -41,8 +41,7 @@ public class ItineraryUtils {
 
     /**
      * Creates a map of new query strings based on the one provided,
-     * with the date changed to the desired one and ignoring realtime updates.
-     *
+     * with the date changed to the desired one.
      * @param params a map of the base OTP query parameters.
      * @param dates a list of the desired dates in YYYY-MM-DD format.
      * @return a map of query strings with, and indexed by the specified dates.
@@ -61,10 +60,11 @@ public class ItineraryUtils {
     }
 
     /**
-     * Obtains dates for which we should check that itineraries exist for the specified trip.
+     * Obtains the monitored dates for the given trip, for which we should check that itineraries exist.
      * The dates include each day to be monitored in a 7-day window starting from the trip's query start date.
-     *
-     * @return a list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor.
+     * @param trip The trip from which to extract the monitored dates to check.
+     * @param checkAllDays true if all days of the week are included regardless of the trip's monitored days.
+     * @return A list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor.
      */
     public static List<String> getDatesToCheckItineraryExistence(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
         List<String> result = new ArrayList<>();
@@ -102,7 +102,7 @@ public class ItineraryUtils {
     }
 
     /**
-     * @return a copy of the specified query, with ignoreRealtimeUpdates set to true.
+     * @return a copy of the specified query parameter map, with ignoreRealtimeUpdates set to true.
      */
     public static Map<String, String> excludeRealtime(Map<String, String> params) {
         Map<String, String> result = new HashMap<>(params);
