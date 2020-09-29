@@ -62,7 +62,11 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     @AfterAll
     public static void tearDown() {
         setAuthDisabled(getDefaultAuthDisabled());
-        if (apiUser != null) apiUser.delete(false);
+        if (apiUser != null) {
+            // refresh API key(s)
+            apiUser = Persistence.apiUsers.getById(apiUser.id);
+            apiUser.delete(false);
+        }
         if (adminUser != null) Persistence.adminUsers.removeById(adminUser.id);
     }
 
