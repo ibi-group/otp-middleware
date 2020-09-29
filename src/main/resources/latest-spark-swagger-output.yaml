@@ -74,9 +74,9 @@ paths:
         required: false
         type: "string"
         default: "10"
-      - name: "page"
+      - name: "offset"
         in: "query"
-        description: "If specified, the page number to return."
+        description: "If specified, the number of records to skip/offset."
         required: false
         type: "string"
         default: "0"
@@ -251,9 +251,9 @@ paths:
         required: false
         type: "string"
         default: "10"
-      - name: "page"
+      - name: "offset"
         in: "query"
-        description: "If specified, the page number to return."
+        description: "If specified, the number of records to skip/offset."
         required: false
         type: "string"
         default: "0"
@@ -356,9 +356,9 @@ paths:
         required: false
         type: "string"
         default: "10"
-      - name: "page"
+      - name: "offset"
         in: "query"
-        description: "If specified, the page number to return."
+        description: "If specified, the number of records to skip/offset."
         required: false
         type: "string"
         default: "0"
@@ -467,9 +467,9 @@ paths:
         required: false
         type: "string"
         default: "10"
-      - name: "page"
+      - name: "offset"
         in: "query"
-        description: "If specified, the page number to return."
+        description: "If specified, the number of records to skip/offset."
         required: false
         type: "string"
         default: "0"
@@ -570,9 +570,9 @@ paths:
         required: false
         type: "string"
         default: "10"
-      - name: "page"
+      - name: "offset"
         in: "query"
-        description: "If specified, the page number to return."
+        description: "If specified, the number of records to skip/offset."
         required: false
         type: "string"
         default: "0"
@@ -744,7 +744,7 @@ definitions:
         type: "array"
         items:
           type: "string"
-      page:
+      offset:
         type: "integer"
         format: "int32"
       limit:
