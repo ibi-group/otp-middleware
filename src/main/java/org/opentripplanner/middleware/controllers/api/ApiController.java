@@ -190,21 +190,21 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     // FIXME Will require further granularity for admin
     private ResponseList<T> getMany(Request req, Response res) {
         int limit = getQueryParamFromRequest(req, LIMIT_PARAM, true, 0, DEFAULT_LIMIT, 100);
-        int page = getQueryParamFromRequest(req, OFFSET_PARAM, true, 0, DEFAULT_OFFSET);
+        int offset = getQueryParamFromRequest(req, OFFSET_PARAM, true, 0, DEFAULT_OFFSET);
         Auth0UserProfile requestingUser = getUserFromRequest(req);
         if (isUserAdmin(requestingUser)) {
             // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
             // management or review without restriction.
-            return persistence.getResponseList(page, limit);
+            return persistence.getResponseList(offset, limit);
         } else if (persistence.clazz == OtpUser.class) {
             // If the required entity is of type 'OtpUser' the assumption is that a call is being made via the
             // OtpUserController. Therefore, the request should be limited to return just the entity matching the
             // requesting user.
-            return persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), page, limit);
+            return persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), offset, limit);
         } else {
             // For all other cases the assumption is that the request is being made by an Otp user and the requested
             // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
-            return persistence.getResponseList(Filters.eq("userId", requestingUser.otpUser.id), page, limit);
+            return persistence.getResponseList(Filters.eq("userId", requestingUser.otpUser.id), offset, limit);
         }
     }
 

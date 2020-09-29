@@ -65,11 +65,11 @@ public class BugsnagController implements Endpoint {
      */
     private static ResponseList<EventSummary> getEventSummary(Request req, Response res) {
         int limit = getQueryParamFromRequest(req, LIMIT_PARAM, true, 0, DEFAULT_LIMIT, 100);
-        int page = getQueryParamFromRequest(req, OFFSET_PARAM, true, 0, 0);
+        int offset = getQueryParamFromRequest(req, OFFSET_PARAM, true, 0, 0);
         // Get latest events from database.
         FindIterable<BugsnagEvent> events = bugsnagEvents.getSortedIterableWithOffsetAndLimit(
             Sorts.descending("receivedAt"),
-            page * limit,
+            offset,
             limit
         );
         // Get Bugsnag projects by id (avoid multiple queries to Mongo for the same project).
@@ -79,6 +79,6 @@ public class BugsnagController implements Endpoint {
         List<EventSummary> eventSummaries = events
             .map(event -> new EventSummary(projectsById.get(event.projectId), event))
             .into(new ArrayList<>());
-        return new ResponseList<>(eventSummaries, page, limit, bugsnagEvents.getCount());
+        return new ResponseList<>(eventSummaries, offset, limit, bugsnagEvents.getCount());
     }
 }
