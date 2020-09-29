@@ -6,7 +6,6 @@ import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
-import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
@@ -23,9 +22,7 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
-import java.lang.reflect.Array;
 import java.util.Date;
-import java.util.List;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
@@ -41,8 +38,8 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * methods. This will identify the MongoDB collection on which to operate based on the provided {@link Model} class.
  *
  * TODO: Add hooks so that validation can be performed on certain methods (e.g., validating fields on create/update,
- * checking user permissions to perform certain actions, checking whether an entity can be deleted due to references
- * that exist in other collection).
+ *  checking user permissions to perform certain actions, checking whether an entity can be deleted due to references
+ *  that exist in other collection).
  *
  * @param <T> One of the {@link Model} classes (extracted from {@link TypedPersistence})
  */
@@ -57,17 +54,17 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private final Class<T> clazz;
     public static final String LIMIT_PARAM = "limit";
     public static final int DEFAULT_LIMIT = 10;
-    public static final int DEFAULT_PAGE = 0;
-    public static final String PAGE_PARAM = "page";
+    public static final int DEFAULT_OFFSET = 0;
+    public static final String OFFSET_PARAM = "offset";
 
     public static final ParameterDescriptor LIMIT = ParameterDescriptor.newBuilder()
         .withName(LIMIT_PARAM)
         .withDefaultValue(String.valueOf(DEFAULT_LIMIT))
         .withDescription("If specified, the maximum number of items to return.").build();
-    public static final ParameterDescriptor PAGE = ParameterDescriptor.newBuilder()
-        .withName(PAGE_PARAM)
-        .withDefaultValue(String.valueOf(DEFAULT_PAGE))
-        .withDescription("If specified, the page number to return.").build();
+    public static final ParameterDescriptor OFFSET = ParameterDescriptor.newBuilder()
+        .withName(OFFSET_PARAM)
+        .withDefaultValue(String.valueOf(DEFAULT_OFFSET))
+        .withDescription("If specified, the number of records to skip/offset.").build();
 
     /**
      * @param apiPrefix string prefix to use in determining the resource location
@@ -132,7 +129,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 path(ROOT_ROUTE)
                     .withDescription("Gets a list of all '" + className + "' entities.")
                     .withQueryParam(LIMIT)
-                    .withQueryParam(PAGE)
+                    .withQueryParam(OFFSET)
                     .withProduces(JSON_ONLY)
                     .withResponseType(ResponseList.class),
                 this::getMany, JsonUtils::toJson
@@ -193,7 +190,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     // FIXME Will require further granularity for admin
     private ResponseList<T> getMany(Request req, Response res) {
         int limit = getQueryParamFromRequest(req, LIMIT_PARAM, true, 0, DEFAULT_LIMIT, 100);
-        int page = getQueryParamFromRequest(req, PAGE_PARAM, true, 0, DEFAULT_PAGE);
+        int page = getQueryParamFromRequest(req, OFFSET_PARAM, true, 0, DEFAULT_OFFSET);
         Auth0UserProfile requestingUser = getUserFromRequest(req);
         if (isUserAdmin(requestingUser)) {
             // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for

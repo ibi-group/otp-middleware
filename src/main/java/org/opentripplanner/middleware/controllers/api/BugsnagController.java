@@ -24,7 +24,7 @@ import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_LIMIT;
 import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT_PARAM;
-import static org.opentripplanner.middleware.controllers.api.ApiController.PAGE_PARAM;
+import static org.opentripplanner.middleware.controllers.api.ApiController.OFFSET_PARAM;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.HttpUtils.getQueryParamFromRequest;
 
@@ -65,10 +65,10 @@ public class BugsnagController implements Endpoint {
      */
     private static ResponseList<EventSummary> getEventSummary(Request req, Response res) {
         int limit = getQueryParamFromRequest(req, LIMIT_PARAM, true, 0, DEFAULT_LIMIT, 100);
-        int page = getQueryParamFromRequest(req, PAGE_PARAM, true, 0, 0);
+        int page = getQueryParamFromRequest(req, OFFSET_PARAM, true, 0, 0);
         // Get latest events from database.
-        FindIterable<BugsnagEvent> events = bugsnagEvents.getFilteredIterableWithOffsetAndLimit(
-            Sorts.descending("received"),
+        FindIterable<BugsnagEvent> events = bugsnagEvents.getSortedIterableWithOffsetAndLimit(
+            Sorts.descending("receivedAt"),
             page * limit,
             limit
         );

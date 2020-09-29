@@ -152,19 +152,25 @@ public class TypedPersistence<T extends Model> {
         return mongoCollection.find(filter).limit(limit).into(new ArrayList<>());
     }
 
-    public FindIterable<T> getFilteredIterableWithOffsetAndLimit(Bson filter, int offset, int limit) {
-        FindIterable<T> iterable;
-        if (filter == null) iterable = mongoCollection.find();
-        else iterable = mongoCollection.find(filter);
-        return iterable.skip(offset).limit(limit);
+    /**
+     * Get an optionally sorted set of records from the collection.
+     * @param sort - optional sort to apply to query (null value is OK)
+     * @param offset - number of records to skip
+     * @param limit - max number of records to return
+     */
+    public FindIterable<T> getSortedIterableWithOffsetAndLimit(Bson sort, int offset, int limit) {
+        return mongoCollection.find()
+            .sort(sort)
+            .skip(offset)
+            .limit(limit);
     }
 
-    public ResponseList<T> getResponseList(int page, int limit) {
-        return new ResponseList<T>(mongoCollection, page, limit);
+    public ResponseList<T> getResponseList(int offset, int limit) {
+        return new ResponseList<T>(mongoCollection, offset, limit);
     }
 
-    public ResponseList<T> getResponseList(Bson filter, int page, int limit) {
-        return new ResponseList<T>(mongoCollection, filter, page, limit);
+    public ResponseList<T> getResponseList(Bson filter, int offset, int limit) {
+        return new ResponseList<T>(mongoCollection, filter, offset, limit);
     }
 
     /**

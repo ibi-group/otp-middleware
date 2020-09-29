@@ -22,11 +22,11 @@ import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
 import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_LIMIT;
-import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_PAGE;
+import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_OFFSET;
 import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT;
 import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT_PARAM;
-import static org.opentripplanner.middleware.controllers.api.ApiController.PAGE;
-import static org.opentripplanner.middleware.controllers.api.ApiController.PAGE_PARAM;
+import static org.opentripplanner.middleware.controllers.api.ApiController.OFFSET;
+import static org.opentripplanner.middleware.controllers.api.ApiController.OFFSET_PARAM;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserAndDateRange;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.YYYY_MM_DD;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
@@ -63,7 +63,7 @@ public class TripHistoryController implements Endpoint {
                     .withRequired(true)
                     .withDescription("The OTP user for which to retrieve trip requests.").and()
                .withQueryParam(LIMIT)
-               .withQueryParam(PAGE)
+               .withQueryParam(OFFSET)
                .withQueryParam()
                     .withName(FROM_DATE_PARAM)
                     .withPattern(YYYY_MM_DD)
@@ -95,7 +95,7 @@ public class TripHistoryController implements Endpoint {
         isAuthorized(userId, request);
         // Get params from request (or use defaults).
         int limit = getQueryParamFromRequest(request, LIMIT_PARAM, true, 0, DEFAULT_LIMIT, 100);
-        int page = getQueryParamFromRequest(request, PAGE_PARAM, true, 0, DEFAULT_PAGE);
+        int offset = getQueryParamFromRequest(request, OFFSET_PARAM, true, 0, DEFAULT_OFFSET);
         String paramFromDate = getQueryParamFromRequest(request, FROM_DATE_PARAM, true);
         Date fromDate = getDate(request, FROM_DATE_PARAM, paramFromDate, LocalTime.MIDNIGHT);
         String paramToDate = getQueryParamFromRequest(request, TO_DATE_PARAM, true);
@@ -107,7 +107,7 @@ public class TripHistoryController implements Endpoint {
                     paramFromDate));
         }
         Bson filter = filterByUserAndDateRange(userId, fromDate, toDate);
-        return Persistence.tripRequests.getResponseList(filter, page, limit);
+        return Persistence.tripRequests.getResponseList(filter, offset, limit);
     }
 
     /**

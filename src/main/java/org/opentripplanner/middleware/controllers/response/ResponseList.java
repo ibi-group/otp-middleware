@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class ResponseList<T> {
     public List<T> data;
-    public int page;
+    public int offset;
     public int limit;
     public long total;
     public Date timestamp;
@@ -27,13 +27,13 @@ public class ResponseList<T> {
      * Primary constructor for generating a paginated response list.
      * @param collection - Mongo collection from which to construct the list
      * @param filter - filter (query/sort) to apply to find operation (null is OK)
-     * @param page - page number to start from
+     * @param offset - number of results by which to offset
      * @param limit - number of results by which the response should be limited
      */
-    public ResponseList(MongoCollection<T> collection, Bson filter, int page, int limit){
+    public ResponseList(MongoCollection<T> collection, Bson filter, int offset, int limit){
         FindIterable<T> iterable = filter != null ? collection.find(filter) : collection.find();
-        this.data = iterable.skip(page * limit).limit(limit).into(new ArrayList<>());
-        this.page = page;
+        this.data = iterable.skip(offset).limit(limit).into(new ArrayList<>());
+        this.offset = offset;
         this.limit = limit;
         this.total = collection.countDocuments();
         this.timestamp = new Date();
@@ -42,17 +42,17 @@ public class ResponseList<T> {
     /**
      * Shorthand constructor for generating an unfiltered response list.
      */
-    public ResponseList(MongoCollection<T> collection, int page, int limit){
-        this(collection, null, page, limit);
+    public ResponseList(MongoCollection<T> collection, int offset, int limit){
+        this(collection, null, offset, limit);
     }
 
     /**
      * Alternate constructor to generate paginated response when the data cannot be derived directly from a MongoDB
      * collection (e.g., with {@link org.opentripplanner.middleware.bugsnag.EventSummary}).
      */
-    public ResponseList(List<T> data, int page, int limit, long total){
+    public ResponseList(List<T> data, int offset, int limit, long total){
         this.data = data;
-        this.page = page;
+        this.offset = offset;
         this.limit = limit;
         this.total = total;
         this.timestamp = new Date();
