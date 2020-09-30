@@ -34,43 +34,13 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
-        try {
-            monitoredTrip.initializeFromItineraryAndQueryParams();
-        } catch (Exception e) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.BAD_REQUEST_400,
-                "Invalid input data received for monitored trip.",
-                e
-            );
-        }
-        ItineraryExistenceChecker.Result checkResult = checkItineraryExistence(monitoredTrip, req);
-
-        // Replace the provided trip's itinerary with a verified, non-real-time version of it.
-        if (checkResult != null) {
-            updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult.labeledResponses);
-        }
+        initializeTripAndSetVerifiedItinerary(monitoredTrip, req);
         return monitoredTrip;
     }
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        try {
-            monitoredTrip.initializeFromItineraryAndQueryParams();
-        } catch (Exception e) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.BAD_REQUEST_400,
-                "Invalid input data received for monitored trip.",
-                e
-            );
-        }
-        ItineraryExistenceChecker.Result checkResult = checkItineraryExistence(monitoredTrip, req);
-
-        // Replace the provided trip's itinerary with a verified, non-real-time version of it.
-        if (checkResult != null) {
-            updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult.labeledResponses);
-        }
+        initializeTripAndSetVerifiedItinerary(monitoredTrip, req);
         return monitoredTrip;
     }
 
@@ -78,6 +48,31 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     boolean preDeleteHook(MonitoredTrip monitoredTrip, Request req) {
         // Authorization checks are done prior to this hook
         return true;
+    }
+
+    /**
+     * Helper code for the preCreateHook and preDeleteHook methods that
+     * - initializes a {@link MonitoredTrip} instance,
+     * - checks that that trip's itinerary exists for that trip's monitored days,
+     * - sets the trip with a non-realtime version of it.
+     */
+    private void initializeTripAndSetVerifiedItinerary(MonitoredTrip monitoredTrip, Request req) {
+        try {
+            monitoredTrip.initializeFromItineraryAndQueryParams();
+        } catch (Exception e) {
+            logMessageAndHalt(
+                req,
+                HttpStatus.BAD_REQUEST_400,
+                "Invalid input data received for monitored trip.",
+                e
+            );
+        }
+        ItineraryExistenceChecker.Result checkResult = checkItineraryExistence(monitoredTrip, req);
+
+        // Replace the provided trip's itinerary with a verified, non-realtime version of it.
+        if (checkResult != null) {
+            updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult.labeledResponses);
+        }
     }
 
     /**

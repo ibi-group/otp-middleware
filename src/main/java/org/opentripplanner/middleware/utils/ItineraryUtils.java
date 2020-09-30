@@ -49,14 +49,14 @@ public class ItineraryUtils {
     public static Map<String, String> getQueriesFromDates(Map<String, String> params, List<String> dates) {
         // Create a copy of the original params in which we change the date.
         Map<String, String> paramsCopy = new HashMap<>(params);
-        Map<String, String> result = new HashMap<>();
+        Map<String, String> queryParamsByDate = new HashMap<>();
 
         for (String date : dates) {
             paramsCopy.put(DATE_PARAM, date);
-            result.put(date, toQueryString(paramsCopy));
+            queryParamsByDate.put(date, toQueryString(paramsCopy));
         }
 
-        return result;
+        return queryParamsByDate;
     }
 
     /**
@@ -145,18 +145,18 @@ public class ItineraryUtils {
      * @return true if the itinerary's startTime or endTime is one the same day as the day of the specified date and time.
      */
     public static boolean isSameDay(Itinerary itinerary, String date, String time, ZoneId zoneId, boolean checkArrival) {
-        // TODO: Make SERVICEDAY_START_HOUR an optional config parameter.
-        final int SERVICEDAY_START_HOUR = 3;
+        // TODO: Make SERVICE_DAY_START_HOUR an optional config parameter.
+        final int SERVICE_DAY_START_HOUR = 3;
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN);
 
         ZonedDateTime startDate = ZonedDateTime.ofInstant(itinerary.getStartOrEndTime(checkArrival).toInstant(), zoneId);
 
-        // If the OTP request was made at a time before SERVICEDAY_START_HOUR
+        // If the OTP request was made at a time before SERVICE_DAY_START_HOUR
         // (for instance, a request with a departure or arrival at 12:30 am),
         // then consider the request to have been made the day before.
         // To compensate, advance startDate by one day.
         String hour = time.split(":")[0];
-        if (Integer.parseInt(hour) < SERVICEDAY_START_HOUR) {
+        if (Integer.parseInt(hour) < SERVICE_DAY_START_HOUR) {
             startDate = startDate.plusDays(1);
         }
 
@@ -164,11 +164,11 @@ public class ItineraryUtils {
 
         return (
             date.equals(startDate.format(dateFormatter)) &&
-                startDate.getHour() >= SERVICEDAY_START_HOUR
+                startDate.getHour() >= SERVICE_DAY_START_HOUR
         ) || (
             // Trips starting between 12am and 2:59am next day are considered same-day.
             date.equals(startDateDayBefore.format(dateFormatter)) &&
-                startDateDayBefore.getHour() < SERVICEDAY_START_HOUR
+                startDateDayBefore.getHour() < SERVICE_DAY_START_HOUR
         );
     }
 

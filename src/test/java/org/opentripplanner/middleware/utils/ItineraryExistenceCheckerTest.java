@@ -23,17 +23,18 @@ public class ItineraryExistenceCheckerTest {
      */
     private static HashMap<String, OtpDispatcherResponse> queryToResponse;
 
-    /** Mock (significantly abbreviated) OTP response when an itinerary is not found. */
-    private final static String MOCK_RESPONSE_WITH_ERROR = "{\"requestParameters\":{},\"error\":{\"id\":404,\"msg\":\"No trip found...\",\"message\":\"PATH_NOT_FOUND\",\"noPath\":true},\"debugOutput\":{}}";
-
     @BeforeAll
     public static void setUp() throws IOException {
         // Mock OTP responses for when itineraries exist for a query.
         String mockPlanResponse = FileUtils.getFileContents(
             TEST_RESOURCE_PATH + "persistence/planResponse.json"
         );
+        // Mock OTP responses for when when an error is returned (i.e. an itinerary is not found).
+        String mockPlanErrorResponse = FileUtils.getFileContents(
+            TEST_RESOURCE_PATH + "persistence/planErrorResponse.json"
+        );
         queryToResponse = new HashMap<>();
-        URI uri = URI.create("http://www,example.com");
+        URI uri = URI.create("http://www.example.com");
 
         // Queries for which an itinerary exists.
         queryToResponse.put("exist1", new OtpDispatcherResponse(mockPlanResponse, uri));
@@ -41,7 +42,7 @@ public class ItineraryExistenceCheckerTest {
         queryToResponse.put("exist3", new OtpDispatcherResponse(mockPlanResponse, uri));
 
         // Query for which an itinerary is not found.
-        queryToResponse.put("not found", new OtpDispatcherResponse(MOCK_RESPONSE_WITH_ERROR, uri));
+        queryToResponse.put("not found", new OtpDispatcherResponse(mockPlanErrorResponse, uri));
     }
 
     @Test

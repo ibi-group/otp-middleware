@@ -108,14 +108,10 @@ public class OtpDispatcherResponse implements Serializable {
         OtpResponse response = this.getResponse();
         TripPlan plan = response.plan;
         HashMap<String, String> reqParams = response.requestParameters;
-        if (reqParams != null) {
+        if (plan != null && plan.itineraries != null && reqParams != null) {
             String requestDate = reqParams.get(DATE_PARAM);
             String requestTime = reqParams.get(TIME_PARAM);
-            if (requestDate != null &&
-                requestTime != null &&
-                plan != null &&
-                plan.itineraries != null) {
-
+            if (requestDate != null && requestTime != null) {
                 // Get the zone id for this plan. Don't search for itineraries in this plan if the zone cannot be determined.
                 Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(plan.from.lat, plan.from.lon);
                 if (fromZoneId.isPresent()) {

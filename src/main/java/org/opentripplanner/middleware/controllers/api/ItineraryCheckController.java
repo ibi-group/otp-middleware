@@ -78,7 +78,7 @@ public class ItineraryCheckController implements Endpoint {
                 if (r.getValue().plan != null) {
                     // Only keep same-day itineraries.
                     List<Itinerary> sameDayItineraries = ItineraryUtils.getSameDayItineraries(r.getValue().plan.itineraries, trip, dateString);
-                    if (sameDayItineraries.size() != 0) {
+                    if (!sameDayItineraries.isEmpty()) {
                         switch (date.getDayOfWeek()) {
                             case MONDAY:
                                 result.monday = sameDayItineraries;
