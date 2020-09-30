@@ -120,7 +120,7 @@ public class HttpUtils {
                 value = Integer.parseInt(requestValue);
                 // If requested value is out of range, pin to min/max.
                 if (value < min) value = min;
-                else if (max != -1 && value > max) value = max;
+                else if (value > max) value = max;
             }
         } catch (NumberFormatException e) {
             LOG.warn("Unable to parse {} value of {}. Using default limit: {}", name, requestValue, defaultValue, e);
