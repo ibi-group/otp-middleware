@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.opentripplanner.middleware.utils.HttpUtils.getQueryParamFromRequest;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -113,7 +112,7 @@ public class OtpMiddlewareMain {
          * _encoded_ URL e.g. http://localhost:3000/#/register which allows for greater flexibility.
          */
         spark.get("/register", (request, response) -> {
-            String route = getQueryParamFromRequest(request, "route", false);
+            String route = HttpUtils.getQueryParamFromRequest(request, "route", false);
             if (route == null) {
                 logMessageAndHalt(request,
                     HttpStatus.BAD_REQUEST_400,

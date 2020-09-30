@@ -30,7 +30,6 @@ import static org.opentripplanner.middleware.controllers.api.ApiController.OFFSE
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserAndDateRange;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.YYYY_MM_DD;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
-import static org.opentripplanner.middleware.utils.HttpUtils.getQueryParamFromRequest;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -90,15 +89,15 @@ public class TripHistoryController implements Endpoint {
      * An authorized user (Auth0) and user id are required.
      */
     private static ResponseList<TripRequest> getTripRequests(Request request, Response response) {
-        final String userId = getQueryParamFromRequest(request, "userId", false);
+        final String userId = HttpUtils.getQueryParamFromRequest(request, "userId", false);
         // Check that the user is authorized (otherwise a halt is thrown).
         isAuthorized(userId, request);
         // Get params from request (or use defaults).
-        int limit = getQueryParamFromRequest(request, LIMIT_PARAM, true, 0, DEFAULT_LIMIT, 100);
-        int offset = getQueryParamFromRequest(request, OFFSET_PARAM, true, 0, DEFAULT_OFFSET);
-        String paramFromDate = getQueryParamFromRequest(request, FROM_DATE_PARAM, true);
+        int limit = HttpUtils.getQueryParamFromRequest(request, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);
+        int offset = HttpUtils.getQueryParamFromRequest(request, OFFSET_PARAM, 0, DEFAULT_OFFSET);
+        String paramFromDate = HttpUtils.getQueryParamFromRequest(request, FROM_DATE_PARAM, true);
         Date fromDate = getDate(request, FROM_DATE_PARAM, paramFromDate, LocalTime.MIDNIGHT);
-        String paramToDate = getQueryParamFromRequest(request, TO_DATE_PARAM, true);
+        String paramToDate = HttpUtils.getQueryParamFromRequest(request, TO_DATE_PARAM, true);
         Date toDate = getDate(request, TO_DATE_PARAM, paramToDate, LocalTime.MAX);
         // Throw halt if the date params are bad.
         if (fromDate != null && toDate != null && toDate.before(fromDate)) {

@@ -26,7 +26,6 @@ import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAU
 import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT_PARAM;
 import static org.opentripplanner.middleware.controllers.api.ApiController.OFFSET_PARAM;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
-import static org.opentripplanner.middleware.utils.HttpUtils.getQueryParamFromRequest;
 
 /**
  * Responsible for providing the current set of Bugsnag events to the calling service
@@ -64,8 +63,8 @@ public class BugsnagController implements Endpoint {
      * Get all Bugsnag events from Mongo and replace the project id with the project name and return.
      */
     private static ResponseList<EventSummary> getEventSummary(Request req, Response res) {
-        int limit = getQueryParamFromRequest(req, LIMIT_PARAM, true, 0, DEFAULT_LIMIT, 100);
-        int offset = getQueryParamFromRequest(req, OFFSET_PARAM, true, 0, 0);
+        int limit = HttpUtils.getQueryParamFromRequest(req, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);
+        int offset = HttpUtils.getQueryParamFromRequest(req, OFFSET_PARAM, 0, 0);
         // Get latest events from database.
         FindIterable<BugsnagEvent> events = bugsnagEvents.getSortedIterableWithOffsetAndLimit(
             Sorts.descending("receivedAt"),

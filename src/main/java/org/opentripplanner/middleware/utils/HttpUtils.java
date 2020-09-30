@@ -104,13 +104,18 @@ public class HttpUtils {
         return null;
     }
 
-    public static int getQueryParamFromRequest(Request req, String name, boolean optional, int min, int defaultValue, int max) {
+    /**
+     * Get optional query param value from request as int (defaults to defaultValue). If parsed value is outside of the
+     * range of accepted values, it will be pinned to the min or max value (depending on which end of the range it is
+     * located).
+     */
+    public static int getQueryParamFromRequest(Request req, String name, int min, int defaultValue, int max) {
         // Start with default value
         int value = defaultValue;
         String requestValue = null;
         try {
             // Attempt to get value from query param.
-            requestValue = HttpUtils.getQueryParamFromRequest(req, name, optional);
+            requestValue = HttpUtils.getQueryParamFromRequest(req, name, true);
             if (requestValue != null) {
                 value = Integer.parseInt(requestValue);
                 // If requested value is out of range, pin to min/max.
@@ -123,12 +128,15 @@ public class HttpUtils {
         return value;
     }
 
-    public static int getQueryParamFromRequest(Request req, String name, boolean optional, int min, int defaultValue) {
-        return getQueryParamFromRequest(req, name, optional, min, defaultValue, -1);
+    /**
+     * Get query param value from request as int with no maximum value. If not optional, halt with error message.
+     */
+    public static int getQueryParamFromRequest(Request req, String name, int min, int defaultValue) {
+        return getQueryParamFromRequest(req, name, min, defaultValue, Integer.MAX_VALUE);
     }
 
     /**
-     * Get entity attribute value from request. If nulls are not allowed, halt with error message.
+     * Get query param value from request as string. If not optional/nulls not allowed, halt with error message.
      */
     public static String getQueryParamFromRequest(Request req, String paramName, boolean optional) {
         String paramValue = req.queryParams(paramName);
