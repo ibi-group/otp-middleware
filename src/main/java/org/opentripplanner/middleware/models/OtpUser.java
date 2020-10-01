@@ -47,6 +47,10 @@ public class OtpUser extends AbstractUser {
 
     @Override
     public boolean delete() {
+        return delete(true);
+    }
+
+    public boolean delete(boolean deleteAuth0User) {
         // Delete trip request history (related trip summaries are deleted in TripRequest#delete)
         for (TripRequest request : TripRequest.requestsForUser(this.id)) {
             boolean success = request.delete();
@@ -63,12 +67,15 @@ public class OtpUser extends AbstractUser {
                 return false;
             }
         }
-        boolean auth0UserDeleted = super.delete();
-        if (auth0UserDeleted) {
-            return Persistence.otpUsers.removeById(this.id);
-        } else {
-            LOG.warn("Aborting user deletion for {}", this.email);
-            return false;
+
+        if (deleteAuth0User) {
+            boolean auth0UserDeleted = super.delete();
+            if (!auth0UserDeleted) {
+                LOG.warn("Aborting user deletion for {}", this.email);
+                return false;
+            }
         }
+
+        return Persistence.otpUsers.removeById(this.id);
     }
 }

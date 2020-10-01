@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.auth.Auth0Connection.getDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 
@@ -62,12 +61,10 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     @AfterAll
     public static void tearDown() {
         assumeTrue(isEndToEnd);
-        setAuthDisabled(getDefaultAuthDisabled());
-        // Delete admin user.
-        Persistence.adminUsers.removeById(adminUser.id);
-        // Refresh api keys for user.
+        // refresh API key(s)
         apiUser = Persistence.apiUsers.getById(apiUser.id);
-        apiUser.delete();
+        apiUser.delete(false);
+        Persistence.adminUsers.removeById(adminUser.id);
     }
 
     /**
@@ -166,7 +163,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     /**
      * Delete API key for target user based on authorization of requesting user
      */
-    private HttpResponse<String> deleteApiKeyRequest(String targetUserId, String apiKeyId, AbstractUser requestingUser) {
+    private static HttpResponse<String> deleteApiKeyRequest(String targetUserId, String apiKeyId, AbstractUser requestingUser) {
         String path = String.format("api/secure/application/%s/apikey/%s", targetUserId, apiKeyId);
         return mockAuthenticatedRequest(path, requestingUser, HttpUtils.REQUEST_METHOD.DELETE);
     }
