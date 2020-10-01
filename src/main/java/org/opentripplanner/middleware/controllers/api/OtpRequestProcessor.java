@@ -24,7 +24,8 @@ import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_XML;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_API_ROOT;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -34,16 +35,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public class OtpRequestProcessor implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
-
-    /**
-     * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
-     * return OTP version info.
-     */
-    private static final String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
-    /**
-     * Location of the plan endpoint for which all requests will be handled by {@link #handlePlanTripResponse}
-     */
-    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT");
 
     /**
      * Endpoint for the OTP Middleware's OTP proxy
@@ -90,7 +81,7 @@ public class OtpRequestProcessor implements Endpoint {
             return null;
         }
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
-        String otpRequestPath = request.uri().replace(OTP_PROXY_ENDPOINT, "");
+        String otpRequestPath = request.uri().replaceFirst(OTP_PROXY_ENDPOINT, "");
 
         // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
