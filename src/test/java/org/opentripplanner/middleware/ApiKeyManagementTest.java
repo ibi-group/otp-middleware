@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.auth.Auth0Connection.getDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 
@@ -61,13 +60,11 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @AfterAll
     public static void tearDown() {
-        setAuthDisabled(getDefaultAuthDisabled());
-        if (apiUser != null) {
-            // refresh API key(s)
-            apiUser = Persistence.apiUsers.getById(apiUser.id);
-            apiUser.delete(false);
-        }
-        if (adminUser != null) Persistence.adminUsers.removeById(adminUser.id);
+        assumeTrue(isEndToEnd);
+        // refresh API key(s)
+        apiUser = Persistence.apiUsers.getById(apiUser.id);
+        apiUser.delete(false);
+        Persistence.adminUsers.removeById(adminUser.id);
     }
 
     /**

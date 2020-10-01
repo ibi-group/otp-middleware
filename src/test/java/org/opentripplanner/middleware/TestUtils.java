@@ -2,11 +2,9 @@ package org.opentripplanner.middleware;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
-import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.utils.FileUtils;
@@ -171,11 +169,9 @@ public class TestUtils {
     public static OtpDispatcherResponse sendSamplePlanRequest() {
         // Submit a query to the OTP server.
         // From P&R to Downtown Orlando
-        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(
+        return OtpDispatcher.sendOtpPlanRequest(
             "28.45119,-81.36818",
             "28.54834,-81.37745"
         );
-        // Construct a monitored trip from it.
-        return otpDispatcherResponse;
     }
 }
