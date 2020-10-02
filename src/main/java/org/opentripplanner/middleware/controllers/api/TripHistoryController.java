@@ -56,7 +56,7 @@ public class TripHistoryController implements Endpoint {
            HttpUtils.NO_FILTER
        ).get(
            path(ROOT_ROUTE)
-                .withDescription("Gets a list of all trip requests for a user.")
+                .withDescription("Gets a paginated list of the most recent trip requests for a user.")
                 .withQueryParam()
                     .withName("userId")
                     .withRequired(true)

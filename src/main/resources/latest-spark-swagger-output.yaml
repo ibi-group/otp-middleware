@@ -740,6 +740,8 @@ definitions:
   ResponseList:
     type: "object"
     properties:
+      clazz:
+        type: "string"
       data:
         type: "array"
         items:

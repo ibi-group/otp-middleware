@@ -126,7 +126,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // Get multiple entities.
             .get(
                 path(ROOT_ROUTE)
-                    .withDescription("Gets a list of all '" + className + "' entities.")
+                    .withDescription("Gets a paginated list of all '" + className + "' entities.")
                     .withQueryParam(LIMIT)
                     .withQueryParam(OFFSET)
                     .withProduces(JSON_ONLY)

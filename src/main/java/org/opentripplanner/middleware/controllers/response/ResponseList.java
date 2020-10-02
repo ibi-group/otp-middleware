@@ -11,6 +11,11 @@ import java.util.List;
  * Generic class for wrapping a paginated list response for a 'get all' HTTP endpoint.
  */
 public class ResponseList<T> {
+    /**
+     * Simple class name representing the data type.
+     * TODO: remove in favor of better approach to swagger doc generation?
+     */
+    public String clazz;
     /** Data elements requested */
     public List<T> data;
     /** number of results by which to offset */
@@ -36,6 +41,7 @@ public class ResponseList<T> {
      */
     public ResponseList(MongoCollection<T> collection, Bson filter, int offset, int limit){
         this(
+            collection.getDocumentClass(),
             collection.find(filter).skip(offset).limit(limit).into(new ArrayList<>()),
             offset,
             limit,
@@ -48,6 +54,7 @@ public class ResponseList<T> {
      */
     public ResponseList(MongoCollection<T> collection, int offset, int limit){
         this(
+            collection.getDocumentClass(),
             collection.find().skip(offset).limit(limit).into(new ArrayList<>()),
             offset,
             limit,
@@ -59,7 +66,8 @@ public class ResponseList<T> {
      * Alternate constructor to generate paginated response when the data cannot be derived directly from a MongoDB
      * collection (e.g., with {@link org.opentripplanner.middleware.bugsnag.EventSummary}).
      */
-    public ResponseList(List<T> data, int offset, int limit, long total){
+    public ResponseList(Class clazz, List<T> data, int offset, int limit, long total){
+        this.clazz = clazz.getSimpleName();
         this.data = data;
         this.offset = offset;
         this.limit = limit;

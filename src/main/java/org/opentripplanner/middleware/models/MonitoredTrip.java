@@ -16,8 +16,6 @@ import java.time.ZonedDateTime;
 import static com.mongodb.client.model.Filters.eq;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 
-import java.util.List;
-
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
  * change.
