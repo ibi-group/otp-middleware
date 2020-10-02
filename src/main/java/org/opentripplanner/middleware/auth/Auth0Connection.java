@@ -279,7 +279,8 @@ public class Auth0Connection {
     }
 
     /**
-     * Confirm that the user's actions are on their items if not admin.
+     * Confirm that the user's actions are on their items if not admin. In the case of an Api user confirm that the
+     * user's actions, on Otp users, are Otp users they created initially.
      */
     public static void isAuthorized(String userId, Request request) {
         RequestingUser requestingUser = getUserFromRequest(request);
@@ -287,7 +288,7 @@ public class Auth0Connection {
         if (requestingUser.adminUser != null) {
             return;
         }
-        // If userId is defined, it must be set to a value associated with the a user.
+        // If userId is defined, it must be set to a value associated with a user.
         if (userId != null) {
             if (requestingUser.otpUser != null && requestingUser.otpUser.id.equals(userId)) {
                 // Otp user requesting their item.
@@ -298,7 +299,7 @@ public class Auth0Connection {
                 return;
             }
             if (requestingUser.apiUser != null) {
-                // Api user potentially requesting an item on behave of an Otp user they created.
+                // Api user potentially requesting an item on behalf of an Otp user they created.
                 OtpUser otpUser = Persistence.otpUsers.getById(userId);
                 if (otpUser != null && requestingUser.apiUser.id.equals(otpUser.applicationId)) {
                     return;

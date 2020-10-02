@@ -69,13 +69,12 @@ public class OtpUser extends AbstractUser {
             }
         }
 
-        if (deleteAuth0User) {
+        // Only attempt to delete Auth0 user if Otp user is not assigned to third party.
+        if (deleteAuth0User && applicationId.isEmpty()) {
             boolean auth0UserDeleted = super.delete();
             if (!auth0UserDeleted) {
                 LOG.warn("Aborting user deletion for {}", this.email);
-                // FIXME: This fails if an Api user is attempting to delete an Otp user they created. No Auth0 account
-                //  would have been created for this user.
-//                return false;
+                return false;
             }
         }
 
