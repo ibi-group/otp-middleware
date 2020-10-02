@@ -5,8 +5,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.slf4j.Logger;
@@ -94,23 +96,36 @@ public class TestUtils {
         // the request when received.
         if (isAuthDisabled()) {
             headers.put("Authorization", requestingUser.auth0UserId);
-        } else {
-            // Otherwise, get a valid oauth token for the user
-            String token = null;
-            try {
-                token = getAuth0Token(requestingUser.email, TEMP_AUTH0_USER_PASSWORD);
-            } catch (JsonProcessingException e) {
-                LOG.error("Cannot obtain Auth0 token for user {}", requestingUser.email, e);
-            }
-            headers.put("Authorization", "Bearer " + token);
+            headers.put("x-api-key", requestingUser.apiKey);
+            return headers;
         }
+
         // If requester is an API user, add API key value as x-api-key header to simulate request over API Gateway.
         if (requestingUser instanceof ApiUser) {
             ApiUser apiUser = (ApiUser) requestingUser;
             if (!apiUser.apiKeys.isEmpty()) {
                 headers.put("x-api-key", apiUser.apiKeys.get(0).value);
             }
+            return headers;
         }
+
+        // If requester is an Otp user which was created by an Api user, return empty header because an Otp user created
+        // by an Api user can not directly access the middleware.
+        if (requestingUser instanceof OtpUser) {
+            OtpUser otpUserFromDB = Persistence.otpUsers.getById(requestingUser.id);
+            if (otpUserFromDB != null && otpUserFromDB.applicationId != null) {
+                return headers;
+            }
+        }
+
+        // Otherwise, get a valid oauth token for the user
+        String token = null;
+        try {
+            token = getAuth0Token(requestingUser.email, TEMP_AUTH0_USER_PASSWORD);
+        } catch (JsonProcessingException e) {
+            LOG.error("Cannot obtain Auth0 token for user {}", requestingUser.email, e);
+        }
+        headers.put("Authorization", "Bearer " + token);
         return headers;
     }
 

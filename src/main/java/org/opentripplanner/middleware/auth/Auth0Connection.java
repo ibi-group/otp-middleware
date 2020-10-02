@@ -14,6 +14,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
@@ -33,6 +34,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * This handles verifying the Auth0 token passed in the auth header (e.g., Authorization: Bearer MY_TOKEN of Spark HTTP
  * requests.
  */
+// TODO: Come up with a name that covers Auth0 and apiKey auth... could just remove the '0'?!
 public class Auth0Connection {
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Connection.class);
     private static JWTVerifier verifier;
@@ -57,6 +59,20 @@ public class Auth0Connection {
             addUserToRequest(req, RequestingUser.createTestUser(req));
             return;
         }
+
+        // API user authenticated by API key
+        String apiKey = getApiKeyFromRequest(req);
+        if (apiKey != null) {
+            RequestingUser requestingUser = new RequestingUser(apiKey);
+            if (!isValidUser(requestingUser)) {
+                // Otherwise, if no valid user is found, halt the request.
+                logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "API key auth - Unknown user.");
+            }
+            addUserToRequest(req, requestingUser);
+            return;
+        }
+
+        // Admin and OTP users authenticated by Bearer token
         String token = getTokenFromRequest(req);
         // Handle getting the verifier outside of the below verification try/catch, which is intended to catch issues
         // with the client request. (getVerifier has its own exception/halt handling).
@@ -74,7 +90,7 @@ public class Auth0Connection {
                     LOG.info("New user is creating self. OK to proceed without existing user object for auth0UserId");
                 } else {
                     // Otherwise, if no valid user is found, halt the request.
-                    logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Unknown user.");
+                    logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Auth0 auth - Unknown user.");
                 }
             }
             // The user attribute is used on the server side to check user permissions and does not have all of the
@@ -124,6 +140,10 @@ public class Auth0Connection {
         return authHeader != null;
     }
 
+    public static boolean isApiKeyHeaderPresent(Request req) {
+        final String apiKey = req.headers("x-api-key");
+        return apiKey != null;
+    }
 
     /**
      * Assign user to request and check that the user is an admin.
@@ -161,6 +181,24 @@ public class Auth0Connection {
      */
     public static RequestingUser getUserFromRequest(Request req) {
         return req.attribute("user");
+    }
+
+
+    /**
+     * Extract API key from Spark HTTP request (in Authorization header).
+     */
+    private static String getApiKeyFromRequest(Request req) {
+        if (!isApiKeyHeaderPresent(req)) {
+            // x-api-key header not present, fallback onto Auth0 check.
+            return null;
+        }
+
+        final String apiKey = req.headers("x-api-key");
+        if (apiKey == null) {
+            logMessageAndHalt(req, 401, "Could not find api key");
+        }
+
+        return apiKey;
     }
 
     /**
@@ -244,18 +282,27 @@ public class Auth0Connection {
      * Confirm that the user's actions are on their items if not admin.
      */
     public static void isAuthorized(String userId, Request request) {
-        RequestingUser profile = getUserFromRequest(request);
+        RequestingUser requestingUser = getUserFromRequest(request);
         // let admin do anything
-        if (profile.adminUser != null) {
+        if (requestingUser.adminUser != null) {
             return;
         }
-        // If userId is defined, it must be set to a value associated with the user.
+        // If userId is defined, it must be set to a value associated with the a user.
         if (userId != null) {
-            if (profile.otpUser != null && profile.otpUser.id.equals(userId)) {
+            if (requestingUser.otpUser != null && requestingUser.otpUser.id.equals(userId)) {
+                // Otp user requesting their item.
                 return;
             }
-            if (profile.apiUser != null && profile.apiUser.id.equals(userId)) {
+            if (requestingUser.apiUser != null && requestingUser.apiUser.id.equals(userId)) {
+                // Api user requesting their item.
                 return;
+            }
+            if (requestingUser.apiUser != null) {
+                // Api user potentially requesting an item on behave of an Otp user they created.
+                OtpUser otpUser = Persistence.otpUsers.getById(userId);
+                if (otpUser != null && requestingUser.apiUser.id.equals(otpUser.applicationId)) {
+                    return;
+                }
             }
         }
         logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");

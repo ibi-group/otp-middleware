@@ -30,6 +30,13 @@ public abstract class AbstractUser extends Model {
      * value, so the stored user will contain the value from Auth0 (e.g., "auth0|abcd1234").
      */
     public String auth0UserId = UUID.randomUUID().toString();
+
+    /**
+     * Random api key for testing.
+     */
+    public String apiKey = UUID.randomUUID().toString();
+
+
     /** Whether a user is also a Data Tools user */
     public boolean isDataToolsUser;
     /**

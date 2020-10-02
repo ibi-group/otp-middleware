@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.models;
 
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
@@ -40,28 +41,13 @@ public class ApiUser extends AbstractUser {
     public String name;
 
     /**
-     * Delete API user details including Auth0 user.
+     * Delete API user's API keys (from AWS), self (from Mongo).
      */
     @Override
     public boolean delete() {
-        return delete(true);
-    }
-
-    /**
-     * Delete API user's API keys (from AWS), self (from Mongo). Optionally delete user from Auth0.
-     */
-    public boolean delete(boolean deleteAuth0User) {
         for (ApiKey apiKey : apiKeys) {
             if (!ApiGatewayUtils.deleteApiKey(apiKey)) {
                 LOG.error("Could not delete API key for user {}. Aborting delete user.", apiKey.keyId);
-                return false;
-            }
-        }
-
-        if (deleteAuth0User) {
-            boolean auth0UserDeleted = super.delete();
-            if (!auth0UserDeleted) {
-                LOG.warn("Aborting user deletion for {}", this.email);
                 return false;
             }
         }
@@ -87,4 +73,26 @@ public class ApiUser extends AbstractUser {
     public static ApiUser userForApiKey(String apiKeyId) {
         return Persistence.apiUsers.getOneFiltered(Filters.elemMatch("apiKeys", Filters.eq("keyId", apiKeyId)));
     }
+
+    /**
+     * @return the first {@link ApiUser} found with an {@link ApiKey#value} in {@link #apiKeys} that matches the
+     * provided api key value.
+     */
+    public static ApiUser userForApiKeyValue(String apiKeyValue) {
+        return Persistence.apiUsers.getOneFiltered(Filters.elemMatch("apiKeys", Filters.eq("value", apiKeyValue)));
+    }
+
+    /**
+     * Confirm that the requesting user has the required permissions
+     */
+    @Override
+    public boolean canBeManagedBy(RequestingUser requestingUser) {
+        if (requestingUser.apiUser != null && requestingUser.apiUser.id.equals(id)) {
+            // Otp user was created by this Api user.
+            return true;
+        }
+        // Fallback to Model#userCanManage.
+        return super.canBeManagedBy(requestingUser);
+    }
+
 }

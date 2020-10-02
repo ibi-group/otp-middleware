@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,10 +73,26 @@ public class OtpUser extends AbstractUser {
             boolean auth0UserDeleted = super.delete();
             if (!auth0UserDeleted) {
                 LOG.warn("Aborting user deletion for {}", this.email);
-                return false;
+                // FIXME: This fails if an Api user is attempting to delete an Otp user they created. No Auth0 account
+                //  would have been created for this user.
+//                return false;
             }
         }
 
         return Persistence.otpUsers.removeById(this.id);
     }
+
+    /**
+     * Confirm that the requesting user has the required permissions
+     */
+    @Override
+    public boolean canBeManagedBy(RequestingUser requestingUser) {
+        if (requestingUser.apiUser != null && requestingUser.apiUser.id.equals(applicationId)) {
+            // Otp user was created by this Api user.
+            return true;
+        }
+        // Fallback to Model#userCanManage.
+        return super.canBeManagedBy(requestingUser);
+    }
+
 }

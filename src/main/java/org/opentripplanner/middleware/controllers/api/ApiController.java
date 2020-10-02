@@ -30,6 +30,7 @@ import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
+import static org.opentripplanner.middleware.utils.HttpUtils.getRequiredQueryParamFromRequest;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -184,11 +185,14 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // OtpUserController. Therefore, the request should be limited to return just the entity matching the
             // requesting user.
             return getObjectsFiltered("_id", requestingUser.otpUser.id);
+        } else if (requestingUser.apiUser != null) {
+            // Third party API users must pass in an OtpUser id as a query param in order to get filtered objects.
+            // Query param is used so existing (and new) endpoints aren't affected.
+            String otpUserId = getRequiredQueryParamFromRequest(req, "otpUserId", false);
+            return getObjectsFiltered("userId", otpUserId);
         } else {
             // For all other cases the assumption is that the request is being made by an Otp user and the requested
             // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
-            // FIXME: This needs to change so that third party API users must pass in an OtpUser id in order to get
-            //  filtered objects. This could be either a param (in path) or query param.
             return getObjectsFiltered("userId", requestingUser.otpUser.id);
         }
     }

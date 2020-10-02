@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.AbstractUser;
+import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -105,7 +106,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // TODO: If MOD UI is to be an ApiUser, we may want to do an additional check here to determine if this is a
         //  first-party API user (MOD UI) or third party.
-        if (requestingUser.apiUser != null && user instanceof OtpUser) {
+        if (requestingUser.apiUser != null && user instanceof OtpUser || user instanceof ApiUser) {
             // Do not create Auth0 account for OtpUsers created on behalf of third party API users.
             return user;
         } else {

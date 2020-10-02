@@ -179,9 +179,9 @@ public class MonitoredTrip extends Model {
     }
 
     @Override
-    public boolean canBeCreatedBy(RequestingUser profile) {
-        OtpUser otpUser = profile.otpUser;
+    public boolean canBeCreatedBy(RequestingUser requestingUser) {
         if (userId == null) {
+            OtpUser otpUser = requestingUser.otpUser;
             if (otpUser == null) {
                 // The otpUser must exist (and be the requester) if the userId is null. Otherwise, there is nobody to
                 // assign the trip to.
@@ -191,35 +191,42 @@ public class MonitoredTrip extends Model {
             userId = otpUser.id;
         } else {
             // If userId was provided, follow authorization provided by canBeManagedBy
-            return canBeManagedBy(profile);
+            return canBeManagedBy(requestingUser);
         }
-        return super.canBeCreatedBy(profile);
+        return super.canBeCreatedBy(requestingUser);
     }
 
     /**
      * Confirm that the requesting user has the required permissions
      */
     @Override
-    public boolean canBeManagedBy(RequestingUser user) {
+    public boolean canBeManagedBy(RequestingUser requestingUser) {
         // This should not be possible, but return false on a null userId just in case.
         if (userId == null) return false;
-        // If the user is attempting to update someone else's monitored trip, they must be admin.
+        // If the user is attempting to update someone else's monitored trip, they must be admin or an API user if the
+        // OTP user is assigned to that API.
         boolean belongsToUser = false;
         // Monitored trip can only be owned by an OtpUser (not an ApiUser or AdminUser).
-        if (user.otpUser != null) {
-            belongsToUser = userId.equals(user.otpUser.id);
+        if (requestingUser.otpUser != null) {
+            belongsToUser = userId.equals(requestingUser.otpUser.id);
         }
 
         if (belongsToUser) {
             return true;
-        } else if (user.adminUser != null) {
+        } else if (requestingUser.apiUser != null) {
+            // get the required OTP user to confirm they are associated with the requesting API user.
+            OtpUser otpUser = Persistence.otpUsers.getById(userId);
+            if (otpUser != null && requestingUser.apiUser.id.equals(otpUser.applicationId)) {
+                return true;
+            }
+        } else if (requestingUser.adminUser != null) {
             // If not managing self, user must have manage permission.
-            for (Permission permission : user.adminUser.permissions) {
+            for (Permission permission : requestingUser.adminUser.permissions) {
                 if (permission.canManage(this.getClass())) return true;
             }
         }
         // Fallback to Model#userCanManage.
-        return super.canBeManagedBy(user);
+        return super.canBeManagedBy(requestingUser);
     }
 
     private Bson tripIdFilter() {

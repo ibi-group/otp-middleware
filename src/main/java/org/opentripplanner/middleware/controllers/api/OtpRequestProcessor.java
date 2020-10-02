@@ -5,6 +5,7 @@ import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
@@ -23,6 +24,7 @@ import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_XML;
+import static org.opentripplanner.middleware.auth.Auth0Connection.isApiKeyHeaderPresent;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_API_ROOT;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
@@ -105,9 +107,10 @@ public class OtpRequestProcessor implements Endpoint {
      */
     private static void handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse) {
 
-        // If the Auth header is present, this indicates that the request was made by a logged in user. This indicates
-        // that we should store trip history (but we verify this preference before doing so).
-        if (!isAuthHeaderPresent(request)) {
+        // If the Auth header is present, this indicates that the request was made by a logged in user. If the Api key
+        // header is present, this indicates that the request was made by an Api user. If either are present we should
+        // store trip history (but we verify this preference before doing so).
+        if (!isAuthHeaderPresent(request) && !isApiKeyHeaderPresent(request)) {
             LOG.debug("Anonymous user, trip history not stored");
             return;
         }
@@ -122,9 +125,30 @@ public class OtpRequestProcessor implements Endpoint {
         long tripStorageStartTime = DateTimeUtils.currentTimeMillis();
 
         Auth0Connection.checkUser(request);
-        RequestingUser profile = Auth0Connection.getUserFromRequest(request);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(request);
+        if (requestingUser == null) {
+            return;
+        }
 
-        final boolean storeTripHistory = profile != null && profile.otpUser != null && profile.otpUser.storeTripHistory;
+        OtpUser otpUser;
+        if (requestingUser.apiUser != null) {
+            // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
+            // as a query parameter.
+            String otpUserId = request.queryParams("userId");
+            otpUser = Persistence.otpUsers.getById(otpUserId);
+            if (otpUser != null && !otpUser.canBeManagedBy(requestingUser)) {
+                logMessageAndHalt(request,
+                    HttpStatus.FORBIDDEN_403,
+                    String.format("Api user: %s not authorized to make trip requests for Otp user: %s",
+                        requestingUser.apiUser.email,
+                        otpUser.email));
+            }
+        } else {
+            // Otp user making a trip request for self.
+            otpUser = requestingUser.otpUser;
+        }
+
+        final boolean storeTripHistory = otpUser != null && otpUser.storeTripHistory;
         // only save trip details if the user has given consent and a response from OTP is provided
         if (!storeTripHistory) {
             LOG.debug("User does not want trip history stored");
@@ -133,7 +157,7 @@ public class OtpRequestProcessor implements Endpoint {
             if (otpResponse == null) {
                 LOG.warn("OTP response is null, cannot save trip history for user!");
             } else {
-                TripRequest tripRequest = new TripRequest(profile.otpUser.id, batchId, request.queryParams("fromPlace"),
+                TripRequest tripRequest = new TripRequest(otpUser.id, batchId, request.queryParams("fromPlace"),
                     request.queryParams("toPlace"), request.queryString());
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
