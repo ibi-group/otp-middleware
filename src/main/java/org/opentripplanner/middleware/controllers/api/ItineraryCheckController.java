@@ -6,7 +6,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.ItineraryExistenceResult;
 import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -66,7 +65,7 @@ public class ItineraryCheckController implements Endpoint {
             MonitoredTrip trip = getPOJOFromRequestBody(request, MonitoredTrip.class);
             trip.initializeFromItineraryAndQueryParams();
 
-            ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker(OtpDispatcher::sendOtpPlanRequest);
+            ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker();
             ItineraryExistenceChecker.Result checkResult = itineraryChecker
                 .checkAll(ItineraryUtils.getItineraryExistenceQueries(trip, true), trip.isArriveBy());
 

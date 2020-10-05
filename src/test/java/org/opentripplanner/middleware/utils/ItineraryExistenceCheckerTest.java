@@ -1,53 +1,59 @@
 package org.opentripplanner.middleware.utils;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
+import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
 
 /**
  * Tests for checking the existence of trips from query strings.
  */
-public class ItineraryExistenceCheckerTest {
-    /**
-     * Map query strings to mock OTP responses.
-     * We use {@link HashMap#get} function to mock {@link OtpDispatcher#sendOtpPlanRequest}
-     * (both have the same signature).
-     */
-    private static HashMap<String, OtpDispatcherResponse> queryToResponse;
+public class ItineraryExistenceCheckerTest extends OtpMiddlewareTest {
+    private static OtpDispatcherResponse otpDispatcherPlanResponse;
+    private static OtpDispatcherResponse otpDispatcherPlanErrorResponse;
 
     @BeforeAll
-    public static void setUp() throws IOException {
-        // Mock OTP responses for when itineraries exist for a query.
+    public static void setup() throws IOException {
+        TestUtils.mockOtpServer();
+
+         // Contains an OTP response with an itinerary found.
+         // (We are reusing an existing response. The exact contents of the response does not matter
+         // for the purposes of this class.)
         String mockPlanResponse = FileUtils.getFileContents(
             TEST_RESOURCE_PATH + "persistence/planResponse.json"
         );
-        // Mock OTP responses for when when an error is returned (i.e. an itinerary is not found).
-        String mockPlanErrorResponse = FileUtils.getFileContents(
+        // Contains an OTP response with no itinerary found.
+        String mockErrorResponse = FileUtils.getFileContents(
             TEST_RESOURCE_PATH + "persistence/planErrorResponse.json"
         );
-        queryToResponse = new HashMap<>();
-        URI uri = URI.create("http://www.example.com");
 
-        // Queries for which an itinerary exists.
-        queryToResponse.put("exist1", new OtpDispatcherResponse(mockPlanResponse, uri));
-        queryToResponse.put("exist2", new OtpDispatcherResponse(mockPlanResponse, uri));
-        queryToResponse.put("exist3", new OtpDispatcherResponse(mockPlanResponse, uri));
+        otpDispatcherPlanResponse = new OtpDispatcherResponse(mockPlanResponse, DEFAULT_PLAN_URI);
+        otpDispatcherPlanErrorResponse = new OtpDispatcherResponse(mockErrorResponse, DEFAULT_PLAN_URI);
+    }
 
-        // Query for which an itinerary is not found.
-        queryToResponse.put("not found", new OtpDispatcherResponse(mockPlanErrorResponse, uri));
+    @AfterEach
+    public void tearDownAfterTest() {
+        TestUtils.resetOtpMocks();
     }
 
     @Test
     public void testAllTripsExist() {
-        ItineraryExistenceChecker tripChecker = new ItineraryExistenceChecker(queryToResponse::get);
+        // Set mocks to a list of responses with itineraries.
+        OtpResponse resp = otpDispatcherPlanResponse.getResponse();
+        TestUtils.setupOtpMocks(List.of(resp, resp, resp));
+
+        ItineraryExistenceChecker tripChecker = new ItineraryExistenceChecker();
         HashMap<String, String> labeledQueries = new HashMap<>();
         labeledQueries.put("label1", "exist1");
         labeledQueries.put("label2", "exist2");
@@ -63,7 +69,11 @@ public class ItineraryExistenceCheckerTest {
 
     @Test
     public void testAtLeastOneTripDoesNotExist() {
-        ItineraryExistenceChecker tripChecker = new ItineraryExistenceChecker(queryToResponse::get);
+        // Set mocks to a list of responses, one without an itinerary.
+        OtpResponse resp = otpDispatcherPlanResponse.getResponse();
+        TestUtils.setupOtpMocks(List.of(resp, otpDispatcherPlanErrorResponse.getResponse(), resp));
+
+        ItineraryExistenceChecker tripChecker = new ItineraryExistenceChecker();
         HashMap<String, String> labeledQueries = new HashMap<>();
         labeledQueries.put("label1", "exist1");
         labeledQueries.put("label2", "not found");
@@ -71,10 +81,5 @@ public class ItineraryExistenceCheckerTest {
 
         ItineraryExistenceChecker.Result result = tripChecker.checkAll(labeledQueries, false);
         Assertions.assertFalse(result.allItinerariesExist);
-    }
-
-    @Test
-    public void testThrowIfNullArgument() {
-        Assertions.assertThrows(NullPointerException.class, () ->  new ItineraryExistenceChecker(null));
     }
 }

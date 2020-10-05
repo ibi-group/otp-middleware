@@ -4,7 +4,6 @@ import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -79,7 +78,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      * Checks that non-realtime itineraries exist for the days the specified monitored trip is active.
      */
     private static ItineraryExistenceChecker.Result checkItineraryExistence(MonitoredTrip trip, Request request) {
-        ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker(OtpDispatcher::sendOtpPlanRequest);
+        ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker();
         try {
             ItineraryExistenceChecker.Result checkResult = itineraryChecker.checkAll(ItineraryUtils.getItineraryExistenceQueries(trip, false), trip.isArriveBy());
             if (!checkResult.allItinerariesExist) {

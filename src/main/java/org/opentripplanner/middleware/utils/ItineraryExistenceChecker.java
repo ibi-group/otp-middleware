@@ -7,23 +7,11 @@ import org.opentripplanner.middleware.otp.response.OtpResponse;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * This utility class checks for existence of itineraries for given OTP queries.
  */
 public class ItineraryExistenceChecker {
-    private final Function<String, OtpDispatcherResponse> otpDispatcherFunction;
-
-    /**
-     * @param otpDispatcherFunction a function that takes String as input and returns {@link OtpDispatcherResponse},
-     *                              example: {@link OtpDispatcher#sendOtpPlanRequest}.
-     */
-    public ItineraryExistenceChecker(Function<String, OtpDispatcherResponse> otpDispatcherFunction) {
-        if (otpDispatcherFunction == null) throw new NullPointerException();
-        this.otpDispatcherFunction = otpDispatcherFunction;
-    }
-
     /**
      * Checks that, for each query provided, an itinerary exists.
      * @param labeledQueries a map containing the queries to check, each query having a key or
@@ -36,7 +24,7 @@ public class ItineraryExistenceChecker {
         boolean allItinerariesExist = true;
 
         for (Map.Entry<String, String> entry : labeledQueries.entrySet()) {
-            OtpDispatcherResponse response = otpDispatcherFunction.apply(entry.getValue());
+            OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(entry.getValue());
             responses.put(entry.getKey(), response.getResponse());
 
             Itinerary sameDayItinerary = response.findItineraryDepartingSameDay(tripIsArriveBy);
