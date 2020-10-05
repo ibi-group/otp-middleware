@@ -3,10 +3,10 @@ package org.opentripplanner.middleware;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.FileUtils;
@@ -26,10 +26,10 @@ import java.util.List;
 import java.util.UUID;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
-import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 import static spark.Service.ignite;
 
 
@@ -62,11 +62,27 @@ public class TestUtils {
     private static List<OtpResponse> mockResponses = Collections.EMPTY_LIST;
     private static int mockResponseIndex = -1;
 
-    public static <T> T getResourceFileContentsAsJSON (String resourcePathName, Class<T> clazz) throws IOException {
+    /**
+     * Returns true only if an environment variable exists and is set to "true".
+     */
+    public static boolean getBooleanEnvVar(String var) {
+        String variable = System.getenv(var);
+        return variable != null && variable.equals("true");
+    }
+
+    public static <T> T getResourceFileContentsAsJSON(String resourcePathName, Class<T> clazz) throws IOException {
         return FileUtils.getFileContentsAsJSON(
             TEST_RESOURCE_PATH + resourcePathName,
             clazz
         );
+    }
+
+    /**
+     * Helper method to determine if end to end is enabled and auth is disabled. (Used for checking if tests should
+     * run.)
+     */
+    public static boolean isEndToEndAndAuthIsDisabled() {
+        return getBooleanEnvVar("RUN_E2E") && isAuthDisabled();
     }
 
     /**
@@ -100,7 +116,7 @@ public class TestUtils {
         HashMap<String, String> headers = new HashMap<>();
         // If auth is disabled, simply place the Auth0 user ID in the authorization header, which will be extracted from
         // the request when received.
-        if (Auth0Connection.isAuthDisabled()) {
+        if (isAuthDisabled()) {
             headers.put("Authorization", requestingUser.auth0UserId);
         } else {
             // Otherwise, get a valid oauth token for the user
@@ -139,8 +155,8 @@ public class TestUtils {
     }
 
     /**
-     * Configure a mock OTP server for providing mock OTP responses.
-     * Note: this expects the config value OTP_API_ROOT=http://localhost:8080/otp
+     * Configure a mock OTP server for providing mock OTP responses. Note: this expects the config value
+     * OTP_API_ROOT=http://localhost:8080/otp
      */
     public static void mockOtpServer() {
         if (mockOtpServerSetUpIsDone) {
@@ -213,5 +229,18 @@ public class TestUtils {
         }
         mockResponses = Collections.EMPTY_LIST;
         mockResponseIndex = -1;
+    }
+
+    /**
+     * Submit plan query to OTP server and return the response.
+     */
+    public static OtpDispatcherResponse sendSamplePlanRequest() {
+        // Submit a query to the OTP server.
+        // From P&R to Downtown Orlando
+        return OtpDispatcher.sendOtpPlanRequest(
+            "28.45119,-81.36818",
+            "28.54834,-81.37745",
+            "08:35"
+        );
     }
 }

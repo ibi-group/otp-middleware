@@ -89,7 +89,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     }
 
     /**
-     * To run this trip, change the env.yml config values for OTP_SERVER
+     * To run this trip, change the env.yml config values for OTP_API_ROOT
      * (and OTP_PLAN_ENDPOINT) to a valid OTP server.
      */
     @Test
@@ -97,16 +97,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // Do not run this test on Travis CI because it requires a live OTP server
         // FIXME: Add live otp server to e2e tests.
         assumeTrue(!isRunningCi && isEndToEnd);
-        // Submit a query to the OTP server.
-        // From P&R to Downtown Orlando
-        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(
-            "28.45119,-81.36818",
-            "28.54834,-81.37745",
-            "08:35"
-        );
-        // Construct a monitored trip from it.
-        MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse)
-            .updateAllDaysOfWeek(true);
+        MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = user.id;
         monitoredTrip.tripName = "My Morning Commute";
         Persistence.monitoredTrips.create(monitoredTrip);
@@ -127,7 +119,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // TODO: Improve assertions to use snapshots.
         Assertions.assertEquals(checkMonitoredTrip.notifications.size(), 0);
         // Clear the created trip.
-        Persistence.monitoredTrips.removeById(monitoredTrip.id);
+        deleteMonitoredTripAndJourney(monitoredTrip);
     }
 
     @Test

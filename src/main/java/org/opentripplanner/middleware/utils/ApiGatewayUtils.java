@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -81,9 +82,9 @@ public class ApiGatewayUtils {
                 //FIXME This may need to include stage key(s). Not sure what impact that places on the calling
                 // services though?
                 .withName(keyName)
-                // TODO: On deleting am ApiUser, it might be worth doing a query on customerId to make sure the keys
+                // TODO: On deleting am ApiUser, it might be worth doing a query on the userId tag to make sure the keys
                 //  have been cleared.
-                .withCustomerId(user.id)
+                .withTags(Collections.singletonMap("userId", user.id))
                 .withEnabled(true);
             CreateApiKeyResult apiKeyResult = gateway.createApiKey(apiKeyRequest);
 
