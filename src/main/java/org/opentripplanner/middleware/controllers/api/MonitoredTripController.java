@@ -7,7 +7,6 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
-import org.opentripplanner.middleware.utils.ItineraryExistenceChecker;
 import spark.Request;
 
 import java.net.URISyntaxException;
@@ -66,7 +65,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 e
             );
         }
-        ItineraryExistenceChecker.Result checkResult = checkItineraryExistence(monitoredTrip, req);
+        ItineraryUtils.Result checkResult = checkItineraryExistence(monitoredTrip, req);
 
         // Replace the provided trip's itinerary with a verified, non-realtime version of it.
         if (checkResult != null) {
@@ -77,10 +76,11 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     /**
      * Checks that non-realtime itineraries exist for the days the specified monitored trip is active.
      */
-    private static ItineraryExistenceChecker.Result checkItineraryExistence(MonitoredTrip trip, Request request) {
-        ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker();
+    private static ItineraryUtils.Result checkItineraryExistence(MonitoredTrip trip, Request request) {
         try {
-            ItineraryExistenceChecker.Result checkResult = itineraryChecker.checkAll(ItineraryUtils.getItineraryExistenceQueries(trip, false), trip.isArriveBy());
+            ItineraryUtils.Result checkResult = ItineraryUtils.checkItineraryExistence(
+                ItineraryUtils.getItineraryExistenceQueries(trip, false), trip.isArriveBy()
+            );
             if (!checkResult.allItinerariesExist) {
                 logMessageAndHalt(
                     request,

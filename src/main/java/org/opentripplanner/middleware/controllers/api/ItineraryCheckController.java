@@ -10,7 +10,6 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
-import org.opentripplanner.middleware.utils.ItineraryExistenceChecker;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
@@ -65,9 +64,9 @@ public class ItineraryCheckController implements Endpoint {
             MonitoredTrip trip = getPOJOFromRequestBody(request, MonitoredTrip.class);
             trip.initializeFromItineraryAndQueryParams();
 
-            ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker();
-            ItineraryExistenceChecker.Result checkResult = itineraryChecker
-                .checkAll(ItineraryUtils.getItineraryExistenceQueries(trip, true), trip.isArriveBy());
+            ItineraryUtils.Result checkResult = ItineraryUtils.checkItineraryExistence(
+                ItineraryUtils.getItineraryExistenceQueries(trip, true), trip.isArriveBy()
+            );
 
             // Convert the dates in the result to weekdays,
             // and fill the same-day itineraries in each day, if any.

@@ -1,10 +1,15 @@
 package org.opentripplanner.middleware.utils;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
 
 import java.io.IOException;
@@ -15,15 +20,17 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
+import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
 
-public class ItineraryUtilsTest {
+public class ItineraryUtilsTest extends OtpMiddlewareTest {
     /** Abbreviated query for the tests */
     public static final String BASE_QUERY = "?fromPlace=2418%20Dade%20Ave&toPlace=McDonald%27s&date=2020-08-13&time=11%3A23&arriveBy=false";
 
@@ -40,6 +47,67 @@ public class ItineraryUtilsTest {
     public static final long _2020_08_13__23_59_59_EDT = 1597377599000L; // Aug 13, 2020 11:59:59 PM
     public static final long _2020_08_14__02_59_59_EDT = 1597388399000L; // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
     public static final long _2020_08_14__03_00_00_EDT = 1597388400000L; // Aug 14, 2020 3:00:00 AM
+
+    private static OtpDispatcherResponse otpDispatcherPlanResponse;
+    private static OtpDispatcherResponse otpDispatcherPlanErrorResponse;
+
+    @BeforeAll
+    public static void setup() throws IOException {
+        TestUtils.mockOtpServer();
+
+        // Contains an OTP response with an itinerary found.
+        // (We are reusing an existing response. The exact contents of the response does not matter
+        // for the purposes of this class.)
+        String mockPlanResponse = FileUtils.getFileContents(
+            TEST_RESOURCE_PATH + "persistence/planResponse.json"
+        );
+        // Contains an OTP response with no itinerary found.
+        String mockErrorResponse = FileUtils.getFileContents(
+            TEST_RESOURCE_PATH + "persistence/planErrorResponse.json"
+        );
+
+        otpDispatcherPlanResponse = new OtpDispatcherResponse(mockPlanResponse, DEFAULT_PLAN_URI);
+        otpDispatcherPlanErrorResponse = new OtpDispatcherResponse(mockErrorResponse, DEFAULT_PLAN_URI);
+    }
+
+    @AfterEach
+    public void tearDownAfterTest() {
+        TestUtils.resetOtpMocks();
+    }
+
+    @Test
+    public void testAllTripsExist() {
+        // Set mocks to a list of responses with itineraries.
+        OtpResponse resp = otpDispatcherPlanResponse.getResponse();
+        TestUtils.setupOtpMocks(List.of(resp, resp, resp));
+
+        HashMap<String, String> labeledQueries = new HashMap<>();
+        labeledQueries.put("label1", "exist1");
+        labeledQueries.put("label2", "exist2");
+        labeledQueries.put("label3", "exist3");
+
+        ItineraryUtils.Result result = ItineraryUtils.checkItineraryExistence(labeledQueries, false);
+        Assertions.assertTrue(result.allItinerariesExist);
+
+        for (String label : labeledQueries.keySet()) {
+            Assertions.assertNotNull(result.labeledResponses.get(label));
+        }
+    }
+
+    @Test
+    public void testAtLeastOneTripDoesNotExist() {
+        // Set mocks to a list of responses, one without an itinerary.
+        OtpResponse resp = otpDispatcherPlanResponse.getResponse();
+        TestUtils.setupOtpMocks(List.of(resp, otpDispatcherPlanErrorResponse.getResponse(), resp));
+
+        HashMap<String, String> labeledQueries = new HashMap<>();
+        labeledQueries.put("label1", "exist1");
+        labeledQueries.put("label2", "not found");
+        labeledQueries.put("label3", "exist3");
+
+        ItineraryUtils.Result result = ItineraryUtils.checkItineraryExistence(labeledQueries, false);
+        Assertions.assertFalse(result.allItinerariesExist);
+    }
 
     @Test
     public void testGetQueriesFromDates() throws URISyntaxException {
