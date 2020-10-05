@@ -12,6 +12,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -141,15 +142,16 @@ public class ItineraryUtils {
      * @param itinerary the itinerary to check.
      * @param date the request date to check.
      * @param time the request time to check.
-     * @param checkArrival true to check the itinerary endtime, false to check the startTime.
+     * @param tripIsArriveBy true to check the itinerary endtime, false to check the startTime.
      * @return true if the itinerary's startTime or endTime is one the same day as the day of the specified date and time.
      */
-    public static boolean isSameDay(Itinerary itinerary, String date, String time, ZoneId zoneId, boolean checkArrival) {
+    public static boolean isSameDay(Itinerary itinerary, String date, String time, ZoneId zoneId, boolean tripIsArriveBy) {
         // TODO: Make SERVICE_DAY_START_HOUR an optional config parameter.
         final int SERVICE_DAY_START_HOUR = 3;
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN);
 
-        ZonedDateTime startDate = ZonedDateTime.ofInstant(itinerary.getStartOrEndTime(checkArrival).toInstant(), zoneId);
+        Date itineraryTime = tripIsArriveBy ? itinerary.endTime : itinerary.startTime;
+        ZonedDateTime startDate = ZonedDateTime.ofInstant(itineraryTime.toInstant(), zoneId);
 
         // If the OTP request was made at a time before SERVICE_DAY_START_HOUR
         // (for instance, a request with a departure or arrival at 12:30 am),

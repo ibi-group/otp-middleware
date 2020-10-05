@@ -32,7 +32,7 @@ public class ItineraryUtilsTest {
     public static final String QUERY_TIME = "11:23";
 
     // Timestamps (in EDT or GMT-4:00) to test whether an itinerary is same-day as QUERY_DATE.
-    // The timezone match the location time zone from makeTestTrip.
+    // Note that the timezone matches the location time zone from makeTestTrip.
     public static final long _2020_08_12__03_00_00_EDT = 1597215600000L; // Aug 12, 2020 3:00:00 AM
     public static final long _2020_08_12__23_59_59_EDT = 1597291199000L; // Aug 12, 2020 11:59:59 PM
     public static final long _2020_08_13__02_59_59_EDT = 1597301999000L; // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
@@ -214,8 +214,12 @@ public class ItineraryUtilsTest {
 
     private Itinerary simpleItinerary(Long startTime, boolean isArrival) {
         Itinerary itinerary = new Itinerary();
-        Instant instant = Instant.ofEpochMilli(startTime);
-        itinerary.setStartOrEndTime(Date.from(instant), isArrival);
+        Date date = Date.from(Instant.ofEpochMilli(startTime));
+        if (isArrival) {
+            itinerary.endTime = date;
+        } else {
+            itinerary.startTime = date;
+        }
         itinerary.legs = new ArrayList<>();
         return itinerary;
     }

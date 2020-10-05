@@ -67,7 +67,8 @@ public class ItineraryCheckController implements Endpoint {
             trip.initializeFromItineraryAndQueryParams();
 
             ItineraryExistenceChecker itineraryChecker = new ItineraryExistenceChecker(OtpDispatcher::sendOtpPlanRequest);
-            ItineraryExistenceChecker.Result checkResult = itineraryChecker.checkAll(ItineraryUtils.getItineraryExistenceQueries(trip, true), trip.isArriveBy());
+            ItineraryExistenceChecker.Result checkResult = itineraryChecker
+                .checkAll(ItineraryUtils.getItineraryExistenceQueries(trip, true), trip.isArriveBy());
 
             // Convert the dates in the result to weekdays,
             // and fill the same-day itineraries in each day, if any.

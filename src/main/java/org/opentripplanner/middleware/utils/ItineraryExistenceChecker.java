@@ -30,7 +30,7 @@ public class ItineraryExistenceChecker {
      *                       label that will be used in Result.labeledResponses for easy identification.
      * @return An object with a map of results and summary of itinerary existence.
      */
-    public Result checkAll(Map<String, String> labeledQueries, boolean checkArrival) {
+    public Result checkAll(Map<String, String> labeledQueries, boolean tripIsArriveBy) {
         // TODO: Consider multi-threading?
         Map<String, OtpResponse> responses = new HashMap<>();
         boolean allItinerariesExist = true;
@@ -39,7 +39,7 @@ public class ItineraryExistenceChecker {
             OtpDispatcherResponse response = otpDispatcherFunction.apply(entry.getValue());
             responses.put(entry.getKey(), response.getResponse());
 
-            Itinerary sameDayItinerary = response.findItineraryDepartingSameDay(checkArrival);
+            Itinerary sameDayItinerary = response.findItineraryDepartingSameDay(tripIsArriveBy);
             if (sameDayItinerary == null) allItinerariesExist = false;
         }
 

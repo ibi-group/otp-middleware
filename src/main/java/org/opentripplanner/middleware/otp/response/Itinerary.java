@@ -97,18 +97,6 @@ public class Itinerary {
         }
     }
 
-    public Date getStartOrEndTime(boolean isArrival) {
-        return isArrival ? endTime : startTime;
-    }
-
-    public void setStartOrEndTime(Date startOrEnd, boolean isArrival) {
-        if (isArrival) {
-            endTime = startOrEnd;
-        } else {
-            startTime = startOrEnd;
-        }
-    }
-
     /**
      * This method calculates equality in the context of trip monitoring in order to analyzing equality when
      * checking if itineraries match.
