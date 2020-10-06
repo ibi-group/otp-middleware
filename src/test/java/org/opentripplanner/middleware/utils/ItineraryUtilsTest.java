@@ -142,8 +142,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      * Check the computation of the dates corresponding to the monitored days,
      * for which we want to check itinerary existence.
      */
-    @Test
-    public void testGetDatesToCheckItineraryExistence() throws URISyntaxException {
+    @ParameterizedTest
+    @MethodSource("createGetDatesTestCases")
+    public void testGetDatesToCheckItineraryExistence(GetDatesTestCase testCase) throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip(false);
         trip.monday = true;
         trip.tuesday = true;
@@ -153,16 +154,20 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         trip.saturday = true;
         trip.sunday = true;
 
-        // The list includes dates to be monitored in a 7-day window starting from the query date.
-        List<String> newDates = List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18");
-        List<String> checkedDates = ItineraryUtils.getDatesToCheckItineraryExistence(trip, false);
-        Assertions.assertEquals(newDates, checkedDates);
+        List<String> checkedDates = ItineraryUtils.getDatesToCheckItineraryExistence(trip, testCase.checkAllDays);
+        Assertions.assertEquals(testCase.dates, checkedDates);
+    }
 
-        // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence,
-        // it should return all dates regardless of the ones set in the monitored trip.
-        List<String> allDates = List.of(QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19");
-        List<String> allCheckedDates = ItineraryUtils.getDatesToCheckItineraryExistence(trip, true);
-        Assertions.assertEquals(allDates, allCheckedDates);
+    private static List<GetDatesTestCase> createGetDatesTestCases() {
+        // Each list includes dates to be monitored in a 7-day window starting from the query date.
+        return List.of(
+            // Dates solely based on monitored days (see the trip variable in the corresponding test).
+            new GetDatesTestCase(false, List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18")),
+
+            // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence,
+            // it should return all dates in the 7-day window regardless of the ones set in the monitored trip.
+            new GetDatesTestCase(true, List.of(QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19"))
+        );
     }
 
     /**
@@ -324,6 +329,22 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         return trip;
     }
 
+    /**
+     * Data structure for the date check test.
+     */
+    private static class GetDatesTestCase {
+        public final boolean checkAllDays;
+        public final List<String> dates;
+
+        public GetDatesTestCase(boolean checkAllDays, List<String> dates) {
+            this.checkAllDays = checkAllDays;
+            this.dates = dates;
+        }
+    }
+
+    /**
+     * Data structure for the same-day test.
+     */
     private static class SameDayTestCase {
         public final boolean isArrival;
         public final boolean shouldBeSameDay;
