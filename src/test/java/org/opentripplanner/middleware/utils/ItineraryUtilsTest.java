@@ -15,7 +15,6 @@ import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -188,17 +187,13 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      * right now based on the index of the selected itinerary in the UI.
      */
     @Test
-    public void testUpdateTripWithVerifiedItinerary() throws IOException, URISyntaxException {
+    public void testUpdateTripWithVerifiedItinerary() throws URISyntaxException {
         MonitoredTrip trip = new MonitoredTrip();
         trip.id = "testUpdateTripWithVerifiedItinerary";
         trip.queryParams = BASE_QUERY + "&ui_activeItinerary=1";
         trip.itinerary = null;
 
-        String mockResponse = FileUtils.getFileContents(
-            TEST_RESOURCE_PATH + "persistence/planResponse.json"
-        );
-        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse, URI.create("http://www.example.com"));
-        List<Itinerary> itineraries = otpDispatcherResponse.getResponse().plan.itineraries;
+        List<Itinerary> itineraries = otpDispatcherPlanResponse.getResponse().plan.itineraries;
 
         ItineraryUtils.updateTripWithVerifiedItinerary(trip, itineraries);
 
@@ -252,7 +247,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
             new SameDayTestCase(QUERY_TIME, _2020_08_14__03_00_00_EDT, true, false),
             new SameDayTestCase("1:23", _2020_08_13__03_00_00_EDT, true, false),
             new SameDayTestCase("1:23", _2020_08_13__23_59_59_EDT, true, false),
-            new SameDayTestCase("1:23", _2020_08_14__02_59_59_EDT, true, true)
+            new SameDayTestCase("1:23", _2020_08_14__02_59_59_EDT, true, false)
         );
     }
 
