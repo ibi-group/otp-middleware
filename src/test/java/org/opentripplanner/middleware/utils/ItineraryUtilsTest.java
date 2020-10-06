@@ -4,6 +4,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -75,8 +77,11 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         TestUtils.resetOtpMocks();
     }
 
+    /**
+     * Test case in which all itineraries exist and result.allItinerariesExist should be true.
+     */
     @Test
-    public void testAllTripsExist() {
+    public void testAllItinerariesExist() {
         // Set mocks to a list of responses with itineraries.
         OtpResponse resp = otpDispatcherPlanResponse.getResponse();
         TestUtils.setupOtpMocks(List.of(resp, resp, resp));
@@ -94,6 +99,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         }
     }
 
+    /**
+     * Test case in which at least one itinerary does not exist,
+     * and therefore result.allItinerariesExist should be false.
+     */
     @Test
     public void testAtLeastOneTripDoesNotExist() {
         // Set mocks to a list of responses, one without an itinerary.
@@ -109,6 +118,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         Assertions.assertFalse(result.allItinerariesExist);
     }
 
+    /**
+     * Check that the query date parameter is properly modified to simulate the given OTP query for different dates.
+     */
     @Test
     public void testGetQueriesFromDates() throws URISyntaxException {
         MonitoredTrip trip = new MonitoredTrip();
@@ -127,6 +139,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         }
     }
 
+    /**
+     * Check the computation of the dates corresponding to the monitored days,
+     * for which we want to check itinerary existence.
+     */
     @Test
     public void testGetDatesToCheckItineraryExistence() throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip(false);
@@ -150,6 +166,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         Assertions.assertEquals(allDates, allCheckedDates);
     }
 
+    /**
+     * Check that the ignoreRealtime query parameter is set to true
+     * regardless of whether it was originally missing or false.
+     */
     @Test
     public void testAddIgnoreRealtimeParam() throws URISyntaxException {
         String queryWithRealtimeParam = BASE_QUERY + "&" + IGNORE_REALTIME_UPDATES_PARAM + "=false";
@@ -163,6 +183,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         }
     }
 
+    /**
+     * Check that a given trip is modified with an OTP itinerary that exists,
+     * right now based on the index of the selected itinerary in the UI.
+     */
     @Test
     public void testUpdateTripWithVerifiedItinerary() throws IOException, URISyntaxException {
         MonitoredTrip trip = new MonitoredTrip();
@@ -181,83 +205,60 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         Assertions.assertEquals(itineraries.get(1), trip.itinerary);
     }
 
-    private void testIsSameDay(String time, boolean isArrival, boolean expected, Long... startTimes) throws URISyntaxException {
-        MonitoredTrip trip = makeTestTrip(isArrival);
-        // The time zone for trip (and startTimes) is US ES Eastern per trip location.
+    @ParameterizedTest
+    @MethodSource("createSameDayTestCases")
+    void testIsSameDay(SameDayTestCase testCase) throws URISyntaxException {
+        MonitoredTrip trip = makeTestTrip(testCase.isArrival);
+        // The time zone for trip (and testCase.tripTime) is US Eastern per trip location.
         ZoneId zoneId = trip.timezoneForTargetLocation();
 
-        for (Long startTime : startTimes) {
-            Itinerary itinerary = simpleItinerary(startTime, isArrival);
-            Assertions.assertEquals(
-                expected,
-                ItineraryUtils.isSameDay(itinerary, QUERY_DATE, time, zoneId, isArrival),
-                String.format(
-                    "%s %s be considered same day as %s %s",
-                    ZonedDateTime.ofInstant(Instant.ofEpochMilli(startTime), zoneId),
-                    expected ? "should" : "should not",
-                    QUERY_DATE,
-                    time
-                )
-            );
-        }
-    }
-
-    @Test
-    public void testItineraryDepartsSameDay() throws URISyntaxException {
-        testIsSameDay(QUERY_TIME, false, true,
-            _2020_08_13__03_00_00_EDT,
-            _2020_08_13__23_59_59_EDT,
-            _2020_08_14__02_59_59_EDT
-        );
-        testIsSameDay("1:23", false, true,
-            _2020_08_12__03_00_00_EDT,
-            _2020_08_12__23_59_59_EDT,
-            _2020_08_13__02_59_59_EDT
+        Itinerary itinerary = simpleItinerary(testCase.tripTime, testCase.isArrival);
+        Assertions.assertEquals(
+            testCase.shouldBeSameDay,
+            ItineraryUtils.isSameDay(itinerary, QUERY_DATE, testCase.timeOfDay, zoneId, testCase.isArrival),
+            testCase.getMessage(zoneId)
         );
     }
 
-    @Test
-    public void testItineraryDoesNotDepartSameDay() throws URISyntaxException {
-        testIsSameDay(QUERY_TIME, false, false,
-            _2020_08_12__23_59_59_EDT,
-            _2020_08_13__02_59_59_EDT,
-            _2020_08_14__03_00_00_EDT
-        );
-        testIsSameDay("1:23", false, false,
-            _2020_08_13__03_00_00_EDT,
-            _2020_08_13__23_59_59_EDT,
-            _2020_08_14__02_59_59_EDT
+    private static List<SameDayTestCase> createSameDayTestCases() {
+        return List.of(
+            // Same-day departures
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__03_00_00_EDT, false, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__23_59_59_EDT, false, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__02_59_59_EDT, false, true),
+            new SameDayTestCase("1:23", _2020_08_12__03_00_00_EDT, false, true),
+            new SameDayTestCase("1:23", _2020_08_12__23_59_59_EDT, false, true),
+            new SameDayTestCase("1:23", _2020_08_13__02_59_59_EDT, false, true),
+
+            // Not same-day departures
+            new SameDayTestCase(QUERY_TIME, _2020_08_12__23_59_59_EDT, false, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__02_59_59_EDT, false, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__03_00_00_EDT, false, false),
+            new SameDayTestCase("1:23", _2020_08_13__03_00_00_EDT, false, false),
+            new SameDayTestCase("1:23", _2020_08_13__23_59_59_EDT, false, false),
+            new SameDayTestCase("1:23", _2020_08_14__02_59_59_EDT, false, false),
+
+            // Same-day arrivals
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__03_00_00_EDT, true, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__23_59_59_EDT, true, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__02_59_59_EDT, true, true),
+            new SameDayTestCase("1:23", _2020_08_12__03_00_00_EDT, true, true),
+            new SameDayTestCase("1:23", _2020_08_12__23_59_59_EDT, true, true),
+            new SameDayTestCase("1:23", _2020_08_13__02_59_59_EDT, true, true),
+
+            // Not same-day arrivals
+            new SameDayTestCase(QUERY_TIME, _2020_08_12__23_59_59_EDT, true, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__02_59_59_EDT, true, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__03_00_00_EDT, true, false),
+            new SameDayTestCase("1:23", _2020_08_13__03_00_00_EDT, true, false),
+            new SameDayTestCase("1:23", _2020_08_13__23_59_59_EDT, true, false),
+            new SameDayTestCase("1:23", _2020_08_14__02_59_59_EDT, true, true)
         );
     }
 
-    @Test
-    public void testItineraryArrivesSameDay() throws URISyntaxException {
-        testIsSameDay(QUERY_TIME, true, true,
-            _2020_08_13__03_00_00_EDT,
-            _2020_08_13__23_59_59_EDT,
-            _2020_08_14__02_59_59_EDT
-        );
-        testIsSameDay("1:23", true, true,
-            _2020_08_12__03_00_00_EDT,
-            _2020_08_12__23_59_59_EDT,
-            _2020_08_13__02_59_59_EDT
-        );
-    }
-
-    @Test
-    public void testItineraryDoesNotArriveSameDay() throws URISyntaxException {
-        testIsSameDay(QUERY_TIME, true, false,
-            _2020_08_12__23_59_59_EDT,
-            _2020_08_13__02_59_59_EDT,
-            _2020_08_14__03_00_00_EDT
-        );
-        testIsSameDay("1:23", true, false,
-            _2020_08_13__03_00_00_EDT,
-            _2020_08_13__23_59_59_EDT,
-            _2020_08_14__02_59_59_EDT
-        );
-    }
-
+    /**
+     * Check that only same-day itineraries are selected.
+     */
     @Test
     public void testGetSameDayItineraries() throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip(false);
@@ -280,6 +281,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         Assertions.assertTrue(processedItineraries.contains(itineraries.get(1)));
     }
 
+    /**
+     * Helper method to create a bare-bones itinerary with start or end time.
+     */
     private Itinerary simpleItinerary(Long startTime, boolean isArrival) {
         Itinerary itinerary = new Itinerary();
         Date date = Date.from(Instant.ofEpochMilli(startTime));
@@ -292,10 +296,13 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         return itinerary;
     }
 
+    /**
+     * Helper method to create a trip with locations, time, and queryParams populated.
+     */
     private MonitoredTrip makeTestTrip(boolean arriveBy) throws URISyntaxException {
         Place targetPlace = new Place();
         targetPlace.lat = 33.80;
-        targetPlace.lon = -84.70; // America/NewYork
+        targetPlace.lon = -84.70; // America/New_York
 
         Place dummyPlace = new Place();
         dummyPlace.lat = 33.90;
@@ -320,5 +327,35 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
             trip.queryParams = BASE_QUERY;
         }
         return trip;
+    }
+
+    private static class SameDayTestCase {
+        public final boolean isArrival;
+        public final boolean shouldBeSameDay;
+        public final String timeOfDay;
+        public final Long tripTime;
+
+        public SameDayTestCase(String timeOfDay, Long tripTime, boolean isArrival, boolean shouldBeSameDay) {
+            this.isArrival = isArrival;
+            this.shouldBeSameDay = shouldBeSameDay;
+            this.timeOfDay = timeOfDay;
+            this.tripTime = tripTime;
+        }
+
+        /**
+         * @return A message, in case of test failure, in the form:
+         * "On 2020-08-13 at 1:23[America/New_York], a trip arriving at 2020-08-14T02:59:59-04:00[America/New_York] should be considered same-day."
+         */
+        public String getMessage(ZoneId zoneId) {
+            return String.format(
+                "On %s at %s[%s], a trip %s at %s %s be considered same-day.",
+                QUERY_DATE,
+                timeOfDay,
+                zoneId.toString(),
+                isArrival ? "arriving" : "departing",
+                ZonedDateTime.ofInstant(Instant.ofEpochMilli(tripTime), zoneId),
+                shouldBeSameDay ? "should" : "should not"
+            );
+        }
     }
 }
