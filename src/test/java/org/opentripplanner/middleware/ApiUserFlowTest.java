@@ -92,7 +92,7 @@ public class ApiUserFlowTest {
         otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
         otpUser.hasConsentedToTerms = true;
         otpUser.isPhoneNumberVerified = true;
-        otpUser.phoneNumber = "+15555550222";
+        otpUser.phoneNumber = "+15555550222"; // Fake 555 number.
         otpUser.storeTripHistory = true;
         // create Auth0 users for apiUser and optUser.
         try {
@@ -213,7 +213,7 @@ public class ApiUserFlowTest {
         // 1. Request verification SMS.
         // Note that the result of the request for an SMS does not matter
         // (e.g. if the SMS service is down, the user's phone number should still be recorded).
-        HttpResponse<String> smsRequestResponse = mockAuthenticatedRequest(
+        mockAuthenticatedRequest(
             String.format("api/secure/user/%s/verify_sms/%s",
                 otpUserResponse.id,
                 MOCK_PHONE_NUMBER
