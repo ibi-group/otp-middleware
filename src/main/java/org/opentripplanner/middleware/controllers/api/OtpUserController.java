@@ -139,7 +139,17 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
                 "Unknown error encountered while checking SMS verification code"
             );
         }
-        // If the check is successful, status will be "approved"
-        return new VerificationResult(check);
+        // If the check is successful, status will be "approved".
+        VerificationResult verificationResult = new VerificationResult(check);
+        if (verificationResult.status.equals("approved")) {
+            // If the check is successful, update the OtpUser
+            // (set isPhoneNumberVerified and notificationChannel).
+            // TODO: Figure out adding a test for this update to the OtpUser record.
+            otpUser.isPhoneNumberVerified = true;
+            otpUser.notificationChannel = "sms";
+            Persistence.otpUsers.replace(otpUser.id, otpUser);
+        }
+
+        return verificationResult;
     }
 }
