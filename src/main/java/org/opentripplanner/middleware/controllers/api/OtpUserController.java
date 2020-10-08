@@ -119,6 +119,8 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
     /**
      * HTTP endpoint for an {@link OtpUser} to post a verification code sent to their phone in order to verify their
      * phone number.
+     * If the verification succeeds, this endpoint sets isPhoneNumberVerified to true
+     * and sets the user's notification channel to 'sms'.
      */
     public VerificationResult verifyPhoneWithCode(Request req, Response res) {
         OtpUser otpUser = getEntityForId(req, res);
