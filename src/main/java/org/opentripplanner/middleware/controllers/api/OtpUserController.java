@@ -140,6 +140,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
                 "Unknown error encountered while checking SMS verification code"
             );
         }
+
         // If the check is successful, status will be "approved".
         VerificationResult verificationResult = new VerificationResult(check);
         if (verificationResult.status.equals("approved")) {
