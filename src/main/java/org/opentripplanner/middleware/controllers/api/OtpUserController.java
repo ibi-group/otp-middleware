@@ -91,8 +91,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
      * HTTP endpoint to send an SMS text to an {@link OtpUser}'s phone number with a verification code. This is used
      * during user signup (or if a user wishes to change their notification preferences to use a new un-verified phone
      * number).
-     * Before sending a SMS request, this endpoint also saves the submitted phone number, marks it as not verified,
-     * and sets the user's notification channel to 'sms'.
+     * Before sending a SMS request, this endpoint also saves the submitted phone number, marks it as not verified.
      */
     public VerificationResult sendVerificationText(Request req, Response res) {
         OtpUser otpUser = getEntityForId(req, res);
@@ -105,22 +104,22 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         // Update OtpUser before submitting SMS request.
         otpUser.phoneNumber = phoneNumber;
         otpUser.isPhoneNumberVerified = false;
-        otpUser.notificationChannel = "sms";
         Persistence.otpUsers.replace(otpUser.id, otpUser);
-
+/*
         Verification verification = NotificationUtils.sendVerificationText(phoneNumber);
         if (verification == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Unknown error sending verification text");
         }
         // Verification result will show "pending" status if verification text is successfully sent.
         return new VerificationResult(verification);
+ */
+        return null;
     }
 
     /**
      * HTTP endpoint for an {@link OtpUser} to post a verification code sent to their phone in order to verify their
      * phone number.
-     * If the verification succeeds, this endpoint sets isPhoneNumberVerified to true
-     * and sets the user's notification channel to 'sms'.
+     * If the verification succeeds, this endpoint sets isPhoneNumberVerified to true.
      */
     public VerificationResult verifyPhoneWithCode(Request req, Response res) {
         OtpUser otpUser = getEntityForId(req, res);
@@ -148,7 +147,6 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             // (set isPhoneNumberVerified and notificationChannel).
             // TODO: Figure out adding a test for this update to the OtpUser record.
             otpUser.isPhoneNumberVerified = true;
-            otpUser.notificationChannel = "sms";
             Persistence.otpUsers.replace(otpUser.id, otpUser);
         }
 

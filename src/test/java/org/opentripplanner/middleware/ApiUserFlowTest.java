@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
@@ -193,49 +192,5 @@ public class ApiUserFlowTest {
         // Verify that API user is deleted.
         ApiUser deletedApiUser = Persistence.apiUsers.getById(apiUser.id);
         assertNull(deletedApiUser);
-    }
-
-    /**
-     * Tests for the chain of API calls to verify a user's phone number.
-     */
-    @Test
-    public void canSimulatePhoneVerificationFlow() {
-        // create otp user as api user
-        HttpResponse<String> createUserResponse = mockAuthenticatedPost("api/secure/user",
-            apiUser,
-            JsonUtils.toJson(otpUser)
-        );
-        assertEquals(HttpStatus.OK_200, createUserResponse.statusCode());
-        OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.body(), OtpUser.class);
-
-        // Check phone number persistence.
-        final String MOCK_PHONE_NUMBER = "+15555550321";
-        // 1. Request verification SMS.
-        // Note that the result of the request for an SMS does not matter
-        // (e.g. if the SMS service is down, the user's phone number should still be recorded).
-        mockAuthenticatedRequest(
-            String.format("api/secure/user/%s/verify_sms/%s",
-                otpUserResponse.id,
-                MOCK_PHONE_NUMBER
-            ),
-            otpUserResponse,
-            HttpUtils.REQUEST_METHOD.GET
-        );
-        // 2. Fetch the newly-created user and check the notificationChannel, phoneNumber and isPhoneNumberVerified fields.
-        // This should be the case regardless of the outcome from above.
-        HttpResponse<String> otpUserWithPhoneResponse = mockAuthenticatedRequest(
-            String.format("api/secure/user/%s", otpUserResponse.id),
-            otpUserResponse,
-            HttpUtils.REQUEST_METHOD.GET
-        );
-        assertEquals(HttpStatus.OK_200, otpUserWithPhoneResponse.statusCode());
-
-        OtpUser otpUserWithPhone = JsonUtils.getPOJOFromJSON(otpUserWithPhoneResponse.body(), OtpUser.class);
-        assertEquals(MOCK_PHONE_NUMBER, otpUserWithPhone.phoneNumber);
-        assertFalse(otpUserWithPhone.isPhoneNumberVerified);
-        assertEquals("sms", otpUserWithPhone.notificationChannel);
-
-        // Clean up
-        otpUserResponse.delete();
     }
 }
