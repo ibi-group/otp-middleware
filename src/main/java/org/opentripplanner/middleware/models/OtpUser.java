@@ -28,15 +28,23 @@ public class OtpUser extends AbstractUser {
     public String notificationChannel;
 
     /**
-     * Pending, unverified phone number, and for which a verification code has been requested.
+     * Pending, unverified phone number, in +15551234 format (E.164 format, includes country code, no spaces)
+     * and for which a verification code has been requested.
      */
     public String pendingPhoneNumber;
+    /**
+     * Locally-formatted pendingPhoneNumber for display.
+     */
+    public String pendingPhoneNumberFormatted;
 
     /**
-     * Verified phone number for SMS notifications.
-     * Must include country code, e.g., +15551234
+     * Verified phone number for SMS notifications, in +15551234 format (E.164 format, includes country code, no spaces).
      */
     public String phoneNumber;
+    /**
+     * Locally-formatted phoneNumber for display.
+     */
+    public String phoneNumberFormatted;
 
     /** Locations that the user has saved. */
     public List<UserLocation> savedLocations = new ArrayList<>();

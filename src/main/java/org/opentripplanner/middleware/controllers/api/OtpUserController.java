@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.ApiEndpoint;
+import com.twilio.rest.lookups.v1.PhoneNumber;
 import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
 import org.apache.commons.lang3.StringUtils;
@@ -101,11 +102,15 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "A phone number must be provided.");
         }
 
+        PhoneNumber validNumber = NotificationUtils.ensureDomesticPhoneNumber(req, phoneNumber);
+
         // Update OtpUser.pendingPhoneNumber before submitting SMS request.
-        otpUser.pendingPhoneNumber = phoneNumber;
+        String phoneNumberToSubmit = validNumber.getPhoneNumber().toString();
+        otpUser.pendingPhoneNumber = phoneNumberToSubmit;
+        otpUser.pendingPhoneNumberFormatted = validNumber.getNationalFormat();
         Persistence.otpUsers.replace(otpUser.id, otpUser);
 
-        Verification verification = NotificationUtils.sendVerificationText(phoneNumber);
+        Verification verification = NotificationUtils.sendVerificationText(phoneNumberToSubmit);
         if (verification == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Unknown error sending verification text");
         }

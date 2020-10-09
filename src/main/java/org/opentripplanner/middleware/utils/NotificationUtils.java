@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sendgrid.Content;
 import com.sendgrid.Email;
 import com.sendgrid.Mail;
@@ -9,17 +10,21 @@ import com.sendgrid.SendGrid;
 import com.sparkpost.Client;
 import com.sparkpost.model.responses.Response;
 import com.twilio.Twilio;
+import com.twilio.exception.ApiException;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
 import com.twilio.rest.verify.v2.service.VerificationCreator;
 import com.twilio.type.PhoneNumber;
+import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * This class contains utils for sending SMS and email notifications.
@@ -33,6 +38,9 @@ public class NotificationUtils {
     public static final String TWILIO_ACCOUNT_SID = getConfigPropertyAsText("TWILIO_ACCOUNT_SID");
     public static final String TWILIO_AUTH_TOKEN = getConfigPropertyAsText("TWILIO_AUTH_TOKEN");
     public static final String TWILIO_VERIFICATION_SERVICE_SID = getConfigPropertyAsText("TWILIO_VERIFICATION_SERVICE_SID");
+    // ISO Country code (or "US", if not provided) for phone number validation with Twilio.
+    // See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+    public static final String COUNTRY_CODE = getConfigPropertyAsText("COUNTRY_CODE", "US");
     // From phone must be registered with Twilio account.
     public static final String FROM_PHONE = getConfigPropertyAsText("NOTIFICATION_FROM_PHONE");
     private static final String SPARKPOST_KEY = getConfigPropertyAsText("SPARKPOST_KEY");
@@ -156,6 +164,87 @@ public class NotificationUtils {
             return false;
         }
 
+    }
+
+    /**
+     * Ensures that the provided phone number is a domestic mobile number.
+     * Returns a 400-Bad request status if that is not the case.
+     */
+    public static com.twilio.rest.lookups.v1.PhoneNumber ensureDomesticPhoneNumber(spark.Request req, String phoneNumberString) {
+        if (phoneNumberString.startsWith("+1555555")) {
+            // Give a pass for US fake 555 numbers.
+            String lastFourDigits = phoneNumberString.substring("+1555555".length());
+            return com.twilio.rest.lookups.v1.PhoneNumber.fromJson(
+                "{\n" +
+                    "  \"caller_name\": null,\n" +
+                    "  \"carrier\": {\n" +
+                    "    \"error_code\": null,\n" +
+                    "    \"mobile_country_code\": \"310\",\n" +
+                    "    \"mobile_network_code\": \"456\",\n" +
+                    "    \"name\": \"verizon\",\n" +
+                    "    \"type\": \"mobile\"\n" +
+                    "  },\n" +
+                    "  \"country_code\": \"US\",\n" +
+                    "  \"national_format\": \"(555) 555-" + lastFourDigits + "\",\n" +
+                    "  \"phone_number\": \"" + phoneNumberString + "\",\n" +
+                    "  \"url\": \"https://lookups.twilio.com/v1/PhoneNumbers/+15108675310?Type=carrier\"\n" +
+                    "}", new ObjectMapper()
+            );
+        }
+
+        com.twilio.rest.lookups.v1.PhoneNumber phoneNumber = null;
+        try {
+            Twilio.init(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+            phoneNumber = com.twilio.rest.lookups.v1.PhoneNumber.fetcher(
+                new PhoneNumber(phoneNumberString))
+                .setCountryCode(COUNTRY_CODE)
+                .setType(List.of("carrier"))
+                .fetch();
+        } catch (ApiException apiException) {
+            // Handle 404 response - corresponds to invalid number.
+            // In that case we return a 400 bad request response to the requester.
+            if (apiException.getCode() == 404) {
+                logMessageAndHalt(
+                    req,
+                    HttpStatus.BAD_REQUEST_400,
+                    "Phone number format is invalid."
+                );
+            } else {
+                logMessageAndHalt(
+                    req,
+                    HttpStatus.INTERNAL_SERVER_ERROR_500,
+                    "Error validating phone number format."
+                );
+            }
+        } catch (Exception e) {
+            logMessageAndHalt(
+                req,
+                HttpStatus.INTERNAL_SERVER_ERROR_500,
+                "Error validating phone number format."
+            );
+        }
+
+        if (phoneNumber != null) {
+            System.out.println(phoneNumber.getPhoneNumber());
+            System.out.println(phoneNumber.getCarrier().get("type"));
+            System.out.println(phoneNumber.getCarrier().get("name"));
+            System.out.println(phoneNumber.getCountryCode());
+            System.out.println(phoneNumber.getNationalFormat());
+
+            // Reject numbers that are international with respect to COUNTRY_CODE.
+            // TODO: Also reject numbers whose .getCarrier().get("type") is not "mobile"?
+            if (!phoneNumber.getCountryCode().equals(COUNTRY_CODE)) {
+                logMessageAndHalt(
+                    req,
+                    HttpStatus.BAD_REQUEST_400,
+                    "Phone number must be domestic."
+                );
+            }
+
+            return phoneNumber;
+        }
+
+        return null;
     }
 }
 

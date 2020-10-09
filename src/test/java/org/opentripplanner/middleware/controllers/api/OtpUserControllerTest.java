@@ -64,6 +64,7 @@ public class OtpUserControllerTest {
     public void smsRequestShouldSetPendingPhoneNumberOnly() {
         // Check phone number persistence.
         final String PHONE_NUMBER_TO_VERIFY = "+15555550321";
+        final String PHONE_NUMBER_TO_VERIFY_FORMATTED = "(555) 555-0321";
         // 1. Request verification SMS.
         // Note that the result of the request for an SMS does not matter
         // (e.g. if the SMS service is down, the user's phone number should still be recorded).
@@ -87,5 +88,6 @@ public class OtpUserControllerTest {
         OtpUser otpUserWithPhone = JsonUtils.getPOJOFromJSON(otpUserWithPhoneResponse.body(), OtpUser.class);
         assertEquals(INITIAL_PHONE_NUMBER, otpUserWithPhone.phoneNumber);
         assertEquals(PHONE_NUMBER_TO_VERIFY, otpUserWithPhone.pendingPhoneNumber);
+        assertEquals(PHONE_NUMBER_TO_VERIFY_FORMATTED, otpUserWithPhone.pendingPhoneNumberFormatted);
     }
 }
