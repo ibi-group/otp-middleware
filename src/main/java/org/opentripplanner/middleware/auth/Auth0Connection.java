@@ -34,7 +34,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * This handles verifying the Auth0 token passed in the auth header (e.g., Authorization: Bearer MY_TOKEN of Spark HTTP
  * requests.
  */
-// TODO: Come up with a name that covers Auth0 and apiKey auth... could just remove the '0'?!
 public class Auth0Connection {
     private static final Logger LOG = LoggerFactory.getLogger(Auth0Connection.class);
     private static JWTVerifier verifier;
@@ -59,19 +58,6 @@ public class Auth0Connection {
             addUserToRequest(req, RequestingUser.createTestUser(req));
             return;
         }
-
-        // API user authenticated by API key
-        String apiKey = getApiKeyFromRequest(req);
-        if (apiKey != null) {
-            RequestingUser requestingUser = new RequestingUser(apiKey);
-            if (!isValidUser(requestingUser)) {
-                // Otherwise, if no valid user is found, halt the request.
-                logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "API key auth - Unknown user.");
-            }
-            addUserToRequest(req, requestingUser);
-            return;
-        }
-
         // Admin and OTP users authenticated by Bearer token
         String token = getTokenFromRequest(req);
         // Handle getting the verifier outside of the below verification try/catch, which is intended to catch issues
@@ -183,24 +169,6 @@ public class Auth0Connection {
         return req.attribute("user");
     }
 
-
-    /**
-     * Extract API key from Spark HTTP request (in Authorization header).
-     */
-    private static String getApiKeyFromRequest(Request req) {
-        if (!isApiKeyHeaderPresent(req)) {
-            // x-api-key header not present, fallback onto Auth0 check.
-            return null;
-        }
-
-        final String apiKey = req.headers("x-api-key");
-        if (apiKey == null) {
-            logMessageAndHalt(req, 401, "Could not find api key");
-        }
-
-        return apiKey;
-    }
-
     /**
      * Extract JWT token from Spark HTTP request (in Authorization header).
      */
@@ -308,5 +276,4 @@ public class Auth0Connection {
         }
         logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
     }
-
 }

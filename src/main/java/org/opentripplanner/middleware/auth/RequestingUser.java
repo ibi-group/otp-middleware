@@ -9,11 +9,8 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import spark.Request;
 
-import java.util.UUID;
-
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
-import static org.opentripplanner.middleware.utils.HttpUtils.getRequiredQueryParamFromRequest;
 
 /**
  * User profile that is attached to an HTTP request.
@@ -24,30 +21,23 @@ public class RequestingUser {
     public ApiUser apiUser;
     public AdminUser adminUser;
     public String auth0UserId;
-    public String apiKey;
 
     /**
      * Constructor is only used for creating a test user. If an Auth0 user id is provided check persistence for matching
      * user else create default user.
      */
-    private RequestingUser(String auth0UserId, String apiKey) {
+    private RequestingUser(String auth0UserId) {
         if (auth0UserId == null) {
             this.auth0UserId = "user_id:string";
             otpUser = new OtpUser();
+            apiUser = new ApiUser();
             adminUser = new AdminUser();
         } else {
             this.auth0UserId = auth0UserId;
             Bson withAuth0UserId = eq("auth0UserId", auth0UserId);
             otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
+            apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
             adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
-        }
-
-        if (apiKey == null) {
-            this.apiKey = UUID.randomUUID().toString();
-            apiUser = new ApiUser();
-        } else {
-            this.apiKey = apiKey;
-            apiUser = getApiUserForApiKey(apiKey);
         }
     }
 
@@ -58,22 +48,8 @@ public class RequestingUser {
         this.auth0UserId = jwt.getClaim("sub").asString();
         Bson withAuth0UserId = eq("auth0UserId", auth0UserId);
         otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
+        apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
         adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
-    }
-
-    /**
-     * Create an API user profile from the provided apiKey. Check persistence for matching stored user.
-     */
-    public RequestingUser(String apiKey) {
-        this.apiKey = apiKey;
-        apiUser = getApiUserForApiKey(apiKey);
-    }
-
-    /**
-     * Get an API user matching the provided API key
-     */
-    private ApiUser getApiUserForApiKey(String apiKey) {
-        return ApiUser.userForApiKeyValue(apiKey);
     }
 
     /**
@@ -89,7 +65,6 @@ public class RequestingUser {
             auth0UserId = req.headers("Authorization");
         }
 
-        String apiKey = getRequiredQueryParamFromRequest(req, "apiKey", true);
-        return new RequestingUser(auth0UserId, apiKey);
+        return new RequestingUser(auth0UserId);
     }
 }

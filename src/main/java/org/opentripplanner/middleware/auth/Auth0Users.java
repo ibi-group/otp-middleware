@@ -42,6 +42,7 @@ public class Auth0Users {
     private static final String AUTH0_CLIENT_ID = getConfigPropertyAsText("AUTH0_CLIENT_ID");
     private static final String AUTH0_CLIENT_SECRET = getConfigPropertyAsText("AUTH0_CLIENT_SECRET");
     private static final String DEFAULT_CONNECTION_TYPE = "Username-Password-Authentication";
+    private static final String DEFAULT_AUDIENCE = "https://otp-middleware";
     private static final String MANAGEMENT_API_VERSION = "v2";
     private static final String SEARCH_API_VERSION = "v3";
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
@@ -53,8 +54,8 @@ public class Auth0Users {
     private static final AuthAPI authAPI = new AuthAPI(AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET);
 
     /**
-     * Creates a standard user for the provided email address. Defaults to a random UUID password and connection type of
-     * {@link #DEFAULT_CONNECTION_TYPE}.
+     * Creates a standard user for the provided email address, password (Defaulted to a random UUID) and connection type
+     * of {@link #DEFAULT_CONNECTION_TYPE}.
      */
     public static User createAuth0UserForEmail(String email) throws Auth0Exception {
         return createAuth0UserForEmail(email, UUID.randomUUID().toString());
@@ -253,7 +254,7 @@ public class Auth0Users {
             "grant_type=password&username=%s&password=%s&audience=%s&scope=&client_id=%s&client_secret=%s",
             username,
             password,
-            "https://otp-middleware", // must match an API identifier
+            DEFAULT_AUDIENCE, // must match an API identifier
             AUTH0_CLIENT_ID, // Auth0 application client ID
             AUTH0_CLIENT_SECRET // Auth0 application client secret
         );

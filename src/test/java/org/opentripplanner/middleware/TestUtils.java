@@ -69,13 +69,6 @@ public class TestUtils {
      */
     public static HttpResponse<String> mockAuthenticatedRequest(String path, AbstractUser requestingUser, HttpUtils.REQUEST_METHOD requestMethod) {
         HashMap<String, String> headers = getMockHeaders(requestingUser);
-        // If requester is an API user, add API key value as x-api-key header to simulate request over API Gateway.
-        if (requestingUser instanceof ApiUser) {
-            ApiUser apiUser = (ApiUser) requestingUser;
-            if (!apiUser.apiKeys.isEmpty()) {
-                headers.put("x-api-key", apiUser.apiKeys.get(0).value);
-            }
-        }
 
         return HttpUtils.httpRequestRawResponse(
             URI.create("http://localhost:4567/" + path),
@@ -106,7 +99,6 @@ public class TestUtils {
             if (!apiUser.apiKeys.isEmpty()) {
                 headers.put("x-api-key", apiUser.apiKeys.get(0).value);
             }
-            return headers;
         }
 
         // If requester is an Otp user which was created by an Api user, return empty header because an Otp user created

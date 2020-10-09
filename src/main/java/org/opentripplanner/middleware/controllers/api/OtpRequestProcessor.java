@@ -24,7 +24,6 @@ import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_XML;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isApiKeyHeaderPresent;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_API_ROOT;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
@@ -107,10 +106,9 @@ public class OtpRequestProcessor implements Endpoint {
      */
     private static void handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse) {
 
-        // If the Auth header is present, this indicates that the request was made by a logged in user. If the Api key
-        // header is present, this indicates that the request was made by an Api user. If either are present we should
-        // store trip history (but we verify this preference before doing so).
-        if (!isAuthHeaderPresent(request) && !isApiKeyHeaderPresent(request)) {
+        // If the Auth header is present, this indicates that the request was made by a logged in user. If present
+        // we should store trip history (but we verify this preference before doing so).
+        if (!isAuthHeaderPresent(request)) {
             LOG.debug("Anonymous user, trip history not stored");
             return;
         }
@@ -139,7 +137,7 @@ public class OtpRequestProcessor implements Endpoint {
             if (otpUser != null && !otpUser.canBeManagedBy(requestingUser)) {
                 logMessageAndHalt(request,
                     HttpStatus.FORBIDDEN_403,
-                    String.format("Api user: %s not authorized to make trip requests for Otp user: %s",
+                    String.format("User: %s not authorized to make trip requests for user: %s",
                         requestingUser.apiUser.email,
                         otpUser.email));
             }

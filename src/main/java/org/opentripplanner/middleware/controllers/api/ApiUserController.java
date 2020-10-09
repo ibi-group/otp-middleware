@@ -1,8 +1,10 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.ApiEndpoint;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
@@ -32,9 +34,12 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     private static final Logger LOG = LoggerFactory.getLogger(ApiUserController.class);
     public static final String DEFAULT_USAGE_PLAN_ID = getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
     private static final String API_KEY_PATH = "/apikey";
+    private static final String AUTHENTICATE_PATH = "/authenticate";
     private static final int API_KEY_LIMIT_PER_USER = 2;
     private static final String API_KEY_ID_PARAM = "/:apiKeyId";
     public static final String API_USER_PATH = "secure/application";
+    private static final String USERNAME_PARAM = "username";
+    private static final String PASSWORD_PARAM = "password";
 
     public ApiUserController(String apiPrefix) {
         super(apiPrefix, Persistence.apiUsers, API_USER_PATH);
@@ -66,9 +71,19 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                     .and()
                     .withProduces(JSON_ONLY)
                     .withResponseType(persistence.clazz),
-                this::deleteApiKeyForApiUser, JsonUtils::toJson
+                this::deleteApiKeyForApiUser, JsonUtils::toJson)
+            // Authenticate user with Auth0
+            .post(path(ID_PATH + AUTHENTICATE_PATH)
+                    .withDescription("Authenticates ApiUser with Auth0.")
+                    .withPathParam().withName(ID_PARAM).withDescription("The user ID.").and()
+                    .withQueryParam().withName(USERNAME_PARAM).withRequired(true)
+                    .withDescription("Auth0 username (usually email address).").and()
+                    .withQueryParam().withName(PASSWORD_PARAM).withRequired(true)
+                    .withDescription("Auth0 password.").and()
+                    .withProduces(JSON_ONLY)
+                    .withResponseType(String.class),
+                this::authenticateAuth0User, JsonUtils::toJson
             );
-
 
         // Add the regular CRUD methods after defining the /apikey route.
         super.buildEndpoint(modifiedEndpoint);
@@ -82,6 +97,17 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             user.apiKeys
                 .stream()
                 .anyMatch(apiKey -> apiKeyId.equals(apiKey.keyId));
+    }
+
+    /**
+     * Authenticate user with Auth0 based on username (email) and password. If successful, return the bearer token else
+     * null.
+     */
+    private String authenticateAuth0User(Request req, Response res) throws JsonProcessingException {
+        String username = HttpUtils.getRequiredQueryParamFromRequest(req, USERNAME_PARAM, false);
+        // FIXME: Should this be encrypted?!
+        String password = HttpUtils.getRequiredQueryParamFromRequest(req, PASSWORD_PARAM, false);
+        return Auth0Users.getAuth0Token(username, password);
     }
 
     /**
