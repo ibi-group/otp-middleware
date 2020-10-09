@@ -101,19 +101,16 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "A phone number must be provided.");
         }
 
-        // Update OtpUser before submitting SMS request.
-        otpUser.phoneNumber = phoneNumber;
-        otpUser.isPhoneNumberVerified = false;
+        // Update OtpUser.pendingPhoneNumber before submitting SMS request.
+        otpUser.pendingPhoneNumber = phoneNumber;
         Persistence.otpUsers.replace(otpUser.id, otpUser);
-/*
+
         Verification verification = NotificationUtils.sendVerificationText(phoneNumber);
         if (verification == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Unknown error sending verification text");
         }
         // Verification result will show "pending" status if verification text is successfully sent.
         return new VerificationResult(verification);
- */
-        return null;
     }
 
     /**
@@ -128,11 +125,11 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         if (code == null) {
             logMessageAndHalt(req, 400, "Missing code from verify request.");
         }
-        if (otpUser.phoneNumber == null) {
+        if (otpUser.pendingPhoneNumber == null) {
             logMessageAndHalt(req, 404, "User must have valid phone number for SMS verification.");
         }
         // Check verification code with SMS service.
-        VerificationCheck check = NotificationUtils.checkSmsVerificationCode(otpUser.phoneNumber, code);
+        VerificationCheck check = NotificationUtils.checkSmsVerificationCode(otpUser.pendingPhoneNumber, code);
         if (check == null) {
             logMessageAndHalt(
                 req,
@@ -144,10 +141,10 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         // If the check is successful, status will be "approved".
         VerificationResult verificationResult = new VerificationResult(check);
         if (verificationResult.status.equals("approved")) {
-            // If the check is successful, update the OtpUser
-            // (set isPhoneNumberVerified and notificationChannel).
+            // If the check is successful, update the OtpUser's phoneNumber and erase pendingPhoneNumber.
             // TODO: Figure out adding a test for this update to the OtpUser record.
-            otpUser.isPhoneNumberVerified = true;
+            otpUser.phoneNumber = otpUser.pendingPhoneNumber;
+            otpUser.pendingPhoneNumber = null;
             Persistence.otpUsers.replace(otpUser.id, otpUser);
         }
 

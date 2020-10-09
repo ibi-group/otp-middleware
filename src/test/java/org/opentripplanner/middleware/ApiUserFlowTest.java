@@ -90,8 +90,6 @@ public class ApiUserFlowTest {
         otpUser = new OtpUser();
         otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
         otpUser.hasConsentedToTerms = true;
-        otpUser.isPhoneNumberVerified = true;
-        otpUser.phoneNumber = "+15555550222"; // Fake 555 number.
         otpUser.storeTripHistory = true;
         // create Auth0 users for apiUser and optUser.
         try {

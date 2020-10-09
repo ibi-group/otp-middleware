@@ -20,9 +20,6 @@ public class OtpUser extends AbstractUser {
     /** Whether the user has consented to terms of use. */
     public boolean hasConsentedToTerms;
 
-    /** Whether the phone number has been verified. */
-    public boolean isPhoneNumberVerified;
-
     /**
      * Notification preference for this user
      * ("email", "sms", or "none").
@@ -31,7 +28,12 @@ public class OtpUser extends AbstractUser {
     public String notificationChannel;
 
     /**
-     * Phone number for SMS notifications.
+     * Pending, unverified phone number, and for which a verification code has been requested.
+     */
+    public String pendingPhoneNumber;
+
+    /**
+     * Verified phone number for SMS notifications.
      * Must include country code, e.g., +15551234
      */
     public String phoneNumber;

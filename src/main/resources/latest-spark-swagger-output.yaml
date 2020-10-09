@@ -1107,9 +1107,9 @@ definitions:
     properties:
       hasConsentedToTerms:
         type: "boolean"
-      isPhoneNumberVerified:
-        type: "boolean"
       notificationChannel:
+        type: "string"
+      pendingPhoneNumber:
         type: "string"
       phoneNumber:
         type: "string"

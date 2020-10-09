@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 
 public class OtpUserControllerTest {
+    private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake 555 number.
     private static OtpUser otpUser;
 
     /**
@@ -40,8 +41,8 @@ public class OtpUserControllerTest {
         otpUser = new OtpUser();
         otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
         otpUser.hasConsentedToTerms = true;
-        otpUser.isPhoneNumberVerified = true;
-        otpUser.phoneNumber = "+15555550222"; // Fake 555 number.
+        otpUser.phoneNumber = INITIAL_PHONE_NUMBER;
+        otpUser.pendingPhoneNumber = null;
         Persistence.otpUsers.create(otpUser);
     }
 
@@ -56,19 +57,20 @@ public class OtpUserControllerTest {
     }
 
     /**
-     * Test to check that a user APIs for the chain of API calls to verify a user's phone number.
+     * Test to check that a phone verification SMS request updates OtpUser.pendingPhoneNumber
+     * and leaves OtpUser.phoneNumber intact.
      */
     @Test
-    public void smsRequestShouldPersistPhoneAndSetToUnverified() {
+    public void smsRequestShouldSetPendingPhoneNumberOnly() {
         // Check phone number persistence.
-        final String MOCK_PHONE_NUMBER = "+15555550321";
+        final String PHONE_NUMBER_TO_VERIFY = "+15555550321";
         // 1. Request verification SMS.
         // Note that the result of the request for an SMS does not matter
         // (e.g. if the SMS service is down, the user's phone number should still be recorded).
         mockAuthenticatedRequest(
             String.format("api/secure/user/%s/verify_sms/%s",
                 otpUser.id,
-                MOCK_PHONE_NUMBER
+                PHONE_NUMBER_TO_VERIFY
             ),
             otpUser,
             HttpUtils.REQUEST_METHOD.GET
@@ -83,7 +85,7 @@ public class OtpUserControllerTest {
         assertEquals(HttpStatus.OK_200, otpUserWithPhoneResponse.statusCode());
 
         OtpUser otpUserWithPhone = JsonUtils.getPOJOFromJSON(otpUserWithPhoneResponse.body(), OtpUser.class);
-        assertEquals(MOCK_PHONE_NUMBER, otpUserWithPhone.phoneNumber);
-        assertFalse(otpUserWithPhone.isPhoneNumberVerified);
+        assertEquals(INITIAL_PHONE_NUMBER, otpUserWithPhone.phoneNumber);
+        assertEquals(PHONE_NUMBER_TO_VERIFY, otpUserWithPhone.pendingPhoneNumber);
     }
 }
