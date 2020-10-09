@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
@@ -153,6 +152,10 @@ public class MonitoredTrip extends Model {
         initializeFromItineraryAndQueryParams();
     }
 
+    /**
+     * Initializes a MonitoredTrip by deriving some fields from the currently set itinerary. Also, the realtime info of
+     * the itinerary is removed.
+     */
     public void initializeFromItineraryAndQueryParams() throws IllegalArgumentException, URISyntaxException {
         int lastLegIndex = itinerary.legs.size() - 1;
         from = itinerary.legs.get(0).from;
@@ -308,6 +311,9 @@ public class MonitoredTrip extends Model {
         return Persistence.monitoredTrips.removeById(this.id);
     }
 
+    /**
+     * Parse the query params for this trip into a map of the variables.
+     */
     public Map<String, String> parseQueryParams() throws URISyntaxException {
         return URLEncodedUtils.parse(
             new URI(String.format("http://example.com/plan?%s", queryParams)),
@@ -315,6 +321,11 @@ public class MonitoredTrip extends Model {
         ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
     }
 
+    /**
+     * Check if the trip is planned with the target time being an arriveBy or departAt query.
+     *
+     * @return true, if the trip's target time is for an arriveBy query
+     */
     public boolean isArriveBy() throws URISyntaxException {
         // if arriveBy is not included in query params, OTP will default to false, so initialize to false
         return parseQueryParams().getOrDefault("arriveBy", "false").equals("true");
@@ -351,7 +362,6 @@ public class MonitoredTrip extends Model {
     /**
      * Returns the target hour of the day that the trip is either departing at or arriving by
      */
-    @BsonIgnore
     public int tripTimeHour() {
         return Integer.valueOf(tripTime.split(":")[0]);
     }
@@ -359,7 +369,6 @@ public class MonitoredTrip extends Model {
     /**
      * Returns the target minute of the hour that the trip is either departing at or arriving by
      */
-    @BsonIgnore
     public int tripTimeMinute() {
         return Integer.valueOf(tripTime.split(":")[1]);
     }

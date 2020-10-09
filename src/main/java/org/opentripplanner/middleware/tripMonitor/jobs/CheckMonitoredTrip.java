@@ -268,10 +268,10 @@ public class CheckMonitoredTrip implements Runnable {
      * was checked. Skipping the check should only occur if the previous trip has ended and the next trip meets the
      * following criteria for skipping a check:
      *
-     * - the current time is before when the lead time before the next itinerary starts
+     * - the current time is before the lead time before the next itinerary starts
      * - the current time is after the lead time before the next itinerary starts, but is over an hour until the
      *     itinerary start time and the trip has already been checked within the last 60 minutes
-     * - the current time is after the lead time before the next itinerary starts and between 60-15 minutes prior to the
+     * - the current time is after the lead time before the next itinerary starts and between 60-30 minutes prior to the
      *     itinerary start time, but a check has occurred within the last 15 minutes
      *
      * These checks are done based off of the information in the trip's journey state's latest itinerary. If no such
@@ -304,8 +304,10 @@ public class CheckMonitoredTrip implements Runnable {
                 .withMinute(trip.tripTimeMinute())
                 .withSecond(0);
 
-            // if a previous journeyState target date exists, check if the previous target date was today's date. If so,
-            // immediately advance to the next day
+            // Check if the journeyState indicates that an itinerary has already been calculated in a previous run of
+            // this CheckMonitoredTrip. If the targetDate is null, then the current date has not yet been checked. If
+            // the journeyState's targetDate is not null, that indicates that today has already been checked. Therefore,
+            // advance targetDate by another day before calculating when the next itinerary occurs.
             if (journeyState.targetDate != null) {
                 LocalDate lastDate = DateTimeUtils.getDateFromString(
                     journeyState.targetDate,
@@ -323,7 +325,9 @@ public class CheckMonitoredTrip implements Runnable {
             // calculate the next possible itinerary. If the calculation failed, skip this trip check.
             if (!calculateNextItinerary()) return true;
 
-            // check if the matching itinerary has already ended
+            // check if the matching itinerary has already ended. This could occur on the very first run of
+            // CheckMonitoredTrip for itineraries that occur today, but has already ended. Up until this point, the
+            // matchingItinerary wasn't calculated, so it wasn't known when the end time was.
             if (matchingItinerary.endTime.before(DateTimeUtils.nowAsDate())) {
                 // itinerary is done today, advance to the next day and recheck
                 targetZonedDateTime = targetZonedDateTime.plusDays(1);
@@ -361,9 +365,10 @@ public class CheckMonitoredTrip implements Runnable {
         // If time until trip is greater than 60 minutes, we only need to check once every hour.
         if (minutesUntilTrip > 60) {
             // It's been about an hour since the last check. Do not skip.
-            if (minutesSinceLastCheck >= 60) {
+            int overHourCheckThresholdMinutes = 60;
+            if (minutesSinceLastCheck >= overHourCheckThresholdMinutes) {
                 // TODO: Change log level.
-                LOG.info("Trip not checked in at least an hour. Checking.");
+                LOG.info("Trip not checked in at least an {} minutes. Checking.", overHourCheckThresholdMinutes);
                 return false;
             }
         } else {
@@ -375,9 +380,10 @@ public class CheckMonitoredTrip implements Runnable {
                 return false;
             }
             // If the trip starts within 30 minutes, check the trip every minute (assuming the loop runs every minute).
-            if (minutesUntilTrip <= 30) {
+            int checkEveryMinuteThresholdMinutes = 30;
+            if (minutesUntilTrip <= checkEveryMinuteThresholdMinutes) {
                 // TODO: Change log level.
-                LOG.info("Trip happening within 30 minutes. Checking every minute.");
+                LOG.info("Trip happening within {} minutes. Checking every minute.", checkEveryMinuteThresholdMinutes);
                 return false;
             }
         }
@@ -395,9 +401,13 @@ public class CheckMonitoredTrip implements Runnable {
      * matching itinerary isn't found on the next possible date the trip should be monitored on.
      */
     private boolean calculateNextItinerary() {
+        // double check that this trip is in fact active and throw an error if it is not
+        if (trip.isInactive()) {
+            throw new RuntimeException("An attempt was made to find the next possible active date of an inactive monitored trip.");
+        }
+
         // if the trip is not active on the current zoned date time, advance until a day is found when the trip is
-        // active. It is guaranteed that the trip will be active on a certain date because a call to
-        // {@link MonitoredTrip#isInactive} should already have been made in the shouldSkipMonitoredTripCheck method.
+        // active.
         while (!trip.isActiveOnDate(targetZonedDateTime)) {
             targetZonedDateTime = targetZonedDateTime.plusDays(1);
         }
@@ -419,6 +429,13 @@ public class CheckMonitoredTrip implements Runnable {
         return true;
     }
 
+    /**
+     * Creates and executes a request to OTP using the currently set target date and other trip plan query parameters
+     * associated with the current monitored trip. The response is saved into the {@link CheckMonitoredTrip#otpResponse}
+     * variable.
+     *
+     * @return false if any kind of exception occurred or if a trip plan could not be calculated by OTP
+     */
     private boolean calculateOtpResponse() {
         OtpDispatcherResponse otpDispatcherResponse;
         try {
