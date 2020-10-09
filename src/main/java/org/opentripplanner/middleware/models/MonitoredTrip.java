@@ -16,16 +16,13 @@ import org.opentripplanner.middleware.persistence.TypedPersistence;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.DayOfWeek;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
@@ -329,34 +326,6 @@ public class MonitoredTrip extends Model {
     public boolean isArriveBy() throws URISyntaxException {
         // if arriveBy is not included in query params, OTP will default to false, so initialize to false
         return parseQueryParams().getOrDefault("arriveBy", "false").equals("true");
-    }
-
-    /**
-     * Gets the timezone of the target location. When planning a trip, we either want to depart at a certain time or 
-     * arrive by a certain time. When departing, we use the local time present at the origin and when arriving by we 
-     * use the local time at the destination. Therefore, this method will return the timezone at the destination if this
-     * trip is an arriveBy trip, or the timezone at the origin if the trip is a depart at trip.
-     */
-    public ZoneId timezoneForTargetLocation() throws URISyntaxException {
-        double lat, lon;
-        if (isArriveBy()) {
-            lat = to.lat;
-            lon = to.lon;
-        } else {
-            lat = from.lat;
-            lon = from.lon;
-        }
-        Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(lat, lon);
-        if (fromZoneId.isEmpty()) {
-            String message = String.format(
-                "Could not find coordinate's (lat=%.6f, lon=%.6f) timezone for monitored trip %s",
-                lat,
-                lon,
-                id
-            );
-            throw new RuntimeException(message);
-        } 
-        return fromZoneId.get();
     }
 
     /**

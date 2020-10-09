@@ -14,6 +14,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
@@ -282,8 +283,8 @@ public class CheckMonitoredTrip implements Runnable {
         // before anything else, return true if the trip is inactive
         if (trip.isInactive()) return true;
 
-        // calculate the appropriate timezone to use for the target time based off of the appropriate trip end location
-        ZoneId targetZoneId = trip.timezoneForTargetLocation();
+        // get the configured timezone that OTP is using to parse dates and times
+        ZoneId targetZoneId = DateTimeUtils.getOtpZoneId();
 
         // get the most recent journey state and itinerary to see when the next monitored trip is supposed to occur
         journeyState = trip.retrieveJourneyState();
