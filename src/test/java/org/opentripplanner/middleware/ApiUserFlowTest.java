@@ -2,10 +2,14 @@ package org.opentripplanner.middleware;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -21,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -123,7 +126,7 @@ public class ApiUserFlowTest {
      * records. This also includes Auth0 users if auth is enabled.
      */
     @Test
-    public void canSimulateApiUserFlow() {
+    public void canSimulateApiUserFlow() throws JsonProcessingException {
         // create otp user as api user
         HttpResponse<String> createUserResponse = mockAuthenticatedPost("api/secure/user",
             apiUser,
@@ -157,7 +160,10 @@ public class ApiUserFlowTest {
             HttpUtils.REQUEST_METHOD.GET
         );
         assertEquals(HttpStatus.OK_200, tripRequestResponse.statusCode());
-        List<TripRequest> tripRequests = JsonUtils.getPOJOFromJSONAsList(tripRequestResponse.body(), TripRequest.class);
+        // Special handling of deserialization for ResponseList to avoid class cast issues encountered with JsonUtils
+        // methods.
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseList<TripRequest> tripRequests = mapper.readValue(tripRequestResponse.body(), new TypeReference<>() {});
 
         // Delete otp user.
         HttpResponse<String> deleteUserResponse = mockAuthenticatedRequest(
@@ -176,7 +182,7 @@ public class ApiUserFlowTest {
         assertNull(deletedTrip);
 
         // Verify trip request no longer exists.
-        TripRequest tripRequest = Persistence.tripRequests.getById(tripRequests.get(0).id);
+        TripRequest tripRequest = Persistence.tripRequests.getById(tripRequests.data.get(0).id);
         assertNull(tripRequest);
 
         // Delete API user (this would happen through the OTP Admin portal).

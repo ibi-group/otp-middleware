@@ -64,15 +64,27 @@ paths:
     get:
       tags:
       - "api/admin/user"
-      description: "Gets a list of all 'AdminUser' entities."
+      description: "Gets a paginated list of all 'AdminUser' entities."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
       responses:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/AdminUser[]"
+            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/admin/user"
@@ -229,15 +241,27 @@ paths:
     get:
       tags:
       - "api/secure/application"
-      description: "Gets a list of all 'ApiUser' entities."
+      description: "Gets a paginated list of all 'ApiUser' entities."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
       responses:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/ApiUser[]"
+            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/secure/application"
@@ -322,15 +346,27 @@ paths:
     get:
       tags:
       - "api/secure/monitoredtrip"
-      description: "Gets a list of all 'MonitoredTrip' entities."
+      description: "Gets a paginated list of all 'MonitoredTrip' entities."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
       responses:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/MonitoredTrip[]"
+            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/secure/monitoredtrip"
@@ -416,7 +452,7 @@ paths:
     get:
       tags:
       - "api/secure/triprequests"
-      description: "Gets a list of all trip requests for a user."
+      description: "Gets a paginated list of the most recent trip requests for a user."
       produces:
       - "application/json"
       parameters:
@@ -427,11 +463,16 @@ paths:
         type: "string"
       - name: "limit"
         in: "query"
-        description: "If specified, the maximum number of trip requests to return,\
-          \ starting from the most recent."
+        description: "If specified, the maximum number of items to return."
         required: false
         type: "string"
         default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
       - name: "fromDate"
         in: "query"
         description: "If specified, the earliest date (format yyyy-MM-dd) for which\
@@ -443,7 +484,7 @@ paths:
       - name: "toDate"
         in: "query"
         description: "If specified, the latest date (format yyyy-MM-dd) for which\
-          \ usage logs are retrieved."
+          \ trip requests are retrieved."
         required: false
         type: "string"
         default: "The current date"
@@ -519,15 +560,27 @@ paths:
     get:
       tags:
       - "api/secure/user"
-      description: "Gets a list of all 'OtpUser' entities."
+      description: "Gets a paginated list of all 'OtpUser' entities."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
       responses:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/OtpUser[]"
+            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/secure/user"
@@ -647,10 +700,22 @@ paths:
     get:
       tags:
       - "api/admin/bugsnag/eventsummary"
-      description: "Gets a list of all Bugsnag event summaries."
+      description: "Gets a paginated list of the latest Bugsnag event summaries."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
       responses:
         "200":
           description: "successful operation"
@@ -684,8 +749,27 @@ definitions:
         format: "date"
       id:
         type: "string"
-  AdminUser[]:
+  ResponseList:
     type: "object"
+    properties:
+      clazz:
+        type: "string"
+      data:
+        type: "array"
+        items:
+          type: "string"
+      offset:
+        type: "integer"
+        format: "int32"
+      limit:
+        type: "integer"
+        format: "int32"
+      total:
+        type: "integer"
+        format: "int64"
+      timestamp:
+        type: "string"
+        format: "date"
   ApiKey:
     type: "object"
     properties:
@@ -714,10 +798,6 @@ definitions:
         type: "boolean"
       name:
         type: "string"
-  ApiUser[]:
-    type: "object"
-  MonitoredTrip[]:
-    type: "object"
   EncodedPolyline:
     type: "object"
     properties:
@@ -1116,8 +1196,6 @@ definitions:
         type: "boolean"
       applicationId:
         type: "string"
-  OtpUser[]:
-    type: "object"
   GetUsageResult:
     type: "object"
     properties:
