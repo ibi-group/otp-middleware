@@ -64,7 +64,7 @@ paths:
     get:
       tags:
       - "api/admin/user"
-      description: "Gets a list of all 'AdminUser' entities."
+      description: "Gets a paginated list of all 'AdminUser' entities."
       produces:
       - "application/json"
       parameters:
@@ -241,7 +241,7 @@ paths:
     get:
       tags:
       - "api/secure/application"
-      description: "Gets a list of all 'ApiUser' entities."
+      description: "Gets a paginated list of all 'ApiUser' entities."
       produces:
       - "application/json"
       parameters:
@@ -346,7 +346,7 @@ paths:
     get:
       tags:
       - "api/secure/monitoredtrip"
-      description: "Gets a list of all 'MonitoredTrip' entities."
+      description: "Gets a paginated list of all 'MonitoredTrip' entities."
       produces:
       - "application/json"
       parameters:
@@ -452,7 +452,7 @@ paths:
     get:
       tags:
       - "api/secure/triprequests"
-      description: "Gets a list of all trip requests for a user."
+      description: "Gets a paginated list of the most recent trip requests for a user."
       produces:
       - "application/json"
       parameters:
@@ -560,7 +560,7 @@ paths:
     get:
       tags:
       - "api/secure/user"
-      description: "Gets a list of all 'OtpUser' entities."
+      description: "Gets a paginated list of all 'OtpUser' entities."
       produces:
       - "application/json"
       parameters:
@@ -700,10 +700,22 @@ paths:
     get:
       tags:
       - "api/admin/bugsnag/eventsummary"
-      description: "Gets a list of all Bugsnag event summaries."
+      description: "Gets a paginated list of the latest Bugsnag event summaries."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
       responses:
         "200":
           description: "successful operation"
