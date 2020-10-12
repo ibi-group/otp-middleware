@@ -92,8 +92,8 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
 
     @Test
     public void canGetFilteredTripRequestsWithFromAndToDate() {
-        user = createUser(TEST_EMAIL);
-        List<TripRequest> tripRequests = createTripRequests(limit, user.id);
+        OtpUser user = createUser(TEST_EMAIL);
+        List<TripRequest> tripRequests = createTripRequests(LIMIT, user.id);
         LocalDateTime fromStartOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MIN);
         LocalDateTime toEndOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MAX);
         Date fromDate = Date.from(fromStartOfDay

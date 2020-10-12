@@ -2,6 +2,7 @@ package org.opentripplanner.middleware;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.http.HttpStatus;
@@ -125,7 +126,7 @@ public class ApiUserFlowTest {
      * records. This also includes Auth0 users if auth is enabled.
      */
     @Test
-    public void canSimulateApiUserFlow() {
+    public void canSimulateApiUserFlow() throws JsonProcessingException {
         // create otp user as api user
         HttpResponse<String> createUserResponse = mockAuthenticatedPost("api/secure/user",
             apiUser,
