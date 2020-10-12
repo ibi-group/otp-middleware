@@ -1111,7 +1111,11 @@ definitions:
         type: "string"
       pendingPhoneNumber:
         type: "string"
+      pendingPhoneNumberFormatted:
+        type: "string"
       phoneNumber:
+        type: "string"
+      phoneNumberFormatted:
         type: "string"
       savedLocations:
         type: "array"
