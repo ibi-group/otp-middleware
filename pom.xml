@@ -13,10 +13,16 @@
         <awsjavasdk.version>1.11.728</awsjavasdk.version>
     </properties>
     <repositories>
-        <!--  used for importing java projects from github -->
+        <!-- To create Swagger API docs with spark-java -->
         <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
+            <id>manusant-beerRepo</id>
+            <url>https://packagecloud.io/manusant/beerRepo/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
     </repositories>
     <build>
@@ -273,9 +279,9 @@
 
         <!-- To create Swagger API docs with spark-java -->
         <dependency>
-            <groupId>com.github.ibi-group</groupId>
+            <groupId>com.beerboy.ss</groupId>
             <artifactId>spark-swagger</artifactId>
-            <version>handle-bounded-class-SNAPSHOT</version>
+            <version>1.0.0.48</version>
         </dependency>
 
         <!-- Auth0 Client library for using Management API  -->
