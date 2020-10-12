@@ -8,11 +8,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
@@ -80,7 +80,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     }
 
     /**
-     * To run this trip, change the env.yml config values for OTP_SERVER
+     * To run this trip, change the env.yml config values for OTP_API_ROOT
      * (and OTP_PLAN_ENDPOINT) to a valid OTP server.
      */
     @Test
@@ -88,15 +88,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // Do not run this test on Travis CI because it requires a live OTP server
         // FIXME: Add live otp server to e2e tests.
         assumeTrue(!isRunningCi && isEndToEnd);
-        // Submit a query to the OTP server.
-        // From P&R to Downtown Orlando
-        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(
-            "28.45119,-81.36818",
-            "28.54834,-81.37745"
-        );
-        // Construct a monitored trip from it.
-        MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse)
-            .updateAllDaysOfWeek(true);
+        MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = user.id;
         monitoredTrip.tripName = "My Morning Commute";
         Persistence.monitoredTrips.create(monitoredTrip);
@@ -117,7 +110,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // TODO: Improve assertions to use snapshots.
         Assertions.assertEquals(checkMonitoredTrip.notifications.size(), 1);
         // Clear the created trip.
-        Persistence.monitoredTrips.removeById(monitoredTrip.id);
+        deleteMonitoredTripAndJourney(monitoredTrip);
     }
 
     @Test
