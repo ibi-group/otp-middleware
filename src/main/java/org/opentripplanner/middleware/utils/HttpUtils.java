@@ -2,6 +2,8 @@ package org.opentripplanner.middleware.utils;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Filter;
 import spark.Request;
 
@@ -12,7 +14,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +21,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
-
+    private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
     public enum REQUEST_METHOD {GET, POST, DELETE}
 
     /**
@@ -104,11 +105,42 @@ public class HttpUtils {
     }
 
     /**
-     * Get entity attribute value from request. If nulls are not allowed, halt with error message.
+     * Get optional query param value from request as int (defaults to defaultValue). If parsed value is outside of the
+     * range of accepted values, it will be pinned to the min or max value (depending on which end of the range it is
+     * located).
      */
-    public static String getRequiredQueryParamFromRequest(Request req, String paramName, boolean allowNull) {
+    public static int getQueryParamFromRequest(Request req, String name, int min, int defaultValue, int max) {
+        // Start with default value
+        int value = defaultValue;
+        String requestValue = null;
+        try {
+            // Attempt to get value from query param.
+            requestValue = HttpUtils.getQueryParamFromRequest(req, name, true);
+            if (requestValue != null) {
+                value = Integer.parseInt(requestValue);
+                // If requested value is out of range, pin to min/max.
+                if (value < min) value = min;
+                else if (value > max) value = max;
+            }
+        } catch (NumberFormatException e) {
+            LOG.warn("Unable to parse {} value of {}. Using default limit: {}", name, requestValue, defaultValue, e);
+        }
+        return value;
+    }
+
+    /**
+     * Get query param value from request as int with no maximum value. If not optional, halt with error message.
+     */
+    public static int getQueryParamFromRequest(Request req, String name, int min, int defaultValue) {
+        return getQueryParamFromRequest(req, name, min, defaultValue, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Get query param value from request as string. If not optional/nulls not allowed, halt with error message.
+     */
+    public static String getQueryParamFromRequest(Request req, String paramName, boolean optional) {
         String paramValue = req.queryParams(paramName);
-        if (paramValue == null && !allowNull) {
+        if (paramValue == null && !optional) {
             logMessageAndHalt(req,
                 HttpStatus.BAD_REQUEST_400,
                 String.format("The parameter name (%s) must be provided.", paramName));

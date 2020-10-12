@@ -2,10 +2,14 @@ package org.opentripplanner.middleware;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -20,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -188,6 +193,7 @@ public class ApiUserFlowTest {
             otpUserResponse,
             HttpUtils.REQUEST_METHOD.GET
         );
+
         assertEquals(HttpStatus.UNAUTHORIZED_401, tripRequestResponseAsOtUser.statusCode());
 
         // Get trip for user as an Api user. This will work because an Api user should be able to get a trip on behalf
@@ -199,7 +205,7 @@ public class ApiUserFlowTest {
         );
         assertEquals(HttpStatus.OK_200, tripRequestResponseAsApiUser.statusCode());
 
-        List<TripRequest> tripRequests = JsonUtils.getPOJOFromJSONAsList(tripRequestResponseAsApiUser.body(), TripRequest.class);
+        ResponseList tripRequests = JsonUtils.getPOJOFromJSON(tripRequestResponseAsApiUser.body(), ResponseList.class);
 
         // Delete Otp user as Otp user. This will fail because the user was created by an Api user and therefore does
         // not have a Auth0 account.
@@ -227,7 +233,8 @@ public class ApiUserFlowTest {
         assertNull(deletedTrip);
 
         // Verify trip request no longer exists.
-        TripRequest tripRequest = Persistence.tripRequests.getById(tripRequests.get(0).id);
+        LinkedHashMap trip = (LinkedHashMap) tripRequests.data.get(0);
+        TripRequest tripRequest = Persistence.tripRequests.getById(trip.get("id").toString());
         assertNull(tripRequest);
 
         // Delete API user (this would happen through the OTP Admin portal).

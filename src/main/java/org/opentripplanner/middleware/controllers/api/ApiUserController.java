@@ -104,9 +104,9 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      * null.
      */
     private String authenticateAuth0User(Request req, Response res) throws JsonProcessingException {
-        String username = HttpUtils.getRequiredQueryParamFromRequest(req, USERNAME_PARAM, false);
+        String username = HttpUtils.getQueryParamFromRequest(req, USERNAME_PARAM, false);
         // FIXME: Should this be encrypted?!
-        String password = HttpUtils.getRequiredQueryParamFromRequest(req, PASSWORD_PARAM, false);
+        String password = HttpUtils.getQueryParamFromRequest(req, PASSWORD_PARAM, false);
         return Auth0Users.getAuth0Token(username, password);
     }
 

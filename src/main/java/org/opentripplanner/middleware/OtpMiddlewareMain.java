@@ -112,7 +112,7 @@ public class OtpMiddlewareMain {
          * _encoded_ URL e.g. http://localhost:3000/#/register which allows for greater flexibility.
          */
         spark.get("/register", (request, response) -> {
-            String route = HttpUtils.getRequiredQueryParamFromRequest(request, "route", false);
+            String route = HttpUtils.getQueryParamFromRequest(request, "route", false);
             if (route == null) {
                 logMessageAndHalt(request,
                     HttpStatus.BAD_REQUEST_400,
