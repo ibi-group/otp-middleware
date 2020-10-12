@@ -4,24 +4,27 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.NotificationUtils;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 
 public class OtpUserControllerTest {
-    private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake 555 number.
+    private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake US 555 number.
     private static OtpUser otpUser;
 
     /**
@@ -62,9 +65,9 @@ public class OtpUserControllerTest {
      */
     @Test
     public void smsRequestShouldSetPendingPhoneNumberOnly() {
-        // Check phone number persistence.
         final String PHONE_NUMBER_TO_VERIFY = "+15555550321";
         final String PHONE_NUMBER_TO_VERIFY_FORMATTED = "(555) 555-0321";
+
         // 1. Request verification SMS.
         // Note that the result of the request for an SMS does not matter
         // (e.g. if the SMS service is down, the user's phone number should still be recorded).
@@ -76,6 +79,7 @@ public class OtpUserControllerTest {
             otpUser,
             HttpUtils.REQUEST_METHOD.GET
         );
+
         // 2. Fetch the newly-created user and check the notificationChannel, phoneNumber and isPhoneNumberVerified fields.
         // This should be the case regardless of the outcome from above.
         HttpResponse<String> otpUserWithPhoneResponse = mockAuthenticatedRequest(
@@ -89,5 +93,36 @@ public class OtpUserControllerTest {
         assertEquals(INITIAL_PHONE_NUMBER, otpUserWithPhone.phoneNumber);
         assertEquals(PHONE_NUMBER_TO_VERIFY, otpUserWithPhone.pendingPhoneNumber);
         assertEquals(PHONE_NUMBER_TO_VERIFY_FORMATTED, otpUserWithPhone.pendingPhoneNumberFormatted);
+    }
+
+    /**
+     * Check that a request with an malformed number or an international number
+     * results in a 400-bad request response.
+     * The home country is set by the COUNTRY_CODE config parameter.
+     */
+    @ParameterizedTest
+    @MethodSource("createRejectedNumbers")
+    public void invalidOrForeignNumbersShouldProduceBadRequest(String number) {
+        assumeTrue(NotificationUtils.COUNTRY_CODE.equals("US"));
+
+        HttpResponse<String> response = mockAuthenticatedRequest(
+            String.format("api/secure/user/%s/verify_sms/%s",
+                otpUser.id,
+                number
+            ),
+            otpUser,
+            HttpUtils.REQUEST_METHOD.GET
+        );
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.statusCode());
+    }
+
+    private static List<String> createRejectedNumbers() {
+        return List.of(
+            // "Famous" old parisian print shop number (https://fr.wikipedia.org/wiki/Jean_Mineur)
+            "+33142250001",
+
+            // US number with invalid characters
+            "+1555_&5551"
+        );
     }
 }

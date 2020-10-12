@@ -172,22 +172,13 @@ public class NotificationUtils {
      */
     public static com.twilio.rest.lookups.v1.PhoneNumber ensureDomesticPhoneNumber(spark.Request req, String phoneNumberString) {
         if (phoneNumberString.startsWith("+1555555")) {
-            // Give a pass for US fake 555 numbers.
+            // For US fake 555 numbers (used in for UI and backend testing),
+            // create and return a PhoneNumber object from a minimal JSON string.
             String lastFourDigits = phoneNumberString.substring("+1555555".length());
             return com.twilio.rest.lookups.v1.PhoneNumber.fromJson(
                 "{\n" +
-                    "  \"caller_name\": null,\n" +
-                    "  \"carrier\": {\n" +
-                    "    \"error_code\": null,\n" +
-                    "    \"mobile_country_code\": \"310\",\n" +
-                    "    \"mobile_network_code\": \"456\",\n" +
-                    "    \"name\": \"verizon\",\n" +
-                    "    \"type\": \"mobile\"\n" +
-                    "  },\n" +
-                    "  \"country_code\": \"US\",\n" +
                     "  \"national_format\": \"(555) 555-" + lastFourDigits + "\",\n" +
-                    "  \"phone_number\": \"" + phoneNumberString + "\",\n" +
-                    "  \"url\": \"https://lookups.twilio.com/v1/PhoneNumbers/+15108675310?Type=carrier\"\n" +
+                    "  \"phone_number\": \"" + phoneNumberString + "\"\n" +
                     "}", new ObjectMapper()
             );
         }
@@ -203,7 +194,7 @@ public class NotificationUtils {
         } catch (ApiException apiException) {
             // Handle 404 response - corresponds to invalid number.
             // In that case we return a 400 bad request response to the requester.
-            if (apiException.getCode() == 404) {
+            if (apiException.getStatusCode() == 404) {
                 logMessageAndHalt(
                     req,
                     HttpStatus.BAD_REQUEST_400,
