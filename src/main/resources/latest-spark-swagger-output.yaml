@@ -239,7 +239,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            type: "string"
+            $ref: "#/definitions/TokenHolder"
   /api/secure/application/fromtoken:
     get:
       tags:
@@ -826,6 +826,20 @@ definitions:
         type: "boolean"
       name:
         type: "string"
+  TokenHolder:
+    type: "object"
+    properties:
+      accessToken:
+        type: "string"
+      idToken:
+        type: "string"
+      refreshToken:
+        type: "string"
+      tokenType:
+        type: "string"
+      expiresIn:
+        type: "integer"
+        format: "int64"
   EncodedPolyline:
     type: "object"
     properties:
