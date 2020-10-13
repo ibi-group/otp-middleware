@@ -67,4 +67,11 @@ public class RequestingUser {
 
         return new RequestingUser(auth0UserId);
     }
+
+    /**
+     * Determine if requesting user is a third party user.
+     */
+    public boolean isThirdPartyUser() {
+        return apiUser != null;
+    }
 }

@@ -14,6 +14,7 @@ import org.opentripplanner.middleware.otp.response.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -27,7 +28,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_XML;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_API_ROOT;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
-import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Responsible for getting a response from OTP based on the parameters provided by the requester. If the target service
@@ -78,7 +78,7 @@ public class OtpRequestProcessor implements Endpoint {
      */
     private static String proxy(Request request, spark.Response response) {
         if (OTP_API_ROOT == null) {
-            logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
+            JsonUtils.logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
             return null;
         }
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
@@ -87,7 +87,7 @@ public class OtpRequestProcessor implements Endpoint {
         // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
-            logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
+            JsonUtils.logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
             return null;
         }
 
@@ -128,14 +128,15 @@ public class OtpRequestProcessor implements Endpoint {
             return;
         }
 
+        // Determine if the Otp request is being made by an actual Otp user or by a third party on behalf of an Otp user.
         OtpUser otpUser;
-        if (requestingUser.apiUser != null) {
+        if (requestingUser.isThirdPartyUser()) {
             // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
             // as a query parameter.
-            String otpUserId = request.queryParams("userId");
-            otpUser = Persistence.otpUsers.getById(otpUserId);
+            String userId = request.queryParams("userId");
+            otpUser = Persistence.otpUsers.getById(userId);
             if (otpUser != null && !otpUser.canBeManagedBy(requestingUser)) {
-                logMessageAndHalt(request,
+                JsonUtils.logMessageAndHalt(request,
                     HttpStatus.FORBIDDEN_403,
                     String.format("User: %s not authorized to make trip requests for user: %s",
                         requestingUser.apiUser.email,

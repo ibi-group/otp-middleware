@@ -38,20 +38,23 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
 
     @Override
     OtpUser preCreateHook(OtpUser user, Request req) {
-        // Check API key and assign user to appropriate third-party application. Note: this is only relevant for
-        // instances of otp-middleware running behind API Gateway.
         String apiKey = req.headers("x-api-key");
-        ApiUser apiUser = Persistence.apiUsers.getOneFiltered(Filters.eq("apiKeys.value", apiKey));
-        if (apiUser != null) {
-            // If API user found, assign to new OTP user.
-            user.applicationId = apiUser.id;
-        } else {
-            // If API user not found, report to Bugsnag for further investigation.
-            BugsnagReporter.reportErrorToBugsnag(
-                "OTP user created with API key that is not linked to any API user",
-                apiKey,
-                new IllegalArgumentException("API key not linked to API user.")
-            );
+        // If an api key is present an API user is attempting to create an OTP user.
+        if (apiKey != null) {
+            // Check API key and assign user to appropriate third-party application. Note: this is only relevant for
+            // instances of otp-middleware running behind API Gateway.
+            ApiUser apiUser = Persistence.apiUsers.getOneFiltered(Filters.eq("apiKeys.value", apiKey));
+            if (apiUser != null) {
+                // If API user found, assign to new OTP user.
+                user.applicationId = apiUser.id;
+            } else {
+                // If API user not found, report to Bugsnag for further investigation.
+                BugsnagReporter.reportErrorToBugsnag(
+                    "OTP user created with API key that is not linked to any API user",
+                    apiKey,
+                    new IllegalArgumentException("API key not linked to API user.")
+                );
+            }
         }
         return super.preCreateHook(user, req);
     }

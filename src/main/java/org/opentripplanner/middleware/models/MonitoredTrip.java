@@ -212,7 +212,7 @@ public class MonitoredTrip extends Model {
 
         if (belongsToUser) {
             return true;
-        } else if (requestingUser.apiUser != null) {
+        } else if (requestingUser.isThirdPartyUser()) {
             // get the required OTP user to confirm they are associated with the requesting API user.
             OtpUser otpUser = Persistence.otpUsers.getById(userId);
             if (otpUser != null && requestingUser.apiUser.id.equals(otpUser.applicationId)) {

@@ -26,12 +26,7 @@ import java.util.Date;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
-import static org.opentripplanner.middleware.utils.HttpUtils.getQueryParamFromRequest;
-import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
-import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Generic API controller abstract class. This class provides CRUD methods using {@link spark.Spark} HTTP request
@@ -189,10 +184,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     // FIXME Maybe better if the user check (and filtering) was done in a pre hook?
     // FIXME Will require further granularity for admin
     private ResponseList<T> getMany(Request req, Response res) {
-        int limit = getQueryParamFromRequest(req, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);
-        int offset = getQueryParamFromRequest(req, OFFSET_PARAM, 0, DEFAULT_OFFSET);
-        RequestingUser requestingUser = getUserFromRequest(req);
-        if (isUserAdmin(requestingUser)) {
+        int limit = HttpUtils.getQueryParamFromRequest(req, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);
+        int offset = HttpUtils.getQueryParamFromRequest(req, OFFSET_PARAM, 0, DEFAULT_OFFSET);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
+        if (Auth0Connection.isUserAdmin(requestingUser)) {
             // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
             // management or review without restriction.
             return persistence.getResponseList(offset, limit);
@@ -201,11 +196,11 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // OtpUserController. Therefore, the request should be limited to return just the entity matching the
             // requesting user.
             return persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), offset, limit);
-        } else if (requestingUser.apiUser != null) {
+        } else if (requestingUser.isThirdPartyUser()) {
             // Third party API users must pass in an OtpUser id as a query param in order to get filtered objects.
             // Query param is used so existing (and new) endpoints aren't affected.
-            String otpUserId = getQueryParamFromRequest(req, "otpUserId", false);
-            return persistence.getResponseList(Filters.eq("userId", otpUserId), offset, limit);
+            String userId = HttpUtils.getQueryParamFromRequest(req, "userId", false);
+            return persistence.getResponseList(Filters.eq("userId", userId), offset, limit);
         } else {
             // For all other cases the assumption is that the request is being made by an Otp user and the requested
             // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
@@ -225,7 +220,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         T object = getObjectForId(req, id);
 
         if (!object.canBeManagedBy(requestingUser)) {
-            logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to get %s.", className));
+            JsonUtils.logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to get %s.", className));
         }
 
         return object;
@@ -242,17 +237,17 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             T object = getObjectForId(req, id);
             // Check that requesting user can manage entity.
             if (!object.canBeManagedBy(requestingUser)) {
-                logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to delete %s.", className));
+                JsonUtils.logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to delete %s.", className));
             }
             // Run pre-delete hook. If return value is false, abort.
             if (!preDeleteHook(object, req)) {
-                logMessageAndHalt(req, 500, "Unknown error occurred during delete attempt.");
+                JsonUtils.logMessageAndHalt(req, 500, "Unknown error occurred during delete attempt.");
             }
             boolean success = object.delete();
             if (success) {
                 return object;
             } else {
-                logMessageAndHalt(
+                JsonUtils.logMessageAndHalt(
                     req,
                     HttpStatus.INTERNAL_SERVER_ERROR_500,
                     String.format("Unknown error encountered. Failed to delete %s", className),
@@ -262,7 +257,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         } catch (HaltException e) {
             throw e;
         } catch (Exception e) {
-            logMessageAndHalt(
+            JsonUtils.logMessageAndHalt(
                 req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
                 String.format("Error deleting %s", className),
@@ -280,7 +275,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private T getObjectForId(Request req, String id) {
         T object = persistence.getById(id);
         if (object == null) {
-            logMessageAndHalt(
+            JsonUtils.logMessageAndHalt(
                 req,
                 HttpStatus.NOT_FOUND_404,
                 String.format("No %s with id=%s found.", className, id),
@@ -315,18 +310,20 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         // Check if an update or create operation depending on presence of id param
         // This needs to be final because it is used in a lambda operation below.
         if (req.params(ID_PARAM) == null && req.requestMethod().equals("PUT")) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
+            JsonUtils.logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Must provide id");
         }
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         final boolean isCreating = req.params(ID_PARAM) == null;
         // Save or update to database
         try {
             // Validate fields by deserializing into POJO.
-            T object = getPOJOFromRequestBody(req, clazz);
+            T object = JsonUtils.getPOJOFromRequestBody(req, clazz);
             if (isCreating) {
                 // Verify that the requesting user can create object.
                 if (!object.canBeCreatedBy(requestingUser)) {
-                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to create %s.", className));
+                    JsonUtils.logMessageAndHalt(req,
+                        HttpStatus.FORBIDDEN_403,
+                        String.format("Requesting user not authorized to create %s.", className));
                 }
                 // Run pre-create hook and use updated object (with potentially modified values) in create operation.
                 T updatedObject = preCreateHook(object, req);
@@ -335,12 +332,14 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 String id = getIdFromRequest(req);
                 T preExistingObject = getObjectForId(req, id);
                 if (preExistingObject == null) {
-                    logMessageAndHalt(req, 400, "Object to update does not exist!");
+                    JsonUtils.logMessageAndHalt(req, 400, "Object to update does not exist!");
                     return null;
                 }
                 // Check that requesting user can manage entity.
                 if (!preExistingObject.canBeManagedBy(requestingUser)) {
-                    logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to update %s.", className));
+                    JsonUtils.logMessageAndHalt(req,
+                        HttpStatus.FORBIDDEN_403,
+                        String.format("Requesting user not authorized to update %s.", className));
                 }
                 // Update last updated value.
                 object.lastUpdated = new Date();
@@ -348,7 +347,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 object.dateCreated = preExistingObject.dateCreated;
                 // Validate that ID in JSON body matches ID param. TODO add test
                 if (!id.equals(object.id)) {
-                    logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "ID in JSON body must match ID param.");
+                    JsonUtils.logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "ID in JSON body must match ID param.");
                 }
                 // Get updated object from pre-update hook method.
                 T updatedObject = preUpdateHook(object, preExistingObject, req);
@@ -359,9 +358,13 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         } catch (HaltException e) {
             throw e;
         } catch (JsonProcessingException e) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for " + clazz.getSimpleName(), e);
+            JsonUtils.logMessageAndHalt(req,
+                HttpStatus.BAD_REQUEST_400,
+                "Error parsing JSON for " + clazz.getSimpleName(), e);
         } catch (Exception e) {
-            logMessageAndHalt(req, 500, "An error was encountered while trying to save to the database", e);
+            JsonUtils.logMessageAndHalt(req,
+                500,
+                "An error was encountered while trying to save to the database", e);
         } finally {
             String operation = isCreating ? "Create" : "Update";
             LOG.info("{} {} operation took {} msec", operation, className, DateTimeUtils.currentTimeMillis() - startTime);

@@ -17,11 +17,7 @@ import spark.Request;
 import spark.Response;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static org.opentripplanner.middleware.auth.Auth0Users.createNewAuth0User;
-import static org.opentripplanner.middleware.auth.Auth0Users.updateAuthFieldsForUser;
-import static org.opentripplanner.middleware.auth.Auth0Users.validateExistingUser;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
-import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Implementation of the {@link ApiController} abstract class for managing users. This controller connects with Auth0
@@ -85,7 +81,10 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         // but have not completed the account setup form yet.
         // For those users, the user profile would be 404 not found (as opposed to 403 forbidden).
         if (user == null) {
-            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.auth0UserId), null);
+            JsonUtils.logMessageAndHalt(req,
+                HttpStatus.NOT_FOUND_404,
+                String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.auth0UserId),
+                null);
         }
         return user;
     }
@@ -105,19 +104,19 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // TODO: If MOD UI is to be an ApiUser, we may want to do an additional check here to determine if this is a
         //  first-party API user (MOD UI) or third party.
-        if (requestingUser.apiUser != null && user instanceof OtpUser) {
+        if (requestingUser.isThirdPartyUser() && user instanceof OtpUser) {
             // Do not create Auth0 account for OtpUsers created on behalf of third party API users.
             return user;
         } else {
             // For any other user account, create Auth0 account
-            User auth0UserProfile = createNewAuth0User(user, req, this.persistence);
-            return updateAuthFieldsForUser(user, auth0UserProfile);
+            User auth0UserProfile = Auth0Users.createNewAuth0User(user, req, this.persistence);
+            return Auth0Users.updateAuthFieldsForUser(user, auth0UserProfile);
         }
     }
 
     @Override
     U preUpdateHook(U user, U preExistingUser, Request req) {
-        validateExistingUser(user, preExistingUser, req, this.persistence);
+        Auth0Users.validateExistingUser(user, preExistingUser, req, this.persistence);
         return user;
     }
 

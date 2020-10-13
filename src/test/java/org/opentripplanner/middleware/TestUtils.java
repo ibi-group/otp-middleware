@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
@@ -11,8 +11,6 @@ import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -25,13 +23,11 @@ import java.util.UUID;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
-import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Token;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 import static spark.Service.ignite;
 
 
 public class TestUtils {
-    private static final Logger LOG = LoggerFactory.getLogger(TestUtils.class);
     /**
      * Whether the end-to-end environment variable is enabled.
      */
@@ -111,13 +107,7 @@ public class TestUtils {
         }
 
         // Otherwise, get a valid oauth token for the user
-        String token = null;
-        try {
-            token = getAuth0Token(requestingUser.email, TEMP_AUTH0_USER_PASSWORD);
-        } catch (JsonProcessingException e) {
-            LOG.error("Cannot obtain Auth0 token for user {}", requestingUser.email, e);
-        }
-        headers.put("Authorization", "Bearer " + token);
+        headers.put("Authorization", "Bearer " + Auth0Users.getAuth0Token(requestingUser.email, TEMP_AUTH0_USER_PASSWORD));
         return headers;
     }
 

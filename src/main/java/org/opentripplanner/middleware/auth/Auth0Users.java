@@ -3,16 +3,18 @@ package org.opentripplanner.middleware.auth;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.client.mgmt.ManagementAPI;
 import com.auth0.exception.Auth0Exception;
+import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -25,26 +27,21 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.utils.HttpUtils.httpRequestRawResponse;
-import static org.opentripplanner.middleware.utils.JsonUtils.getSingleNodeValueFromJSON;
-import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * This class contains methods for querying Auth0 users using the Auth0 User Management API. Auth0 docs describing the
  * searchable fields and query syntax are here: https://auth0.com/docs/api/management/v2/user-search
  */
 public class Auth0Users {
-    public static final String AUTH0_DOMAIN = getConfigPropertyAsText("AUTH0_DOMAIN");
+    public static final String AUTH0_DOMAIN = ConfigUtils.getConfigPropertyAsText("AUTH0_DOMAIN");
     // This client/secret pair is for making requests for an API access token used with the Management API.
-    private static final String AUTH0_API_CLIENT = getConfigPropertyAsText("AUTH0_API_CLIENT");
-    private static final String AUTH0_API_SECRET = getConfigPropertyAsText("AUTH0_API_SECRET");
-    private static final String AUTH0_CLIENT_ID = getConfigPropertyAsText("AUTH0_CLIENT_ID");
-    private static final String AUTH0_CLIENT_SECRET = getConfigPropertyAsText("AUTH0_CLIENT_SECRET");
+    private static final String AUTH0_API_CLIENT = ConfigUtils.getConfigPropertyAsText("AUTH0_API_CLIENT");
+    private static final String AUTH0_API_SECRET = ConfigUtils.getConfigPropertyAsText("AUTH0_API_SECRET");
+    private static final String AUTH0_CLIENT_ID = ConfigUtils.getConfigPropertyAsText("AUTH0_CLIENT_ID");
+    private static final String AUTH0_CLIENT_SECRET = ConfigUtils.getConfigPropertyAsText("AUTH0_CLIENT_SECRET");
     private static final String DEFAULT_CONNECTION_TYPE = "Username-Password-Authentication";
     private static final String DEFAULT_AUDIENCE = "https://otp-middleware";
     private static final String MANAGEMENT_API_VERSION = "v2";
-    private static final String SEARCH_API_VERSION = "v3";
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
     /**
      * Cached API token so that we do not have to request a new one each time a Management API request is made.
@@ -192,12 +189,12 @@ public class Auth0Users {
         U userWithEmail = userStore.getOneFiltered(eq("email", user.email));
         if (userWithEmail != null) {
             // TODO: Does this need to change to allow multiple applications to create otpuser's with the same email?
-            logMessageAndHalt(req, 400, "User with email already exists in database!");
+            JsonUtils.logMessageAndHalt(req, 400, "User with email already exists in database!");
         }
         // Check for pre-existing user in Auth0 and create if not exists.
         User auth0UserProfile = getUserByEmail(user.email, true);
         if (auth0UserProfile == null) {
-            logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Error creating user for email " + user.email);
+            JsonUtils.logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Error creating user for email " + user.email);
         }
         LOG.info("Created new Auth0 user ({}) for user {}", auth0UserProfile.getId(), user.id);
         return auth0UserProfile;
@@ -208,7 +205,7 @@ public class Auth0Users {
      */
     public static <U extends AbstractUser> void validateUser(U user, Request req) {
         if (!isValidEmail(user.email)) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Email address is invalid.");
+            JsonUtils.logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Email address is invalid.");
         }
     }
 
@@ -220,11 +217,11 @@ public class Auth0Users {
         // Verify that email address for user has not changed.
         // TODO: should we permit changing email addresses? This would require making an update to Auth0.
         if (!preExistingUser.email.equals(user.email)) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Cannot change user email address!");
+            JsonUtils.logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Cannot change user email address!");
         }
         // Verify that Auth0 ID for user has not changed.
         if (!preExistingUser.auth0UserId.equals(user.auth0UserId)) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Cannot change Auth0 ID!");
+            JsonUtils.logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Cannot change Auth0 ID!");
         }
     }
 
@@ -245,10 +242,10 @@ public class Auth0Users {
     /**
      * Get an Auth0 oauth token for use in mocking user requests by using the Auth0 'Call Your API Using Resource Owner
      * Password Flow' approach. Auth0 setup can be reviewed here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow.
-     * If the user is successfully validated by Auth0 a bearer access token is returned, which is extracted and returned
+     * If the user is successfully validated by Auth0 a complete token is returned, which is extracted and returned
      * to the caller. In all other cases, null is returned.
      */
-    public static String getAuth0Token(String username, String password) throws JsonProcessingException {
+    public static TokenHolder getCompleteAuth0Token(String username, String password) {
         if (Auth0Connection.isAuthDisabled()) return null;
         String body = String.format(
             "grant_type=password&username=%s&password=%s&audience=%s&scope=&client_id=%s&client_secret=%s",
@@ -258,8 +255,7 @@ public class Auth0Users {
             AUTH0_CLIENT_ID, // Auth0 application client ID
             AUTH0_CLIENT_SECRET // Auth0 application client secret
         );
-
-        HttpResponse<String> response = httpRequestRawResponse(
+        HttpResponse<String> response = HttpUtils.httpRequestRawResponse(
             URI.create(String.format("https://%s/oauth/token", AUTH0_DOMAIN)),
             1000,
             HttpUtils.REQUEST_METHOD.POST,
@@ -270,6 +266,15 @@ public class Auth0Users {
             LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}", username, response.statusCode(), response.body());
             return null;
         }
-        return getSingleNodeValueFromJSON("access_token", response.body());
+        return JsonUtils.getPOJOFromJSON(response.body(), TokenHolder.class);
     }
+
+    /**
+     * Extract from a complete Auth0 token just the access token. If the token is not available, return null instead.
+     */
+    public static String getAuth0Token(String username, String password) {
+        TokenHolder token = getCompleteAuth0Token(username, password);
+        return (token == null) ? null : token.getAccessToken();
+    }
+
 }

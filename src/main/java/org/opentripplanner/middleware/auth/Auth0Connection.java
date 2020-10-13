@@ -15,6 +15,8 @@ import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.ConfigUtils;
+import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
@@ -25,10 +27,6 @@ import java.security.interfaces.RSAPublicKey;
 
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.OtpUserController.OTP_USER_PATH;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.utils.ConfigUtils.hasConfigProperty;
-import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
-import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * This handles verifying the Auth0 token passed in the auth header (e.g., Authorization: Bearer MY_TOKEN of Spark HTTP
@@ -76,7 +74,7 @@ public class Auth0Connection {
                     LOG.info("New user is creating self. OK to proceed without existing user object for auth0UserId");
                 } else {
                     // Otherwise, if no valid user is found, halt the request.
-                    logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Auth0 auth - Unknown user.");
+                    JsonUtils.logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Auth0 auth - Unknown user.");
                 }
             }
             // The user attribute is used on the server side to check user permissions and does not have all of the
@@ -84,12 +82,12 @@ public class Auth0Connection {
             addUserToRequest(req, profile);
         } catch (JWTVerificationException e) {
             // Invalid signature/claims
-            logMessageAndHalt(req, 401, "Login failed to verify with our authorization provider.", e);
+            JsonUtils.logMessageAndHalt(req, 401, "Login failed to verify with our authorization provider.", e);
         } catch (HaltException e) {
             throw e;
         } catch (Exception e) {
             LOG.warn("Login failed to verify with our authorization provider.", e);
-            logMessageAndHalt(req, 401, "Could not verify user's token");
+            JsonUtils.logMessageAndHalt(req, 401, "Could not verify user's token");
         }
     }
 
@@ -111,7 +109,7 @@ public class Auth0Connection {
                 try {
                     // Next, get the user object from the request body, verifying that the Auth0UserId matches between
                     // requester and the new user object.
-                    AbstractUser user = getPOJOFromRequestBody(req, userClass);
+                    AbstractUser user = JsonUtils.getPOJOFromRequestBody(req, userClass);
                     return profile.auth0UserId.equals(user.auth0UserId);
                 } catch (JsonProcessingException e) {
                     LOG.warn("Could not parse user object from request.", e);
@@ -126,11 +124,6 @@ public class Auth0Connection {
         return authHeader != null;
     }
 
-    public static boolean isApiKeyHeaderPresent(Request req) {
-        final String apiKey = req.headers("x-api-key");
-        return apiKey != null;
-    }
-
     /**
      * Assign user to request and check that the user is an admin.
      */
@@ -140,7 +133,7 @@ public class Auth0Connection {
         // Check that user object is present and is admin.
         RequestingUser user = Auth0Connection.getUserFromRequest(req);
         if (!isUserAdmin(user)) {
-            logMessageAndHalt(
+            JsonUtils.logMessageAndHalt(
                 req,
                 HttpStatus.UNAUTHORIZED_401,
                 "User is not authorized to perform administrative action"
@@ -174,19 +167,19 @@ public class Auth0Connection {
      */
     private static String getTokenFromRequest(Request req) {
         if (!isAuthHeaderPresent(req)) {
-            logMessageAndHalt(req, 401, "Authorization header is missing.");
+            JsonUtils.logMessageAndHalt(req, 401, "Authorization header is missing.");
         }
 
         // Check that auth header is present and formatted correctly (Authorization: Bearer [token]).
         final String authHeader = req.headers("Authorization");
         String[] parts = authHeader.split(" ");
         if (parts.length != 2 || !"bearer".equals(parts[0].toLowerCase())) {
-            logMessageAndHalt(req, 401, String.format("Authorization header is malformed: %s", authHeader));
+            JsonUtils.logMessageAndHalt(req, 401, String.format("Authorization header is malformed: %s", authHeader));
         }
         // Retrieve token from auth header.
         String token = parts[1];
         if (token == null) {
-            logMessageAndHalt(req, 401, "Could not find authorization token");
+            JsonUtils.logMessageAndHalt(req, 401, "Could not find authorization token");
         }
         return token;
     }
@@ -198,7 +191,7 @@ public class Auth0Connection {
     private static JWTVerifier getVerifier(Request req, String token) {
         if (verifier == null) {
             try {
-                final String domain = "https://" + getConfigPropertyAsText("AUTH0_DOMAIN") + "/";
+                final String domain = "https://" + ConfigUtils.getConfigPropertyAsText("AUTH0_DOMAIN") + "/";
                 JwkProvider provider = new UrlJwkProvider(domain);
                 // Decode the token.
                 DecodedJWT jwt = JWT.decode(token);
@@ -215,14 +208,15 @@ public class Auth0Connection {
                     .build();
             } catch (IllegalStateException | NullPointerException | JwkException e) {
                 LOG.error("Auth0 verifier configured incorrectly.");
-                logMessageAndHalt(req, 500, "Server authentication configured incorrectly.", e);
+                JsonUtils.logMessageAndHalt(req, 500, "Server authentication configured incorrectly.", e);
             }
         }
         return verifier;
     }
 
     public static boolean getDefaultAuthDisabled() {
-        return hasConfigProperty("DISABLE_AUTH") && "true".equals(getConfigPropertyAsText("DISABLE_AUTH"));
+        return ConfigUtils.hasConfigProperty("DISABLE_AUTH") &&
+            "true".equals(ConfigUtils.getConfigPropertyAsText("DISABLE_AUTH"));
     }
 
     /**
@@ -262,11 +256,11 @@ public class Auth0Connection {
                 // Otp user requesting their item.
                 return;
             }
-            if (requestingUser.apiUser != null && requestingUser.apiUser.id.equals(userId)) {
+            if (requestingUser.isThirdPartyUser() && requestingUser.apiUser.id.equals(userId)) {
                 // Api user requesting their item.
                 return;
             }
-            if (requestingUser.apiUser != null) {
+            if (requestingUser.isThirdPartyUser()) {
                 // Api user potentially requesting an item on behalf of an Otp user they created.
                 OtpUser otpUser = Persistence.otpUsers.getById(userId);
                 if (otpUser != null && requestingUser.apiUser.id.equals(otpUser.applicationId)) {
@@ -274,6 +268,6 @@ public class Auth0Connection {
                 }
             }
         }
-        logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
+        JsonUtils.logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
     }
 }
