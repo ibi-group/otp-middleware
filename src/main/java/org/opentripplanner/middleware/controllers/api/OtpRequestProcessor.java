@@ -9,7 +9,7 @@ import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
-import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -129,7 +129,7 @@ public class OtpRequestProcessor implements Endpoint {
         if (!storeTripHistory) {
             LOG.debug("User does not want trip history stored");
         } else {
-            Response otpResponse = otpDispatcherResponse.getResponse();
+            OtpResponse otpResponse = otpDispatcherResponse.getResponse();
             if (otpResponse == null) {
                 LOG.warn("OTP response is null, cannot save trip history for user!");
             } else {

@@ -28,7 +28,7 @@ import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT
 import static org.opentripplanner.middleware.controllers.api.ApiController.OFFSET;
 import static org.opentripplanner.middleware.controllers.api.ApiController.OFFSET_PARAM;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserAndDateRange;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.YYYY_MM_DD;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -65,17 +65,19 @@ public class TripHistoryController implements Endpoint {
                .withQueryParam(OFFSET)
                .withQueryParam()
                     .withName(FROM_DATE_PARAM)
-                    .withPattern(YYYY_MM_DD)
+                    .withPattern(DEFAULT_DATE_FORMAT_PATTERN)
                     .withDefaultValue("The current date")
                     .withDescription(String.format(
-                        "If specified, the earliest date (format %s) for which trip requests are retrieved.", YYYY_MM_DD
+                        "If specified, the earliest date (format %s) for which trip requests are retrieved.",
+                        DEFAULT_DATE_FORMAT_PATTERN
                     )).and()
                .withQueryParam()
                .withName(TO_DATE_PARAM)
-                    .withPattern(YYYY_MM_DD)
+                    .withPattern(DEFAULT_DATE_FORMAT_PATTERN)
                     .withDefaultValue("The current date")
                     .withDescription(String.format(
-                        "If specified, the latest date (format %s) for which trip requests are retrieved.", YYYY_MM_DD
+                        "If specified, the latest date (format %s) for which trip requests are retrieved.",
+                        DEFAULT_DATE_FORMAT_PATTERN
                     )).and()
                .withProduces(JSON_ONLY)
                // Note: unlike the name suggests, withResponseAsCollection does not generate an array
@@ -122,11 +124,12 @@ public class TripHistoryController implements Endpoint {
 
         LocalDate localDate = null;
         try {
-            localDate = DateTimeUtils.getDateFromParam(paramName, paramValue, YYYY_MM_DD);
+            localDate = DateTimeUtils.getDateFromParam(paramName, paramValue, DEFAULT_DATE_FORMAT_PATTERN);
         } catch (DateTimeParseException e) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400,
                 String.format("%s value: %s is not a valid date. Must be in the format: %s", paramName, paramValue,
-                    YYYY_MM_DD));
+                    DEFAULT_DATE_FORMAT_PATTERN
+                ));
         }
 
         if (localDate == null) {

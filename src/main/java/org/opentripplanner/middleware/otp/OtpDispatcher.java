@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -51,10 +52,11 @@ public class OtpDispatcher {
     }
 
     /**
-     * Provides a response from the OTP server target service based on the query parameters provided.
+     * Provides a response from the OTP server target service based on the query parameters provided. This is used only
+     * during testing.
      */
-    public static OtpDispatcherResponse sendOtpPlanRequest(String from, String to) {
-        return sendOtpPlanRequest(String.format("fromPlace=%s&toPlace=%s", from, to));
+    public static OtpDispatcherResponse sendOtpPlanRequest(String from, String to, String time) {
+        return sendOtpPlanRequest(String.format("fromPlace=%s&toPlace=%s&time=%s", from, to, time));
     }
 
     /**
@@ -85,10 +87,11 @@ public class OtpDispatcher {
         // Get response from OTP
         OtpDispatcherResponse otpDispatcherResponse = null;
         try {
+            LOG.info("Sending request to OTP: {}", uri.toString());
             HttpResponse<String> otpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
             otpDispatcherResponse = new OtpDispatcherResponse(otpResponse);
         } catch (InterruptedException | IOException e) {
-            LOG.error("Error requesting OTP data", e);
+            LOG.error("Error requesting OTP data from {}", uri, e);
         }
         return otpDispatcherResponse;
     }

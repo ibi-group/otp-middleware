@@ -1,5 +1,8 @@
 package org.opentripplanner.middleware.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import com.mongodb.client.FindIterable;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
@@ -9,17 +12,24 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.persistence.TypedPersistence;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
-import org.opentripplanner.middleware.persistence.TypedPersistence;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
  * change.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MonitoredTrip extends Model {
 
     /**
@@ -131,19 +141,33 @@ public class MonitoredTrip extends Model {
     public MonitoredTrip() {
     }
 
-    public MonitoredTrip(OtpDispatcherResponse otpDispatcherResponse) {
+    public MonitoredTrip(OtpDispatcherResponse otpDispatcherResponse) throws URISyntaxException {
         queryParams = otpDispatcherResponse.requestUri.getQuery();
         TripPlan plan = otpDispatcherResponse.getResponse().plan;
         itinerary = plan.itineraries.get(0);
-        initializeFromItinerary();
+
+        // extract trip time from parsed params and itinerary
+        initializeFromItineraryAndQueryParams();
     }
 
-    public void initializeFromItinerary() {
+    /**
+     * Initializes a MonitoredTrip by deriving some fields from the currently set itinerary. Also, the realtime info of
+     * the itinerary is removed.
+     */
+    public void initializeFromItineraryAndQueryParams() throws IllegalArgumentException, URISyntaxException {
         int lastLegIndex = itinerary.legs.size() - 1;
         from = itinerary.legs.get(0).from;
         to = itinerary.legs.get(lastLegIndex).to;
+
         // Ensure the itinerary we store does not contain any realtime info.
         clearRealtimeInfo();
+
+        // set the trip time by parsing the query params
+        Map<String, String> params = parseQueryParams();
+        tripTime = params.get("time");
+        if (tripTime == null) {
+            throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
+        }
     }
 
     public MonitoredTrip updateAllDaysOfWeek(boolean value) {
@@ -160,6 +184,15 @@ public class MonitoredTrip extends Model {
         thursday = value;
         friday = value;
         return this;
+    }
+
+    /**
+     * Returns true if the trip is not active overall or if all days of the week are set to false
+     */
+    public boolean isInactive() {
+        return !isActive || (
+          !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday
+        );
     }
 
     public boolean isActiveOnDate(ZonedDateTime zonedDateTime) {
@@ -229,6 +262,7 @@ public class MonitoredTrip extends Model {
      * Get the journey state for this trip.
      */
     public JourneyState retrieveJourneyState() {
+        // attempt to retrieve from the db
         JourneyState journeyState = Persistence.journeyStates.getOneFiltered(tripIdFilter());
         // If journey state does not exist, create and persist.
         if (journeyState == null) {
@@ -244,11 +278,7 @@ public class MonitoredTrip extends Model {
      */
     public Itinerary latestItinerary() {
         JourneyState journeyState = retrieveJourneyState();
-        if (journeyState.lastResponse != null && journeyState.matchingItineraryIndex != -1) {
-            return journeyState.lastResponse.plan.itineraries.get(journeyState.matchingItineraryIndex);
-        }
-        // If there is no last response, return null.
-        return null;
+        return journeyState.matchingItinerary;
     }
 
     /**
@@ -277,6 +307,40 @@ public class MonitoredTrip extends Model {
     public boolean delete() {
         // TODO: Add journey state deletion.
         return Persistence.monitoredTrips.removeById(this.id);
+    }
+
+    /**
+     * Parse the query params for this trip into a map of the variables.
+     */
+    public Map<String, String> parseQueryParams() throws URISyntaxException {
+        return URLEncodedUtils.parse(
+            new URI(String.format("http://example.com/plan?%s", queryParams)),
+            UTF_8
+        ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+    }
+
+    /**
+     * Check if the trip is planned with the target time being an arriveBy or departAt query.
+     *
+     * @return true, if the trip's target time is for an arriveBy query
+     */
+    public boolean isArriveBy() throws URISyntaxException {
+        // if arriveBy is not included in query params, OTP will default to false, so initialize to false
+        return parseQueryParams().getOrDefault("arriveBy", "false").equals("true");
+    }
+
+    /**
+     * Returns the target hour of the day that the trip is either departing at or arriving by
+     */
+    public int tripTimeHour() {
+        return Integer.valueOf(tripTime.split(":")[0]);
+    }
+
+    /**
+     * Returns the target minute of the hour that the trip is either departing at or arriving by
+     */
+    public int tripTimeMinute() {
+        return Integer.valueOf(tripTime.split(":")[1]);
     }
 }
 

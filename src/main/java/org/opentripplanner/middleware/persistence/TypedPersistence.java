@@ -12,6 +12,7 @@ import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.Model;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +115,7 @@ public class TypedPersistence<T extends Model> {
      */
     public T update(String id, Document updateDocument) {
         // Set last updated.
-        updateDocument.put("lastUpdated", new Date());
+        updateDocument.put("lastUpdated", DateTimeUtils.nowAsDate());
         return mongoCollection.findOneAndUpdate(eq(id), new Document("$set", updateDocument), findOneAndUpdateOptions);
     }
 
