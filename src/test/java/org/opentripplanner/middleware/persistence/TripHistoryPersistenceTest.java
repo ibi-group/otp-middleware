@@ -6,6 +6,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
@@ -21,6 +22,7 @@ import static com.mongodb.client.model.Filters.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.*;
+import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserAndDateRange;
 
 /**
  * Tests to verify that trip request and trip summary persistence in MongoDB collections are functioning properly. A
@@ -90,20 +92,19 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
 
     @Test
     public void canGetFilteredTripRequestsWithFromAndToDate() {
+        OtpUser user = createUser(TEST_EMAIL);
+        List<TripRequest> tripRequests = createTripRequests(LIMIT, user.id);
         LocalDateTime fromStartOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MIN);
         LocalDateTime toEndOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MAX);
-        Bson filter = Filters.and(
-            gte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
-                Date.from(fromStartOfDay
-                    .atZone(DateTimeUtils.getSystemZoneId())
-                    .toInstant())),
-            lte(TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
-                Date.from(toEndOfDay
-                    .atZone(DateTimeUtils.getSystemZoneId())
-                    .toInstant())),
-            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, otpUser.id));
-        List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, LIMIT);
-        assertEquals(result.size(), tripRequests.size());
+        Date fromDate = Date.from(fromStartOfDay
+            .atZone(DateTimeUtils.getSystemZoneId())
+            .toInstant());
+        Date toDate = Date.from(toEndOfDay
+            .atZone(DateTimeUtils.getSystemZoneId())
+            .toInstant());
+        Bson filter = filterByUserAndDateRange(user.id, fromDate, toDate);
+        ResponseList<TripRequest> result = Persistence.tripRequests.getResponseList(filter, 0, LIMIT);
+        assertEquals(result.data.size(), tripRequests.size());
     }
 
     @Test
