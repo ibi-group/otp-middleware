@@ -142,10 +142,11 @@ public class Auth0Connection {
     }
 
     /**
-     * Check if the incoming user is an admin user
+     * Check if the incoming user is an admin user. To be classed as an admin user, the user must not be any other user
+     * type.
      */
     public static boolean isUserAdmin(RequestingUser user) {
-        return user != null && user.adminUser != null;
+        return user != null && user.adminUser != null && user.apiUser == null && user.otpUser == null;
     }
 
     /**

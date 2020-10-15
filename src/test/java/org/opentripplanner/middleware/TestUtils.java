@@ -137,6 +137,7 @@ public class TestUtils {
         }
         Service http = ignite().port(8080);
         http.get("/otp" + OTP_PLAN_ENDPOINT, TestUtils::mockOtpPlanResponse);
+        mockOtpServerSetUpIsDone = true;
     }
 
     /**

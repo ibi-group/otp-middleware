@@ -51,6 +51,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     public static final int DEFAULT_LIMIT = 10;
     public static final int DEFAULT_OFFSET = 0;
     public static final String OFFSET_PARAM = "offset";
+    public static final String USER_ID_PARAM = "userId";
 
     public static final ParameterDescriptor LIMIT = ParameterDescriptor.newBuilder()
         .withName(LIMIT_PARAM)
@@ -186,6 +187,12 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     private ResponseList<T> getMany(Request req, Response res) {
         int limit = HttpUtils.getQueryParamFromRequest(req, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);
         int offset = HttpUtils.getQueryParamFromRequest(req, OFFSET_PARAM, 0, DEFAULT_OFFSET);
+        String userId = HttpUtils.getQueryParamFromRequest(req, USER_ID_PARAM, true);
+        // Filter the response based on the user id, if provided.
+        if (userId != null) {
+            return persistence.getResponseList(Filters.eq(USER_ID_PARAM, userId), offset, limit);
+        }
+        // If the user id is not provided filter response based on requesting user.
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         if (Auth0Connection.isUserAdmin(requestingUser)) {
             // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
@@ -197,16 +204,54 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // requesting user.
             return persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), offset, limit);
         } else if (requestingUser.isThirdPartyUser()) {
-            // Third party API users must pass in an OtpUser id as a query param in order to get filtered objects.
-            // Query param is used so existing (and new) endpoints aren't affected.
-            String userId = HttpUtils.getQueryParamFromRequest(req, "userId", false);
-            return persistence.getResponseList(Filters.eq("userId", userId), offset, limit);
+            // A user id must be provided if the request is being made by a third party user.
+            JsonUtils.logMessageAndHalt(req,
+                HttpStatus.BAD_REQUEST_400,
+                String.format("The parameter name (%s) must be provided.", USER_ID_PARAM));
+            return null;
         } else {
             // For all other cases the assumption is that the request is being made by an Otp user and the requested
             // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
-            return persistence.getResponseList(Filters.eq("userId", requestingUser.otpUser.id), offset, limit);
+            return persistence.getResponseList(Filters.eq(USER_ID_PARAM, requestingUser.otpUser.id), offset, limit);
         }
     }
+//        private ResponseList<T> getMany(Request req, Response res) {
+//        int limit = HttpUtils.getQueryParamFromRequest(req, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);
+//        int offset = HttpUtils.getQueryParamFromRequest(req, OFFSET_PARAM, 0, DEFAULT_OFFSET);
+//        String userId = HttpUtils.getQueryParamFromRequest(req, USER_ID_PARAM, true);
+//        // Filter the response based on the user id, if provided.
+//        if (userId != null) {
+//            // Define the correct field name depending on the entities being requested. If one of the user classes is
+//            // being requested, this will limit the response to a single entity.
+//            String fieldName = (persistence.clazz == OtpUser.class ||
+//                persistence.clazz == ApiUser.class ||
+//                persistence.clazz == AdminUser.class)
+//                ? "_id" : "userId";
+//            return persistence.getResponseList(Filters.eq(fieldName, userId), offset, limit);
+//        }
+//        // If the user id is not provided filter response based on requesting user.
+//        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
+//        if (Auth0Connection.isUserAdmin(requestingUser)) {
+//            // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
+//            // management or review without restriction.
+//            return persistence.getResponseList(offset, limit);
+//        } else if (persistence.clazz == OtpUser.class) {
+//            // If the required entity is of type 'OtpUser' the assumption is that a call is being made via the
+//            // OtpUserController. Therefore, the request should be limited to return just the entity matching the
+//            // requesting user.
+//            return persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), offset, limit);
+//        } else if (requestingUser.isThirdPartyUser()) {
+//            // A user id must be provided if the request is being made by a third party user.
+//            JsonUtils.logMessageAndHalt(req,
+//                HttpStatus.BAD_REQUEST_400,
+//                String.format("The parameter name (%s) must be provided.", USER_ID_PARAM));
+//            return null;
+//        } else {
+//            // For all other cases the assumption is that the request is being made by an Otp user and the requested
+//            // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
+//            return persistence.getResponseList(Filters.eq("userId", requestingUser.otpUser.id), offset, limit);
+//        }
+//    }
 
     /**
      * HTTP endpoint to get one entity specified by ID. This will return an object based on the checks carried out in

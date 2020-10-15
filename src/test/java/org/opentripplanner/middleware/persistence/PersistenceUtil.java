@@ -36,6 +36,8 @@ public class PersistenceUtil {
         user.email = email;
         user.phoneNumber = phoneNumber;
         user.notificationChannel = "email";
+        user.hasConsentedToTerms = true;
+        user.storeTripHistory = true;
         Persistence.otpUsers.create(user);
         return user;
     }

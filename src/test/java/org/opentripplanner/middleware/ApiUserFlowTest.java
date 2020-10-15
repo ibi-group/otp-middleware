@@ -76,7 +76,7 @@ public class ApiUserFlowTest {
     }
 
     /**
-     * Create an {@link ApiUser} and an {@link AdminUser} prior to unit tests
+     * Create an {@link ApiUser} and an {@link OtpUser} prior to unit tests
      */
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException, CreateApiKeyException {
@@ -162,6 +162,22 @@ public class ApiUserFlowTest {
         );
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.statusCode());
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(createTripResponseAsApiUser.body(), MonitoredTrip.class);
+
+        // Request all monitored trip for an Otp user authenticating as an Api user.
+        HttpResponse<String> getAllMonitoredTripsForOtpUser = mockAuthenticatedRequest(String.format("api/secure/monitoredtrip?userId=%s",
+            otpUserResponse.id),
+            apiUser,
+            HttpUtils.REQUEST_METHOD.GET
+        );
+        assertEquals(HttpStatus.OK_200, getAllMonitoredTripsForOtpUser.statusCode());
+
+        // Request all monitored trip for an Otp user authenticating as an Api user. Without defining the user id.
+        getAllMonitoredTripsForOtpUser = mockAuthenticatedRequest("api/secure/monitoredtrip",
+            apiUser,
+            HttpUtils.REQUEST_METHOD.GET
+        );
+        assertEquals(HttpStatus.BAD_REQUEST_400, getAllMonitoredTripsForOtpUser.statusCode());
+
 
         // Plan trip with OTP proxy authenticating as an OTP user. Mock plan response will be returned. This will work
         // as an Otp user (created by MOD UI or an Api user) because the end point has no auth.
