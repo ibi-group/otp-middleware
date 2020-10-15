@@ -102,6 +102,11 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "A phone number must be provided.");
         }
 
+        // Set OtpUser.pendingPhoneNumber* to null before checking numbers.
+        otpUser.pendingPhoneNumber = null;
+        otpUser.pendingPhoneNumberFormatted = null;
+        Persistence.otpUsers.replace(otpUser.id, otpUser);
+
         PhoneNumber validNumber = NotificationUtils.ensureDomesticPhoneNumber(req, phoneNumber);
 
         // Update OtpUser.pendingPhoneNumber before submitting SMS request.
@@ -149,7 +154,9 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             // If the check is successful, update the OtpUser's phoneNumber and erase pendingPhoneNumber.
             // TODO: Figure out adding a test for this update to the OtpUser record.
             otpUser.phoneNumber = otpUser.pendingPhoneNumber;
+            otpUser.phoneNumberFormatted = otpUser.pendingPhoneNumberFormatted;
             otpUser.pendingPhoneNumber = null;
+            otpUser.pendingPhoneNumberFormatted = null;
             Persistence.otpUsers.replace(otpUser.id, otpUser);
         }
 

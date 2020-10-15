@@ -21,7 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -187,9 +186,9 @@ public class NotificationUtils {
         try {
             Twilio.init(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
             phoneNumber = com.twilio.rest.lookups.v1.PhoneNumber.fetcher(
-                new PhoneNumber(phoneNumberString))
+                // HACK: Decoding in the twilio API will turn spaces into '+' signs that will fail otherwise valid numbers.
+                new PhoneNumber(phoneNumberString.replace(" ", "")))
                 .setCountryCode(COUNTRY_CODE)
-                .setType(List.of("carrier"))
                 .fetch();
         } catch (ApiException apiException) {
             // Handle 404 response - corresponds to invalid number.
@@ -216,12 +215,6 @@ public class NotificationUtils {
         }
 
         if (phoneNumber != null) {
-            System.out.println(phoneNumber.getPhoneNumber());
-            System.out.println(phoneNumber.getCarrier().get("type"));
-            System.out.println(phoneNumber.getCarrier().get("name"));
-            System.out.println(phoneNumber.getCountryCode());
-            System.out.println(phoneNumber.getNationalFormat());
-
             // Reject numbers that are international with respect to COUNTRY_CODE.
             // TODO: Also reject numbers whose .getCarrier().get("type") is not "mobile"?
             if (!phoneNumber.getCountryCode().equals(COUNTRY_CODE)) {

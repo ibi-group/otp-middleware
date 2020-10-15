@@ -15,11 +15,13 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 
@@ -64,7 +66,7 @@ public class OtpUserControllerTest {
      * and leaves OtpUser.phoneNumber intact.
      */
     @Test
-    public void smsRequestShouldSetPendingPhoneNumberOnly() {
+    public void smsRequestShouldSetPendingPhoneNumberOnly() throws UnsupportedEncodingException {
         final String PHONE_NUMBER_TO_VERIFY = "+15555550321";
         final String PHONE_NUMBER_TO_VERIFY_FORMATTED = "(555) 555-0321";
 
@@ -105,6 +107,8 @@ public class OtpUserControllerTest {
     public void invalidOrForeignNumbersShouldProduceBadRequest(String number) {
         assumeTrue(NotificationUtils.COUNTRY_CODE.equals("US"));
 
+        // 1. Request verification SMS.
+        // The invalid number should fail the call.
         HttpResponse<String> response = mockAuthenticatedRequest(
             String.format("api/secure/user/%s/verify_sms/%s",
                 otpUser.id,
@@ -114,6 +118,20 @@ public class OtpUserControllerTest {
             HttpUtils.REQUEST_METHOD.GET
         );
         assertEquals(HttpStatus.BAD_REQUEST_400, response.statusCode());
+
+        // 2. Fetch the newly-created user.
+        // pendingPhoneNumber* fields should be null.
+        HttpResponse<String> otpUserWithBadPhoneRequest = mockAuthenticatedRequest(
+            String.format("api/secure/user/%s", otpUser.id),
+            otpUser,
+            HttpUtils.REQUEST_METHOD.GET
+        );
+        assertEquals(HttpStatus.OK_200, otpUserWithBadPhoneRequest.statusCode());
+
+        OtpUser otpUserWithBadPhone = JsonUtils.getPOJOFromJSON(otpUserWithBadPhoneRequest.body(), OtpUser.class);
+        assertEquals(INITIAL_PHONE_NUMBER, otpUserWithBadPhone.phoneNumber);
+        assertNull(otpUserWithBadPhone.pendingPhoneNumber);
+        assertNull(otpUserWithBadPhone.pendingPhoneNumberFormatted);
     }
 
     private static List<String> createRejectedNumbers() {
