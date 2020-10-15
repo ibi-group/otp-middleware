@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.ApiEndpoint;
-import com.twilio.rest.lookups.v1.PhoneNumber;
 import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
 import org.apache.commons.lang3.StringUtils;
@@ -98,21 +97,19 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         OtpUser otpUser = getEntityForId(req, res);
         // Get phone number from the path param.
         String phoneNumber = req.params(PHONE_PARAM);
-        if (StringUtils.isBlank(phoneNumber)) {
-            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "A phone number must be provided.");
+
+        if (!NotificationUtils.isPhoneNumberIsValid(phoneNumber)) {
+            logMessageAndHalt(
+                req,
+                HttpStatus.BAD_REQUEST_400,
+                "Phone number is invalid."
+            );
         }
 
-        // Set OtpUser.pendingPhoneNumber* to null before checking numbers.
-        otpUser.pendingPhoneNumber = null;
-        otpUser.pendingPhoneNumberFormatted = null;
-        Persistence.otpUsers.replace(otpUser.id, otpUser);
-
-        PhoneNumber validNumber = NotificationUtils.ensureDomesticPhoneNumber(req, phoneNumber);
-
-        // Update OtpUser.pendingPhoneNumber before submitting SMS request.
-        String phoneNumberToSubmit = validNumber.getPhoneNumber().toString();
-        otpUser.pendingPhoneNumber = phoneNumberToSubmit;
-        otpUser.pendingPhoneNumberFormatted = validNumber.getNationalFormat();
+        // Update OtpUser.phoneNumber before submitting SMS request.
+        String phoneNumberToSubmit = NotificationUtils.getRawPhoneNumber(phoneNumber);
+        otpUser.phoneNumber = phoneNumberToSubmit;
+        otpUser.isPhoneNumberVerified = false;
         Persistence.otpUsers.replace(otpUser.id, otpUser);
 
         Verification verification = NotificationUtils.sendVerificationText(phoneNumberToSubmit);
@@ -135,11 +132,11 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         if (code == null) {
             logMessageAndHalt(req, 400, "Missing code from verify request.");
         }
-        if (otpUser.pendingPhoneNumber == null) {
-            logMessageAndHalt(req, 404, "User must have valid phone number for SMS verification.");
+        if (StringUtils.isBlank(otpUser.phoneNumber)) {
+            logMessageAndHalt(req, 404, "User must have a phone number for SMS verification.");
         }
         // Check verification code with SMS service.
-        VerificationCheck check = NotificationUtils.checkSmsVerificationCode(otpUser.pendingPhoneNumber, code);
+        VerificationCheck check = NotificationUtils.checkSmsVerificationCode(otpUser.phoneNumber, code);
         if (check == null) {
             logMessageAndHalt(
                 req,
@@ -151,15 +148,12 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         // If the check is successful, status will be "approved".
         VerificationResult verificationResult = new VerificationResult(check);
         if (verificationResult.status.equals("approved")) {
-            // If the check is successful, update the OtpUser's phoneNumber and erase pendingPhoneNumber.
-            // TODO: Figure out adding a test for this update to the OtpUser record.
-            otpUser.phoneNumber = otpUser.pendingPhoneNumber;
-            otpUser.phoneNumberFormatted = otpUser.pendingPhoneNumberFormatted;
-            otpUser.pendingPhoneNumber = null;
-            otpUser.pendingPhoneNumberFormatted = null;
+            // If the check is successful, update the OtpUser's isPhoneNumberVerified.
+            otpUser.isPhoneNumberVerified = true;
             Persistence.otpUsers.replace(otpUser.id, otpUser);
         }
 
         return verificationResult;
     }
+
 }

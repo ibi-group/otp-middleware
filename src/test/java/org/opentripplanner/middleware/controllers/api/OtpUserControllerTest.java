@@ -15,13 +15,14 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.http.HttpResponse;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 
@@ -47,7 +48,7 @@ public class OtpUserControllerTest {
         otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
         otpUser.hasConsentedToTerms = true;
         otpUser.phoneNumber = INITIAL_PHONE_NUMBER;
-        otpUser.pendingPhoneNumber = null;
+        otpUser.isPhoneNumberVerified = true;
         Persistence.otpUsers.create(otpUser);
     }
 
@@ -62,57 +63,20 @@ public class OtpUserControllerTest {
     }
 
     /**
-     * Test to check that a phone verification SMS request updates OtpUser.pendingPhoneNumber
-     * and leaves OtpUser.phoneNumber intact.
+     * Check that a request with a malformed number
+     * results in a 400-bad request response, and that the user phone number is unchanged.
      */
     @Test
-    public void smsRequestShouldSetPendingPhoneNumberOnly() throws UnsupportedEncodingException {
-        final String PHONE_NUMBER_TO_VERIFY = "+15555550321";
-        final String PHONE_NUMBER_TO_VERIFY_FORMATTED = "(555) 555-0321";
-
-        // 1. Request verification SMS.
-        // Note that the result of the request for an SMS does not matter
-        // (e.g. if the SMS service is down, the user's phone number should still be recorded).
-        mockAuthenticatedRequest(
-            String.format("api/secure/user/%s/verify_sms/%s",
-                otpUser.id,
-                PHONE_NUMBER_TO_VERIFY
-            ),
-            otpUser,
-            HttpUtils.REQUEST_METHOD.GET
-        );
-
-        // 2. Fetch the newly-created user and check the notificationChannel, phoneNumber and isPhoneNumberVerified fields.
-        // This should be the case regardless of the outcome from above.
-        HttpResponse<String> otpUserWithPhoneResponse = mockAuthenticatedRequest(
-            String.format("api/secure/user/%s", otpUser.id),
-            otpUser,
-            HttpUtils.REQUEST_METHOD.GET
-        );
-        assertEquals(HttpStatus.OK_200, otpUserWithPhoneResponse.statusCode());
-
-        OtpUser otpUserWithPhone = JsonUtils.getPOJOFromJSON(otpUserWithPhoneResponse.body(), OtpUser.class);
-        assertEquals(INITIAL_PHONE_NUMBER, otpUserWithPhone.phoneNumber);
-        assertEquals(PHONE_NUMBER_TO_VERIFY, otpUserWithPhone.pendingPhoneNumber);
-        assertEquals(PHONE_NUMBER_TO_VERIFY_FORMATTED, otpUserWithPhone.pendingPhoneNumberFormatted);
-    }
-
-    /**
-     * Check that a request with an malformed number or an international number
-     * results in a 400-bad request response.
-     * The home country is set by the COUNTRY_CODE config parameter.
-     */
-    @ParameterizedTest
-    @MethodSource("createRejectedNumbers")
-    public void invalidOrForeignNumbersShouldProduceBadRequest(String number) {
-        assumeTrue(NotificationUtils.COUNTRY_CODE.equals("US"));
+    public void invalidNumbersShouldProduceBadRequest() {
+        assumeTrue(testsShouldRun());
+        final String encodedNumber = "(555%5D%20555%2C0123"; // (555] 555,0123 encoded by JavaScript.
 
         // 1. Request verification SMS.
         // The invalid number should fail the call.
         HttpResponse<String> response = mockAuthenticatedRequest(
             String.format("api/secure/user/%s/verify_sms/%s",
                 otpUser.id,
-                number
+                encodedNumber
             ),
             otpUser,
             HttpUtils.REQUEST_METHOD.GET
@@ -120,27 +84,45 @@ public class OtpUserControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST_400, response.statusCode());
 
         // 2. Fetch the newly-created user.
-        // pendingPhoneNumber* fields should be null.
-        HttpResponse<String> otpUserWithBadPhoneRequest = mockAuthenticatedRequest(
+        // The phone number should not be updated.
+        HttpResponse<String> otpUserWithPhoneRequest = mockAuthenticatedRequest(
             String.format("api/secure/user/%s", otpUser.id),
             otpUser,
             HttpUtils.REQUEST_METHOD.GET
         );
-        assertEquals(HttpStatus.OK_200, otpUserWithBadPhoneRequest.statusCode());
+        assertEquals(HttpStatus.OK_200, otpUserWithPhoneRequest.statusCode());
 
-        OtpUser otpUserWithBadPhone = JsonUtils.getPOJOFromJSON(otpUserWithBadPhoneRequest.body(), OtpUser.class);
-        assertEquals(INITIAL_PHONE_NUMBER, otpUserWithBadPhone.phoneNumber);
-        assertNull(otpUserWithBadPhone.pendingPhoneNumber);
-        assertNull(otpUserWithBadPhone.pendingPhoneNumberFormatted);
+        OtpUser otpUserWithPhone = JsonUtils.getPOJOFromJSON(otpUserWithPhoneRequest.body(), OtpUser.class);
+        assertEquals(INITIAL_PHONE_NUMBER, otpUserWithPhone.phoneNumber);
+        assertTrue(otpUserWithPhone.isPhoneNumberVerified);
     }
 
-    private static List<String> createRejectedNumbers() {
-        return List.of(
-            // "Famous" old parisian print shop number (https://fr.wikipedia.org/wiki/Jean_Mineur)
-            "+33142250001",
+    @ParameterizedTest
+    @MethodSource("createPhoneNumberTestCases")
+    public void isPhoneNumberValid(Map.Entry<String, Boolean> testCase) {
+        assumeTrue(testsShouldRun());
+        String number = testCase.getKey();
+        boolean isValid = testCase.getValue();
 
-            // US number with invalid characters
-            "+1555_&5551"
-        );
+        assertEquals(isValid, NotificationUtils.isPhoneNumberIsValid(number));
+    }
+
+    private static Set<Map.Entry<String, Boolean>> createPhoneNumberTestCases() {
+        HashMap<String, Boolean> cases = new HashMap<>();
+        cases.put("5555550123", true);
+        cases.put("(555) 555-0123", true);
+        cases.put("555 555 0123", true);
+        cases.put("(555) 555,0123", false);
+        cases.put("555555", false);
+        cases.put("55555555555555", false);
+
+        return cases.entrySet();
+    }
+
+    @Test
+    public void getE164Number() {
+        assumeTrue(testsShouldRun());
+        String formattedNumber = "(800) 555-0123";
+        assertEquals("+18005550123", NotificationUtils.getRawPhoneNumber(formattedNumber));
     }
 }

@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sendgrid.Content;
 import com.sendgrid.Email;
 import com.sendgrid.Mail;
@@ -10,20 +9,20 @@ import com.sendgrid.SendGrid;
 import com.sparkpost.Client;
 import com.sparkpost.model.responses.Response;
 import com.twilio.Twilio;
-import com.twilio.exception.ApiException;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
 import com.twilio.rest.verify.v2.service.VerificationCreator;
 import com.twilio.type.PhoneNumber;
-import org.eclipse.jetty.http.HttpStatus;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * This class contains utils for sending SMS and email notifications.
@@ -37,13 +36,16 @@ public class NotificationUtils {
     public static final String TWILIO_ACCOUNT_SID = getConfigPropertyAsText("TWILIO_ACCOUNT_SID");
     public static final String TWILIO_AUTH_TOKEN = getConfigPropertyAsText("TWILIO_AUTH_TOKEN");
     public static final String TWILIO_VERIFICATION_SERVICE_SID = getConfigPropertyAsText("TWILIO_VERIFICATION_SERVICE_SID");
-    // ISO Country code (or "US", if not provided) for phone number validation with Twilio.
-    // See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
-    public static final String COUNTRY_CODE = getConfigPropertyAsText("COUNTRY_CODE", "US");
     // From phone must be registered with Twilio account.
     public static final String FROM_PHONE = getConfigPropertyAsText("NOTIFICATION_FROM_PHONE");
     private static final String SPARKPOST_KEY = getConfigPropertyAsText("SPARKPOST_KEY");
     private static final String FROM_EMAIL = getConfigPropertyAsText("NOTIFICATION_FROM_EMAIL");
+
+    private static final String PHONE_COUNTRY_PREFIX = getConfigPropertyAsText("PHONE_COUNTRY_PREFIX", "+1");
+    private static final String PHONE_NUMBER_REGEXP = getConfigPropertyAsText("PHONE_NUMBER_REGEXP");
+    private static final Pattern PHONE_PATTERN = StringUtils.isBlank(PHONE_NUMBER_REGEXP)
+        ? null
+        : Pattern.compile(PHONE_NUMBER_REGEXP);
 
     /**
      * Send a SMS message to the provided phone number
@@ -166,69 +168,26 @@ public class NotificationUtils {
     }
 
     /**
-     * Ensures that the provided phone number is a domestic mobile number.
-     * Returns a 400-Bad request status if that is not the case.
+     * @return true if the specified phoneNumber matches the configured regexp;
+     *   false if the phoneNumber is null, empty string, or PHONE_NUMBER_REGEXP has not been configured.
      */
-    public static com.twilio.rest.lookups.v1.PhoneNumber ensureDomesticPhoneNumber(spark.Request req, String phoneNumberString) {
-        if (phoneNumberString.startsWith("+1555555")) {
-            // For US fake 555 numbers (used in for UI and backend testing),
-            // create and return a PhoneNumber object from a minimal JSON string.
-            String lastFourDigits = phoneNumberString.substring("+1555555".length());
-            return com.twilio.rest.lookups.v1.PhoneNumber.fromJson(
-                "{\n" +
-                    "  \"national_format\": \"(555) 555-" + lastFourDigits + "\",\n" +
-                    "  \"phone_number\": \"" + phoneNumberString + "\"\n" +
-                    "}", new ObjectMapper()
-            );
-        }
+    public static boolean isPhoneNumberIsValid(String phoneNumber) {
+        if (StringUtils.isBlank(phoneNumber)) return false;
 
-        com.twilio.rest.lookups.v1.PhoneNumber phoneNumber = null;
-        try {
-            Twilio.init(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-            phoneNumber = com.twilio.rest.lookups.v1.PhoneNumber.fetcher(
-                // HACK: Decoding in the twilio API will turn spaces into '+' signs that will fail otherwise valid numbers.
-                new PhoneNumber(phoneNumberString.replace(" ", "")))
-                .setCountryCode(COUNTRY_CODE)
-                .fetch();
-        } catch (ApiException apiException) {
-            // Handle 404 response - corresponds to invalid number.
-            // In that case we return a 400 bad request response to the requester.
-            if (apiException.getStatusCode() == 404) {
-                logMessageAndHalt(
-                    req,
-                    HttpStatus.BAD_REQUEST_400,
-                    "Phone number format is invalid."
-                );
-            } else {
-                logMessageAndHalt(
-                    req,
-                    HttpStatus.INTERNAL_SERVER_ERROR_500,
-                    "Error validating phone number format."
-                );
-            }
-        } catch (Exception e) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.INTERNAL_SERVER_ERROR_500,
-                "Error validating phone number format."
-            );
-        }
+        // If no regex string/pattern is configured, assume phone number is valid.
+        if (PHONE_PATTERN == null) return true;
 
-        if (phoneNumber != null) {
-            // Reject numbers that are international with respect to COUNTRY_CODE.
-            // TODO: Also reject numbers whose .getCarrier().get("type") is not "mobile"?
-            if (!phoneNumber.getCountryCode().equals(COUNTRY_CODE)) {
-                logMessageAndHalt(
-                    req,
-                    HttpStatus.BAD_REQUEST_400,
-                    "Phone number must be domestic."
-                );
-            }
+        // Else the phone number must match the regex pattern.
+        Matcher m = PHONE_PATTERN.matcher(phoneNumber);
+        return m.matches();
+    }
 
-            return phoneNumber;
-        }
-
-        return null;
+    /**
+     * @return A phone number in +155555555 format (E.164 format) for passing to Twilio
+     * by stripping non-digit characters and prefixing with the configured country code.
+     */
+    public static String getRawPhoneNumber(String formattedNumber) {
+        return PHONE_COUNTRY_PREFIX + formattedNumber.replaceAll("\\D", "");
     }
 }
 
