@@ -67,7 +67,8 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             .get(path(ROOT_ROUTE + String.format(VERIFY_ROUTE_TEMPLATE, ID_PARAM, VERIFY_PATH, PHONE_PARAM))
                     .withDescription("Request an SMS verification to be sent to an OtpUser's phone number.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the OtpUser.").and()
-                    .withPathParam().withName(PHONE_PARAM).withRequired(true).withDescription("The phone number to validate, in E.164 format.").and()
+                    .withPathParam().withName(PHONE_PARAM).withRequired(true).withDescription(
+                        "The phone number to validate, in raw format (e.g. +15555550123).").and()
                     .withResponseType(VerificationResult.class),
                 this::sendVerificationText, JsonUtils::toJson
             )
