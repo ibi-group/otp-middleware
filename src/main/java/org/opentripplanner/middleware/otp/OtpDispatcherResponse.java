@@ -2,7 +2,7 @@ package org.opentripplanner.middleware.otp;
 
 
 import org.apache.commons.lang3.SerializationUtils;
-import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +33,8 @@ public class OtpDispatcherResponse implements Serializable {
     /**
      * Constructor used only for testing.
      */
-    public OtpDispatcherResponse(String otpResponse) {
-        requestUri = URI.create("http://test.com");
+    public OtpDispatcherResponse(String otpResponse, URI requestUri) {
+        this.requestUri = requestUri;
         responseBody = otpResponse;
         statusCode = 200;
         LOG.debug("Response from OTP server: {}", toString());
@@ -57,11 +57,11 @@ public class OtpDispatcherResponse implements Serializable {
      * Response. POJO version of response from an OTP server.
      * Do not persist in case these classes change. This should always be re-instantiated from responseBody if needed.
      */
-    public Response getResponse() {
-        return JsonUtils.getPOJOFromJSON(responseBody, Response.class);
+    public OtpResponse getResponse() {
+        return JsonUtils.getPOJOFromJSON(responseBody, OtpResponse.class);
     }
 
-    public void setResponse(Response response) {
+    public void setResponse(OtpResponse response) {
         responseBody = JsonUtils.toJson(response);
     }
 

@@ -26,12 +26,31 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
-        monitoredTrip.initializeFromItinerary();
+        try {
+            monitoredTrip.initializeFromItineraryAndQueryParams();
+        } catch (Exception e) {
+            logMessageAndHalt(
+                req,
+                HttpStatus.BAD_REQUEST_400,
+                "Invalid input data received for monitored trip.",
+                e
+            );
+        }
         return monitoredTrip;
     }
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
+        try {
+            monitoredTrip.initializeFromItineraryAndQueryParams();
+        } catch (Exception e) {
+            logMessageAndHalt(
+                req,
+                HttpStatus.BAD_REQUEST_400,
+                "Invalid input data received for monitored trip.",
+                e
+            );
+        }
         return monitoredTrip;
     }
 

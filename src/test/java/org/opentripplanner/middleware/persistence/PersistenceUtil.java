@@ -11,8 +11,10 @@ import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.otp.response.Response;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
+
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.*;
 
 /**
@@ -78,7 +80,7 @@ public class PersistenceUtil {
      * Create trip summary from static plan response file and store in database.
      */
     public static TripSummary createTripSummary(String tripRequestId) throws IOException {
-        Response planResponse = getPlanResponse();
+        OtpResponse planResponse = getPlanResponse();
         TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
@@ -88,7 +90,7 @@ public class PersistenceUtil {
      * Create trip summary from static plan error response file and store in database.
      */
     public static TripSummary createTripSummaryWithError(String tripRequestId) throws IOException {
-        Response planErrorResponse = getPlanErrorResponse();
+        OtpResponse planErrorResponse = getPlanErrorResponse();
         TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
@@ -123,11 +125,18 @@ public class PersistenceUtil {
         return monitoredTrip;
     }
 
-    public static MonitoredTrip createMonitoredTrip(String userId, OtpDispatcherResponse otpDispatcherResponse, boolean persist) {
+    public static MonitoredTrip createMonitoredTrip(
+        String userId,
+        OtpDispatcherResponse otpDispatcherResponse,
+        boolean persist
+    ) throws URISyntaxException {
         MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "test trip";
-        monitoredTrip.leadTimeInMinutes = 30;
+        monitoredTrip.leadTimeInMinutes = 240;
+        // set trip time since otpDispatcherResponse doesn't have full query params in URI
+        monitoredTrip.tripTime = "08:35";
+        monitoredTrip.updateWeekdays(true);
         if (persist) Persistence.monitoredTrips.create(monitoredTrip);
         return monitoredTrip;
     }
@@ -177,14 +186,14 @@ public class PersistenceUtil {
     /**
      * Get successful plan response from file for creating trip summaries.
      */
-    public static Response getPlanResponse() throws IOException {
-        return TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "planResponse.json", Response.class);
+    public static OtpResponse getPlanResponse() throws IOException {
+        return TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "planResponse.json", OtpResponse.class);
     }
 
     /**
      * Get error plan response from file for creating trip summaries.
      */
-    public static Response getPlanErrorResponse() throws IOException {
-        return TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "planErrorResponse.json", Response.class);
+    public static OtpResponse getPlanErrorResponse() throws IOException {
+        return TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "planErrorResponse.json", OtpResponse.class);
     }
 }

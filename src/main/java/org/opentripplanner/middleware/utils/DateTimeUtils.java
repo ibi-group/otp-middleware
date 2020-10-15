@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.utils;
 
-import net.iakovlev.timeshape.TimeZoneEngine;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
-import java.util.Optional;
+import java.util.Date;
 
 /**
  * Date and time specific utils. All timing in this application should be obtained by using this method in order to
@@ -24,23 +23,13 @@ import java.util.Optional;
 public class DateTimeUtils {
     private static final Logger LOG = LoggerFactory.getLogger(DateTimeUtils.class);
 
-    public static final String YYYY_MM_DD = "yyyy-MM-dd";
+    public static final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
 
     /**
      * These are internal variables that can be used to mock dates and times in tests
      */
     private static Clock clock = Clock.systemDefaultZone();
     private static ZoneId zoneId = clock.getZone();
-
-    /**
-     * Timezone engine is used to look up the timezone based on input lat/lng coordinates.
-     * TODO: If this is memory-intensive we may want to limit it by a bounding box.
-     */
-    private static final TimeZoneEngine engine = TimeZoneEngine.initialize();
-
-    public static Optional<ZoneId> getZoneIdForCoordinates(double lat, double lon) {
-        return engine.query(lat, lon);
-    }
 
     /**
      * Get {@Link java.time.LocalDate} from provided value base on expected date format. The date conversion
@@ -77,6 +66,10 @@ public class DateTimeUtils {
             .toFormatter()
             .withZone(zoneId);
         return localDate.format(expectedDateFormat);
+    }
+
+    public static Date nowAsDate() {
+        return new Date(currentTimeMillis());
     }
 
     public static LocalDate nowAsLocalDate() {
@@ -143,5 +136,17 @@ public class DateTimeUtils {
      */
     public static ZoneId getSystemZoneId() {
         return zoneId;
+    }
+
+    /**
+     * Get the configured timezone that OTP is using from the config. OTP parses dates and times assuming the use of the
+     * timezone identifier of the first agency that it finds.
+     */
+    public static ZoneId getOtpZoneId() {
+        String otpTzId = ConfigUtils.getConfigPropertyAsText("OTP_TIMEZONE");
+        if (otpTzId == null) {
+            throw new RuntimeException("OTP_TIMEZONE is not defined in config!");
+        }
+        return ZoneId.of(otpTzId);
     }
 }

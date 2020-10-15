@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.UUID;
 
@@ -110,7 +111,7 @@ public class GetMonitoredTripsTest {
      * credentials.
      */
     @Test
-    public void canGetOwnMonitoredTrips() {
+    public void canGetOwnMonitoredTrips() throws URISyntaxException {
 
         // Create trip as Otp user 1.
         MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());

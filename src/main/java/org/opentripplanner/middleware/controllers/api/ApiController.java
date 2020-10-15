@@ -387,7 +387,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                         String.format("Requesting user not authorized to update %s.", className));
                 }
                 // Update last updated value.
-                object.lastUpdated = new Date();
+                object.lastUpdated = DateTimeUtils.nowAsDate();
                 // Pin the date created to pre-existing value.
                 object.dateCreated = preExistingObject.dateCreated;
                 // Validate that ID in JSON body matches ID param. TODO add test

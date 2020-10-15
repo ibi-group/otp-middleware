@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.auth.RequestingUser;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -16,8 +17,8 @@ public class Model implements Serializable {
         // This autogenerates an ID
         // this is OK for dump/restore, because the ID will simply be overridden
         this.id = UUID.randomUUID().toString();
-        this.lastUpdated = new Date();
-        this.dateCreated = new Date();
+        this.lastUpdated = DateTimeUtils.nowAsDate();
+        this.dateCreated = DateTimeUtils.nowAsDate();
     }
     public String id;
     public Date lastUpdated;

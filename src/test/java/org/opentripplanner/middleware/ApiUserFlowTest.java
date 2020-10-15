@@ -7,7 +7,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
-import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -21,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.LinkedHashMap;
 import java.util.UUID;
@@ -121,7 +121,7 @@ public class ApiUserFlowTest {
      * records. This also includes Auth0 users if auth is enabled.
      */
     @Test
-    public void canSimulateApiUserFlow() {
+    public void canSimulateApiUserFlow() throws URISyntaxException {
 
         // obtain Auth0 token for Api user.
         String endpoint = String.format("api/secure/application/%s/authenticate?username=%s&password=%s",
@@ -146,6 +146,8 @@ public class ApiUserFlowTest {
         // Attempt to create a monitored trip for an Otp user authenticating as an Otp user. This will fail because the
         // user was created by an Api user and therefore does not have a Auth0 account.
         OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.body(), OtpUser.class);
+
+        // Create a monitored trip for the Otp user (API users are prevented from doing this).
         MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
         monitoredTrip.userId = otpUser.id;
         HttpResponse<String> createTripResponseAsOtpUser = mockAuthenticatedPost("api/secure/monitoredtrip",
