@@ -36,7 +36,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
     private static final String VERIFY_PATH = "verify_sms";
     public static final String OTP_USER_PATH = "secure/user";
     private static final String VERIFY_ROUTE_TEMPLATE = "/:%s/%s/:%s";
-    /** E164 Regex per https://www.twilio.com/docs/glossary/what-e164 */
+    /** Regex to check E.164 phone number format per https://www.twilio.com/docs/glossary/what-e164 */
     private static final Pattern PHONE_E164_PATTERN = Pattern.compile("^\\+[1-9]\\d{1,14}$");
 
     public OtpUserController(String apiPrefix) {
@@ -162,7 +162,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
     }
 
     /**
-     * @return true if the specified phoneNumber matches the E164 format, false otherwise.
+     * @return true if the argument matches the E.164 format (e.g. +15555550123), false otherwise.
      */
     public static boolean isPhoneNumberValidE164(String phoneNumber) {
         if (StringUtils.isBlank(phoneNumber)) return false;
