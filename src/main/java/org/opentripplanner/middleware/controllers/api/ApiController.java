@@ -2,6 +2,8 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.descriptor.EndpointDescriptor;
+import com.beerboy.ss.descriptor.MethodDescriptor;
 import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -21,12 +23,6 @@ import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
 import spark.Response;
-
-import java.util.Date;
-
-import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 
 /**
  * Generic API controller abstract class. This class provides CRUD methods using {@link spark.Spark} HTTP request
@@ -61,6 +57,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         .withName(OFFSET_PARAM)
         .withDefaultValue(String.valueOf(DEFAULT_OFFSET))
         .withDescription("If specified, the number of records to skip/offset.").build();
+    public static final ParameterDescriptor USER_ID = ParameterDescriptor.newBuilder()
+        .withName(USER_ID_PARAM)
+        .withRequired(false)
+        .withDescription("If specified, the required user id.").build();
 
     /**
      * @param apiPrefix string prefix to use in determining the resource location
@@ -90,7 +90,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     @Override
     public void bind(final SparkSwagger restApi) {
         ApiEndpoint apiEndpoint = restApi.endpoint(
-            endpointPath(ROOT_ROUTE).withDescription("Interface for querying and managing '" + className + "' entities."),
+            EndpointDescriptor.endpointPath(ROOT_ROUTE)
+                .withDescription("Interface for querying and managing '" + className + "' entities."),
             HttpUtils.NO_FILTER
         );
         buildEndpoint(apiEndpoint);
@@ -122,45 +123,46 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         baseEndpoint
             // Get multiple entities.
             .get(
-                path(ROOT_ROUTE)
+                MethodDescriptor.path(ROOT_ROUTE)
                     .withDescription("Gets a paginated list of all '" + className + "' entities.")
                     .withQueryParam(LIMIT)
                     .withQueryParam(OFFSET)
-                    .withProduces(JSON_ONLY)
+                    .withQueryParam(USER_ID)
+                    .withProduces(HttpUtils.JSON_ONLY)
                     .withResponseType(ResponseList.class),
                 this::getMany, JsonUtils::toJson
             )
 
             // Get one entity.
             .get(
-                path(ROOT_ROUTE + ID_PATH)
+                MethodDescriptor.path(ROOT_ROUTE + ID_PATH)
                     .withDescription("Returns the '" + className + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to search.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
-                    .withProduces(JSON_ONLY)
+                    .withProduces(HttpUtils.JSON_ONLY)
                     .withResponseType(clazz),
                 this::getEntityForId, JsonUtils::toJson
             )
 
             // Create entity request
             .post(
-                path("")
+                MethodDescriptor.path("")
                     .withDescription("Creates a '" + className + "' entity.")
-                    .withConsumes(JSON_ONLY)
+                    .withConsumes(HttpUtils.JSON_ONLY)
                     .withRequestType(clazz)
-                    .withProduces(JSON_ONLY)
+                    .withProduces(HttpUtils.JSON_ONLY)
                     .withResponseType(clazz),
                 this::createOrUpdate, JsonUtils::toJson
             )
 
             // Update entity request
             .put(
-                path(ID_PATH)
+                MethodDescriptor.path(ID_PATH)
                     .withDescription("Updates and returns the '" + className + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to update.").and()
-                    .withConsumes(JSON_ONLY)
+                    .withConsumes(HttpUtils.JSON_ONLY)
                     .withRequestType(clazz)
-                    .withProduces(JSON_ONLY)
+                    .withProduces(HttpUtils.JSON_ONLY)
                     // FIXME: `withResponses` is supposed to document the expected HTTP responses (200, 403, 404)...
                     //  but that doesn't appear to be implemented in spark-swagger.
                     // .withResponses(...)
@@ -170,10 +172,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
 
             // Delete entity request
             .delete(
-                path(ID_PATH)
+                MethodDescriptor.path(ID_PATH)
                     .withDescription("Deletes the '" + className + "' entity with the specified id if it exists.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to delete.").and()
-                    .withProduces(JSON_ONLY)
+                    .withProduces(HttpUtils.JSON_ONLY)
                     .withResponseType(clazz),
                 this::deleteOne, JsonUtils::toJson
             );
@@ -194,7 +196,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         }
         // If the user id is not provided filter response based on requesting user.
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
-        if (Auth0Connection.isUserAdmin(requestingUser)) {
+        if (requestingUser.isAdmin()) {
             // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
             // management or review without restriction.
             return persistence.getResponseList(offset, limit);
@@ -203,7 +205,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // OtpUserController. Therefore, the request should be limited to return just the entity matching the
             // requesting user.
             return persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), offset, limit);
-        } else if (requestingUser.isThirdPartyUser()) {
+        } else if (requestingUser.isThirdParty()) {
             // A user id must be provided if the request is being made by a third party user.
             JsonUtils.logMessageAndHalt(req,
                 HttpStatus.BAD_REQUEST_400,
@@ -215,43 +217,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             return persistence.getResponseList(Filters.eq(USER_ID_PARAM, requestingUser.otpUser.id), offset, limit);
         }
     }
-//        private ResponseList<T> getMany(Request req, Response res) {
-//        int limit = HttpUtils.getQueryParamFromRequest(req, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);
-//        int offset = HttpUtils.getQueryParamFromRequest(req, OFFSET_PARAM, 0, DEFAULT_OFFSET);
-//        String userId = HttpUtils.getQueryParamFromRequest(req, USER_ID_PARAM, true);
-//        // Filter the response based on the user id, if provided.
-//        if (userId != null) {
-//            // Define the correct field name depending on the entities being requested. If one of the user classes is
-//            // being requested, this will limit the response to a single entity.
-//            String fieldName = (persistence.clazz == OtpUser.class ||
-//                persistence.clazz == ApiUser.class ||
-//                persistence.clazz == AdminUser.class)
-//                ? "_id" : "userId";
-//            return persistence.getResponseList(Filters.eq(fieldName, userId), offset, limit);
-//        }
-//        // If the user id is not provided filter response based on requesting user.
-//        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
-//        if (Auth0Connection.isUserAdmin(requestingUser)) {
-//            // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
-//            // management or review without restriction.
-//            return persistence.getResponseList(offset, limit);
-//        } else if (persistence.clazz == OtpUser.class) {
-//            // If the required entity is of type 'OtpUser' the assumption is that a call is being made via the
-//            // OtpUserController. Therefore, the request should be limited to return just the entity matching the
-//            // requesting user.
-//            return persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), offset, limit);
-//        } else if (requestingUser.isThirdPartyUser()) {
-//            // A user id must be provided if the request is being made by a third party user.
-//            JsonUtils.logMessageAndHalt(req,
-//                HttpStatus.BAD_REQUEST_400,
-//                String.format("The parameter name (%s) must be provided.", USER_ID_PARAM));
-//            return null;
-//        } else {
-//            // For all other cases the assumption is that the request is being made by an Otp user and the requested
-//            // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
-//            return persistence.getResponseList(Filters.eq("userId", requestingUser.otpUser.id), offset, limit);
-//        }
-//    }
 
     /**
      * HTTP endpoint to get one entity specified by ID. This will return an object based on the checks carried out in

@@ -80,6 +80,11 @@ paths:
         required: false
         type: "string"
         default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -285,6 +290,11 @@ paths:
         required: false
         type: "string"
         default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -390,6 +400,11 @@ paths:
         required: false
         type: "string"
         default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -604,6 +619,11 @@ paths:
         required: false
         type: "string"
         default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"

@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.json.auth.TokenHolder;
 import com.beerboy.ss.ApiEndpoint;
+import com.beerboy.ss.descriptor.MethodDescriptor;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0Users;
@@ -19,9 +20,6 @@ import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
 import spark.Response;
-
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 
 /**
  * Implementation of the {@link AbstractUserController} for {@link ApiUser}. This controller also contains methods for
@@ -49,35 +47,35 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         LOG.info("Registering path {}.", ROOT_ROUTE + ID_PATH + API_KEY_PATH);
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Create API key
-            .post(path(ID_PATH + API_KEY_PATH)
+            .post(MethodDescriptor.path(ID_PATH + API_KEY_PATH)
                     .withDescription("Creates API key for ApiUser (with optional AWS API Gateway usage plan ID).")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The user ID")
                     .and()
                     .withQueryParam().withName("usagePlanId").withDescription("Optional AWS API Gateway usage plan ID.")
                     .and()
-                    .withProduces(JSON_ONLY)
+                    .withProduces(HttpUtils.JSON_ONLY)
                     .withResponseType(persistence.clazz),
                 this::createApiKeyForApiUser, JsonUtils::toJson
             )
             // Delete API key
-            .delete(path(ID_PATH + API_KEY_PATH + API_KEY_ID_PARAM)
+            .delete(MethodDescriptor.path(ID_PATH + API_KEY_PATH + API_KEY_ID_PARAM)
                     .withDescription("Deletes API key for ApiUser.")
                     .withPathParam().withName(ID_PARAM).withDescription("The user ID.")
                     .and()
                     .withPathParam().withName("apiKeyId").withDescription("The ID of the API key.")
                     .and()
-                    .withProduces(JSON_ONLY)
+                    .withProduces(HttpUtils.JSON_ONLY)
                     .withResponseType(persistence.clazz),
                 this::deleteApiKeyForApiUser, JsonUtils::toJson)
             // Authenticate user with Auth0
-            .post(path(ID_PATH + AUTHENTICATE_PATH)
+            .post(MethodDescriptor.path(ID_PATH + AUTHENTICATE_PATH)
                     .withDescription("Authenticates ApiUser with Auth0.")
                     .withPathParam().withName(ID_PARAM).withDescription("The user ID.").and()
                     .withQueryParam().withName(USERNAME_PARAM).withRequired(true)
                     .withDescription("Auth0 username (usually email address).").and()
                     .withQueryParam().withName(PASSWORD_PARAM).withRequired(true)
                     .withDescription("Auth0 password.").and()
-                    .withProduces(JSON_ONLY)
+                    .withProduces(HttpUtils.JSON_ONLY)
                     .withResponseType(TokenHolder.class),
                 this::authenticateAuth0User, JsonUtils::toJson
             );
@@ -117,7 +115,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         String usagePlanId = req.queryParamOrDefault("usagePlanId", DEFAULT_USAGE_PLAN_ID);
         // If requester is not an admin user, force the usage plan ID to the default and enforce key limit. A non-admin
         // user should not be able to create an API key for any usage plan.
-        if (!Auth0Connection.isUserAdmin(requestingUser)) {
+        if (!requestingUser.isAdmin()) {
             usagePlanId = DEFAULT_USAGE_PLAN_ID;
             if (targetUser.apiKeys.size() >= API_KEY_LIMIT_PER_USER) {
                 JsonUtils.logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "User has reached API key limit.");
@@ -145,7 +143,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     private ApiUser deleteApiKeyForApiUser(Request req, Response res) {
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // Do not permit key deletion unless user is an admin.
-        if (!Auth0Connection.isUserAdmin(requestingUser)) {
+        if (!requestingUser.isAdmin()) {
             JsonUtils.logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to delete an API key.");
         }
         ApiUser targetUser = getApiUser(req);

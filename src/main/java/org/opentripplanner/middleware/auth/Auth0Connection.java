@@ -11,6 +11,8 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.controllers.api.ApiUserController;
+import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -24,9 +26,6 @@ import spark.Request;
 import spark.Response;
 
 import java.security.interfaces.RSAPublicKey;
-
-import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
-import static org.opentripplanner.middleware.controllers.api.OtpUserController.OTP_USER_PATH;
 
 /**
  * This handles verifying the Auth0 token passed in the auth header (e.g., Authorization: Bearer MY_TOKEN of Spark HTTP
@@ -101,8 +100,8 @@ public class Auth0Connection {
         if (method.equalsIgnoreCase("POST")) {
             // Next, check that an OtpUser or ApiUser is being created (an admin must rely on another admin to create
             // them).
-            boolean creatingOtpUser = uri.endsWith(OTP_USER_PATH);
-            boolean creatingApiUser = uri.endsWith(API_USER_PATH);
+            boolean creatingOtpUser = uri.endsWith(OtpUserController.OTP_USER_PATH);
+            boolean creatingApiUser = uri.endsWith(ApiUserController.API_USER_PATH);
             if (creatingApiUser || creatingOtpUser) {
                 // Get the correct user class depending on request path.
                 Class<? extends AbstractUser> userClass = creatingApiUser ? ApiUser.class : OtpUser.class;
@@ -132,21 +131,13 @@ public class Auth0Connection {
         checkUser(req);
         // Check that user object is present and is admin.
         RequestingUser user = Auth0Connection.getUserFromRequest(req);
-        if (!isUserAdmin(user)) {
+        if (!user.isAdmin()) {
             JsonUtils.logMessageAndHalt(
                 req,
                 HttpStatus.UNAUTHORIZED_401,
                 "User is not authorized to perform administrative action"
             );
         }
-    }
-
-    /**
-     * Check if the incoming user is an admin user. To be classed as an admin user, the user must not be any other user
-     * type.
-     */
-    public static boolean isUserAdmin(RequestingUser user) {
-        return user != null && user.adminUser != null && user.apiUser == null && user.otpUser == null;
     }
 
     /**
@@ -257,11 +248,11 @@ public class Auth0Connection {
                 // Otp user requesting their item.
                 return;
             }
-            if (requestingUser.isThirdPartyUser() && requestingUser.apiUser.id.equals(userId)) {
+            if (requestingUser.isThirdParty() && requestingUser.apiUser.id.equals(userId)) {
                 // Api user requesting their item.
                 return;
             }
-            if (requestingUser.isThirdPartyUser()) {
+            if (requestingUser.isThirdParty()) {
                 // Api user potentially requesting an item on behalf of an Otp user they created.
                 OtpUser otpUser = Persistence.otpUsers.getById(userId);
                 if (otpUser != null && requestingUser.apiUser.id.equals(otpUser.applicationId)) {

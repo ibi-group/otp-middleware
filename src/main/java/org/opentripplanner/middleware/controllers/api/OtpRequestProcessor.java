@@ -1,6 +1,8 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.descriptor.EndpointDescriptor;
+import com.beerboy.ss.descriptor.MethodDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
@@ -19,15 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
+import javax.ws.rs.core.MediaType;
 import java.util.List;
-
-import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.APPLICATION_XML;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
-import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_API_ROOT;
-import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 
 /**
  * Responsible for getting a response from OTP based on the parameters provided by the requester. If the target service
@@ -60,12 +55,12 @@ public class OtpRequestProcessor implements Endpoint {
     @Override
     public void bind(final SparkSwagger restApi) {
         restApi.endpoint(
-            endpointPath(OTP_PROXY_ENDPOINT).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_LINK),
+            EndpointDescriptor.endpointPath(OTP_PROXY_ENDPOINT).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_LINK),
             HttpUtils.NO_FILTER
         ).get(
-            path("/*")
+            MethodDescriptor.path("/*")
                 .withDescription("Forwards any GET request to OTP. " + OTP_DOC_LINK)
-                .withProduces(List.of(APPLICATION_JSON, APPLICATION_XML)),
+                .withProduces(List.of(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)),
             OtpRequestProcessor::proxy
         );
     }
@@ -77,7 +72,7 @@ public class OtpRequestProcessor implements Endpoint {
      * status) is passed back to the requester.
      */
     private static String proxy(Request request, spark.Response response) {
-        if (OTP_API_ROOT == null) {
+        if (OtpDispatcher.OTP_API_ROOT == null) {
             JsonUtils.logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
             return null;
         }
@@ -92,10 +87,10 @@ public class OtpRequestProcessor implements Endpoint {
         }
 
         // If the request path ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
-        if (otpRequestPath.endsWith(OTP_PLAN_ENDPOINT)) handlePlanTripResponse(request, otpDispatcherResponse);
+        if (otpRequestPath.endsWith(OtpDispatcher.OTP_PLAN_ENDPOINT)) handlePlanTripResponse(request, otpDispatcherResponse);
 
         // provide response to requester as received from OTP server
-        response.type(APPLICATION_JSON);
+        response.type(MediaType.APPLICATION_JSON);
         response.status(otpDispatcherResponse.statusCode);
         return otpDispatcherResponse.responseBody;
     }
@@ -108,7 +103,7 @@ public class OtpRequestProcessor implements Endpoint {
 
         // If the Auth header is present, this indicates that the request was made by a logged in user. If present
         // we should store trip history (but we verify this preference before doing so).
-        if (!isAuthHeaderPresent(request)) {
+        if (!Auth0Connection.isAuthHeaderPresent(request)) {
             LOG.debug("Anonymous user, trip history not stored");
             return;
         }
@@ -130,7 +125,7 @@ public class OtpRequestProcessor implements Endpoint {
 
         // Determine if the Otp request is being made by an actual Otp user or by a third party on behalf of an Otp user.
         OtpUser otpUser;
-        if (requestingUser.isThirdPartyUser()) {
+        if (requestingUser.isThirdParty()) {
             // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
             // as a query parameter.
             String userId = request.queryParams("userId");

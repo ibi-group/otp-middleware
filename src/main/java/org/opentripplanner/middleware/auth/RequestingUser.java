@@ -2,15 +2,13 @@ package org.opentripplanner.middleware.auth;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import spark.Request;
-
-import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 
 /**
  * User profile that is attached to an HTTP request.
@@ -34,7 +32,7 @@ public class RequestingUser {
             adminUser = new AdminUser();
         } else {
             this.auth0UserId = auth0UserId;
-            Bson withAuth0UserId = eq("auth0UserId", auth0UserId);
+            Bson withAuth0UserId = Filters.eq("auth0UserId", auth0UserId);
             otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
             apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
             adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
@@ -46,7 +44,7 @@ public class RequestingUser {
      */
     public RequestingUser(DecodedJWT jwt) {
         this.auth0UserId = jwt.getClaim("sub").asString();
-        Bson withAuth0UserId = eq("auth0UserId", auth0UserId);
+        Bson withAuth0UserId = Filters.eq("auth0UserId", auth0UserId);
         otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
         apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
         adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
@@ -59,7 +57,7 @@ public class RequestingUser {
     static RequestingUser createTestUser(Request req) {
         String auth0UserId = null;
 
-        if (isAuthHeaderPresent(req)) {
+        if (Auth0Connection.isAuthHeaderPresent(req)) {
             // If the auth header has been provided get the Auth0 user id from it. This is different from normal
             // operation as the parameter will only contain the Auth0 user id and not "Bearer token".
             auth0UserId = req.headers("Authorization");
@@ -71,7 +69,16 @@ public class RequestingUser {
     /**
      * Determine if requesting user is a third party user.
      */
-    public boolean isThirdPartyUser() {
+    public boolean isThirdParty() {
         return apiUser != null;
     }
+
+    /**
+     * Check if the incoming user is an admin user. To be classed as an admin user, the user must not be any other user
+     * type.
+     */
+    public boolean isAdmin() {
+        return adminUser != null && apiUser == null && otpUser == null;
+    }
+
 }

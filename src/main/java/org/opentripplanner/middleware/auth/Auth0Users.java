@@ -272,7 +272,7 @@ public class Auth0Users {
     /**
      * Extract from a complete Auth0 token just the access token. If the token is not available, return null instead.
      */
-    public static String getAuth0Token(String username, String password) {
+    public static String getAuth0AccessToken(String username, String password) {
         TokenHolder token = getCompleteAuth0Token(username, password);
         return (token == null) ? null : token.getAccessToken();
     }

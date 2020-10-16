@@ -6,8 +6,6 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
-
 /**
  * Represents an administrative user of the OTP Admin Dashboard (otp-admin-ui).
  */
@@ -32,7 +30,7 @@ public class AdminUser extends AbstractUser {
      */
     @Override
     public boolean canBeCreatedBy(RequestingUser user) {
-        return isUserAdmin(user);
+        return user.isAdmin();
     }
 
     @Override

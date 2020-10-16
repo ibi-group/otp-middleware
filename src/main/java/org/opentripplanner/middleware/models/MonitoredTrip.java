@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.mongodb.client.model.Filters;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import com.mongodb.client.FindIterable;
@@ -16,14 +17,11 @@ import org.opentripplanner.middleware.persistence.TypedPersistence;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static com.mongodb.client.model.Filters.eq;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
@@ -245,13 +243,13 @@ public class MonitoredTrip extends Model {
 
         if (belongsToUser) {
             return true;
-        } else if (requestingUser.isThirdPartyUser()) {
+        } else if (requestingUser.isThirdParty()) {
             // get the required OTP user to confirm they are associated with the requesting API user.
             OtpUser otpUser = Persistence.otpUsers.getById(userId);
             if (otpUser != null && requestingUser.apiUser.id.equals(otpUser.applicationId)) {
                 return true;
             }
-        } else if (requestingUser.adminUser != null) {
+        } else if (requestingUser.isAdmin()) {
             // If not managing self, user must have manage permission.
             for (Permission permission : requestingUser.adminUser.permissions) {
                 if (permission.canManage(this.getClass())) return true;
@@ -262,7 +260,7 @@ public class MonitoredTrip extends Model {
     }
 
     private Bson tripIdFilter() {
-        return eq("monitoredTripId", this.id);
+        return Filters.eq("monitoredTripId", this.id);
     }
 
     /**
@@ -322,7 +320,7 @@ public class MonitoredTrip extends Model {
     public Map<String, String> parseQueryParams() throws URISyntaxException {
         return URLEncodedUtils.parse(
             new URI(String.format("http://example.com/plan?%s", queryParams)),
-            UTF_8
+            StandardCharsets.UTF_8
         ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
     }
 

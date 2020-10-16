@@ -8,8 +8,6 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
 
-import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
-
 public class Model implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -38,7 +36,7 @@ public class Model implements Serializable {
      */
     public boolean canBeManagedBy(RequestingUser user) {
         // TODO: Check if user has application administrator permission?
-        return isUserAdmin(user);
+        return user.isAdmin();
     }
 
     @Override

@@ -124,7 +124,7 @@ public class TestUtils {
         }
 
         // Otherwise, get a valid oauth token for the user
-        headers.put("Authorization", "Bearer " + Auth0Users.getAuth0Token(requestingUser.email, TEMP_AUTH0_USER_PASSWORD));
+        headers.put("Authorization", "Bearer " + Auth0Users.getAuth0AccessToken(requestingUser.email, TEMP_AUTH0_USER_PASSWORD));
         return headers;
     }
 
