@@ -31,12 +31,6 @@ public abstract class AbstractUser extends Model {
      */
     public String auth0UserId = UUID.randomUUID().toString();
 
-    /**
-     * Random api key for testing.
-     */
-    public String apiKey = UUID.randomUUID().toString();
-
-
     /** Whether a user is also a Data Tools user */
     public boolean isDataToolsUser;
     /**

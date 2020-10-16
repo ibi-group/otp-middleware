@@ -42,6 +42,11 @@ public class TestUtils {
     static final String TEMP_AUTH0_USER_PASSWORD = UUID.randomUUID().toString();
 
     /**
+     * x-api-key used when auth is disabled.
+     */
+    static final String TEMP_X_API_KEY = UUID.randomUUID().toString();
+
+    /**
      * Whether the end-to-end environment variable is enabled.
      */
     public static final boolean isEndToEnd = getBooleanEnvVar("RUN_E2E");
@@ -102,7 +107,7 @@ public class TestUtils {
         // the request when received.
         if (isAuthDisabled()) {
             headers.put("Authorization", requestingUser.auth0UserId);
-            headers.put("x-api-key", requestingUser.apiKey);
+            headers.put("x-api-key", TEMP_X_API_KEY);
             return headers;
         }
 
