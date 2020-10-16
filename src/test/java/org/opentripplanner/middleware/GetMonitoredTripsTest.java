@@ -77,14 +77,15 @@ public class GetMonitoredTripsTest {
         otpUser2 = PersistenceUtil.createUser(email);
         adminUser = PersistenceUtil.createAdminUser(email);
         try {
+            // Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
+            // from being able to use TEMP_AUTH0_USER_PASSWORD.
             User auth0User = Auth0Users.createAuth0UserForEmail(otpUser1.email, TEMP_AUTH0_USER_PASSWORD);
             otpUser1.auth0UserId = auth0User.getId();
             Persistence.otpUsers.replace(otpUser1.id, otpUser1);
-            auth0User = Auth0Users.createAuth0UserForEmail(otpUser2.email, TEMP_AUTH0_USER_PASSWORD);
+            auth0User = Auth0Users.createAuth0UserForEmail(email, TEMP_AUTH0_USER_PASSWORD);
             otpUser2.auth0UserId = auth0User.getId();
             Persistence.otpUsers.replace(otpUser2.id, otpUser2);
-            // Uncommenting will fail set-up because the email address already exists with Auth0.
-//            auth0User = createAuth0UserForEmail(otpUser.email, TEMP_AUTH0_USER_PASSWORD);
+            // Use the same Auth0 user id as otpUser2 as the email address is the same.
             adminUser.auth0UserId = auth0User.getId();
             Persistence.adminUsers.replace(adminUser.id, adminUser);
         } catch (Auth0Exception e) {
@@ -138,8 +139,9 @@ public class GetMonitoredTripsTest {
         );
         ResponseList tripRequests = JsonUtils.getPOJOFromJSON(response.body(), ResponseList.class);
 
-        // Although Otp user 2 has 'enhanced' admin credentials a single trip will be returned.
-        assertEquals(1, tripRequests.data.size());
+        // Otp user 2 has 'enhanced' admin credentials both trips will be returned. The expectation here is that the UI
+        // will always provide the user id to prevent this (as with the next test).
+        assertEquals(2, tripRequests.data.size());
 
         // Get trips for Otp user 2 defining user id.
         response = mockAuthenticatedRequest(String.format("api/secure/monitoredtrip?userId=%s", otpUser2.id),

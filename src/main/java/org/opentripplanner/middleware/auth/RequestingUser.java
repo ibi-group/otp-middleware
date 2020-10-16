@@ -74,11 +74,10 @@ public class RequestingUser {
     }
 
     /**
-     * Check if the incoming user is an admin user. To be classed as an admin user, the user must not be any other user
-     * type.
+     * Check if the incoming user is an admin user.
      */
     public boolean isAdmin() {
-        return adminUser != null && apiUser == null && otpUser == null;
+        return adminUser != null;
     }
 
 }
