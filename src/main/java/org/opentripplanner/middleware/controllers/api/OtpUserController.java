@@ -112,16 +112,19 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             );
         }
 
-        // Update OtpUser.phoneNumber before submitting SMS request.
-        otpUser.phoneNumber = phoneNumber;
-        otpUser.isPhoneNumberVerified = false;
-        Persistence.otpUsers.replace(otpUser.id, otpUser);
-
         Verification verification = NotificationUtils.sendVerificationText(phoneNumber);
         if (verification == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Unknown error sending verification text");
         }
-        // Verification result will show "pending" status if verification text is successfully sent.
+
+        // Update OtpUser.phoneNumber after successfully submitting the SMS.
+        // (Verification result will show "pending" status if verification text is successfully sent.)
+        if (verification.getStatus().equals("pending")) {
+            otpUser.phoneNumber = phoneNumber;
+            otpUser.isPhoneNumberVerified = false;
+            Persistence.otpUsers.replace(otpUser.id, otpUser);
+        }
+
         return new VerificationResult(verification);
     }
 

@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.utils.NotificationUtils;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -63,13 +64,15 @@ public class OtpUserControllerTest {
     }
 
     /**
-     * Check that a request with a malformed number
-     * results in a 400-bad request response, and that the user phone number is unchanged.
+     * Check that if for some reason the verification SMS is not sent (invalid format or other error from Twilio),
+     * the request is 400-bad request/500-error, and that the user phone number is unchanged.
      */
-    @Test
-    public void invalidNumbersShouldProduceBadRequest() {
+    @ParameterizedTest
+    @MethodSource("createBadPhoneNumbers")
+    public void invalidNumbersShouldProduceBadRequest(Map.Entry<String, Integer> testCase) {
         assumeTrue(testsShouldRun());
-        final String badNumber = "5555555";
+        String badNumber = testCase.getKey();
+        int statusCode = testCase.getValue();
 
         // 1. Request verification SMS.
         // The invalid number should fail the call.
@@ -81,7 +84,7 @@ public class OtpUserControllerTest {
             otpUser,
             HttpUtils.REQUEST_METHOD.GET
         );
-        assertEquals(HttpStatus.BAD_REQUEST_400, response.statusCode());
+        assertEquals(statusCode, response.statusCode());
 
         // 2. Fetch the newly-created user.
         // The phone number should not be updated.
@@ -97,9 +100,16 @@ public class OtpUserControllerTest {
         assertTrue(otpUserWithPhone.isPhoneNumberVerified);
     }
 
+    private static Set<Map.Entry<String, Integer>> createBadPhoneNumbers() {
+        HashMap<String, Integer> cases = new HashMap<>();
+        cases.put("5555555", HttpStatus.BAD_REQUEST_400);
+        cases.put("+15555550001", HttpStatus.INTERNAL_SERVER_ERROR_500);
+
+        return cases.entrySet();
+    }
+
     /**
      * Tests that phone numbers meet the E.164 format (e.g. +1555555).
-     * @param testCase
      */
     @ParameterizedTest
     @MethodSource("createPhoneNumberTestCases")
