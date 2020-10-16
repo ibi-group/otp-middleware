@@ -466,7 +466,7 @@ paths:
         type: "string"
       - name: "phoneNumber"
         in: "path"
-        description: "The phone number to validate, in raw format (e.g. +15555550123)."
+        description: "The phone number to validate, in E.164 format (e.g. +15555550123)."
         required: true
         type: "string"
       responses:

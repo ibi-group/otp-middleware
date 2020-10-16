@@ -14,13 +14,10 @@ import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
 import com.twilio.rest.verify.v2.service.VerificationCreator;
 import com.twilio.type.PhoneNumber;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -40,12 +37,6 @@ public class NotificationUtils {
     public static final String FROM_PHONE = getConfigPropertyAsText("NOTIFICATION_FROM_PHONE");
     private static final String SPARKPOST_KEY = getConfigPropertyAsText("SPARKPOST_KEY");
     private static final String FROM_EMAIL = getConfigPropertyAsText("NOTIFICATION_FROM_EMAIL");
-
-    private static final String PHONE_COUNTRY_PREFIX = getConfigPropertyAsText("PHONE_COUNTRY_PREFIX", "+1");
-    private static final String PHONE_NUMBER_REGEXP = getConfigPropertyAsText("PHONE_NUMBER_REGEXP");
-    private static final Pattern PHONE_PATTERN = StringUtils.isBlank(PHONE_NUMBER_REGEXP)
-        ? null
-        : Pattern.compile(PHONE_NUMBER_REGEXP);
 
     /**
      * Send a SMS message to the provided phone number
@@ -165,29 +156,6 @@ public class NotificationUtils {
             return false;
         }
 
-    }
-
-    /**
-     * @return true if the specified phoneNumber matches the configured regexp;
-     *   false if the phoneNumber is null, empty string, or PHONE_NUMBER_REGEXP has not been configured.
-     */
-    public static boolean isPhoneNumberIsValid(String phoneNumber) {
-        if (StringUtils.isBlank(phoneNumber)) return false;
-
-        // If no regex string/pattern is configured, assume phone number is valid.
-        if (PHONE_PATTERN == null) return true;
-
-        // Else the phone number must match the regex pattern.
-        Matcher m = PHONE_PATTERN.matcher(phoneNumber);
-        return m.matches();
-    }
-
-    /**
-     * @return A phone number in +155555555 format (E.164 format) for passing to Twilio
-     * by stripping non-digit characters and prefixing with the configured country code.
-     */
-    public static String getRawPhoneNumber(String formattedNumber) {
-        return PHONE_COUNTRY_PREFIX + formattedNumber.replaceAll("\\D", "");
     }
 }
 

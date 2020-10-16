@@ -69,14 +69,14 @@ public class OtpUserControllerTest {
     @Test
     public void invalidNumbersShouldProduceBadRequest() {
         assumeTrue(testsShouldRun());
-        final String encodedNumber = "(555%5D%20555%2C0123"; // (555] 555,0123 encoded by JavaScript.
+        final String badNumber = "5555555";
 
         // 1. Request verification SMS.
         // The invalid number should fail the call.
         HttpResponse<String> response = mockAuthenticatedRequest(
             String.format("api/secure/user/%s/verify_sms/%s",
                 otpUser.id,
-                encodedNumber
+                badNumber
             ),
             otpUser,
             HttpUtils.REQUEST_METHOD.GET
@@ -97,32 +97,27 @@ public class OtpUserControllerTest {
         assertTrue(otpUserWithPhone.isPhoneNumberVerified);
     }
 
+    /**
+     * Tests that phone numbers meet the E.164 format (e.g. +1555555).
+     * @param testCase
+     */
     @ParameterizedTest
     @MethodSource("createPhoneNumberTestCases")
-    public void isPhoneNumberValid(Map.Entry<String, Boolean> testCase) {
+    public void isPhoneNumberValidE164(Map.Entry<String, Boolean> testCase) {
         assumeTrue(testsShouldRun());
         String number = testCase.getKey();
         boolean isValid = testCase.getValue();
 
-        assertEquals(isValid, NotificationUtils.isPhoneNumberIsValid(number));
+        assertEquals(isValid, OtpUserController.isPhoneNumberValidE164(number));
     }
 
     private static Set<Map.Entry<String, Boolean>> createPhoneNumberTestCases() {
         HashMap<String, Boolean> cases = new HashMap<>();
-        cases.put("5555550123", true);
-        cases.put("(555) 555-0123", true);
-        cases.put("555 555 0123", true);
+        cases.put("+15555550123", true);
+        cases.put("+1 5555550123", false); // no spaces allowed.
         cases.put("(555) 555,0123", false);
         cases.put("555555", false);
-        cases.put("55555555555555", false);
 
         return cases.entrySet();
-    }
-
-    @Test
-    public void getE164Number() {
-        assumeTrue(testsShouldRun());
-        String formattedNumber = "(800) 555-0123";
-        assertEquals("+18005550123", NotificationUtils.getRawPhoneNumber(formattedNumber));
     }
 }

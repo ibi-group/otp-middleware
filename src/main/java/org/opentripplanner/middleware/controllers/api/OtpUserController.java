@@ -18,6 +18,9 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -33,6 +36,8 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
     private static final String VERIFY_PATH = "verify_sms";
     public static final String OTP_USER_PATH = "secure/user";
     private static final String VERIFY_ROUTE_TEMPLATE = "/:%s/%s/:%s";
+    /** E164 Regex per https://www.twilio.com/docs/glossary/what-e164 */
+    private static final Pattern PHONE_E164_PATTERN = Pattern.compile("^\\+[1-9]\\d{1,14}$");
 
     public OtpUserController(String apiPrefix) {
         super(apiPrefix, Persistence.otpUsers, OTP_USER_PATH);
@@ -68,7 +73,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
                     .withDescription("Request an SMS verification to be sent to an OtpUser's phone number.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the OtpUser.").and()
                     .withPathParam().withName(PHONE_PARAM).withRequired(true).withDescription(
-                        "The phone number to validate, in raw format (e.g. +15555550123).").and()
+                        "The phone number to validate, in E.164 format (e.g. +15555550123).").and()
                     .withResponseType(VerificationResult.class),
                 this::sendVerificationText, JsonUtils::toJson
             )
@@ -99,7 +104,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         // Get phone number from the path param.
         String phoneNumber = req.params(PHONE_PARAM);
 
-        if (!NotificationUtils.isPhoneNumberIsValid(phoneNumber)) {
+        if (!isPhoneNumberValidE164(phoneNumber)) {
             logMessageAndHalt(
                 req,
                 HttpStatus.BAD_REQUEST_400,
@@ -108,12 +113,11 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         }
 
         // Update OtpUser.phoneNumber before submitting SMS request.
-        String phoneNumberToSubmit = NotificationUtils.getRawPhoneNumber(phoneNumber);
-        otpUser.phoneNumber = phoneNumberToSubmit;
+        otpUser.phoneNumber = phoneNumber;
         otpUser.isPhoneNumberVerified = false;
         Persistence.otpUsers.replace(otpUser.id, otpUser);
 
-        Verification verification = NotificationUtils.sendVerificationText(phoneNumberToSubmit);
+        Verification verification = NotificationUtils.sendVerificationText(phoneNumber);
         if (verification == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Unknown error sending verification text");
         }
@@ -157,4 +161,13 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         return verificationResult;
     }
 
+    /**
+     * @return true if the specified phoneNumber matches the E164 format, false otherwise.
+     */
+    public static boolean isPhoneNumberValidE164(String phoneNumber) {
+        if (StringUtils.isBlank(phoneNumber)) return false;
+
+        Matcher m = PHONE_E164_PATTERN.matcher(phoneNumber);
+        return m.matches();
+    }
 }
