@@ -237,16 +237,16 @@ public class MonitoredTrip extends Model {
         // OTP user is assigned to that API.
         boolean belongsToUser = false;
         // Monitored trip can only be owned by an OtpUser (not an ApiUser or AdminUser).
-        if (requestingUser.otpUser != null) {
+        if (requestingUser.isFirstPartyUser()) {
             belongsToUser = userId.equals(requestingUser.otpUser.id);
         }
 
         if (belongsToUser) {
             return true;
-        } else if (requestingUser.isThirdParty()) {
+        } else if (requestingUser.isThirdPartyUser()) {
             // get the required OTP user to confirm they are associated with the requesting API user.
             OtpUser otpUser = Persistence.otpUsers.getById(userId);
-            if (otpUser != null && requestingUser.apiUser.id.equals(otpUser.applicationId)) {
+            if (otpUser != null && otpUser.canBeManagedBy(requestingUser)) {
                 return true;
             }
         } else if (requestingUser.isAdmin()) {

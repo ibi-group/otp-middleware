@@ -778,7 +778,13 @@ paths:
       produces:
       - "application/json"
       - "application/xml"
-      parameters: []
+      parameters:
+      - name: "userId"
+        in: "query"
+        description: "If a third party user is making a trip request on behalf of\
+          \ an OTP user, the OTP user id must be specified."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"

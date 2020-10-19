@@ -103,7 +103,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // TODO: If MOD UI is to be an ApiUser, we may want to do an additional check here to determine if this is a
         //  first-party API user (MOD UI) or third party.
-        if (requestingUser.isThirdParty() && user instanceof OtpUser) {
+        if (requestingUser.isThirdPartyUser() && user instanceof OtpUser) {
             // Do not create Auth0 account for OtpUsers created on behalf of third party API users.
             return user;
         } else {

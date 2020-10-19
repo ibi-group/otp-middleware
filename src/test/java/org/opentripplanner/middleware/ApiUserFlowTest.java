@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware;
 
 import com.auth0.exception.Auth0Exception;
+import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.mgmt.users.User;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.UUID;
 
@@ -29,8 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.TEMP_AUTH0_USER_PASSWORD;
+import static org.opentripplanner.middleware.TestUtils.authenticatedRequest;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedPost;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
@@ -128,17 +130,27 @@ public class ApiUserFlowTest {
             apiUser.id,
             apiUser.email,
             TEMP_AUTH0_USER_PASSWORD);
-        HttpResponse<String> getTokenResponse = mockAuthenticatedPost(endpoint,
+        HttpResponse<String> getTokenResponse = mockAuthenticatedRequest(endpoint,
+            "",
             apiUser,
-            ""
+            HttpUtils.REQUEST_METHOD.POST,
+            false
         );
         LOG.info(getTokenResponse.body());
         assertEquals(HttpStatus.OK_200, getTokenResponse.statusCode());
+        TokenHolder tokenHolder = JsonUtils.getPOJOFromJSON(getTokenResponse.body(), TokenHolder.class);
+
+        // Define the header values to be used in requests from this point forward.
+        HashMap<String, String> headers = new HashMap<>();
+        headers.put("Authorization", "Bearer " + tokenHolder.getAccessToken());
+        headers.put("x-api-key", apiUser.apiKeys.get(0).value);
+
 
         // create an Otp user authenticating as an Api user.
-        HttpResponse<String> createUserResponse = mockAuthenticatedPost("api/secure/user",
-            apiUser,
-            JsonUtils.toJson(otpUser)
+        HttpResponse<String> createUserResponse = authenticatedRequest("api/secure/user",
+            JsonUtils.toJson(otpUser),
+            headers,
+            HttpUtils.REQUEST_METHOD.POST
         );
 
         assertEquals(HttpStatus.OK_200, createUserResponse.statusCode());
@@ -150,32 +162,37 @@ public class ApiUserFlowTest {
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
         MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
         monitoredTrip.userId = otpUser.id;
-        HttpResponse<String> createTripResponseAsOtpUser = mockAuthenticatedPost("api/secure/monitoredtrip",
+        HttpResponse<String> createTripResponseAsOtpUser = mockAuthenticatedRequest("api/secure/monitoredtrip",
+            JsonUtils.toJson(monitoredTrip),
             otpUserResponse,
-            JsonUtils.toJson(monitoredTrip)
+            HttpUtils.REQUEST_METHOD.POST,
+            true
         );
         assertEquals(HttpStatus.UNAUTHORIZED_401, createTripResponseAsOtpUser.statusCode());
 
         // Create a monitored trip for an Otp user authenticating as an Api user. An Api user can create a monitored
         // trip for an Otp user they created.
-        HttpResponse<String> createTripResponseAsApiUser = mockAuthenticatedPost("api/secure/monitoredtrip",
-            apiUser,
-            JsonUtils.toJson(monitoredTrip)
+        HttpResponse<String> createTripResponseAsApiUser = authenticatedRequest("api/secure/monitoredtrip",
+            JsonUtils.toJson(monitoredTrip),
+            headers,
+            HttpUtils.REQUEST_METHOD.POST
         );
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.statusCode());
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(createTripResponseAsApiUser.body(), MonitoredTrip.class);
 
         // Request all monitored trip for an Otp user authenticating as an Api user.
-        HttpResponse<String> getAllMonitoredTripsForOtpUser = mockAuthenticatedRequest(String.format("api/secure/monitoredtrip?userId=%s",
+        HttpResponse<String> getAllMonitoredTripsForOtpUser = authenticatedRequest(String.format("api/secure/monitoredtrip?userId=%s",
             otpUserResponse.id),
-            apiUser,
+            "",
+            headers,
             HttpUtils.REQUEST_METHOD.GET
         );
         assertEquals(HttpStatus.OK_200, getAllMonitoredTripsForOtpUser.statusCode());
 
         // Request all monitored trip for an Otp user authenticating as an Api user. Without defining the user id.
-        getAllMonitoredTripsForOtpUser = mockAuthenticatedRequest("api/secure/monitoredtrip",
-            apiUser,
+        getAllMonitoredTripsForOtpUser = authenticatedRequest("api/secure/monitoredtrip",
+            "",
+            headers,
             HttpUtils.REQUEST_METHOD.GET
         );
         assertEquals(HttpStatus.BAD_REQUEST_400, getAllMonitoredTripsForOtpUser.statusCode());
@@ -185,16 +202,19 @@ public class ApiUserFlowTest {
         // as an Otp user (created by MOD UI or an Api user) because the end point has no auth.
         String otpQuery = OTP_PROXY_ENDPOINT + OTP_PLAN_ENDPOINT + "?fromPlace=28.45119,-81.36818&toPlace=28.54834,-81.37745&userId=" + otpUserResponse.id;
         HttpResponse<String> planTripResponseAsOtUser = mockAuthenticatedRequest(otpQuery,
+            "",
             otpUserResponse,
-            HttpUtils.REQUEST_METHOD.GET
+            HttpUtils.REQUEST_METHOD.GET,
+            true
         );
         LOG.info("Plan trip response: {}\n....", planTripResponseAsOtUser.body().substring(0, 300));
         assertEquals(HttpStatus.OK_200, planTripResponseAsOtUser.statusCode());
 
         // Plan trip with OTP proxy authenticating as an Api user. Mock plan response will be returned. This will work
         // as an Api user because the end point has no auth.
-        HttpResponse<String> planTripResponseAsApiUser = mockAuthenticatedRequest(otpQuery,
-            apiUser,
+        HttpResponse<String> planTripResponseAsApiUser = authenticatedRequest(otpQuery,
+            "",
+            headers,
             HttpUtils.REQUEST_METHOD.GET
         );
         LOG.info("Plan trip response: {}\n....", planTripResponseAsApiUser.body().substring(0, 300));
@@ -204,17 +224,20 @@ public class ApiUserFlowTest {
         // by an Api user and therefore does not have a Auth0 account.
         HttpResponse<String> tripRequestResponseAsOtUser = mockAuthenticatedRequest(String.format("api/secure/triprequests?userId=%s",
             otpUserResponse.id),
+            "",
             otpUserResponse,
-            HttpUtils.REQUEST_METHOD.GET
+            HttpUtils.REQUEST_METHOD.GET,
+            true
         );
 
         assertEquals(HttpStatus.UNAUTHORIZED_401, tripRequestResponseAsOtUser.statusCode());
 
         // Get trip request history for user authenticating as an Api user. This will work because an Api user is able
         // to get a trip on behalf of an Otp user they created.
-        HttpResponse<String> tripRequestResponseAsApiUser = mockAuthenticatedRequest(String.format("api/secure/triprequests?userId=%s",
+        HttpResponse<String> tripRequestResponseAsApiUser = authenticatedRequest(String.format("api/secure/triprequests?userId=%s",
             otpUserResponse.id),
-            apiUser,
+            "",
+            headers,
             HttpUtils.REQUEST_METHOD.GET
         );
         assertEquals(HttpStatus.OK_200, tripRequestResponseAsApiUser.statusCode());
@@ -225,16 +248,19 @@ public class ApiUserFlowTest {
         // therefore does not have a Auth0 account.
         HttpResponse<String> deleteUserResponseAsOtpUser = mockAuthenticatedRequest(
             String.format("api/secure/user/%s", otpUserResponse.id),
+            "",
             otpUserResponse,
-            HttpUtils.REQUEST_METHOD.DELETE
+            HttpUtils.REQUEST_METHOD.DELETE,
+            true
         );
         assertEquals(HttpStatus.UNAUTHORIZED_401, deleteUserResponseAsOtpUser.statusCode());
 
         // Delete Otp user authenticating as an Api user. This will work because an Api user can delete an Otp user they
         // created.
-        HttpResponse<String> deleteUserResponseAsApiUser = mockAuthenticatedRequest(
+        HttpResponse<String> deleteUserResponseAsApiUser = authenticatedRequest(
             String.format("api/secure/user/%s", otpUserResponse.id),
-            apiUser,
+            "",
+            headers,
             HttpUtils.REQUEST_METHOD.DELETE
         );
         assertEquals(HttpStatus.OK_200, deleteUserResponseAsApiUser.statusCode());
@@ -253,9 +279,10 @@ public class ApiUserFlowTest {
         assertNull(tripRequest);
 
         // Delete API user (this would happen through the OTP Admin portal).
-        HttpResponse<String> deleteApiUserResponse = mockAuthenticatedRequest(
+        HttpResponse<String> deleteApiUserResponse = authenticatedRequest(
             String.format("api/secure/application/%s", apiUser.id),
-            apiUser,
+            "",
+            headers,
             HttpUtils.REQUEST_METHOD.DELETE
         );
         assertEquals(HttpStatus.OK_200, deleteApiUserResponse.statusCode());

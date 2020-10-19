@@ -161,7 +161,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     private HttpResponse<String> createApiKeyRequest(String targetUserId, AbstractUser requestingUser) {
         String path = String.format("api/secure/application/%s/apikey", targetUserId);
-        return mockAuthenticatedRequest(path, requestingUser, HttpUtils.REQUEST_METHOD.POST);
+        return mockAuthenticatedRequest(path, "", requestingUser, HttpUtils.REQUEST_METHOD.POST, true);
     }
 
     /**
@@ -169,6 +169,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     private static HttpResponse<String> deleteApiKeyRequest(String targetUserId, String apiKeyId, AbstractUser requestingUser) {
         String path = String.format("api/secure/application/%s/apikey/%s", targetUserId, apiKeyId);
-        return mockAuthenticatedRequest(path, requestingUser, HttpUtils.REQUEST_METHOD.DELETE);
+        return mockAuthenticatedRequest(path, "", requestingUser, HttpUtils.REQUEST_METHOD.DELETE, true);
     }
 }

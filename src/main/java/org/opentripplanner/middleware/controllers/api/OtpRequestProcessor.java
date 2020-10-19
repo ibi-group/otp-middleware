@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.descriptor.EndpointDescriptor;
 import com.beerboy.ss.descriptor.MethodDescriptor;
+import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
@@ -31,6 +32,7 @@ import java.util.List;
  */
 public class OtpRequestProcessor implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
+    private static final String USER_ID_PARAM = "userId";
 
     /**
      * Endpoint for the OTP Middleware's OTP proxy
@@ -54,12 +56,17 @@ public class OtpRequestProcessor implements Endpoint {
      */
     @Override
     public void bind(final SparkSwagger restApi) {
+        ParameterDescriptor USER_ID = ParameterDescriptor.newBuilder()
+            .withName(USER_ID_PARAM)
+            .withRequired(false)
+            .withDescription("If a third party user is making a trip request on behalf of an OTP user, the OTP user id must be specified.").build();
         restApi.endpoint(
             EndpointDescriptor.endpointPath(OTP_PROXY_ENDPOINT).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_LINK),
             HttpUtils.NO_FILTER
         ).get(
             MethodDescriptor.path("/*")
                 .withDescription("Forwards any GET request to OTP. " + OTP_DOC_LINK)
+                .withQueryParam(USER_ID)
                 .withProduces(List.of(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)),
             OtpRequestProcessor::proxy
         );
@@ -124,12 +131,14 @@ public class OtpRequestProcessor implements Endpoint {
         }
 
         // Determine if the Otp request is being made by an actual Otp user or by a third party on behalf of an Otp user.
-        OtpUser otpUser;
-        if (requestingUser.isThirdParty()) {
+        OtpUser otpUser = null;
+        if (requestingUser.isFirstPartyUser()) {
+            // Otp user making a trip request for self.
+            otpUser = requestingUser.otpUser;
+        } else if (requestingUser.isThirdPartyUser()) {
             // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
             // as a query parameter.
-            String userId = request.queryParams("userId");
-            otpUser = Persistence.otpUsers.getById(userId);
+            otpUser = Persistence.otpUsers.getById(request.queryParams(USER_ID_PARAM));
             if (otpUser != null && !otpUser.canBeManagedBy(requestingUser)) {
                 JsonUtils.logMessageAndHalt(request,
                     HttpStatus.FORBIDDEN_403,
@@ -137,9 +146,6 @@ public class OtpRequestProcessor implements Endpoint {
                         requestingUser.apiUser.email,
                         otpUser.email));
             }
-        } else {
-            // Otp user making a trip request for self.
-            otpUser = requestingUser.otpUser;
         }
 
         final boolean storeTripHistory = otpUser != null && otpUser.storeTripHistory;

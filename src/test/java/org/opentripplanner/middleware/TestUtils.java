@@ -82,22 +82,6 @@ public class TestUtils {
     }
 
     /**
-     * Send request to provided URL placing the Auth0 user id in the headers so that {@link RequestingUser} can check
-     * the database for a matching user. Returns the response.
-     */
-    public static HttpResponse<String> mockAuthenticatedRequest(String path, AbstractUser requestingUser, HttpUtils.REQUEST_METHOD requestMethod) {
-        HashMap<String, String> headers = getMockHeaders(requestingUser);
-
-        return HttpUtils.httpRequestRawResponse(
-            URI.create("http://localhost:4567/" + path),
-            1000,
-            requestMethod,
-            headers,
-            ""
-        );
-    }
-
-    /**
      * Construct http header values based on user type and status of DISABLE_AUTH config parameter. If authorization is
      * disabled, use Auth0 user ID to authenticate else attempt to get a valid 0auth token from Auth0 and use this.
      */
@@ -133,20 +117,29 @@ public class TestUtils {
         return headers;
     }
 
+
     /**
      * Send request to provided URL placing the Auth0 user id in the headers so that {@link RequestingUser} can check
-     * the database for a matching user. Returns the response.
+     * the database for a matching user.
      */
-    public static HttpResponse<String> mockAuthenticatedPost(String path, AbstractUser requestingUser, String body) {
-        HashMap<String, String> headers = getMockHeaders(requestingUser);
-
+    static HttpResponse<String> authenticatedRequest(String path, String body, HashMap<String, String> headers,
+                                                     HttpUtils.REQUEST_METHOD requestMethod) {
         return HttpUtils.httpRequestRawResponse(
             URI.create("http://localhost:4567/" + path),
             1000,
-            HttpUtils.REQUEST_METHOD.POST,
+            requestMethod,
             headers,
             body
         );
+    }
+
+    /**
+     * Construct http headers according to caller request and then make an authenticated call.
+     */
+    static HttpResponse<String> mockAuthenticatedRequest(String path, String body, AbstractUser requestingUser,
+                                                         HttpUtils.REQUEST_METHOD requestMethod, boolean mockHeaders) {
+        HashMap<String, String> headers = (mockHeaders) ? getMockHeaders(requestingUser) : null;
+        return authenticatedRequest(path, body, headers, requestMethod);
     }
 
     /**

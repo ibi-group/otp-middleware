@@ -205,7 +205,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // OtpUserController. Therefore, the request should be limited to return just the entity matching the
             // requesting user.
             return persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), offset, limit);
-        } else if (requestingUser.isThirdParty()) {
+        } else if (requestingUser.isThirdPartyUser()) {
             // A user id must be provided if the request is being made by a third party user.
             JsonUtils.logMessageAndHalt(req,
                 HttpStatus.BAD_REQUEST_400,

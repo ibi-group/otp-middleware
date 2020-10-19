@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedPost;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 
@@ -117,25 +116,31 @@ public class GetMonitoredTripsTest {
         // Create trip as Otp user 1.
         MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
         monitoredTrip.userId = otpUser1.id;
-        HttpResponse<String> response = mockAuthenticatedPost("api/secure/monitoredtrip",
+        HttpResponse<String> response = mockAuthenticatedRequest("api/secure/monitoredtrip",
+            JsonUtils.toJson(monitoredTrip),
             otpUser1,
-            JsonUtils.toJson(monitoredTrip)
+            HttpUtils.REQUEST_METHOD.POST,
+            true
         );
         assertEquals(HttpStatus.OK_200, response.statusCode());
 
         // Create trip as Otp user 2.
         monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
         monitoredTrip.userId = otpUser2.id;
-        response = mockAuthenticatedPost("api/secure/monitoredtrip",
+        response = mockAuthenticatedRequest("api/secure/monitoredtrip",
+            JsonUtils.toJson(monitoredTrip),
             otpUser2,
-            JsonUtils.toJson(monitoredTrip)
+            HttpUtils.REQUEST_METHOD.POST,
+            true
         );
         assertEquals(HttpStatus.OK_200, response.statusCode());
 
         // Get trips for Otp user 2.
         response = mockAuthenticatedRequest("api/secure/monitoredtrip",
+            "",
             otpUser2,
-            HttpUtils.REQUEST_METHOD.GET
+            HttpUtils.REQUEST_METHOD.GET,
+            true
         );
         ResponseList tripRequests = JsonUtils.getPOJOFromJSON(response.body(), ResponseList.class);
 
@@ -145,8 +150,10 @@ public class GetMonitoredTripsTest {
 
         // Get trips for Otp user 2 defining user id.
         response = mockAuthenticatedRequest(String.format("api/secure/monitoredtrip?userId=%s", otpUser2.id),
+            "",
             otpUser2,
-            HttpUtils.REQUEST_METHOD.GET
+            HttpUtils.REQUEST_METHOD.GET,
+            true
         );
         tripRequests = JsonUtils.getPOJOFromJSON(response.body(), ResponseList.class);
 

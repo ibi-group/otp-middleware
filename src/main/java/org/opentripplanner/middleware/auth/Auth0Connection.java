@@ -244,18 +244,18 @@ public class Auth0Connection {
         }
         // If userId is defined, it must be set to a value associated with a user.
         if (userId != null) {
-            if (requestingUser.otpUser != null && requestingUser.otpUser.id.equals(userId)) {
+            if (requestingUser.isFirstPartyUser() && requestingUser.otpUser.id.equals(userId)) {
                 // Otp user requesting their item.
                 return;
             }
-            if (requestingUser.isThirdParty() && requestingUser.apiUser.id.equals(userId)) {
+            if (requestingUser.isThirdPartyUser() && requestingUser.apiUser.id.equals(userId)) {
                 // Api user requesting their item.
                 return;
             }
-            if (requestingUser.isThirdParty()) {
+            if (requestingUser.isThirdPartyUser()) {
                 // Api user potentially requesting an item on behalf of an Otp user they created.
                 OtpUser otpUser = Persistence.otpUsers.getById(userId);
-                if (otpUser != null && requestingUser.apiUser.id.equals(otpUser.applicationId)) {
+                if (otpUser != null && otpUser.canBeManagedBy(requestingUser)) {
                     return;
                 }
             }

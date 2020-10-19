@@ -67,10 +67,20 @@ public class RequestingUser {
     }
 
     /**
-     * Determine if requesting user is a third party user.
+     * Determine if requesting user is a third party user. A third party user is classed as a user coming via the AWS
+     * API gateway.
      */
-    public boolean isThirdParty() {
+    public boolean isThirdPartyUser() {
+        // TODO: Look to enhance api user check. Perhaps define specific field to indicate this?
         return apiUser != null;
+    }
+
+    /**
+     * Determine if requesting user is a first party user. A first party user is a user coming directly from MOD UI.
+     */
+    public boolean isFirstPartyUser() {
+        // TODO: Look to enhance otp user check. Perhaps define specific field to indicate this?
+        return otpUser != null;
     }
 
     /**
