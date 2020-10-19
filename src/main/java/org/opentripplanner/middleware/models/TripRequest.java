@@ -1,14 +1,11 @@
 package org.opentripplanner.middleware.models;
 
+import com.mongodb.client.FindIterable;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-import java.util.List;
-
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserAndDateRange;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
 
 /**
@@ -73,12 +70,8 @@ public class TripRequest extends Model {
             '}';
     }
 
-    public static List<TripRequest> requestsForUser(String userId) {
+    public static FindIterable<TripRequest> requestsForUser(String userId) {
         return Persistence.tripRequests.getFiltered(filterByUserId(userId));
-    }
-
-    public static List<TripRequest> requestsForUser(String userId, Date fromDate, Date toDate, int limit) {
-        return Persistence.tripRequests.getFilteredWithLimit(filterByUserAndDateRange(userId, fromDate, toDate), limit);
     }
 
     @Override

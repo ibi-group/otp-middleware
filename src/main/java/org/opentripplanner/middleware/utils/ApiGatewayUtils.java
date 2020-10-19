@@ -4,9 +4,11 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.apigateway.AmazonApiGateway;
 import com.amazonaws.services.apigateway.AmazonApiGatewayClient;
 import com.amazonaws.services.apigateway.AmazonApiGatewayClientBuilder;
+import com.amazonaws.services.apigateway.model.ConflictException;
 import com.amazonaws.services.apigateway.model.CreateApiKeyRequest;
 import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
 import com.amazonaws.services.apigateway.model.CreateUsagePlanKeyRequest;
+import com.amazonaws.services.apigateway.model.CreateUsagePlanKeyResult;
 import com.amazonaws.services.apigateway.model.DeleteApiKeyRequest;
 import com.amazonaws.services.apigateway.model.GetApiKeyRequest;
 import com.amazonaws.services.apigateway.model.GetUsagePlanRequest;
@@ -25,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -69,22 +72,20 @@ public class ApiGatewayUtils {
             GetUsagePlanRequest usagePlanRequest = new GetUsagePlanRequest();
             usagePlanRequest.withUsagePlanId(usagePlanId);
             GetUsagePlanResult usagePlanResult = gateway.getUsagePlan(usagePlanRequest);
-
-            // Create API key with descriptive fields (for tracing back to users).
-            CreateApiKeyRequest apiKeyRequest = new CreateApiKeyRequest();
-            apiKeyRequest.setSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
             // Construct key name in the form email-planname-shortId (e.g., user@email.com-Unlimited-2). Note: shortId is
             // not intended to be unique, just for a bit of differentiation in the AWS console.
             String shortId = UUID.randomUUID().toString().substring(0, 7);
             String keyName = String.join("-", user.email, usagePlanResult.getName(), shortId);
-            apiKeyRequest
+            // Create API key with descriptive fields (for tracing back to users).
+            CreateApiKeyRequest apiKeyRequest = new CreateApiKeyRequest()
                 //FIXME This may need to include stage key(s). Not sure what impact that places on the calling
                 // services though?
                 .withName(keyName)
-                // TODO: On deleting am ApiUser, it might be worth doing a query on customerId to make sure the keys
+                // TODO: On deleting am ApiUser, it might be worth doing a query on the userId tag to make sure the keys
                 //  have been cleared.
-                .withCustomerId(user.id)
-                .withEnabled(true);
+                .withTags(Collections.singletonMap("userId", user.id))
+                .withEnabled(true)
+                .withSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
             CreateApiKeyResult apiKeyResult = gateway.createApiKey(apiKeyRequest);
 
             // add API key to usage plan

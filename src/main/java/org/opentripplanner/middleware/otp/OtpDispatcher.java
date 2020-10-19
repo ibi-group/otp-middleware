@@ -15,24 +15,23 @@ import java.time.Duration;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
- * Responsible for constructing requests to an elected OTP server end point using original query parameters provided by
+ * Responsible for constructing requests to an elected OTP server endpoint using original query parameters provided by
  * the requester. To provide the response from the OTP server in the form of status code and body so the correct
  * response can be provided to the requester.
  */
 public class OtpDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcher.class);
+
+    /**
+     * Location of the OTP plan endpoint (e.g. /routers/default/plan).
+     */
+    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
+
     /**
      * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
      * return OTP version info.
      */
-    public static final String OTP_SERVER = getConfigPropertyAsText("OTP_SERVER");
-
-    /**
-     * Location of the plan endpoint (e.g., /plan).
-     */
-    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
-
-    public static String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
+    public static final String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
 
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
@@ -74,16 +73,16 @@ public class OtpDispatcher {
     }
 
     /**
-     * Makes a call to the OTP server end point. The original response and status are wrapped in a
-     * single object and returned. It will fail if a connection is not made.
+     * Makes a call to the OTP server end point. The original response and status are wrapped in a single object and
+     * returned. It will fail if a connection is not made.
      */
     private static OtpDispatcherResponse sendOtpRequest(URI uri) {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(uri)
-                .timeout(Duration.ofSeconds(OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS))
-                .GET()
-                .build();
+            .uri(uri)
+            .timeout(Duration.ofSeconds(OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS))
+            .GET()
+            .build();
 
         // Get response from OTP
         OtpDispatcherResponse otpDispatcherResponse = null;

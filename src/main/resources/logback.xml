@@ -2,6 +2,7 @@
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!-- the prefix variable is currently only used in the CheckMonitoredTrip class -->
             <pattern>%highlight(%-5level) %d{yyyy-MM-dd'T'HH:mm:ss.SSS} %yellow([%thread]) %blue(%logger{36}\(%file:%line\)) %yellow(%X{prefix}) %msg%n</pattern>
         </encoder>
     </appender>

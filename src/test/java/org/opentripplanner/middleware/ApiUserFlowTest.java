@@ -2,10 +2,14 @@ package org.opentripplanner.middleware;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -24,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,20 +39,30 @@ import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
-import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PROXY_ENDPOINT;
 import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 
 /**
  * Tests to simulate API user flow. The following config parameters must be set in configurations/default/env.yml for
- * these end-to-end tests to run: - AUTH0_DOMAIN set to a valid Auth0 domain - AUTH0_API_CLIENT set to a valid Auth0
- * application client id - AUTH0_API_SECRET set to a valid Auth0 application client secret - DEFAULT_USAGE_PLAN_ID set
- * to a valid usage plan id (AWS requires this to create an api key) - OTP_API_ROOT set to http://localhost:8080/otp so
- * the mock OTP server is used - OTP_PLAN_ENDPOINT set to /plan - An AWS_PROFILE is required, or AWS access has been
- * configured for your operating environment e.g. C:\Users\<username>\.aws\credentials in Windows or Mac OS equivalent.
+ * these end-to-end tests to run:
  *
- * The following environment variable must be set for these tests to run: - RUN_E2E=true
+ * AUTH0_DOMAIN set to a valid Auth0 domain.
+ *
+ * AUTH0_API_CLIENT set to a valid Auth0 application client id.
+ *
+ * AUTH0_API_SECRET set to a valid Auth0 application client secret.
+ *
+ * DEFAULT_USAGE_PLAN_ID set to a valid usage plan id (AWS requires this to create an api key).
+ *
+ * OTP_API_ROOT set to a live OTP instance (e.g. http://otp-server.example.com/otp).
+ *
+ * OTP_PLAN_ENDPOINT set to a live OTP plan endpoint (e.g. /routers/default/plan).
+ *
+ * An AWS_PROFILE is required, or AWS access has been configured for your operating environment e.g.
+ * C:\Users\<username>\.aws\credentials in Windows or Mac OS equivalent.
+ *
+ * The following environment variable must be set for these tests to run: - RUN_E2E=true.
  *
  * Auth0 must be correctly configured as described here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
  */
@@ -80,7 +93,7 @@ public class ApiUserFlowTest {
         // As a pre-condition, create an API User with API key.
         apiUser = PersistenceUtil.createApiUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
         apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
-        // Create, but do not persist, an OTP user. Also
+        // Create, but do not persist, an OTP user.
         otpUser = new OtpUser();
         otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
         otpUser.hasConsentedToTerms = true;
@@ -125,23 +138,26 @@ public class ApiUserFlowTest {
         );
         assertEquals(HttpStatus.OK_200, createUserResponse.statusCode());
         OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.body(), OtpUser.class);
+
         // Generate mock response to create monitored trip
         // FIXME: Refactor once the method to store monitored trip is refactored.
         String mockResponse = FileUtils.getFileContents(
             "src/test/resources/org/opentripplanner/middleware/persistence/planResponse.json"
         );
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse(mockResponse, DEFAULT_PLAN_URI);
+
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
-        MonitoredTrip trip = createMonitoredTrip(otpUserResponse.id, otpDispatcherResponse, false);
+        MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        monitoredTrip.userId = otpUser.id;
         HttpResponse<String> createTripResponse = mockAuthenticatedPost("api/secure/monitoredtrip",
             otpUserResponse,
-            JsonUtils.toJson(trip)
+            JsonUtils.toJson(monitoredTrip)
         );
         assertEquals(HttpStatus.OK_200, createTripResponse.statusCode());
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(createTripResponse.body(), MonitoredTrip.class);
 
         // Plan trip with OTP proxy. Mock plan response will be returned
-        String otpQuery = OTP_PROXY_ENDPOINT + OTP_PLAN_ENDPOINT + "?fromPlace=34,-87&toPlace=33.-87";
+        String otpQuery = OTP_PROXY_ENDPOINT + OTP_PLAN_ENDPOINT + "?fromPlace=28.45119,-81.36818&toPlace=28.54834,-81.37745";
         HttpResponse<String> planTripResponse = mockAuthenticatedRequest(otpQuery,
             otpUserResponse,
             HttpUtils.REQUEST_METHOD.GET
@@ -156,7 +172,10 @@ public class ApiUserFlowTest {
             HttpUtils.REQUEST_METHOD.GET
         );
         assertEquals(HttpStatus.OK_200, tripRequestResponse.statusCode());
-        List<TripRequest> tripRequests = JsonUtils.getPOJOFromJSONAsList(tripRequestResponse.body(), TripRequest.class);
+        // Special handling of deserialization for ResponseList to avoid class cast issues encountered with JsonUtils
+        // methods.
+        ObjectMapper mapper = new ObjectMapper();
+        ResponseList<TripRequest> tripRequests = mapper.readValue(tripRequestResponse.body(), new TypeReference<>() {});
 
         // Delete otp user.
         HttpResponse<String> deleteUserResponse = mockAuthenticatedRequest(
@@ -175,7 +194,7 @@ public class ApiUserFlowTest {
         assertNull(deletedTrip);
 
         // Verify trip request no longer exists.
-        TripRequest tripRequest = Persistence.tripRequests.getById(tripRequests.get(0).id);
+        TripRequest tripRequest = Persistence.tripRequests.getById(tripRequests.data.get(0).id);
         assertNull(tripRequest);
 
         // Delete API user (this would happen through the OTP Admin portal).

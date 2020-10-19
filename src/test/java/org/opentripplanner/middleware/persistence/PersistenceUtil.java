@@ -17,16 +17,12 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
-
 /**
  * Utility class to aid with creating and storing objects in Mongo.
  */
 public class PersistenceUtil {
 
     private static final String BATCH_ID = "783726";
-    private static final String TRIP_REQUEST_ID = "59382";
-
     private static final String resourceFilePath = "persistence/";
 
 
@@ -81,9 +77,9 @@ public class PersistenceUtil {
     /**
      * Create trip summary from static plan response file and store in database.
      */
-    public static TripSummary createTripSummary() throws IOException {
+    public static TripSummary createTripSummary(String tripRequestId) throws IOException {
         OtpResponse planResponse = getPlanResponse();
-        TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, TRIP_REQUEST_ID);
+        TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
     }
@@ -91,9 +87,9 @@ public class PersistenceUtil {
     /**
      * Create trip summary from static plan error response file and store in database.
      */
-    public static TripSummary createTripSummaryWithError() throws IOException {
+    public static TripSummary createTripSummaryWithError(String tripRequestId) throws IOException {
         OtpResponse planErrorResponse = getPlanErrorResponse();
-        TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, TRIP_REQUEST_ID);
+        TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
     }
@@ -109,15 +105,6 @@ public class PersistenceUtil {
             i++;
         }
         return tripRequests;
-    }
-
-    /**
-     * Delete multiple trip requests from database.
-     */
-    public static void deleteTripRequests(List<TripRequest> tripRequests) {
-        for (TripRequest tripRequest : tripRequests) {
-            Persistence.tripRequests.removeById(tripRequest.id);
-        }
     }
 
     public static MonitoredTrip createMonitoredTrip(String userId) {

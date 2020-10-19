@@ -2,10 +2,12 @@ package org.opentripplanner.middleware;
 
 import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +18,9 @@ import static org.opentripplanner.middleware.persistence.PersistenceUtil.createU
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
- * Contains tests for the various notification utilities to send SMS and email messages. Note: these tests require
- * the environment variables RUN_E2E=true and valid values for TEST_TO_EMAIL and TEST_TO_PHONE. Furthermore,
- * TEST_TO_PHONE must be a verified phone number in a valid Twilio account.
+ * Contains tests for the various notification utilities to send SMS and email messages. Note: these tests require the
+ * environment variables RUN_E2E=true and valid values for TEST_TO_EMAIL and TEST_TO_PHONE. Furthermore, TEST_TO_PHONE
+ * must be a verified phone number in a valid Twilio account.
  */
 public class NotificationUtilsTest extends OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationUtilsTest.class);
@@ -40,6 +42,11 @@ public class NotificationUtilsTest extends OtpMiddlewareTest {
     public static void setup() {
         assumeTrue(shouldTestsRun);
         user = createUser(email, phone);
+    }
+
+    @AfterAll
+    public static void tearDown() {
+        if (user != null) Persistence.otpUsers.removeById(user.id);
     }
 
     @Test
@@ -85,9 +92,9 @@ public class NotificationUtilsTest extends OtpMiddlewareTest {
     }
 
     /**
-     * Tests whether a verification code can be checked with the Twilio service. Note: if running locally, the
-     * {@link #canSendTwilioVerificationText()} test can be run first (with your own mobile phone number) and the code
-     * sent to your phone can be used below (in place of 123456) to generate an "approved" status.
+     * Tests whether a verification code can be checked with the Twilio service. Note: if running locally, the {@link
+     * #canSendTwilioVerificationText()} test can be run first (with your own mobile phone number) and the code sent to
+     * your phone can be used below (in place of 123456) to generate an "approved" status.
      */
     @Test
     public void canCheckSmsVerificationCode() {

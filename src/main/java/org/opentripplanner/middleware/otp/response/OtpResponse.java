@@ -8,7 +8,7 @@ import java.util.HashMap;
 /**
  * Represents a trip planner response
  *
- * Pare down version of class original produced for OpenTripPlanner.
+ * This is a pared-down version of the org.opentripplanner.api.resource.Response class in OpenTripPlanner.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OtpResponse {
