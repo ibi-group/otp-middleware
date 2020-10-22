@@ -140,7 +140,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         if (code == null) {
             logMessageAndHalt(req, 400, "Missing code from verify request.");
         }
-        if (isPhoneNumberValidE164(otpUser.phoneNumber)) {
+        if (!isPhoneNumberValidE164(otpUser.phoneNumber)) {
             logMessageAndHalt(req, 404, "User must have a valid phone number for SMS verification.");
         }
         // Check verification code with SMS service.
