@@ -76,14 +76,6 @@ public class RequestingUser {
     }
 
     /**
-     * Determine if requesting user is a first party user. A first party user is a user coming directly from MOD UI.
-     */
-    public boolean isFirstPartyUser() {
-        // TODO: Look to enhance otp user check. Perhaps define specific field to indicate this?
-        return otpUser != null;
-    }
-
-    /**
      * Check if the incoming user is an admin user.
      */
     public boolean isAdmin() {

@@ -21,6 +21,8 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
+import java.net.http.HttpResponse;
+
 /**
  * Implementation of the {@link AbstractUserController} for {@link ApiUser}. This controller also contains methods for
  * managing an {@link ApiUser}'s API keys.
@@ -68,7 +70,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                     .withResponseType(persistence.clazz),
                 this::deleteApiKeyForApiUser, JsonUtils::toJson)
             // Authenticate user with Auth0
-            .post(MethodDescriptor.path(ID_PATH + AUTHENTICATE_PATH)
+            .post(MethodDescriptor.path(AUTHENTICATE_PATH)
                     .withDescription("Authenticates ApiUser with Auth0.")
                     .withPathParam().withName(ID_PARAM).withDescription("The user ID.").and()
                     .withQueryParam().withName(USERNAME_PARAM).withRequired(true)
@@ -96,13 +98,21 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
 
     /**
      * Authenticate user with Auth0 based on username (email) and password. If successful, return the complete Auth0
-     * token else null.
+     * token else log message and halt.
      */
     private TokenHolder authenticateAuth0User(Request req, Response res) {
         String username = HttpUtils.getQueryParamFromRequest(req, USERNAME_PARAM, false);
         // FIXME: Should this be encrypted?!
         String password = HttpUtils.getQueryParamFromRequest(req, PASSWORD_PARAM, false);
-        return Auth0Users.getCompleteAuth0Token(username, password);
+        HttpResponse<String> auth0TokenResponse = Auth0Users.getCompleteAuth0TokenResponse(username, password);
+        if (auth0TokenResponse == null || auth0TokenResponse.statusCode() != HttpStatus.OK_200) {
+            JsonUtils.logMessageAndHalt(req,
+                auth0TokenResponse.statusCode(),
+                String.format("Cannot obtain Auth0 token for user %s", username),
+                null
+            );
+        }
+        return JsonUtils.getPOJOFromJSON(auth0TokenResponse.body(), TokenHolder.class);
     }
 
     /**

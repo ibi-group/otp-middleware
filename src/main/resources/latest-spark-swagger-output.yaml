@@ -217,7 +217,7 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ApiUser"
-  /api/secure/application/{id}/authenticate:
+  /api/secure/application/authenticate:
     post:
       tags:
       - "api/secure/application"
@@ -225,11 +225,6 @@ paths:
       produces:
       - "application/json"
       parameters:
-      - name: "id"
-        in: "path"
-        description: "The user ID."
-        required: true
-        type: "string"
       - name: "username"
         in: "query"
         description: "Auth0 username (usually email address)."
@@ -781,8 +776,8 @@ paths:
       parameters:
       - name: "userId"
         in: "query"
-        description: "If a third party user is making a trip request on behalf of\
-          \ an OTP user, the OTP user id must be specified."
+        description: "If a third-party application is making a trip plan request on\
+          \ behalf of an end user (OtpUser), the user id must be specified."
         required: false
         type: "string"
       responses:

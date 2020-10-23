@@ -240,11 +240,11 @@ public class Auth0Users {
     }
 
     /**
-     * Get an Auth0 oauth token for use in mocking user requests by using the Auth0 'Call Your API Using Resource Owner
-     * Password Flow' approach. Auth0 setup can be reviewed here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow.
-     * If the user is successfully validated by Auth0 a complete token is returned. In all other cases, null is returned.
+     * Get an Auth0 oauth token response for use in mocking user requests by using the Auth0 'Call Your API Using Resource
+     * Owner Password Flow' approach. Auth0 setup can be reviewed here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow.
+     * If token response is returned to calling methods for evaluation.
      */
-    public static TokenHolder getCompleteAuth0Token(String username, String password) {
+    public static HttpResponse<String> getCompleteAuth0TokenResponse(String username, String password) {
         if (Auth0Connection.isAuthDisabled()) return null;
         String body = String.format(
             "grant_type=password&username=%s&password=%s&audience=%s&scope=&client_id=%s&client_secret=%s",
@@ -254,26 +254,25 @@ public class Auth0Users {
             AUTH0_CLIENT_ID, // Auth0 application client ID
             AUTH0_CLIENT_SECRET // Auth0 application client secret
         );
-        HttpResponse<String> response = HttpUtils.httpRequestRawResponse(
+        return HttpUtils.httpRequestRawResponse(
             URI.create(String.format("https://%s/oauth/token", AUTH0_DOMAIN)),
             1000,
             HttpUtils.REQUEST_METHOD.POST,
             Collections.singletonMap("content-type", "application/x-www-form-urlencoded"),
             body
         );
-        if (response == null || response.statusCode() != HttpStatus.OK_200) {
-            LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}", username, response.statusCode(), response.body());
-            return null;
-        }
-        return JsonUtils.getPOJOFromJSON(response.body(), TokenHolder.class);
     }
 
     /**
      * Extract from a complete Auth0 token just the access token. If the token is not available, return null instead.
      */
     public static String getAuth0AccessToken(String username, String password) {
-        TokenHolder token = getCompleteAuth0Token(username, password);
+        HttpResponse<String> response = getCompleteAuth0TokenResponse(username, password);
+        if (response == null || response.statusCode() != HttpStatus.OK_200) {
+            LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}", username, response.statusCode(), response.body());
+            return null;
+        }
+        TokenHolder token = JsonUtils.getPOJOFromJSON(response.body(), TokenHolder.class);
         return (token == null) ? null : token.getAccessToken();
     }
-
 }

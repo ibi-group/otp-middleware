@@ -86,7 +86,7 @@ public class OtpUser extends AbstractUser {
      */
     @Override
     public boolean canBeManagedBy(RequestingUser requestingUser) {
-        if (requestingUser.isThirdPartyUser() && requestingUser.apiUser.id.equals(applicationId)) {
+        if (requestingUser.apiUser.id.equals(applicationId)) {
             // Otp user was created by this Api user.
             return true;
         }

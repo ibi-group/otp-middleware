@@ -237,7 +237,7 @@ public class MonitoredTrip extends Model {
         // OTP user is assigned to that API.
         boolean belongsToUser = false;
         // Monitored trip can only be owned by an OtpUser (not an ApiUser or AdminUser).
-        if (requestingUser.isFirstPartyUser()) {
+        if (requestingUser.otpUser != null) {
             belongsToUser = userId.equals(requestingUser.otpUser.id);
         }
 

@@ -59,7 +59,8 @@ public class OtpRequestProcessor implements Endpoint {
         ParameterDescriptor USER_ID = ParameterDescriptor.newBuilder()
             .withName(USER_ID_PARAM)
             .withRequired(false)
-            .withDescription("If a third party user is making a trip request on behalf of an OTP user, the OTP user id must be specified.").build();
+            .withDescription("If a third-party application is making a trip plan request on behalf of an end user (OtpUser), the user id must be specified.")
+            .build();
         restApi.endpoint(
             EndpointDescriptor.endpointPath(OTP_PROXY_ENDPOINT).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_LINK),
             HttpUtils.NO_FILTER
@@ -132,7 +133,7 @@ public class OtpRequestProcessor implements Endpoint {
 
         // Determine if the Otp request is being made by an actual Otp user or by a third party on behalf of an Otp user.
         OtpUser otpUser = null;
-        if (requestingUser.isFirstPartyUser()) {
+        if (requestingUser.otpUser != null) {
             // Otp user making a trip request for self.
             otpUser = requestingUser.otpUser;
         } else if (requestingUser.isThirdPartyUser()) {

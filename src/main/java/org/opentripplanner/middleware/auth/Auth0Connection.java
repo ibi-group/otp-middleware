@@ -73,7 +73,7 @@ public class Auth0Connection {
                     LOG.info("New user is creating self. OK to proceed without existing user object for auth0UserId");
                 } else {
                     // Otherwise, if no valid user is found, halt the request.
-                    JsonUtils.logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Auth0 auth - Unknown user.");
+                    JsonUtils.logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "User is unknown to Auth0 tenant.");
                 }
             }
             // The user attribute is used on the server side to check user permissions and does not have all of the
@@ -244,7 +244,7 @@ public class Auth0Connection {
         }
         // If userId is defined, it must be set to a value associated with a user.
         if (userId != null) {
-            if (requestingUser.isFirstPartyUser() && requestingUser.otpUser.id.equals(userId)) {
+            if (requestingUser.otpUser != null && requestingUser.otpUser.id.equals(userId)) {
                 // Otp user requesting their item.
                 return;
             }

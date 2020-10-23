@@ -134,6 +134,20 @@ public class TestUtils {
     }
 
     /**
+     * Send 'get' request to provided URL placing the Auth0 user id in the headers so that {@link RequestingUser} can
+     * check the database for a matching user.
+     */
+    static HttpResponse<String> authenticatedGet(String path, HashMap<String, String> headers) {
+        return HttpUtils.httpRequestRawResponse(
+            URI.create("http://localhost:4567/" + path),
+            1000,
+            HttpUtils.REQUEST_METHOD.GET,
+            headers,
+            ""
+        );
+    }
+
+    /**
      * Construct http headers according to caller request and then make an authenticated call.
      */
     static HttpResponse<String> mockAuthenticatedRequest(String path, String body, AbstractUser requestingUser,
@@ -141,6 +155,15 @@ public class TestUtils {
         HashMap<String, String> headers = (mockHeaders) ? getMockHeaders(requestingUser) : null;
         return authenticatedRequest(path, body, headers, requestMethod);
     }
+
+    /**
+     * Construct http headers according to caller request and then make an authenticated 'get' call.
+     */
+    static HttpResponse<String> mockAuthenticatedGet(String path, AbstractUser requestingUser, boolean mockHeaders) {
+        HashMap<String, String> headers = (mockHeaders) ? getMockHeaders(requestingUser) : null;
+        return authenticatedRequest(path, "", headers, HttpUtils.REQUEST_METHOD.GET);
+    }
+
 
     /**
      * Configure a mock OTP server for providing mock OTP responses. Note: this expects the config value
