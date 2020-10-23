@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 
 /**
  * This class contains methods for querying Auth0 users using the Auth0 User Management API. Auth0 docs describing the
@@ -43,6 +44,12 @@ public class Auth0Users {
     private static final String DEFAULT_AUDIENCE = "https://otp-middleware";
     private static final String MANAGEMENT_API_VERSION = "v2";
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
+
+    /**
+     * Whether the end-to-end environment variable is enabled.
+     */
+    private static final boolean isEndToEnd = getBooleanEnvVar("RUN_E2E");
+
     /**
      * Cached API token so that we do not have to request a new one each time a Management API request is made.
      */
@@ -251,8 +258,8 @@ public class Auth0Users {
             username,
             password,
             DEFAULT_AUDIENCE, // must match an API identifier
-            AUTH0_API_CLIENT, // Auth0 application client ID
-            AUTH0_API_SECRET // Auth0 application client secret
+            (isEndToEnd) ? AUTH0_CLIENT_ID : AUTH0_API_CLIENT, // Auth0 application client ID
+            (isEndToEnd) ? AUTH0_CLIENT_SECRET : AUTH0_API_SECRET // Auth0 application client secret
         );
         return HttpUtils.httpRequestRawResponse(
             URI.create(String.format("https://%s/oauth/token", AUTH0_DOMAIN)),
