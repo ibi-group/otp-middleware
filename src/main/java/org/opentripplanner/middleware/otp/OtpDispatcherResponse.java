@@ -4,6 +4,7 @@ package org.opentripplanner.middleware.otp;
 import org.apache.commons.lang3.SerializationUtils;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.TripPlan;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -15,10 +16,8 @@ import java.net.URI;
 import java.net.http.HttpResponse;
 import java.time.ZoneId;
 import java.util.HashMap;
-import java.util.Optional;
 
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getZoneIdForCoordinates;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
 
@@ -112,15 +111,13 @@ public class OtpDispatcherResponse implements Serializable {
             String requestDate = reqParams.get(DATE_PARAM);
             String requestTime = reqParams.get(TIME_PARAM);
             if (requestDate != null && requestTime != null) {
-                // Get the zone id for this plan. Don't search for itineraries in this plan if the zone cannot be determined.
-                Optional<ZoneId> fromZoneId = getZoneIdForCoordinates(plan.from.lat, plan.from.lon);
-                if (fromZoneId.isPresent()) {
-                    for (Itinerary itinerary : plan.itineraries) {
-                        if (ItineraryUtils.isSameDay(
-                            itinerary, requestDate, requestTime, fromZoneId.get(), tripIsArriveBy
-                        )) {
-                            return itinerary;
-                        }
+                // Get the zone id for this plan for same-day check.
+                ZoneId fromZoneId = DateTimeUtils.getOtpZoneId();
+                for (Itinerary itinerary : plan.itineraries) {
+                    if (ItineraryUtils.isSameDay(
+                        itinerary, requestDate, requestTime, fromZoneId, tripIsArriveBy
+                    )) {
+                        return itinerary;
                     }
                 }
             }

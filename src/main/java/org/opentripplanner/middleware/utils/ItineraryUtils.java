@@ -70,18 +70,23 @@ public class ItineraryUtils {
      * @param checkAllDays true if all days of the week are included regardless of the trip's monitored days.
      * @return A list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor.
      */
-    public static List<String> getDatesToCheckItineraryExistence(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
+    public static List<String> getDatesToCheckItineraryExistence(MonitoredTrip trip, boolean checkAllDays)
+        throws URISyntaxException {
         List<String> result = new ArrayList<>();
-        ZoneId zoneId = trip.timezoneForTargetLocation();
+        ZoneId zoneId = DateTimeUtils.getOtpZoneId();
         Map<String, String> params = trip.parseQueryParams();
 
         // Start from the query date, if available.
         // If there is no query date, start from today.
-        String queryDateString = params.getOrDefault(DATE_PARAM, DateTimeUtils.getStringFromDate(DateTimeUtils.nowAsLocalDate(), DEFAULT_DATE_FORMAT_PATTERN));
+        String queryDateString = params.getOrDefault(
+            DATE_PARAM, DateTimeUtils.getStringFromDate(DateTimeUtils.nowAsLocalDate(), DEFAULT_DATE_FORMAT_PATTERN)
+        );
         LocalDate queryDate = DateTimeUtils.getDateFromString(queryDateString, DEFAULT_DATE_FORMAT_PATTERN);
 
         // Get the trip time.
-        ZonedDateTime queryZonedDateTime = ZonedDateTime.of(queryDate, LocalTime.of(trip.tripTimeHour(), trip.tripTimeMinute()), zoneId);
+        ZonedDateTime queryZonedDateTime = ZonedDateTime.of(
+            queryDate, LocalTime.of(trip.tripTimeHour(), trip.tripTimeMinute()), zoneId
+        );
 
         // Check the dates on days when a trip is active, or every day if checkAllDays is true,
         // in a 7-day window starting from the query date.
@@ -98,7 +103,8 @@ public class ItineraryUtils {
     /**
      * Gets OTP queries to check non-realtime itinerary existence for the given trip.
      */
-    public static Map<String, String> getItineraryExistenceQueries(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
+    public static Map<String, String> getItineraryExistenceQueries(MonitoredTrip trip, boolean checkAllDays)
+        throws URISyntaxException {
         return getQueriesFromDates(
             excludeRealtime(trip.parseQueryParams()),
             getDatesToCheckItineraryExistence(trip, checkAllDays)
@@ -119,7 +125,8 @@ public class ItineraryUtils {
      * The ui_activeItinerary query parameter is used to determine which itinerary to use,
      * TODO/FIXME: need a trip resemblance check to supplement the ui_activeItinerary param used in this function.
      */
-    public static void updateTripWithVerifiedItinerary(MonitoredTrip trip, List<Itinerary> verifiedItineraries) throws URISyntaxException {
+    public static void updateTripWithVerifiedItinerary(MonitoredTrip trip, List<Itinerary> verifiedItineraries)
+        throws URISyntaxException {
         Map<String, String> params = trip.parseQueryParams();
         Itinerary itinerary = null;
         String itineraryIndexParam = params.get("ui_activeItinerary");
@@ -177,14 +184,15 @@ public class ItineraryUtils {
         );
     }
 
-    public static List<Itinerary> getSameDayItineraries(List<Itinerary> itineraries, MonitoredTrip trip, String date) throws URISyntaxException {
+    public static List<Itinerary> getSameDayItineraries(List<Itinerary> itineraries, MonitoredTrip trip, String date)
+        throws URISyntaxException {
         List<Itinerary> result = new ArrayList<>();
 
         if (itineraries != null) {
             for (Itinerary itinerary : itineraries) {
                 // TODO/FIXME: initialize the parameter map in the monitored trip in initializeFromItinerary etc.
-                // so we don't have to lug the URI exception around.
-                if (isSameDay(itinerary, date, trip.tripTime, trip.timezoneForTargetLocation(), trip.isArriveBy())) {
+                //   so we don't have to lug the URI exception around.
+                if (isSameDay(itinerary, date, trip.tripTime, DateTimeUtils.getOtpZoneId(), trip.isArriveBy())) {
                     result.add(itinerary);
                 }
             }

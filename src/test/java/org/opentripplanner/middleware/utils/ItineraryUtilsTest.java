@@ -145,7 +145,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     @ParameterizedTest
     @MethodSource("createGetDatesTestCases")
     public void testGetDatesToCheckItineraryExistence(GetDatesTestCase testCase) throws URISyntaxException {
-        MonitoredTrip trip = makeTestTrip(false);
+        MonitoredTrip trip = makeTestTrip();
         trip.monday = true;
         trip.tuesday = true;
         trip.wednesday = false;
@@ -207,12 +207,11 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
     @ParameterizedTest
     @MethodSource("createSameDayTestCases")
-    void testIsSameDay(SameDayTestCase testCase) throws URISyntaxException {
-        MonitoredTrip trip = makeTestTrip(testCase.isArrival);
+    void testIsSameDay(SameDayTestCase testCase) {
         // The time zone for trip (and testCase.tripTime) is US Eastern per trip location.
-        ZoneId zoneId = trip.timezoneForTargetLocation();
+        ZoneId zoneId = DateTimeUtils.getOtpZoneId();
 
-        Itinerary itinerary = simpleItinerary(testCase.tripTime, testCase.isArrival);
+        Itinerary itinerary = simpleItinerary(testCase.tripTargetTimeEpochMillis, testCase.isArrival);
         Assertions.assertEquals(
             testCase.shouldBeSameDay,
             ItineraryUtils.isSameDay(itinerary, QUERY_DATE, testCase.timeOfDay, zoneId, testCase.isArrival),
@@ -261,7 +260,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      */
     @Test
     public void testGetSameDayItineraries() throws URISyntaxException {
-        MonitoredTrip trip = makeTestTrip(false);
+        MonitoredTrip trip = makeTestTrip();
         trip.tripTime = QUERY_TIME;
 
         List<Long> startTimes = List.of(
@@ -284,10 +283,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     /**
      * Helper method to create a bare-bones itinerary with start or end time.
      */
-    private Itinerary simpleItinerary(Long startTime, boolean isArrival) {
+    private Itinerary simpleItinerary(Long targetEpochMillis, boolean isArriveBy) {
         Itinerary itinerary = new Itinerary();
-        Date date = Date.from(Instant.ofEpochMilli(startTime));
-        if (isArrival) {
+        Date date = Date.from(Instant.ofEpochMilli(targetEpochMillis));
+        if (isArriveBy) {
             itinerary.endTime = date;
         } else {
             itinerary.startTime = date;
@@ -299,7 +298,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     /**
      * Helper method to create a trip with locations, time, and queryParams populated.
      */
-    private MonitoredTrip makeTestTrip(boolean arriveBy) throws URISyntaxException {
+    private MonitoredTrip makeTestTrip() {
         Place targetPlace = new Place();
         targetPlace.lat = 33.80;
         targetPlace.lon = -84.70; // America/New_York
@@ -313,19 +312,11 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         trip.queryParams = BASE_QUERY;
         trip.tripTime = QUERY_TIME;
 
-        if (arriveBy) {
-            trip.from = dummyPlace;
-            trip.to = targetPlace;
+        trip.from = targetPlace;
+        trip.to = dummyPlace;
 
-            Map<String, String> baseQueryParams = trip.parseQueryParams();
-            baseQueryParams.put("arriveBy", "true");
-            trip.queryParams = ItineraryUtils.toQueryString(baseQueryParams);
-        } else { // departBy
-            trip.from = targetPlace;
-            trip.to = dummyPlace;
+        trip.queryParams = BASE_QUERY;
 
-            trip.queryParams = BASE_QUERY;
-        }
         return trip;
     }
 
@@ -349,13 +340,13 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         public final boolean isArrival;
         public final boolean shouldBeSameDay;
         public final String timeOfDay;
-        public final Long tripTime;
+        public final Long tripTargetTimeEpochMillis;
 
-        public SameDayTestCase(String timeOfDay, Long tripTime, boolean isArrival, boolean shouldBeSameDay) {
+        public SameDayTestCase(String timeOfDay, Long tripTargetTimeEpochMillis, boolean isArrival, boolean shouldBeSameDay) {
             this.isArrival = isArrival;
             this.shouldBeSameDay = shouldBeSameDay;
             this.timeOfDay = timeOfDay;
-            this.tripTime = tripTime;
+            this.tripTargetTimeEpochMillis = tripTargetTimeEpochMillis;
         }
 
         /**
@@ -369,7 +360,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
                 timeOfDay,
                 zoneId.toString(),
                 isArrival ? "arriving" : "departing",
-                ZonedDateTime.ofInstant(Instant.ofEpochMilli(tripTime), zoneId),
+                ZonedDateTime.ofInstant(Instant.ofEpochMilli(tripTargetTimeEpochMillis), zoneId),
                 shouldBeSameDay ? "should" : "should not"
             );
         }

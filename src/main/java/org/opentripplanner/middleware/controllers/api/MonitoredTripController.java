@@ -38,7 +38,6 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        initializeTripAndSetVerifiedItinerary(monitoredTrip, req);
         return monitoredTrip;
     }
 
