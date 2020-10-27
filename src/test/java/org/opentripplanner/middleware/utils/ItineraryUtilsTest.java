@@ -219,10 +219,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         // The time zone for trip is OTP's time zone.
         ZoneId zoneId = DateTimeUtils.getOtpZoneId();
 
-        Itinerary itinerary = simpleItinerary(testCase.tripTargetTimeEpochMillis, testCase.isArrival);
+        Itinerary itinerary = simpleItinerary(testCase.tripTargetTimeEpochMillis, testCase.isArriveBy);
         Assertions.assertEquals(
             testCase.shouldBeSameDay,
-            ItineraryUtils.isSameDay(itinerary, QUERY_DATE, testCase.timeOfDay, zoneId, testCase.isArrival),
+            ItineraryUtils.isSameDay(itinerary, QUERY_DATE, testCase.timeOfDay, zoneId, testCase.isArriveBy),
             testCase.getMessage(zoneId)
         );
     }
@@ -345,13 +345,13 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      * Data structure for the same-day test.
      */
     private static class SameDayTestCase {
-        public final boolean isArrival;
+        public final boolean isArriveBy;
         public final boolean shouldBeSameDay;
         public final String timeOfDay;
         public final Long tripTargetTimeEpochMillis;
 
-        public SameDayTestCase(String timeOfDay, Long tripTargetTimeEpochMillis, boolean isArrival, boolean shouldBeSameDay) {
-            this.isArrival = isArrival;
+        public SameDayTestCase(String timeOfDay, Long tripTargetTimeEpochMillis, boolean isArriveBy, boolean shouldBeSameDay) {
+            this.isArriveBy = isArriveBy;
             this.shouldBeSameDay = shouldBeSameDay;
             this.timeOfDay = timeOfDay;
             this.tripTargetTimeEpochMillis = tripTargetTimeEpochMillis;
@@ -367,7 +367,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
                 QUERY_DATE,
                 timeOfDay,
                 zoneId.toString(),
-                isArrival ? "arriving" : "departing",
+                isArriveBy ? "arriving" : "departing",
                 ZonedDateTime.ofInstant(Instant.ofEpochMilli(tripTargetTimeEpochMillis), zoneId),
                 shouldBeSameDay ? "should" : "should not"
             );
