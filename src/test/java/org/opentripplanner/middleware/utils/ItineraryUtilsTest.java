@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.otp.response.Place;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
 
@@ -39,15 +41,21 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     public static final String QUERY_DATE = "2020-08-13";
     public static final String QUERY_TIME = "11:23";
 
-    // Timestamps (in EDT or GMT-4:00) to test whether an itinerary is same-day as QUERY_DATE.
-    // Note that the timezone matches the location time zone from makeTestTrip.
-    public static final long _2020_08_12__03_00_00_EDT = 1597215600000L; // Aug 12, 2020 3:00:00 AM
-    public static final long _2020_08_12__23_59_59_EDT = 1597291199000L; // Aug 12, 2020 11:59:59 PM
-    public static final long _2020_08_13__02_59_59_EDT = 1597301999000L; // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
-    public static final long _2020_08_13__03_00_00_EDT = 1597302000000L; // Aug 13, 2020 3:00:00 AM
-    public static final long _2020_08_13__23_59_59_EDT = 1597377599000L; // Aug 13, 2020 11:59:59 PM
-    public static final long _2020_08_14__02_59_59_EDT = 1597388399000L; // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
-    public static final long _2020_08_14__03_00_00_EDT = 1597388400000L; // Aug 14, 2020 3:00:00 AM
+    // Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE.
+    public static final long _2020_08_12__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 12, 3, 0, 0)); // Aug 12, 2020 3:00:00 AM
+    public static final long _2020_08_12__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020,8,12,23,59,59)); // Aug 12, 2020 11:59:59 PM
+    public static final long _2020_08_13__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 13, 2, 59, 59)); // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
+    public static final long _2020_08_13__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 13, 3, 0, 0)); // Aug 13, 2020 3:00:00 AM
+    public static final long _2020_08_13__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 13, 23, 59, 59)); // Aug 13, 2020 11:59:59 PM
+    public static final long _2020_08_14__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 14, 2, 59, 59)); // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
+    public static final long _2020_08_14__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 14, 3, 0, 0)); // Aug 14, 2020 3:00:00 AM
 
     private static OtpDispatcherResponse otpDispatcherPlanResponse;
     private static OtpDispatcherResponse otpDispatcherPlanErrorResponse;
@@ -208,7 +216,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     @ParameterizedTest
     @MethodSource("createSameDayTestCases")
     void testIsSameDay(SameDayTestCase testCase) {
-        // The time zone for trip (and testCase.tripTime) is US Eastern per trip location.
+        // The time zone for trip is OTP's time zone.
         ZoneId zoneId = DateTimeUtils.getOtpZoneId();
 
         Itinerary itinerary = simpleItinerary(testCase.tripTargetTimeEpochMillis, testCase.isArrival);
@@ -222,36 +230,36 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     private static List<SameDayTestCase> createSameDayTestCases() {
         return List.of(
             // Same-day departures
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__03_00_00_EDT, false, true),
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__23_59_59_EDT, false, true),
-            new SameDayTestCase(QUERY_TIME, _2020_08_14__02_59_59_EDT, false, true),
-            new SameDayTestCase("1:23", _2020_08_12__03_00_00_EDT, false, true),
-            new SameDayTestCase("1:23", _2020_08_12__23_59_59_EDT, false, true),
-            new SameDayTestCase("1:23", _2020_08_13__02_59_59_EDT, false, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__03_00_00, false, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__23_59_59, false, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__02_59_59, false, true),
+            new SameDayTestCase("1:23", _2020_08_12__03_00_00, false, true),
+            new SameDayTestCase("1:23", _2020_08_12__23_59_59, false, true),
+            new SameDayTestCase("1:23", _2020_08_13__02_59_59, false, true),
 
             // Not same-day departures
-            new SameDayTestCase(QUERY_TIME, _2020_08_12__23_59_59_EDT, false, false),
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__02_59_59_EDT, false, false),
-            new SameDayTestCase(QUERY_TIME, _2020_08_14__03_00_00_EDT, false, false),
-            new SameDayTestCase("1:23", _2020_08_13__03_00_00_EDT, false, false),
-            new SameDayTestCase("1:23", _2020_08_13__23_59_59_EDT, false, false),
-            new SameDayTestCase("1:23", _2020_08_14__02_59_59_EDT, false, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_12__23_59_59, false, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__02_59_59, false, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__03_00_00, false, false),
+            new SameDayTestCase("1:23", _2020_08_13__03_00_00, false, false),
+            new SameDayTestCase("1:23", _2020_08_13__23_59_59, false, false),
+            new SameDayTestCase("1:23", _2020_08_14__02_59_59, false, false),
 
             // Same-day arrivals
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__03_00_00_EDT, true, true),
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__23_59_59_EDT, true, true),
-            new SameDayTestCase(QUERY_TIME, _2020_08_14__02_59_59_EDT, true, true),
-            new SameDayTestCase("1:23", _2020_08_12__03_00_00_EDT, true, true),
-            new SameDayTestCase("1:23", _2020_08_12__23_59_59_EDT, true, true),
-            new SameDayTestCase("1:23", _2020_08_13__02_59_59_EDT, true, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__03_00_00, true, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__23_59_59, true, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__02_59_59, true, true),
+            new SameDayTestCase("1:23", _2020_08_12__03_00_00, true, true),
+            new SameDayTestCase("1:23", _2020_08_12__23_59_59, true, true),
+            new SameDayTestCase("1:23", _2020_08_13__02_59_59, true, true),
 
             // Not same-day arrivals
-            new SameDayTestCase(QUERY_TIME, _2020_08_12__23_59_59_EDT, true, false),
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__02_59_59_EDT, true, false),
-            new SameDayTestCase(QUERY_TIME, _2020_08_14__03_00_00_EDT, true, false),
-            new SameDayTestCase("1:23", _2020_08_13__03_00_00_EDT, true, false),
-            new SameDayTestCase("1:23", _2020_08_13__23_59_59_EDT, true, false),
-            new SameDayTestCase("1:23", _2020_08_14__02_59_59_EDT, true, false)
+            new SameDayTestCase(QUERY_TIME, _2020_08_12__23_59_59, true, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__02_59_59, true, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__03_00_00, true, false),
+            new SameDayTestCase("1:23", _2020_08_13__03_00_00, true, false),
+            new SameDayTestCase("1:23", _2020_08_13__23_59_59, true, false),
+            new SameDayTestCase("1:23", _2020_08_14__02_59_59, true, false)
         );
     }
 
@@ -264,9 +272,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         trip.tripTime = QUERY_TIME;
 
         List<Long> startTimes = List.of(
-            _2020_08_13__23_59_59_EDT, // same day
-            _2020_08_14__02_59_59_EDT, // considered same day
-            _2020_08_14__03_00_00_EDT // not same day
+            _2020_08_13__23_59_59, // same day
+            _2020_08_14__02_59_59, // considered same day
+            _2020_08_14__03_00_00 // not same day
         );
 
         // Create itineraries, some being same-day, some not per the times above.
