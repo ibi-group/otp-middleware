@@ -1,8 +1,12 @@
 package org.opentripplanner.middleware.otp.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -47,53 +51,23 @@ public class Leg implements Cloneable {
     public String routeShortName;
     public String routeLongName;
     public List<LocalizedAlert> alerts = null;
+    public String headsign;
 
-    /**
-     * This method calculates equality in the context of trip monitoring in order to analyzing equality when
-     * checking if itineraries are the same.
-     *
-     * FIXME: maybe don't check duration exactly as it might vary slightly in certain trips
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Leg leg = (Leg) o;
-        return duration.equals(leg.duration) &&
-            mode.equals(leg.mode) &&
-            from.equals(leg.from) &&
-            to.equals(leg.to) &&
-            Objects.equals(rentedBike, leg.rentedBike) &&
-            Objects.equals(rentedCar, leg.rentedCar) &&
-            Objects.equals(rentedVehicle, leg.rentedVehicle) &&
-            Objects.equals(hailedCar, leg.hailedCar) &&
-            Objects.equals(transitLeg, leg.transitLeg) &&
-            Objects.equals(routeType, leg.routeType) &&
-            Objects.equals(route, leg.route);
-        // also include headsign?
+    @JsonIgnore
+    @BsonIgnore
+    public ZonedDateTime getScheduledStartTime() {
+        return ZonedDateTime.ofInstant(
+            startTime.toInstant().minusSeconds(departureDelay),
+            DateTimeUtils.getOtpZoneId()
+        );
     }
 
-    /**
-     * This method calculates the hash code in the context of trip monitoring in order to analyzing equality when
-     * checking if itineraries match.
-     *
-     * FIXME: maybe don't check duration exactly as it might vary slightly in certain trips
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(
-            duration,
-            mode,
-            from,
-            to,
-            rentedBike,
-            rentedCar,
-            rentedVehicle,
-            hailedCar,
-            transitLeg,
-            routeType,
-            route
-            // also include headsign?
+    @JsonIgnore
+    @BsonIgnore
+    public ZonedDateTime getScheduledEndTime() {
+        return ZonedDateTime.ofInstant(
+            endTime.toInstant().minusSeconds(arrivalDelay),
+            DateTimeUtils.getOtpZoneId()
         );
     }
 

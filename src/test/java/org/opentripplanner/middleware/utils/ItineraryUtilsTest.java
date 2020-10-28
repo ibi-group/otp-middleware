@@ -59,6 +59,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
     private static OtpDispatcherResponse otpDispatcherPlanResponse;
     private static OtpDispatcherResponse otpDispatcherPlanErrorResponse;
+    private static Itinerary defaultItinerary;
 
     @BeforeAll
     public static void setup() throws IOException {
@@ -77,6 +78,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
         otpDispatcherPlanResponse = new OtpDispatcherResponse(mockPlanResponse, DEFAULT_PLAN_URI);
         otpDispatcherPlanErrorResponse = new OtpDispatcherResponse(mockErrorResponse, DEFAULT_PLAN_URI);
+        defaultItinerary = otpDispatcherPlanResponse.getResponse().plan.itineraries.get(0);
     }
 
     @AfterEach
@@ -264,6 +266,32 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     }
 
     /**
+     * Check whether certain itineraries match.
+     */
+    @ParameterizedTest
+    @MethodSource("createItineraryMatchingTestCases")
+    public void testItineraryMatches(ItineraryMatchTestCase testCase) {
+        Assertions.assertEquals(
+            testCase.shouldMatch,
+            ItineraryUtils.itinerariesMatch(testCase.previousItinerary, testCase.newItinerary),
+            testCase.name
+        );
+    }
+
+    private static List<ItineraryMatchTestCase> createItineraryMatchingTestCases() throws CloneNotSupportedException {
+        List<ItineraryMatchTestCase> testCases = new ArrayList<>();
+
+        testCases.add(
+            new ItineraryMatchTestCase(
+                "Should be equal with same data",
+                defaultItinerary.clone(),
+                true
+            )
+        );
+        return testCases;
+    }
+
+    /**
      * Check that only same-day itineraries are selected.
      */
     @Test
@@ -371,6 +399,54 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
                 ZonedDateTime.ofInstant(Instant.ofEpochMilli(tripTargetTimeEpochMillis), zoneId),
                 shouldBeSameDay ? "should" : "should not"
             );
+        }
+    }
+
+    private static class ItineraryMatchTestCase {
+        /**
+         * A descriptive name of this test case
+         */
+        public final String name;
+
+        /**
+         * The newer itinerary to compare to.
+         */
+        public final Itinerary newItinerary;
+
+        /**
+         * The previous itinerary which should be perform the baseline comparison from. Uses the first
+         */
+        public final Itinerary previousItinerary;
+        /**
+         * Whether the given itineraries should match
+         */
+        public final boolean shouldMatch;
+
+        /**
+         * Constructor that uses the default itinerary as the previous itineary.
+         */
+        public ItineraryMatchTestCase(
+            String name,
+            Itinerary newItinerary,
+            boolean shouldMatch
+        ) {
+            this(name, null, newItinerary, shouldMatch);
+        }
+
+        public ItineraryMatchTestCase(
+            String name,
+            Itinerary previousItinerary,
+            Itinerary newItinerary,
+            boolean shouldMatch
+        ) {
+            this.name = name;
+            if (previousItinerary != null) {
+                this.previousItinerary = previousItinerary;
+            } else {
+                this.previousItinerary = defaultItinerary;
+            }
+            this.newItinerary = newItinerary;
+            this.shouldMatch = shouldMatch;
         }
     }
 }

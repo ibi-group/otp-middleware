@@ -1,12 +1,16 @@
 package org.opentripplanner.middleware.utils;
 
+import com.spatial4j.core.distance.DistanceUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.otp.response.Place;
 
 import java.net.URISyntaxException;
 import java.time.LocalDate;
@@ -19,6 +23,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -221,6 +226,131 @@ public class ItineraryUtils {
         }
 
         return new Result(allItinerariesExist, responses);
+    }
+
+    /**
+     * TODO: fully implement
+     */
+    public static boolean itineraryIsSavable(Itinerary itinerary) {
+        return true;
+    }
+
+    /**
+     * Returns true if the itineraries match for the purposes of trip monitoring.
+     *
+     * @param previousItinerary The original itinerary that others are compared against.
+     * @param newItinerary A new itinerary that might match the previous itinerary.
+     */
+    public static boolean itinerariesMatch(Itinerary previousItinerary, Itinerary newItinerary) {
+        // make sure either itinerary is savable before continuing
+        if (!itineraryIsSavable(previousItinerary) || !itineraryIsSavable(newItinerary)) return false;
+
+        // make sure itineraries have same amount of legs
+        if (previousItinerary.legs.size() != newItinerary.legs.size()) return false;
+
+        // make sure each leg matches
+        for (int i = 0; i < previousItinerary.legs.size(); i++) {
+            Leg previousItineraryLeg = previousItinerary.legs.get(i);
+            Leg newItineraryLeg = newItinerary.legs.get(i);
+
+            // for now don't analyze non-transit legs
+            if (!previousItineraryLeg.transitLeg) continue;
+
+            // make sure the same from/to stop are being used
+            if (
+                !stopsMatch(previousItineraryLeg.from, newItineraryLeg.from) ||
+                    !stopsMatch(previousItineraryLeg.to, newItineraryLeg.to)
+            ) {
+                return false;
+            }
+
+            // make sure the transit service is the same as perceived by the customer
+            if (
+                !equalsOrPreviousWasNull(previousItineraryLeg.mode, newItineraryLeg.mode) ||
+                    !equalsIgnoreCaseOrPreviousWasEmpty(previousItineraryLeg.agencyName, newItineraryLeg.agencyName) ||
+                    !equalsIgnoreCaseOrPreviousWasEmpty(
+                        previousItineraryLeg.routeLongName,
+                        newItineraryLeg.routeLongName
+                    ) ||
+                    !equalsIgnoreCaseOrPreviousWasEmpty(
+                        previousItineraryLeg.routeShortName,
+                        newItineraryLeg.routeShortName
+                    ) ||
+                    !equalsIgnoreCaseOrPreviousWasEmpty(
+                        previousItineraryLeg.headsign,
+                        newItineraryLeg.headsign
+                    ) ||
+                    !equalsOrPreviousWasNull(
+                        previousItineraryLeg.interlineWithPreviousLeg,
+                        newItineraryLeg.interlineWithPreviousLeg
+                    )
+            ) {
+                return false;
+            }
+
+            // make sure the transit trips are scheduled for the same time of the day
+            if (
+                !timeOfDayMatches(
+                    previousItineraryLeg.getScheduledStartTime(),
+                    newItineraryLeg.getScheduledStartTime()
+                ) || !timeOfDayMatches(
+                    previousItineraryLeg.getScheduledEndTime(),
+                    newItineraryLeg.getScheduledEndTime()
+                )
+            ) {
+                return false;
+            }
+        }
+
+        // if this point is reached, the itineraries are assumed to match
+        return true;
+    }
+
+    /**
+     * Checks whether two stops (OTP Places) match for the purposes of matching itineraries
+     */
+    private static boolean stopsMatch(Place stopA, Place stopB) {
+        // stop names must match
+        if (!StringUtils.equalsIgnoreCase(stopA.name, stopB.name)) return false;
+
+        // stop code must match
+        if (!equalsIgnoreCaseOrPreviousWasEmpty(stopA.stopCode, stopB.stopCode)) return false;
+
+        // stop positions must be no further than 5 meters apart
+        if (
+            DistanceUtils.radians2Dist(
+                DistanceUtils.distHaversineRAD(stopA.lat, stopA.lon, stopB.lat, stopB.lon),
+                DistanceUtils.EARTH_MEAN_RADIUS_KM
+            ) * 1000 > 5
+        ) {
+            return false;
+        };
+
+        // if this point is reached, the stops are assumed to match
+        return true;
+    }
+
+    /**
+     * Returns true if previous is null. Otherwise, returns Objects.equals.
+     */
+    private static boolean equalsOrPreviousWasNull (Object previous, Object newer) {
+        return previous == null || Objects.equals(previous, newer);
+    }
+
+    /**
+     * Returns true if the previous string was empty. Otherwise, returns if the strings are equal ignoring case.
+     */
+    private static boolean equalsIgnoreCaseOrPreviousWasEmpty(String previous, String newer) {
+        return StringUtils.isEmpty(previous) || StringUtils.equalsIgnoreCase(previous, newer);
+    }
+
+    /**
+     * Returns true if both times have the same hour, minute and second.
+     */
+    private static boolean timeOfDayMatches(ZonedDateTime zonedDateTimeA, ZonedDateTime zonedDateTimeB) {
+        return zonedDateTimeA.getHour() == zonedDateTimeB.getHour() &&
+            zonedDateTimeA.getMinute() == zonedDateTimeB.getMinute() &&
+            zonedDateTimeA.getSecond() == zonedDateTimeB.getSecond();
     }
 
     /**

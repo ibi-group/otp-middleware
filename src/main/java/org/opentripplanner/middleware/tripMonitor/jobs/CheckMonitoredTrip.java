@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,7 +156,7 @@ public class CheckMonitoredTrip implements Runnable {
             // TODO: BIG - Find the specific itinerary to compare against. For now, use equals, but this may need some
             //  tweaking
             Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
-            if (candidateItinerary.equals(trip.itinerary)) {
+            if (ItineraryUtils.itinerariesMatch(candidateItinerary, trip.itinerary)) {
                 matchingItinerary = candidateItinerary;
                 return true;
             }

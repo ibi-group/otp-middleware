@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
  * Pare down version of class original produced for OpenTripPlanner.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Itinerary {
+public class Itinerary implements Cloneable {
 
     /**
      * Duration of the trip on this itinerary, in seconds.
@@ -97,33 +98,6 @@ public class Itinerary {
         }
     }
 
-    /**
-     * This method calculates equality in the context of trip monitoring in order to analyzing equality when
-     * checking if itineraries match.
-     *
-     * FIXME: maybe don't check duration exactly as it might vary slightly in certain trips
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Itinerary itinerary = (Itinerary) o;
-        return duration.equals(itinerary.duration) &&
-            Objects.equals(transfers, itinerary.transfers) &&
-            Objects.equals(legs, itinerary.legs);
-    }
-
-    /**
-     * This method calculates the hash code in the context of trip monitoring in order to analyzing equality when
-     * checking if itineraries match.
-     *
-     * FIXME: maybe don't check duration exactly as it might vary slightly in certain trips
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(duration, transfers, legs);
-    }
-
     @Override
     public String toString() {
         return "Itinerary{" +
@@ -141,5 +115,15 @@ public class Itinerary {
             ", fare=" + fare +
             ", legs=" + legs +
             '}';
+    }
+
+    @Override
+    public Itinerary clone() throws CloneNotSupportedException {
+        Itinerary cloned = (Itinerary) super.clone();
+        cloned.legs = new ArrayList<>();
+        for (Leg leg : legs) {
+            cloned.legs.add(leg.clone());
+        }
+        return cloned;
     }
 }

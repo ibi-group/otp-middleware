@@ -31,32 +31,6 @@ public class Place implements Cloneable {
     public Set<String> networks;
     public String address;
 
-    /**
-     * This method calculates equality in the context of trip monitoring in order to analyzing equality when
-     * checking if itineraries are the same.
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Place place = (Place) o;
-        // FIXME account for slight stop repositioning by calculating equality based off of proximity to previous stop
-        return lon.equals(place.lon) &&
-            lat.equals(place.lat) &&
-            Objects.equals(stopId, place.stopId) &&
-            Objects.equals(vertexType, place.vertexType);
-    }
-
-    /**
-     * This method calculates equality in the context of trip monitoring in order to analyzing equality when
-     * checking if itineraries are the same.
-     */
-    @Override
-    public int hashCode() {
-        // FIXME account for slight stop repositioning by calculating hashCode based off of proximity to previous stop
-        return Objects.hash(lon, lat, stopId, vertexType);
-    }
-
     protected Place clone() throws CloneNotSupportedException {
         return (Place) super.clone();
     }
