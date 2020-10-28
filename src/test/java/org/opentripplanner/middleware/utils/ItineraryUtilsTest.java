@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
@@ -102,7 +103,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         Assertions.assertTrue(result.allItinerariesExist);
 
         for (String label : labeledQueries.keySet()) {
-            Assertions.assertNotNull(result.labeledResponses.get(label));
+            Assertions.assertNotNull(result.responsesByDate.get(label));
         }
     }
 
@@ -162,19 +163,19 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         trip.saturday = true;
         trip.sunday = true;
 
-        List<String> checkedDates = ItineraryUtils.getDatesToCheckItineraryExistence(trip, testCase.checkAllDays);
-        Assertions.assertEquals(testCase.dates, checkedDates);
+        Set<ZonedDateTime> datesToCheck = ItineraryUtils.getDatesToCheckItineraryExistence(trip);
+        Assertions.assertEquals(testCase.dates, datesToCheck);
     }
 
     private static List<GetDatesTestCase> createGetDatesTestCases() {
         // Each list includes dates to be monitored in a 7-day window starting from the query date.
         return List.of(
             // Dates solely based on monitored days (see the trip variable in the corresponding test).
-            new GetDatesTestCase(false, List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18")),
+            new GetDatesTestCase(List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18")),
 
             // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence,
             // it should return all dates in the 7-day window regardless of the ones set in the monitored trip.
-            new GetDatesTestCase(true, List.of(QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19"))
+            new GetDatesTestCase(List.of(QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19"))
         );
     }
 
@@ -332,11 +333,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      * Data structure for the date check test.
      */
     private static class GetDatesTestCase {
-        public final boolean checkAllDays;
         public final List<String> dates;
 
-        public GetDatesTestCase(boolean checkAllDays, List<String> dates) {
-            this.checkAllDays = checkAllDays;
+        public GetDatesTestCase(List<String> dates) {
             this.dates = dates;
         }
     }
