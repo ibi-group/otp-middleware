@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
 
@@ -281,11 +282,24 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     private static List<ItineraryMatchTestCase> createItineraryMatchingTestCases() throws CloneNotSupportedException {
         List<ItineraryMatchTestCase> testCases = new ArrayList<>();
 
+        // should match same data
         testCases.add(
             new ItineraryMatchTestCase(
                 "Should be equal with same data",
                 defaultItinerary.clone(),
                 true
+            )
+        );
+
+        // should not be equal with a different amount of legs
+        Leg extraBikeLeg = new Leg();
+        Itinerary itineraryWithMoreLegs = defaultItinerary.clone();
+        itineraryWithMoreLegs.legs.add(extraBikeLeg);
+        testCases.add(
+            new ItineraryMatchTestCase(
+                "should not be equal with a different amount of legs",
+                itineraryWithMoreLegs,
+                false
             )
         );
         return testCases;
