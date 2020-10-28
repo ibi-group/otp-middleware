@@ -68,7 +68,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
         // Replace the provided trip's itinerary with a verified, non-realtime version of it.
         if (checkResult != null) {
-            updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult.labeledResponses);
+            updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult.responsesByDate);
         }
     }
 
@@ -77,9 +77,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      */
     private static ItineraryUtils.Result checkItineraryExistence(MonitoredTrip trip, Request request) {
         try {
-            ItineraryUtils.Result checkResult = ItineraryUtils.checkItineraryExistence(
-                ItineraryUtils.getItineraryExistenceQueries(trip, false), trip.isArriveBy()
-            );
+            ItineraryUtils.Result checkResult = ItineraryUtils.checkItineraryExistence(trip);
             if (!checkResult.allItinerariesExist) {
                 logMessageAndHalt(
                     request,
