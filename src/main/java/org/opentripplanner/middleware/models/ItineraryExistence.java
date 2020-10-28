@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.utils.ItineraryUtils;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,9 +18,9 @@ import java.util.Set;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
- * This class holds a list of OTP itineraries for each day of the week,
- * so that clients can check that itineraries exist
- * or compare the returned itineraries with another one.
+ * This class holds an {@link ItineraryExistenceResult} for each day of the week,
+ * so that clients can determine whether a trip can be regularly monitored on that
+ * particular day of the week.
  */
 public class ItineraryExistence {
     public ItineraryExistenceResult monday = new ItineraryExistenceResult();
@@ -29,6 +30,12 @@ public class ItineraryExistence {
     public ItineraryExistenceResult friday = new ItineraryExistenceResult();
     public ItineraryExistenceResult saturday = new ItineraryExistenceResult();
     public ItineraryExistenceResult sunday = new ItineraryExistenceResult();
+    /**
+     * When the itinerary existence check was run/completed.
+     * FIXME: If a monitored trip has not been fully enabled for monitoring, we may want to check the timestamp to
+     *  verify that the existence check has not gone stale.
+     */
+    public Date timestamp = new Date();
 
     public ItineraryExistence(Set<ZonedDateTime> datesChecked, Set<ZonedDateTime> datesWithMatches) {
         Set<ZonedDateTime> invalidDates = Sets.difference(datesChecked, datesWithMatches);
