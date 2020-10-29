@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -293,6 +294,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
         // should not be equal with a different amount of legs
         Leg extraBikeLeg = new Leg();
+        extraBikeLeg.mode = "BICYCLE";
         Itinerary itineraryWithMoreLegs = defaultItinerary.clone();
         itineraryWithMoreLegs.legs.add(extraBikeLeg);
         testCases.add(
@@ -302,6 +304,36 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
                 false
             )
         );
+
+        // should be equal with realtime data on transit leg (same day)
+        Itinerary itineraryWithRealtimeTransit = defaultItinerary.clone();
+        Leg transitLeg = itineraryWithRealtimeTransit.legs.get(1);
+        int secondsOfDelay = 120;
+        transitLeg.startTime = new Date(transitLeg.startTime.getTime() + secondsOfDelay * 1000);
+        transitLeg.departureDelay = secondsOfDelay;
+        transitLeg.endTime = new Date(transitLeg.endTime.getTime() + secondsOfDelay * 1000);
+        transitLeg.arrivalDelay = secondsOfDelay;
+        testCases.add(
+            new ItineraryMatchTestCase(
+                "should be equal with realtime data on transit leg (same day)",
+                itineraryWithRealtimeTransit,
+                true
+            )
+        );
+
+        // should be equal with scheduled data on transit leg (future date)
+        Itinerary itineraryOnFutureDate = defaultItinerary.clone();
+        Leg transitLeg2 = itineraryOnFutureDate.legs.get(1);
+        transitLeg2.startTime = Date.from(transitLeg2.startTime.toInstant().plus(7, ChronoUnit.DAYS));
+        transitLeg2.endTime = Date.from(transitLeg2.endTime.toInstant().plus(7, ChronoUnit.DAYS));
+        testCases.add(
+            new ItineraryMatchTestCase(
+                "should be equal with scheduled data on transit leg (future date)",
+                itineraryOnFutureDate,
+                true
+            )
+        );
+
         return testCases;
     }
 
@@ -437,7 +469,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         public final boolean shouldMatch;
 
         /**
-         * Constructor that uses the default itinerary as the previous itineary.
+         * Constructor that uses the default itinerary as the previous itinerary.
          */
         public ItineraryMatchTestCase(
             String name,
