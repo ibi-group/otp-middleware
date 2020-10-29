@@ -33,8 +33,7 @@ public class OtpUser extends AbstractUser {
     public String notificationChannel;
 
     /**
-     * Phone number for SMS notifications.
-     * Must include country code, e.g., +15551234
+     * Verified phone number for SMS notifications, in +15551234 format (E.164 format, includes country code, no spaces).
      */
     public String phoneNumber;
 

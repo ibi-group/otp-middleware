@@ -532,7 +532,7 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/TripRequest"
-  /api/secure/user/{id}/verify_sms:
+  /api/secure/user/{id}/verify_sms/{phoneNumber}:
     get:
       tags:
       - "api/secure/user"
@@ -541,6 +541,11 @@ paths:
       - name: "id"
         in: "path"
         description: "The id of the OtpUser."
+        required: true
+        type: "string"
+      - name: "phoneNumber"
+        in: "path"
+        description: "The phone number to validate, in E.164 format (e.g. +15555550123)."
         required: true
         type: "string"
       responses:
