@@ -740,7 +740,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/ItineraryExistenceResult"
+            $ref: "#/definitions/ItineraryExistence"
   /otp/*:
     get:
       tags:
@@ -1275,34 +1275,34 @@ definitions:
   ItineraryExistenceResult:
     type: "object"
     properties:
+      isValid:
+        type: "boolean"
+      invalidDates:
+        type: "array"
+        items:
+          type: "string"
+      itinerary:
+        $ref: "#/definitions/Itinerary"
+  ItineraryExistence:
+    type: "object"
+    properties:
       monday:
-        type: "array"
-        items:
-          $ref: "#/definitions/Itinerary"
+        $ref: "#/definitions/ItineraryExistenceResult"
       tuesday:
-        type: "array"
-        items:
-          $ref: "#/definitions/Itinerary"
+        $ref: "#/definitions/ItineraryExistenceResult"
       wednesday:
-        type: "array"
-        items:
-          $ref: "#/definitions/Itinerary"
+        $ref: "#/definitions/ItineraryExistenceResult"
       thursday:
-        type: "array"
-        items:
-          $ref: "#/definitions/Itinerary"
+        $ref: "#/definitions/ItineraryExistenceResult"
       friday:
-        type: "array"
-        items:
-          $ref: "#/definitions/Itinerary"
+        $ref: "#/definitions/ItineraryExistenceResult"
       saturday:
-        type: "array"
-        items:
-          $ref: "#/definitions/Itinerary"
+        $ref: "#/definitions/ItineraryExistenceResult"
       sunday:
-        type: "array"
-        items:
-          $ref: "#/definitions/Itinerary"
+        $ref: "#/definitions/ItineraryExistenceResult"
+      timestamp:
+        type: "string"
+        format: "date"
 externalDocs:
   description: ""
   url: ""
