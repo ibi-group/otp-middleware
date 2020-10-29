@@ -13,7 +13,6 @@ import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -72,7 +71,7 @@ public class ItineraryUtils {
      * @param trip The trip from which to extract the monitored dates to check.
      * @return A list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor, sorted from earliest.
      */
-    public static Set<ZonedDateTime> getDatesToCheckItineraryExistence(MonitoredTrip trip)
+    public static Set<ZonedDateTime> getDatesToCheckItineraryExistence(MonitoredTrip trip, boolean checkAllDays)
         throws URISyntaxException {
         Set<ZonedDateTime> datesToCheck = new HashSet<>();
         Map<String, String> params = trip.parseQueryParams();
@@ -85,7 +84,7 @@ public class ItineraryUtils {
         // Get the dates to check starting from the query date and continuing through the full date range window.
         for (int i = 0; i < ITINERARY_CHECK_WINDOW; i++) {
             ZonedDateTime dateToCheck = startingDateTime.plusDays(i);
-            if (trip.isActiveOnDate(dateToCheck)) {
+            if (checkAllDays || trip.isActiveOnDate(dateToCheck)) {
                 datesToCheck.add(dateToCheck);
             }
         }
@@ -96,11 +95,11 @@ public class ItineraryUtils {
     /**
      * Gets OTP queries to check non-realtime itinerary existence for the given trip.
      */
-    public static Map<ZonedDateTime, String> getItineraryExistenceQueries(MonitoredTrip trip)
+    public static Map<ZonedDateTime, String> getItineraryExistenceQueries(MonitoredTrip trip, boolean checkAllDays)
         throws URISyntaxException {
         return getQueriesFromDates(
             excludeRealtime(trip.parseQueryParams()),
-            getDatesToCheckItineraryExistence(trip)
+            getDatesToCheckItineraryExistence(trip, checkAllDays)
         );
     }
 
@@ -117,15 +116,15 @@ public class ItineraryUtils {
      * Checks that, for each query provided, an itinerary exists.
      * @return An object with a map of results and summary of itinerary existence.
      */
-    public static ItineraryExistence checkItineraryExistence(MonitoredTrip trip, boolean sortDates) throws URISyntaxException {
+    public static ItineraryExistence checkItineraryExistence(MonitoredTrip trip, boolean checkAllDays, boolean sortDates) throws URISyntaxException {
         // Get queries to execute by date.
-        Map<ZonedDateTime, String> queriesByDate = ItineraryUtils.getItineraryExistenceQueries(trip);
+        Map<ZonedDateTime, String> queriesByDate = ItineraryUtils.getItineraryExistenceQueries(trip, checkAllDays);
         // TODO: Consider multi-threading?
         Map<ZonedDateTime, Itinerary> datesWithMatchingItineraries = new HashMap<>();
 
         Collection<Map.Entry<ZonedDateTime, String>> entriesToIterate = sortDates
             ? queriesByDate.entrySet().stream()
-                .sorted(Comparator.comparing(Map.Entry::getKey))
+                .sorted(Map.Entry.comparingByKey())
                 .collect(Collectors.toList())
             : queriesByDate.entrySet();
 
@@ -152,15 +151,15 @@ public class ItineraryUtils {
     /**
      * Overload used in normal conditions.
      */
-    public static ItineraryExistence checkItineraryExistence(MonitoredTrip trip) throws URISyntaxException {
-        return checkItineraryExistence(trip, false);
+    public static ItineraryExistence checkItineraryExistence(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
+        return checkItineraryExistence(trip, checkAllDays,false);
     }
 
     /**
      * Overload used for tests to guarantee that order of dates matches the order of mock OTP responses.
      */
-    public static ItineraryExistence checkItineraryExistenceOrdered(MonitoredTrip trip) throws URISyntaxException {
-        return checkItineraryExistence(trip, true);
+    public static ItineraryExistence checkItineraryExistenceOrdered(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
+        return checkItineraryExistence(trip, checkAllDays,true);
     }
 
 }

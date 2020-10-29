@@ -79,7 +79,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      */
     private static ItineraryExistence checkItineraryExistence(MonitoredTrip trip, Request request) {
         try {
-            ItineraryExistence checkResult = ItineraryUtils.checkItineraryExistence(trip);
+            ItineraryExistence checkResult = ItineraryUtils.checkItineraryExistence(trip, false);
             if (!checkResult.allCheckedDatesAreValid()) {
                 logMessageAndHalt(
                     request,

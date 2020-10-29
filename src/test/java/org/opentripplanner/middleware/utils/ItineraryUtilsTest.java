@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.TestUtils;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
@@ -80,7 +82,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         Itinerary expectedItinerary = resp.plan.itineraries.get(0);
         trip.itinerary = expectedItinerary;
 
-        ItineraryExistence result = ItineraryUtils.checkItineraryExistence(trip);//, false);
+        ItineraryExistence result = ItineraryUtils.checkItineraryExistence(trip, false);
         Assertions.assertTrue(result.allCheckedDatesAreValid());
 
         Assertions.assertTrue(result.monday.isValid);
@@ -113,7 +115,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         // Also set trip itinerary to the same for easy/lazy match.
         trip.itinerary = resp.plan.itineraries.get(0);
 
-        ItineraryExistence result = ItineraryUtils.checkItineraryExistenceOrdered(trip);//, false);
+        ItineraryExistence result = ItineraryUtils.checkItineraryExistenceOrdered(trip, false);
         Assertions.assertFalse(result.allCheckedDatesAreValid());
 
         // Assertions ordered by date, Thursday is the query date and therefore comes first.
@@ -153,19 +155,19 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      */
     @ParameterizedTest
     @MethodSource("createGetDatesTestCases")
-    public void testGetDatesToCheckItineraryExistence(Set<ZonedDateTime> testDates) throws URISyntaxException {
+    public void testGetDatesToCheckItineraryExistence(Set<ZonedDateTime> testDates, boolean checkAllDays) throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip();
-        Set<ZonedDateTime> datesToCheck = ItineraryUtils.getDatesToCheckItineraryExistence(trip);//, false)
+        Set<ZonedDateTime> datesToCheck = ItineraryUtils.getDatesToCheckItineraryExistence(trip, checkAllDays);
         Assertions.assertEquals(testDates, datesToCheck);
     }
 
-    private static List<Set<ZonedDateTime>> createGetDatesTestCases() {
+    private static Stream<Arguments> createGetDatesTestCases() {
         // Each list includes dates to be monitored in a 7-day window starting from the query date.
-        return List.of(
+        return Stream.of(
             // Dates solely based on monitored days (see the trip variable in the corresponding test).
-            datesToZonedDateTimes(
+            Arguments.of(datesToZonedDateTimes(
                 List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18")
-            )
+            ), false)
 
             // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence,
             // it should return all dates in the 7-day window regardless of the ones set in the monitored trip.
