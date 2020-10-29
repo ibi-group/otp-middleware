@@ -8,6 +8,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.TestUtils;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -16,21 +17,17 @@ import org.opentripplanner.middleware.otp.response.Place;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
 
@@ -41,22 +38,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     // Date and time from the above query.
     public static final String QUERY_DATE = "2020-08-13";
     public static final String QUERY_TIME = "11:23";
-
-    // Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE.
-    public static final long _2020_08_12__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 12, 3, 0, 0)); // Aug 12, 2020 3:00:00 AM
-    public static final long _2020_08_12__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020,8,12,23,59,59)); // Aug 12, 2020 11:59:59 PM
-    public static final long _2020_08_13__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 13, 2, 59, 59)); // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
-    public static final long _2020_08_13__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 13, 3, 0, 0)); // Aug 13, 2020 3:00:00 AM
-    public static final long _2020_08_13__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 13, 23, 59, 59)); // Aug 13, 2020 11:59:59 PM
-    public static final long _2020_08_14__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 14, 2, 59, 59)); // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
-    public static final long _2020_08_14__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 14, 3, 0, 0)); // Aug 14, 2020 3:00:00 AM
 
     private static OtpDispatcherResponse otpDispatcherPlanResponse;
     private static OtpDispatcherResponse otpDispatcherPlanErrorResponse;
@@ -86,44 +67,74 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     }
 
     /**
-     * Test case in which all itineraries exist and result.allItinerariesExist should be true.
+     * Test case in which all itineraries exist and result.allCheckedDatesAreValid should be true.
      */
     @Test
-    public void testAllItinerariesExist() {
+    public void testAllItinerariesExist() throws URISyntaxException {
+        MonitoredTrip trip = makeTestTrip();
+        trip.monday = true;
+        trip.tuesday = true;
+        trip.wednesday = false;
+        trip.thursday = true;
+        trip.friday = false;
+        trip.saturday = true;
+        trip.sunday = true;
+
         // Set mocks to a list of responses with itineraries.
         OtpResponse resp = otpDispatcherPlanResponse.getResponse();
-        TestUtils.setupOtpMocks(List.of(resp, resp, resp));
+        TestUtils.setupOtpMocks(List.of(resp, resp, resp, resp, resp));
 
-        HashMap<String, String> labeledQueries = new HashMap<>();
-        labeledQueries.put("label1", "exist1");
-        labeledQueries.put("label2", "exist2");
-        labeledQueries.put("label3", "exist3");
+        // Also set trip itinerary to the same for easy/lazy match.
+        Itinerary expectedItinerary = resp.plan.itineraries.get(0);
+        trip.itinerary = expectedItinerary;
 
-        ItineraryUtils.Result result = ItineraryUtils.checkItineraryExistence(labeledQueries, false);
-        Assertions.assertTrue(result.allItinerariesExist);
+        ItineraryExistence result = ItineraryUtils.checkItineraryExistence(trip);//, false);
+        Assertions.assertTrue(result.allCheckedDatesAreValid());
 
-        for (String label : labeledQueries.keySet()) {
-            Assertions.assertNotNull(result.responsesByDate.get(label));
-        }
+        Assertions.assertTrue(result.monday.isValid);
+        Assertions.assertEquals(expectedItinerary, result.monday.itinerary);
+        Assertions.assertTrue(result.tuesday.isValid);
+        Assertions.assertEquals(expectedItinerary, result.tuesday.itinerary);
+        Assertions.assertTrue(result.thursday.isValid);
+        Assertions.assertEquals(expectedItinerary, result.thursday.itinerary);
+        Assertions.assertTrue(result.saturday.isValid);
+        Assertions.assertEquals(expectedItinerary, result.saturday.itinerary);
+        Assertions.assertTrue(result.sunday.isValid);
+        Assertions.assertEquals(expectedItinerary, result.sunday.itinerary);
+
+        Assertions.assertNull(result.wednesday);
+        Assertions.assertNull(result.friday);
     }
 
     /**
      * Test case in which at least one itinerary does not exist,
-     * and therefore result.allItinerariesExist should be false.
+     * and therefore result.allCheckedDatesAreValid should be false.
      */
     @Test
-    public void testAtLeastOneTripDoesNotExist() {
+    public void testAtLeastOneTripDoesNotExist() throws URISyntaxException {
+        MonitoredTrip trip = makeTestTrip();
+        trip.monday = true;
+        trip.tuesday = true;
+        trip.wednesday = false;
+        trip.thursday = true;
+        trip.friday = false;
+        trip.saturday = false;
+        trip.sunday = false;
+
         // Set mocks to a list of responses, one without an itinerary.
         OtpResponse resp = otpDispatcherPlanResponse.getResponse();
-        TestUtils.setupOtpMocks(List.of(resp, otpDispatcherPlanErrorResponse.getResponse(), resp));
+        TestUtils.setupOtpMocks(List.of(resp, resp, otpDispatcherPlanErrorResponse.getResponse()));
 
-        HashMap<String, String> labeledQueries = new HashMap<>();
-        labeledQueries.put("label1", "exist1");
-        labeledQueries.put("label2", "not found");
-        labeledQueries.put("label3", "exist3");
+        // Also set trip itinerary to the same for easy/lazy match.
+        trip.itinerary = resp.plan.itineraries.get(0);
 
-        ItineraryUtils.Result result = ItineraryUtils.checkItineraryExistence(labeledQueries, false);
-        Assertions.assertFalse(result.allItinerariesExist);
+        ItineraryExistence result = ItineraryUtils.checkItineraryExistenceOrdered(trip);//, false);
+        Assertions.assertFalse(result.allCheckedDatesAreValid());
+
+        // Assertions ordered by date, Thursday is the query date and therefore comes first.
+        Assertions.assertTrue(result.thursday.isValid);
+        Assertions.assertTrue(result.monday.isValid);
+        Assertions.assertFalse(result.tuesday.isValid);
     }
 
     /**
@@ -131,19 +142,32 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      */
     @Test
     public void testGetQueriesFromDates() throws URISyntaxException {
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.queryParams = BASE_QUERY;
+        MonitoredTrip trip = makeTestTrip();
+        trip.monday = true;
+        trip.tuesday = true;
+        trip.wednesday = false;
+        trip.thursday = true;
+        trip.friday = false;
+        trip.saturday = true;
+        trip.sunday = true;
 
+        LocalTime queryTime = LocalTime.parse(QUERY_TIME);
         List<String> newDates = List.of("2020-12-30", "2020-12-31", "2021-01-01");
-        Map<String, String> labeledQueries = ItineraryUtils.getQueriesFromDates(trip.parseQueryParams(), newDates);
-        Assertions.assertEquals(newDates.size(), labeledQueries.size());
+        List<ZonedDateTime> newZonedDateTimes = newDates.stream()
+            .map(s -> DateTimeUtils.getDateFromString(s, DEFAULT_DATE_FORMAT_PATTERN))
+            .map(d -> ZonedDateTime.of(d, queryTime, DateTimeUtils.getOtpZoneId()))
+            .collect(Collectors.toList());
 
-        for (String date : newDates) {
+        Map<ZonedDateTime, String> queriesByDate = ItineraryUtils.getQueriesFromDates(trip.parseQueryParams(), newZonedDateTimes);
+        Assertions.assertEquals(newDates.size(), queriesByDate.size());
+
+        for (ZonedDateTime zonedDateTime : newZonedDateTimes) {
             MonitoredTrip newTrip = new MonitoredTrip();
-            newTrip.queryParams = labeledQueries.get(date);
+            newTrip.queryParams = queriesByDate.get(zonedDateTime);
 
             Map<String, String> newParams = newTrip.parseQueryParams();
-            Assertions.assertEquals(date, newParams.get(DATE_PARAM));
+            Assertions.assertEquals(zonedDateTime.format(DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN)),
+                newParams.get(DATE_PARAM));
         }
     }
 
@@ -163,7 +187,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         trip.saturday = true;
         trip.sunday = true;
 
-        Set<ZonedDateTime> datesToCheck = ItineraryUtils.getDatesToCheckItineraryExistence(trip);
+        List<ZonedDateTime> datesToCheck = ItineraryUtils.getDatesToCheckItineraryExistence(trip);
         Assertions.assertEquals(testCase.dates, datesToCheck);
     }
 
@@ -171,11 +195,12 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         // Each list includes dates to be monitored in a 7-day window starting from the query date.
         return List.of(
             // Dates solely based on monitored days (see the trip variable in the corresponding test).
-            new GetDatesTestCase(List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18")),
+            new GetDatesTestCase(List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18"))//,
 
             // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence,
             // it should return all dates in the 7-day window regardless of the ones set in the monitored trip.
-            new GetDatesTestCase(List.of(QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19"))
+            //new GetDatesTestCase(List.of(QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19"))
+
         );
     }
 
@@ -194,114 +219,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
             Map<String, String> params = ItineraryUtils.excludeRealtime(trip.parseQueryParams());
             Assertions.assertEquals("true", params.get(IGNORE_REALTIME_UPDATES_PARAM));
         }
-    }
-
-    /**
-     * Check that a given trip is modified with an OTP itinerary that exists,
-     * right now based on the index of the selected itinerary in the UI.
-     */
-    @Test
-    public void testUpdateTripWithVerifiedItinerary() throws URISyntaxException {
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.id = "testUpdateTripWithVerifiedItinerary";
-        trip.queryParams = BASE_QUERY + "&ui_activeItinerary=1";
-        trip.itinerary = null;
-
-        List<Itinerary> itineraries = otpDispatcherPlanResponse.getResponse().plan.itineraries;
-
-        ItineraryUtils.updateTripWithVerifiedItinerary(trip, itineraries);
-
-        Assertions.assertEquals(itineraries.get(1), trip.itinerary);
-    }
-
-    @ParameterizedTest
-    @MethodSource("createSameDayTestCases")
-    void testIsSameDay(SameDayTestCase testCase) {
-        // The time zone for trip is OTP's time zone.
-        ZoneId zoneId = DateTimeUtils.getOtpZoneId();
-
-        Itinerary itinerary = simpleItinerary(testCase.tripTargetTimeEpochMillis, testCase.isArriveBy);
-        Assertions.assertEquals(
-            testCase.shouldBeSameDay,
-            ItineraryUtils.isSameDay(itinerary, QUERY_DATE, testCase.timeOfDay, zoneId, testCase.isArriveBy),
-            testCase.getMessage(zoneId)
-        );
-    }
-
-    private static List<SameDayTestCase> createSameDayTestCases() {
-        return List.of(
-            // Same-day departures
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__03_00_00, false, true),
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__23_59_59, false, true),
-            new SameDayTestCase(QUERY_TIME, _2020_08_14__02_59_59, false, true),
-            new SameDayTestCase("1:23", _2020_08_12__03_00_00, false, true),
-            new SameDayTestCase("1:23", _2020_08_12__23_59_59, false, true),
-            new SameDayTestCase("1:23", _2020_08_13__02_59_59, false, true),
-
-            // Not same-day departures
-            new SameDayTestCase(QUERY_TIME, _2020_08_12__23_59_59, false, false),
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__02_59_59, false, false),
-            new SameDayTestCase(QUERY_TIME, _2020_08_14__03_00_00, false, false),
-            new SameDayTestCase("1:23", _2020_08_13__03_00_00, false, false),
-            new SameDayTestCase("1:23", _2020_08_13__23_59_59, false, false),
-            new SameDayTestCase("1:23", _2020_08_14__02_59_59, false, false),
-
-            // Same-day arrivals
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__03_00_00, true, true),
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__23_59_59, true, true),
-            new SameDayTestCase(QUERY_TIME, _2020_08_14__02_59_59, true, true),
-            new SameDayTestCase("1:23", _2020_08_12__03_00_00, true, true),
-            new SameDayTestCase("1:23", _2020_08_12__23_59_59, true, true),
-            new SameDayTestCase("1:23", _2020_08_13__02_59_59, true, true),
-
-            // Not same-day arrivals
-            new SameDayTestCase(QUERY_TIME, _2020_08_12__23_59_59, true, false),
-            new SameDayTestCase(QUERY_TIME, _2020_08_13__02_59_59, true, false),
-            new SameDayTestCase(QUERY_TIME, _2020_08_14__03_00_00, true, false),
-            new SameDayTestCase("1:23", _2020_08_13__03_00_00, true, false),
-            new SameDayTestCase("1:23", _2020_08_13__23_59_59, true, false),
-            new SameDayTestCase("1:23", _2020_08_14__02_59_59, true, false)
-        );
-    }
-
-    /**
-     * Check that only same-day itineraries are selected.
-     */
-    @Test
-    public void testGetSameDayItineraries() throws URISyntaxException {
-        MonitoredTrip trip = makeTestTrip();
-        trip.tripTime = QUERY_TIME;
-
-        List<Long> startTimes = List.of(
-            _2020_08_13__23_59_59, // same day
-            _2020_08_14__02_59_59, // considered same day
-            _2020_08_14__03_00_00 // not same day
-        );
-
-        // Create itineraries, some being same-day, some not per the times above.
-        List<Itinerary> itineraries = startTimes.stream()
-            .map(t -> simpleItinerary(t, false))
-            .collect(Collectors.toList());
-
-        List<Itinerary> processedItineraries = ItineraryUtils.getSameDayItineraries(itineraries, trip, QUERY_DATE);
-        Assertions.assertEquals(2, processedItineraries.size());
-        Assertions.assertTrue(processedItineraries.contains(itineraries.get(0)));
-        Assertions.assertTrue(processedItineraries.contains(itineraries.get(1)));
-    }
-
-    /**
-     * Helper method to create a bare-bones itinerary with start or end time.
-     */
-    private Itinerary simpleItinerary(Long targetEpochMillis, boolean isArriveBy) {
-        Itinerary itinerary = new Itinerary();
-        Date date = Date.from(Instant.ofEpochMilli(targetEpochMillis));
-        if (isArriveBy) {
-            itinerary.endTime = date;
-        } else {
-            itinerary.startTime = date;
-        }
-        itinerary.legs = new ArrayList<>();
-        return itinerary;
     }
 
     /**
@@ -324,8 +241,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         trip.from = targetPlace;
         trip.to = dummyPlace;
 
-        trip.queryParams = BASE_QUERY;
-
         return trip;
     }
 
@@ -333,43 +248,16 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      * Data structure for the date check test.
      */
     private static class GetDatesTestCase {
-        public final List<String> dates;
+        public final List<ZonedDateTime> dates;
 
         public GetDatesTestCase(List<String> dates) {
-            this.dates = dates;
-        }
-    }
-
-    /**
-     * Data structure for the same-day test.
-     */
-    private static class SameDayTestCase {
-        public final boolean isArriveBy;
-        public final boolean shouldBeSameDay;
-        public final String timeOfDay;
-        public final Long tripTargetTimeEpochMillis;
-
-        public SameDayTestCase(String timeOfDay, Long tripTargetTimeEpochMillis, boolean isArriveBy, boolean shouldBeSameDay) {
-            this.isArriveBy = isArriveBy;
-            this.shouldBeSameDay = shouldBeSameDay;
-            this.timeOfDay = timeOfDay;
-            this.tripTargetTimeEpochMillis = tripTargetTimeEpochMillis;
-        }
-
-        /**
-         * @return A message, in case of test failure, in the form:
-         * "On 2020-08-13 at 1:23[America/New_York], a trip arriving at 2020-08-14T02:59:59-04:00[America/New_York] should be considered same-day."
-         */
-        public String getMessage(ZoneId zoneId) {
-            return String.format(
-                "On %s at %s[%s], a trip %s at %s %s be considered same-day.",
-                QUERY_DATE,
-                timeOfDay,
-                zoneId.toString(),
-                isArriveBy ? "arriving" : "departing",
-                ZonedDateTime.ofInstant(Instant.ofEpochMilli(tripTargetTimeEpochMillis), zoneId),
-                shouldBeSameDay ? "should" : "should not"
-            );
+            this.dates = dates.stream()
+                .map(d -> ZonedDateTime.of(
+                    LocalDate.parse(d),
+                    LocalTime.parse(QUERY_TIME),
+                    DateTimeUtils.getOtpZoneId()
+                ))
+                .collect(Collectors.toList());
         }
     }
 }

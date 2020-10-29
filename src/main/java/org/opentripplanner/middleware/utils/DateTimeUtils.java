@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -33,7 +32,7 @@ public class DateTimeUtils {
     private static ZoneId zoneId = clock.getZone();
 
     /**
-     * Get {@Link java.time.LocalDate} from provided value base on expected date format. The date conversion
+     * Get {@link java.time.LocalDate} from provided value base on expected date format. The date conversion
      * is based on the system time zone.
      */
     public static LocalDate getDateFromParam(String paramName, String paramValue, String expectedDatePattern)
@@ -152,9 +151,12 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a {@link LocalDateTime} on OTP's time zone to epoch milliseconds.
+     * Converts a {@link LocalDate} object from the 'date' query parameter string,
+     * or returns today's date if that parameter is null.
      */
-    public static long otpDateTimeAsEpochMillis(LocalDateTime otpDateTime) {
-        return Instant.from(ZonedDateTime.of(otpDateTime, getOtpZoneId())).toEpochMilli();
+    public static LocalDate getDateFromQueryDateString(String dateString) {
+        return dateString == null
+            ? nowAsLocalDate()
+            : getDateFromString(dateString, DEFAULT_DATE_FORMAT_PATTERN);
     }
 }

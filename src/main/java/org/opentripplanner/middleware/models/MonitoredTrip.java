@@ -20,9 +20,7 @@ import java.net.URISyntaxException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -341,9 +339,9 @@ public class MonitoredTrip extends Model {
     }
 
     /**
-     * Returns the trip time given a particular date.
+     * Returns the trip time as a {@link ZonedDateTime} given a particular date.
      */
-    public ZonedDateTime tripTime(LocalDate date) {
+    public ZonedDateTime tripZonedDateTime(LocalDate date) {
         return ZonedDateTime.of(
             date, LocalTime.of(tripTimeHour(), tripTimeMinute()), DateTimeUtils.getOtpZoneId()
         );

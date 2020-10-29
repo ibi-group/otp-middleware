@@ -2,10 +2,6 @@ package org.opentripplanner.middleware.otp;
 
 
 import org.apache.commons.lang3.SerializationUtils;
-import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.TripPlan;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -14,12 +10,8 @@ import org.slf4j.LoggerFactory;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.http.HttpResponse;
-import java.time.ZoneId;
-import java.util.HashMap;
 
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
 
 /**
  * An OTP dispatcher response represents the status code and body return from a call to an OTP end point e.g. plan
@@ -97,31 +89,5 @@ public class OtpDispatcherResponse implements Serializable {
 //        clonedObject.requestUri = URI.create(this.requestUri.toString());
 //        clonedObject.responseBody = this.responseBody;
 //        return clonedObject;
-    }
-
-    /**
-     * @return the first itinerary from the raw OTP response
-     * departing the same day as specified in the request date/time parameters, or null otherwise.
-     */
-    public Itinerary findItineraryDepartingSameDay(boolean tripIsArriveBy) {
-        OtpResponse response = this.getResponse();
-        TripPlan plan = response.plan;
-        HashMap<String, String> reqParams = response.requestParameters;
-        if (plan != null && plan.itineraries != null && reqParams != null) {
-            String requestDate = reqParams.get(DATE_PARAM);
-            String requestTime = reqParams.get(TIME_PARAM);
-            if (requestDate != null && requestTime != null) {
-                // Get the zone id for this plan for same-day check.
-                ZoneId fromZoneId = DateTimeUtils.getOtpZoneId();
-                for (Itinerary itinerary : plan.itineraries) {
-                    if (ItineraryUtils.isSameDay(
-                        itinerary, requestDate, requestTime, fromZoneId, tripIsArriveBy
-                    )) {
-                        return itinerary;
-                    }
-                }
-            }
-        }
-        return null;
     }
 }

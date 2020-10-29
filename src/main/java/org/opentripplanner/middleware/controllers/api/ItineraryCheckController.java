@@ -56,6 +56,7 @@ public class ItineraryCheckController implements Endpoint {
             MonitoredTrip trip = getPOJOFromRequestBody(request, MonitoredTrip.class);
             trip.initializeFromItineraryAndQueryParams();
             return ItineraryUtils.checkItineraryExistence(trip);
+            //return ItineraryUtils.checkMatchingItineraryExistence(trip, true);
         } catch (JsonProcessingException e) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for MonitoredTrip", e);
         } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.

@@ -1,17 +1,12 @@
 package org.opentripplanner.middleware.models;
 
-import com.google.common.collect.Sets;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtils;
 
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,13 +18,13 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  * particular day of the week.
  */
 public class ItineraryExistence {
-    public ItineraryExistenceResult monday = new ItineraryExistenceResult();
-    public ItineraryExistenceResult tuesday = new ItineraryExistenceResult();
-    public ItineraryExistenceResult wednesday = new ItineraryExistenceResult();
-    public ItineraryExistenceResult thursday = new ItineraryExistenceResult();
-    public ItineraryExistenceResult friday = new ItineraryExistenceResult();
-    public ItineraryExistenceResult saturday = new ItineraryExistenceResult();
-    public ItineraryExistenceResult sunday = new ItineraryExistenceResult();
+    public ItineraryExistenceResult monday;
+    public ItineraryExistenceResult tuesday;
+    public ItineraryExistenceResult wednesday;
+    public ItineraryExistenceResult thursday;
+    public ItineraryExistenceResult friday;
+    public ItineraryExistenceResult saturday;
+    public ItineraryExistenceResult sunday;
     /**
      * When the itinerary existence check was run/completed.
      * FIXME: If a monitored trip has not been fully enabled for monitoring, we may want to check the timestamp to
@@ -37,11 +32,19 @@ public class ItineraryExistence {
      */
     public Date timestamp = new Date();
 
-    public ItineraryExistence(Set<ZonedDateTime> datesChecked, Set<ZonedDateTime> datesWithMatches) {
-        Set<ZonedDateTime> invalidDates = Sets.difference(datesChecked, datesWithMatches);
-        for (ZonedDateTime date : invalidDates) {
-            ItineraryExistenceResult result = getResultForDayOfWeek(date.getDayOfWeek());
-            result.handleInvalidDate(date);
+    public ItineraryExistence(Set<ZonedDateTime> datesChecked, Map<ZonedDateTime, Itinerary> datesWithMatches) {
+        // Initialize each day according to the dates checked.
+        for (ZonedDateTime date : datesChecked) {
+            ItineraryExistenceResult result = new ItineraryExistenceResult();
+            setResultForDayOfWeek(result, date.getDayOfWeek());
+
+            // If no match was found for that date, mark date as non-available for the desired trip.
+            Itinerary itineraryForCheckedDate = datesWithMatches.get(date);
+            if (itineraryForCheckedDate == null) {
+                result.handleInvalidDate(date);
+            } else {
+                result.itinerary = itineraryForCheckedDate;
+            }
         }
     }
 
@@ -58,9 +61,63 @@ public class ItineraryExistence {
         throw new IllegalArgumentException("Invalid day of week provided!");
     }
 
-    public class ItineraryExistenceResult {
+    public void setResultForDayOfWeek(ItineraryExistenceResult result, DayOfWeek dayOfWeek) {
+        switch (dayOfWeek) {
+            case MONDAY:
+                monday = result;
+                break;
+            case TUESDAY:
+                tuesday = result;
+                break;
+            case WEDNESDAY:
+                wednesday = result;
+                break;
+            case THURSDAY:
+                thursday = result;
+                break;
+            case FRIDAY:
+                friday = result;
+                break;
+            case SATURDAY:
+                saturday = result;
+                break;
+            case SUNDAY:
+                sunday = result;
+                break;
+            default:
+                break;
+        }
+    }
+
+    public boolean allCheckedDatesAreValid() {
+        return (monday == null || monday.isValid) &&
+            (tuesday == null || tuesday.isValid) &&
+            (wednesday == null || wednesday.isValid) &&
+            (thursday == null || thursday.isValid) &&
+            (friday == null || friday.isValid) &&
+            (saturday == null || saturday.isValid) &&
+            (sunday == null || sunday.isValid);
+    }
+
+    public static class ItineraryExistenceResult {
+        /**
+         * True if an itinerary is available for the applicable day of the week, false otherwise.
+         */
         public boolean isValid = true;
+        /**
+         * Holds a list of invalid dates an itinerary is not available for the applicable day of the week.
+         * TODO: This field is for future use.
+         */
         public Set<String> invalidDates = new HashSet<>();
+
+        /**
+         * Holds a matching itinerary for the applicable day of the week.
+         */
+        public Itinerary itinerary;
+
+        /**
+         * Marks an itinerary as not available for the specified date for the applicable day of the week.
+         */
         public void handleInvalidDate (ZonedDateTime date) {
             isValid = false;
             String dateString = DateTimeUtils.getStringFromDate(date.toLocalDate(), DEFAULT_DATE_FORMAT_PATTERN);
