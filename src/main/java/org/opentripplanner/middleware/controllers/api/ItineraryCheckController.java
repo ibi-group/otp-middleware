@@ -49,7 +49,7 @@ public class ItineraryCheckController implements Endpoint {
     }
 
     /**
-     * Check itinerary existence by making OTP requests.
+     * Check itinerary existence by making OTP requests on all days of the week.
      */
     private static ItineraryExistence checkItinerary(Request request, Response response) {
         try {

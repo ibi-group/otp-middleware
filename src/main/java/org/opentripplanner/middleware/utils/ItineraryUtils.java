@@ -156,7 +156,8 @@ public class ItineraryUtils {
     }
 
     /**
-     * Overload used for tests to guarantee that order of dates matches the order of mock OTP responses.
+     * Variant of checkItineraryExistence used for tests,
+     * to ensure that the order of the dates to check matches the order of the mock OTP responses for those dates.
      */
     public static ItineraryExistence checkItineraryExistenceOrdered(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
         return checkItineraryExistence(trip, checkAllDays,true);

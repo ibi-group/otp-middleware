@@ -48,6 +48,9 @@ public class ItineraryExistence {
         }
     }
 
+    /**
+     * Helper function to extract the existence check for a particular day of the week.
+     */
     public ItineraryExistenceResult getResultForDayOfWeek(DayOfWeek dayOfWeek) {
         switch (dayOfWeek) {
             case MONDAY: return monday;
@@ -61,6 +64,9 @@ public class ItineraryExistence {
         throw new IllegalArgumentException("Invalid day of week provided!");
     }
 
+    /**
+     * Helper function to set the existence check for a particular day of the week.
+     */
     public void setResultForDayOfWeek(ItineraryExistenceResult result, DayOfWeek dayOfWeek) {
         switch (dayOfWeek) {
             case MONDAY:
@@ -89,6 +95,10 @@ public class ItineraryExistence {
         }
     }
 
+    /**
+     * Checks whether all checked dates are valid.
+     * @return true if all days are either valid (i.e., the day was checked) or null (i.e., the day was not checked).
+     */
     public boolean allCheckedDatesAreValid() {
         return (monday == null || monday.isValid) &&
             (tuesday == null || tuesday.isValid) &&
@@ -99,6 +109,9 @@ public class ItineraryExistence {
             (sunday == null || sunday.isValid);
     }
 
+    /**
+     * Holds results for an itinerary existence check.
+     */
     public static class ItineraryExistenceResult {
         /**
          * True if an itinerary is available for the applicable day of the week, false otherwise.
