@@ -27,6 +27,8 @@ import spark.Response;
 
 import java.security.interfaces.RSAPublicKey;
 
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
+
 /**
  * This handles verifying the Auth0 token passed in the auth header (e.g., Authorization: Bearer MY_TOKEN of Spark HTTP
  * requests.
@@ -73,7 +75,7 @@ public class Auth0Connection {
                     LOG.info("New user is creating self. OK to proceed without existing user object for auth0UserId");
                 } else {
                     // Otherwise, if no valid user is found, halt the request.
-                    JsonUtils.logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "User is unknown to Auth0 tenant.");
+                    logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "User is unknown to Auth0 tenant.");
                 }
             }
             // The user attribute is used on the server side to check user permissions and does not have all of the
@@ -81,12 +83,12 @@ public class Auth0Connection {
             addUserToRequest(req, profile);
         } catch (JWTVerificationException e) {
             // Invalid signature/claims
-            JsonUtils.logMessageAndHalt(req, 401, "Login failed to verify with our authorization provider.", e);
+            logMessageAndHalt(req, 401, "Login failed to verify with our authorization provider.", e);
         } catch (HaltException e) {
             throw e;
         } catch (Exception e) {
             LOG.warn("Login failed to verify with our authorization provider.", e);
-            JsonUtils.logMessageAndHalt(req, 401, "Could not verify user's token");
+            logMessageAndHalt(req, 401, "Could not verify user's token");
         }
     }
 
@@ -132,7 +134,7 @@ public class Auth0Connection {
         // Check that user object is present and is admin.
         RequestingUser user = Auth0Connection.getUserFromRequest(req);
         if (!user.isAdmin()) {
-            JsonUtils.logMessageAndHalt(
+            logMessageAndHalt(
                 req,
                 HttpStatus.UNAUTHORIZED_401,
                 "User is not authorized to perform administrative action"
@@ -159,19 +161,19 @@ public class Auth0Connection {
      */
     private static String getTokenFromRequest(Request req) {
         if (!isAuthHeaderPresent(req)) {
-            JsonUtils.logMessageAndHalt(req, 401, "Authorization header is missing.");
+            logMessageAndHalt(req, 401, "Authorization header is missing.");
         }
 
         // Check that auth header is present and formatted correctly (Authorization: Bearer [token]).
         final String authHeader = req.headers("Authorization");
         String[] parts = authHeader.split(" ");
         if (parts.length != 2 || !"bearer".equals(parts[0].toLowerCase())) {
-            JsonUtils.logMessageAndHalt(req, 401, String.format("Authorization header is malformed: %s", authHeader));
+            logMessageAndHalt(req, 401, String.format("Authorization header is malformed: %s", authHeader));
         }
         // Retrieve token from auth header.
         String token = parts[1];
         if (token == null) {
-            JsonUtils.logMessageAndHalt(req, 401, "Could not find authorization token");
+            logMessageAndHalt(req, 401, "Could not find authorization token");
         }
         return token;
     }
@@ -200,7 +202,7 @@ public class Auth0Connection {
                     .build();
             } catch (IllegalStateException | NullPointerException | JwkException e) {
                 LOG.error("Auth0 verifier configured incorrectly.");
-                JsonUtils.logMessageAndHalt(req, 500, "Server authentication configured incorrectly.", e);
+                logMessageAndHalt(req, 500, "Server authentication configured incorrectly.", e);
             }
         }
         return verifier;
@@ -260,6 +262,6 @@ public class Auth0Connection {
                 }
             }
         }
-        JsonUtils.logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
+        logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
     }
 }

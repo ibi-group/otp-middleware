@@ -25,6 +25,8 @@ import spark.Request;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
+
 /**
  * Responsible for getting a response from OTP based on the parameters provided by the requester. If the target service
  * is of interest the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
@@ -81,7 +83,7 @@ public class OtpRequestProcessor implements Endpoint {
      */
     private static String proxy(Request request, spark.Response response) {
         if (OtpDispatcher.OTP_API_ROOT == null) {
-            JsonUtils.logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
+            logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
             return null;
         }
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
@@ -90,7 +92,7 @@ public class OtpRequestProcessor implements Endpoint {
         // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
-            JsonUtils.logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
+            logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
             return null;
         }
 
@@ -127,6 +129,7 @@ public class OtpRequestProcessor implements Endpoint {
 
         Auth0Connection.checkUser(request);
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(request);
+        // A requesting user (Otp or third party user) is required to proceed.
         if (requestingUser == null) {
             return;
         }
@@ -141,7 +144,7 @@ public class OtpRequestProcessor implements Endpoint {
             // as a query parameter.
             otpUser = Persistence.otpUsers.getById(request.queryParams(USER_ID_PARAM));
             if (otpUser != null && !otpUser.canBeManagedBy(requestingUser)) {
-                JsonUtils.logMessageAndHalt(request,
+                logMessageAndHalt(request,
                     HttpStatus.FORBIDDEN_403,
                     String.format("User: %s not authorized to make trip requests for user: %s",
                         requestingUser.apiUser.email,

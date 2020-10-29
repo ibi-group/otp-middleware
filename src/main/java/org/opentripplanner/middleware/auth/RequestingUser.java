@@ -67,8 +67,11 @@ public class RequestingUser {
     }
 
     /**
-     * Determine if requesting user is a third party user. A third party user is classed as a user coming via the AWS
-     * API gateway.
+     * Determine if the requesting user is a third party API user. A third party API user is classed as a user that has
+     * signed up for access to the otp-middleware API. These users are expected to make requests on behalf of the
+     * OtpUsers they sign up, via a server application that authenticates via otp-middleware's authenticate
+     * endpoint (/api/secure/application/authenticate). OtpUsers created for third party API users enjoy a more limited
+     * range of activities (e.g., they cannot receive email/SMS notifications from otp-middleware).
      */
     public boolean isThirdPartyUser() {
         // TODO: Look to enhance api user check. Perhaps define specific field to indicate this?

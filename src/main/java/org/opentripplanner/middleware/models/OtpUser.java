@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -44,6 +45,7 @@ public class OtpUser extends AbstractUser {
     public boolean storeTripHistory;
 
     @JsonIgnore
+    /** If this user was created by an Api user, this parameter will match the Api user's id */
     public String applicationId;
 
     @Override
@@ -69,8 +71,8 @@ public class OtpUser extends AbstractUser {
             }
         }
 
-        // Only attempt to delete Auth0 user if Otp user is not assigned to third party.
-        if (deleteAuth0User && applicationId.isEmpty()) {
+        // Only attempt to delete Auth0 user if they exist within Auth0 tenant.
+        if (deleteAuth0User && Auth0Users.getUserByEmail(email, false) != null) {
             boolean auth0UserDeleted = super.delete();
             if (!auth0UserDeleted) {
                 LOG.warn("Aborting user deletion for {}", this.email);
@@ -86,8 +88,8 @@ public class OtpUser extends AbstractUser {
      */
     @Override
     public boolean canBeManagedBy(RequestingUser requestingUser) {
-        if (requestingUser.apiUser.id.equals(applicationId)) {
-            // Otp user was created by this Api user.
+        if (requestingUser.apiUser != null && requestingUser.apiUser.id.equals(applicationId)) {
+            // Otp user was created by this Api user (first or third party).
             return true;
         }
         // Fallback to Model#userCanManage.

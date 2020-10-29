@@ -4,10 +4,8 @@ import com.beerboy.ss.ApiEndpoint;
 import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
 import org.eclipse.jetty.http.HttpStatus;
-import com.mongodb.client.model.Filters;
+import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
-import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
-import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -38,22 +36,22 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
 
     @Override
     OtpUser preCreateHook(OtpUser user, Request req) {
-        String apiKey = req.headers("x-api-key");
-        // If an api key is present an API user is attempting to create an OTP user.
-        if (apiKey != null) {
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
+        String apiKeyFromHeader = req.headers("x-api-key");
+        // If third party and an api key is present user is attempting to create an OTP user.
+        if (requestingUser.apiUser != null && apiKeyFromHeader != null) {
             // Check API key and assign user to appropriate third-party application. Note: this is only relevant for
             // instances of otp-middleware running behind API Gateway.
-            ApiUser apiUser = Persistence.apiUsers.getOneFiltered(Filters.eq("apiKeys.value", apiKey));
-            if (apiUser != null) {
-                // If API user found, assign to new OTP user.
-                user.applicationId = apiUser.id;
+            if (requestingUser.apiUser.hasToken(apiKeyFromHeader)) {
+                // If third party and using their own api key, assign to new OTP user.
+                user.applicationId = requestingUser.apiUser.id;
             } else {
-                // If API user not found, report to Bugsnag for further investigation.
-                BugsnagReporter.reportErrorToBugsnag(
-                    "OTP user created with API key that is not linked to any API user",
-                    apiKey,
-                    new IllegalArgumentException("API key not linked to API user.")
-                );
+                // If API user not found, log message and halt.
+                logMessageAndHalt(
+                    req,
+                    HttpStatus.FORBIDDEN_403,
+                    "Attempting to create OTP user with API key that is not linked to calling third party",
+                    new IllegalArgumentException("API key not linked to API user."));
             }
         }
         return super.preCreateHook(user, req);

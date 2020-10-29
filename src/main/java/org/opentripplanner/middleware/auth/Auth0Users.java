@@ -28,6 +28,7 @@ import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * This class contains methods for querying Auth0 users using the Auth0 User Management API. Auth0 docs describing the
@@ -196,12 +197,12 @@ public class Auth0Users {
         U userWithEmail = userStore.getOneFiltered(eq("email", user.email));
         if (userWithEmail != null) {
             // TODO: Does this need to change to allow multiple applications to create otpuser's with the same email?
-            JsonUtils.logMessageAndHalt(req, 400, "User with email already exists in database!");
+            logMessageAndHalt(req, 400, "User with email already exists in database!");
         }
         // Check for pre-existing user in Auth0 and create if not exists.
         User auth0UserProfile = getUserByEmail(user.email, true);
         if (auth0UserProfile == null) {
-            JsonUtils.logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Error creating user for email " + user.email);
+            logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Error creating user for email " + user.email);
         }
         LOG.info("Created new Auth0 user ({}) for user {}", auth0UserProfile.getId(), user.id);
         return auth0UserProfile;
@@ -212,7 +213,7 @@ public class Auth0Users {
      */
     public static <U extends AbstractUser> void validateUser(U user, Request req) {
         if (!isValidEmail(user.email)) {
-            JsonUtils.logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Email address is invalid.");
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Email address is invalid.");
         }
     }
 
@@ -224,11 +225,11 @@ public class Auth0Users {
         // Verify that email address for user has not changed.
         // TODO: should we permit changing email addresses? This would require making an update to Auth0.
         if (!preExistingUser.email.equals(user.email)) {
-            JsonUtils.logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Cannot change user email address!");
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Cannot change user email address!");
         }
         // Verify that Auth0 ID for user has not changed.
         if (!preExistingUser.auth0UserId.equals(user.auth0UserId)) {
-            JsonUtils.logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Cannot change Auth0 ID!");
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Cannot change Auth0 ID!");
         }
     }
 

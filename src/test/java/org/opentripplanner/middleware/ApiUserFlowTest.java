@@ -127,25 +127,25 @@ public class ApiUserFlowTest {
     @Test
     public void canSimulateApiUserFlow() throws URISyntaxException {
 
+        // Define the header values to be used in requests from this point forward.
+        HashMap<String, String> headers = new HashMap<>();
+        headers.put("x-api-key", apiUser.apiKeys.get(0).value);
+
         // obtain Auth0 token for Api user.
         String endpoint = String.format("api/secure/application/authenticate?username=%s&password=%s",
             apiUser.email,
             TEMP_AUTH0_USER_PASSWORD);
-        HttpResponse<String> getTokenResponse = mockAuthenticatedRequest(endpoint,
+        HttpResponse<String> getTokenResponse = authenticatedRequest(endpoint,
             "",
-            apiUser,
-            HttpUtils.REQUEST_METHOD.POST,
-            false
+            headers,
+            HttpUtils.REQUEST_METHOD.POST
         );
         LOG.info(getTokenResponse.body());
         assertEquals(HttpStatus.OK_200, getTokenResponse.statusCode());
         TokenHolder tokenHolder = JsonUtils.getPOJOFromJSON(getTokenResponse.body(), TokenHolder.class);
 
-        // Define the header values to be used in requests from this point forward.
-        HashMap<String, String> headers = new HashMap<>();
+        // Define the bearer value to be used in requests from this point forward.
         headers.put("Authorization", "Bearer " + tokenHolder.getAccessToken());
-        headers.put("x-api-key", apiUser.apiKeys.get(0).value);
-
 
         // create an Otp user authenticating as an Api user.
         HttpResponse<String> createUserResponse = authenticatedRequest("api/secure/user",
@@ -156,8 +156,8 @@ public class ApiUserFlowTest {
 
         assertEquals(HttpStatus.OK_200, createUserResponse.statusCode());
 
-        // Attempt to create a monitored trip for an Otp user authenticating as an Otp user. This will fail because the
-        // user was created by an Api user and therefore does not have a Auth0 account.
+        // Attempt to create a monitored trip for an Otp user using mock authentication. This will fail because the user
+        // was created by an Api user and therefore does not have a Auth0 account.
         OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.body(), OtpUser.class);
 
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
@@ -181,14 +181,16 @@ public class ApiUserFlowTest {
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.statusCode());
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(createTripResponseAsApiUser.body(), MonitoredTrip.class);
 
-        // Request all monitored trip for an Otp user authenticating as an Api user.
+        // Request all monitored trips for an Otp user authenticating as an Api user. This will work and return all trips
+        // matching the user id provided.
         HttpResponse<String> getAllMonitoredTripsForOtpUser = authenticatedGet(String.format("api/secure/monitoredtrip?userId=%s",
             otpUserResponse.id),
             headers
         );
         assertEquals(HttpStatus.OK_200, getAllMonitoredTripsForOtpUser.statusCode());
 
-        // Request all monitored trip for an Otp user authenticating as an Api user. Without defining the user id.
+        // Request all monitored trips for an Otp user authenticating as an Api user. Without defining the user id. This
+        // will fail because an Api user must provide a user id.
         getAllMonitoredTripsForOtpUser = authenticatedRequest("api/secure/monitoredtrip",
             "",
             headers,
@@ -200,12 +202,12 @@ public class ApiUserFlowTest {
         // Plan trip with OTP proxy authenticating as an OTP user. Mock plan response will be returned. This will work
         // as an Otp user (created by MOD UI or an Api user) because the end point has no auth.
         String otpQuery = OTP_PROXY_ENDPOINT + OTP_PLAN_ENDPOINT + "?fromPlace=28.45119,-81.36818&toPlace=28.54834,-81.37745&userId=" + otpUserResponse.id;
-        HttpResponse<String> planTripResponseAsOtUser = mockAuthenticatedGet(otpQuery,
+        HttpResponse<String> planTripResponseAsOtpUser = mockAuthenticatedGet(otpQuery,
             otpUserResponse,
             true
         );
-        LOG.info("Plan trip response: {}\n....", planTripResponseAsOtUser.body().substring(0, 300));
-        assertEquals(HttpStatus.OK_200, planTripResponseAsOtUser.statusCode());
+        LOG.info("Plan trip response: {}\n....", planTripResponseAsOtpUser.body().substring(0, 300));
+        assertEquals(HttpStatus.OK_200, planTripResponseAsOtpUser.statusCode());
 
         // Plan trip with OTP proxy authenticating as an Api user. Mock plan response will be returned. This will work
         // as an Api user because the end point has no auth.

@@ -23,6 +23,8 @@ import spark.Response;
 
 import java.net.http.HttpResponse;
 
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
+
 /**
  * Implementation of the {@link AbstractUserController} for {@link ApiUser}. This controller also contains methods for
  * managing an {@link ApiUser}'s API keys.
@@ -87,29 +89,27 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     }
 
     /**
-     * Shorthand method to determine if an API user exists and has an API key.
-     */
-    private boolean userHasKey(ApiUser user, String apiKeyId) {
-        return user != null &&
-            user.apiKeys
-                .stream()
-                .anyMatch(apiKey -> apiKeyId.equals(apiKey.keyId));
-    }
-
-    /**
-     * Authenticate user with Auth0 based on username (email) and password. If successful, return the complete Auth0
+     * Authenticate user with Auth0 based on username (email) and password. If successful, confirm that the provided API
+     * key is return the complete Auth0
      * token else log message and halt.
      */
     private TokenHolder authenticateAuth0User(Request req, Response res) {
         String username = HttpUtils.getQueryParamFromRequest(req, USERNAME_PARAM, false);
         // FIXME: Should this be encrypted?!
         String password = HttpUtils.getQueryParamFromRequest(req, PASSWORD_PARAM, false);
+        String apiKeyFromHeader = req.headers("x-api-key");
+        ApiUser apiUser = ApiUser.userForApiKeyValue(apiKeyFromHeader);
+        if (apiKeyFromHeader == null || apiUser == null || !apiUser.email.equals(username)) {
+            logMessageAndHalt(req,
+                HttpStatus.BAD_REQUEST_400,
+                "An API key must be provided and match Api user."
+            );
+        }
         HttpResponse<String> auth0TokenResponse = Auth0Users.getCompleteAuth0TokenResponse(username, password);
         if (auth0TokenResponse == null || auth0TokenResponse.statusCode() != HttpStatus.OK_200) {
-            JsonUtils.logMessageAndHalt(req,
+            logMessageAndHalt(req,
                 auth0TokenResponse.statusCode(),
-                String.format("Cannot obtain Auth0 token for user %s", username),
-                null
+                String.format("Cannot obtain Auth0 token for user %s", username)
             );
         }
         return JsonUtils.getPOJOFromJSON(auth0TokenResponse.body(), TokenHolder.class);
@@ -128,7 +128,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         if (!requestingUser.isAdmin()) {
             usagePlanId = DEFAULT_USAGE_PLAN_ID;
             if (targetUser.apiKeys.size() >= API_KEY_LIMIT_PER_USER) {
-                JsonUtils.logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "User has reached API key limit.");
+                logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "User has reached API key limit.");
             }
         }
         // FIXME Should an Api user be limited to one api key per usage plan (and perhaps stage)?
@@ -138,7 +138,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             targetUser.apiKeys.add(apiKey);
             Persistence.apiUsers.replace(targetUser.id, targetUser);
         } catch (CreateApiKeyException e) {
-            JsonUtils.logMessageAndHalt(req,
+            logMessageAndHalt(req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
                 "Error creating API key",
                 e
@@ -154,18 +154,18 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // Do not permit key deletion unless user is an admin.
         if (!requestingUser.isAdmin()) {
-            JsonUtils.logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to delete an API key.");
+            logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to delete an API key.");
         }
         ApiUser targetUser = getApiUser(req);
         String apiKeyId = HttpUtils.getRequiredParamFromRequest(req, "apiKeyId");
         if (apiKeyId == null) {
-            JsonUtils.logMessageAndHalt(req,
+            logMessageAndHalt(req,
                 HttpStatus.BAD_REQUEST_400,
                 "An api key id is required",
                 null);
         }
-        if (!userHasKey(targetUser, apiKeyId)) {
-            JsonUtils.logMessageAndHalt(req,
+        if (targetUser != null && !targetUser.hasKey(apiKeyId)) {
+            logMessageAndHalt(req,
                 HttpStatus.NOT_FOUND_404,
                 String.format("User id (%s) does not have expected api key id (%s)", targetUser.id, apiKeyId),
                 null);
@@ -180,7 +180,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             return Persistence.apiUsers.getById(targetUser.id);
         } else {
             // Throw halt if API key deletion failed.
-            JsonUtils.logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Unknown error deleting API key.");
+            logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Unknown error deleting API key.");
             return null;
         }
     }
@@ -199,7 +199,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         try {
             user.createApiKey(DEFAULT_USAGE_PLAN_ID, false);
         } catch (CreateApiKeyException e) {
-            JsonUtils.logMessageAndHalt(
+            logMessageAndHalt(
                 req,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,
                 "Error creating API key",
@@ -234,7 +234,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         String userId = HttpUtils.getRequiredParamFromRequest(req, ID_PARAM);
         ApiUser apiUser = Persistence.apiUsers.getById(userId);
         if (apiUser == null) {
-            JsonUtils.logMessageAndHalt(
+            logMessageAndHalt(
                 req,
                 HttpStatus.NOT_FOUND_404,
                 String.format("No Api user matching the given user id (%s)", userId),
@@ -243,7 +243,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         }
 
         if (!apiUser.canBeManagedBy(requestingUser)) {
-            JsonUtils.logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to perform this operation.");
+            logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to perform this operation.");
         }
         return apiUser;
     }

@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
+
 /**
  * Sets up HTTP endpoints for getting logging and request summary information from AWS Cloudwatch and API Gateway.
  */
@@ -81,7 +83,7 @@ public class LogController implements Endpoint {
         // If the user is not an admin, the list of API keys is defaulted to their keys.
         if (!requestingUser.isAdmin()) {
             if (requestingUser.apiUser == null) {
-                JsonUtils.logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Action is not permitted for user.");
+                logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Action is not permitted for user.");
                 return null;
             }
             apiKeys = requestingUser.apiUser.apiKeys;
@@ -109,7 +111,7 @@ public class LogController implements Endpoint {
                 .collect(Collectors.toList());
         } catch (Exception e) {
             // Catch any issues with bad request parameters (e.g., invalid API keyId or bad date format).
-            JsonUtils.logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error requesting usage results", e);
+            logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "Error requesting usage results", e);
         }
 
         return null;

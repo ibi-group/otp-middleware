@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
+
 /**
  * Implementation of the {@link ApiController} abstract class for managing users. This controller connects with Auth0
  * services using the hooks provided by {@link ApiController}.
@@ -80,7 +82,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         // but have not completed the account setup form yet.
         // For those users, the user profile would be 404 not found (as opposed to 403 forbidden).
         if (user == null) {
-            JsonUtils.logMessageAndHalt(req,
+            logMessageAndHalt(req,
                 HttpStatus.NOT_FOUND_404,
                 String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.auth0UserId),
                 null);
