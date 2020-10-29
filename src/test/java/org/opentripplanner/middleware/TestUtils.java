@@ -159,7 +159,7 @@ public class TestUtils {
     /**
      * Construct http headers according to caller request and then make an authenticated 'get' call.
      */
-    static HttpResponse<String> mockAuthenticatedGet(String path, AbstractUser requestingUser, boolean mockHeaders) {
+    public static HttpResponse<String> mockAuthenticatedGet(String path, AbstractUser requestingUser, boolean mockHeaders) {
         HashMap<String, String> headers = (mockHeaders) ? getMockHeaders(requestingUser) : null;
         return authenticatedRequest(path, "", headers, HttpUtils.REQUEST_METHOD.GET);
     }

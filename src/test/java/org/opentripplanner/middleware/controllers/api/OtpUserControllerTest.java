@@ -9,7 +9,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
@@ -19,7 +18,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 
@@ -65,22 +64,22 @@ public class OtpUserControllerTest {
     public void invalidNumbersShouldProduceBadRequest(String badNumber, int statusCode) {
         // 1. Request verification SMS.
         // The invalid number should fail the call.
-        HttpResponse<String> response = mockAuthenticatedRequest(
+        HttpResponse<String> response = mockAuthenticatedGet(
             String.format("api/secure/user/%s/verify_sms/%s",
                 otpUser.id,
                 badNumber
             ),
             otpUser,
-            HttpUtils.REQUEST_METHOD.GET
+            true
         );
         assertEquals(statusCode, response.statusCode());
 
         // 2. Fetch the newly-created user.
         // The phone number should not be updated.
-        HttpResponse<String> otpUserWithPhoneRequest = mockAuthenticatedRequest(
+        HttpResponse<String> otpUserWithPhoneRequest = mockAuthenticatedGet(
             String.format("api/secure/user/%s", otpUser.id),
             otpUser,
-            HttpUtils.REQUEST_METHOD.GET
+            true
         );
         assertEquals(HttpStatus.OK_200, otpUserWithPhoneRequest.statusCode());
 
