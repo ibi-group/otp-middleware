@@ -17,12 +17,11 @@ import org.opentripplanner.middleware.otp.response.Place;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
@@ -72,13 +71,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     @Test
     public void testAllItinerariesExist() throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip();
-        trip.monday = true;
-        trip.tuesday = true;
-        trip.wednesday = false;
-        trip.thursday = true;
-        trip.friday = false;
-        trip.saturday = true;
-        trip.sunday = true;
 
         // Set mocks to a list of responses with itineraries.
         OtpResponse resp = otpDispatcherPlanResponse.getResponse();
@@ -113,17 +105,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     @Test
     public void testAtLeastOneTripDoesNotExist() throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip();
-        trip.monday = true;
-        trip.tuesday = true;
-        trip.wednesday = false;
-        trip.thursday = true;
-        trip.friday = false;
-        trip.saturday = false;
-        trip.sunday = false;
 
         // Set mocks to a list of responses, one without an itinerary.
         OtpResponse resp = otpDispatcherPlanResponse.getResponse();
-        TestUtils.setupOtpMocks(List.of(resp, resp, otpDispatcherPlanErrorResponse.getResponse()));
+        TestUtils.setupOtpMocks(List.of(resp, resp, resp, otpDispatcherPlanErrorResponse.getResponse(), resp));
 
         // Also set trip itinerary to the same for easy/lazy match.
         trip.itinerary = resp.plan.itineraries.get(0);
@@ -133,8 +118,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
         // Assertions ordered by date, Thursday is the query date and therefore comes first.
         Assertions.assertTrue(result.thursday.isValid);
-        Assertions.assertTrue(result.monday.isValid);
-        Assertions.assertFalse(result.tuesday.isValid);
+        Assertions.assertTrue(result.saturday.isValid);
+        Assertions.assertTrue(result.sunday.isValid);
+        Assertions.assertFalse(result.monday.isValid);
+        Assertions.assertTrue(result.tuesday.isValid);
     }
 
     /**
@@ -143,20 +130,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     @Test
     public void testGetQueriesFromDates() throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip();
-        trip.monday = true;
-        trip.tuesday = true;
-        trip.wednesday = false;
-        trip.thursday = true;
-        trip.friday = false;
-        trip.saturday = true;
-        trip.sunday = true;
 
-        LocalTime queryTime = LocalTime.parse(QUERY_TIME);
         List<String> newDates = List.of("2020-12-30", "2020-12-31", "2021-01-01");
-        List<ZonedDateTime> newZonedDateTimes = newDates.stream()
-            .map(s -> DateTimeUtils.getDateFromString(s, DEFAULT_DATE_FORMAT_PATTERN))
-            .map(d -> ZonedDateTime.of(d, queryTime, DateTimeUtils.getOtpZoneId()))
-            .collect(Collectors.toList());
+        Set<ZonedDateTime> newZonedDateTimes = datesToZonedDateTimes(newDates);
 
         Map<ZonedDateTime, String> queriesByDate = ItineraryUtils.getQueriesFromDates(trip.parseQueryParams(), newZonedDateTimes);
         Assertions.assertEquals(newDates.size(), queriesByDate.size());
@@ -177,25 +153,19 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      */
     @ParameterizedTest
     @MethodSource("createGetDatesTestCases")
-    public void testGetDatesToCheckItineraryExistence(GetDatesTestCase testCase) throws URISyntaxException {
+    public void testGetDatesToCheckItineraryExistence(Set<ZonedDateTime> testDates) throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip();
-        trip.monday = true;
-        trip.tuesday = true;
-        trip.wednesday = false;
-        trip.thursday = true;
-        trip.friday = false;
-        trip.saturday = true;
-        trip.sunday = true;
-
-        List<ZonedDateTime> datesToCheck = ItineraryUtils.getDatesToCheckItineraryExistence(trip);
-        Assertions.assertEquals(testCase.dates, datesToCheck);
+        Set<ZonedDateTime> datesToCheck = ItineraryUtils.getDatesToCheckItineraryExistence(trip);//, false)
+        Assertions.assertEquals(testDates, datesToCheck);
     }
 
-    private static List<GetDatesTestCase> createGetDatesTestCases() {
+    private static List<Set<ZonedDateTime>> createGetDatesTestCases() {
         // Each list includes dates to be monitored in a 7-day window starting from the query date.
         return List.of(
             // Dates solely based on monitored days (see the trip variable in the corresponding test).
-            new GetDatesTestCase(List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18"))//,
+            datesToZonedDateTimes(
+                List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18")
+            )
 
             // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence,
             // it should return all dates in the 7-day window regardless of the ones set in the monitored trip.
@@ -241,23 +211,24 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         trip.from = targetPlace;
         trip.to = dummyPlace;
 
+        // trip monitored days.
+        trip.monday = true;
+        trip.tuesday = true;
+        trip.wednesday = false;
+        trip.thursday = true;
+        trip.friday = false;
+        trip.saturday = true;
+        trip.sunday = true;
+
         return trip;
     }
 
     /**
-     * Data structure for the date check test.
+     * Converts a list of date strings to a set of {@link ZonedDateTime} assuming QUERY_TIME.
      */
-    private static class GetDatesTestCase {
-        public final List<ZonedDateTime> dates;
-
-        public GetDatesTestCase(List<String> dates) {
-            this.dates = dates.stream()
-                .map(d -> ZonedDateTime.of(
-                    LocalDate.parse(d),
-                    LocalTime.parse(QUERY_TIME),
-                    DateTimeUtils.getOtpZoneId()
-                ))
-                .collect(Collectors.toList());
-        }
+    static Set<ZonedDateTime> datesToZonedDateTimes(List<String> dates) {
+        return dates.stream()
+            .map(d -> DateTimeUtils.makeZonedDateTime(d, QUERY_TIME))
+            .collect(Collectors.toSet());
     }
 }

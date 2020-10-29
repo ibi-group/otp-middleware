@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -158,5 +159,16 @@ public class DateTimeUtils {
         return dateString == null
             ? nowAsLocalDate()
             : getDateFromString(dateString, DEFAULT_DATE_FORMAT_PATTERN);
+    }
+
+    /**
+     * Makes a {@link ZonedDateTime} object from a date string and a time string, using OTP's time zone.
+     */
+    public static ZonedDateTime makeZonedDateTime(String dateString, String timeString) {
+        return ZonedDateTime.of(
+            getDateFromString(dateString, DEFAULT_DATE_FORMAT_PATTERN),
+            LocalTime.parse(timeString),
+            DateTimeUtils.getOtpZoneId()
+        );
     }
 }

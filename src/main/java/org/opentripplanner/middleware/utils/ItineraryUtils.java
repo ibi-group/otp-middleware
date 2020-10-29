@@ -51,7 +51,7 @@ public class ItineraryUtils {
      * @param dates a list of the desired dates in YYYY-MM-DD format.
      * @return a map of query strings with, and indexed by the specified dates.
      */
-    public static Map<ZonedDateTime, String> getQueriesFromDates(Map<String, String> params, List<ZonedDateTime> dates) {
+    public static Map<ZonedDateTime, String> getQueriesFromDates(Map<String, String> params, Set<ZonedDateTime> dates) {
         // Create a copy of the original params in which we change the date.
         Map<String, String> paramsCopy = new HashMap<>(params);
         Map<ZonedDateTime, String> queryParamsByDate = new HashMap<>();
@@ -72,7 +72,7 @@ public class ItineraryUtils {
      * @param trip The trip from which to extract the monitored dates to check.
      * @return A list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor, sorted from earliest.
      */
-    public static List<ZonedDateTime> getDatesToCheckItineraryExistence(MonitoredTrip trip)
+    public static Set<ZonedDateTime> getDatesToCheckItineraryExistence(MonitoredTrip trip)
         throws URISyntaxException {
         Set<ZonedDateTime> datesToCheck = new HashSet<>();
         Map<String, String> params = trip.parseQueryParams();
@@ -90,7 +90,7 @@ public class ItineraryUtils {
             }
         }
 
-        return datesToCheck.stream().sorted().collect(Collectors.toList());
+        return datesToCheck;
     }
 
     /**
