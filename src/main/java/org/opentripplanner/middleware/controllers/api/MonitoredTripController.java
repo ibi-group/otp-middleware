@@ -28,31 +28,14 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
         checkItineraryCanBeMonitored(monitoredTrip, req);
-        try {
-            monitoredTrip.initializeFromItineraryAndQueryParams();
-        } catch (Exception e) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.BAD_REQUEST_400,
-                "Invalid input data received for monitored trip.",
-                e
-            );
-        }
+        processTripQueryParams(monitoredTrip, req);
         return monitoredTrip;
     }
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        try {
-            monitoredTrip.initializeFromItineraryAndQueryParams();
-        } catch (Exception e) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.BAD_REQUEST_400,
-                "Invalid input data received for monitored trip.",
-                e
-            );
-        }
+        checkItineraryCanBeMonitored(monitoredTrip, req);
+        processTripQueryParams(monitoredTrip, req);
         return monitoredTrip;
     }
 
@@ -60,6 +43,23 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     boolean preDeleteHook(MonitoredTrip monitoredTrip, Request req) {
         // Authorization checks are done prior to this hook
         return true;
+    }
+
+    /**
+     * Processes the {@link MonitoredTrip} query parameters, so the trip's fields match the query parameters.
+     * If an error occurs regarding the query params, returns a HTTP 400 status.
+     */
+    private void processTripQueryParams(MonitoredTrip monitoredTrip, Request req) {
+        try {
+            monitoredTrip.initializeFromItineraryAndQueryParams();
+        } catch (Exception e) {
+            logMessageAndHalt(
+                req,
+                HttpStatus.BAD_REQUEST_400,
+                "Invalid input data received for monitored trip.",
+                e
+            );
+        }
     }
 
     /**
