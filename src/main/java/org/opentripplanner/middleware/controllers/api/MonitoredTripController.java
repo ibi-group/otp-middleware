@@ -3,19 +3,21 @@ package org.opentripplanner.middleware.controllers.api;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import spark.Request;
 
 import java.net.URISyntaxException;
+import java.time.LocalDate;
 import java.util.Map;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
-import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * Implementation of the {@link ApiController} abstract class for managing monitored trips. This controller connects
@@ -48,7 +50,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     }
 
     /**
-     * Helper code for the preCreateHook and preDeleteHook methods that
+     * Helper code for the preCreateHook method that
      * - initializes a {@link MonitoredTrip} instance,
      * - checks that that trip's itinerary exists for that trip's monitored days,
      * - sets the trip with a non-realtime version of it.
@@ -64,23 +66,21 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 e
             );
         }
-        ItineraryUtils.Result checkResult = checkItineraryExistence(monitoredTrip, req);
+        ItineraryExistence checkResult = checkItineraryExistence(monitoredTrip, req);
 
         // Replace the provided trip's itinerary with a verified, non-realtime version of it.
         if (checkResult != null) {
-            updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult.labeledResponses);
+            updateTripWithVerifiedItinerary(monitoredTrip, req, checkResult);
         }
     }
 
     /**
      * Checks that non-realtime itineraries exist for the days the specified monitored trip is active.
      */
-    private static ItineraryUtils.Result checkItineraryExistence(MonitoredTrip trip, Request request) {
+    private static ItineraryExistence checkItineraryExistence(MonitoredTrip trip, Request request) {
         try {
-            ItineraryUtils.Result checkResult = ItineraryUtils.checkItineraryExistence(
-                ItineraryUtils.getItineraryExistenceQueries(trip, false), trip.isArriveBy()
-            );
-            if (!checkResult.allItinerariesExist) {
+            ItineraryExistence checkResult = ItineraryUtils.checkItineraryExistence(trip, false);
+            if (!checkResult.allCheckedDatesAreValid()) {
                 logMessageAndHalt(
                     request,
                     HttpStatus.BAD_REQUEST_400,
@@ -103,24 +103,28 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      * Replace the itinerary provided with the monitored trip
      * with a non-real-time, verified itinerary from the responses provided.
      */
-    private static void updateTripWithVerifiedItinerary(MonitoredTrip monitoredTrip, Request request, Map<String, OtpResponse> responsesByDate) {
+    private static void updateTripWithVerifiedItinerary(MonitoredTrip monitoredTrip, Request request, ItineraryExistence responsesByDayOfWeek) {
         try {
             Map<String, String> params = monitoredTrip.parseQueryParams();
-            String queryDate = params.get(DATE_PARAM);
+            String queryDateParam = params.get(DATE_PARAM);
+
+            // TODO: Refactor. Originally found in ItineraryUtils#getDatesToCheckItineraryExistence.
+            LocalDate queryDate = DateTimeUtils.getDateFromQueryDateString(queryDateParam);
 
             // Find the response corresponding to the day of the query.
             // TODO/FIXME: There is a possibility that the user chooses to monitor the query/trip provided
             //       on other days but not the day for which the plan request was originally made.
             //       In such cases, the actual itinerary can be different from the one we are looking to save.
             //       To address that, in the UI, we can, for instance, force the date for the plan request to be monitored.
-            OtpResponse responseForDayOfQuery = responsesByDate.get(queryDate);
-            if (responseForDayOfQuery != null) {
-                if (responseForDayOfQuery.plan != null && responseForDayOfQuery.plan.itineraries != null) {
-                    // TODO/FIXME: need a trip resemblance check to supplement the ui_activeItinerary param used in this function.
-                    ItineraryUtils.updateTripWithVerifiedItinerary(monitoredTrip, responseForDayOfQuery.plan.itineraries);
-                }
+            ItineraryExistence.ItineraryExistenceResult itinExistenceForQueryDay = responsesByDayOfWeek.getResultForDayOfWeek(queryDate.getDayOfWeek());
+            if (itinExistenceForQueryDay != null &&
+                itinExistenceForQueryDay.isValid &&
+                itinExistenceForQueryDay.itinerary != null)
+            {
+                monitoredTrip.itinerary = itinExistenceForQueryDay.itinerary;
+                monitoredTrip.initializeFromItineraryAndQueryParams();
             }
-        } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
+        } catch (URISyntaxException e) { // triggered by monitoredTrip#parseQueryParams.
             logMessageAndHalt(
                 request,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,

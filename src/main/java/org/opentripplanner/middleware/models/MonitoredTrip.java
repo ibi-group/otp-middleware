@@ -13,12 +13,14 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -334,6 +336,15 @@ public class MonitoredTrip extends Model {
      */
     public int tripTimeHour() {
         return Integer.valueOf(tripTime.split(":")[0]);
+    }
+
+    /**
+     * Returns the trip time as a {@link ZonedDateTime} given a particular date.
+     */
+    public ZonedDateTime tripZonedDateTime(LocalDate date) {
+        return ZonedDateTime.of(
+            date, LocalTime.of(tripTimeHour(), tripTimeMinute()), DateTimeUtils.getOtpZoneId()
+        );
     }
 
     /**
