@@ -115,7 +115,8 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         // Also set trip itinerary to the same for easy/lazy match.
         trip.itinerary = resp.plan.itineraries.get(0);
 
-        ItineraryExistence result = ItineraryUtils.checkItineraryExistenceOrdered(trip, false);
+        // Sort dates to ensure OTP responses match the dates.
+        ItineraryExistence result = ItineraryUtils.checkItineraryExistence(trip, false, true);
         Assertions.assertFalse(result.allCheckedDatesAreValid());
 
         // Assertions ordered by date, Thursday is the query date and therefore comes first.

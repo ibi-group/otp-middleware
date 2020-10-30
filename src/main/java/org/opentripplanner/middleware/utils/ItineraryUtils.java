@@ -114,6 +114,12 @@ public class ItineraryUtils {
 
     /**
      * Checks that, for each query provided, an itinerary exists.
+     * @param trip The trip which itinerary is to be checked/matched.
+     * @param checkAllDays Determines whether all days of the week are checked,
+     *                     or just the days the trip is set to be monitored.
+     * @param sortDates Determines whether the dates should be sorted prior to making the OTP requests.
+     *                  This is used for tests to to ensure that the order of the dates to check
+     *                  matches the order of the mock OTP responses for those dates.
      * @return An object with a map of results and summary of itinerary existence.
      */
     public static ItineraryExistence checkItineraryExistence(MonitoredTrip trip, boolean checkAllDays, boolean sortDates) throws URISyntaxException {
@@ -149,18 +155,9 @@ public class ItineraryUtils {
     }
 
     /**
-     * Overload used in normal conditions.
+     * Overload used in normal conditions (hides the sort parameter).
      */
     public static ItineraryExistence checkItineraryExistence(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
-        return checkItineraryExistence(trip, checkAllDays,false);
+        return checkItineraryExistence(trip, checkAllDays, false);
     }
-
-    /**
-     * Variant of checkItineraryExistence used for tests,
-     * to ensure that the order of the dates to check matches the order of the mock OTP responses for those dates.
-     */
-    public static ItineraryExistence checkItineraryExistenceOrdered(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
-        return checkItineraryExistence(trip, checkAllDays,true);
-    }
-
 }
