@@ -5,6 +5,7 @@ import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -26,6 +27,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
+        checkItineraryCanBeMonitored(monitoredTrip, req);
         try {
             monitoredTrip.initializeFromItineraryAndQueryParams();
         } catch (Exception e) {
@@ -72,6 +74,20 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 request,
                 HttpStatus.BAD_REQUEST_400,
                 "Maximum permitted saved monitored trips reached. Maximum = " + MAXIMUM_PERMITTED_MONITORED_TRIPS
+            );
+        }
+    }
+
+    /**
+     * Checks that the given {@link MonitoredTrip} can be monitored
+     * (the underlying {@link org.opentripplanner.middleware.otp.response.Itinerary} has transit and no rentals).
+     */
+    private void checkItineraryCanBeMonitored(MonitoredTrip trip, Request request) {
+        if (!ItineraryUtils.itineraryHasTransitAndNoRentals(trip.itinerary)) {
+            logMessageAndHalt(
+                request,
+                HttpStatus.BAD_REQUEST_400,
+                "Only trips with an itinerary that includes transit and no rentals can be monitored."
             );
         }
     }
