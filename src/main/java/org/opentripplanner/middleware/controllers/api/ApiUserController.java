@@ -33,7 +33,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     private static final Logger LOG = LoggerFactory.getLogger(ApiUserController.class);
     public static final String DEFAULT_USAGE_PLAN_ID = ConfigUtils.getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
     private static final String API_KEY_PATH = "/apikey";
-    private static final String AUTHENTICATE_PATH = "/authenticate";
+    public static final String AUTHENTICATE_PATH = "/authenticate";
     private static final int API_KEY_LIMIT_PER_USER = 2;
     private static final String API_KEY_ID_PARAM = "/:apiKeyId";
     public static final String API_USER_PATH = "secure/application";

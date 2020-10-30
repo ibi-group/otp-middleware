@@ -75,7 +75,7 @@ public class Auth0Connection {
                     LOG.info("New user is creating self. OK to proceed without existing user object for auth0UserId");
                 } else {
                     // Otherwise, if no valid user is found, halt the request.
-                    logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "User is unknown to Auth0 tenant.");
+                    logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "No user found in database associated with the provided auth token.");
                 }
             }
             // The user attribute is used on the server side to check user permissions and does not have all of the
