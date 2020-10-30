@@ -143,8 +143,7 @@ public class ItineraryUtils {
                 for (Itinerary itinerary: plan.itineraries) {
                     // If a matching itinerary is found, save the date with the matching itinerary.
                     // The matching itinerary will replace the original trip.itinerary.
-                    // FIXME Replace 'equals' with matching itinerary
-                    if (itinerary.equals(trip.itinerary)) {
+                    if (itinerariesMatch(trip.itinerary, itinerary)) {
                         datesWithMatchingItineraries.put(date, itinerary);
                     }
                 }
