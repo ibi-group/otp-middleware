@@ -52,7 +52,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     /**
      * Helper code for the preCreateHook method that
      * - initializes a {@link MonitoredTrip} instance,
-     * - checks that that trip's itinerary exists for that trip's monitored days,
+     * - checks that, for that trip, its itinerary exists for the days to be monitored,
      * - sets the trip with a non-realtime version of it.
      */
     private void initializeTripAndSetVerifiedItinerary(MonitoredTrip monitoredTrip, Request req) {

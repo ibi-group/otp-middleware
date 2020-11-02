@@ -30,7 +30,6 @@ public class ItineraryUtils {
 
     public static final String IGNORE_REALTIME_UPDATES_PARAM = "ignoreRealtimeUpdates";
     public static final String DATE_PARAM = "date";
-    public static final String TIME_PARAM = "time";
     public static final int ITINERARY_CHECK_WINDOW = 7;
 
     /**
@@ -50,7 +49,7 @@ public class ItineraryUtils {
      * @param dates a list of the desired dates in YYYY-MM-DD format.
      * @return a map of query strings with, and indexed by the specified dates.
      */
-    public static Map<ZonedDateTime, String> getQueriesFromDates(Map<String, String> params, Set<ZonedDateTime> dates) {
+    static Map<ZonedDateTime, String> getQueriesFromDates(Map<String, String> params, Set<ZonedDateTime> dates) {
         // Create a copy of the original params in which we change the date.
         Map<String, String> paramsCopy = new HashMap<>(params);
         Map<ZonedDateTime, String> queryParamsByDate = new HashMap<>();

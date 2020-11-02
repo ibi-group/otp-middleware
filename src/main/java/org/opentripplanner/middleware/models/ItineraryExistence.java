@@ -67,7 +67,7 @@ public class ItineraryExistence {
     /**
      * Helper function to set the existence check for a particular day of the week.
      */
-    public void setResultForDayOfWeek(ItineraryExistenceResult result, DayOfWeek dayOfWeek) {
+    private void setResultForDayOfWeek(ItineraryExistenceResult result, DayOfWeek dayOfWeek) {
         switch (dayOfWeek) {
             case MONDAY:
                 monday = result;
@@ -131,7 +131,7 @@ public class ItineraryExistence {
         /**
          * Marks an itinerary as not available for the specified date for the applicable day of the week.
          */
-        public void handleInvalidDate (ZonedDateTime date) {
+        public void handleInvalidDate(ZonedDateTime date) {
             isValid = false;
             String dateString = DateTimeUtils.getStringFromDate(date.toLocalDate(), DEFAULT_DATE_FORMAT_PATTERN);
             invalidDates.add(dateString);

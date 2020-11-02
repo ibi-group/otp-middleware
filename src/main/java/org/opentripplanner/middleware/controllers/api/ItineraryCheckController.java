@@ -21,7 +21,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestB
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
- * This endpoint checks is used by web clients or other APIs to let users know
+ * This endpoint is used by web clients or other APIs to let users know
  * whether a given itinerary exists on each day of the week.
  */
 public class ItineraryCheckController implements Endpoint {
