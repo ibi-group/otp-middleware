@@ -30,7 +30,7 @@ public class ItineraryUtilsTest {
         walkLeg.mode = "WALK";
 
         Leg rideHailLeg = new Leg();
-        rideHailLeg.mode = "WALK";
+        rideHailLeg.mode = "CAR_HAIL";
         rideHailLeg.hailedCar = true;
 
         Itinerary blankItinerary = new Itinerary();
