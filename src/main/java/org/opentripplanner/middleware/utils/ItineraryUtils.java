@@ -5,11 +5,12 @@ import org.opentripplanner.middleware.otp.response.Leg;
 
 public class ItineraryUtils {
     /**
+     * Determines whether the specified {@link Itinerary} can be monitored.
      * @return true if at least one {@link Leg} of the specified {@link Itinerary} is a transit leg,
      *   and none of the legs is a rental or ride hail leg (e.g. CAR_RENT, CAR_HAIL, BICYCLE_RENT, etc.).
      *   (We use the corresponding fields returned by OTP to get transit legs and rental/ride hail legs.)
      */
-    public static boolean itineraryHasTransitAndNoRentals(Itinerary itinerary) {
+    public static boolean itineraryCanBeMonitored(Itinerary itinerary) {
         boolean hasTransit = false;
         boolean hasRentalOrRideHail = false;
 

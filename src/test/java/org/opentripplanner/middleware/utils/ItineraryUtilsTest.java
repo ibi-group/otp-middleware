@@ -12,12 +12,12 @@ import java.util.stream.Stream;
 
 public class ItineraryUtilsTest {
     @ParameterizedTest
-    @MethodSource("createItineraryHasTransitNoRentalsCases")
-    public void testItineraryHasTransitNoRentals(Itinerary itinerary, boolean expectedResult, String message) {
-        Assertions.assertEquals(expectedResult, ItineraryUtils.itineraryHasTransitAndNoRentals(itinerary), message);
+    @MethodSource("createItineraryCanBeMonitoredCases")
+    public void testItineraryCanBeMonitored(Itinerary itinerary, boolean expectedResult, String message) {
+        Assertions.assertEquals(expectedResult, ItineraryUtils.itineraryCanBeMonitored(itinerary), message);
     }
 
-    private static Stream<Arguments> createItineraryHasTransitNoRentalsCases() {
+    private static Stream<Arguments> createItineraryCanBeMonitoredCases() {
         Leg transitLeg = new Leg();
         transitLeg.mode = "BUS";
         transitLeg.transitLeg = true;

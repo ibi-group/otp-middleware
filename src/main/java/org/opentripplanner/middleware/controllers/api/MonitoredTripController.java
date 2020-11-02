@@ -83,7 +83,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      * (the underlying {@link org.opentripplanner.middleware.otp.response.Itinerary} has transit and no rentals).
      */
     private void checkItineraryCanBeMonitored(MonitoredTrip trip, Request request) {
-        if (!ItineraryUtils.itineraryHasTransitAndNoRentals(trip.itinerary)) {
+        if (!ItineraryUtils.itineraryCanBeMonitored(trip.itinerary)) {
             logMessageAndHalt(
                 request,
                 HttpStatus.BAD_REQUEST_400,
