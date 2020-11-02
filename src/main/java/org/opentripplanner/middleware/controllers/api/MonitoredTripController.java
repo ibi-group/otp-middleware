@@ -87,7 +87,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             logMessageAndHalt(
                 request,
                 HttpStatus.BAD_REQUEST_400,
-                "Only trips with an itinerary that includes transit and no rentals can be monitored."
+                "Only trips with an itinerary that includes transit and no rentals or ride hailing can be monitored."
             );
         }
     }
