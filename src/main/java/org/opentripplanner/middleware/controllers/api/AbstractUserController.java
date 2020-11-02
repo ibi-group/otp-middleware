@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.controllers.api;
 import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
 import com.beerboy.ss.ApiEndpoint;
-import com.beerboy.ss.descriptor.MethodDescriptor;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
@@ -18,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -46,14 +46,14 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         // by spark as 'GET user with id "fromtoken"', which we don't want).
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Get user from token.
-            .get(MethodDescriptor.path(ROOT_ROUTE + TOKEN_PATH)
+            .get(path(ROOT_ROUTE + TOKEN_PATH)
                     .withDescription("Retrieves an " + persistence.clazz.getSimpleName() + " entity using an Auth0 access token passed in an Authorization header.")
                     .withProduces(HttpUtils.JSON_ONLY)
                     .withResponseType(persistence.clazz),
                 this::getUserFromRequest, JsonUtils::toJson
             )
             // Resend verification email
-            .get(MethodDescriptor.path(ROOT_ROUTE + VERIFICATION_EMAIL_PATH)
+            .get(path(ROOT_ROUTE + VERIFICATION_EMAIL_PATH)
                     .withDescription("Triggers a job to resend the Auth0 verification email.")
                     .withResponseType(Job.class),
                 this::resendVerificationEmail, JsonUtils::toJson

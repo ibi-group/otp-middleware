@@ -17,7 +17,6 @@ import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +26,8 @@ import spark.Response;
 
 import java.security.interfaces.RSAPublicKey;
 
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.hasConfigProperty;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -185,7 +186,7 @@ public class Auth0Connection {
     private static JWTVerifier getVerifier(Request req, String token) {
         if (verifier == null) {
             try {
-                final String domain = "https://" + ConfigUtils.getConfigPropertyAsText("AUTH0_DOMAIN") + "/";
+                final String domain = "https://" + getConfigPropertyAsText("AUTH0_DOMAIN") + "/";
                 JwkProvider provider = new UrlJwkProvider(domain);
                 // Decode the token.
                 DecodedJWT jwt = JWT.decode(token);
@@ -209,8 +210,8 @@ public class Auth0Connection {
     }
 
     public static boolean getDefaultAuthDisabled() {
-        return ConfigUtils.hasConfigProperty("DISABLE_AUTH") &&
-            "true".equals(ConfigUtils.getConfigPropertyAsText("DISABLE_AUTH"));
+        return hasConfigProperty("DISABLE_AUTH") &&
+            "true".equals(getConfigPropertyAsText("DISABLE_AUTH"));
     }
 
     /**

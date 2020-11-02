@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getVersionFromJar;
 
 /**
  * Class that generates an enhanced public-facing documentation, in OpenAPI 2.0 (Swagger) format,
@@ -109,7 +110,7 @@ public class PublicApiDocGenerator {
         // Overwrite top-level parameters.
         swaggerRoot.put("host", AWS_API_SERVER);
         swaggerRoot.put("basePath", "/" + AWS_API_STAGE);
-        ((ObjectNode) swaggerRoot.get("info")).put("version", ConfigUtils.getVersionFromJar());
+        ((ObjectNode) swaggerRoot.get("info")).put("version", getVersionFromJar());
 
 
         // Generate output file.

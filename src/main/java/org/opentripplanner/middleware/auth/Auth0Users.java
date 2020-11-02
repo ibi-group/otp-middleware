@@ -12,7 +12,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
-import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -28,6 +27,7 @@ import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -35,12 +35,12 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * searchable fields and query syntax are here: https://auth0.com/docs/api/management/v2/user-search
  */
 public class Auth0Users {
-    public static final String AUTH0_DOMAIN = ConfigUtils.getConfigPropertyAsText("AUTH0_DOMAIN");
+    public static final String AUTH0_DOMAIN = getConfigPropertyAsText("AUTH0_DOMAIN");
     // This client/secret pair is for making requests for an API access token used with the Management API.
-    private static final String AUTH0_API_CLIENT = ConfigUtils.getConfigPropertyAsText("AUTH0_API_CLIENT");
-    private static final String AUTH0_API_SECRET = ConfigUtils.getConfigPropertyAsText("AUTH0_API_SECRET");
-    private static final String AUTH0_CLIENT_ID = ConfigUtils.getConfigPropertyAsText("AUTH0_CLIENT_ID");
-    private static final String AUTH0_CLIENT_SECRET = ConfigUtils.getConfigPropertyAsText("AUTH0_CLIENT_SECRET");
+    private static final String AUTH0_API_CLIENT = getConfigPropertyAsText("AUTH0_API_CLIENT");
+    private static final String AUTH0_API_SECRET = getConfigPropertyAsText("AUTH0_API_SECRET");
+    private static final String AUTH0_CLIENT_ID = getConfigPropertyAsText("AUTH0_CLIENT_ID");
+    private static final String AUTH0_CLIENT_SECRET = getConfigPropertyAsText("AUTH0_CLIENT_SECRET");
     private static final String DEFAULT_CONNECTION_TYPE = "Username-Password-Authentication";
     private static final String DEFAULT_AUDIENCE = "https://otp-middleware";
     private static final String MANAGEMENT_API_VERSION = "v2";

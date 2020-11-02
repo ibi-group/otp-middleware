@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.controllers.api;
 import com.amazonaws.services.apigateway.model.GetUsageResult;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.descriptor.EndpointDescriptor;
-import com.beerboy.ss.descriptor.MethodDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
@@ -23,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -44,26 +45,26 @@ public class LogController implements Endpoint {
         restApi.endpoint(
             EndpointDescriptor.endpointPath(ROOT_ROUTE).withDescription("Interface for retrieving API logs from AWS."),
             HttpUtils.NO_FILTER
-        ).get(MethodDescriptor.path(ROOT_ROUTE)
+        ).get(path(ROOT_ROUTE)
                 .withDescription("Gets a list of all API usage logs.")
                 .withQueryParam()
                 .withName("keyId")
                 .withDescription("If specified, restricts the search to the specified AWS API key ID.").and()
                 .withQueryParam()
                 .withName("startDate")
-                .withPattern(DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN)
+                .withPattern(DEFAULT_DATE_FORMAT_PATTERN)
                 .withDefaultValue("30 days prior to the current date")
                 .withDescription(String.format(
                     "If specified, the earliest date (format %s) for which usage logs are retrieved.",
-                    DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
+                    DEFAULT_DATE_FORMAT_PATTERN
                 )).and()
                 .withQueryParam()
                 .withName("endDate")
-                .withPattern(DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN)
+                .withPattern(DEFAULT_DATE_FORMAT_PATTERN)
                 .withDefaultValue("The current date")
                 .withDescription(String.format(
                     "If specified, the latest date (format %s) for which usage logs are retrieved.",
-                    DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
+                    DEFAULT_DATE_FORMAT_PATTERN
                 )).and()
                 .withProduces(HttpUtils.JSON_ONLY)
                 // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
@@ -95,7 +96,7 @@ public class LogController implements Endpoint {
         LocalDateTime now = DateTimeUtils.nowAsLocalDateTime();
         // TODO: Future work might modify this so that we accept multiple API key IDs for a single request (depends on
         //  how third party developer accounts are structured).
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN);
         String startDate = req.queryParamOrDefault("startDate", formatter.format(now.minusDays(30)));
         String endDate = req.queryParamOrDefault("endDate", formatter.format(now));
         try {

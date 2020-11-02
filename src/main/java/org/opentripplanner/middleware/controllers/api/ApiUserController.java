@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.json.auth.TokenHolder;
 import com.beerboy.ss.ApiEndpoint;
-import com.beerboy.ss.descriptor.MethodDescriptor;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0Users;
@@ -11,7 +10,6 @@ import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
-import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -23,6 +21,8 @@ import spark.Response;
 
 import java.net.http.HttpResponse;
 
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -31,7 +31,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public class ApiUserController extends AbstractUserController<ApiUser> {
     private static final Logger LOG = LoggerFactory.getLogger(ApiUserController.class);
-    public static final String DEFAULT_USAGE_PLAN_ID = ConfigUtils.getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
+    public static final String DEFAULT_USAGE_PLAN_ID = getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
     private static final String API_KEY_PATH = "/apikey";
     public static final String AUTHENTICATE_PATH = "/authenticate";
     private static final int API_KEY_LIMIT_PER_USER = 2;
@@ -51,7 +51,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         LOG.info("Registering path {}.", ROOT_ROUTE + ID_PATH + API_KEY_PATH);
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Create API key
-            .post(MethodDescriptor.path(ID_PATH + API_KEY_PATH)
+            .post(path(ID_PATH + API_KEY_PATH)
                     .withDescription("Creates API key for ApiUser (with optional AWS API Gateway usage plan ID).")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The user ID")
                     .and()
@@ -62,7 +62,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 this::createApiKeyForApiUser, JsonUtils::toJson
             )
             // Delete API key
-            .delete(MethodDescriptor.path(ID_PATH + API_KEY_PATH + API_KEY_ID_PARAM)
+            .delete(path(ID_PATH + API_KEY_PATH + API_KEY_ID_PARAM)
                     .withDescription("Deletes API key for ApiUser.")
                     .withPathParam().withName(ID_PARAM).withDescription("The user ID.")
                     .and()
@@ -72,7 +72,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                     .withResponseType(persistence.clazz),
                 this::deleteApiKeyForApiUser, JsonUtils::toJson)
             // Authenticate user with Auth0
-            .post(MethodDescriptor.path(AUTHENTICATE_PATH)
+            .post(path(AUTHENTICATE_PATH)
                     .withDescription("Authenticates ApiUser with Auth0.")
                     .withPathParam().withName(ID_PARAM).withDescription("The user ID.").and()
                     .withQueryParam().withName(USERNAME_PARAM).withRequired(true)
@@ -89,8 +89,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     }
 
     /**
-     * Authenticate user with Auth0 based on username (email) and password. If successful, confirm that the provided API
-     * key is return the complete Auth0
+     * Authenticate user with Auth0 based on username (email) and password. If successful, return the complete Auth0
      * token else log message and halt.
      */
     private TokenHolder authenticateAuth0User(Request req, Response res) {

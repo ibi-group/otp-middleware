@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.descriptor.EndpointDescriptor;
-import com.beerboy.ss.descriptor.MethodDescriptor;
 import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
@@ -17,7 +16,6 @@ import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
-import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -25,6 +23,7 @@ import spark.Request;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -66,8 +65,7 @@ public class OtpRequestProcessor implements Endpoint {
         restApi.endpoint(
             EndpointDescriptor.endpointPath(OTP_PROXY_ENDPOINT).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_LINK),
             HttpUtils.NO_FILTER
-        ).get(
-            MethodDescriptor.path("/*")
+        ).get(path("/*")
                 .withDescription("Forwards any GET request to OTP. " + OTP_DOC_LINK)
                 .withQueryParam(USER_ID)
                 .withProduces(List.of(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)),
@@ -130,7 +128,7 @@ public class OtpRequestProcessor implements Endpoint {
         Auth0Connection.checkUser(request);
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(request);
         // A requesting user (Otp or third party user) is required to proceed.
-        if (requestingUser == null) {
+        if (requestingUser.otpUser == null && requestingUser.apiUser == null) {
             return;
         }
 

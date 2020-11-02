@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.controllers.api;
 import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.descriptor.EndpointDescriptor;
-import com.beerboy.ss.descriptor.MethodDescriptor;
 import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,6 +24,8 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.utils.HttpUtils.getRequiredParamFromRequest;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -125,8 +126,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
 
         baseEndpoint
             // Get multiple entities.
-            .get(
-                MethodDescriptor.path(ROOT_ROUTE)
+            .get(path(ROOT_ROUTE)
                     .withDescription("Gets a paginated list of all '" + className + "' entities.")
                     .withQueryParam(LIMIT)
                     .withQueryParam(OFFSET)
@@ -137,8 +137,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             )
 
             // Get one entity.
-            .get(
-                MethodDescriptor.path(ROOT_ROUTE + ID_PATH)
+            .get(path(ROOT_ROUTE + ID_PATH)
                     .withDescription("Returns the '" + className + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to search.").and()
                     // .withResponses(...) // FIXME: not implemented (requires source change).
@@ -148,8 +147,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             )
 
             // Create entity request
-            .post(
-                MethodDescriptor.path("")
+            .post(path("")
                     .withDescription("Creates a '" + className + "' entity.")
                     .withConsumes(HttpUtils.JSON_ONLY)
                     .withRequestType(clazz)
@@ -159,8 +157,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             )
 
             // Update entity request
-            .put(
-                MethodDescriptor.path(ID_PATH)
+            .put(path(ID_PATH)
                     .withDescription("Updates and returns the '" + className + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to update.").and()
                     .withConsumes(HttpUtils.JSON_ONLY)
@@ -174,8 +171,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             )
 
             // Delete entity request
-            .delete(
-                MethodDescriptor.path(ID_PATH)
+            .delete(path(ID_PATH)
                     .withDescription("Deletes the '" + className + "' entity with the specified id if it exists.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to delete.").and()
                     .withProduces(HttpUtils.JSON_ONLY)
@@ -198,9 +194,12 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         if (userId != null) {
             OtpUser otpUser = Persistence.otpUsers.getById(userId);
-            return (otpUser != null && otpUser.canBeManagedBy(requestingUser)) ?
-                persistence.getResponseList(Filters.eq(USER_ID_PARAM, userId), offset, limit) :
-                null;
+            if(otpUser != null && otpUser.canBeManagedBy(requestingUser)) {
+                return persistence.getResponseList(Filters.eq(USER_ID_PARAM, userId), offset, limit);
+            } else {
+                res.status(HttpStatus.FORBIDDEN_403);
+                return null;
+            }
         }
         if (requestingUser.isAdmin()) {
             // If the user is admin, the context is presumed to be the admin dashboard, so we deliver all entities for
@@ -208,9 +207,12 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             return persistence.getResponseList(offset, limit);
         } else if (persistence.clazz == OtpUser.class) {
             // If the required entity is of type 'OtpUser' the assumption is that a call is being made via the
-            // OtpUserController. Therefore, the request should be limited to return just the entity matching the
-            // requesting user.
-            return persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), offset, limit);
+            // OtpUserController. If the request is being made by an Api user the response will be limited to the Otp users
+            // created by this Api user. If not, the assumption is that an Otp user is making the request and the response
+            // will be limited to just the entity matching this Otp user.
+            return (requestingUser.apiUser != null)
+                ? persistence.getResponseList(Filters.eq("applicationId", requestingUser.apiUser.id), offset, limit)
+                : persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), offset, limit);
         } else if (requestingUser.isThirdPartyUser()) {
             // A user id must be provided if the request is being made by a third party user.
             logMessageAndHalt(req,
@@ -392,6 +394,6 @@ public abstract class ApiController<T extends Model> implements Endpoint {
      * Get entity ID from request.
      */
     private String getIdFromRequest(Request req) {
-        return HttpUtils.getRequiredParamFromRequest(req, "id");
+        return getRequiredParamFromRequest(req, "id");
     }
 }

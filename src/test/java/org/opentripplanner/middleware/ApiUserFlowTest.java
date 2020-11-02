@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -156,6 +157,14 @@ public class ApiUserFlowTest {
 
         assertEquals(HttpStatus.OK_200, createUserResponse.statusCode());
 
+        // Request all Otp users created by an Api user. This will work and return all Otp users.
+        HttpResponse<String> getAllOtpUsersCreatedByApiUser = authenticatedGet("api/secure/user",
+            headers
+        );
+        assertEquals(HttpStatus.OK_200, getAllOtpUsersCreatedByApiUser.statusCode());
+        ResponseList otpUsers = JsonUtils.getPOJOFromJSON(getAllOtpUsersCreatedByApiUser.body(), ResponseList.class);
+        assertEquals(1, otpUsers.total);
+
         // Attempt to create a monitored trip for an Otp user using mock authentication. This will fail because the user
         // was created by an Api user and therefore does not have a Auth0 account.
         OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.body(), OtpUser.class);
@@ -189,7 +198,7 @@ public class ApiUserFlowTest {
         );
         assertEquals(HttpStatus.OK_200, getAllMonitoredTripsForOtpUser.statusCode());
 
-        // Request all monitored trips for an Otp user authenticating as an Api user. Without defining the user id. This
+        // Request all monitored trips for an Otp user authenticating as an Api user, without defining the user id. This
         // will fail because an Api user must provide a user id.
         getAllMonitoredTripsForOtpUser = authenticatedRequest("api/secure/monitoredtrip",
             "",
