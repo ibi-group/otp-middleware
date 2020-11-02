@@ -1,19 +1,23 @@
 package org.opentripplanner.middleware.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import com.mongodb.client.FindIterable;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -21,11 +25,15 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
@@ -114,9 +122,9 @@ public class MonitoredTrip extends Model {
     public String queryParams;
 
     /**
-     * The trips itinerary
+     * The trip's itinerary
      */
-    public Itinerary itinerary;
+    public org.opentripplanner.middleware.otp.response.Itinerary itinerary;
 
     /**
      * Whether to notify the user if an alert is present on monitored trip.
@@ -140,6 +148,8 @@ public class MonitoredTrip extends Model {
      */
     public boolean notifyOnItineraryChange = true;
 
+    public ItineraryExistence itineraryExistence;
+
     public MonitoredTrip() {
     }
 
@@ -150,6 +160,67 @@ public class MonitoredTrip extends Model {
 
         // extract trip time from parsed params and itinerary
         initializeFromItineraryAndQueryParams();
+    }
+
+    /**
+     * Checks that, for each query provided, an itinerary exists.
+     * @param checkAllDays Determines whether all days of the week are checked,
+     *                     or just the days the trip is set to be monitored.
+     * @return a summary of the itinerary existence results for each day of the week
+     */
+    public boolean checkItineraryExistence(boolean checkAllDays, boolean replaceItinerary) throws URISyntaxException {
+        // Get queries to execute by date.
+        List<OtpRequest> queriesByDate = getItineraryExistenceQueries(checkAllDays);
+        this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary);
+        this.itineraryExistence.checkExistence();
+        boolean itineraryExists = this.itineraryExistence.allCheckedDaysAreValid();
+        // If itinerary should be replaced, do so if all checked days are valid.
+        return replaceItinerary && itineraryExists
+            ? this.updateTripWithVerifiedItinerary()
+            : itineraryExists;
+    }
+
+    /**
+     * Replace the itinerary provided with the monitored trip
+     * with a non-real-time, verified itinerary from the responses provided.
+     */
+    private boolean updateTripWithVerifiedItinerary() throws URISyntaxException {
+        Map<String, String> params = parseQueryParams();
+        String queryDate = params.get(DATE_PARAM);
+
+        // TODO: Refactor. Originally found in ItineraryUtils#getDatesToCheckItineraryExistence.
+        DayOfWeek dayOfWeek = DateTimeUtils.getDateFromQueryDateString(queryDate).getDayOfWeek();
+
+        // Find the response corresponding to the day of the query.
+        // TODO/FIXME: There is a possibility that the user chooses to monitor the query/trip provided
+        //       on other days but not the day for which the plan request was originally made.
+        //       In such cases, the actual itinerary can be different from the one we are looking to save.
+        //       To address that, in the UI, we can, for instance, force the date for the plan request to be monitored.
+        Itinerary verifiedItinerary = this.itineraryExistence.getItineraryForDayOfWeek(dayOfWeek);
+        if (verifiedItinerary != null) {
+            // Set itinerary for monitored trip if verified itinerary is available.
+            this.itinerary = verifiedItinerary;
+            this.initializeFromItineraryAndQueryParams();
+            return true;
+        } else {
+            // Otherwise, set itinerary existence error/message.
+            this.itineraryExistence.error = true;
+            this.itineraryExistence.message = String.format("No verified itinerary found for date: %s.", queryDate);
+            return false;
+        }
+    }
+
+    /**
+     * Gets OTP queries to check non-realtime itinerary existence for the given trip.
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public List<OtpRequest> getItineraryExistenceQueries(boolean checkAllDays)
+        throws URISyntaxException {
+        return ItineraryUtils.getOtpRequestsForDates(
+            ItineraryUtils.excludeRealtime(parseQueryParams()),
+            ItineraryUtils.getDatesToCheckItineraryExistence(this, checkAllDays)
+        );
     }
 
     /**
@@ -165,8 +236,7 @@ public class MonitoredTrip extends Model {
         clearRealtimeInfo();
 
         // set the trip time by parsing the query params
-        Map<String, String> params = parseQueryParams();
-        tripTime = params.get("time");
+        tripTime = this.parseQueryParams().get(TIME_PARAM);
         if (tripTime == null) {
             throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
         }
@@ -278,7 +348,7 @@ public class MonitoredTrip extends Model {
      * Get the latest itinerary that was tracked in the journey state or null if the check has never been performed (or
      * a matching itinerary has never been found).
      */
-    public Itinerary latestItinerary() {
+    public org.opentripplanner.middleware.otp.response.Itinerary latestItinerary() {
         JourneyState journeyState = retrieveJourneyState();
         return journeyState.matchingItinerary;
     }
