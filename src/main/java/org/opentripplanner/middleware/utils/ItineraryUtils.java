@@ -3,6 +3,9 @@ package org.opentripplanner.middleware.utils;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 
+/**
+ * A utility class for dealing with OTP queries and itineraries.
+ */
 public class ItineraryUtils {
     /**
      * Determines whether the specified {@link Itinerary} can be monitored.
@@ -19,7 +22,9 @@ public class ItineraryUtils {
                 if (leg.transitLeg != null && leg.transitLeg) {
                     hasTransit = true;
                 }
-                if (leg.rentedVehicle != null && leg.rentedVehicle ||
+                if (leg.rentedBike != null && leg.rentedBike ||
+                    leg.rentedCar != null && leg.rentedCar ||
+                    leg.rentedVehicle != null && leg.rentedVehicle ||
                     leg.hailedCar != null && leg.hailedCar) {
                    hasRentalOrRideHail = true;
                 }

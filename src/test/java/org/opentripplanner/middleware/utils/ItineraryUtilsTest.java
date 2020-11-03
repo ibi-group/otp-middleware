@@ -22,9 +22,17 @@ public class ItineraryUtilsTest {
         transitLeg.mode = "BUS";
         transitLeg.transitLeg = true;
 
-        Leg rentalLeg = new Leg();
-        rentalLeg.mode = "BICYCLE_RENT";
-        rentalLeg.rentedVehicle = true;
+        Leg rentalBikeLeg = new Leg();
+        rentalBikeLeg.mode = "BICYCLE_RENT";
+        rentalBikeLeg.rentedBike = true;
+
+        Leg rentalCarLeg = new Leg();
+        rentalCarLeg.mode = "CAR_RENT";
+        rentalCarLeg.rentedCar = true;
+
+        Leg rentalMicromobilityLeg = new Leg();
+        rentalMicromobilityLeg.mode = "MICROMOBILITY_RENT";
+        rentalMicromobilityLeg.rentedVehicle = true;
 
         Leg walkLeg = new Leg();
         walkLeg.mode = "WALK";
@@ -38,19 +46,26 @@ public class ItineraryUtilsTest {
         Itinerary itineraryWithTransitNoRentals = new Itinerary();
         itineraryWithTransitNoRentals.legs = List.of(transitLeg, walkLeg);
 
-        Itinerary itineraryWithoutTransit = new Itinerary();
-        itineraryWithoutTransit.legs = List.of(walkLeg, rentalLeg);
+        Itinerary itineraryWithRentalBikeWithoutTransit = new Itinerary();
+        itineraryWithRentalBikeWithoutTransit.legs = List.of(walkLeg, rentalBikeLeg);
 
-        Itinerary itineraryWithTransitAndRental = new Itinerary();
-        itineraryWithTransitAndRental.legs = List.of(walkLeg, transitLeg, rentalLeg);
+        Itinerary itineraryWithTransitAndRentalBike = new Itinerary();
+        itineraryWithTransitAndRentalBike.legs = List.of(walkLeg, transitLeg, rentalBikeLeg);
+
+        Itinerary itineraryWithTransitAndRentalCar = new Itinerary();
+        itineraryWithTransitAndRentalCar.legs = List.of(walkLeg, transitLeg, rentalCarLeg);
+
+        Itinerary itineraryWithTransitAndRentalMicromobility = new Itinerary();
+        itineraryWithTransitAndRentalMicromobility.legs = List.of(walkLeg, transitLeg, rentalMicromobilityLeg);
 
         Itinerary itineraryWithTransitAndRideHail = new Itinerary();
         itineraryWithTransitAndRideHail.legs = List.of(walkLeg, transitLeg, rideHailLeg);
 
         return Stream.of(
             Arguments.of(itineraryWithTransitNoRentals, true, "Itinerary with transit, no rentals/ride hail."),
-            Arguments.of(itineraryWithoutTransit, false, "Itinerary without transit."),
-            Arguments.of(itineraryWithTransitAndRental, false, "Itinerary with transit and rental."),
+            Arguments.of(itineraryWithRentalBikeWithoutTransit, false, "Itinerary without transit."),
+            Arguments.of(itineraryWithTransitAndRentalBike, false, "Itinerary with transit and rental bike."),
+            Arguments.of(itineraryWithTransitAndRentalCar, false, "Itinerary with transit and rental car."),
             Arguments.of(itineraryWithTransitAndRideHail, false, "Itinerary with transit and ride hail."),
             Arguments.of(blankItinerary, false, "Blank itinerary."),
             Arguments.of(null, false, "Null itinerary.")
