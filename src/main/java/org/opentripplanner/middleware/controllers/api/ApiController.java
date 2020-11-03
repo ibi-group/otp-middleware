@@ -194,7 +194,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         if (userId != null) {
             OtpUser otpUser = Persistence.otpUsers.getById(userId);
-            if(otpUser != null && otpUser.canBeManagedBy(requestingUser)) {
+            if (otpUser != null && otpUser.canBeManagedBy(requestingUser)) {
                 return persistence.getResponseList(Filters.eq(USER_ID_PARAM, userId), offset, limit);
             } else {
                 res.status(HttpStatus.FORBIDDEN_403);
