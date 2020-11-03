@@ -27,14 +27,14 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
-        checkItineraryCanBeMonitored(monitoredTrip, req);
+        checkTripCanBeMonitored(monitoredTrip, req);
         processTripQueryParams(monitoredTrip, req);
         return monitoredTrip;
     }
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        checkItineraryCanBeMonitored(monitoredTrip, req);
+        checkTripCanBeMonitored(monitoredTrip, req);
         processTripQueryParams(monitoredTrip, req);
         return monitoredTrip;
     }
@@ -79,10 +79,10 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     }
 
     /**
-     * Checks that the given {@link MonitoredTrip} can be monitored
-     * (the underlying {@link org.opentripplanner.middleware.otp.response.Itinerary} has transit and no rentals).
+     * Checks that the given {@link MonitoredTrip} can be monitored (i.e., that the underlying
+     * {@link org.opentripplanner.middleware.otp.response.Itinerary} has transit and no rentals/ride hailing).
      */
-    private void checkItineraryCanBeMonitored(MonitoredTrip trip, Request request) {
+    private void checkTripCanBeMonitored(MonitoredTrip trip, Request request) {
         if (!ItineraryUtils.itineraryCanBeMonitored(trip.itinerary)) {
             logMessageAndHalt(
                 request,
