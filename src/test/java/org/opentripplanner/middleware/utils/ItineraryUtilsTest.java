@@ -66,6 +66,7 @@ public class ItineraryUtilsTest {
             Arguments.of(itineraryWithRentalBikeWithoutTransit, false, "Itinerary without transit."),
             Arguments.of(itineraryWithTransitAndRentalBike, false, "Itinerary with transit and rental bike."),
             Arguments.of(itineraryWithTransitAndRentalCar, false, "Itinerary with transit and rental car."),
+            Arguments.of(itineraryWithTransitAndRentalMicromobility, false, "Itinerary with transit and rental micromobility."),
             Arguments.of(itineraryWithTransitAndRideHail, false, "Itinerary with transit and ride hail."),
             Arguments.of(blankItinerary, false, "Blank itinerary."),
             Arguments.of(null, false, "Null itinerary.")
