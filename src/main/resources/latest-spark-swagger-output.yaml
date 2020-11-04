@@ -346,7 +346,8 @@ paths:
     post:
       tags:
       - "api/secure/monitoredtrip"
-      description: "Returns a monitored trip with the itinerary existence check results."
+      description: "Returns the itinerary existence check results for a monitored\
+        \ trip."
       produces:
       - "application/json"
       parameters:

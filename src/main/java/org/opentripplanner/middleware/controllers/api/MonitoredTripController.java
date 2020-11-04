@@ -38,7 +38,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         // Add the api key route BEFORE the regular CRUD methods
         ApiEndpoint modifiedEndpoint = baseEndpoint
             .post(path("/checkitinerary")
-                    .withDescription("Returns a monitored trip with the itinerary existence check results.")
+                    .withDescription("Returns the itinerary existence check results for a monitored trip.")
                     .withRequestType(MonitoredTrip.class)
                     .withProduces(JSON_ONLY)
                     .withResponseType(ItineraryExistence.class),
