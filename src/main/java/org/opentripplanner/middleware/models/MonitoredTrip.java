@@ -147,6 +147,9 @@ public class MonitoredTrip extends Model {
      */
     public boolean notifyOnItineraryChange = true;
 
+    /**
+     * Records the last itinerary existence check results for this trip.
+     */
     public ItineraryExistence itineraryExistence;
 
     public MonitoredTrip() {

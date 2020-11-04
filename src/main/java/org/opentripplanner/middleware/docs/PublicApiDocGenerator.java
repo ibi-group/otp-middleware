@@ -48,7 +48,6 @@ public class PublicApiDocGenerator {
      * TODO: List any new public endpoints here in order for them to be published.
      */
     private static final String[] PUBLIC_PATHS = new String[] {
-        "api/secure/itinerarycheck",
         "api/secure/monitoredtrip",
         "api/secure/triprequests",
         "api/secure/user",

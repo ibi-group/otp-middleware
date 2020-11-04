@@ -127,6 +127,9 @@ public class ItineraryExistence extends Model {
             (sunday == null || sunday.isValid());
     }
 
+    /**
+     * @return The first {@link Itinerary} found for the given {@link DayOfWeek}.
+     */
     public Itinerary getItineraryForDayOfWeek(DayOfWeek dow) {
         ItineraryExistenceResult resultForDay = getResultForDayOfWeek(dow);
         return resultForDay != null && resultForDay.isValid() && resultForDay.itineraries.size() > 0
@@ -134,6 +137,9 @@ public class ItineraryExistence extends Model {
             : null;
     }
 
+    /**
+     * @return A collection of days of week (and first date found) for which the trip is not possible.
+     */
     @JsonIgnore
     @BsonIgnore
     public Collection<String> getInvalidDaysOfWeek() {
@@ -150,6 +156,9 @@ public class ItineraryExistence extends Model {
         return invalidDaysOfWeek;
     }
 
+    /**
+     * Checks whether the itinerary of a trip matches any of the OTP itineraries from the trip query params.
+     */
     public void checkExistence() {
         // TODO: Consider multi-threading?
         // Check existence of itinerary in the response for each OTP request.
