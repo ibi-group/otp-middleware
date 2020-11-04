@@ -72,7 +72,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             if (!success) {
                 logMessageAndHalt(
                     req,
-                    HttpStatus.INTERNAL_SERVER_ERROR_500,
+                    HttpStatus.BAD_REQUEST_400,
                     monitoredTrip.itineraryExistence.message
                 );
             }

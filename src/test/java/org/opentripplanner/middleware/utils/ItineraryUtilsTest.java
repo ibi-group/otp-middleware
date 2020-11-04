@@ -12,6 +12,7 @@ import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.slf4j.Logger;
@@ -80,7 +81,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         TestUtils.setupOtpMocks(List.of(resp, resp, resp, resp, resp));
 
         // Also set trip itinerary to the same for easy/lazy match.
-        org.opentripplanner.middleware.otp.response.Itinerary expectedItinerary = resp.plan.itineraries.get(0);
+        Itinerary expectedItinerary = resp.plan.itineraries.get(0);
         trip.itinerary = expectedItinerary;
 
         trip.checkItineraryExistence(false, false);

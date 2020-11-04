@@ -123,7 +123,7 @@ public class MonitoredTrip extends Model {
     /**
      * The trip's itinerary
      */
-    public org.opentripplanner.middleware.otp.response.Itinerary itinerary;
+    public Itinerary itinerary;
 
     /**
      * Whether to notify the user if an alert is present on monitored trip.
@@ -347,7 +347,7 @@ public class MonitoredTrip extends Model {
      * Get the latest itinerary that was tracked in the journey state or null if the check has never been performed (or
      * a matching itinerary has never been found).
      */
-    public org.opentripplanner.middleware.otp.response.Itinerary latestItinerary() {
+    public Itinerary latestItinerary() {
         JourneyState journeyState = retrieveJourneyState();
         return journeyState.matchingItinerary;
     }

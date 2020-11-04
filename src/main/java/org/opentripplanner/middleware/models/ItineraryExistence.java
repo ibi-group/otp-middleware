@@ -62,7 +62,7 @@ public class ItineraryExistence extends Model {
     // Required for persistence.
     public ItineraryExistence() {}
 
-    public ItineraryExistence(List<OtpRequest> otpRequests, org.opentripplanner.middleware.otp.response.Itinerary referenceItinerary) {
+    public ItineraryExistence(List<OtpRequest> otpRequests, Itinerary referenceItinerary) {
         this.otpRequests = otpRequests;
         this.referenceItinerary = referenceItinerary;
     }
@@ -182,7 +182,7 @@ public class ItineraryExistence extends Model {
             TripPlan plan = response.getResponse().plan;
             // Handle response if valid itineraries exist.
             if (plan != null && plan.itineraries != null) {
-                for (org.opentripplanner.middleware.otp.response.Itinerary itineraryCandidate : plan.itineraries) {
+                for (Itinerary itineraryCandidate : plan.itineraries) {
                     // If a matching itinerary is found, save the date with the matching itinerary.
                     // The matching itinerary will replace the original trip.itinerary.
                     // FIXME Replace 'equals' with matching itinerary
