@@ -12,10 +12,12 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
@@ -56,6 +58,9 @@ public class ItineraryExistence extends Model {
      *  verify that the existence check has not gone stale.
      */
     public Date timestamp = new Date();
+
+    // Required for persistence.
+    public ItineraryExistence() {}
 
     public ItineraryExistence(List<OtpRequest> otpRequests, org.opentripplanner.middleware.otp.response.Itinerary referenceItinerary) {
         this.otpRequests = otpRequests;
@@ -143,6 +148,22 @@ public class ItineraryExistence extends Model {
         return invalidDates;
     }
 
+    @JsonIgnore
+    @BsonIgnore
+    public Set<String> getInvalidDaysOfWeek() {
+        Set<String> invalidDaysOfWeek = new HashSet<>();
+        for (DayOfWeek dow : DayOfWeek.values()) {
+            ItineraryExistenceResult resultForDayOfWeek = getResultForDayOfWeek(dow);
+            if (resultForDayOfWeek != null && !resultForDayOfWeek.isValid()) {
+                invalidDaysOfWeek.add(String.format("%s (Invalid dates: %s)",
+                    dow.getDisplayName(TextStyle.FULL, Locale.ENGLISH), // TODO: i18n
+                    String.join(", ", resultForDayOfWeek.invalidDates)
+                ));
+            }
+        }
+        return invalidDaysOfWeek;
+    }
+
     public void checkExistence() {
         // TODO: Consider multi-threading?
         // Check existence of itinerary in the response for each OTP request.
@@ -178,8 +199,8 @@ public class ItineraryExistence extends Model {
         }
         if (!this.allCheckedDaysAreValid()) {
             this.message = String.format(
-                "The following dates are invalid for the selected days of the week: %s",
-                String.join(", ", getInvalidDates())
+                "The trip is not valid for the following days of the week you have selected: %s",
+                String.join(", ", getInvalidDaysOfWeek())
             );
             this.error = true;
         }
@@ -196,6 +217,14 @@ public class ItineraryExistence extends Model {
         public boolean isValid() {
             return invalidDates.size() == 0;
         }
+
+        /**
+         * Method and argument solely needed for accepting request contents that include a `valid` field
+         * (e.g. for checking a monitored trip with previous existence check record).
+         */
+        @JsonIgnore
+        public void setValid (boolean value) {}
+
         /**
          * Holds a list of invalid dates an itinerary is not available for the associated day of the week.
          */

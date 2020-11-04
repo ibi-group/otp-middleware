@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -36,11 +37,11 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     protected void buildEndpoint(ApiEndpoint baseEndpoint) {
         // Add the api key route BEFORE the regular CRUD methods
         ApiEndpoint modifiedEndpoint = baseEndpoint
-            .post(path("checkitinerary")
+            .post(path("/checkitinerary")
                     .withDescription("Returns a monitored trip with the itinerary existence check results.")
                     .withRequestType(MonitoredTrip.class)
                     .withProduces(JSON_ONLY)
-                    .withResponseType(MonitoredTrip.class),
+                    .withResponseType(ItineraryExistence.class),
                 MonitoredTripController::checkItinerary, JsonUtils::toJson);
         // Add the regular CRUD methods after defining the controller-specific routes.
         super.buildEndpoint(modifiedEndpoint);
@@ -88,6 +89,8 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
+        // TODO: Update itinerary existence record when updating a trip.
+
         return monitoredTrip;
     }
 
@@ -99,8 +102,9 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     /**
      * Check itinerary existence by making OTP requests on all days of the week.
+     * @return The results of the itinerary existence check.
      */
-    private static MonitoredTrip checkItinerary(Request request, Response response) {
+    private static ItineraryExistence checkItinerary(Request request, Response response) {
         MonitoredTrip trip;
         try {
             trip = getPOJOFromRequestBody(request, MonitoredTrip.class);
@@ -119,7 +123,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 e
             );
         }
-        return trip;
+        return trip.itineraryExistence;
     }
 
     /**
