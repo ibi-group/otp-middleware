@@ -29,8 +29,6 @@ tags:
   description: "Interface for retrieving API logs from AWS."
 - name: "api/admin/bugsnag/eventsummary"
   description: "Interface for reporting and retrieving application errors using Bugsnag."
-- name: "api/secure/itinerarycheck"
-  description: "Interface for checking itinerary existence."
 - name: "otp"
   description: "Proxy interface for OTP endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
@@ -344,6 +342,24 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ApiUser"
+  /api/secure/monitoredtripcheckitinerary:
+    post:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Returns a monitored trip with the itinerary existence check results."
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredTrip"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/MonitoredTrip"
   /api/secure/monitoredtrip:
     get:
       tags:
@@ -723,24 +739,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/BugsnagEvent"
-  /api/secure/itinerarycheck:
-    post:
-      tags:
-      - "api/secure/itinerarycheck"
-      description: "Returns a map of day and OTP responses for the itinerary to check."
-      produces:
-      - "application/json"
-      parameters:
-      - in: "body"
-        description: "Body object description"
-        required: true
-        schema:
-          $ref: "#/definitions/MonitoredTrip"
-      responses:
-        "200":
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ItineraryExistence"
   /otp/*:
     get:
       tags:
@@ -879,6 +877,21 @@ definitions:
       lat:
         type: "number"
         format: "double"
+  ItineraryExistenceResult:
+    type: "object"
+    properties:
+      invalidDates:
+        type: "array"
+        items:
+          type: "string"
+      validDates:
+        type: "array"
+        items:
+          type: "string"
+      itineraries:
+        type: "array"
+        items:
+          $ref: "#/definitions/Itinerary"
   Fare:
     type: "object"
     properties:
@@ -976,6 +989,13 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/LocalizedAlert"
+  OtpRequest:
+    type: "object"
+    properties:
+      date:
+        $ref: "#/definitions/ZonedDateTime"
+      requestParameters:
+        $ref: "#/definitions/Map"
   Price:
     type: "object"
     properties:
@@ -984,6 +1004,36 @@ definitions:
       cents:
         type: "integer"
         format: "int32"
+  ItineraryExistence:
+    type: "object"
+    properties:
+      otpRequests:
+        type: "array"
+        items:
+          $ref: "#/definitions/OtpRequest"
+      referenceItinerary:
+        $ref: "#/definitions/Itinerary"
+      monday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      tuesday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      wednesday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      thursday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      friday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      saturday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      sunday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      message:
+        type: "string"
+      error:
+        type: "boolean"
+      timestamp:
+        type: "string"
+        format: "date"
   Currency:
     type: "object"
     properties:
@@ -1158,6 +1208,8 @@ definitions:
         format: "int32"
       notifyOnItineraryChange:
         type: "boolean"
+      itineraryExistence:
+        $ref: "#/definitions/ItineraryExistence"
   TripRequest:
     type: "object"
     properties:
@@ -1272,37 +1324,6 @@ definitions:
         type: "string"
       message:
         type: "string"
-  ItineraryExistenceResult:
-    type: "object"
-    properties:
-      isValid:
-        type: "boolean"
-      invalidDates:
-        type: "array"
-        items:
-          type: "string"
-      itinerary:
-        $ref: "#/definitions/Itinerary"
-  ItineraryExistence:
-    type: "object"
-    properties:
-      monday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      tuesday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      wednesday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      thursday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      friday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      saturday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      sunday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      timestamp:
-        type: "string"
-        format: "date"
 externalDocs:
   description: ""
   url: ""

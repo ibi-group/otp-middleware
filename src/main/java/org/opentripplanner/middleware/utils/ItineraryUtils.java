@@ -24,6 +24,7 @@ public class ItineraryUtils {
 
     public static final String IGNORE_REALTIME_UPDATES_PARAM = "ignoreRealtimeUpdates";
     public static final String DATE_PARAM = "date";
+    public static final String TIME_PARAM = "time";
     public static final int ITINERARY_CHECK_WINDOW = 7;
 
     /**
