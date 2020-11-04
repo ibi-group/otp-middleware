@@ -14,11 +14,10 @@ import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
@@ -137,25 +136,12 @@ public class ItineraryExistence extends Model {
 
     @JsonIgnore
     @BsonIgnore
-    public Set<String> getInvalidDates() {
-        Set<String> invalidDates = new HashSet<>();
+    public Collection<String> getInvalidDaysOfWeek() {
+        List<String> invalidDaysOfWeek = new ArrayList<>();
         for (DayOfWeek dow : DayOfWeek.values()) {
             ItineraryExistenceResult resultForDayOfWeek = getResultForDayOfWeek(dow);
             if (resultForDayOfWeek != null && !resultForDayOfWeek.isValid()) {
-                invalidDates.addAll(resultForDayOfWeek.invalidDates);
-            }
-        }
-        return invalidDates;
-    }
-
-    @JsonIgnore
-    @BsonIgnore
-    public Set<String> getInvalidDaysOfWeek() {
-        Set<String> invalidDaysOfWeek = new HashSet<>();
-        for (DayOfWeek dow : DayOfWeek.values()) {
-            ItineraryExistenceResult resultForDayOfWeek = getResultForDayOfWeek(dow);
-            if (resultForDayOfWeek != null && !resultForDayOfWeek.isValid()) {
-                invalidDaysOfWeek.add(String.format("%s (Invalid dates: %s)",
+                invalidDaysOfWeek.add(String.format("%s (no trip %s)",
                     dow.getDisplayName(TextStyle.FULL, Locale.ENGLISH), // TODO: i18n
                     String.join(", ", resultForDayOfWeek.invalidDates)
                 ));
@@ -199,7 +185,7 @@ public class ItineraryExistence extends Model {
         }
         if (!this.allCheckedDaysAreValid()) {
             this.message = String.format(
-                "The trip is not valid for the following days of the week you have selected: %s",
+                "The trip is not possible on the following days of the week you have selected: %s",
                 String.join(", ", getInvalidDaysOfWeek())
             );
             this.error = true;
@@ -236,9 +222,8 @@ public class ItineraryExistence extends Model {
 
         /**
          * Holds any matching itineraries (sorted by date) for the applicable day of the week.
+         * TODO: remove itineraries from list of returned fields in swagger.
          */
-        @JsonIgnore
-        @BsonIgnore
         public transient List<Itinerary> itineraries = new ArrayList<>();
 
         /**
