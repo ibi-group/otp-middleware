@@ -131,6 +131,7 @@ public class OtpRequestProcessor implements Endpoint {
         if (requestingUser.otpUser == null && requestingUser.apiUser == null) {
             return;
         }
+        // TODO: Consider moving/replicating these checks (or a subset of) to before sending the request to OTP.
         // If a user id is provided, the assumption is that an Api user is making a plan request on behalf of an Otp user.
         String userId = request.queryParams(USER_ID_PARAM);
         OtpUser otpUser = null;
@@ -141,7 +142,9 @@ public class OtpRequestProcessor implements Endpoint {
             // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
             // as a query parameter.
             otpUser = Persistence.otpUsers.getById(userId);
-            if (otpUser != null && !otpUser.canBeManagedBy(requestingUser)) {
+            if (otpUser == null) {
+                logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "The specified user id was not found.");
+            } else if (!otpUser.canBeManagedBy(requestingUser)) {
                 logMessageAndHalt(request,
                     HttpStatus.FORBIDDEN_403,
                     String.format("User: %s not authorized to make trip requests for user: %s",
