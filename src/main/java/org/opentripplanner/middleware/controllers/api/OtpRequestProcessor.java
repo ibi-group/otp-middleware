@@ -131,16 +131,16 @@ public class OtpRequestProcessor implements Endpoint {
         if (requestingUser.otpUser == null && requestingUser.apiUser == null) {
             return;
         }
-
-        // Determine if the Otp request is being made by an actual Otp user or by a third party on behalf of an Otp user.
+        // If a user id is provided, the assumption is that an Api user is making a plan request on behalf of an Otp user.
+        String userId = request.queryParams(USER_ID_PARAM);
         OtpUser otpUser = null;
-        if (requestingUser.otpUser != null) {
+        if (requestingUser.otpUser != null && userId == null) {
             // Otp user making a trip request for self.
             otpUser = requestingUser.otpUser;
-        } else if (requestingUser.isThirdPartyUser()) {
+        } else if (requestingUser.apiUser != null) {
             // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
             // as a query parameter.
-            otpUser = Persistence.otpUsers.getById(request.queryParams(USER_ID_PARAM));
+            otpUser = Persistence.otpUsers.getById(userId);
             if (otpUser != null && !otpUser.canBeManagedBy(requestingUser)) {
                 logMessageAndHalt(request,
                     HttpStatus.FORBIDDEN_403,

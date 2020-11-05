@@ -25,7 +25,6 @@ import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,6 +69,7 @@ public class ApiUserFlowTest {
     private static final Logger LOG = LoggerFactory.getLogger(ApiUserFlowTest.class);
     private static ApiUser apiUser;
     private static OtpUser otpUser;
+    private static OtpUser otpUserMatchingApiUser;
 
     /**
      * Whether tests for this class should run. End to End must be enabled and Auth must NOT be disabled. This should be
@@ -104,6 +104,11 @@ public class ApiUserFlowTest {
             // update api user with valid auth0 user ID (so the Auth0 delete works)
             apiUser.auth0UserId = auth0User.getId();
             Persistence.apiUsers.replace(apiUser.id, apiUser);
+            // create Otp user matching Api user to aid with testing edge cases.
+            otpUserMatchingApiUser = new OtpUser();
+            otpUserMatchingApiUser.email = apiUser.email;
+            otpUserMatchingApiUser.auth0UserId = apiUser.auth0UserId;
+            Persistence.otpUsers.create(otpUserMatchingApiUser);
         } catch (Auth0Exception e) {
             throw new RuntimeException(e);
         }
@@ -119,6 +124,8 @@ public class ApiUserFlowTest {
         if (apiUser != null) apiUser.delete();
         otpUser = Persistence.otpUsers.getById(otpUser.id);
         if (otpUser != null) otpUser.delete(false);
+        otpUserMatchingApiUser = Persistence.otpUsers.getById(otpUserMatchingApiUser.id);
+        if (otpUserMatchingApiUser != null) otpUserMatchingApiUser.delete(false);
     }
 
     /**
@@ -209,19 +216,27 @@ public class ApiUserFlowTest {
 
 
         // Plan trip with OTP proxy authenticating as an OTP user. Mock plan response will be returned. This will work
-        // as an Otp user (created by MOD UI or an Api user) because the end point has no auth.
-        String otpQuery = OTP_PROXY_ENDPOINT + OTP_PLAN_ENDPOINT + "?fromPlace=28.45119,-81.36818&toPlace=28.54834,-81.37745&userId=" + otpUserResponse.id;
-        HttpResponse<String> planTripResponseAsOtpUser = mockAuthenticatedGet(otpQuery,
+        // as an Otp user (created by MOD UI or an Api user) because the end point has no auth. A lack of auth also means
+        // the plan is not saved.
+        String otpQueryForOtpUserRequest = OTP_PROXY_ENDPOINT +
+            OTP_PLAN_ENDPOINT +
+            "?fromPlace=28.45119,-81.36818&toPlace=28.54834,-81.37745";
+        HttpResponse<String> planTripResponseAsOtpUser = mockAuthenticatedGet(otpQueryForOtpUserRequest,
             otpUserResponse,
             true
         );
-        LOG.info("Plan trip response: {}\n....", planTripResponseAsOtpUser.body().substring(0, 300));
+        LOG.info("OTP user: Plan trip response: {}\n....", planTripResponseAsOtpUser.body().substring(0, 300));
         assertEquals(HttpStatus.OK_200, planTripResponseAsOtpUser.statusCode());
+
+
 
         // Plan trip with OTP proxy authenticating as an Api user. Mock plan response will be returned. This will work
         // as an Api user because the end point has no auth.
-        HttpResponse<String> planTripResponseAsApiUser = authenticatedGet(otpQuery,headers);
-        LOG.info("Plan trip response: {}\n....", planTripResponseAsApiUser.body().substring(0, 300));
+        String otpQueryForApiUserRequest = OTP_PROXY_ENDPOINT +
+            OTP_PLAN_ENDPOINT +
+            String.format("?fromPlace=28.45119,-81.36818&toPlace=28.54834,-81.37745&userId=%s",otpUserResponse.id);
+        HttpResponse<String> planTripResponseAsApiUser = authenticatedGet(otpQueryForApiUserRequest, headers);
+        LOG.info("API user (on behalf of an Otp user): Plan trip response: {}\n....", planTripResponseAsApiUser.body().substring(0, 300));
         assertEquals(HttpStatus.OK_200, planTripResponseAsApiUser.statusCode());
 
         // Get trip request history for user authenticating as an Otp user. This will fail because the user was created
