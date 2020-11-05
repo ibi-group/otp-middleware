@@ -30,7 +30,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     private static final Logger LOG = LoggerFactory.getLogger(AbstractUserController.class);
     static final String NO_USER_WITH_AUTH0_ID_MESSAGE = "No user with auth0UserID=%s found.";
     private static final String TOKEN_PATH = "/fromtoken";
-    private static final String VERIFICATION_EMAIL_PATH = "/verification-email";
+    public static final String VERIFICATION_EMAIL_PATH = "/verification-email";
 
     /**
      * Constructor that child classes can access to setup persistence and API route.

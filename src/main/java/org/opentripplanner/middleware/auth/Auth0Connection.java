@@ -22,6 +22,7 @@ import spark.Response;
 
 import java.security.interfaces.RSAPublicKey;
 
+import static org.opentripplanner.middleware.controllers.api.AbstractUserController.VERIFICATION_EMAIL_PATH;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.OtpUserController.OTP_USER_PATH;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
@@ -67,7 +68,7 @@ public class Auth0Connection {
             DecodedJWT jwt = verifier.verify(token);
             Auth0UserProfile profile = new Auth0UserProfile(jwt);
             if (!isValidUser(profile)) {
-                if (isCreatingSelf(req, profile)) {
+                if (isCreatingOrEmailingSelf(req, profile)) {
                     // If creating self, no user account is required (it does not exist yet!). Note: creating an
                     // admin user requires that the requester is an admin (checkUserIsAdmin must be passed), so this
                     // is not a concern for that method/controller.
@@ -92,13 +93,14 @@ public class Auth0Connection {
     }
 
     /**
-     * Check for POST requests that are creating an {@link AbstractUser} (a proxy for OTP/API users).
+     * Check for POST requests that are creating an {@link AbstractUser} (a proxy for OTP/API users),
+     * or GET requests for resending the verification email.
      */
-    private static boolean isCreatingSelf(Request req, Auth0UserProfile profile) {
+    private static boolean isCreatingOrEmailingSelf(Request req, Auth0UserProfile profile) {
         String uri = req.uri();
         String method = req.requestMethod();
-        // Check that this is a POST request.
         if (method.equalsIgnoreCase("POST")) {
+            // If this a POST request, it should be against the secure/user or secure/application route.
             // Next, check that an OtpUser or ApiUser is being created (an admin must rely on another admin to create
             // them).
             boolean creatingOtpUser = uri.endsWith(OTP_USER_PATH);
@@ -115,6 +117,11 @@ public class Auth0Connection {
                     LOG.warn("Could not parse user object from request.", e);
                 }
             }
+        } else if (method.equalsIgnoreCase("GET")) {
+            // If this a GET request, it should be against the verification-email route for /user or /application.
+            // (Email verification does not apply to admins.)
+            return uri.endsWith(API_USER_PATH + VERIFICATION_EMAIL_PATH) ||
+                uri.endsWith(OTP_USER_PATH + VERIFICATION_EMAIL_PATH);
         }
         return false;
     }
