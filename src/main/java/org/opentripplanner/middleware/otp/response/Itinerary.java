@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -79,6 +78,39 @@ public class Itinerary {
      * Leg information for this itinerary.
      */
     public List<Leg> legs = null;
+
+    /**
+     * Determines whether the itinerary includes transit.
+     * @return true if at least one {@link Leg} of the itinerary is a transit leg per OTP.
+     */
+    public boolean hasTransit() {
+        if (legs != null) {
+            for (Leg leg : legs) {
+                if (leg.transitLeg != null && leg.transitLeg) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Determines whether the itinerary includes transit.
+     * @return true if at least one {@link Leg} of the itinerary is a rental or ride hail leg per OTP.
+     */
+    public boolean hasRentalOrRideHail() {
+        if (legs != null) {
+            for (Leg leg : legs) {
+                if (leg.rentedBike != null && leg.rentedBike ||
+                    leg.rentedCar != null && leg.rentedCar ||
+                    leg.rentedVehicle != null && leg.rentedVehicle ||
+                    leg.hailedCar != null && leg.hailedCar) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     /**
      * OTP-middleware specific function to aid in collecting alerts from legs.

@@ -5,7 +5,6 @@ import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.ItineraryUtils;
 import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -83,11 +82,19 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      * {@link org.opentripplanner.middleware.otp.response.Itinerary} has transit and no rentals/ride hailing).
      */
     private void checkTripCanBeMonitored(MonitoredTrip trip, Request request) {
-        if (!ItineraryUtils.itineraryCanBeMonitored(trip.itinerary)) {
+        boolean hasTransit = trip.itinerary.hasTransit();
+        boolean hasRentalOrRideHail = trip.itinerary.hasRentalOrRideHail();
+
+        if (!hasTransit || hasRentalOrRideHail) {
+            String rejectReason = "";
+            if (!hasTransit) rejectReason += "it does not include a transit leg";
+            if (!hasTransit && hasRentalOrRideHail) rejectReason += ", and ";
+            if (hasRentalOrRideHail) rejectReason += "it includes a rental or ride hail";
+
             logMessageAndHalt(
                 request,
                 HttpStatus.BAD_REQUEST_400,
-                "Only trips with an itinerary that includes transit and no rentals or ride hailing can be monitored."
+                String.format("This trip cannot be monitored because %s.", rejectReason)
             );
         }
     }
