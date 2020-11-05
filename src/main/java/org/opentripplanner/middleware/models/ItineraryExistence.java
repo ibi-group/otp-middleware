@@ -137,7 +137,7 @@ public class ItineraryExistence extends Model {
     }
 
     /**
-     * @return A collection of days of week (and first date found) for which the trip is not possible.
+     * @return A string containing the days of week (and first date found) for which the trip is not possible.
      */
     @JsonIgnore
     @BsonIgnore
