@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -29,15 +28,21 @@ public class JourneyState extends Model {
     }
 
     /**
-     * The arrival/departure delay seen in the latest monitored trip check.
+     * The current arrival/departure baseline to use when checking if a new threshold has been met
      */
-    public int lastArrivalDelay;
-    public int lastDepartureDelay;
+    public long baselineArrivalTimeEpochMillis;
+    public long baselineDepartureTimeEpochMillis;
+
+    /**
+     * The original arrival/departure time of the trip in a scheduled state.
+     */
+    public long originalArrivalTimeEpochMillis;
+    public long originalDepartureTimeEpochMillis;
 
     /**
      * Timestamp checking the last time a journey was checked.
      */
-    public long lastCheckedMillis;
+    public long lastCheckedEpochMillis;
 
     /**
      * The notifications already sent.
@@ -79,10 +84,8 @@ public class JourneyState extends Model {
      */
     public void update(CheckMonitoredTrip checkMonitoredTripJob) {
         targetDate = checkMonitoredTripJob.targetDate;
-        lastCheckedMillis = DateTimeUtils.currentTimeMillis();
+        lastCheckedEpochMillis = DateTimeUtils.currentTimeMillis();
         matchingItinerary = checkMonitoredTripJob.matchingItinerary;
-        lastDepartureDelay = checkMonitoredTripJob.departureDelay;
-        lastArrivalDelay = checkMonitoredTripJob.arrivalDelay;
         // Update notification time if notification successfully sent.
         if (checkMonitoredTripJob.notificationTimestampMillis != -1) {
             lastNotificationTimeMillis = checkMonitoredTripJob.notificationTimestampMillis;

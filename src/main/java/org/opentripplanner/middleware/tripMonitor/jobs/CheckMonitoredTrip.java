@@ -14,7 +14,6 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
@@ -37,9 +36,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.opentripplanner.middleware.tripMonitor.jobs.NotificationType.ARRIVAL_DELAY;
-import static org.opentripplanner.middleware.tripMonitor.jobs.NotificationType.DEPARTURE_DELAY;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -50,11 +46,11 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN);
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(
+        DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
+    );
 
     private final MonitoredTrip trip;
-    public int departureDelay;
-    public int arrivalDelay;
     /**
      * Used to track the various check trip notifications and construct email/SMS messages.
      */
@@ -137,8 +133,8 @@ public class CheckMonitoredTrip implements Runnable {
             // Check for notifications related to service alerts.
             checkTripForNewAlerts(),
             // Check for notifications related to delays.
-            checkTripForDepartureDelay(),
-            checkTripForArrivalDelay()
+            checkTripForDelay(NotificationType.DEPARTURE_DELAY),
+            checkTripForDelay(NotificationType.ARRIVAL_DELAY)
         );
     }
 
@@ -173,7 +169,7 @@ public class CheckMonitoredTrip implements Runnable {
         // recent the trip check was run). If no check has yet been run, this will be null.
         Itinerary latestItinerary = trip.latestItinerary();
         Set<LocalizedAlert> previousAlerts = latestItinerary == null
-            ? Collections.EMPTY_SET
+            ? Collections.emptySet()
             : new HashSet<>(latestItinerary.getAlerts());
         // Construct set from new alerts.
         Set<LocalizedAlert> newAlerts = new HashSet<>(matchingItinerary.getAlerts());
@@ -185,21 +181,58 @@ public class CheckMonitoredTrip implements Runnable {
         return notification;
     }
 
-    public TripMonitorNotification checkTripForDepartureDelay() {
-        long departureDelayInMinutes = TimeUnit.SECONDS.toMinutes(matchingItinerary.legs.get(0).departureDelay);
-        // First leg departure time should not exceed variance allowed.
-        if (departureDelayInMinutes >= trip.departureVarianceMinutesThreshold) {
-            return TripMonitorNotification.createDelayNotification(departureDelayInMinutes, trip.departureVarianceMinutesThreshold, DEPARTURE_DELAY);
-        }
-        return null;
-    }
+    /**
+     * Checks whether the trip is beginning or ending at a time greater than the allowable variance. This will check
+     * whether the departure or arrival time of the whole journey has deviated to the point where the absolute value of
+     * the variance has changed more than the trip's variance. If it has, a notification is generated.
+     */
+    public TripMonitorNotification checkTripForDelay(NotificationType delayType) {
+        // the target time for trip depending on notification type
+        Date matchingItineraryTargetTime;
 
-    public TripMonitorNotification checkTripForArrivalDelay() {
-        Leg lastLeg = matchingItinerary.legs.get(matchingItinerary.legs.size() - 1);
-        long arrivalDelayInMinutes = TimeUnit.SECONDS.toMinutes(lastLeg.arrivalDelay);
-        // Last leg arrival time should not exceed variance allowed.
-        if (arrivalDelayInMinutes >= trip.arrivalVarianceMinutesThreshold) {
-            return TripMonitorNotification.createDelayNotification(arrivalDelayInMinutes, trip.arrivalVarianceMinutesThreshold, ARRIVAL_DELAY);
+        // the current baseline epoch millis to check if a new threshold has been met
+        long baselineItineraryTargetEpochMillis;
+
+        // the original target epoch millis that the trip would've started or ended at
+        long originalTargetTimeEpochMillis;
+
+        if (delayType == NotificationType.DEPARTURE_DELAY) {
+            matchingItineraryTargetTime = matchingItinerary.startTime;
+            baselineItineraryTargetEpochMillis = journeyState.baselineDepartureTimeEpochMillis;
+            originalTargetTimeEpochMillis = journeyState.originalDepartureTimeEpochMillis;
+        } else {
+            matchingItineraryTargetTime = matchingItinerary.endTime;
+            baselineItineraryTargetEpochMillis = journeyState.baselineArrivalTimeEpochMillis;
+            originalTargetTimeEpochMillis = journeyState.originalArrivalTimeEpochMillis;
+        }
+
+        // calculate deviation from threshold in minutes
+        long deviationInMinutes = Math.abs(
+            TimeUnit.MINUTES.convert(
+                baselineItineraryTargetEpochMillis - matchingItineraryTargetTime.getTime(),
+                TimeUnit.MILLISECONDS
+            )
+        );
+
+        // check if threshold met
+        if (deviationInMinutes >= trip.departureVarianceMinutesThreshold) {
+            // threshold met, set new baseline time
+            if (delayType == NotificationType.DEPARTURE_DELAY) {
+                journeyState.baselineDepartureTimeEpochMillis = matchingItineraryTargetTime.getTime();
+            } else {
+                journeyState.baselineArrivalTimeEpochMillis = matchingItineraryTargetTime.getTime();
+            }
+
+            // create and return notification
+            return TripMonitorNotification.createDelayNotification(
+                TimeUnit.MINUTES.convert(
+                    matchingItineraryTargetTime.getTime() - originalTargetTimeEpochMillis,
+                    TimeUnit.MILLISECONDS
+                ),
+                trip.departureVarianceMinutesThreshold,
+                matchingItineraryTargetTime,
+                delayType
+            );
         }
         return null;
     }
@@ -290,7 +323,7 @@ public class CheckMonitoredTrip implements Runnable {
         journeyState = trip.retrieveJourneyState();
         if (
             journeyState.matchingItinerary == null ||
-                journeyState.matchingItinerary.endTime.before(new Date(journeyState.lastCheckedMillis))
+                journeyState.matchingItinerary.endTime.before(new Date(journeyState.lastCheckedEpochMillis))
         ) {
             // Either the monitored trip hasn't ever checked on the next itinerary, or the most recent itinerary has
             // completed and the next possible one needs to be fetched in order to determine the scheduled start time of
@@ -312,7 +345,7 @@ public class CheckMonitoredTrip implements Runnable {
             if (journeyState.targetDate != null) {
                 LocalDate lastDate = DateTimeUtils.getDateFromString(
                     journeyState.targetDate,
-                    DEFAULT_DATE_FORMAT_PATTERN
+                    DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
                 );
                 if (
                     lastDate.getYear() == targetZonedDateTime.getYear() &&
@@ -336,6 +369,35 @@ public class CheckMonitoredTrip implements Runnable {
                 if (!calculateNextItinerary()) return true;
             }
             LOG.info("Next itinerary happening on {}.", targetDate);
+
+            // update journey state with baseline departure and arrival times which are the last known departure/arrival
+            journeyState.baselineDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
+            journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
+
+            // update journey state with the original (scheduled departure and arrival times). Calculate these by
+            // finding the first/last transit legs and subtracting any delay.
+            journeyState.originalDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
+            for (Leg leg : matchingItinerary.legs) {
+                if (leg.transitLeg) {
+                    journeyState.originalDepartureTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
+                        leg.departureDelay,
+                        TimeUnit.SECONDS
+                    );
+                    break;
+                }
+            }
+            journeyState.originalArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
+            for (int i = matchingItinerary.legs.size() - 1; i >= 0; i--) {
+                Leg leg = matchingItinerary.legs.get(i);
+                if (leg.transitLeg) {
+                    journeyState.originalArrivalTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
+                        leg.arrivalDelay,
+                        TimeUnit.SECONDS
+                    );
+                    break;
+                }
+            }
+
             // save journey state with updated matching itinerary and target date
             journeyState.update(this);
         } else {
@@ -350,7 +412,7 @@ public class CheckMonitoredTrip implements Runnable {
         LOG.info("Trip starts at {} (now={})", tripStartInstant.toString(), now.toString());
 
         // If last check was more than an hour ago and trip doesn't occur until an hour from now, check trip.
-        long millisSinceLastCheck = DateTimeUtils.currentTimeMillis() - journeyState.lastCheckedMillis;
+        long millisSinceLastCheck = DateTimeUtils.currentTimeMillis() - journeyState.lastCheckedEpochMillis;
         long minutesSinceLastCheck = TimeUnit.MILLISECONDS.toMinutes(millisSinceLastCheck);
         LOG.info("{} minutes since last checking trip", minutesSinceLastCheck);
         long minutesUntilTrip = (tripStartInstant.getEpochSecond() - now.toEpochSecond()) / 60;

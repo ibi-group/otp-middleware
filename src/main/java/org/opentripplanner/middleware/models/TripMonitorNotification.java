@@ -1,11 +1,14 @@
 package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
-import org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripMonitor.jobs.NotificationType;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -39,22 +42,43 @@ public class TripMonitorNotification extends Model {
         return notification;
     }
 
+    /**
+     * Create a new notification about a change in the trip's arrival or departure time exceeding a threshold.
+     *
+     * @param delayInMinutes The delay in minutes (negative values indicate early times).
+     * @param delayThresholdMinutes The user's threshold for delay notifications in minutes.
+     * @param targetDatetime The actual arrival or departure of the trip
+     * @param delayType Whether the notification is for an arrival or departure delay
+     */
     public static TripMonitorNotification createDelayNotification(
         long delayInMinutes,
-        int delayThreshold,
-        NotificationType delayType)
-    {
+        int delayThresholdMinutes,
+        Date targetDatetime,
+        NotificationType delayType
+    ) {
         TripMonitorNotification notification = new TripMonitorNotification();
         notification.type = delayType;
         if (delayType != NotificationType.ARRIVAL_DELAY && delayType != NotificationType.DEPARTURE_DELAY) {
             LOG.error("Delay notification not permitted for type {}", delayType);
             return null;
         }
+        String delayHumanTime;
+        if (Math.abs(delayInMinutes) <= 1) {
+            delayHumanTime = "about on time";
+        } else if (delayInMinutes > 0) {
+            delayHumanTime = String.format("%d minute%s late", delayInMinutes, delayInMinutes > 1 ? "s" : "");
+        } else {
+            delayHumanTime = String.format("%d minute%s early", delayInMinutes, delayInMinutes < -1 ? "s" : "");
+        }
+
         notification.body = String.format(
-            "The %s time for your itinerary was delayed by %d minutes (your threshold is currently set to %d minutes).",
+            "The %s time for your itinerary is now %s (%s) (your threshold is currently set to %d minutes).",
             delayType == NotificationType.ARRIVAL_DELAY ? "arrival" : "departure",
-            delayInMinutes,
-            delayThreshold
+            ZonedDateTime
+                .ofInstant(targetDatetime.toInstant(), DateTimeUtils.getOtpZoneId())
+                .format(DateTimeFormatter.ofPattern("HH:mm")),
+            delayHumanTime,
+            delayThresholdMinutes
         );
         return notification;
     }
