@@ -189,8 +189,6 @@ public class MonitoredTrip extends Model {
     private boolean updateTripWithVerifiedItinerary() throws URISyntaxException {
         Map<String, String> params = parseQueryParams();
         String queryDate = params.get(DATE_PARAM);
-
-        // TODO: Refactor. Originally found in ItineraryUtils#getDatesToCheckItineraryExistence.
         DayOfWeek dayOfWeek = DateTimeUtils.getDateFromQueryDateString(queryDate).getDayOfWeek();
 
         // Find the response corresponding to the day of the query.

@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.YamlUtils;
@@ -23,6 +24,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -99,6 +101,11 @@ public class PublicApiDocGenerator {
         insertAbstractUserRefs(supplements.get("definitions"));
         inlineArrayDefinitions();
         // TODO: Add description to the fields of generated types?
+
+        // Remove unwanted fields that spark-swagger created, add fields that were missed.
+        removeTypeFields(ItineraryExistence.ItineraryExistenceResult.class.getSimpleName(), "itineraries");
+        addTypeField(ItineraryExistence.ItineraryExistenceResult.class.getSimpleName(), "valid", "boolean");
+        removeTypeFields(ItineraryExistence.class.getSimpleName(), "otpRequests", "referenceItinerary");
 
         // Cleanup the final document.
         generateMissingTypes();
@@ -356,6 +363,24 @@ public class PublicApiDocGenerator {
 
             unusedTypeCount = typesToRemove.size();
         } while(unusedTypeCount > 0);
+    }
+
+    /**
+     * Removes specific fields in a type.
+     */
+    private void removeTypeFields(String type, String... fields) {
+        ObjectNode typeProperties = (ObjectNode) definitions.get(type).get("properties");
+        typeProperties.remove(Arrays.asList(fields));
+    }
+
+    /**
+     * Adds a simple field to a type.
+     */
+    private void addTypeField(String type, String field, String fieldType) {
+        ObjectNode fieldNode = JsonNodeFactory.instance.objectNode();
+        fieldNode.put("type", fieldType);
+        ObjectNode typeProperties = (ObjectNode) definitions.get(type).get("properties");
+        typeProperties.set(field, fieldNode);
     }
 
     /**

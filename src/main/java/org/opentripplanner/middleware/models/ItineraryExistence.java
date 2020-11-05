@@ -14,7 +14,6 @@ import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -142,7 +141,7 @@ public class ItineraryExistence extends Model {
      */
     @JsonIgnore
     @BsonIgnore
-    public Collection<String> getInvalidDaysOfWeek() {
+    public String getInvalidDaysOfWeekMessage() {
         List<String> invalidDaysOfWeek = new ArrayList<>();
         for (DayOfWeek dow : DayOfWeek.values()) {
             ItineraryExistenceResult resultForDayOfWeek = getResultForDayOfWeek(dow);
@@ -153,7 +152,7 @@ public class ItineraryExistence extends Model {
                 ));
             }
         }
-        return invalidDaysOfWeek;
+        return String.join(", ", invalidDaysOfWeek);
     }
 
     /**
@@ -195,7 +194,7 @@ public class ItineraryExistence extends Model {
         if (!this.allCheckedDaysAreValid()) {
             this.message = String.format(
                 "The trip is not possible on the following days of the week you have selected: %s",
-                String.join(", ", getInvalidDaysOfWeek())
+                getInvalidDaysOfWeekMessage()
             );
             this.error = true;
         }
@@ -214,8 +213,8 @@ public class ItineraryExistence extends Model {
         }
 
         /**
-         * Method and argument solely needed for accepting request contents that include a `valid` field
-         * (e.g. for checking a monitored trip with previous existence check record).
+         * Dummy setter required to prevent a deserialization "unknown field" error for itinerary
+         * existence requests that include an `itineraryExistence.valid` entry in the body.
          */
         @JsonIgnore
         public void setValid (boolean value) {}
@@ -231,7 +230,6 @@ public class ItineraryExistence extends Model {
 
         /**
          * Holds any matching itineraries (sorted by date) for the applicable day of the week.
-         * TODO: remove itineraries from list of returned fields in swagger.
          */
         public transient List<Itinerary> itineraries = new ArrayList<>();
 
