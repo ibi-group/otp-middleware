@@ -142,7 +142,7 @@ public class OtpRequestProcessor implements Endpoint {
             // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
             // as a query parameter.
             otpUser = Persistence.otpUsers.getById(userId);
-            if (otpUser == null) {
+            if (otpUser == null && userId != null) {
                 logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "The specified user id was not found.");
             } else if (!otpUser.canBeManagedBy(requestingUser)) {
                 logMessageAndHalt(request,
