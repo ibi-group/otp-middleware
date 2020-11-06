@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
+import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 
@@ -50,6 +52,7 @@ public class GetMonitoredTripsTest {
     private static AdminUser adminUser;
     private static OtpUser otpUser1;
     private static OtpUser otpUser2;
+    private static final String MONITORED_TRIP_PATH = "api/secure/monitoredtrip";
 
     /**
      * Whether tests for this class should run. End to End must be enabled and Auth must NOT be disabled. This should be
@@ -116,48 +119,47 @@ public class GetMonitoredTripsTest {
         // Create trip as Otp user 1.
         MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
         monitoredTrip.userId = otpUser1.id;
-        HttpResponse<String> response = mockAuthenticatedRequest("api/secure/monitoredtrip",
+        HttpResponse<String> createTripResponse = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
             otpUser1,
-            HttpUtils.REQUEST_METHOD.POST,
-            true
+            HttpUtils.REQUEST_METHOD.POST
         );
-        assertEquals(HttpStatus.OK_200, response.statusCode());
+        assertEquals(HttpStatus.OK_200, createTripResponse.statusCode());
 
         // Create trip as Otp user 2.
         monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
         monitoredTrip.userId = otpUser2.id;
-        response = mockAuthenticatedRequest("api/secure/monitoredtrip",
+        HttpResponse<String> createTripResponse2 = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
             otpUser2,
-            HttpUtils.REQUEST_METHOD.POST,
-            true
+            HttpUtils.REQUEST_METHOD.POST
         );
-        assertEquals(HttpStatus.OK_200, response.statusCode());
+        assertEquals(HttpStatus.OK_200, createTripResponse2.statusCode());
+
+        // Get trips for Otp user 1.
+        HttpResponse<String> getTripsResponse1 = mockAuthenticatedGet(MONITORED_TRIP_PATH, otpUser2);
+        ResponseList<TripRequest> trips = JsonUtils.getPOJOFromJSON(getTripsResponse1.body(), ResponseList.class);
+
+        // Expect only 1 trip for Otp user 1.
+        assertEquals(1, trips.data.size());
 
         // Get trips for Otp user 2.
-        response = mockAuthenticatedRequest("api/secure/monitoredtrip",
-            "",
-            otpUser2,
-            HttpUtils.REQUEST_METHOD.GET,
-            true
-        );
-        ResponseList tripRequests = JsonUtils.getPOJOFromJSON(response.body(), ResponseList.class);
+        HttpResponse<String> getTripsCombined = mockAuthenticatedGet(MONITORED_TRIP_PATH, otpUser2);
+        ResponseList<TripRequest> tripsCombined = JsonUtils.getPOJOFromJSON(getTripsCombined.body(), ResponseList.class);
 
         // Otp user 2 has 'enhanced' admin credentials both trips will be returned. The expectation here is that the UI
         // will always provide the user id to prevent this (as with the next test).
-        assertEquals(2, tripRequests.data.size());
+        // TODO: Determine if a separate admin endpoint should be maintained for getting all/combined trips.
+        assertEquals(2, tripsCombined.data.size());
 
         // Get trips for Otp user 2 defining user id.
-        response = mockAuthenticatedRequest(String.format("api/secure/monitoredtrip?userId=%s", otpUser2.id),
-            "",
-            otpUser2,
-            HttpUtils.REQUEST_METHOD.GET,
-            true
+        HttpResponse<String> getTripsFiltered = mockAuthenticatedGet(
+            String.format("api/secure/monitoredtrip?userId=%s", otpUser2.id),
+            otpUser2
         );
-        tripRequests = JsonUtils.getPOJOFromJSON(response.body(), ResponseList.class);
+        ResponseList<TripRequest> tripsFiltered = JsonUtils.getPOJOFromJSON(getTripsFiltered.body(), ResponseList.class);
 
         // Just the trip for Otp user 2 will be returned.
-        assertEquals(1, tripRequests.data.size());
+        assertEquals(1, tripsFiltered.data.size());
     }
 }

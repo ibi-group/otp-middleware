@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
+import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedDelete;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -161,7 +162,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     private HttpResponse<String> createApiKeyRequest(String targetUserId, AbstractUser requestingUser) {
         String path = String.format("api/secure/application/%s/apikey", targetUserId);
-        return mockAuthenticatedRequest(path, "", requestingUser, HttpUtils.REQUEST_METHOD.POST, true);
+        return mockAuthenticatedRequest(path, "", requestingUser, HttpUtils.REQUEST_METHOD.POST);
     }
 
     /**
@@ -169,6 +170,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     private static HttpResponse<String> deleteApiKeyRequest(String targetUserId, String apiKeyId, AbstractUser requestingUser) {
         String path = String.format("api/secure/application/%s/apikey/%s", targetUserId, apiKeyId);
-        return mockAuthenticatedRequest(path, "", requestingUser, HttpUtils.REQUEST_METHOD.DELETE, true);
+        return mockAuthenticatedDelete(path, requestingUser);
     }
 }

@@ -69,8 +69,7 @@ public class OtpUserControllerTest {
                 otpUser.id,
                 badNumber
             ),
-            otpUser,
-            true
+            otpUser
         );
         assertEquals(statusCode, response.statusCode());
 
@@ -78,8 +77,7 @@ public class OtpUserControllerTest {
         // The phone number should not be updated.
         HttpResponse<String> otpUserWithPhoneRequest = mockAuthenticatedGet(
             String.format("api/secure/user/%s", otpUser.id),
-            otpUser,
-            true
+            otpUser
         );
         assertEquals(HttpStatus.OK_200, otpUserWithPhoneRequest.statusCode());
 
