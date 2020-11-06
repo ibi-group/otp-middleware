@@ -24,7 +24,9 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedDelete;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.auth.Auth0Connection.getDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
+import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 
@@ -41,7 +43,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(ApiKeyManagementTest.class);
     private static ApiUser apiUser;
     private static AdminUser adminUser;
-    private static boolean prevAuthState;
 
     /**
      * Create an {@link ApiUser} and an {@link AdminUser} prior to unit tests
@@ -51,7 +52,6 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         assumeTrue(isEndToEnd);
         // TODO: It might be useful to allow this to run without DISABLE_AUTH set to true (in an end-to-end environment
         //  using real tokens from Auth0.
-        prevAuthState = isAuthDisabled();
         setAuthDisabled(true);
         // Load config before checking if tests should run.
         OtpMiddlewareTest.setUp();
@@ -69,7 +69,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
         apiUser = Persistence.apiUsers.getById(apiUser.id);
         apiUser.delete();
         Persistence.adminUsers.removeById(adminUser.id);
-        setAuthDisabled(prevAuthState);
+        restoreDefaultAuthDisabled();
     }
 
     /**

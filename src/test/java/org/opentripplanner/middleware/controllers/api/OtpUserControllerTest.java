@@ -19,23 +19,19 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedGet;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
+import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 
 public class OtpUserControllerTest {
     private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake US 555 number.
     private static OtpUser otpUser;
-    private static boolean originalIsAuthDisabled;
 
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException {
         // Load config.
         OtpMiddlewareTest.setUp();
-
-        // Save original isAuthDisabled state to restore it on tear down.
-        originalIsAuthDisabled = isAuthDisabled();
+        // Ensure auth is disabled.
         setAuthDisabled(true);
-
         // Create a persisted OTP user.
         otpUser = new OtpUser();
         otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
@@ -52,7 +48,7 @@ public class OtpUserControllerTest {
         if (otpUser != null) otpUser.delete();
 
         // Restore original isAuthDisabled state.
-        setAuthDisabled(originalIsAuthDisabled);
+        restoreDefaultAuthDisabled();
     }
 
     /**

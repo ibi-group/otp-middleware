@@ -16,6 +16,8 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -28,7 +30,8 @@ import static org.opentripplanner.middleware.TestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
+import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
+import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 
 /**
  * Tests to simulate getting trips as an Otp user with enhanced admin credentials. The following config parameters must
@@ -49,19 +52,11 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled
  * Auth0 must be correctly configured as described here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
  */
 public class GetMonitoredTripsTest {
-    private static AdminUser adminUser;
-    private static OtpUser otpUser1;
-    private static OtpUser otpUser2;
+    private static AdminUser multiAdminUser;
+    private static OtpUser soloOtpUser;
+    private static OtpUser multiOtpUser;
     private static final String MONITORED_TRIP_PATH = "api/secure/monitoredtrip";
-
-    /**
-     * Whether tests for this class should run. End to End must be enabled and Auth must NOT be disabled. This should be
-     * evaluated after the middleware application starts up (to ensure default disableAuth value has been applied from
-     * config).
-     */
-    private static boolean testsShouldRun() {
-        return isEndToEnd && !isAuthDisabled();
-    }
+    private static final Logger LOG = LoggerFactory.getLogger(GetMonitoredTripsTest.class);
 
     /**
      * Create Otp and Admin user accounts. Create Auth0 account for just the Otp users. If
@@ -71,25 +66,26 @@ public class GetMonitoredTripsTest {
     public static void setUp() throws IOException, InterruptedException {
         // Load config before checking if tests should run.
         OtpMiddlewareTest.setUp();
-        assumeTrue(testsShouldRun());
+        assumeTrue(isEndToEnd);
+        setAuthDisabled(false);
         // Mock the OTP server TODO: Run a live OTP instance?
         TestUtils.mockOtpServer();
-        String email = String.format("test-%s@example.com", UUID.randomUUID().toString());
-        otpUser1 = PersistenceUtil.createUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
-        otpUser2 = PersistenceUtil.createUser(email);
-        adminUser = PersistenceUtil.createAdminUser(email);
+        String multiUserEmail = String.format("test-%s@example.com", UUID.randomUUID().toString());
+        soloOtpUser = PersistenceUtil.createUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
+        multiOtpUser = PersistenceUtil.createUser(multiUserEmail);
+        multiAdminUser = PersistenceUtil.createAdminUser(multiUserEmail);
         try {
             // Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
             // from being able to use TEMP_AUTH0_USER_PASSWORD.
-            User auth0User = Auth0Users.createAuth0UserForEmail(otpUser1.email, TEMP_AUTH0_USER_PASSWORD);
-            otpUser1.auth0UserId = auth0User.getId();
-            Persistence.otpUsers.replace(otpUser1.id, otpUser1);
-            auth0User = Auth0Users.createAuth0UserForEmail(email, TEMP_AUTH0_USER_PASSWORD);
-            otpUser2.auth0UserId = auth0User.getId();
-            Persistence.otpUsers.replace(otpUser2.id, otpUser2);
+            User auth0User = Auth0Users.createAuth0UserForEmail(soloOtpUser.email, TEMP_AUTH0_USER_PASSWORD);
+            soloOtpUser.auth0UserId = auth0User.getId();
+            Persistence.otpUsers.replace(soloOtpUser.id, soloOtpUser);
+            auth0User = Auth0Users.createAuth0UserForEmail(multiUserEmail, TEMP_AUTH0_USER_PASSWORD);
+            multiOtpUser.auth0UserId = auth0User.getId();
+            Persistence.otpUsers.replace(multiOtpUser.id, multiOtpUser);
             // Use the same Auth0 user id as otpUser2 as the email address is the same.
-            adminUser.auth0UserId = auth0User.getId();
-            Persistence.adminUsers.replace(adminUser.id, adminUser);
+            multiAdminUser.auth0UserId = auth0User.getId();
+            Persistence.adminUsers.replace(multiAdminUser.id, multiAdminUser);
         } catch (Auth0Exception e) {
             throw new RuntimeException(e);
         }
@@ -100,13 +96,14 @@ public class GetMonitoredTripsTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(testsShouldRun());
-        otpUser1 = Persistence.otpUsers.getById(otpUser1.id);
-        if (otpUser1 != null) otpUser1.delete(false);
-        otpUser2 = Persistence.otpUsers.getById(otpUser2.id);
-        if (otpUser2 != null) otpUser2.delete(false);
-        adminUser = Persistence.adminUsers.getById(adminUser.id);
-        if (adminUser != null) adminUser.delete();
+        assumeTrue(isEndToEnd);
+        restoreDefaultAuthDisabled();
+        soloOtpUser = Persistence.otpUsers.getById(soloOtpUser.id);
+        if (soloOtpUser != null) soloOtpUser.delete(false);
+        multiOtpUser = Persistence.otpUsers.getById(multiOtpUser.id);
+        if (multiOtpUser != null) multiOtpUser.delete(false);
+        multiAdminUser = Persistence.adminUsers.getById(multiAdminUser.id);
+        if (multiAdminUser != null) multiAdminUser.delete();
     }
 
     /**
@@ -118,47 +115,46 @@ public class GetMonitoredTripsTest {
 
         // Create trip as Otp user 1.
         MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
-        monitoredTrip.userId = otpUser1.id;
-        HttpResponse<String> createTripResponse = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
+        monitoredTrip.userId = soloOtpUser.id;
+        HttpResponse<String> createTrip1Response = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
-            otpUser1,
+            soloOtpUser,
             HttpUtils.REQUEST_METHOD.POST
         );
-        assertEquals(HttpStatus.OK_200, createTripResponse.statusCode());
+        assertEquals(HttpStatus.OK_200, createTrip1Response.statusCode());
 
         // Create trip as Otp user 2.
         monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
-        monitoredTrip.userId = otpUser2.id;
+        monitoredTrip.userId = multiOtpUser.id;
         HttpResponse<String> createTripResponse2 = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
-            otpUser2,
+            multiOtpUser,
             HttpUtils.REQUEST_METHOD.POST
         );
         assertEquals(HttpStatus.OK_200, createTripResponse2.statusCode());
 
-        // Get trips for Otp user 1.
-        HttpResponse<String> getTripsResponse1 = mockAuthenticatedGet(MONITORED_TRIP_PATH, otpUser2);
-        ResponseList<TripRequest> trips = JsonUtils.getPOJOFromJSON(getTripsResponse1.body(), ResponseList.class);
+        // Get trips for solo Otp user.
+        HttpResponse<String> soloTripsResponse = mockAuthenticatedGet(MONITORED_TRIP_PATH, soloOtpUser);
+        ResponseList<MonitoredTrip> soloTrips = JsonUtils.getPOJOFromJSON(soloTripsResponse.body(), ResponseList.class);
 
-        // Expect only 1 trip for Otp user 1.
-        assertEquals(1, trips.data.size());
+        // Expect only 1 trip for solo Otp user.
+        assertEquals(1, soloTrips.data.size());
 
-        // Get trips for Otp user 2.
-        HttpResponse<String> getTripsCombined = mockAuthenticatedGet(MONITORED_TRIP_PATH, otpUser2);
-        ResponseList<TripRequest> tripsCombined = JsonUtils.getPOJOFromJSON(getTripsCombined.body(), ResponseList.class);
+        // Get trips for multi Otp user/admin user.
+        HttpResponse<String> multiTripsResponse = mockAuthenticatedGet(MONITORED_TRIP_PATH, multiOtpUser);
+        ResponseList<MonitoredTrip> multiTrips = JsonUtils.getPOJOFromJSON(multiTripsResponse.body(), ResponseList.class);
 
-        // Otp user 2 has 'enhanced' admin credentials both trips will be returned. The expectation here is that the UI
+        // Multi Otp user has 'enhanced' admin credentials both trips will be returned. The expectation here is that the UI
         // will always provide the user id to prevent this (as with the next test).
         // TODO: Determine if a separate admin endpoint should be maintained for getting all/combined trips.
-        assertEquals(2, tripsCombined.data.size());
+        assertEquals(2, multiTrips.data.size());
 
-        // Get trips for Otp user 2 defining user id.
-        HttpResponse<String> getTripsFiltered = mockAuthenticatedGet(
-            String.format("api/secure/monitoredtrip?userId=%s", otpUser2.id),
-            otpUser2
+        // Get trips for only the multi Otp user by specifying Otp user id.
+        HttpResponse<String> tripsFilteredResponse = mockAuthenticatedGet(
+            String.format("api/secure/monitoredtrip?userId=%s", multiOtpUser.id),
+            multiOtpUser
         );
-        ResponseList<TripRequest> tripsFiltered = JsonUtils.getPOJOFromJSON(getTripsFiltered.body(), ResponseList.class);
-
+        ResponseList<MonitoredTrip> tripsFiltered = JsonUtils.getPOJOFromJSON(tripsFilteredResponse.body(), ResponseList.class);
         // Just the trip for Otp user 2 will be returned.
         assertEquals(1, tripsFiltered.data.size());
     }

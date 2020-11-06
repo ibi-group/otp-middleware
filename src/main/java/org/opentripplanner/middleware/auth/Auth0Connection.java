@@ -222,10 +222,19 @@ public class Auth0Connection {
     }
 
     /**
-     * Override the current {@link #authDisabled} value.
+     * Override the current {@link #authDisabled} value. This is used principally for setting up test environments that
+     * require auth to be disabled.
      */
     public static void setAuthDisabled(boolean authDisabled) {
         Auth0Connection.authDisabled = authDisabled;
+    }
+
+    /**
+     * Restore default {@link #authDisabled} value. This is used principally for tearing down test environments that
+     * require auth to be disabled.
+     */
+    public static void restoreDefaultAuthDisabled() {
+        setAuthDisabled(getDefaultAuthDisabled());
     }
 
     /**
