@@ -3,6 +3,8 @@ package org.opentripplanner.middleware;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.mgmt.users.User;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -140,7 +142,7 @@ public class ApiUserFlowTest {
      *   5. Delete user and verify that their associated objects are also deleted.
      */
     @Test
-    public void canSimulateApiUserFlow() throws URISyntaxException {
+    public void canSimulateApiUserFlow() throws URISyntaxException, JsonProcessingException {
 
         // Define the header values to be used in requests from this point forward.
         HashMap<String, String> apiUserHeaders = new HashMap<>();
@@ -174,7 +176,7 @@ public class ApiUserFlowTest {
         // Request all Otp users created by an Api user. This will work and return all Otp users.
         HttpResponse<String> getAllOtpUsersCreatedByApiUser = makeGetRequest(OTP_USER_PATH, apiUserHeaders);
         assertEquals(HttpStatus.OK_200, getAllOtpUsersCreatedByApiUser.statusCode());
-        ResponseList<OtpUser> otpUsers = JsonUtils.getPOJOFromJSON(getAllOtpUsersCreatedByApiUser.body(), ResponseList.class);
+        ResponseList<OtpUser> otpUsers = JsonUtils.getResponseListFromJSON(getAllOtpUsersCreatedByApiUser.body(), OtpUser.class);
         assertEquals(1, otpUsers.total);
 
         // Attempt to create a monitored trip for an Otp user using mock authentication. This will fail because the user
@@ -257,10 +259,7 @@ public class ApiUserFlowTest {
         HttpResponse<String> tripRequestResponseAsApiUser = makeGetRequest(tripRequestsPath, apiUserHeaders);
         assertEquals(HttpStatus.OK_200, tripRequestResponseAsApiUser.statusCode());
 
-        ResponseList<TripRequest> tripRequests = JsonUtils.getPOJOFromJSON(
-            tripRequestResponseAsApiUser.body(),
-            ResponseList.class
-        );
+        ResponseList<TripRequest> tripRequests = JsonUtils.getResponseListFromJSON(tripRequestResponseAsApiUser.body(), TripRequest.class);
 
         // Delete Otp user authenticating as an Otp user. This will fail because the user was created by an Api user and
         // therefore does not have a Auth0 account.

@@ -2,6 +2,8 @@ package org.opentripplanner.middleware;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -111,7 +113,7 @@ public class GetMonitoredTripsTest {
      * credentials.
      */
     @Test
-    public void canGetOwnMonitoredTrips() throws URISyntaxException {
+    public void canGetOwnMonitoredTrips() throws URISyntaxException, JsonProcessingException {
 
         // Create trip as Otp user 1.
         MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
@@ -135,14 +137,14 @@ public class GetMonitoredTripsTest {
 
         // Get trips for solo Otp user.
         HttpResponse<String> soloTripsResponse = mockAuthenticatedGet(MONITORED_TRIP_PATH, soloOtpUser);
-        ResponseList<MonitoredTrip> soloTrips = JsonUtils.getPOJOFromJSON(soloTripsResponse.body(), ResponseList.class);
+        ResponseList<MonitoredTrip> soloTrips = JsonUtils.getResponseListFromJSON(soloTripsResponse.body(), MonitoredTrip.class);
 
         // Expect only 1 trip for solo Otp user.
         assertEquals(1, soloTrips.data.size());
 
         // Get trips for multi Otp user/admin user.
         HttpResponse<String> multiTripsResponse = mockAuthenticatedGet(MONITORED_TRIP_PATH, multiOtpUser);
-        ResponseList<MonitoredTrip> multiTrips = JsonUtils.getPOJOFromJSON(multiTripsResponse.body(), ResponseList.class);
+        ResponseList<MonitoredTrip> multiTrips = JsonUtils.getResponseListFromJSON(multiTripsResponse.body(), MonitoredTrip.class);
 
         // Multi Otp user has 'enhanced' admin credentials both trips will be returned. The expectation here is that the UI
         // will always provide the user id to prevent this (as with the next test).
@@ -154,7 +156,7 @@ public class GetMonitoredTripsTest {
             String.format("api/secure/monitoredtrip?userId=%s", multiOtpUser.id),
             multiOtpUser
         );
-        ResponseList<MonitoredTrip> tripsFiltered = JsonUtils.getPOJOFromJSON(tripsFilteredResponse.body(), ResponseList.class);
+        ResponseList<MonitoredTrip> tripsFiltered = JsonUtils.getResponseListFromJSON(tripsFilteredResponse.body(), MonitoredTrip.class);
         // Just the trip for Otp user 2 will be returned.
         assertEquals(1, tripsFiltered.data.size());
     }
