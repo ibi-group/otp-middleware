@@ -78,6 +78,13 @@ public class CheckMonitoredTrip implements Runnable {
         this.trip = trip;
     }
 
+    /**
+     * For testing purposes only!
+     */
+    public void setJourneyState(JourneyState journeyState) {
+        this.journeyState = journeyState;
+    }
+
     @Override
     public void run() {
         // Add a prefix of the current trip ID for logging purposes to every log message generated from within an

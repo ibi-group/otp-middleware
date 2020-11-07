@@ -32,9 +32,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
@@ -121,57 +124,130 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         deleteMonitoredTripAndJourney(monitoredTrip);
     }
 
-    @Test
-    public void willGenerateDepartureDelayNotification() throws URISyntaxException {
-        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
-        OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
-        Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
-        // Set departure time to twenty minutes (in seconds). Default departure time variance threshold is 15 minutes.
-        simulatedItinerary.legs.get(0).departureDelay = 60 * 20;
-
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip);
-        // Set isolated departure time check for simulated itinerary.
-        checkMonitoredTrip.matchingItinerary = simulatedItinerary;
-        TripMonitorNotification notification = checkMonitoredTrip.checkTripForDelay(NotificationType.DEPARTURE_DELAY);
-        LOG.info("Departure delay notification: {}", notification.body);
-        Assertions.assertNotNull(notification);
+    @ParameterizedTest
+    @MethodSource("createDelayNotificationTestCases")
+    void testDelayNotifications(DelayNotificationTestCase testCase) {
+        TripMonitorNotification notification = testCase.checkMonitoredTrip.checkTripForDelay(testCase.delayType);
+        if (testCase.expectedNotificationMessage == null) {
+            assertNull(notification, testCase.message);
+        } else {
+            assertNotNull(notification, String.format("Expected notification for test case: %s", testCase.message));
+            assertEquals(testCase.expectedNotificationMessage, notification.body, testCase.message);
+        }
     }
 
-    @Test
-    public void willGenerateDepartureDelayNotificationUponNewThreshold() throws URISyntaxException {
-        // create base monitored trip
-        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
+    private static List<DelayNotificationTestCase> createDelayNotificationTestCases () throws URISyntaxException {
+        List<DelayNotificationTestCase> testCases = new ArrayList<>();
 
-        // create journey state for monitored trip
+        // doesn't create departure/arrival notification for on-time trip
+        CheckMonitoredTrip onTimeTrip = createCheckMonitoredTrip();
+        onTimeTrip.setJourneyState(createDefaultJourneyState());
+        testCases.add(new DelayNotificationTestCase(
+            onTimeTrip,
+            NotificationType.DEPARTURE_DELAY,
+            "doesn't create departure notification for on-time trip"
+        ));
+        testCases.add(new DelayNotificationTestCase(
+            onTimeTrip,
+            NotificationType.ARRIVAL_DELAY,
+            "doesn't create arrival notification for on-time trip"
+        ));
 
-        // create mock itinerary for
-        OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
-        Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
-        // Set departure time to twenty minutes (in seconds). Default departure time variance threshold is 15 minutes.
-        simulatedItinerary.legs.get(0).departureDelay = 60 * 20;
+        // creates departure notification for 20 minute late trip
+        CheckMonitoredTrip twentyMinutesLateTimeTrip = createCheckMonitoredTrip();
+        offsetItineraryTime(
+            twentyMinutesLateTimeTrip.matchingItinerary,
+            TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
+        );
+        JourneyState twentyMinutesLateJourneyState = createDefaultJourneyState();
+        twentyMinutesLateTimeTrip.setJourneyState(twentyMinutesLateJourneyState);
+        testCases.add(new DelayNotificationTestCase(
+            twentyMinutesLateTimeTrip,
+            NotificationType.DEPARTURE_DELAY,
+            "The departure time for your itinerary is now 09:00 (20 minutes late) (your threshold is currently set to 15 minutes).",
+            "creates departure notification for 20 minute late trip"
+        ));
+        testCases.add(new DelayNotificationTestCase(
+            twentyMinutesLateTimeTrip,
+            NotificationType.ARRIVAL_DELAY,
+            "The arrival time for your itinerary is now 09:18 (20 minutes late) (your threshold is currently set to 15 minutes).",
+            "creates arrival notification for 20 minute late trip"
+        ));
 
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip);
-        // Set isolated departure time check for simulated itinerary.
-        checkMonitoredTrip.matchingItinerary = simulatedItinerary;
-        TripMonitorNotification notification = checkMonitoredTrip.checkTripForDelay(NotificationType.DEPARTURE_DELAY);
-        LOG.info("Departure delay notification: {}", notification.body);
-        Assertions.assertNotNull(notification);
+        // doesn't create departure notification for 20 minute late trip w/ 15 minute threshold
+        // doesn't create arrival notification for 20 minute late trip w/ 15 minute threshold
+        CheckMonitoredTrip twentyMinutesLateTripWithUpdatedThreshold = createCheckMonitoredTrip();
+        offsetItineraryTime(
+            twentyMinutesLateTripWithUpdatedThreshold.matchingItinerary,
+            TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
+        );
+        JourneyState twentyMinutesLateJourneyStateWithUpdatedThreshold = createDefaultJourneyState();
+        long fifteenMinutesInMilliseconds = TimeUnit.MILLISECONDS.convert(15, TimeUnit.MINUTES);
+        twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis +=
+            fifteenMinutesInMilliseconds;
+        twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis +=
+            fifteenMinutesInMilliseconds;
+        twentyMinutesLateTripWithUpdatedThreshold.setJourneyState(
+            twentyMinutesLateJourneyStateWithUpdatedThreshold
+        );
+        testCases.add(new DelayNotificationTestCase(
+            twentyMinutesLateTripWithUpdatedThreshold,
+            NotificationType.DEPARTURE_DELAY,
+            "doesn't create departure notification for 20 minute late trip w/ 15 minute threshold"
+        ));
+        testCases.add(new DelayNotificationTestCase(
+            twentyMinutesLateTripWithUpdatedThreshold,
+            NotificationType.ARRIVAL_DELAY,
+            "doesn't create arrival notification for 20 minute late trip w/ 15 minute threshold"
+        ));
+
+        // creates departure notification for on-time trip w/ 20 minute late threshold
+        // creates arrival notification for on-time trip w/ 20 minute late threshold
+        CheckMonitoredTrip onTimeTripWithUpdatedThreshold = createCheckMonitoredTrip();
+        JourneyState onTimeJourneyStateWithUpdatedThreshold = createDefaultJourneyState();
+        onTimeJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis += fifteenMinutesInMilliseconds;
+        onTimeJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis += fifteenMinutesInMilliseconds;
+        onTimeTripWithUpdatedThreshold.setJourneyState(onTimeJourneyStateWithUpdatedThreshold);
+        testCases.add(new DelayNotificationTestCase(
+            onTimeTripWithUpdatedThreshold,
+            NotificationType.DEPARTURE_DELAY,
+            "The departure time for your itinerary is now 08:40 (about on time) (your threshold is currently set to 15 minutes).",
+            "creates departure notification for on-time trip w/ 20 minute late threshold"
+        ));
+        testCases.add(new DelayNotificationTestCase(
+            onTimeTripWithUpdatedThreshold,
+            NotificationType.ARRIVAL_DELAY,
+            "The arrival time for your itinerary is now 08:58 (about on time) (your threshold is currently set to 15 minutes).",
+            "creates arrival notification for on-time trip w/ 20 minute late threshold"
+        ));
+
+        return testCases;
     }
 
-    @Test
-    public void willSkipDepartureDelayNotification() throws URISyntaxException {
-        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
-        OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
-        Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
-        // Set departure time to ten minutes (in seconds). Default departure time variance threshold is 15 minutes.
-        simulatedItinerary.legs.get(0).departureDelay = 60 * 10;
-
+    /**
+     * Creates a new CheckMonitoredTrip instance with a new non-persisted MonitoredTrip instance. The monitored trip is
+     * created using the default OTP response. Also, creates a new matching itinerary that consists of the first
+     * itinerary in the default OTP response.
+     */
+    private static CheckMonitoredTrip createCheckMonitoredTrip() throws URISyntaxException {
+        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, false);
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip);
-        // Run isolated departure time check for simulated itinerary.
-        checkMonitoredTrip.matchingItinerary = simulatedItinerary;
-        TripMonitorNotification notification = checkMonitoredTrip.checkTripForDelay(NotificationType.DEPARTURE_DELAY);
-        LOG.info("Departure delay notification (should be null): {}", notification);
-        Assertions.assertNull(notification);
+        checkMonitoredTrip.matchingItinerary = createDefaultItinerary();
+        return checkMonitoredTrip;
+    }
+
+    private static Itinerary createDefaultItinerary() {
+        return otpDispatcherResponse.clone().getResponse().plan.itineraries.get(0);
+    }
+
+    private static JourneyState createDefaultJourneyState() {
+        JourneyState journeyState = new JourneyState();
+        Itinerary defaultItinerary = createDefaultItinerary();
+        journeyState.originalArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
+        journeyState.originalDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
+        journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
+        journeyState.baselineDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
+        return journeyState;
     }
 
     /**
@@ -348,6 +424,49 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         return testCases;
     }
 
+    private static class DelayNotificationTestCase {
+        /**
+         * The trip to use to test. It is assumed that the trip is completely setup with an appropriate journey state.
+         */
+        public CheckMonitoredTrip checkMonitoredTrip;
+
+        /**
+         * Whether the check is for the arrival or departure
+         */
+        public NotificationType delayType;
+
+        /**
+         * The expected body of the notification message. If this is not set, it is assumed in the test case that a
+         * notification should not be generated.
+         */
+        public String expectedNotificationMessage;
+
+        /**
+         * Message for test case
+         */
+        public String message;
+
+        public DelayNotificationTestCase(
+            CheckMonitoredTrip checkMonitoredTrip,
+            NotificationType delayType,
+            String message
+        ) {
+            this(checkMonitoredTrip, delayType, null, message);
+        }
+
+        public DelayNotificationTestCase(
+            CheckMonitoredTrip checkMonitoredTrip,
+            NotificationType delayType,
+            String expectedNotificationMessage,
+            String message
+        ) {
+            this.checkMonitoredTrip = checkMonitoredTrip;
+            this.delayType = delayType;
+            this.expectedNotificationMessage = expectedNotificationMessage;
+            this.message = message;
+        }
+    }
+
     private static class ShouldSkipTripTestCase {
         /* The last time a journey was checked */
         public final ZonedDateTime lastCheckedTime;
@@ -451,12 +570,22 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      * will be the offset that is applied to all other times in the itinerary.
      */
     private static void updateBaseItineraryTime(Itinerary mockItinerary, ZonedDateTime baseZonedDateTime) {
-        long offset = baseZonedDateTime.toEpochSecond() * 1000 - mockItinerary.startTime.getTime();
-        mockItinerary.startTime = new Date(mockItinerary.startTime.getTime() + offset);
-        mockItinerary.endTime = new Date(mockItinerary.endTime.getTime() + offset);
+        offsetItineraryTime(
+            mockItinerary,
+            baseZonedDateTime.toEpochSecond() * 1000 - mockItinerary.startTime.getTime()
+        );
+    }
+
+    /**
+     * Offsets the itinerary's timing by adding the given offset to the overall start/end time and each leg start/end
+     * times.
+     */
+    private static void offsetItineraryTime(Itinerary mockItinerary, long offsetMillis) {
+        mockItinerary.startTime = new Date(mockItinerary.startTime.getTime() + offsetMillis);
+        mockItinerary.endTime = new Date(mockItinerary.endTime.getTime() + offsetMillis);
         for (Leg leg : mockItinerary.legs) {
-            leg.startTime = new Date(leg.startTime.getTime() + offset);
-            leg.endTime = new Date(leg.endTime.getTime() + offset);
+            leg.startTime = new Date(leg.startTime.getTime() + offsetMillis);
+            leg.endTime = new Date(leg.endTime.getTime() + offsetMillis);
         }
     }
 }
