@@ -223,6 +223,7 @@ public class ItineraryExistence extends Model {
          * Holds a list of invalid dates an itinerary is not available for the associated day of the week.
          */
         public List<String> invalidDates = new ArrayList<>();
+
         /**
          * Holds a list of valid dates for which an itinerary exists.
          */
