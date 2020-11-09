@@ -44,7 +44,7 @@ public class OtpUser extends AbstractUser {
     public boolean storeTripHistory;
 
     @JsonIgnore
-    /** If this user was created by an Api user, this parameter will match the Api user's id */
+    /** If this user was created by an {@link ApiUser}, this parameter will match the {@link ApiUser}'s id */
     public String applicationId;
 
     @Override

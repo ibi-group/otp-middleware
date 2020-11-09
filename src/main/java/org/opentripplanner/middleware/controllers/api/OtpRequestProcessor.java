@@ -5,7 +5,6 @@ import com.beerboy.ss.descriptor.EndpointDescriptor;
 import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -24,6 +23,10 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.auth.Auth0Connection.checkUser;
+import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
+import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
+import static org.opentripplanner.middleware.controllers.api.ApiController.USER_ID_PARAM;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -33,7 +36,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  */
 public class OtpRequestProcessor implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
-    private static final String USER_ID_PARAM = "userId";
 
     /**
      * Endpoint for the OTP Middleware's OTP proxy
@@ -84,19 +86,43 @@ public class OtpRequestProcessor implements Endpoint {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
             return null;
         }
+        OtpUser otpUser = null;
+        // If the Auth header is present, this indicates that the request was made by a logged in user.
+        if (isAuthHeaderPresent(request)) {
+            checkUser(request);
+            RequestingUser requestingUser = getUserFromRequest(request);
+            // If a user id is provided, the assumption is that an API user is making a plan request on behalf of an Otp user.
+            String userId = request.queryParams(USER_ID_PARAM);
+            if (requestingUser.otpUser != null && userId == null) {
+                // Otp user making a trip request for self.
+                otpUser = requestingUser.otpUser;
+            } else if (requestingUser.apiUser != null) {
+                // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
+                // as a query parameter.
+                otpUser = Persistence.otpUsers.getById(userId);
+                if (otpUser == null && userId != null) {
+                    logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "The specified user id was not found.");
+                } else if (!requestingUser.canManageEntity(otpUser)) {
+                    logMessageAndHalt(request,
+                        HttpStatus.FORBIDDEN_403,
+                        String.format("User: %s not authorized to make trip requests for user: %s",
+                            requestingUser.apiUser.email,
+                            otpUser.email));
+                }
+            }
+        }
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replaceFirst(OTP_PROXY_ENDPOINT, "");
-
         // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
             return null;
         }
-
         // If the request path ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
-        if (otpRequestPath.endsWith(OtpDispatcher.OTP_PLAN_ENDPOINT)) handlePlanTripResponse(request, otpDispatcherResponse);
-
+        if (otpRequestPath.endsWith(OtpDispatcher.OTP_PLAN_ENDPOINT) && otpUser != null) {
+            handlePlanTripResponse(request, otpDispatcherResponse, otpUser);
+        }
         // provide response to requester as received from OTP server
         response.type(MediaType.APPLICATION_JSON);
         response.status(otpDispatcherResponse.statusCode);
@@ -107,55 +133,16 @@ public class OtpRequestProcessor implements Endpoint {
      * Process plan response from OTP. Store the response if consent is given. Handle the process and all exceptions
      * seamlessly so as not to affect the response provided to the requester.
      */
-    private static void handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse) {
-
-        // If the Auth header is present, this indicates that the request was made by a logged in user. If present
-        // we should store trip history (but we verify this preference before doing so).
-        if (!Auth0Connection.isAuthHeaderPresent(request)) {
-            LOG.debug("Anonymous user, trip history not stored");
-            return;
-        }
+    private static void handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse, OtpUser otpUser) {
 
         String batchId = request.queryParams("batchId");
         if (batchId == null) {
             //TODO place holder for now
             batchId = "-1";
         }
-
-        // Dispatch request to OTP and store request/response summary if user elected to store trip history.
         long tripStorageStartTime = DateTimeUtils.currentTimeMillis();
-
-        Auth0Connection.checkUser(request);
-        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(request);
-        // A requesting user (Otp or third party user) is required to proceed.
-        if (requestingUser.otpUser == null && requestingUser.apiUser == null) {
-            return;
-        }
-        // TODO: Consider moving/replicating these checks (or a subset of) to before sending the request to OTP.
-        // If a user id is provided, the assumption is that an Api user is making a plan request on behalf of an Otp user.
-        String userId = request.queryParams(USER_ID_PARAM);
-        OtpUser otpUser = null;
-        if (requestingUser.otpUser != null && userId == null) {
-            // Otp user making a trip request for self.
-            otpUser = requestingUser.otpUser;
-        } else if (requestingUser.apiUser != null) {
-            // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
-            // as a query parameter.
-            otpUser = Persistence.otpUsers.getById(userId);
-            if (otpUser == null && userId != null) {
-                logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "The specified user id was not found.");
-            } else if (!otpUser.canBeManagedBy(requestingUser)) {
-                logMessageAndHalt(request,
-                    HttpStatus.FORBIDDEN_403,
-                    String.format("User: %s not authorized to make trip requests for user: %s",
-                        requestingUser.apiUser.email,
-                        otpUser.email));
-            }
-        }
-
-        final boolean storeTripHistory = otpUser != null && otpUser.storeTripHistory;
         // only save trip details if the user has given consent and a response from OTP is provided
-        if (!storeTripHistory) {
+        if (!otpUser.storeTripHistory) {
             LOG.debug("User does not want trip history stored");
         } else {
             OtpResponse otpResponse = otpDispatcherResponse.getResponse();

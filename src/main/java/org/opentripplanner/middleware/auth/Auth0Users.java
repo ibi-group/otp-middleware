@@ -259,8 +259,8 @@ public class Auth0Users {
             username,
             password,
             DEFAULT_AUDIENCE, // must match an API identifier
-            (isEndToEnd) ? AUTH0_CLIENT_ID : AUTH0_API_CLIENT, // Auth0 application client ID
-            (isEndToEnd) ? AUTH0_CLIENT_SECRET : AUTH0_API_SECRET // Auth0 application client secret
+            AUTH0_API_CLIENT, // Auth0 application client ID
+            AUTH0_API_SECRET // Auth0 application client secret
         );
         return HttpUtils.httpRequestRawResponse(
             URI.create(String.format("https://%s/oauth/token", AUTH0_DOMAIN)),

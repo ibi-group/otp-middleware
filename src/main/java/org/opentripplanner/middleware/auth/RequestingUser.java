@@ -6,6 +6,7 @@ import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import spark.Request;
@@ -85,4 +86,10 @@ public class RequestingUser {
         return adminUser != null;
     }
 
+    /**
+     * Check if this requesting user can manage the specified entity.
+     */
+    public boolean canManageEntity(Model model) {
+        return model != null && model.canBeManagedBy(this);
+    }
 }

@@ -97,18 +97,18 @@ public class ApiUser extends AbstractUser {
     }
 
     /**
-     * Shorthand method to determine if an API user has an API key.
+     * Shorthand method to determine if an API user has an API key id.
      */
-    public boolean hasKey(String apiKeyId) {
+    public boolean hasApiKeyId(String apiKeyId) {
         return apiKeys
             .stream()
             .anyMatch(apiKey -> apiKeyId.equals(apiKey.keyId));
     }
 
     /**
-     * Shorthand method to determine if an API user has an API token (value).
+     * Shorthand method to determine if an API user has an API key value.
      */
-    public boolean hasToken(String apiKeyValue) {
+    public boolean hasApiKeyValue(String apiKeyValue) {
         return apiKeys
             .stream()
             .anyMatch(apiKey -> apiKeyValue.equals(apiKey.value));

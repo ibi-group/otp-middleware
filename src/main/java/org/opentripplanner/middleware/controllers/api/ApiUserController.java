@@ -163,7 +163,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 "An api key id is required",
                 null);
         }
-        if (targetUser != null && !targetUser.hasKey(apiKeyId)) {
+        if (targetUser != null && !targetUser.hasApiKeyId(apiKeyId)) {
             logMessageAndHalt(req,
                 HttpStatus.NOT_FOUND_404,
                 String.format("User id (%s) does not have expected api key id (%s)", targetUser.id, apiKeyId),
@@ -241,7 +241,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             );
         }
 
-        if (!apiUser.canBeManagedBy(requestingUser)) {
+        if (!requestingUser.canManageEntity(apiUser)) {
             logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to perform this operation.");
         }
         return apiUser;

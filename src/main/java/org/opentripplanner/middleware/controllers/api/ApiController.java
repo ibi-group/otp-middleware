@@ -7,6 +7,7 @@ import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
+import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
@@ -194,7 +195,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         if (userId != null) {
             OtpUser otpUser = Persistence.otpUsers.getById(userId);
-            if (otpUser != null && otpUser.canBeManagedBy(requestingUser)) {
+            if (requestingUser.canManageEntity(otpUser)) {
                 return persistence.getResponseList(Filters.eq(USER_ID_PARAM, userId), offset, limit);
             } else {
                 res.status(HttpStatus.FORBIDDEN_403);
@@ -210,9 +211,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // OtpUserController. If the request is being made by an Api user the response will be limited to the Otp users
             // created by this Api user. If not, the assumption is that an Otp user is making the request and the response
             // will be limited to just the entity matching this Otp user.
-            return (requestingUser.apiUser != null)
-                ? persistence.getResponseList(Filters.eq("applicationId", requestingUser.apiUser.id), offset, limit)
-                : persistence.getResponseList(Filters.eq("_id", requestingUser.otpUser.id), offset, limit);
+            Bson filter = (requestingUser.apiUser != null)
+                ? Filters.eq("applicationId", requestingUser.apiUser.id)
+                : Filters.eq("_id", requestingUser.otpUser.id);
+            return persistence.getResponseList(filter, offset, limit);
         } else if (requestingUser.isThirdPartyUser()) {
             // A user id must be provided if the request is being made by a third party user.
             logMessageAndHalt(req,
@@ -237,7 +239,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         String id = getIdFromRequest(req);
         T object = getObjectForId(req, id);
 
-        if (!object.canBeManagedBy(requestingUser)) {
+        if (!requestingUser.canManageEntity(object)) {
             logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to get %s.", className));
         }
 
@@ -254,7 +256,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         try {
             T object = getObjectForId(req, id);
             // Check that requesting user can manage entity.
-            if (!object.canBeManagedBy(requestingUser)) {
+            if (!requestingUser.canManageEntity(object)) {
                 logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, String.format("Requesting user not authorized to delete %s.", className));
             }
             // Run pre-delete hook. If return value is false, abort.
@@ -354,7 +356,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     return null;
                 }
                 // Check that requesting user can manage entity.
-                if (!preExistingObject.canBeManagedBy(requestingUser)) {
+                if (!requestingUser.canManageEntity(preExistingObject)) {
                     logMessageAndHalt(req,
                         HttpStatus.FORBIDDEN_403,
                         String.format("Requesting user not authorized to update %s.", className));

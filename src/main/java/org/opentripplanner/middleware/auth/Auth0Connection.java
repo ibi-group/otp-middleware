@@ -144,6 +144,25 @@ public class Auth0Connection {
     }
 
     /**
+     * Check that an {@link ApiUser} is linked to an Api key.
+     */
+    //FIXME: Move this check into existing auth checks so it would be carried out automatically prior to any
+    // business logic. Consider edge cases where a user can be both an API user and OTP user.
+    public static void linkApiKeyToApiUser(Request req) {
+        RequestingUser requestingUser = getUserFromRequest(req);
+        String apiKeyValueFromHeader = req.headers("x-api-key");
+        if (requestingUser.apiUser == null ||
+            apiKeyValueFromHeader == null ||
+            !requestingUser.apiUser.hasApiKeyValue(apiKeyValueFromHeader)) {
+            // If API user not found, log message and halt.
+            logMessageAndHalt(
+                req,
+                HttpStatus.FORBIDDEN_403,
+                "API key not linked to an API user.");
+        }
+    }
+
+    /**
      * Add user profile to Spark Request object
      */
     public static void addUserToRequest(Request req, RequestingUser user) {
@@ -267,7 +286,7 @@ public class Auth0Connection {
             if (requestingUser.isThirdPartyUser()) {
                 // Api user potentially requesting an item on behalf of an Otp user they created.
                 OtpUser otpUser = Persistence.otpUsers.getById(userId);
-                if (otpUser != null && otpUser.canBeManagedBy(requestingUser)) {
+                if (requestingUser.canManageEntity(otpUser)) {
                     return;
                 }
             }

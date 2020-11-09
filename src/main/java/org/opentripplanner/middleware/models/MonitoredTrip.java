@@ -1,8 +1,6 @@
 package org.opentripplanner.middleware.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mongodb.client.model.Filters;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -248,7 +246,7 @@ public class MonitoredTrip extends Model {
         } else if (requestingUser.apiUser != null) {
             // get the required OTP user to confirm they are associated with the requesting API user.
             OtpUser otpUser = Persistence.otpUsers.getById(userId);
-            if (otpUser != null && otpUser.canBeManagedBy(requestingUser)) {
+            if (requestingUser.canManageEntity(otpUser)) {
                 return true;
             }
         } else if (requestingUser.isAdmin()) {

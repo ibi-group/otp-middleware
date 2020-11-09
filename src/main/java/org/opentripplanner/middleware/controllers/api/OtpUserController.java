@@ -44,22 +44,11 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
     @Override
     OtpUser preCreateHook(OtpUser user, Request req) {
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
-        // If an Api user is present it is assumed an attempt is being made to create an OTP user.
         if (requestingUser.apiUser != null) {
-            String apiKeyFromHeader = req.headers("x-api-key");
             // Check API key and assign user to appropriate third-party application. Note: this is only relevant for
             // instances of otp-middleware running behind API Gateway.
-            if (apiKeyFromHeader != null && requestingUser.apiUser.hasToken(apiKeyFromHeader)) {
-                // If third party and using their own api key, assign to new OTP user.
-                user.applicationId = requestingUser.apiUser.id;
-            } else {
-                // If API user not found, log message and halt.
-                logMessageAndHalt(
-                    req,
-                    HttpStatus.FORBIDDEN_403,
-                    "Attempting to create OTP user with API key that is not linked to calling third party",
-                    new IllegalArgumentException("API key not linked to API user."));
-            }
+            Auth0Connection.linkApiKeyToApiUser(req);
+            user.applicationId = requestingUser.apiUser.id;
         }
         return super.preCreateHook(user, req);
     }
