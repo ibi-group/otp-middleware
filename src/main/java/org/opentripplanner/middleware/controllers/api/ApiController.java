@@ -22,8 +22,6 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
-import java.util.Date;
-
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
