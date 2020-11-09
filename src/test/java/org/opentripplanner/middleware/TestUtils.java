@@ -37,6 +37,11 @@ public class TestUtils {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     /**
+     * Base URL for application running during testing.
+     */
+    private static final String BASE_URL = "http://localhost:4567/";
+
+    /**
      * Password used to create and validate temporary Auth0 users
      */
     static final String TEMP_AUTH0_USER_PASSWORD = UUID.randomUUID().toString();
@@ -119,13 +124,12 @@ public class TestUtils {
 
 
     /**
-     * Send request to provided URL placing the Auth0 user id in the headers so that {@link RequestingUser} can check
-     * the database for a matching user.
+     * Send request to provided URL.
      */
-    static HttpResponse<String> authenticatedRequest(String path, String body, HashMap<String, String> headers,
-                                                     HttpUtils.REQUEST_METHOD requestMethod) {
+    static HttpResponse<String> makeRequest(String path, String body, HashMap<String, String> headers,
+                                            HttpUtils.REQUEST_METHOD requestMethod) {
         return HttpUtils.httpRequestRawResponse(
-            URI.create("http://localhost:4567/" + path),
+            URI.create(BASE_URL + path),
             1000,
             requestMethod,
             headers,
@@ -134,12 +138,11 @@ public class TestUtils {
     }
 
     /**
-     * Send 'get' request to provided URL placing the Auth0 user id in the headers so that {@link RequestingUser} can
-     * check the database for a matching user.
+     * Send 'get' request to provided URL.
      */
-    static HttpResponse<String> authenticatedGet(String path, HashMap<String, String> headers) {
+    static HttpResponse<String> makeGetRequest(String path, HashMap<String, String> headers) {
         return HttpUtils.httpRequestRawResponse(
-            URI.create("http://localhost:4567/" + path),
+            URI.create(BASE_URL + path),
             1000,
             HttpUtils.REQUEST_METHOD.GET,
             headers,
@@ -148,20 +151,40 @@ public class TestUtils {
     }
 
     /**
-     * Construct http headers according to caller request and then make an authenticated call.
+     * Send 'delete' request to provided URL.
+     */
+    static HttpResponse<String> makeDeleteRequest(String path, HashMap<String, String> headers) {
+        return HttpUtils.httpRequestRawResponse(
+            URI.create(BASE_URL + path),
+            1000,
+            HttpUtils.REQUEST_METHOD.DELETE,
+            headers,
+            ""
+        );
+    }
+
+    /**
+     * Construct http headers according to caller request and then make an authenticated call by placing the Auth0 user
+     * id in the headers so that {@link RequestingUser} can check the database for a matching user.
      */
     static HttpResponse<String> mockAuthenticatedRequest(String path, String body, AbstractUser requestingUser,
-                                                         HttpUtils.REQUEST_METHOD requestMethod, boolean mockHeaders) {
-        HashMap<String, String> headers = (mockHeaders) ? getMockHeaders(requestingUser) : null;
-        return authenticatedRequest(path, body, headers, requestMethod);
+                                                         HttpUtils.REQUEST_METHOD requestMethod) {
+        return makeRequest(path, body, getMockHeaders(requestingUser), requestMethod);
     }
 
     /**
      * Construct http headers according to caller request and then make an authenticated 'get' call.
      */
-    public static HttpResponse<String> mockAuthenticatedGet(String path, AbstractUser requestingUser, boolean mockHeaders) {
-        HashMap<String, String> headers = (mockHeaders) ? getMockHeaders(requestingUser) : null;
-        return authenticatedRequest(path, "", headers, HttpUtils.REQUEST_METHOD.GET);
+    public static HttpResponse<String> mockAuthenticatedGet(String path, AbstractUser requestingUser) {
+        return makeGetRequest(path, getMockHeaders(requestingUser));
+    }
+
+    /**
+     * Construct http headers according to caller request and then make an authenticated call by placing the Auth0 user
+     * id in the headers so that {@link RequestingUser} can check the database for a matching user.
+     */
+    static HttpResponse<String> mockAuthenticatedDelete(String path, AbstractUser requestingUser) {
+        return makeDeleteRequest(path, getMockHeaders(requestingUser));
     }
 
 

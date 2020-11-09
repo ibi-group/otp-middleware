@@ -1,6 +1,8 @@
 package org.opentripplanner.middleware.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mongodb.client.model.Filters;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -322,16 +324,6 @@ public class MonitoredTrip extends Model {
             new URI(String.format("http://example.com/plan?%s", queryParams)),
             StandardCharsets.UTF_8
         ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
-    }
-
-    /**
-     * Check if the trip is planned with the target time being an arriveBy or departAt query.
-     *
-     * @return true, if the trip's target time is for an arriveBy query
-     */
-    public boolean isArriveBy() throws URISyntaxException {
-        // if arriveBy is not included in query params, OTP will default to false, so initialize to false
-        return parseQueryParams().getOrDefault("arriveBy", "false").equals("true");
     }
 
     /**

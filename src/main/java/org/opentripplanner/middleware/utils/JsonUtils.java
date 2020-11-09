@@ -1,11 +1,14 @@
 package org.opentripplanner.middleware.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
@@ -70,11 +73,19 @@ public class JsonUtils {
     }
 
     /**
+     * Utility method to parse a string representing a {@link ResponseList} correctly into its parameterized type.
+     */
+    public static <T> ResponseList<T> getResponseListFromJSON(String json, Class<T> contentClass) throws JsonProcessingException {
+        JavaType type = mapper.getTypeFactory().constructParametricType(ResponseList.class, contentClass);
+        return mapper.readValue(json, type);
+    }
+
+    /**
      * Utility method to parse generic objects from JSON String and return as list
      */
     public static <T> List<T> getPOJOFromJSONAsList(String json, Class<T> clazz) {
         try {
-            JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, clazz);
+            CollectionType type = mapper.getTypeFactory().constructCollectionType(List.class, clazz);
             return mapper.readValue(json, type);
         } catch (JsonProcessingException e) {
             BugsnagReporter.reportErrorToBugsnag(
@@ -146,12 +157,5 @@ public class JsonUtils {
             .put("message", message)
             .put("code", code)
             .put("detail", detail);
-    }
-
-    /**
-     * Get a single node value from JSON if present, else return null
-     */
-    public static String getSingleNodeValueFromJSON(String nodeName, String json) throws JsonProcessingException {
-        return mapper.readTree(json).get(nodeName).textValue();
     }
 }
