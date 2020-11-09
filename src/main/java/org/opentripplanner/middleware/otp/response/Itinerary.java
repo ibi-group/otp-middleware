@@ -143,7 +143,7 @@ public class Itinerary {
         Itinerary itinerary = (Itinerary) o;
         return duration.equals(itinerary.duration) &&
             Objects.equals(transfers, itinerary.transfers) &&
-            legs.equals(itinerary.legs);
+            Objects.equals(legs, itinerary.legs);
     }
 
     /**
