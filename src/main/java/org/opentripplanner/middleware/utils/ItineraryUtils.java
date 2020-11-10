@@ -206,7 +206,7 @@ public class ItineraryUtils {
             ) * 1000 > 5
         ) {
             return false;
-        };
+        }
 
         // if this point is reached, the stops are assumed to match
         return true;

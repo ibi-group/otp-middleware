@@ -334,7 +334,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         public final Itinerary newItinerary;
 
         /**
-         * The previous itinerary which should be perform the baseline comparison from. Uses the first
+         * The previous itinerary which should be perform the baseline comparison from.
          */
         public final Itinerary previousItinerary;
         /**
