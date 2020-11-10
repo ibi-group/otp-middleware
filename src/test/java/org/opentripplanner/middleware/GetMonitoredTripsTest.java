@@ -117,6 +117,7 @@ public class GetMonitoredTripsTest {
 
         // Create trip as Otp user 1.
         MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = soloOtpUser.id;
         HttpResponse<String> createTrip1Response = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
@@ -127,6 +128,7 @@ public class GetMonitoredTripsTest {
 
         // Create trip as Otp user 2.
         monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = multiOtpUser.id;
         HttpResponse<String> createTripResponse2 = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),

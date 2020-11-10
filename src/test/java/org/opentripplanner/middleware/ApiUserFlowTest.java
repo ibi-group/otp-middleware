@@ -184,6 +184,7 @@ public class ApiUserFlowTest {
 
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
         MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
         HttpResponse<String> createTripResponseAsOtpUser = mockAuthenticatedRequest(
             MONITORED_TRIP_PATH,
