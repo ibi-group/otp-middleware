@@ -8,10 +8,12 @@ import org.opentripplanner.middleware.utils.Scheduler;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import static org.opentripplanner.middleware.utils.ConfigUtils.loadConfig;
+
 public class Main {
     public static void main(String[] args) throws IOException {
         // Load configuration.
-        ConfigUtils.loadConfig(args);
+        loadConfig(args);
 
         // Connect to MongoDB.
         Persistence.initialize();

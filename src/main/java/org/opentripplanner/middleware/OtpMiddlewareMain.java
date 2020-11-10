@@ -16,7 +16,6 @@ import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripMonitor.jobs.MonitorAllTripsJob;
-import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
@@ -30,6 +29,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
+import static org.opentripplanner.middleware.controllers.api.ApiUserController.AUTHENTICATE_PATH;
+import static org.opentripplanner.middleware.utils.ConfigUtils.loadConfig;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -43,7 +45,7 @@ public class OtpMiddlewareMain {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         // Load configuration.
-        ConfigUtils.loadConfig(args);
+        loadConfig(args);
 
         // Connect to MongoDB.
         Persistence.initialize();
@@ -131,9 +133,12 @@ public class OtpMiddlewareMain {
                 return "OK";
             });
 
-        // Security checks for admin and /secure/ endpoints.
+        // Security checks for admin and /secure/ endpoints. Excluding /authenticate so that API users can obtain a
+        // bearer token to authenticate against all other /secure/ endpoints.
         spark.before(API_PREFIX + "/secure/*", ((request, response) -> {
-            if (!request.requestMethod().equals("OPTIONS")) Auth0Connection.checkUser(request);
+            if (!request.requestMethod().equals("OPTIONS") && !request.pathInfo().endsWith(API_USER_PATH + AUTHENTICATE_PATH)) {
+                Auth0Connection.checkUser(request);
+            }
         }));
         spark.before(API_PREFIX + "admin/*", ((request, response) -> {
             if (!request.requestMethod().equals("OPTIONS")) {

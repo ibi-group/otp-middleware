@@ -92,8 +92,6 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
 
     @Test
     public void canGetFilteredTripRequestsWithFromAndToDate() {
-        OtpUser user = createUser(TEST_EMAIL);
-        List<TripRequest> tripRequests = createTripRequests(LIMIT, user.id);
         LocalDateTime fromStartOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MIN);
         LocalDateTime toEndOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MAX);
         Date fromDate = Date.from(fromStartOfDay
@@ -102,7 +100,7 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
         Date toDate = Date.from(toEndOfDay
             .atZone(DateTimeUtils.getSystemZoneId())
             .toInstant());
-        Bson filter = filterByUserAndDateRange(user.id, fromDate, toDate);
+        Bson filter = filterByUserAndDateRange(otpUser.id, fromDate, toDate);
         ResponseList<TripRequest> result = Persistence.tripRequests.getResponseList(filter, 0, LIMIT);
         assertEquals(result.data.size(), tripRequests.size());
     }
