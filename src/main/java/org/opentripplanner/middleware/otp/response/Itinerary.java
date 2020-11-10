@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static java.lang.Boolean.TRUE;
+
 /**
  * An Itinerary is one complete way of getting from the start location to the end location.
  * Pare down version of class original produced for OpenTripPlanner.
@@ -95,16 +97,16 @@ public class Itinerary {
     }
 
     /**
-     * Determines whether the itinerary includes transit.
+     * Determines whether the itinerary includes a rental or ride hail.
      * @return true if at least one {@link Leg} of the itinerary is a rental or ride hail leg per OTP.
      */
     public boolean hasRentalOrRideHail() {
         if (legs != null) {
             for (Leg leg : legs) {
-                if (leg.rentedBike != null && leg.rentedBike ||
-                    leg.rentedCar != null && leg.rentedCar ||
-                    leg.rentedVehicle != null && leg.rentedVehicle ||
-                    leg.hailedCar != null && leg.hailedCar) {
+                if (TRUE.equals(leg.rentedBike) ||
+                    TRUE.equals(leg.rentedCar) ||
+                    TRUE.equals(leg.rentedVehicle) ||
+                    TRUE.equals(leg.hailedCar)) {
                     return true;
                 }
             }

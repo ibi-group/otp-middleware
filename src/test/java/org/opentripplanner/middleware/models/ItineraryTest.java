@@ -11,6 +11,9 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * This class contains tests for select methods in {@link Itinerary}.
+ */
 public class ItineraryTest {
     private static final Itinerary blankItinerary = new Itinerary();
     private static Itinerary itineraryWithTransitNoRentals;
