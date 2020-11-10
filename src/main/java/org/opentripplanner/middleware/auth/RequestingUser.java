@@ -45,10 +45,15 @@ public class RequestingUser {
      */
     public RequestingUser(DecodedJWT jwt) {
         this.auth0UserId = jwt.getClaim("sub").asString();
+        String scope = jwt.getClaim("scope").asString();
         Bson withAuth0UserId = Filters.eq("auth0UserId", auth0UserId);
-        otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
-        apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
-        adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
+        if (scope.equals("otp-user")) {
+            otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
+        } else if (scope.equals(ApiUser.SCOPE)) {
+            apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
+        } else {
+            adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
+        }
     }
 
     /**

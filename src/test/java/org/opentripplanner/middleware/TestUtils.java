@@ -1,6 +1,8 @@
 package org.opentripplanner.middleware;
 
+import com.auth0.json.auth.TokenHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.AbstractUser;
@@ -12,6 +14,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -92,6 +95,7 @@ public class TestUtils {
      */
     private static HashMap<String, String> getMockHeaders(AbstractUser requestingUser) {
         HashMap<String, String> headers = new HashMap<>();
+        String scope = OtpUser.SCOPE;
         // If auth is disabled, simply place the Auth0 user ID in the authorization header, which will be extracted from
         // the request when received.
         if (isAuthDisabled()) {
@@ -103,6 +107,7 @@ public class TestUtils {
         // If requester is an API user, add API key value as x-api-key header to simulate request over API Gateway.
         if (requestingUser instanceof ApiUser) {
             ApiUser apiUser = (ApiUser) requestingUser;
+            scope = ApiUser.SCOPE;
             if (!apiUser.apiKeys.isEmpty()) {
                 headers.put("x-api-key", apiUser.apiKeys.get(0).value);
             }
@@ -118,8 +123,18 @@ public class TestUtils {
         }
 
         // Otherwise, get a valid oauth token for the user
-        headers.put("Authorization", "Bearer " + Auth0Users.getAuth0AccessToken(requestingUser.email, TEMP_AUTH0_USER_PASSWORD));
+        headers.put("Authorization", "Bearer " + getMockAuth0AccessToken(requestingUser.email, scope));
         return headers;
+    }
+
+    private static String getMockAuth0AccessToken(String username, String scope) {
+        HttpResponse<String> response = Auth0Users.getApiUserAuth0TokenResponse(username, TestUtils.TEMP_AUTH0_USER_PASSWORD, scope);
+        if (response == null || response.statusCode() != HttpStatus.OK_200) {
+            LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}", username, response.statusCode(), response.body());
+            return null;
+        }
+        TokenHolder token = JsonUtils.getPOJOFromJSON(response.body(), TokenHolder.class);
+        return (token == null) ? null : token.getAccessToken();
     }
 
 
