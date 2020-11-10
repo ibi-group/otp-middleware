@@ -98,15 +98,19 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         // FIXME: For now, just check that the first itinerary in the list is valid. If we expand our check window from
         //  7 days to 14 (or more) days, this may need to be adjusted.
         Assertions.assertTrue(existence.monday.isValid());
-        Assertions.assertEquals(expectedItinerary, existence.monday.itineraries.get(0));
+        Assertions.assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, existence.monday.itineraries.get(0)));
         Assertions.assertTrue(existence.tuesday.isValid());
-        Assertions.assertEquals(expectedItinerary, existence.tuesday.itineraries.get(0));
+        Assertions.assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, existence.tuesday.itineraries.get(0)));
         Assertions.assertTrue(existence.thursday.isValid());
-        Assertions.assertEquals(expectedItinerary, existence.thursday.itineraries.get(0));
+        Assertions.assertTrue(
+            ItineraryUtils.itinerariesMatch(expectedItinerary, existence.thursday.itineraries.get(0))
+        );
         Assertions.assertTrue(existence.saturday.isValid());
-        Assertions.assertEquals(expectedItinerary, existence.saturday.itineraries.get(0));
+        Assertions.assertTrue(
+            ItineraryUtils.itinerariesMatch(expectedItinerary, existence.saturday.itineraries.get(0))
+        );
         Assertions.assertTrue(existence.sunday.isValid());
-        Assertions.assertEquals(expectedItinerary, existence.sunday.itineraries.get(0));
+        Assertions.assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, existence.sunday.itineraries.get(0)));
 
         Assertions.assertNull(existence.wednesday);
         Assertions.assertNull(existence.friday);

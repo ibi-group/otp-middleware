@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
@@ -180,7 +181,7 @@ public class ItineraryExistence extends Model {
                     // If a matching itinerary is found, save the date with the matching itinerary.
                     // The matching itinerary will replace the original trip.itinerary.
                     // FIXME Replace 'equals' with matching itinerary
-                    if (itineraryCandidate.equals(referenceItinerary)) {
+                    if (ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)) {
                         result.handleValidDate(otpRequest.date, itineraryCandidate);
                         hasMatchingItinerary = true;
                     }
