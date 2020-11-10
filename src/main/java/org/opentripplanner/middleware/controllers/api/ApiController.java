@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.ApiEndpoint;
 import com.beerboy.ss.SparkSwagger;
-import com.beerboy.ss.descriptor.EndpointDescriptor;
 import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,6 +24,7 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
+import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.HttpUtils.getRequiredParamFromRequest;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -95,7 +95,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     @Override
     public void bind(final SparkSwagger restApi) {
         ApiEndpoint apiEndpoint = restApi.endpoint(
-            EndpointDescriptor.endpointPath(ROOT_ROUTE)
+            endpointPath(ROOT_ROUTE)
                 .withDescription("Interface for querying and managing '" + className + "' entities."),
             HttpUtils.NO_FILTER
         );
