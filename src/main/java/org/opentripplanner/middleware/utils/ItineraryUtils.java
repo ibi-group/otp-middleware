@@ -4,25 +4,20 @@ import com.spatial4j.core.distance.DistanceUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
-import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.otp.response.TripPlan;
+import org.opentripplanner.middleware.otp.OtpRequest;
 
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -55,18 +50,17 @@ public class ItineraryUtils {
      * @param dates a list of the desired dates in YYYY-MM-DD format.
      * @return a map of query strings with, and indexed by the specified dates.
      */
-    public static Map<ZonedDateTime, String> getQueriesFromDates(Map<String, String> params, Set<ZonedDateTime> dates) {
+    public static List<OtpRequest> getOtpRequestsForDates(Map<String, String> params, List<ZonedDateTime> dates) {
         // Create a copy of the original params in which we change the date.
-        Map<String, String> paramsCopy = new HashMap<>(params);
-        Map<ZonedDateTime, String> queryParamsByDate = new HashMap<>();
-
+        List<OtpRequest> requests = new ArrayList<>();
         for (ZonedDateTime date : dates) {
+            // Get updated date string and add to params copy.
+            Map<String, String> paramsCopy = new HashMap<>(params);
             String dateString = DateTimeUtils.getStringFromDate(date.toLocalDate(), DEFAULT_DATE_FORMAT_PATTERN);
             paramsCopy.put(DATE_PARAM, dateString);
-            queryParamsByDate.put(date, toQueryString(paramsCopy));
+            requests.add(new OtpRequest(date, paramsCopy));
         }
-
-        return queryParamsByDate;
+        return requests;
     }
 
     /**
@@ -76,9 +70,9 @@ public class ItineraryUtils {
      * @param trip The trip from which to extract the monitored dates to check.
      * @return A list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor, sorted from earliest.
      */
-    public static Set<ZonedDateTime> getDatesToCheckItineraryExistence(MonitoredTrip trip, boolean checkAllDays)
+    public static List<ZonedDateTime> getDatesToCheckItineraryExistence(MonitoredTrip trip, boolean checkAllDays)
         throws URISyntaxException {
-        Set<ZonedDateTime> datesToCheck = new HashSet<>();
+        List<ZonedDateTime> datesToCheck = new ArrayList<>();
         Map<String, String> params = trip.parseQueryParams();
 
         // Start from the query date, if available.
@@ -98,65 +92,12 @@ public class ItineraryUtils {
     }
 
     /**
-     * Gets OTP queries to check non-realtime itinerary existence for the given trip.
-     */
-    public static Map<ZonedDateTime, String> getItineraryExistenceQueries(MonitoredTrip trip, boolean checkAllDays)
-        throws URISyntaxException {
-        return getQueriesFromDates(
-            excludeRealtime(trip.parseQueryParams()),
-            getDatesToCheckItineraryExistence(trip, checkAllDays)
-        );
-    }
-
-    /**
      * @return a copy of the specified query parameter map, with ignoreRealtimeUpdates set to true.
      */
     public static Map<String, String> excludeRealtime(Map<String, String> params) {
         Map<String, String> result = new HashMap<>(params);
         result.put(IGNORE_REALTIME_UPDATES_PARAM, "true");
         return result;
-    }
-
-    /**
-     * Checks that, for each query provided, an itinerary exists.
-     * @return An object with a map of results and summary of itinerary existence.
-     */
-    public static ItineraryExistence checkItineraryExistence(MonitoredTrip trip, boolean checkAllDays, boolean sortDates) throws URISyntaxException {
-        // Get queries to execute by date.
-        Map<ZonedDateTime, String> queriesByDate = ItineraryUtils.getItineraryExistenceQueries(trip, checkAllDays);
-        // TODO: Consider multi-threading?
-        Map<ZonedDateTime, Itinerary> datesWithMatchingItineraries = new HashMap<>();
-
-        Collection<Map.Entry<ZonedDateTime, String>> entriesToIterate = sortDates
-            ? queriesByDate.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .collect(Collectors.toList())
-            : queriesByDate.entrySet();
-
-        for (Map.Entry<ZonedDateTime, String> entry : entriesToIterate) {
-            ZonedDateTime date = entry.getKey();
-            String params = entry.getValue();
-
-            OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(params);
-            TripPlan plan = response.getResponse().plan;
-            if (plan != null && plan.itineraries != null) {
-                for (Itinerary itinerary: plan.itineraries) {
-                    // If a matching itinerary is found, save the date with the matching itinerary.
-                    // The matching itinerary will replace the original trip.itinerary.
-                    if (itinerariesMatch(trip.itinerary, itinerary)) {
-                        datesWithMatchingItineraries.put(date, itinerary);
-                    }
-                }
-            }
-        }
-        return new ItineraryExistence(queriesByDate.keySet(), datesWithMatchingItineraries);
-    }
-
-    /**
-     * Overload used in normal conditions.
-     */
-    public static ItineraryExistence checkItineraryExistence(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
-        return checkItineraryExistence(trip, checkAllDays,false);
     }
 
     /**
@@ -283,13 +224,4 @@ public class ItineraryUtils {
             zonedDateTimeA.getMinute() == zonedDateTimeB.getMinute() &&
             zonedDateTimeA.getSecond() == zonedDateTimeB.getSecond();
     }
-
-    /**
-     * Variant of checkItineraryExistence used for tests,
-     * to ensure that the order of the dates to check matches the order of the mock OTP responses for those dates.
-     */
-    public static ItineraryExistence checkItineraryExistenceOrdered(MonitoredTrip trip, boolean checkAllDays) throws URISyntaxException {
-        return checkItineraryExistence(trip, checkAllDays,true);
-    }
-
 }

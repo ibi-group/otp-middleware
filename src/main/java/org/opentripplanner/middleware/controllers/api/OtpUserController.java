@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import com.beerboy.ss.ApiEndpoint;
 import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import com.mongodb.client.model.Filters;
 import org.opentripplanner.middleware.auth.Auth0UserProfile;
@@ -17,6 +18,9 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -28,9 +32,12 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
     private static final Logger LOG = LoggerFactory.getLogger(OtpUserController.class);
 
     private static final String CODE_PARAM = "code";
-    protected static final String CODE_PATH = "/:" + CODE_PARAM;
-    private static final String VERIFY_ROUTE = "/verify_sms";
+    private static final String PHONE_PARAM = "phoneNumber";
+    private static final String VERIFY_PATH = "verify_sms";
     public static final String OTP_USER_PATH = "secure/user";
+    private static final String VERIFY_ROUTE_TEMPLATE = "/:%s/%s/:%s";
+    /** Regex to check E.164 phone number format per https://www.twilio.com/docs/glossary/what-e164 */
+    private static final Pattern PHONE_E164_PATTERN = Pattern.compile("^\\+[1-9]\\d{1,14}$");
 
     public OtpUserController(String apiPrefix) {
         super(apiPrefix, Persistence.otpUsers, OTP_USER_PATH);
@@ -58,20 +65,22 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
 
     @Override
     protected void buildEndpoint(ApiEndpoint baseEndpoint) {
-        LOG.info("Registering path {}.", ROOT_ROUTE + "verify");
+        LOG.info("Registering path {}/{}.", ROOT_ROUTE, VERIFY_PATH);
 
         // Add the api key route BEFORE the regular CRUD methods
         ApiEndpoint modifiedEndpoint = baseEndpoint
-            .get(path(ROOT_ROUTE + ID_PATH + VERIFY_ROUTE)
+            .get(path(ROOT_ROUTE + String.format(VERIFY_ROUTE_TEMPLATE, ID_PARAM, VERIFY_PATH, PHONE_PARAM))
                     .withDescription("Request an SMS verification to be sent to an OtpUser's phone number.")
-                    .withPathParam().withName(ID_PARAM).withDescription("The id of the OtpUser.").and()
+                    .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the OtpUser.").and()
+                    .withPathParam().withName(PHONE_PARAM).withRequired(true).withDescription(
+                        "The phone number to validate, in E.164 format (e.g. +15555550123).").and()
                     .withResponseType(VerificationResult.class),
                 this::sendVerificationText, JsonUtils::toJson
             )
-            .post(path(ID_PATH + VERIFY_ROUTE + CODE_PATH)
+            .post(path(String.format(VERIFY_ROUTE_TEMPLATE, ID_PARAM, VERIFY_PATH, CODE_PARAM))
                     .withDescription("Verify an OtpUser's phone number with a verification code.")
-                    .withPathParam().withName(ID_PARAM).withDescription("The id of the OtpUser.").and()
-                    .withPathParam().withName(CODE_PARAM).withDescription("The SMS verification code.").and()
+                    .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the OtpUser.").and()
+                    .withPathParam().withName(CODE_PARAM).withRequired(true).withDescription("The SMS verification code.").and()
                     .withResponseType(VerificationResult.class),
                 this::verifyPhoneWithCode, JsonUtils::toJson
             );
@@ -88,23 +97,42 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
      * HTTP endpoint to send an SMS text to an {@link OtpUser}'s phone number with a verification code. This is used
      * during user signup (or if a user wishes to change their notification preferences to use a new un-verified phone
      * number).
+     * Before sending a SMS request, this endpoint also saves the submitted phone number, marks it as not verified.
      */
     public VerificationResult sendVerificationText(Request req, Response res) {
         OtpUser otpUser = getEntityForId(req, res);
-        if (otpUser.phoneNumber == null) {
-            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "User must have valid phone number to verify.");
+        // Get phone number from the path param.
+        String phoneNumber = req.params(PHONE_PARAM);
+
+        if (!isPhoneNumberValidE164(phoneNumber)) {
+            logMessageAndHalt(
+                req,
+                HttpStatus.BAD_REQUEST_400,
+                "Phone number is invalid."
+            );
         }
-        Verification verification = NotificationUtils.sendVerificationText(otpUser.phoneNumber);
+
+        Verification verification = NotificationUtils.sendVerificationText(phoneNumber);
         if (verification == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Unknown error sending verification text");
         }
-        // Verification result will show "pending" status if verification text is successfully sent.
+
+        // Update OtpUser.phoneNumber after successfully submitting the SMS.
+        // (Verification result will show "pending" status if verification text is successfully sent.)
+        if (verification.getStatus().equals("pending")) {
+            otpUser.phoneNumber = phoneNumber;
+            otpUser.isPhoneNumberVerified = false;
+            otpUser.notificationChannel = "sms";
+            Persistence.otpUsers.replace(otpUser.id, otpUser);
+        }
+
         return new VerificationResult(verification);
     }
 
     /**
      * HTTP endpoint for an {@link OtpUser} to post a verification code sent to their phone in order to verify their
      * phone number.
+     * If the verification succeeds, this endpoint sets isPhoneNumberVerified to true.
      */
     public VerificationResult verifyPhoneWithCode(Request req, Response res) {
         OtpUser otpUser = getEntityForId(req, res);
@@ -113,8 +141,8 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         if (code == null) {
             logMessageAndHalt(req, 400, "Missing code from verify request.");
         }
-        if (otpUser.phoneNumber == null) {
-            logMessageAndHalt(req, 404, "User must have valid phone number for SMS verification.");
+        if (!isPhoneNumberValidE164(otpUser.phoneNumber)) {
+            logMessageAndHalt(req, 404, "User must have a valid phone number for SMS verification.");
         }
         // Check verification code with SMS service.
         VerificationCheck check = NotificationUtils.checkSmsVerificationCode(otpUser.phoneNumber, code);
@@ -125,7 +153,25 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
                 "Unknown error encountered while checking SMS verification code"
             );
         }
-        // If the check is successful, status will be "approved"
-        return new VerificationResult(check);
+
+        // If the check is successful, status will be "approved".
+        VerificationResult verificationResult = new VerificationResult(check);
+        if (verificationResult.status.equals("approved")) {
+            // If the check is successful, update the OtpUser's isPhoneNumberVerified.
+            otpUser.isPhoneNumberVerified = true;
+            Persistence.otpUsers.replace(otpUser.id, otpUser);
+        }
+
+        return verificationResult;
+    }
+
+    /**
+     * @return true if the argument matches the E.164 format (e.g. +15555550123), false otherwise.
+     */
+    public static boolean isPhoneNumberValidE164(String phoneNumber) {
+        if (StringUtils.isBlank(phoneNumber)) return false;
+
+        Matcher m = PHONE_E164_PATTERN.matcher(phoneNumber);
+        return m.matches();
     }
 }
