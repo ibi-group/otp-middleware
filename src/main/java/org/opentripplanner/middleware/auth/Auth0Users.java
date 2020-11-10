@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getBooleanEnvVar;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -39,17 +38,10 @@ public class Auth0Users {
     // This client/secret pair is for making requests for an API access token used with the Management API.
     private static final String AUTH0_API_CLIENT = getConfigPropertyAsText("AUTH0_API_CLIENT");
     private static final String AUTH0_API_SECRET = getConfigPropertyAsText("AUTH0_API_SECRET");
-    private static final String AUTH0_CLIENT_ID = getConfigPropertyAsText("AUTH0_CLIENT_ID");
-    private static final String AUTH0_CLIENT_SECRET = getConfigPropertyAsText("AUTH0_CLIENT_SECRET");
     private static final String DEFAULT_CONNECTION_TYPE = "Username-Password-Authentication";
     private static final String DEFAULT_AUDIENCE = "https://otp-middleware";
     private static final String MANAGEMENT_API_VERSION = "v2";
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
-
-    /**
-     * Whether the end-to-end environment variable is enabled.
-     */
-    private static final boolean isEndToEnd = getBooleanEnvVar("RUN_E2E");
 
     /**
      * Cached API token so that we do not have to request a new one each time a Management API request is made.

@@ -74,7 +74,6 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             // Authenticate user with Auth0
             .post(path(AUTHENTICATE_PATH)
                     .withDescription("Authenticates ApiUser with Auth0.")
-                    .withPathParam().withName(ID_PARAM).withDescription("The user ID.").and()
                     .withQueryParam().withName(USERNAME_PARAM).withRequired(true)
                     .withDescription("Auth0 username (usually email address).").and()
                     .withQueryParam().withName(PASSWORD_PARAM).withRequired(true)

@@ -47,7 +47,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         if (requestingUser.apiUser != null) {
             // Check API key and assign user to appropriate third-party application. Note: this is only relevant for
             // instances of otp-middleware running behind API Gateway.
-            Auth0Connection.linkApiKeyToApiUser(req);
+            Auth0Connection.ensureApiUserHasApiKey(req);
             user.applicationId = requestingUser.apiUser.id;
         }
         return super.preCreateHook(user, req);

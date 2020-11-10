@@ -144,11 +144,12 @@ public class Auth0Connection {
     }
 
     /**
-     * Check that an {@link ApiUser} is linked to an Api key.
+     * Check that the API key used in the incoming request is associated with the matching {@link ApiUser} (which is
+     * determined from the Authorization header).
      */
     //FIXME: Move this check into existing auth checks so it would be carried out automatically prior to any
     // business logic. Consider edge cases where a user can be both an API user and OTP user.
-    public static void linkApiKeyToApiUser(Request req) {
+    public static void ensureApiUserHasApiKey(Request req) {
         RequestingUser requestingUser = getUserFromRequest(req);
         String apiKeyValueFromHeader = req.headers("x-api-key");
         if (requestingUser.apiUser == null ||

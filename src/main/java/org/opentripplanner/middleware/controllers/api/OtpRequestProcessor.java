@@ -5,6 +5,7 @@ import com.beerboy.ss.descriptor.EndpointDescriptor;
 import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -86,17 +87,19 @@ public class OtpRequestProcessor implements Endpoint {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
             return null;
         }
+        // If a user id is provided, the assumption is that an API user is making a plan request on behalf of an Otp user.
+        String userId = request.queryParams(USER_ID_PARAM);
+        String apiKeyValueFromHeader = request.headers("x-api-key");
         OtpUser otpUser = null;
         // If the Auth header is present, this indicates that the request was made by a logged in user.
         if (isAuthHeaderPresent(request)) {
             checkUser(request);
             RequestingUser requestingUser = getUserFromRequest(request);
-            // If a user id is provided, the assumption is that an API user is making a plan request on behalf of an Otp user.
-            String userId = request.queryParams(USER_ID_PARAM);
             if (requestingUser.otpUser != null && userId == null) {
                 // Otp user making a trip request for self.
                 otpUser = requestingUser.otpUser;
             } else if (requestingUser.apiUser != null) {
+                Auth0Connection.ensureApiUserHasApiKey(request);
                 // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
                 // as a query parameter.
                 otpUser = Persistence.otpUsers.getById(userId);
@@ -110,6 +113,11 @@ public class OtpRequestProcessor implements Endpoint {
                             otpUser.email));
                 }
             }
+        } else if (userId != null && apiKeyValueFromHeader == null) {
+            // User id has been provided, but no means to authorize the requesting user.
+            logMessageAndHalt(request,
+                HttpStatus.UNAUTHORIZED_401,
+                "Unauthorized trip request, authorization required.");
         }
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replaceFirst(OTP_PROXY_ENDPOINT, "");
