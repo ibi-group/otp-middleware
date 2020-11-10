@@ -153,8 +153,6 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private boolean updateMatchingItinerary() {
         for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
-            // TODO: BIG - Find the specific itinerary to compare against. For now, use equals, but this may need some
-            //  tweaking
             Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
             if (ItineraryUtils.itinerariesMatch(candidateItinerary, trip.itinerary)) {
                 matchingItinerary = candidateItinerary;

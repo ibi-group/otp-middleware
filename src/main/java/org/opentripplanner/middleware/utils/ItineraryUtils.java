@@ -114,7 +114,7 @@ public class ItineraryUtils {
      * @param newItinerary A new itinerary that might match the previous itinerary.
      */
     public static boolean itinerariesMatch(Itinerary previousItinerary, Itinerary newItinerary) {
-        // make sure either itinerary is savable before continuing
+        // make sure either itinerary is monitorable before continuing
         if (!itineraryIsSavable(previousItinerary) || !itineraryIsSavable(newItinerary)) return false;
 
         // make sure itineraries have same amount of legs
@@ -125,56 +125,66 @@ public class ItineraryUtils {
             Leg previousItineraryLeg = previousItinerary.legs.get(i);
             Leg newItineraryLeg = newItinerary.legs.get(i);
 
-            // for now don't analyze non-transit legs
-            if (!previousItineraryLeg.transitLeg) continue;
-
-            // make sure the same from/to stop are being used
-            if (
-                !stopsMatch(previousItineraryLeg.from, newItineraryLeg.from) ||
-                    !stopsMatch(previousItineraryLeg.to, newItineraryLeg.to)
-            ) {
-                return false;
-            }
-
-            // make sure the transit service is the same as perceived by the customer
-            if (
-                !equalsOrPreviousWasNull(previousItineraryLeg.mode, newItineraryLeg.mode) ||
-                    !equalsIgnoreCaseOrPreviousWasEmpty(previousItineraryLeg.agencyName, newItineraryLeg.agencyName) ||
-                    !equalsIgnoreCaseOrPreviousWasEmpty(
-                        previousItineraryLeg.routeLongName,
-                        newItineraryLeg.routeLongName
-                    ) ||
-                    !equalsIgnoreCaseOrPreviousWasEmpty(
-                        previousItineraryLeg.routeShortName,
-                        newItineraryLeg.routeShortName
-                    ) ||
-                    !equalsIgnoreCaseOrPreviousWasEmpty(
-                        previousItineraryLeg.headsign,
-                        newItineraryLeg.headsign
-                    ) ||
-                    !equalsOrPreviousWasNull(
-                        previousItineraryLeg.interlineWithPreviousLeg,
-                        newItineraryLeg.interlineWithPreviousLeg
-                    )
-            ) {
-                return false;
-            }
-
-            // make sure the transit trips are scheduled for the same time of the day
-            if (
-                !timeOfDayMatches(
-                    previousItineraryLeg.getScheduledStartTime(),
-                    newItineraryLeg.getScheduledStartTime()
-                ) || !timeOfDayMatches(
-                    previousItineraryLeg.getScheduledEndTime(),
-                    newItineraryLeg.getScheduledEndTime()
-                )
-            ) {
-                return false;
-            }
+            if (!legsMatch(previousItineraryLeg, newItineraryLeg)) return false;
         }
 
         // if this point is reached, the itineraries are assumed to match
+        return true;
+    }
+
+    /**
+     * Check whether a new leg of an itinerary matches the previous itinerary leg for the purposes of trip monitoring.
+     */
+    private static boolean legsMatch(Leg previousItineraryLeg, Leg newItineraryLeg) {
+        // for now don't analyze non-transit legs
+        if (!previousItineraryLeg.transitLeg) return true;
+
+        // make sure the same from/to stop are being used
+        if (
+            !stopsMatch(previousItineraryLeg.from, newItineraryLeg.from) ||
+                !stopsMatch(previousItineraryLeg.to, newItineraryLeg.to)
+        ) {
+            return false;
+        }
+
+        // make sure the transit service is the same as perceived by the customer
+        if (
+            !equalsOrPreviousWasNull(previousItineraryLeg.mode, newItineraryLeg.mode) ||
+                !equalsIgnoreCaseOrPreviousWasEmpty(previousItineraryLeg.agencyName, newItineraryLeg.agencyName) ||
+                !equalsIgnoreCaseOrPreviousWasEmpty(
+                    previousItineraryLeg.routeLongName,
+                    newItineraryLeg.routeLongName
+                ) ||
+                !equalsIgnoreCaseOrPreviousWasEmpty(
+                    previousItineraryLeg.routeShortName,
+                    newItineraryLeg.routeShortName
+                ) ||
+                !equalsIgnoreCaseOrPreviousWasEmpty(
+                    previousItineraryLeg.headsign,
+                    newItineraryLeg.headsign
+                ) ||
+                !equalsOrPreviousWasNull(
+                    previousItineraryLeg.interlineWithPreviousLeg,
+                    newItineraryLeg.interlineWithPreviousLeg
+                )
+        ) {
+            return false;
+        }
+
+        // make sure the transit trips are scheduled for the same time of the day
+        if (
+            !timeOfDayMatches(
+                previousItineraryLeg.getScheduledStartTime(),
+                newItineraryLeg.getScheduledStartTime()
+            ) || !timeOfDayMatches(
+                previousItineraryLeg.getScheduledEndTime(),
+                newItineraryLeg.getScheduledEndTime()
+            )
+        ) {
+            return false;
+        }
+
+        // if this point is reached, the legs are assumed to match
         return true;
     }
 
@@ -183,7 +193,7 @@ public class ItineraryUtils {
      */
     private static boolean stopsMatch(Place stopA, Place stopB) {
         // stop names must match
-        if (!StringUtils.equalsIgnoreCase(stopA.name, stopB.name)) return false;
+        if (!stopA.name.equalsIgnoreCase(stopB.name)) return false;
 
         // stop code must match
         if (!equalsIgnoreCaseOrPreviousWasEmpty(stopA.stopCode, stopB.stopCode)) return false;
@@ -213,7 +223,7 @@ public class ItineraryUtils {
      * Returns true if the previous string was empty. Otherwise, returns if the strings are equal ignoring case.
      */
     private static boolean equalsIgnoreCaseOrPreviousWasEmpty(String previous, String newer) {
-        return StringUtils.isEmpty(previous) || StringUtils.equalsIgnoreCase(previous, newer);
+        return StringUtils.isEmpty(previous) || previous.equalsIgnoreCase(newer);
     }
 
     /**

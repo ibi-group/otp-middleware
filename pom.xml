@@ -299,6 +299,7 @@
             <version>${awsjavasdk.version}</version>
         </dependency>
 
+        <!-- Used for haversine calculations with GPS coordinates -->
         <dependency>
             <groupId>com.spatial4j</groupId>
             <artifactId>spatial4j</artifactId>
