@@ -87,4 +87,32 @@ public class ApiUser extends AbstractUser {
     public static ApiUser userForApiKey(String apiKeyId) {
         return Persistence.apiUsers.getOneFiltered(Filters.elemMatch("apiKeys", Filters.eq("keyId", apiKeyId)));
     }
+
+    /**
+     * @return the first {@link ApiUser} found with an {@link ApiKey#value} in {@link #apiKeys} that matches the
+     * provided apiKeyValue.
+     */
+    public static ApiUser userForApiKeyValue(String apiKeyValue) {
+        return Persistence.apiUsers.getOneFiltered(Filters.elemMatch("apiKeys", Filters.eq("value", apiKeyValue)));
+    }
+
+    /**
+     * Shorthand method to determine if an API user has an API key id.
+     */
+    public boolean hasApiKeyId(String apiKeyId) {
+        return apiKeys
+            .stream()
+            .anyMatch(apiKey -> apiKeyId.equals(apiKey.keyId));
+    }
+
+    /**
+     * Shorthand method to determine if an API user has an API key value.
+     */
+    public boolean hasApiKeyValue(String apiKeyValue) {
+        return apiKeys
+            .stream()
+            .anyMatch(apiKey -> apiKeyValue.equals(apiKey.value));
+    }
+
+
 }

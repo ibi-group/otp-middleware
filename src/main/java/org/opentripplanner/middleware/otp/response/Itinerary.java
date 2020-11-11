@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -111,7 +110,7 @@ public class Itinerary {
         Itinerary itinerary = (Itinerary) o;
         return duration.equals(itinerary.duration) &&
             Objects.equals(transfers, itinerary.transfers) &&
-            legs.equals(itinerary.legs);
+            Objects.equals(legs, itinerary.legs);
     }
 
     /**

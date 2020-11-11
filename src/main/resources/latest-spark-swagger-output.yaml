@@ -80,6 +80,11 @@ paths:
         required: false
         type: "string"
         default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -212,6 +217,29 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ApiUser"
+  /api/secure/application/authenticate:
+    post:
+      tags:
+      - "api/secure/application"
+      description: "Authenticates ApiUser with Auth0."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "username"
+        in: "query"
+        description: "Auth0 username (usually email address)."
+        required: false
+        type: "string"
+      - name: "password"
+        in: "query"
+        description: "Auth0 password."
+        required: false
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/TokenHolder"
   /api/secure/application/fromtoken:
     get:
       tags:
@@ -257,6 +285,11 @@ paths:
         required: false
         type: "string"
         default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -342,6 +375,25 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ApiUser"
+  /api/secure/monitoredtrip/checkitinerary:
+    post:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Returns the itinerary existence check results for a monitored\
+        \ trip."
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredTrip"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ItineraryExistence"
   /api/secure/monitoredtrip:
     get:
       tags:
@@ -362,6 +414,11 @@ paths:
         required: false
         type: "string"
         default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -581,6 +638,11 @@ paths:
         required: false
         type: "string"
         default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -735,7 +797,13 @@ paths:
       produces:
       - "application/json"
       - "application/xml"
-      parameters: []
+      parameters:
+      - name: "userId"
+        in: "query"
+        description: "If a third-party application is making a trip plan request on\
+          \ behalf of an end user (OtpUser), the user id must be specified."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -803,6 +871,20 @@ definitions:
         type: "boolean"
       name:
         type: "string"
+  TokenHolder:
+    type: "object"
+    properties:
+      accessToken:
+        type: "string"
+      idToken:
+        type: "string"
+      refreshToken:
+        type: "string"
+      tokenType:
+        type: "string"
+      expiresIn:
+        type: "integer"
+        format: "int64"
   EncodedPolyline:
     type: "object"
     properties:
@@ -864,6 +946,21 @@ definitions:
       lat:
         type: "number"
         format: "double"
+  ItineraryExistenceResult:
+    type: "object"
+    properties:
+      invalidDates:
+        type: "array"
+        items:
+          type: "string"
+      validDates:
+        type: "array"
+        items:
+          type: "string"
+      itineraries:
+        type: "array"
+        items:
+          $ref: "#/definitions/Itinerary"
   Fare:
     type: "object"
     properties:
@@ -961,6 +1058,13 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/LocalizedAlert"
+  OtpRequest:
+    type: "object"
+    properties:
+      date:
+        $ref: "#/definitions/ZonedDateTime"
+      requestParameters:
+        $ref: "#/definitions/Map"
   Price:
     type: "object"
     properties:
@@ -969,6 +1073,36 @@ definitions:
       cents:
         type: "integer"
         format: "int32"
+  ItineraryExistence:
+    type: "object"
+    properties:
+      otpRequests:
+        type: "array"
+        items:
+          $ref: "#/definitions/OtpRequest"
+      referenceItinerary:
+        $ref: "#/definitions/Itinerary"
+      monday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      tuesday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      wednesday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      thursday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      friday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      saturday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      sunday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      message:
+        type: "string"
+      error:
+        type: "boolean"
+      timestamp:
+        type: "string"
+        format: "date"
   Currency:
     type: "object"
     properties:
@@ -1143,6 +1277,8 @@ definitions:
         format: "int32"
       notifyOnItineraryChange:
         type: "boolean"
+      itineraryExistence:
+        $ref: "#/definitions/ItineraryExistence"
   TripRequest:
     type: "object"
     properties:

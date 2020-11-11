@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 
@@ -18,7 +18,7 @@ public class AdminUserController extends AbstractUserController<AdminUser> {
     }
 
     @Override
-    protected AdminUser getUserProfile(Auth0UserProfile profile) {
+    protected AdminUser getUserProfile(RequestingUser profile) {
         return profile.adminUser;
     }
 }

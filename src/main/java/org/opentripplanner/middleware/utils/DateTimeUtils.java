@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -14,6 +15,8 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.util.Date;
+
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
  * Date and time specific utils. All timing in this application should be obtained by using this method in order to
@@ -32,7 +35,7 @@ public class DateTimeUtils {
     private static ZoneId zoneId = clock.getZone();
 
     /**
-     * Get {@Link java.time.LocalDate} from provided value base on expected date format. The date conversion
+     * Get {@link java.time.LocalDate} from provided value base on expected date format. The date conversion
      * is based on the system time zone.
      */
     public static LocalDate getDateFromParam(String paramName, String paramValue, String expectedDatePattern)
@@ -143,10 +146,31 @@ public class DateTimeUtils {
      * timezone identifier of the first agency that it finds.
      */
     public static ZoneId getOtpZoneId() {
-        String otpTzId = ConfigUtils.getConfigPropertyAsText("OTP_TIMEZONE");
+        String otpTzId = getConfigPropertyAsText("OTP_TIMEZONE");
         if (otpTzId == null) {
             throw new RuntimeException("OTP_TIMEZONE is not defined in config!");
         }
         return ZoneId.of(otpTzId);
+    }
+
+    /**
+     * Converts a {@link LocalDate} object from the 'date' query parameter string,
+     * or returns today's date if that parameter is null.
+     */
+    public static LocalDate getDateFromQueryDateString(String dateString) {
+        return dateString == null
+            ? nowAsLocalDate()
+            : getDateFromString(dateString, DEFAULT_DATE_FORMAT_PATTERN);
+    }
+
+    /**
+     * Makes a {@link ZonedDateTime} object from a date string and a time string, using OTP's time zone.
+     */
+    public static ZonedDateTime makeZonedDateTime(String dateString, String timeString) {
+        return ZonedDateTime.of(
+            getDateFromString(dateString, DEFAULT_DATE_FORMAT_PATTERN),
+            LocalTime.parse(timeString),
+            DateTimeUtils.getOtpZoneId()
+        );
     }
 }
