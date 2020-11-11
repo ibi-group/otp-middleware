@@ -11,8 +11,6 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.controllers.api.ApiUserController;
-import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -72,8 +70,8 @@ public class Auth0Connection {
             DecodedJWT jwt = verifier.verify(token);
             RequestingUser profile = new RequestingUser(jwt);
             if (!isValidUser(profile)) {
-                if (isCreatingOrEmailingSelf(req, profile)) {
-                    // If creating self, no user account is required (it does not exist yet!). Note: creating an
+                if (expectsMissingProfile(req, profile)) {
+                    // If creating or emailing self, no user account is required (it does not exist yet!). Note: creating an
                     // admin user requires that the requester is an admin (checkUserIsAdmin must be passed), so this
                     // is not a concern for that method/controller.
                     LOG.info("New user is creating self. OK to proceed without existing user object for auth0UserId");
@@ -97,38 +95,15 @@ public class Auth0Connection {
     }
 
     /**
-     * Check for POST requests that are creating an {@link AbstractUser} (a proxy for OTP/API users),
-     * or GET requests for resending the verification email.
+     * Checks whether the given {@link Request} should expect missing {@link ApiUser} or {@link OtpUser} profiles,
+     * to handle situations such as during new user sign up where the ApiUser or OtpUser does not exist yet.
+     * @return true if the request can operate without a user profile, false otherwise.
      */
-    private static boolean isCreatingOrEmailingSelf(Request req, RequestingUser profile) {
-        String uri = req.uri();
-        String method = req.requestMethod();
-        if (method.equalsIgnoreCase("POST")) {
-            // If this a POST request, it should be against the secure/user or secure/application route.
-            // Next, check that an OtpUser or ApiUser is being created (an admin must rely on another admin to create
-            // them).
-            boolean creatingOtpUser = uri.endsWith(OtpUserController.OTP_USER_PATH);
-            boolean creatingApiUser = uri.endsWith(ApiUserController.API_USER_PATH);
-            if (creatingApiUser || creatingOtpUser) {
-                // Get the correct user class depending on request path.
-                Class<? extends AbstractUser> userClass = creatingApiUser ? ApiUser.class : OtpUser.class;
-                try {
-                    // Next, get the user object from the request body, verifying that the Auth0UserId matches between
-                    // requester and the new user object.
-                    AbstractUser user = JsonUtils.getPOJOFromRequestBody(req, userClass);
-                    return profile.auth0UserId.equals(user.auth0UserId);
-                } catch (JsonProcessingException e) {
-                    LOG.warn("Could not parse user object from request.", e);
-                }
-            }
-        } else if (method.equalsIgnoreCase("GET")) {
-            // If this a GET request, it should be against the verification-email route for /user or /application.
-            // (Email verification does not apply to admins.)
-            return uri.endsWith(API_USER_PATH + VERIFICATION_EMAIL_PATH) ||
-                uri.endsWith(OTP_USER_PATH + VERIFICATION_EMAIL_PATH);
-        }
-        return false;
+    private static boolean expectsMissingProfile(Request req, RequestingUser profile) {
+        return isCreatingSelf(req, profile) || isRequestingVerificationEmail(req);
     }
+
+
 
     public static boolean isAuthHeaderPresent(Request req) {
         final String authHeader = req.headers("Authorization");
@@ -302,5 +277,47 @@ public class Auth0Connection {
             }
         }
         logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Unauthorized access.");
+    }
+
+    /**
+     * @return true if the given request is for a user creating themselves, as in new user sign up.
+     * // TODO: add tests.
+     */
+    static boolean isCreatingSelf(Request req, RequestingUser profile) {
+        if (req.requestMethod().equalsIgnoreCase("POST")) {
+            // Should be a POST request against the secure/user or secure/application route, so we know
+            // that an OtpUser or ApiUser is being created. (Admins must rely on another admins to create them.)
+            String uri = req.uri();
+            boolean creatingOtpUser = uri.endsWith(OTP_USER_PATH);
+            boolean creatingApiUser = uri.endsWith(API_USER_PATH);
+            if (creatingApiUser || creatingOtpUser) {
+                // Get the correct user class depending on request path.
+                Class<? extends AbstractUser> userClass = creatingApiUser ? ApiUser.class : OtpUser.class;
+                try {
+                    // Next, get the user object from the request body, verifying that the Auth0UserId matches between
+                    // requester and the new user object.
+                    AbstractUser user = JsonUtils.getPOJOFromRequestBody(req, userClass);
+                    return profile.auth0UserId.equals(user.auth0UserId);
+                } catch (JsonProcessingException e) {
+                    LOG.warn("Could not parse user object from request.", e);
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @return true if the given request is for a user requesting to resend a verification email during sign up.
+     * // TODO: add tests.
+     */
+    static boolean isRequestingVerificationEmail(Request req) {
+        if (req.requestMethod().equalsIgnoreCase("GET")) {
+            // Should be a GET request against the verification-email route for /user or /application.
+            // (Email verification does not apply to admins.)
+            String uri = req.uri();
+            return uri.endsWith(API_USER_PATH + VERIFICATION_EMAIL_PATH) ||
+                uri.endsWith(OTP_USER_PATH + VERIFICATION_EMAIL_PATH);
+        }
+        return false;
     }
 }
