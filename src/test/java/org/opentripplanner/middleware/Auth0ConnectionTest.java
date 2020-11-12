@@ -8,6 +8,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0Users;
+import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -31,11 +32,18 @@ import static org.opentripplanner.middleware.utils.HttpUtils.REQUEST_METHOD.GET;
 import static org.opentripplanner.middleware.utils.HttpUtils.REQUEST_METHOD.POST;
 
 /**
- * Tests for select methods from {@link Auth0Connection}
+ * Tests for select methods from {@link Auth0Connection}.
  */
 public class Auth0ConnectionTest {
 
-    private static OtpUser otpUser;
+    /**
+     * This dummy AbstractUser only holds an email and auth0 id and is passed solely to generate request headers.
+     * It is indifferently initialized as an OtpUser. This user is not persisted.
+     */
+    private static AbstractUser dummyRequestingUser = new OtpUser();
+    /**
+     * A real auth0 user, created to provide an authorization token.
+     */
     private static User auth0User;
 
     @BeforeAll
@@ -44,14 +52,13 @@ public class Auth0ConnectionTest {
         OtpMiddlewareTest.setUp();
         setAuthDisabled(false);
 
-        // The user to be created (this instance is not persisted).
-        otpUser = new OtpUser();
-        otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
+        dummyRequestingUser = new OtpUser();
+        dummyRequestingUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
 
         // Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
         // from being able to use TEMP_AUTH0_USER_PASSWORD.
-        auth0User = Auth0Users.createAuth0UserForEmail(otpUser.email, TEMP_AUTH0_USER_PASSWORD);
-        otpUser.auth0UserId = auth0User.getId();
+        auth0User = Auth0Users.createAuth0UserForEmail(dummyRequestingUser.email, TEMP_AUTH0_USER_PASSWORD);
+        dummyRequestingUser.auth0UserId = auth0User.getId();
     }
     
     @AfterAll
@@ -65,12 +72,15 @@ public class Auth0ConnectionTest {
 
     @ParameterizedTest
     @MethodSource("createIsCreatingSelfTestCases")
-    public void canCheckIsCreatingSelf(Auth0ConnectionTestCase testCase) throws Auth0Exception {
-        // create an OtpUser/ApiUser authenticating as self
-        // (An OTP user is passed solely to generate request headers, so that should work for API users too.)
+    public void canCheckIsCreatingSelf(Auth0ConnectionTestCase testCase) {
+        // Simulate a yet-to-be-saved OtpUser/ApiUser sending an authenticated request to persist itself
+        // (e.g. during sign up).
         HttpResponse<String> createUserResponse = TestUtils.mockAuthenticatedRequest(testCase.uri,
-            String.format("{\"auth0UserId\": \"%s\",  \"email\": \"%s\"}", otpUser.auth0UserId, otpUser.email),
-            otpUser,
+            String.format("{\"auth0UserId\": \"%s\",  \"email\": \"%s\"}",
+                dummyRequestingUser.auth0UserId,
+                dummyRequestingUser.email
+            ),
+            dummyRequestingUser,
             testCase.method
         );
 
@@ -97,6 +107,26 @@ public class Auth0ConnectionTest {
             new Auth0ConnectionTestCase(GET, "api/secure/user", NOT_FOUND_404, "GET OtpUser"),
             new Auth0ConnectionTestCase(GET, "api/secure/application", NOT_FOUND_404, "GET ApiUser"),
             new Auth0ConnectionTestCase(POST, "api/secure/application/1234", NOT_FOUND_404, "POST ApiUser sub url"),
+            new Auth0ConnectionTestCase(POST, "other/endpoint", NOT_FOUND_404, "POST invalid url")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createIsRequestingVerificationEmailTestCases")
+    public void canCheckIsRequestingVerificationEmail(Auth0ConnectionTestCase testCase) {
+        // Simulate a yet-to-be-saved OtpUser/ApiUser sending an authenticated request to resend a verification email
+        // (e.g. during sign up).
+        HttpResponse<String> sendVerificationEmailResponse = TestUtils.mockAuthenticatedGet(testCase.uri, dummyRequestingUser);
+        assertEquals(testCase.result, sendVerificationEmailResponse.statusCode(), testCase.message);
+    }
+
+    private static Stream<Auth0ConnectionTestCase> createIsRequestingVerificationEmailTestCases() {
+        return Stream.of(
+            new Auth0ConnectionTestCase(GET, "api/secure/user/verification-email", OK_200, "OtpUser verification"),
+            new Auth0ConnectionTestCase(GET, "api/secure/application/verification-email", OK_200, "ApiUser verification"),
+            new Auth0ConnectionTestCase(GET, "api/secure/user", NOT_FOUND_404, "OtpUser other route"),
+            new Auth0ConnectionTestCase(GET, "api/secure/application", NOT_FOUND_404, "ApiUser other route"),
+            new Auth0ConnectionTestCase(POST, "api/secure/application/verification-email/1234", NOT_FOUND_404, "ApiUser sub url"),
             new Auth0ConnectionTestCase(POST, "other/endpoint", NOT_FOUND_404, "POST invalid url")
         );
     }

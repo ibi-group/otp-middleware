@@ -279,7 +279,6 @@ public class Auth0Connection {
 
     /**
      * @return true if the given request is for a user creating themselves, as in new user sign up.
-     * // TODO: add tests.
      */
     static boolean isCreatingSelf(Request req, RequestingUser profile) {
         if (req.requestMethod().equalsIgnoreCase("POST")) {
@@ -306,7 +305,6 @@ public class Auth0Connection {
 
     /**
      * @return true if the given request is for a user requesting to resend a verification email during sign up.
-     * // TODO: add tests.
      */
     static boolean isRequestingVerificationEmail(Request req) {
         if (req.requestMethod().equalsIgnoreCase("GET")) {
