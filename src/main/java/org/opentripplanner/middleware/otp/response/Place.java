@@ -31,6 +31,11 @@ public class Place implements Cloneable {
     public Set<String> networks;
     public String address;
 
+    /**
+     * Clone this object.
+     * NOTE: This is used primarily during testing and only clones certain needed items so not all entities are
+     * deep-cloned. Implement this further if additional items should be deep-cloned.
+     */
     protected Place clone() throws CloneNotSupportedException {
         return (Place) super.clone();
     }

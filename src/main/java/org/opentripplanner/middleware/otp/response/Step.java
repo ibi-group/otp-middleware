@@ -22,6 +22,11 @@ public class Step implements Cloneable {
     public Double lon;
     public Double lat;
 
+    /**
+     * Clone this object.
+     * NOTE: This is used primarily during testing and only clones certain needed items so not all entities are
+     * deep-cloned. Implement this further if additional items should be deep-cloned.
+     */
     protected Step clone() throws CloneNotSupportedException {
         return (Step) super.clone();
     }

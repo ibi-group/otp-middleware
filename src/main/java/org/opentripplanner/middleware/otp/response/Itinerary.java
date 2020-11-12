@@ -117,6 +117,11 @@ public class Itinerary implements Cloneable {
             '}';
     }
 
+    /**
+     * Clone this object.
+     * NOTE: This is used primarily during testing and only clones certain needed items so not all entities are
+     * deep-cloned. Implement this further if additional items should be deep-cloned.
+     */
     @Override
     public Itinerary clone() throws CloneNotSupportedException {
         Itinerary cloned = (Itinerary) super.clone();

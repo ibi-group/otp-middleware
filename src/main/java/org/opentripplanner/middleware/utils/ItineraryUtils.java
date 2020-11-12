@@ -110,22 +110,22 @@ public class ItineraryUtils {
     /**
      * Returns true if the itineraries match for the purposes of trip monitoring.
      *
-     * @param previousItinerary The original itinerary that others are compared against.
-     * @param newItinerary A new itinerary that might match the previous itinerary.
+     * @param referenceItinerary The original itinerary that others are compared against.
+     * @param candidiateItinerary A new itinerary that might match the previous itinerary.
      */
-    public static boolean itinerariesMatch(Itinerary previousItinerary, Itinerary newItinerary) {
-        // make sure either itinerary is monitorable before continuing
-        if (!itineraryIsSavable(previousItinerary) || !itineraryIsSavable(newItinerary)) return false;
+    public static boolean itinerariesMatch(Itinerary referenceItinerary, Itinerary candidiateItinerary) {
+        // Make sure both itineraries are monitorable before continuing.
+        if (!itineraryIsSavable(referenceItinerary) || !itineraryIsSavable(candidiateItinerary)) return false;
 
         // make sure itineraries have same amount of legs
-        if (previousItinerary.legs.size() != newItinerary.legs.size()) return false;
+        if (referenceItinerary.legs.size() != candidiateItinerary.legs.size()) return false;
 
         // make sure each leg matches
-        for (int i = 0; i < previousItinerary.legs.size(); i++) {
-            Leg previousItineraryLeg = previousItinerary.legs.get(i);
-            Leg newItineraryLeg = newItinerary.legs.get(i);
+        for (int i = 0; i < referenceItinerary.legs.size(); i++) {
+            Leg referenceItineraryLeg = referenceItinerary.legs.get(i);
+            Leg candidateItineraryLeg = candidiateItinerary.legs.get(i);
 
-            if (!legsMatch(previousItineraryLeg, newItineraryLeg)) return false;
+            if (!legsMatch(referenceItineraryLeg, candidateItineraryLeg)) return false;
         }
 
         // if this point is reached, the itineraries are assumed to match
@@ -135,50 +135,60 @@ public class ItineraryUtils {
     /**
      * Check whether a new leg of an itinerary matches the previous itinerary leg for the purposes of trip monitoring.
      */
-    private static boolean legsMatch(Leg previousItineraryLeg, Leg newItineraryLeg) {
+    private static boolean legsMatch(Leg referenceItineraryLeg, Leg candidateItineraryLeg) {
         // for now don't analyze non-transit legs
-        if (!previousItineraryLeg.transitLeg) return true;
+        if (!referenceItineraryLeg.transitLeg) return true;
 
         // make sure the same from/to stop are being used
         if (
-            !stopsMatch(previousItineraryLeg.from, newItineraryLeg.from) ||
-                !stopsMatch(previousItineraryLeg.to, newItineraryLeg.to)
+            !stopsMatch(referenceItineraryLeg.from, candidateItineraryLeg.from) ||
+                !stopsMatch(referenceItineraryLeg.to, candidateItineraryLeg.to)
         ) {
             return false;
         }
 
-        // make sure the transit service is the same as perceived by the customer
+        // Make sure the transit service is the same as perceived by the customer. It is assumed that the transit
+        // service is the same expereince to a customer if the following conditions are met:
+        // - The modes of transportation are the same
+        // - The agency name of the transit service is the same (or the reference leg had an empty agency name)
+        // - The route's long name is the same (or the reference leg had an empty route long name)
+        // - The route's short name is the same (or the reference leg had an empty route short name)
+        // - The headsign is the same (or the reference leg had an empty headsign)
+        // - The leg has the same interlining qualities with the previous leg
         if (
-            !equalsOrPreviousWasNull(previousItineraryLeg.mode, newItineraryLeg.mode) ||
-                !equalsIgnoreCaseOrPreviousWasEmpty(previousItineraryLeg.agencyName, newItineraryLeg.agencyName) ||
+            !equalsOrPreviousWasNull(referenceItineraryLeg.mode, candidateItineraryLeg.mode) ||
                 !equalsIgnoreCaseOrPreviousWasEmpty(
-                    previousItineraryLeg.routeLongName,
-                    newItineraryLeg.routeLongName
+                    referenceItineraryLeg.agencyName,
+                    candidateItineraryLeg.agencyName
                 ) ||
                 !equalsIgnoreCaseOrPreviousWasEmpty(
-                    previousItineraryLeg.routeShortName,
-                    newItineraryLeg.routeShortName
+                    referenceItineraryLeg.routeLongName,
+                    candidateItineraryLeg.routeLongName
                 ) ||
                 !equalsIgnoreCaseOrPreviousWasEmpty(
-                    previousItineraryLeg.headsign,
-                    newItineraryLeg.headsign
+                    referenceItineraryLeg.routeShortName,
+                    candidateItineraryLeg.routeShortName
                 ) ||
-                !equalsOrPreviousWasNull(
-                    previousItineraryLeg.interlineWithPreviousLeg,
-                    newItineraryLeg.interlineWithPreviousLeg
-                )
+                !equalsIgnoreCaseOrPreviousWasEmpty(
+                    referenceItineraryLeg.headsign,
+                    candidateItineraryLeg.headsign
+                ) ||
+                (referenceItineraryLeg.interlineWithPreviousLeg != candidateItineraryLeg.interlineWithPreviousLeg)
         ) {
             return false;
         }
 
-        // make sure the transit trips are scheduled for the same time of the day
+        // Make sure the transit trips are scheduled for the same time of the day. A check is being done for the exact
+        // scheduled time in order for the trip monitor to attempt to track a specific trip. It is assumed that trip IDs
+        // will change over time and as far as an end-user is concerned if, as long as the same route comes at the same
+        // time to the same start and end stops, then it can be considered a match.
         if (
             !timeOfDayMatches(
-                previousItineraryLeg.getScheduledStartTime(),
-                newItineraryLeg.getScheduledStartTime()
+                referenceItineraryLeg.getScheduledStartTime(),
+                candidateItineraryLeg.getScheduledStartTime()
             ) || !timeOfDayMatches(
-                previousItineraryLeg.getScheduledEndTime(),
-                newItineraryLeg.getScheduledEndTime()
+                referenceItineraryLeg.getScheduledEndTime(),
+                candidateItineraryLeg.getScheduledEndTime()
             )
         ) {
             return false;
@@ -192,19 +202,25 @@ public class ItineraryUtils {
      * Checks whether two stops (OTP Places) match for the purposes of matching itineraries
      */
     private static boolean stopsMatch(Place stopA, Place stopB) {
-        // stop names must match
-        if (!stopA.name.equalsIgnoreCase(stopB.name)) return false;
+        // Stop names must match. It's possible in OTP to have a null place name, although it probably won't occur with
+        // transit legs. But just in case this method is expanded in scope to check more stuff about a place, if both
+        // are null, then assume a match.
+        if (
+            (stopA.name != null && !stopA.name.equalsIgnoreCase(stopB.name)) ||
+                (stopA.name == null && stopB.name != null)
+        ) {
+            return false;
+        }
 
         // stop code must match
         if (!equalsIgnoreCaseOrPreviousWasEmpty(stopA.stopCode, stopB.stopCode)) return false;
 
         // stop positions must be no further than 5 meters apart
-        if (
-            DistanceUtils.radians2Dist(
-                DistanceUtils.distHaversineRAD(stopA.lat, stopA.lon, stopB.lat, stopB.lon),
-                DistanceUtils.EARTH_MEAN_RADIUS_KM
-            ) * 1000 > 5
-        ) {
+        double stopDistanceMeters = DistanceUtils.radians2Dist(
+            DistanceUtils.distHaversineRAD(stopA.lat, stopA.lon, stopB.lat, stopB.lon),
+            DistanceUtils.EARTH_MEAN_RADIUS_KM
+        ) * 1000;
+        if (stopDistanceMeters > 5) {
             return false;
         }
 
@@ -213,17 +229,18 @@ public class ItineraryUtils {
     }
 
     /**
-     * Returns true if previous is null. Otherwise, returns Objects.equals.
+     * Returns true if the reference value is null. Otherwise, returns Objects.equals.
      */
-    private static boolean equalsOrPreviousWasNull (Object previous, Object newer) {
-        return previous == null || Objects.equals(previous, newer);
+    private static boolean equalsOrPreviousWasNull (Object reference, Object candidate) {
+        return reference == null || Objects.equals(reference, candidate);
     }
 
     /**
-     * Returns true if the previous string was empty. Otherwise, returns if the strings are equal ignoring case.
+     * Returns true if the reference string was not present either by being null or an emptry string. Otherwise, returns
+     * if the strings are equal ignoring case.
      */
-    private static boolean equalsIgnoreCaseOrPreviousWasEmpty(String previous, String newer) {
-        return StringUtils.isEmpty(previous) || previous.equalsIgnoreCase(newer);
+    private static boolean equalsIgnoreCaseOrPreviousWasEmpty(String reference, String candidate) {
+        return StringUtils.isEmpty(reference) || reference.equalsIgnoreCase(candidate);
     }
 
     /**

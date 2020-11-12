@@ -215,7 +215,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      * Check whether certain itineraries match.
      */
     @ParameterizedTest
-    @MethodSource("createItineraryMatchingTestCases")
+    @MethodSource("createItineraryComparisonTestCases")
     public void testItineraryMatches(ItineraryMatchTestCase testCase) {
         Assertions.assertEquals(
             testCase.shouldMatch,
@@ -224,7 +224,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         );
     }
 
-    private static List<ItineraryMatchTestCase> createItineraryMatchingTestCases() throws CloneNotSupportedException {
+    private static List<ItineraryMatchTestCase> createItineraryComparisonTestCases() throws CloneNotSupportedException {
         List<ItineraryMatchTestCase> testCases = new ArrayList<>();
 
         // should match same data

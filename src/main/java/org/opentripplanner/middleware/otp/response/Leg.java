@@ -53,6 +53,9 @@ public class Leg implements Cloneable {
     public List<LocalizedAlert> alerts = null;
     public String headsign;
 
+    /**
+     * Gets the scheduled start time of this itinerary in the OTP timezone.
+     */
     @JsonIgnore
     @BsonIgnore
     public ZonedDateTime getScheduledStartTime() {
@@ -62,6 +65,9 @@ public class Leg implements Cloneable {
         );
     }
 
+    /**
+     * Gets the scheduled end time of this itinerary in the OTP timezone.
+     */
     @JsonIgnore
     @BsonIgnore
     public ZonedDateTime getScheduledEndTime() {
@@ -71,6 +77,11 @@ public class Leg implements Cloneable {
         );
     }
 
+    /**
+     * Clone this object.
+     * NOTE: This is used primarily during testing and only clones certain needed items so not all entities are
+     * deep-cloned. Implement this further if additional items should be deep-cloned.
+     */
     @Override
     protected Leg clone() throws CloneNotSupportedException {
         Leg cloned = (Leg) super.clone();
