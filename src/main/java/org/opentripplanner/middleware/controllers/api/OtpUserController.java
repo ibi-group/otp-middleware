@@ -5,10 +5,8 @@ import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
-import com.mongodb.client.model.Filters;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
-import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
-import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -45,20 +43,12 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
 
     @Override
     OtpUser preCreateHook(OtpUser user, Request req) {
-        // Check API key and assign user to appropriate third-party application. Note: this is only relevant for
-        // instances of otp-middleware running behind API Gateway.
-        String apiKey = req.headers("x-api-key");
-        ApiUser apiUser = Persistence.apiUsers.getOneFiltered(Filters.eq("apiKeys.value", apiKey));
-        if (apiUser != null) {
-            // If API user found, assign to new OTP user.
-            user.applicationId = apiUser.id;
-        } else {
-            // If API user not found, report to Bugsnag for further investigation.
-            BugsnagReporter.reportErrorToBugsnag(
-                "OTP user created with API key that is not linked to any API user",
-                apiKey,
-                new IllegalArgumentException("API key not linked to API user.")
-            );
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
+        if (requestingUser.apiUser != null) {
+            // Check API key and assign user to appropriate third-party application. Note: this is only relevant for
+            // instances of otp-middleware running behind API Gateway.
+            Auth0Connection.ensureApiUserHasApiKey(req);
+            user.applicationId = requestingUser.apiUser.id;
         }
         return super.preCreateHook(user, req);
     }
@@ -89,7 +79,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
     }
 
     @Override
-    protected OtpUser getUserProfile(Auth0UserProfile profile) {
+    protected OtpUser getUserProfile(RequestingUser profile) {
         return profile.otpUser;
     }
 

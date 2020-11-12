@@ -1,12 +1,12 @@
 package org.opentripplanner.middleware.otp;
 
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -49,6 +49,13 @@ public class OtpDispatcher {
     public static OtpDispatcherResponse sendOtpPlanRequest(String query) {
         LOG.debug("Original query string: {}", query);
         return sendOtpRequest(buildOtpUri(query, OTP_PLAN_ENDPOINT));
+    }
+
+    /**
+     * Provides a response from the OTP server target service based on the input {@link OtpRequest}.
+     */
+    public static OtpDispatcherResponse sendOtpPlanRequest(OtpRequest otpRequest) {
+        return sendOtpPlanRequest(ItineraryUtils.toQueryString(otpRequest.requestParameters));
     }
 
     /**
