@@ -103,8 +103,6 @@ public class Auth0Connection {
         return isCreatingSelf(req, profile) || isRequestingVerificationEmail(req);
     }
 
-
-
     public static boolean isAuthHeaderPresent(Request req) {
         final String authHeader = req.headers("Authorization");
         return authHeader != null;
