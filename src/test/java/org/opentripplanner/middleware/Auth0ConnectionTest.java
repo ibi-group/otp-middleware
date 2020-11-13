@@ -86,16 +86,20 @@ public class Auth0ConnectionTest {
 
         assertEquals(testCase.result, createUserResponse.statusCode(), testCase.message);
 
-        // Delete the created user.
+        // Delete the created user (but keep the auth0 account through the entire test).
         if (testCase.result == OK_200) {
             boolean creatingOtpUser = testCase.uri.endsWith(OTP_USER_PATH);
             boolean creatingApiUser = testCase.uri.endsWith(API_USER_PATH);
             if (creatingOtpUser) {
                 OtpUser createdUser = JsonUtils.getPOJOFromJSON(createUserResponse.body(), OtpUser.class);
-                createdUser.delete(false);
+                if (createdUser != null) {
+                    createdUser.delete(false);
+                }
             } else if (creatingApiUser) {
                 ApiUser createdUser = JsonUtils.getPOJOFromJSON(createUserResponse.body(), ApiUser.class);
-                createdUser.delete(false);
+                if (createdUser != null) {
+                    createdUser.delete(false);
+                }
             }
         }
     }
