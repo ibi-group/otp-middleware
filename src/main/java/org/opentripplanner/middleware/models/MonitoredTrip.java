@@ -2,13 +2,13 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.mongodb.client.FindIterable;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import com.mongodb.client.FindIterable;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.conversions.Bson;
-import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.auth.Permission;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -27,12 +27,14 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
+
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
  * change.
@@ -231,6 +233,9 @@ public class MonitoredTrip extends Model {
         from = itinerary.legs.get(0).from;
         to = itinerary.legs.get(lastLegIndex).to;
 
+        // Update actual query modes from the itinerary.
+        updateModeInQueryParams();
+
         // Ensure the itinerary we store does not contain any realtime info.
         clearRealtimeInfo();
 
@@ -239,6 +244,32 @@ public class MonitoredTrip extends Model {
         if (tripTime == null) {
             throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
         }
+    }
+
+    /**
+     * Updates the mode in the OTP query parameter based on the modes from the itinerary.
+     */
+    private void updateModeInQueryParams() throws URISyntaxException {
+        Set<String> actualModes = itinerary.legs.stream()
+            .map(leg -> leg.mode)
+            .collect(Collectors.toSet());
+
+        // Remove WALK if other access modes are present (i.e. {BICYCLE|CAR|MICROMOBILITY}[_RENT]).
+        boolean hasAccessModes = actualModes.stream().anyMatch(mode -> {
+            String mainMode = mode.split("_")[0];
+            List<String> accessModes = List.of("BICYCLE", "CAR", "MICROMOBILITY");
+            return accessModes.contains(mainMode);
+        });
+
+        if (hasAccessModes) {
+            actualModes.remove("WALK");
+        }
+
+        String newModeParam = String.join(",", actualModes);
+        Map<String, String> queryParamsMap = parseQueryParams();
+        queryParamsMap.put("mode", newModeParam);
+
+        queryParams = ItineraryUtils.toQueryString(queryParamsMap);
     }
 
     public MonitoredTrip updateAllDaysOfWeek(boolean value) {
@@ -391,8 +422,14 @@ public class MonitoredTrip extends Model {
      * Parse the query params for this trip into a map of the variables.
      */
     public Map<String, String> parseQueryParams() throws URISyntaxException {
+        // If for some reason a leading ? is present in queryParams, skip it.
+        // (We already include a ? when calling URLEncodedUtils.parse below.)
+        String queryParamsWithoutQuestion = queryParams.startsWith("?")
+            ? queryParams.substring(1)
+            : queryParams;
+
         return URLEncodedUtils.parse(
-            new URI(String.format("http://example.com/plan?%s", queryParams)),
+            new URI(String.format("http://example.com/plan?%s", queryParamsWithoutQuestion)),
             UTF_8
         ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
     }
