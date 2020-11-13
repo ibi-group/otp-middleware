@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Holds tests for some methods in MonitoredTrip.
@@ -52,19 +53,18 @@ public class MonitoredTripTest {
         String[] modeParams = paramsMap.get("mode").split(",");
 
         // If BICYCLE (or CAR or MICROMOBILITY...) and WALK appear together in an itinerary, usually the originating query doesn't mention WALK.
-        List<String> expectedModeParams = List.of("BICYCLE", "BUS");
-        List<String> actualModeParams = List.of(modeParams);
+        Set<String> expectedModeParams = Set.of("BICYCLE", "BUS");
+        Set<String> actualModeParams = Set.of(modeParams);
 
-        Assertions.assertEquals(expectedModeParams.size(), actualModeParams.size());
-        Assertions.assertTrue(expectedModeParams.containsAll(actualModeParams));
+        Assertions.assertEquals(expectedModeParams, actualModeParams);
     }
 
     /**
      * Partial test for {@link MonitoredTrip#initializeFromItineraryAndQueryParams}
-     * that focuses on removing the leading question mark in the query params.
+     * that focuses on ignoring the leading question mark in the query params, if any.
      */
     @Test
-    public void canRemoveLeadingQuestionMarkInQueryParams() throws URISyntaxException {
+    public void canIgnoreLeadingQuestionMarkInQueryParams() throws URISyntaxException {
         // Setup a trip with an initial queryParams argument.
         MonitoredTrip trip = new MonitoredTrip();
         trip.queryParams = UI_QUERY_PARAMS;
