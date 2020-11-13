@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
@@ -50,6 +51,12 @@ public class ItineraryExistence extends Model {
      * valid. FIXME: this should be an enum most likely.
      */
     public boolean error;
+
+    /**
+     * Whether the original trip request time is a departure or arrive by time.
+     */
+    private transient boolean tripIsArriveBy;
+
     /**
      * When the itinerary existence check was run/completed.
      * FIXME: If a monitored trip has not been fully enabled for monitoring, we may want to check the timestamp to
@@ -60,9 +67,10 @@ public class ItineraryExistence extends Model {
     // Required for persistence.
     public ItineraryExistence() {}
 
-    public ItineraryExistence(List<OtpRequest> otpRequests, Itinerary referenceItinerary) {
+    public ItineraryExistence(List<OtpRequest> otpRequests, Itinerary referenceItinerary, boolean tripIsArriveBy) {
         this.otpRequests = otpRequests;
         this.referenceItinerary = referenceItinerary;
+        this.tripIsArriveBy = tripIsArriveBy;
     }
 
     /**
@@ -177,12 +185,14 @@ public class ItineraryExistence extends Model {
             // Handle response if valid itineraries exist.
             if (plan != null && plan.itineraries != null) {
                 for (Itinerary itineraryCandidate : plan.itineraries) {
-                    // If a matching itinerary is found, save the date with the matching itinerary.
-                    // The matching itinerary will replace the original trip.itinerary.
-                    // FIXME Replace 'equals' with matching itinerary
-                    if (itineraryCandidate.equals(referenceItinerary)) {
-                        result.handleValidDate(otpRequest.date, itineraryCandidate);
-                        hasMatchingItinerary = true;
+                    // Make sure itinerary is same day as request date
+                    if (ItineraryUtils.isSameDay(itineraryCandidate, otpRequest.date, tripIsArriveBy)) {
+                        // If a matching itinerary is found, save the date with the matching itinerary.
+                        // The matching itinerary will replace the original trip.itinerary.
+                        if (ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)) {
+                            result.handleValidDate(otpRequest.date, itineraryCandidate);
+                            hasMatchingItinerary = true;
+                        }
                     }
                 }
             }

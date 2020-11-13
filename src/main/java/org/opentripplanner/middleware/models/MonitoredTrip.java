@@ -172,7 +172,7 @@ public class MonitoredTrip extends Model {
     public boolean checkItineraryExistence(boolean checkAllDays, boolean replaceItinerary) throws URISyntaxException {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries(checkAllDays);
-        this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary);
+        this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary, isArriveBy());
         this.itineraryExistence.checkExistence();
         boolean itineraryExists = this.itineraryExistence.allCheckedDaysAreValid();
         // If itinerary should be replaced, do so if all checked days are valid.
