@@ -22,6 +22,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -35,6 +40,7 @@ import java.util.stream.Stream;
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
 
@@ -46,6 +52,22 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     // Date and time from the above query.
     public static final String QUERY_DATE = "2020-08-13";
     public static final String QUERY_TIME = "11:23";
+
+    // Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE.
+    public static final long _2020_08_12__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 12, 3, 0, 0)); // Aug 12, 2020 3:00:00 AM
+    public static final long _2020_08_12__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020,8,12,23,59,59)); // Aug 12, 2020 11:59:59 PM
+    public static final long _2020_08_13__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 13, 2, 59, 59)); // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
+    public static final long _2020_08_13__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 13, 3, 0, 0)); // Aug 13, 2020 3:00:00 AM
+    public static final long _2020_08_13__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 13, 23, 59, 59)); // Aug 13, 2020 11:59:59 PM
+    public static final long _2020_08_14__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 14, 2, 59, 59)); // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
+    public static final long _2020_08_14__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 14, 3, 0, 0)); // Aug 14, 2020 3:00:00 AM
 
     private static OtpDispatcherResponse otpDispatcherPlanResponse;
     private static OtpDispatcherResponse otpDispatcherPlanErrorResponse;
@@ -369,4 +391,110 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
             this.shouldMatch = shouldMatch;
         }
     }
+
+    @ParameterizedTest
+    @MethodSource("createSameDayTestCases")
+    void testIsSameDay(SameDayTestCase testCase) {
+        // The time zone for trip is OTP's time zone.
+        ZoneId zoneId = DateTimeUtils.getOtpZoneId();
+
+        Itinerary itinerary = simpleItinerary(testCase.tripTargetTimeEpochMillis, testCase.isArriveBy);
+
+        ZonedDateTime queryDateTime = ZonedDateTime.of(
+          LocalDate.parse(QUERY_DATE, DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN)),
+            LocalTime.parse(testCase.timeOfDay, DateTimeFormatter.ofPattern("H:mm")),
+            DateTimeUtils.getOtpZoneId()
+        );
+
+        Assertions.assertEquals(
+            testCase.shouldBeSameDay,
+            ItineraryUtils.isSameDay(itinerary, queryDateTime, testCase.isArriveBy),
+            testCase.getMessage(zoneId)
+        );
+    }
+
+    private static List<SameDayTestCase> createSameDayTestCases() {
+        return List.of(
+            // Same-day departures
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__03_00_00, false, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__23_59_59, false, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__02_59_59, false, true),
+            new SameDayTestCase("1:23", _2020_08_12__03_00_00, false, true),
+            new SameDayTestCase("1:23", _2020_08_12__23_59_59, false, true),
+            new SameDayTestCase("1:23", _2020_08_13__02_59_59, false, true),
+
+            // Not same-day departures
+            new SameDayTestCase(QUERY_TIME, _2020_08_12__23_59_59, false, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__02_59_59, false, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__03_00_00, false, false),
+            new SameDayTestCase("1:23", _2020_08_13__03_00_00, false, false),
+            new SameDayTestCase("1:23", _2020_08_13__23_59_59, false, false),
+            new SameDayTestCase("1:23", _2020_08_14__02_59_59, false, false),
+
+            // Same-day arrivals
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__03_00_00, true, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__23_59_59, true, true),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__02_59_59, true, true),
+            new SameDayTestCase("1:23", _2020_08_12__03_00_00, true, true),
+            new SameDayTestCase("1:23", _2020_08_12__23_59_59, true, true),
+            new SameDayTestCase("1:23", _2020_08_13__02_59_59, true, true),
+
+            // Not same-day arrivals
+            new SameDayTestCase(QUERY_TIME, _2020_08_12__23_59_59, true, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_13__02_59_59, true, false),
+            new SameDayTestCase(QUERY_TIME, _2020_08_14__03_00_00, true, false),
+            new SameDayTestCase("1:23", _2020_08_13__03_00_00, true, false),
+            new SameDayTestCase("1:23", _2020_08_13__23_59_59, true, false),
+            new SameDayTestCase("1:23", _2020_08_14__02_59_59, true, false)
+        );
+    }
+
+    /**
+     * Helper method to create a bare-bones itinerary with start or end time.
+     */
+    private Itinerary simpleItinerary(Long targetEpochMillis, boolean isArriveBy) {
+        Itinerary itinerary = new Itinerary();
+        Date date = Date.from(Instant.ofEpochMilli(targetEpochMillis));
+        if (isArriveBy) {
+            itinerary.endTime = date;
+        } else {
+            itinerary.startTime = date;
+        }
+        itinerary.legs = new ArrayList<>();
+        return itinerary;
+    }
+
+    /**
+     * Data structure for the same-day test.
+     */
+    private static class SameDayTestCase {
+        public final boolean isArriveBy;
+        public final boolean shouldBeSameDay;
+        public final String timeOfDay;
+        public final Long tripTargetTimeEpochMillis;
+
+        public SameDayTestCase(String timeOfDay, Long tripTargetTimeEpochMillis, boolean isArriveBy, boolean shouldBeSameDay) {
+            this.isArriveBy = isArriveBy;
+            this.shouldBeSameDay = shouldBeSameDay;
+            this.timeOfDay = timeOfDay;
+            this.tripTargetTimeEpochMillis = tripTargetTimeEpochMillis;
+        }
+
+        /**
+         * @return A message, in case of test failure, in the form:
+         * "On 2020-08-13 at 1:23[America/New_York], a trip arriving at 2020-08-14T02:59:59-04:00[America/New_York] should be considered same-day."
+         */
+        public String getMessage(ZoneId zoneId) {
+            return String.format(
+                "On %s at %s[%s], a trip %s at %s %s be considered same-day.",
+                QUERY_DATE,
+                timeOfDay,
+                zoneId.toString(),
+                isArriveBy ? "arriving" : "departing",
+                ZonedDateTime.ofInstant(Instant.ofEpochMilli(tripTargetTimeEpochMillis), zoneId),
+                shouldBeSameDay ? "should" : "should not"
+            );
+        }
+    }
+
 }

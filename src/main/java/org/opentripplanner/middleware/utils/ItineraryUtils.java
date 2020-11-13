@@ -13,7 +13,9 @@ import org.opentripplanner.middleware.otp.OtpRequest;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -132,6 +134,42 @@ public class ItineraryUtils {
         return true;
     }
 
+    /**
+     * Checks that the specified itinerary is on the same day as the specified date/time.
+     * @param itinerary the itinerary to check.
+     * @param requestDateTime the request date/time to check, in the OTP's time zone.
+     * @param tripIsArriveBy true to check the itinerary endtime, false to check the startTime.
+     * @return true if the itinerary's startTime or endTime is one the same day as the day of the specified date and time.
+     */
+    public static boolean isSameDay(Itinerary itinerary, ZonedDateTime requestDateTime, boolean tripIsArriveBy) {
+        // TODO: Make SERVICE_DAY_START_HOUR an optional config parameter.
+        final int SERVICE_DAY_START_HOUR = 3;
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN);
+
+        Date itineraryTime = tripIsArriveBy ? itinerary.endTime : itinerary.startTime;
+        ZonedDateTime startDateTime = ZonedDateTime.ofInstant(itineraryTime.toInstant(), DateTimeUtils.getOtpZoneId());
+
+        // If the OTP request was made at a time before SERVICE_DAY_START_HOUR
+        // (for instance, a request with a departure or arrival at 12:30 am),
+        // then consider the request to have been made the day before.
+        // To compensate, advance startDate by one day.
+        int hour = requestDateTime.toLocalTime().getHour();
+        if (hour < SERVICE_DAY_START_HOUR) {
+            startDateTime = startDateTime.plusDays(1);
+        }
+
+        ZonedDateTime startDateTimeDayBefore = startDateTime.minusDays(1);
+
+        LocalDate requestLocalDate = requestDateTime.toLocalDate();
+        return (
+            requestLocalDate.equals(startDateTime.toLocalDate()) &&
+            startDateTime.getHour() >= SERVICE_DAY_START_HOUR
+        ) || (
+            // Trips starting between 12am and 2:59am next day are considered same-day.
+            requestLocalDate.equals(startDateTimeDayBefore.toLocalDate()) &&
+            startDateTimeDayBefore.getHour() < SERVICE_DAY_START_HOUR
+        );
+    }
     /**
      * Check whether a new leg of an itinerary matches the previous itinerary leg for the purposes of trip monitoring.
      */

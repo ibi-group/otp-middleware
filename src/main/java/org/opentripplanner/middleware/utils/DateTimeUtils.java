@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -149,6 +150,13 @@ public class DateTimeUtils {
             throw new RuntimeException("OTP_TIMEZONE is not defined in config!");
         }
         return ZoneId.of(otpTzId);
+    }
+
+    /**
+     * Converts a {@link LocalDateTime} on OTP's time zone to epoch milliseconds.
+     */
+    public static long otpDateTimeAsEpochMillis(LocalDateTime otpDateTime) {
+        return Instant.from(ZonedDateTime.of(otpDateTime, getOtpZoneId())).toEpochMilli();
     }
 
     /**
