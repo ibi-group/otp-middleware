@@ -1039,6 +1039,8 @@ definitions:
         type: "string"
       error:
         type: "boolean"
+      tripIsArriveBy:
+        type: "boolean"
       timestamp:
         type: "string"
         format: "date"

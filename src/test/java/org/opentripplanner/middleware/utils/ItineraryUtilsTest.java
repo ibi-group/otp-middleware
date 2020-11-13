@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
+import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,11 +50,15 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     /** Abbreviated query for the tests */
     public static final String BASE_QUERY = "?fromPlace=2418%20Dade%20Ave&toPlace=McDonald%27s&date=2020-08-13&time=11%3A23&arriveBy=false";
 
-    // Date and time from the above query.
+    /** Date and time from the above query. */
     public static final String QUERY_DATE = "2020-08-13";
     public static final String QUERY_TIME = "11:23";
 
-    // Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE.
+    public static final List<String> MONITORED_TRIP_DATES = List.of(
+        QUERY_DATE, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18"
+    );
+
+    /** Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE. */
     public static final long _2020_08_12__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
         2020, 8, 12, 3, 0, 0)); // Aug 12, 2020 3:00:00 AM
     public static final long _2020_08_12__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
@@ -72,6 +77,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     private static OtpDispatcherResponse otpDispatcherPlanResponse;
     private static OtpDispatcherResponse otpDispatcherPlanErrorResponse;
     private static Itinerary defaultItinerary;
+    public static final ZoneId OTP_ZONE_ID = DateTimeUtils.getOtpZoneId();
 
     @BeforeAll
     public static void setup() throws IOException {
@@ -99,70 +105,91 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     }
 
     /**
-     * Test case in which all itineraries exist and result.allCheckedDatesAreValid should be true.
+     * Test that itineraries exist and result.allCheckedDatesAreValid are as expected.
      */
-    @Test
-    public void canCheckAllItinerariesExist() throws URISyntaxException {
+    @ParameterizedTest
+    @MethodSource("createCheckAllItinerariesExistTestCases")
+    public void canCheckAllItinerariesExist(boolean insertInvalidDay, String message) throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip();
 
-        // Set mocks to a list of responses with itineraries.
-        OtpResponse resp = otpDispatcherPlanResponse.getResponse();
-        TestUtils.setupOtpMocks(List.of(resp, resp, resp, resp, resp));
+        // Set mocks to a list of responses with itineraries, ordered by day.
+        List<OtpResponse> mockOtpResponses = new ArrayList<>();
 
-        // Also set trip itinerary to the same for easy/lazy match.
-        Itinerary expectedItinerary = resp.plan.itineraries.get(0);
+        for (String dateString : MONITORED_TRIP_DATES) {
+            LocalDate monitoredDate = LocalDate.parse(dateString, DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN));
+
+            // Copy the template OTP response itinerary, and change the itinerary date to the monitored date,
+            // in order to pass with the same-day itinerary requirement.
+            OtpResponse resp = otpDispatcherPlanResponse.getResponse();
+            for (Itinerary itin : resp.plan.itineraries) {
+                itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
+                itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
+            }
+
+            mockOtpResponses.add(resp);
+        }
+
+        // If needed, insert a mock invalid response for one of the monitored days.
+        final int INVALID_DAY_INDEX = 3;
+        if (insertInvalidDay) {
+            mockOtpResponses.set(INVALID_DAY_INDEX, otpDispatcherPlanErrorResponse.getResponse());
+        }
+
+        TestUtils.setupOtpMocks(mockOtpResponses);
+
+        // Also set trip itinerary to the template itinerary for easy/lazy match.
+        Itinerary expectedItinerary = mockOtpResponses.get(0).plan.itineraries.get(0);
         trip.itinerary = expectedItinerary;
 
         trip.checkItineraryExistence(false, false);
         ItineraryExistence existence = trip.itineraryExistence;
 
-        Assertions.assertTrue(existence.allCheckedDaysAreValid());
+        boolean allDaysValid = !insertInvalidDay;
+        Assertions.assertEquals(allDaysValid, existence.allCheckedDaysAreValid(), message);
+
+        // Valid days, in the order of the OTP requests sent (so we can track the invalid entry if we inserted one).
+        ArrayList<ItineraryExistence.ItineraryExistenceResult> validDays = Lists.newArrayList(
+            existence.thursday,
+            existence.saturday,
+            existence.sunday,
+            existence.monday,
+            existence.tuesday
+        );
+        // Check (and remove) the extra invalid day if we inserted one above.
+        if (insertInvalidDay) {
+            Assertions.assertFalse(validDays.get(INVALID_DAY_INDEX).isValid());
+            validDays.remove(INVALID_DAY_INDEX);
+        }
+
         // FIXME: For now, just check that the first itinerary in the list is valid. If we expand our check window from
         //  7 days to 14 (or more) days, this may need to be adjusted.
-        Assertions.assertTrue(existence.monday.isValid());
-        Assertions.assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, existence.monday.itineraries.get(0)));
-        Assertions.assertTrue(existence.tuesday.isValid());
-        Assertions.assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, existence.tuesday.itineraries.get(0)));
-        Assertions.assertTrue(existence.thursday.isValid());
-        Assertions.assertTrue(
-            ItineraryUtils.itinerariesMatch(expectedItinerary, existence.thursday.itineraries.get(0))
-        );
-        Assertions.assertTrue(existence.saturday.isValid());
-        Assertions.assertTrue(
-            ItineraryUtils.itinerariesMatch(expectedItinerary, existence.saturday.itineraries.get(0))
-        );
-        Assertions.assertTrue(existence.sunday.isValid());
-        Assertions.assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, existence.sunday.itineraries.get(0)));
+        for (ItineraryExistence.ItineraryExistenceResult validDay : validDays) {
+            Assertions.assertTrue(validDay.isValid());
+            Assertions.assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, validDay.itineraries.get(0)));
+        }
 
+        // When the check is not requested for a day, the existence entry will be null.
         Assertions.assertNull(existence.wednesday);
         Assertions.assertNull(existence.friday);
     }
 
+    private static Stream<Arguments> createCheckAllItinerariesExistTestCases() {
+        return Stream.of(
+            Arguments.of(false, "checkAllDays = false should produce allCheckedDaysAreValid = true."),
+            Arguments.of(true, "checkAllDays = true should produce allCheckedDaysAreValid = false.")
+        );
+    }
+
     /**
-     * Test case in which at least one itinerary does not exist,
-     * and therefore result.allCheckedDatesAreValid should be false.
+     * @return The new {@link Date} object with the date portion set to the specified {@link LocalDate} in OTP timezone.
      */
-    @Test
-    public void canCheckAtLeastOneTripDoesNotExist() throws URISyntaxException {
-        MonitoredTrip trip = makeTestTrip();
+    private Date getNewItineraryDate(Date itineraryDate, LocalDate date) {
+        Instant startInstant = itineraryDate.toInstant();
 
-        // Set mocks to a list of responses, one without an itinerary.
-        OtpResponse resp = otpDispatcherPlanResponse.getResponse();
-        TestUtils.setupOtpMocks(List.of(resp, resp, resp, otpDispatcherPlanErrorResponse.getResponse(), resp));
-
-        // Also set trip itinerary to the same for easy/lazy match.
-        trip.itinerary = resp.plan.itineraries.get(0);
-
-        // Sort dates to ensure OTP responses match the dates.
-        trip.checkItineraryExistence(false, false);
-        Assertions.assertFalse(trip.itineraryExistence.allCheckedDaysAreValid());
-
-        // Assertions ordered by date, Thursday is the query date and therefore comes first.
-        Assertions.assertTrue(trip.itineraryExistence.thursday.isValid());
-        Assertions.assertTrue(trip.itineraryExistence.saturday.isValid());
-        Assertions.assertTrue(trip.itineraryExistence.sunday.isValid());
-        Assertions.assertFalse(trip.itineraryExistence.monday.isValid());
-        Assertions.assertTrue(trip.itineraryExistence.tuesday.isValid());
+        return Date.from(LocalDateTime.of(
+            date,
+            LocalTime.ofInstant(startInstant, OTP_ZONE_ID)
+        ).toInstant(OTP_ZONE_ID.getRules().getOffset(startInstant)));
     }
 
     /**
@@ -206,13 +233,14 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         return Stream.of(
             // Dates solely based on monitored days (see the trip variable in the corresponding test).
             Arguments.of(datesToZonedDateTimes(
-                List.of(QUERY_DATE /* Thursday */, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18")
-            ), false)
+                MONITORED_TRIP_DATES
+                ), false),
 
             // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence,
             // it should return all dates in the 7-day window regardless of the ones set in the monitored trip.
-            //new GetDatesTestCase(List.of(QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19"))
-
+            Arguments.of(datesToZonedDateTimes(
+                List.of(QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19")
+                ), true)
         );
     }
 
@@ -395,21 +423,18 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     @ParameterizedTest
     @MethodSource("createSameDayTestCases")
     void testIsSameDay(SameDayTestCase testCase) {
-        // The time zone for trip is OTP's time zone.
-        ZoneId zoneId = DateTimeUtils.getOtpZoneId();
-
         Itinerary itinerary = simpleItinerary(testCase.tripTargetTimeEpochMillis, testCase.isArriveBy);
 
         ZonedDateTime queryDateTime = ZonedDateTime.of(
           LocalDate.parse(QUERY_DATE, DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN)),
             LocalTime.parse(testCase.timeOfDay, DateTimeFormatter.ofPattern("H:mm")),
-            DateTimeUtils.getOtpZoneId()
+            OTP_ZONE_ID
         );
 
         Assertions.assertEquals(
             testCase.shouldBeSameDay,
             ItineraryUtils.isSameDay(itinerary, queryDateTime, testCase.isArriveBy),
-            testCase.getMessage(zoneId)
+            testCase.getMessage(OTP_ZONE_ID)
         );
     }
 
