@@ -14,20 +14,6 @@ import java.util.Set;
  */
 public class JourneyState extends Model {
     /**
-     * No-arg constructor for de-serialization.
-     */
-    public JourneyState() {
-    }
-
-    /**
-     * Main constructor to create journey state for associated {@link MonitoredTrip}.
-     */
-    public JourneyState(MonitoredTrip monitoredTrip) {
-        this.monitoredTripId = monitoredTrip.id;
-        this.userId = monitoredTrip.userId;
-    }
-
-    /**
      * The current arrival/departure baseline to use when checking if a new threshold has been met
      */
     public long baselineArrivalTimeEpochMillis;
@@ -72,10 +58,28 @@ public class JourneyState extends Model {
      */
     public String targetDate;
 
+    public TripStatus tripStatus;
+
     /**
      * User ID for {@link OtpUser} that owns the {@link MonitoredTrip}.
      */
     private String userId;
+
+    public boolean noLongerPossible = false;
+
+    /**
+     * No-arg constructor for de-serialization.
+     */
+    public JourneyState() {
+    }
+
+    /**
+     * Main constructor to create journey state for associated {@link MonitoredTrip}.
+     */
+    public JourneyState(MonitoredTrip monitoredTrip) {
+        this.monitoredTripId = monitoredTrip.id;
+        this.userId = monitoredTrip.userId;
+    }
 
     /**
      * Update journey state based on results from {@link CheckMonitoredTrip}.

@@ -7,6 +7,7 @@ import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
+import org.opentripplanner.middleware.models.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -27,6 +28,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -60,10 +62,6 @@ public class CheckMonitoredTrip implements Runnable {
      * The index of the matching {@link Itinerary} as found in the OTP {@link OtpResponse} planned as part of this check.
      */
     public Itinerary matchingItinerary;
-    /**
-     * The OTP response planned to check the stored {@link Itinerary} against.
-     */
-    public OtpResponse otpResponse;
     /**
      * Tracks the time the notification was sent to the user.
      */
@@ -113,12 +111,6 @@ public class CheckMonitoredTrip implements Runnable {
             return;
         }
 
-        // Make a request to OTP with the monitored trip params if not already done in shouldSkipMonitoredTripCheck
-        if (otpResponse == null && !calculateOtpResponse()) {
-            // failed to calculate the OTP response, immediately end this job
-            return;
-        }
-
         // Check monitored trip.
         runCheckLogic();
         // Send notifications to user. This should happen before updating the journey state so that we can check the
@@ -129,11 +121,9 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     private void runCheckLogic() {
-        // TODO: Should null tripRequestId be fixed?
-        // TripSummary tripSummary = new TripSummary(otpDispatcherResponse.response.plan, otpDispatcherResponse.response.error, null);
-        if (!updateMatchingItinerary()) {
-            // No matching itinerary was found.
-            enqueueNotification(TripMonitorNotification.createItineraryNotFoundNotification());
+        // Make a request to OTP and find the matching itinerary. If there was an error or the matching itinerary was
+        // not found, don't run the other checks.
+        if (!makeOTPRequestAndUpdateMatchingItinerary()) {
             return;
         }
         // Matching itinerary found in OTP response. Run real-time checks.
@@ -154,16 +144,95 @@ public class CheckMonitoredTrip implements Runnable {
      *          match. Some additional checks should be performed to make sure the itinerary really isn't possible by
      *          verifying that the same transit schedule/routes exist and that the street network is the same
      */
-    private boolean updateMatchingItinerary() {
+    private boolean makeOTPRequestAndUpdateMatchingItinerary() {
+        OtpDispatcherResponse otpDispatcherResponse;
+        try {
+            // Generate the appropriate OTP query params for the trip for the current check by replacing the date query
+            // parameter with the appropriate date.
+            Map<String, String> params = trip.parseQueryParams();
+
+            // building a new list by copying all values, except for the date which is set to the target date
+            List<NameValuePair> newParams = new ArrayList<>();
+            newParams.add(new BasicNameValuePair("date", targetDate));
+            for (Map.Entry<String, String> param : params.entrySet()) {
+                if (!param.getKey().equals("date")) {
+                    newParams.add(new BasicNameValuePair(param.getKey(), param.getValue()));
+                }
+            }
+            otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(URLEncodedUtils.format(newParams, UTF_8));
+        } catch (Exception e) {
+            // TODO: report bugsnag
+            LOG.error("Encountered an error while making a request ot the OTP server. error={}", e);
+            return false;
+        }
+
+        if (otpDispatcherResponse == null) return false;
+
+        if (otpDispatcherResponse.statusCode >= 400) {
+            // TODO: report bugsnag
+            LOG.error("Received an error from the OTP server. status={}", otpDispatcherResponse.statusCode);
+            return false;
+        }
+        OtpResponse otpResponse = otpDispatcherResponse.getResponse();
         for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
             Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
-            if (ItineraryUtils.itinerariesMatch(candidateItinerary, trip.itinerary)) {
+            if (ItineraryUtils.itinerariesMatch(trip.itinerary, candidateItinerary)) {
+                // matching itinerary found!
+                // Set the matching itinerary.
                 matchingItinerary = candidateItinerary;
+
+                // set the status according to whether the current itinerary occurs in the past, present or future
+                updateTripStatus();
+
+                // update the trip's itinerary existence data so that any invalid dates are cleared (thus resulting in
+                // that day of week saying that it is a valid day of the week).
+                trip.itineraryExistence.getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek()).invalidDates =
+                    new ArrayList<>();
+                Persistence.monitoredTrips.replace(trip.id, trip);
                 return true;
             }
         }
+
+        // If this point is reached, a matching itinerary was not found
         LOG.warn("No comparison itinerary found in otp response for trip");
+
+        // Check whether this trip should no longer ever be checked due to not having matching itineraries on any
+        // monitored day of the week. For trips that are only monitored on one day of the week, they could have been not
+        // possible for just that day, but could again be possible the next week. Therefore, this checks if the trip
+        // was not possible on all monitored days of the previous week and if so, it updates the journeyState to say
+        // that the trip is no longer possible.
+        boolean noMatchingItineraryFoundOnPreviousChecks = !trip.itineraryExistence.
+            isStillPossibleOnAtLeastOneMonitoredDayOfTheWeek(
+                trip
+            );
+        journeyState.tripStatus = noMatchingItineraryFoundOnPreviousChecks
+            ? TripStatus.NO_LONGER_POSSIBLE
+            : TripStatus.NEXT_TRIP_NOT_POSSIBLE;
+        journeyState.noLongerPossible = noMatchingItineraryFoundOnPreviousChecks;
+
+        // update trip itinerary existence to reflect that trip was not possible on this day of the week
+        trip.itineraryExistence
+            .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek())
+            .handleInvalidDate(targetZonedDateTime);
+        Persistence.monitoredTrips.replace(trip.id, trip);
+
+        // send an appropriate notification if the trip is still possible on another day of the week, or if it is now
+        // not possible on any day of the week that the trip should be monitored
+        enqueueNotification(
+            TripMonitorNotification.createItineraryNotFoundNotification(noMatchingItineraryFoundOnPreviousChecks)
+        );
         return false;
+    }
+
+    /**
+     * Updates the journey state's trip status according to whether the matching itinerary occurs in the past, present
+     * or future
+     */
+    private void updateTripStatus() {
+        Instant now = DateTimeUtils.nowAsDate().toInstant();
+        boolean tripIsActive = matchingItinerary.startTime.toInstant().isBefore(now) &&
+            matchingItinerary.endTime.toInstant().isAfter(now);
+        journeyState.tripStatus = tripIsActive ? TripStatus.TRIP_ACTIVE : TripStatus.TRIP_UPCOMING;
     }
 
     public TripMonitorNotification checkTripForNewAlerts() {
@@ -325,8 +394,16 @@ public class CheckMonitoredTrip implements Runnable {
         // get the configured timezone that OTP is using to parse dates and times
         ZoneId targetZoneId = DateTimeUtils.getOtpZoneId();
 
-        // get the most recent journey state and itinerary to see when the next monitored trip is supposed to occur
+        // Get the most recent journey state and itinerary to see when the next monitored trip is supposed to occur
         journeyState = trip.retrieveJourneyState();
+
+        // Make sure journey state indicates that the trip should still possible on at least one day of the week as of
+        // the last time a matching itinerary was attempted to be found. This field in the journey state is used instead
+        // of the trip's itinerary existence data in order to not skip trips that are monitored only one day of the week
+        // and may have not had a matching itinerary on that single monitored day even though it could be possible the
+        // next week.
+        if (journeyState.noLongerPossible) return true;
+
         if (
             journeyState.matchingItinerary == null ||
                 journeyState.matchingItinerary.endTime.before(new Date(journeyState.lastCheckedEpochMillis))
@@ -336,6 +413,14 @@ public class CheckMonitoredTrip implements Runnable {
             // the itinerary on the next possible day the monitored trip happens
 
             LOG.info("Calculating next itinerary for trip");
+
+            // initialize the trip's matching itinerary to the latest journeyState's matching itinerary, or use the
+            // itinerary that the trip was saved with
+            matchingItinerary = journeyState.matchingItinerary == null
+                // clone the trip's itinerary just in case the code attempts to save the trip (and thus the itinerary)
+                ? trip.itinerary.clone()
+                : journeyState.matchingItinerary;
+
             // calculate target time for the next trip plan request
             // find the next possible day the trip is active by initializing the the appropriate target time. Start by
             // checking today's date at the earliest in case the user has paused trip monitoring for a while
@@ -362,58 +447,27 @@ public class CheckMonitoredTrip implements Runnable {
                 }
             }
 
-            // calculate the next possible itinerary. If the calculation failed, skip this trip check.
-            if (!calculateNextItinerary()) return true;
-
-            // check if the matching itinerary has already ended. This could occur on the very first run of
-            // CheckMonitoredTrip for itineraries that occur today, but has already ended. Up until this point, the
-            // matchingItinerary wasn't calculated, so it wasn't known when the end time was.
-            if (matchingItinerary.endTime.before(DateTimeUtils.nowAsDate())) {
-                // itinerary is done today, advance to the next day and recheck
+            // Check if the CheckMonitoredTrip is being ran for the first time for this trip and if the trip's saved
+            // itinerary has already ended for the day. In that case, advance until the next day.
+            if (journeyState.matchingItinerary == null && trip.itinerary.endTime.after(DateTimeUtils.nowAsDate())) {
                 targetZonedDateTime = targetZonedDateTime.plusDays(1);
-                // calculate the next possible itinerary. If the calculation failed, skip this trip check.
-                if (!calculateNextItinerary()) return true;
-            }
-            LOG.info("Next itinerary happening on {}.", targetDate);
-
-            // update journey state with baseline departure and arrival times which are the last known departure/arrival
-            journeyState.baselineDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
-            journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
-
-            // update journey state with the original (scheduled departure and arrival times). Calculate these by
-            // finding the first/last transit legs and subtracting any delay.
-            journeyState.originalDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
-            for (Leg leg : matchingItinerary.legs) {
-                if (leg.transitLeg) {
-                    journeyState.originalDepartureTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
-                        leg.departureDelay,
-                        TimeUnit.SECONDS
-                    );
-                    break;
-                }
-            }
-            journeyState.originalArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
-            for (int i = matchingItinerary.legs.size() - 1; i >= 0; i--) {
-                Leg leg = matchingItinerary.legs.get(i);
-                if (leg.transitLeg) {
-                    journeyState.originalArrivalTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
-                        leg.arrivalDelay,
-                        TimeUnit.SECONDS
-                    );
-                    break;
-                }
             }
 
-            // save journey state with updated matching itinerary and target date
-            journeyState.update(this);
+            // advance the trip to the next active date
+            advanceToNextActiveTripDate();
         } else {
             matchingItinerary = journeyState.matchingItinerary;
             targetDate = journeyState.targetDate;
+
+            // skip checking the trip the rest of the time that it is active if it had its trip status marked as the
+            // next trip not being possible
+            if (journeyState.tripStatus == TripStatus.NEXT_TRIP_NOT_POSSIBLE) return true;
         }
-        Instant tripStartInstant = Instant.ofEpochMilli(matchingItinerary.startTime.getTime());
+        Instant tripStartInstant = matchingItinerary.startTime.toInstant();
 
         // Get current time and trip time (with the time offset to today) for comparison.
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(targetZoneId);
+
         // TODO: Change log level.
         LOG.info("Trip starts at {} (now={})", tripStartInstant.toString(), now.toString());
 
@@ -464,86 +518,75 @@ public class CheckMonitoredTrip implements Runnable {
         return true;
     }
 
-    /**
-     * Calculate the next possible time that the itinerary is possible, advancing the targetZonedDateTime and setting
-     * the targetZonedDateTime, targetDate, otpResponse and matchingItinerary. Returns false if an error occurs or a
-     * matching itinerary isn't found on the next possible date the trip should be monitored on.
-     */
-    private boolean calculateNextItinerary() {
-        // double check that this trip is in fact active and throw an error if it is not
-        if (trip.isInactive()) {
-            throw new RuntimeException("An attempt was made to find the next possible active date of an inactive monitored trip.");
-        }
-
-        // if the trip is not active on the current zoned date time, advance until a day is found when the trip is
-        // active.
+    private void advanceToNextActiveTripDate() throws URISyntaxException {
+        // Advance the target date/time until a day is found when the trip is active.
         while (!trip.isActiveOnDate(targetZonedDateTime)) {
             targetZonedDateTime = targetZonedDateTime.plusDays(1);
         }
         targetDate = targetZonedDateTime.format(DATE_FORMATTER);
 
-        // execute trip plan request for the target time
-        LOG.info("Attempting to calculate next trip on target date {}", targetDate);
-        if (!calculateOtpResponse()) {
-            // failed to calculate, return false
-            return false;
+        LOG.info("Next itinerary happening on {}.", targetDate);
+
+        // Update the matching itinerary with the expected scheduled times for when the next trip is
+        // expected to happen. This is done by incrementing the matching itinerary's start or end time such that it
+        // would be the either the first possible itinerary happening after the target time for depart at trips or
+        // the latest possible itinerary that ends before the target time for arrive by trips. Doing so this way
+        // avoids making calls to OTP and sets up an expected itinerary to check for even if OTP is unable to return
+        // the itinerary due to it being suboptimal.
+        long offsetMillis;
+        if (trip.isArriveBy()) {
+            // find the closest itinerary end time that does not exceed the target zoned date time
+            Instant newEndTime = matchingItinerary.endTime.toInstant();
+            do {
+                newEndTime = newEndTime.plus(1, ChronoUnit.DAYS);
+            } while (newEndTime.plus(1, ChronoUnit.DAYS).isBefore(targetZonedDateTime.toInstant()));
+            offsetMillis = newEndTime.toEpochMilli() - matchingItinerary.endTime.getTime();
+            matchingItinerary.startTime = new Date(matchingItinerary.startTime.getTime() + offsetMillis);
+        } else {
+            // find the first itinerary start time that does exceeds the target zoned date time
+            Instant newStartTime = matchingItinerary.startTime.toInstant();
+            do {
+                newStartTime = newStartTime.plus(1, ChronoUnit.DAYS);
+            } while (newStartTime.isBefore(targetZonedDateTime.toInstant()));
+            offsetMillis = newStartTime.toEpochMilli() - matchingItinerary.startTime.getTime();
+            matchingItinerary.endTime = new Date(matchingItinerary.endTime.getTime() + offsetMillis);
+        }
+        for (Leg leg : matchingItinerary.legs) {
+            leg.startTime = new Date(leg.startTime.getTime() + offsetMillis);
+            leg.endTime = new Date(leg.endTime.getTime() + offsetMillis);
         }
 
-        // check if the resulting itinerary has a matching itinerary
-        if (!updateMatchingItinerary()) {
-            // TODO: figure out how to notify the user that the itinerary is not possible anymore
-            // for now, just say the next itinerary couldn't be found
-            return false;
+        // update journey state with baseline departure and arrival times which are the last known departure/arrival
+        journeyState.baselineDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
+        journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
+
+        // update journey state with the original (scheduled departure and arrival times). Calculate these by
+        // finding the first/last transit legs and subtracting any delay.
+        journeyState.originalDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
+        for (Leg leg : matchingItinerary.legs) {
+            if (leg.transitLeg) {
+                journeyState.originalDepartureTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
+                    leg.departureDelay,
+                    TimeUnit.SECONDS
+                );
+                break;
+            }
         }
-        return true;
-    }
-
-    /**
-     * Creates and executes a request to OTP using the currently set target date and other trip plan query parameters
-     * associated with the current monitored trip. The response is saved into the {@link CheckMonitoredTrip#otpResponse}
-     * variable.
-     *
-     * @return false if any kind of exception occurred or if a trip plan could not be calculated by OTP
-     */
-    private boolean calculateOtpResponse() {
-        OtpDispatcherResponse otpDispatcherResponse;
-        try {
-            otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(generateTripPlanQueryParams());
-        } catch (Exception e) {
-            // TODO: report bugsnag
-            LOG.error("Encountered an error while making a request ot the OTP server. error={}", e);
-            return false;
-        }
-
-        if (otpDispatcherResponse == null) return false;
-
-        if (otpDispatcherResponse.statusCode >= 400) {
-            // TODO: report bugsnag
-            LOG.error("Received an error from the OTP server. status={}", otpDispatcherResponse.statusCode);
-            return false;
-        }
-        otpResponse = otpDispatcherResponse.getResponse();
-        return true;
-    }
-
-    /**
-     * Generate the appropriate OTP query params for the trip for the current check by replacing
-     * the date query parameter with the appropriate date.
-     */
-    public String generateTripPlanQueryParams() throws URISyntaxException {
-        // parse query params
-        Map<String, String> params = trip.parseQueryParams();
-
-        // building a new list by copying all values, except for the date which is set to the target date
-        List<NameValuePair> newParams = new ArrayList<>();
-        newParams.add(new BasicNameValuePair("date", targetDate));
-        for (Map.Entry<String, String> param : params.entrySet()) {
-            if (!param.getKey().equals("date")) {
-                newParams.add(new BasicNameValuePair(param.getKey(), param.getValue()));
+        journeyState.originalArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
+        for (int i = matchingItinerary.legs.size() - 1; i >= 0; i--) {
+            Leg leg = matchingItinerary.legs.get(i);
+            if (leg.transitLeg) {
+                journeyState.originalArrivalTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
+                    leg.arrivalDelay,
+                    TimeUnit.SECONDS
+                );
+                break;
             }
         }
 
-        // convert object to string
-        return URLEncodedUtils.format(newParams, UTF_8);
+        updateTripStatus();
+
+        // save journey state with updated matching itinerary and target date
+        journeyState.update(this);
     }
 }

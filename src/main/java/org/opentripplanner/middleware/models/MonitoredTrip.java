@@ -147,7 +147,8 @@ public class MonitoredTrip extends Model {
     public boolean notifyOnItineraryChange = true;
 
     /**
-     * Records the last itinerary existence check results for this trip.
+     * Records the last itinerary existence check results for this trip. This keeps a record of the latest checks on
+     * whether an itinerary was possible on a certain day of the week.
      */
     public ItineraryExistence itineraryExistence;
 
@@ -395,6 +396,16 @@ public class MonitoredTrip extends Model {
             new URI(String.format("http://example.com/plan?%s", queryParams)),
             UTF_8
         ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+    }
+
+    /**
+     * Check if the trip is planned with the target time being an arriveBy or departAt query.
+     *
+     * @return true, if the trip's target time is for an arriveBy query
+     */
+    public boolean isArriveBy() throws URISyntaxException {
+        // if arriveBy is not included in query params, OTP will default to false, so initialize to false
+        return parseQueryParams().getOrDefault("arriveBy", "false").equals("true");
     }
 
     /**
