@@ -12,6 +12,7 @@ import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -27,6 +28,7 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -254,18 +256,38 @@ public class MonitoredTrip extends Model {
             .map(leg -> leg.mode)
             .collect(Collectors.toSet());
 
-        // Remove WALK if other access modes are present (i.e. {BICYCLE|CAR|MICROMOBILITY}[_RENT]).
+        // Remove WALK if non-car access modes are present (i.e. {BICYCLE|MICROMOBILITY}[_RENT]).
+        // Removing WALK is necessary for OTP to return certain bicycle+transit itineraries.
+        // Including WALK is necessary for OTP to return certain car+transit itineraries.
         boolean hasAccessModes = actualModes.stream().anyMatch(mode -> {
             String mainMode = mode.split("_")[0];
-            List<String> accessModes = List.of("BICYCLE", "CAR", "MICROMOBILITY");
-            return accessModes.contains(mainMode);
+            return List.of("BICYCLE", "MICROMOBILITY").contains(mainMode);
         });
-
         if (hasAccessModes) {
             actualModes.remove("WALK");
         }
 
+        // Replace the "CAR" in the set of modes with the correct CAR query mode (CAR_PARK, CAR_RENT, CAR_HAIL)
+        // (assuming there is only one car leg in an itinerary).
+        Optional<Leg> findCarLeg = itinerary.legs.stream().filter(leg -> "CAR".equals(leg.mode)).findAny();
+        boolean hasCarAndTransit = findCarLeg.isPresent() && itinerary.hasTransit();
+        if (hasCarAndTransit) {
+            Leg carLeg = findCarLeg.get();
+            String carQueryMode;
+
+            if (Boolean.TRUE.equals(carLeg.rentedCar)) {
+                carQueryMode = "CAR_RENT";
+            } else if (Boolean.TRUE.equals(carLeg.hailedCar)) {
+                carQueryMode = "CAR_HAIL";
+            } else {
+                carQueryMode = "CAR_PARK";
+            }
+            actualModes.remove("CAR");
+            actualModes.add(carQueryMode);
+        }
+
         String newModeParam = String.join(",", actualModes);
+
         Map<String, String> queryParamsMap = parseQueryParams();
         queryParamsMap.put("mode", newModeParam);
 

@@ -2,6 +2,9 @@ package org.opentripplanner.middleware.models;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 
@@ -9,6 +12,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Holds tests for some methods in MonitoredTrip.
@@ -24,25 +28,23 @@ public class MonitoredTripTest {
      * Partial test for {@link MonitoredTrip#initializeFromItineraryAndQueryParams}
      * that focuses on updating the mode in queryParams.
      */
-    @Test
-    public void canUpdateModeInQueryParams() throws URISyntaxException {
+    @ParameterizedTest
+    @MethodSource("createUpdateModeInQueryParamTestCases")
+    public void canUpdateModeInQueryParams(Leg accessLeg, Set<String> expectedModeParams) throws URISyntaxException {
         // Setup a trip with an initial queryParams argument.
         MonitoredTrip trip = new MonitoredTrip();
         trip.queryParams = UI_QUERY_PARAMS;
 
-        // Setup an itinerary returned by batch processing using other modes in the query params,
-        // e.g. using bicycle+transit
-        Leg bicycleLeg = new Leg();
-        bicycleLeg.mode = "BICYCLE";
-
+        // Setup an itinerary returned based on the provided accessLeg and a transit and walk leg.
         Leg walkLeg = new Leg();
         walkLeg.mode = "WALK";
 
         Leg busLeg = new Leg();
         busLeg.mode = "BUS";
+        busLeg.transitLeg = true;
 
         Itinerary itinerary = new Itinerary();
-        itinerary.legs = List.of(bicycleLeg, walkLeg, busLeg);
+        itinerary.legs = List.of(accessLeg, walkLeg, busLeg);
         trip.itinerary = itinerary;
 
         // Initialize internal trip vars.
@@ -51,12 +53,44 @@ public class MonitoredTripTest {
         // Check that the mode was updated.
         Map<String, String> paramsMap = trip.parseQueryParams();
         String[] modeParams = paramsMap.get("mode").split(",");
-
-        // If BICYCLE (or CAR or MICROMOBILITY...) and WALK appear together in an itinerary, usually the originating query doesn't mention WALK.
-        Set<String> expectedModeParams = Set.of("BICYCLE", "BUS");
         Set<String> actualModeParams = Set.of(modeParams);
 
-        Assertions.assertEquals(expectedModeParams, actualModeParams);
+        Assertions.assertEquals(expectedModeParams, actualModeParams,
+            String.format("This set of mode params %s is incorrect for access mode %s.", actualModeParams, accessLeg.mode)
+        );
+    }
+
+    private static Stream<Arguments> createUpdateModeInQueryParamTestCases() {
+        // User-owned bicycle leg for bicycle+transit itineraries.
+        Leg bicycleLeg = new Leg();
+        bicycleLeg.mode = "BICYCLE";
+
+        // User-owned car leg for park-and-ride itineraries.
+        // (hailedCar = false, rentedCar = false)
+        Leg ownCarLeg = new Leg();
+        ownCarLeg.mode = "CAR";
+
+        // Rental car leg
+        Leg rentalCarLeg = new Leg();
+        rentalCarLeg.mode = "CAR";
+        rentalCarLeg.rentedCar = true;
+
+        // Hailed car leg
+        Leg hailedCarLeg = new Leg();
+        hailedCarLeg.mode = "CAR";
+        hailedCarLeg.hailedCar = true;
+
+        return Stream.of(
+            // If BICYCLE (or MICROMOBILITY...) and WALK appear together in an itinerary,
+            // removing WALK is necessary for OTP to return certain bicycle+transit itineraries.
+            Arguments.of(bicycleLeg, Set.of("BICYCLE", "BUS")),
+
+            // For itineraries with any CAR,
+            // including WALK is necessary for OTP to return certain car+transit itineraries.
+            Arguments.of(ownCarLeg, Set.of("CAR_PARK", "WALK", "BUS")),
+            Arguments.of(rentalCarLeg, Set.of("CAR_RENT", "WALK", "BUS")),
+            Arguments.of(hailedCarLeg, Set.of("CAR_HAIL", "WALK", "BUS"))
+        );
     }
 
     /**
