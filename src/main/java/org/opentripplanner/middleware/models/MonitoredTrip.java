@@ -252,27 +252,27 @@ public class MonitoredTrip extends Model {
      * Updates the mode in the OTP query parameter based on the modes from the itinerary.
      */
     private void updateModeInQueryParams() throws URISyntaxException {
-        Set<String> actualModes = itinerary.legs.stream()
+        Set<String> legModes = itinerary.legs.stream()
             .map(leg -> leg.mode)
             .collect(Collectors.toSet());
 
         // Remove WALK if non-car access modes are present (i.e. {BICYCLE|MICROMOBILITY}[_RENT]).
         // Removing WALK is necessary for OTP to return certain bicycle+transit itineraries.
         // Including WALK is necessary for OTP to return certain car+transit itineraries.
-        boolean hasAccessModes = actualModes.stream().anyMatch(mode -> {
+        boolean hasAccessModes = legModes.stream().anyMatch(mode -> {
             String mainMode = mode.split("_")[0];
             return List.of("BICYCLE", "MICROMOBILITY").contains(mainMode);
         });
         if (hasAccessModes) {
-            actualModes.remove("WALK");
+            legModes.remove("WALK");
         }
 
         // Replace the "CAR" in the set of modes with the correct CAR query mode (CAR_PARK, CAR_RENT, CAR_HAIL)
         // (assuming there is only one car leg in an itinerary).
-        Optional<Leg> findCarLeg = itinerary.legs.stream().filter(leg -> "CAR".equals(leg.mode)).findAny();
-        boolean hasCarAndTransit = findCarLeg.isPresent() && itinerary.hasTransit();
+        Optional<Leg> firstCarLeg = itinerary.legs.stream().filter(leg -> "CAR".equals(leg.mode)).findFirst();
+        boolean hasCarAndTransit = firstCarLeg.isPresent() && itinerary.hasTransit();
         if (hasCarAndTransit) {
-            Leg carLeg = findCarLeg.get();
+            Leg carLeg = firstCarLeg.get();
             String carQueryMode;
 
             if (Boolean.TRUE.equals(carLeg.rentedCar)) {
@@ -282,11 +282,11 @@ public class MonitoredTrip extends Model {
             } else {
                 carQueryMode = "CAR_PARK";
             }
-            actualModes.remove("CAR");
-            actualModes.add(carQueryMode);
+            legModes.remove("CAR");
+            legModes.add(carQueryMode);
         }
 
-        String newModeParam = String.join(",", actualModes);
+        String newModeParam = String.join(",", legModes);
 
         Map<String, String> queryParamsMap = parseQueryParams();
         queryParamsMap.put("mode", newModeParam);
