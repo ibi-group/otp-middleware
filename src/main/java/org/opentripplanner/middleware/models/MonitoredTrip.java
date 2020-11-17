@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import static com.mongodb.client.model.Filters.eq;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.MODE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
 
 /**
@@ -234,64 +235,22 @@ public class MonitoredTrip extends Model {
         int lastLegIndex = itinerary.legs.size() - 1;
         from = itinerary.legs.get(0).from;
         to = itinerary.legs.get(lastLegIndex).to;
+        Map<String, String> parsedQueryParams = this.parseQueryParams();
 
-        // Update actual query modes from the itinerary.
-        updateModeInQueryParams();
+        // Update modes in query params with set derived from itinerary. This ensures that a potentially inaccurate value
+        // in query params is not used when monitoring trips in the future.
+        Set<String> modes = ItineraryUtils.deriveModesFromItinerary(itinerary);
+        parsedQueryParams.put(MODE_PARAM, String.join(",", modes));
+        this.queryParams = ItineraryUtils.toQueryString(parsedQueryParams);
 
         // Ensure the itinerary we store does not contain any realtime info.
         clearRealtimeInfo();
 
         // set the trip time by parsing the query params
-        tripTime = this.parseQueryParams().get(TIME_PARAM);
+        tripTime = parsedQueryParams.get(TIME_PARAM);
         if (tripTime == null) {
             throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
         }
-    }
-
-    /**
-     * Updates the mode in the OTP query parameter based on the modes from the itinerary.
-     */
-    private void updateModeInQueryParams() throws URISyntaxException {
-        Set<String> legModes = itinerary.legs.stream()
-            .map(leg -> leg.mode)
-            .collect(Collectors.toSet());
-
-        // Remove WALK if non-car access modes are present (i.e. {BICYCLE|MICROMOBILITY}[_RENT]).
-        // Removing WALK is necessary for OTP to return certain bicycle+transit itineraries.
-        // Including WALK is necessary for OTP to return certain car+transit itineraries.
-        boolean hasAccessModes = legModes.stream().anyMatch(mode -> {
-            String mainMode = mode.split("_")[0];
-            return List.of("BICYCLE", "MICROMOBILITY").contains(mainMode);
-        });
-        if (hasAccessModes) {
-            legModes.remove("WALK");
-        }
-
-        // Replace the "CAR" in the set of modes with the correct CAR query mode (CAR_PARK, CAR_RENT, CAR_HAIL)
-        // (assuming there is only one car leg in an itinerary).
-        Optional<Leg> firstCarLeg = itinerary.legs.stream().filter(leg -> "CAR".equals(leg.mode)).findFirst();
-        boolean hasCarAndTransit = firstCarLeg.isPresent() && itinerary.hasTransit();
-        if (hasCarAndTransit) {
-            Leg carLeg = firstCarLeg.get();
-            String carQueryMode;
-
-            if (Boolean.TRUE.equals(carLeg.rentedCar)) {
-                carQueryMode = "CAR_RENT";
-            } else if (Boolean.TRUE.equals(carLeg.hailedCar)) {
-                carQueryMode = "CAR_HAIL";
-            } else {
-                carQueryMode = "CAR_PARK";
-            }
-            legModes.remove("CAR");
-            legModes.add(carQueryMode);
-        }
-
-        String newModeParam = String.join(",", legModes);
-
-        Map<String, String> queryParamsMap = parseQueryParams();
-        queryParamsMap.put("mode", newModeParam);
-
-        queryParams = ItineraryUtils.toQueryString(queryParamsMap);
     }
 
     public MonitoredTrip updateAllDaysOfWeek(boolean value) {
