@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.opentripplanner.middleware.utils.ItineraryUtils.MODE_PARAM;
+
 /**
  * Holds tests for some methods in MonitoredTrip.
  */
@@ -52,7 +54,7 @@ public class MonitoredTripTest {
 
         // Check that the mode was updated.
         Map<String, String> paramsMap = trip.parseQueryParams();
-        String[] modeParams = paramsMap.get("mode").split(",");
+        String[] modeParams = paramsMap.get(MODE_PARAM).split(",");
         Set<String> actualModeParams = Set.of(modeParams);
 
         Assertions.assertEquals(expectedModeParams, actualModeParams,
