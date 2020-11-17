@@ -235,7 +235,7 @@ public class MonitoredTrip extends Model {
         to = itinerary.legs.get(lastLegIndex).to;
         Map<String, String> parsedQueryParams = parseQueryParams();
 
-        // Update actual query modes from the itinerary.
+        // Update actual query modes from the itinerary, so that OTP requests query the correct modes desired by user.
         updateModeInQueryParams(parsedQueryParams);
 
         // Ensure the itinerary we store does not contain any realtime info.
