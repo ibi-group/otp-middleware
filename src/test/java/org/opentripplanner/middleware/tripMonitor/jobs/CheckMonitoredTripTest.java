@@ -117,7 +117,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         checkMonitoredTrip.run();
         // Assert that there is one notification generated during check.
         // TODO: Improve assertions to use snapshots.
-        Assertions.assertEquals(checkMonitoredTrip.notifications.size(), 0);
+        Assertions.assertEquals(1, checkMonitoredTrip.notifications.size());
         // Clear the created trip.
         deleteMonitoredTripAndJourney(monitoredTrip);
     }
