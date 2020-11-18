@@ -235,8 +235,11 @@ public class MonitoredTrip extends Model {
         to = itinerary.legs.get(lastLegIndex).to;
         Map<String, String> parsedQueryParams = parseQueryParams();
 
-        // Update actual query modes from the itinerary, so that OTP requests query the correct modes desired by user.
-        updateModeInQueryParams(parsedQueryParams);
+        // Update modes in query params with set derived from itinerary. This ensures that, when sending requests to OTP
+        // for trip monitoring, we are querying the modes retained by the user when they saved the itinerary.
+        Set<String> modes = ItineraryUtils.deriveModesFromItinerary(itinerary);
+        parsedQueryParams.put(MODE_PARAM, String.join(",", modes));
+        this.queryParams = ItineraryUtils.toQueryString(parsedQueryParams);
 
         // Ensure the itinerary we store does not contain any realtime info.
         clearRealtimeInfo();
@@ -246,16 +249,6 @@ public class MonitoredTrip extends Model {
         if (tripTime == null) {
             throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
         }
-    }
-
-    /**
-     * Update modes in query params with set derived from itinerary. This ensures that, when sending requests to OTP
-     * for trip monitoring, we are querying the modes retained by the user when they saved the itinerary.
-     */
-    private void updateModeInQueryParams(Map<String, String> parsedQueryParams) {
-        Set<String> modes = ItineraryUtils.deriveModesFromItinerary(itinerary);
-        parsedQueryParams.put(MODE_PARAM, String.join(",", modes));
-        this.queryParams = ItineraryUtils.toQueryString(parsedQueryParams);
     }
 
     public MonitoredTrip updateAllDaysOfWeek(boolean value) {
