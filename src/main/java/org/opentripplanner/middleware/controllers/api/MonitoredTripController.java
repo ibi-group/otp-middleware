@@ -7,6 +7,7 @@ import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
@@ -161,14 +162,12 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      * {@link org.opentripplanner.middleware.otp.response.Itinerary} has transit and no rentals/ride hailing).
      */
     private void checkTripCanBeMonitored(MonitoredTrip trip, Request request) {
-        boolean hasTransit = trip.itinerary.hasTransit();
-        boolean hasRentalOrRideHail = trip.itinerary.hasRentalOrRideHail();
-
-        if (!hasTransit || hasRentalOrRideHail) {
+        Itinerary.ItineraryCanBeMonitored canBeMonitored = trip.itinerary.assessCanBeMonitored();
+        if (!canBeMonitored.overall) {
             String rejectReason = "";
-            if (!hasTransit) rejectReason += "it does not include a transit leg";
-            if (!hasTransit && hasRentalOrRideHail) rejectReason += ", and ";
-            if (hasRentalOrRideHail) rejectReason += "it includes a rental or ride hail";
+            if (!canBeMonitored.hasTransit) rejectReason += "it does not include a transit leg";
+            if (!canBeMonitored.overall) rejectReason += ", and ";
+            if (canBeMonitored.hasRentalOrRideHail) rejectReason += "it includes a rental or ride hail";
 
             logMessageAndHalt(
                 request,

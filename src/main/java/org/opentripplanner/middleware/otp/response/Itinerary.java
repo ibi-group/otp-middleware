@@ -83,6 +83,21 @@ public class Itinerary implements Cloneable {
     public List<Leg> legs = null;
 
     /**
+     * @return an {@link ItineraryCanBeMonitored} object with the outcomes of the checks regarding whether
+     * the itinerary can be monitored.
+     */
+    public ItineraryCanBeMonitored assessCanBeMonitored() {
+        return new ItineraryCanBeMonitored();
+    }
+
+    /**
+     * @return true if the itinerary can be monitored.
+     */
+    public boolean canBeMonitored() {
+        return assessCanBeMonitored().overall;
+    }
+
+    /**
      * Determines whether the itinerary includes transit.
      * @return true if at least one {@link Leg} of the itinerary is a transit leg per OTP.
      */
@@ -165,5 +180,24 @@ public class Itinerary implements Cloneable {
             cloned.legs.add(leg.clone());
         }
         return cloned;
+    }
+
+    /**
+     * A class that holds results for method {@link #assessCanBeMonitored()},
+     * including outcomes for the checks regarding whether the itinerary can be monitored.
+     */
+    public class ItineraryCanBeMonitored {
+        public final boolean hasTransit;
+        public final boolean hasRentalOrRideHail;
+        /**
+         * True if the itinerary has transit and no rental/ride hail legs.
+         */
+        public final boolean overall;
+
+        private ItineraryCanBeMonitored() {
+            this.hasTransit = hasTransit();
+            this.hasRentalOrRideHail = hasRentalOrRideHail();
+            this.overall = hasTransit && !hasRentalOrRideHail;
+        }
     }
 }
