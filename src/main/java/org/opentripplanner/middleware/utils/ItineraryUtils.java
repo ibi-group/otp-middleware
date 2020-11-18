@@ -111,19 +111,19 @@ public class ItineraryUtils {
      * Returns true if the itineraries match for the purposes of trip monitoring.
      *
      * @param referenceItinerary The original itinerary that others are compared against.
-     * @param candidiateItinerary A new itinerary that might match the previous itinerary.
+     * @param candidateItinerary A new itinerary that might match the previous itinerary.
      */
-    public static boolean itinerariesMatch(Itinerary referenceItinerary, Itinerary candidiateItinerary) {
+    public static boolean itinerariesMatch(Itinerary referenceItinerary, Itinerary candidateItinerary) {
         // Make sure both itineraries are monitorable before continuing.
-        if (!itineraryIsSavable(referenceItinerary) || !itineraryIsSavable(candidiateItinerary)) return false;
+        if (!itineraryIsSavable(referenceItinerary) || !itineraryIsSavable(candidateItinerary)) return false;
 
         // make sure itineraries have same amount of legs
-        if (referenceItinerary.legs.size() != candidiateItinerary.legs.size()) return false;
+        if (referenceItinerary.legs.size() != candidateItinerary.legs.size()) return false;
 
         // make sure each leg matches
         for (int i = 0; i < referenceItinerary.legs.size(); i++) {
             Leg referenceItineraryLeg = referenceItinerary.legs.get(i);
-            Leg candidateItineraryLeg = candidiateItinerary.legs.get(i);
+            Leg candidateItineraryLeg = candidateItinerary.legs.get(i);
 
             if (!legsMatch(referenceItineraryLeg, candidateItineraryLeg)) return false;
         }
@@ -156,20 +156,20 @@ public class ItineraryUtils {
         // - The headsign is the same (or the reference leg had an empty headsign)
         // - The leg has the same interlining qualities with the previous leg
         if (
-            !equalsOrPreviousWasNull(referenceItineraryLeg.mode, candidateItineraryLeg.mode) ||
-                !equalsIgnoreCaseOrPreviousWasEmpty(
+            !equalsOrReferenceWasNull(referenceItineraryLeg.mode, candidateItineraryLeg.mode) ||
+                !equalsIgnoreCaseOrReferenceWasEmpty(
                     referenceItineraryLeg.agencyName,
                     candidateItineraryLeg.agencyName
                 ) ||
-                !equalsIgnoreCaseOrPreviousWasEmpty(
+                !equalsIgnoreCaseOrReferenceWasEmpty(
                     referenceItineraryLeg.routeLongName,
                     candidateItineraryLeg.routeLongName
                 ) ||
-                !equalsIgnoreCaseOrPreviousWasEmpty(
+                !equalsIgnoreCaseOrReferenceWasEmpty(
                     referenceItineraryLeg.routeShortName,
                     candidateItineraryLeg.routeShortName
                 ) ||
-                !equalsIgnoreCaseOrPreviousWasEmpty(
+                !equalsIgnoreCaseOrReferenceWasEmpty(
                     referenceItineraryLeg.headsign,
                     candidateItineraryLeg.headsign
                 ) ||
@@ -213,7 +213,7 @@ public class ItineraryUtils {
         }
 
         // stop code must match
-        if (!equalsIgnoreCaseOrPreviousWasEmpty(stopA.stopCode, stopB.stopCode)) return false;
+        if (!equalsIgnoreCaseOrReferenceWasEmpty(stopA.stopCode, stopB.stopCode)) return false;
 
         // stop positions must be no further than 5 meters apart
         double stopDistanceMeters = DistanceUtils.radians2Dist(
@@ -231,7 +231,7 @@ public class ItineraryUtils {
     /**
      * Returns true if the reference value is null. Otherwise, returns Objects.equals.
      */
-    private static boolean equalsOrPreviousWasNull (Object reference, Object candidate) {
+    private static boolean equalsOrReferenceWasNull(Object reference, Object candidate) {
         return reference == null || Objects.equals(reference, candidate);
     }
 
@@ -239,7 +239,7 @@ public class ItineraryUtils {
      * Returns true if the reference string was not present either by being null or an emptry string. Otherwise, returns
      * if the strings are equal ignoring case.
      */
-    private static boolean equalsIgnoreCaseOrPreviousWasEmpty(String reference, String candidate) {
+    private static boolean equalsIgnoreCaseOrReferenceWasEmpty(String reference, String candidate) {
         return StringUtils.isEmpty(reference) || reference.equalsIgnoreCase(candidate);
     }
 
