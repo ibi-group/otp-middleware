@@ -2,18 +2,21 @@ package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static java.lang.Boolean.TRUE;
+
 /**
  * An Itinerary is one complete way of getting from the start location to the end location.
  * Pare down version of class original produced for OpenTripPlanner.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Itinerary {
+public class Itinerary implements Cloneable {
 
     /**
      * Duration of the trip on this itinerary, in seconds.
@@ -80,6 +83,39 @@ public class Itinerary {
     public List<Leg> legs = null;
 
     /**
+     * Determines whether the itinerary includes transit.
+     * @return true if at least one {@link Leg} of the itinerary is a transit leg per OTP.
+     */
+    public boolean hasTransit() {
+        if (legs != null) {
+            for (Leg leg : legs) {
+                if (leg.transitLeg != null && leg.transitLeg) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Determines whether the itinerary includes a rental or ride hail.
+     * @return true if at least one {@link Leg} of the itinerary is a rental or ride hail leg per OTP.
+     */
+    public boolean hasRentalOrRideHail() {
+        if (legs != null) {
+            for (Leg leg : legs) {
+                if (TRUE.equals(leg.rentedBike) ||
+                    TRUE.equals(leg.rentedCar) ||
+                    TRUE.equals(leg.rentedVehicle) ||
+                    TRUE.equals(leg.hailedCar)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * OTP-middleware specific function to aid in collecting alerts from legs.
      */
     public List<LocalizedAlert> getAlerts() {
@@ -95,33 +131,6 @@ public class Itinerary {
         for (Leg leg : legs) {
             leg.alerts = null;
         }
-    }
-
-    /**
-     * This method calculates equality in the context of trip monitoring in order to analyzing equality when
-     * checking if itineraries match.
-     *
-     * FIXME: maybe don't check duration exactly as it might vary slightly in certain trips
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Itinerary itinerary = (Itinerary) o;
-        return duration.equals(itinerary.duration) &&
-            Objects.equals(transfers, itinerary.transfers) &&
-            Objects.equals(legs, itinerary.legs);
-    }
-
-    /**
-     * This method calculates the hash code in the context of trip monitoring in order to analyzing equality when
-     * checking if itineraries match.
-     *
-     * FIXME: maybe don't check duration exactly as it might vary slightly in certain trips
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(duration, transfers, legs);
     }
 
     @Override
@@ -141,5 +150,20 @@ public class Itinerary {
             ", fare=" + fare +
             ", legs=" + legs +
             '}';
+    }
+
+    /**
+     * Clone this object.
+     * NOTE: This is used primarily during testing and only clones certain needed items so not all entities are
+     * deep-cloned. Implement this further if additional items should be deep-cloned.
+     */
+    @Override
+    public Itinerary clone() throws CloneNotSupportedException {
+        Itinerary cloned = (Itinerary) super.clone();
+        cloned.legs = new ArrayList<>();
+        for (Leg leg : legs) {
+            cloned.legs.add(leg.clone());
+        }
+        return cloned;
     }
 }

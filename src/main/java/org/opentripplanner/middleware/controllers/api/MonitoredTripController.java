@@ -55,16 +55,9 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         // Ensure user has not reached their limit for number of trips.
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
-        try {
-            monitoredTrip.initializeFromItineraryAndQueryParams();
-        } catch (Exception e) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.BAD_REQUEST_400,
-                "Invalid input data received for monitored trip.",
-                e
-            );
-        }
+        checkTripCanBeMonitored(monitoredTrip, req);
+        processTripQueryParams(monitoredTrip, req);
+        
         try {
             // Check itinerary existence and replace the provided trip's itinerary with a verified, non-realtime
             // version of it.
@@ -84,11 +77,32 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 e
             );
         }
+
         return monitoredTrip;
+    }
+
+    /**
+     * Processes the {@link MonitoredTrip} query parameters, so the trip's fields match the query parameters.
+     * If an error occurs regarding the query params, returns a HTTP 400 status.
+     */
+    private void processTripQueryParams(MonitoredTrip monitoredTrip, Request req) {
+        try {
+            monitoredTrip.initializeFromItineraryAndQueryParams();
+        } catch (Exception e) {
+            logMessageAndHalt(
+                req,
+                HttpStatus.BAD_REQUEST_400,
+                "Invalid input data received for monitored trip.",
+                e
+            );
+        }
     }
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
+        checkTripCanBeMonitored(monitoredTrip, req);
+        processTripQueryParams(monitoredTrip, req);
+
         // TODO: Update itinerary existence record when updating a trip.
 
         return monitoredTrip;
@@ -138,6 +152,28 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 request,
                 HttpStatus.BAD_REQUEST_400,
                 "Maximum permitted saved monitored trips reached. Maximum = " + MAXIMUM_PERMITTED_MONITORED_TRIPS
+            );
+        }
+    }
+
+    /**
+     * Checks that the given {@link MonitoredTrip} can be monitored (i.e., that the underlying
+     * {@link org.opentripplanner.middleware.otp.response.Itinerary} has transit and no rentals/ride hailing).
+     */
+    private void checkTripCanBeMonitored(MonitoredTrip trip, Request request) {
+        boolean hasTransit = trip.itinerary.hasTransit();
+        boolean hasRentalOrRideHail = trip.itinerary.hasRentalOrRideHail();
+
+        if (!hasTransit || hasRentalOrRideHail) {
+            String rejectReason = "";
+            if (!hasTransit) rejectReason += "it does not include a transit leg";
+            if (!hasTransit && hasRentalOrRideHail) rejectReason += ", and ";
+            if (hasRentalOrRideHail) rejectReason += "it includes a rental or ride hail";
+
+            logMessageAndHalt(
+                request,
+                HttpStatus.BAD_REQUEST_400,
+                String.format("This trip cannot be monitored because %s.", rejectReason)
             );
         }
     }

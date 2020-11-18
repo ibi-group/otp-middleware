@@ -23,32 +23,10 @@ public class Step implements Cloneable {
     public Double lat;
 
     /**
-     * This method calculates equality in the context of trip monitoring in order to analyzing equality when
-     * checking if itineraries are the same.
+     * Clone this object.
+     * NOTE: This is used primarily during testing and only clones certain needed items so not all entities are
+     * deep-cloned. Implement this further if additional items should be deep-cloned.
      */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        Step step = (Step) o;
-        return Objects.equals(streetName, step.streetName) &&
-            // FIXME account for slight step repositioning by calculating equality based off of proximity to previous
-            //   step
-            lon.equals(step.lon) && lat.equals(step.lat);
-    }
-
-    /**
-     * This method calculates equality in the context of trip monitoring in order to analyzing equality when
-     * checking if itineraries are the same.
-     */
-    @Override
-    public int hashCode() {
-        // FIXME account for slight step repositioning by calculating equality based off of proximity to previous step
-        return Objects.hash(streetName, lon, lat);
-    }
-
     protected Step clone() throws CloneNotSupportedException {
         return (Step) super.clone();
     }

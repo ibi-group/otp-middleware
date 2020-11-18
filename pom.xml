@@ -298,5 +298,12 @@
             <artifactId>aws-java-sdk-api-gateway</artifactId>
             <version>${awsjavasdk.version}</version>
         </dependency>
+
+        <!-- Used for haversine calculations with GPS coordinates -->
+        <dependency>
+            <groupId>com.spatial4j</groupId>
+            <artifactId>spatial4j</artifactId>
+            <version>0.5</version>
+        </dependency>
     </dependencies>
 </project>
