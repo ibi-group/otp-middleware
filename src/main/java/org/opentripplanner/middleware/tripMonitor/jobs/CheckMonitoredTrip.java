@@ -188,18 +188,37 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Checks whether the trip is beginning or ending at a time greater than the allowable variance. This will check
-     * whether the departure or arrival time of the whole journey has deviated to the point where the absolute value of
-     * the variance has changed more than the trip's variance. If it has, a notification is generated.
+     * Checks whether the trip is beginning or ending at a time greater than the allowable variance relative to the
+     * baseline itinerary arrival or departure time. This will check whether the departure or arrival time of the whole
+     * journey has deviated to the point where the absolute value of the variance has changed more than the trip's
+     * variance. If it has, a notification is generated.
+     *
+     * Example (departure):
+     * - Deviation threshold: 10 minutes
+     * - Original departure time: 5:00pm
+     * - Baseline departure time: 5:00pm
+     * - Current realtime departure time: 5:08pm
+     * - Result: The threshold is not met, so no notification is sent.
+     *
+     * Example (arrival):
+     * - Deviation threshold: 10 minutes
+     * - Original arrival time: 6:00pm
+     * - Baseline arrival time: 6:11pm (a previous check sent out a notification once the trip become more than 10
+     *     minutes late. Following that, the baseline arrival time was updated accordingly)
+     * - Current realtime departure time: 5:58pm
+     * - Result: The threshold is met, so a notification is sent.
      */
     public TripMonitorNotification checkTripForDelay(NotificationType delayType) {
-        // the target time for trip depending on notification type
+        // the target time for trip depending on notification type (the matching itinerary's start time if checking for
+        // departure delay, or the matching itinerary's end time if checking for arrival delay)
         Date matchingItineraryTargetTime;
 
-        // the current baseline epoch millis to check if a new threshold has been met
+        // the current baseline epoch millis to check if a new threshold has been met (the baseline departure time if
+        // checking for departure delay, or the baseline arrival time if checking for arrival delay)
         long baselineItineraryTargetEpochMillis;
 
-        // the original target epoch millis that the trip would've started or ended at
+        // the original target epoch millis that the trip would've started or ended at (the original departure time if
+        // checking for departure delay, or the original arrival time if checking for arrival delay)
         long originalTargetTimeEpochMillis;
 
         if (delayType == NotificationType.DEPARTURE_DELAY) {
@@ -212,8 +231,8 @@ public class CheckMonitoredTrip implements Runnable {
             originalTargetTimeEpochMillis = journeyState.originalArrivalTimeEpochMillis;
         }
 
-        // calculate deviation from threshold in minutes
-        long deviationInMinutes = Math.abs(
+        // calculate absolute deviation of current itinerary target time from the baseline target time in minutes
+        long deviationAbsoluteMinutes = Math.abs(
             TimeUnit.MINUTES.convert(
                 baselineItineraryTargetEpochMillis - matchingItineraryTargetTime.getTime(),
                 TimeUnit.MILLISECONDS
@@ -221,7 +240,7 @@ public class CheckMonitoredTrip implements Runnable {
         );
 
         // check if threshold met
-        if (deviationInMinutes >= trip.departureVarianceMinutesThreshold) {
+        if (deviationAbsoluteMinutes >= trip.departureVarianceMinutesThreshold) {
             // threshold met, set new baseline time
             if (delayType == NotificationType.DEPARTURE_DELAY) {
                 journeyState.baselineDepartureTimeEpochMillis = matchingItineraryTargetTime.getTime();
@@ -230,11 +249,12 @@ public class CheckMonitoredTrip implements Runnable {
             }
 
             // create and return notification
+            long delayMinutes = TimeUnit.MINUTES.convert(
+                matchingItineraryTargetTime.getTime() - originalTargetTimeEpochMillis,
+                TimeUnit.MILLISECONDS
+            );
             return TripMonitorNotification.createDelayNotification(
-                TimeUnit.MINUTES.convert(
-                    matchingItineraryTargetTime.getTime() - originalTargetTimeEpochMillis,
-                    TimeUnit.MILLISECONDS
-                ),
+                delayMinutes,
                 trip.departureVarianceMinutesThreshold,
                 matchingItineraryTargetTime,
                 delayType
@@ -327,10 +347,12 @@ public class CheckMonitoredTrip implements Runnable {
 
         // get the most recent journey state and itinerary to see when the next monitored trip is supposed to occur
         journeyState = trip.retrieveJourneyState();
-        if (
-            journeyState.matchingItinerary == null ||
-                journeyState.matchingItinerary.endTime.before(new Date(journeyState.lastCheckedEpochMillis))
-        ) {
+        boolean matchingItineraryActiveOrUpcoming = journeyState.matchingItinerary != null &&
+            journeyState.matchingItinerary.endTime.after(new Date(journeyState.lastCheckedEpochMillis));
+        if (matchingItineraryActiveOrUpcoming) {
+            matchingItinerary = journeyState.matchingItinerary;
+            targetDate = journeyState.targetDate;
+        } else {
             // Either the monitored trip hasn't ever checked on the next itinerary, or the most recent itinerary has
             // completed and the next possible one needs to be fetched in order to determine the scheduled start time of
             // the itinerary on the next possible day the monitored trip happens
@@ -380,36 +402,14 @@ public class CheckMonitoredTrip implements Runnable {
             journeyState.baselineDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
             journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
 
-            // update journey state with the original (scheduled departure and arrival times). Calculate these by
-            // finding the first/last transit legs and subtracting any delay.
-            journeyState.originalDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
-            for (Leg leg : matchingItinerary.legs) {
-                if (leg.transitLeg) {
-                    journeyState.originalDepartureTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
-                        leg.departureDelay,
-                        TimeUnit.SECONDS
-                    );
-                    break;
-                }
-            }
-            journeyState.originalArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
-            for (int i = matchingItinerary.legs.size() - 1; i >= 0; i--) {
-                Leg leg = matchingItinerary.legs.get(i);
-                if (leg.transitLeg) {
-                    journeyState.originalArrivalTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
-                        leg.arrivalDelay,
-                        TimeUnit.SECONDS
-                    );
-                    break;
-                }
-            }
+            // update journey state with the original (scheduled departure and arrival) times.
+            journeyState.originalDepartureTimeEpochMillis = matchingItinerary.getScheduledStartTimeEpochMillis();
+            journeyState.originalArrivalTimeEpochMillis = matchingItinerary.getScheduledEndTimeEpochMillis();
 
             // save journey state with updated matching itinerary and target date
             journeyState.update(this);
-        } else {
-            matchingItinerary = journeyState.matchingItinerary;
-            targetDate = journeyState.targetDate;
         }
+
         Instant tripStartInstant = Instant.ofEpochMilli(matchingItinerary.startTime.getTime());
 
         // Get current time and trip time (with the time offset to today) for comparison.

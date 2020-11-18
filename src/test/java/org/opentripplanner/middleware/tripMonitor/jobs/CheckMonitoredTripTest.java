@@ -139,21 +139,21 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     private static List<DelayNotificationTestCase> createDelayNotificationTestCases () throws URISyntaxException {
         List<DelayNotificationTestCase> testCases = new ArrayList<>();
 
-        // doesn't create departure/arrival notification for on-time trip
+        // should not create departure/arrival notification for on-time trip
         CheckMonitoredTrip onTimeTrip = createCheckMonitoredTrip();
         onTimeTrip.setJourneyState(createDefaultJourneyState());
         testCases.add(new DelayNotificationTestCase(
             onTimeTrip,
             NotificationType.DEPARTURE_DELAY,
-            "doesn't create departure notification for on-time trip"
+            "should not create departure notification for on-time trip"
         ));
         testCases.add(new DelayNotificationTestCase(
             onTimeTrip,
             NotificationType.ARRIVAL_DELAY,
-            "doesn't create arrival notification for on-time trip"
+            "should not create arrival notification for on-time trip"
         ));
 
-        // creates departure notification for 20 minute late trip
+        // should create a departure notification for 20 minute late trip
         CheckMonitoredTrip twentyMinutesLateTimeTrip = createCheckMonitoredTrip();
         offsetItineraryTime(
             twentyMinutesLateTimeTrip.matchingItinerary,
@@ -164,61 +164,63 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTimeTrip,
             NotificationType.DEPARTURE_DELAY,
-            "The departure time for your itinerary is now 09:00 (20 minutes late) (your threshold is currently set to 15 minutes).",
-            "creates departure notification for 20 minute late trip"
+            "Your trip is now predicted to depart 20 minutes late (at 09:00).",
+            "should create a departure notification for 20 minute late trip"
         ));
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTimeTrip,
             NotificationType.ARRIVAL_DELAY,
-            "The arrival time for your itinerary is now 09:18 (20 minutes late) (your threshold is currently set to 15 minutes).",
-            "creates arrival notification for 20 minute late trip"
+            "Your trip is now predicted to arrive 20 minutes late (at 09:18).",
+            "should create a arrival notification for 20 minute late trip"
         ));
 
-        // doesn't create departure notification for 20 minute late trip w/ 15 minute threshold
-        // doesn't create arrival notification for 20 minute late trip w/ 15 minute threshold
+        // should not create departure notification for 20 minute late trip w/ 15 minute threshold and 18 minute late
+        // baseline
+        // should not create arrival notification for 20 minute late trip w/ 15 minute threshold and 18 minute late
+        // baseline
         CheckMonitoredTrip twentyMinutesLateTripWithUpdatedThreshold = createCheckMonitoredTrip();
         offsetItineraryTime(
             twentyMinutesLateTripWithUpdatedThreshold.matchingItinerary,
             TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
         );
         JourneyState twentyMinutesLateJourneyStateWithUpdatedThreshold = createDefaultJourneyState();
-        long fifteenMinutesInMilliseconds = TimeUnit.MILLISECONDS.convert(15, TimeUnit.MINUTES);
+        long eighteenMinutesInMilliseconds = TimeUnit.MILLISECONDS.convert(15, TimeUnit.MINUTES);
         twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis +=
-            fifteenMinutesInMilliseconds;
+            eighteenMinutesInMilliseconds;
         twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis +=
-            fifteenMinutesInMilliseconds;
+            eighteenMinutesInMilliseconds;
         twentyMinutesLateTripWithUpdatedThreshold.setJourneyState(
             twentyMinutesLateJourneyStateWithUpdatedThreshold
         );
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTripWithUpdatedThreshold,
             NotificationType.DEPARTURE_DELAY,
-            "doesn't create departure notification for 20 minute late trip w/ 15 minute threshold"
+            "should not create departure notification for 20 minute late trip w/ 15 minute threshold and 18 minute late baseline"
         ));
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTripWithUpdatedThreshold,
             NotificationType.ARRIVAL_DELAY,
-            "doesn't create arrival notification for 20 minute late trip w/ 15 minute threshold"
+            "should not create arrival notification for 20 minute late trip w/ 15 minute threshold and 18 minute late baseline"
         ));
 
-        // creates departure notification for on-time trip w/ 20 minute late threshold
-        // creates arrival notification for on-time trip w/ 20 minute late threshold
+        // should create a departure notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline
+        // should create a arrival notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline
         CheckMonitoredTrip onTimeTripWithUpdatedThreshold = createCheckMonitoredTrip();
         JourneyState onTimeJourneyStateWithUpdatedThreshold = createDefaultJourneyState();
-        onTimeJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis += fifteenMinutesInMilliseconds;
-        onTimeJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis += fifteenMinutesInMilliseconds;
+        onTimeJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis += eighteenMinutesInMilliseconds;
+        onTimeJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis += eighteenMinutesInMilliseconds;
         onTimeTripWithUpdatedThreshold.setJourneyState(onTimeJourneyStateWithUpdatedThreshold);
         testCases.add(new DelayNotificationTestCase(
             onTimeTripWithUpdatedThreshold,
             NotificationType.DEPARTURE_DELAY,
-            "The departure time for your itinerary is now 08:40 (about on time) (your threshold is currently set to 15 minutes).",
-            "creates departure notification for on-time trip w/ 20 minute late threshold"
+            "Your trip is now predicted to depart about on time (at 08:40).",
+            "should create a departure notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline"
         ));
         testCases.add(new DelayNotificationTestCase(
             onTimeTripWithUpdatedThreshold,
             NotificationType.ARRIVAL_DELAY,
-            "The arrival time for your itinerary is now 08:58 (about on time) (your threshold is currently set to 15 minutes).",
-            "creates arrival notification for on-time trip w/ 20 minute late threshold"
+            "Your trip is now predicted to arrive about on time (at 08:58).",
+            "should create a arrival notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline"
         ));
 
         return testCases;
