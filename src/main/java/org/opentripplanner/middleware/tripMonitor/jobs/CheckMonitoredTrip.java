@@ -119,8 +119,8 @@ public class CheckMonitoredTrip implements Runnable {
         // Send notifications to user. This should happen before updating the journey state so that we can check the
         // last notification sent.
         sendNotifications();
-        // Update journey state.
-        journeyState.update(this);
+        // Update journey state, including matching itinerary.
+        journeyState.update(this, true);
     }
 
     private void runCheckLogic() {
@@ -335,8 +335,10 @@ public class CheckMonitoredTrip implements Runnable {
                 if (!calculateNextItinerary()) return true;
             }
             LOG.info("Next itinerary happening on {}.", targetDate);
-            // save journey state with updated matching itinerary and target date
-            journeyState.update(this);
+            // Save journey state time checks, but do not update with updated matching itinerary and target date.
+            // The matching itinerary will be updated at the end of method runLogic.
+            // FIXME: Can/should this call be removed altogether?
+            journeyState.update(this, false);
         } else {
             matchingItinerary = journeyState.matchingItinerary;
             targetDate = journeyState.targetDate;

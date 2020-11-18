@@ -76,11 +76,14 @@ public class JourneyState extends Model {
      * Update journey state based on results from {@link CheckMonitoredTrip}.
      * TODO: This may need some tweaking depending on whether a check was successfully completed or not.
      *   E.g., should a previous journey state be overwritten by a failed check?
+     * @param updateMatchingItinerary true to update the matchingItinerary, otherwise just updates the other fields.
      */
-    public void update(CheckMonitoredTrip checkMonitoredTripJob) {
+    public void update(CheckMonitoredTrip checkMonitoredTripJob, boolean updateMatchingItinerary) {
         targetDate = checkMonitoredTripJob.targetDate;
         lastCheckedMillis = DateTimeUtils.currentTimeMillis();
-        matchingItinerary = checkMonitoredTripJob.matchingItinerary;
+        if (updateMatchingItinerary) {
+            matchingItinerary = checkMonitoredTripJob.matchingItinerary;
+        }
         lastDepartureDelay = checkMonitoredTripJob.departureDelay;
         lastArrivalDelay = checkMonitoredTripJob.arrivalDelay;
         // Update notification time if notification successfully sent.

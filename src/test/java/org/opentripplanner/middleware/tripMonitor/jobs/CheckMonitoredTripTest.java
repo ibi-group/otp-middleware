@@ -13,7 +13,6 @@ import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
@@ -36,6 +35,7 @@ import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
@@ -123,6 +123,24 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     }
 
     @Test
+    public void willGenerateNotificationForAlertsOnInitialCheck() throws URISyntaxException {
+        // Create a monitored trip with base itinerary.
+        // (Alerts are removed from the trip's itinerary on initialization).
+        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip);
+
+        // Simulated itinerary similar to the original itinerary,
+        // but keeping alerts to trigger an initial notification the first time the itinerary is checked.
+        OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
+        Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
+        checkMonitoredTrip.matchingItinerary = simulatedItinerary;
+
+        TripMonitorNotification notification = checkMonitoredTrip.checkTripForNewAlerts();
+        LOG.info("New alerts notification: {}", notification.body);
+        Assertions.assertNotNull(notification);
+    }
+
+    @Test
     public void willGenerateDepartureDelayNotification() throws URISyntaxException {
         MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
         OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
@@ -191,13 +209,25 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
             } else {
                 journeyState.matchingItinerary = mockWeekdayItinerary;
             }
+            // As a means to detect a change in the matching itinerary, change the trip duration field.
+            if (journeyState.matchingItinerary != null) {
+                journeyState.matchingItinerary.duration--;
+            }
             journeyState.targetDate = "2020-06-08";
             journeyState.lastCheckedMillis = testCase.lastCheckedTime.toInstant().toEpochMilli();
             Persistence.journeyStates.replace(journeyState.id, journeyState);
         }
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(trip);
         try {
+            Itinerary originalJourneyItinerary = trip.latestItinerary();
             assertEquals(testCase.shouldSkipTrip, checkMonitoredTrip.shouldSkipMonitoredTripCheck(), testCase.message);
+
+            // shouldSkipMonitoredTripCheck should not update the JourneyState itinerary (returned by trip.latestItinerary)
+            // because it is needed on initial check to send notifications about alerts on the matching itinerary.
+            // For non-null initial itineraries, check on alerts???
+            Itinerary latestItinerary = trip.latestItinerary();
+            assertEquals(originalJourneyItinerary, latestItinerary,
+                "shouldSkipMonitoredTripCheck should not update the JourneyState matching itinerary.");
         } finally {
             DateTimeUtils.useSystemDefaultClockAndTimezone();
         }
