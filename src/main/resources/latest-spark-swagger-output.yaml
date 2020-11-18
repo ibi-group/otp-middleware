@@ -1058,6 +1058,8 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/LocalizedAlert"
+      headsign:
+        type: "string"
   OtpRequest:
     type: "object"
     properties:
