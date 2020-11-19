@@ -1,7 +1,9 @@
-package org.opentripplanner.middleware.models;
+package org.opentripplanner.middleware.tripMonitor;
 
+import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.models.TripMonitorNotification;
+import org.opentripplanner.middleware.models.TripStatus;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
@@ -12,7 +14,7 @@ import java.util.Set;
  * Tracks information during the active monitoring of a {@link org.opentripplanner.middleware.models.MonitoredTrip}
  * (e.g., last alerts encountered, last time a check was made, etc.).
  */
-public class JourneyState extends Model {
+public class JourneyState {
     /**
      * The current arrival/departure baseline to use when checking if a new threshold has been met
      */
@@ -60,26 +62,9 @@ public class JourneyState extends Model {
 
     public TripStatus tripStatus;
 
-    /**
-     * User ID for {@link OtpUser} that owns the {@link MonitoredTrip}.
-     */
-    private String userId;
-
     public boolean noLongerPossible = false;
 
-    /**
-     * No-arg constructor for de-serialization.
-     */
-    public JourneyState() {
-    }
-
-    /**
-     * Main constructor to create journey state for associated {@link MonitoredTrip}.
-     */
-    public JourneyState(MonitoredTrip monitoredTrip) {
-        this.monitoredTripId = monitoredTrip.id;
-        this.userId = monitoredTrip.userId;
-    }
+    public JourneyState() {}
 
     /**
      * Update journey state based on results from {@link CheckMonitoredTrip}.
@@ -94,6 +79,5 @@ public class JourneyState extends Model {
         if (checkMonitoredTripJob.notificationTimestampMillis != -1) {
             lastNotificationTimeMillis = checkMonitoredTripJob.notificationTimestampMillis;
         }
-        Persistence.journeyStates.replace(this.id, this);
     }
 }

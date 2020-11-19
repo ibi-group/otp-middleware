@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -72,13 +71,12 @@ public class TripMonitorNotification extends Model {
         }
 
         notification.body = String.format(
-            "The %s time for your itinerary is now %s (%s) (your threshold is currently set to %d minutes).",
-            delayType == NotificationType.ARRIVAL_DELAY ? "arrival" : "departure",
+            "Your trip is now predicted to %s %s (at %s).",
+            delayType == NotificationType.ARRIVAL_DELAY ? "arrive" : "depart",
+            delayHumanTime,
             ZonedDateTime
                 .ofInstant(targetDatetime.toInstant(), DateTimeUtils.getOtpZoneId())
-                .format(DateTimeFormatter.ofPattern("HH:mm")),
-            delayHumanTime,
-            delayThresholdMinutes
+                .format(DateTimeUtils.NOTIFICATION_TIME_FORMATTER)
         );
         return notification;
     }

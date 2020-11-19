@@ -28,6 +28,9 @@ public class DateTimeUtils {
     private static final Logger LOG = LoggerFactory.getLogger(DateTimeUtils.class);
 
     public static final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
+    public static final DateTimeFormatter NOTIFICATION_TIME_FORMATTER = DateTimeFormatter.ofPattern(
+        ConfigUtils.getConfigPropertyAsText("NOTIFICATION_TIME_FORMAT", "HH:mm")
+    );
 
     /**
      * These are internal variables that can be used to mock dates and times in tests

@@ -2,13 +2,13 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.mongodb.client.FindIterable;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import com.mongodb.client.FindIterable;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.conversions.Bson;
-import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.auth.Permission;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.tripMonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 
@@ -27,12 +28,15 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.MODE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
+
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
  * change.
@@ -152,6 +156,8 @@ public class MonitoredTrip extends Model {
      */
     public ItineraryExistence itineraryExistence;
 
+    public JourneyState journeyState = new JourneyState();
+
     public MonitoredTrip() {
     }
 
@@ -231,12 +237,19 @@ public class MonitoredTrip extends Model {
         int lastLegIndex = itinerary.legs.size() - 1;
         from = itinerary.legs.get(0).from;
         to = itinerary.legs.get(lastLegIndex).to;
+        Map<String, String> parsedQueryParams = parseQueryParams();
+
+        // Update modes in query params with set derived from itinerary. This ensures that, when sending requests to OTP
+        // for trip monitoring, we are querying the modes retained by the user when they saved the itinerary.
+        Set<String> modes = ItineraryUtils.deriveModesFromItinerary(itinerary);
+        parsedQueryParams.put(MODE_PARAM, String.join(",", modes));
+        this.queryParams = ItineraryUtils.toQueryString(parsedQueryParams);
 
         // Ensure the itinerary we store does not contain any realtime info.
         clearRealtimeInfo();
 
         // set the trip time by parsing the query params
-        tripTime = this.parseQueryParams().get(TIME_PARAM);
+        tripTime = parsedQueryParams.get(TIME_PARAM);
         if (tripTime == null) {
             throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
         }
@@ -338,33 +351,11 @@ public class MonitoredTrip extends Model {
     }
 
     /**
-     * Get the journey state for this trip.
-     */
-    public JourneyState retrieveJourneyState() {
-        // attempt to retrieve from the db
-        JourneyState journeyState = Persistence.journeyStates.getOneFiltered(tripIdFilter());
-        // If journey state does not exist, create and persist.
-        if (journeyState == null) {
-            journeyState = new JourneyState(this);
-            Persistence.journeyStates.create(journeyState);
-        }
-        return journeyState;
-    }
-
-    /**
      * Get the latest itinerary that was tracked in the journey state or null if the check has never been performed (or
      * a matching itinerary has never been found).
      */
     public Itinerary latestItinerary() {
-        JourneyState journeyState = retrieveJourneyState();
         return journeyState.matchingItinerary;
-    }
-
-    /**
-     * Clear journey state for the trip. TODO: remove?
-     */
-    public boolean clearJourneyState() {
-        return Persistence.journeyStates.removeFiltered(tripIdFilter());
     }
 
     /**
@@ -392,8 +383,14 @@ public class MonitoredTrip extends Model {
      * Parse the query params for this trip into a map of the variables.
      */
     public Map<String, String> parseQueryParams() throws URISyntaxException {
+        // If for some reason a leading ? is present in queryParams, skip it.
+        // (We already include a ? when calling URLEncodedUtils.parse below.)
+        String queryParamsWithoutQuestion = queryParams.startsWith("?")
+            ? queryParams.substring(1)
+            : queryParams;
+
         return URLEncodedUtils.parse(
-            new URI(String.format("http://example.com/plan?%s", queryParams)),
+            new URI(String.format("http://example.com/plan?%s", queryParamsWithoutQuestion)),
             UTF_8
         ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
     }
