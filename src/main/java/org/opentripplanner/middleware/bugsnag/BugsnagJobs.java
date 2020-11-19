@@ -1,8 +1,7 @@
 package org.opentripplanner.middleware.bugsnag;
 
-import org.opentripplanner.middleware.bugsnag.jobs.BugsnagEventJob;
+import org.opentripplanner.middleware.bugsnag.jobs.BugsnagEventHandlingJob;
 import org.opentripplanner.middleware.bugsnag.jobs.BugsnagEventRequestJob;
-import org.opentripplanner.middleware.bugsnag.jobs.BugsnagProjectJob;
 import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,34 +32,24 @@ public class BugsnagJobs {
      * Schedule each Bugsnag job based on the delay configuration parameters
      */
     public static void initialize() {
-        BugsnagEventRequestJob bugsnagEventRequestJob = new BugsnagEventRequestJob();
-
+        if (BugsnagDispatcher.BUGSNAG_ORGANIZATION == null) {
+            LOG.error("WARNING: Bugsnag organization is not available. Cannot schedule bugsnag jobs.");
+            return;
+        }
+        LOG.info("Scheduling Bugsnag event data requests for every {} minute(s)", BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES);
+        // First, handle sending event data requests to Bugsnag on a regular basis.
         Scheduler.scheduleJob(
-            bugsnagEventRequestJob,
+            new BugsnagEventRequestJob(),
             0,
             BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES,
             TimeUnit.MINUTES);
 
-        LOG.debug("Scheduled Bugsnag event request job");
-
-        BugsnagEventJob bugsnagEventJob = new BugsnagEventJob();
-
+        LOG.info("Scheduling Bugsnag request handling for every {} minute(s)", BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES);
+        // Next, schedule the job to handle the event data that comes back and sync with the existing database.
         Scheduler.scheduleJob(
-            bugsnagEventJob,
+            new BugsnagEventHandlingJob(),
             BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES + BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES,
             BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES,
             TimeUnit.MINUTES);
-
-        LOG.debug("Scheduled Bugsnag event job");
-
-        BugsnagProjectJob bugsnagProjectJob = new BugsnagProjectJob();
-
-        Scheduler.scheduleJob(
-            bugsnagProjectJob,
-            0,
-            BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES,
-            TimeUnit.MINUTES);
-
-        LOG.debug("Scheduled Bugsnag project job");
     }
 }

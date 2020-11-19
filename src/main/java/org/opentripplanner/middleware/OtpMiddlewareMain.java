@@ -7,17 +7,17 @@ import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
-import org.opentripplanner.middleware.controllers.api.BugsnagController;
+import org.opentripplanner.middleware.controllers.api.ErrorEventsController;
 import org.opentripplanner.middleware.controllers.api.LogController;
+import org.opentripplanner.middleware.controllers.api.MonitoredComponentController;
 import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
 import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
 import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
+import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.tripMonitor.jobs.MonitorAllTripsJob;
 import org.opentripplanner.middleware.utils.HttpUtils;
-import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Service;
@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
@@ -50,10 +49,13 @@ public class OtpMiddlewareMain {
         // Connect to MongoDB.
         Persistence.initialize();
 
+        MonitoredComponent.initializeMonitoredComponentsFromConfig();
+
         initializeHttpEndpoints();
 
+        // If Middleware started from test class, skip recurring jobs (that can be log heavy).
         if (!inTestEnvironment) {
-            // Schedule Bugsnag jobs to start retrieving Bugsnag event and project information
+            // Schedule Bugsnag jobs to start retrieving Bugsnag event/error data
             BugsnagJobs.initialize();
 
             // Initialize Bugsnag in order to report application errors
@@ -61,13 +63,13 @@ public class OtpMiddlewareMain {
 
             // Schedule recurring Monitor All Trips Job.
             // TODO: Determine whether this should go in some other process.
-            MonitorAllTripsJob monitorAllTripsJob = new MonitorAllTripsJob();
-            Scheduler.scheduleJob(
-                monitorAllTripsJob,
-                0,
-                1,
-                TimeUnit.MINUTES
-            );
+//            MonitorAllTripsJob monitorAllTripsJob = new MonitorAllTripsJob();
+//            Scheduler.scheduleJob(
+//                monitorAllTripsJob,
+//                0,
+//                1,
+//                TimeUnit.MINUTES
+//            );
         }
     }
 
@@ -83,9 +85,10 @@ public class OtpMiddlewareMain {
                     new ApiUserController(API_PREFIX),
                     new MonitoredTripController(API_PREFIX),
                     new TripHistoryController(API_PREFIX),
+                    new MonitoredComponentController(API_PREFIX),
                     new OtpUserController(API_PREFIX),
                     new LogController(API_PREFIX),
-                    new BugsnagController(API_PREFIX),
+                    new ErrorEventsController(API_PREFIX),
                     new OtpRequestProcessor()
                     // TODO Add other models.
                 ))

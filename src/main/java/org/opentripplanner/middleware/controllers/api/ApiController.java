@@ -76,6 +76,10 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     public ApiController(String apiPrefix, TypedPersistence<T> persistence, String resource) {
+        // Ensure that typed persistence has been constructed in Persistence#initialize
+        if (persistence == null) {
+            throw new IllegalArgumentException("Mongo collection must be initialized in Persistence.java");
+        }
         this.clazz = persistence.clazz;
         this.persistence = persistence;
         this.className = persistence.clazz.getSimpleName();

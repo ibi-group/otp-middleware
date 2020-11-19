@@ -17,7 +17,6 @@ public class BugsnagTest extends OtpMiddlewareTest {
 
     private static BugsnagEvent BUGSNAG_EVENT = null;
     private static BugsnagEventRequest BUGSNAG_EVENT_REQUEST = null;
-    private static BugsnagProject BUGSNAG_PROJECT = null;
 
     @BeforeAll
     public static void setup() throws IOException {
@@ -39,13 +38,6 @@ public class BugsnagTest extends OtpMiddlewareTest {
         assertEquals(BUGSNAG_EVENT_REQUEST.id, retrieved.id, "Found Bugsnag event request.");
     }
 
-    @Test
-    public void canCreateBugsnagProject() {
-        Persistence.bugsnagProjects.create(BUGSNAG_PROJECT);
-        BugsnagProject retrieved = Persistence.bugsnagProjects.getById(BUGSNAG_PROJECT.id);
-        assertEquals(BUGSNAG_PROJECT.id, retrieved.id, "Found Bugsnag project.");
-    }
-
     @AfterAll
     public static void tearDown() {
         if (BUGSNAG_EVENT != null) {
@@ -54,10 +46,6 @@ public class BugsnagTest extends OtpMiddlewareTest {
 
         if (BUGSNAG_EVENT_REQUEST != null) {
             Persistence.bugsnagEventRequests.removeById(BUGSNAG_EVENT_REQUEST.id);
-        }
-
-        if (BUGSNAG_PROJECT != null) {
-            Persistence.bugsnagProjects.removeById(BUGSNAG_PROJECT.id);
         }
     }
 
@@ -68,7 +56,6 @@ public class BugsnagTest extends OtpMiddlewareTest {
         final String resourceFilePath = "bugsnag/";
         BUGSNAG_EVENT = TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "bugsnagEvent.json", BugsnagEvent.class);
         BUGSNAG_EVENT_REQUEST = TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "bugsnagEventRequest.json", BugsnagEventRequest.class);
-        BUGSNAG_PROJECT = TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "bugsnagProject.json", BugsnagProject.class);
     }
 
 }

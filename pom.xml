@@ -284,6 +284,13 @@
             <version>1.15.0</version>
         </dependency>
 
+        <!-- HTML rendering library for nicely formatted notification emails -->
+        <dependency>
+            <groupId>com.j2html</groupId>
+            <artifactId>j2html</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
         <!--
             AWS SDK is used for integration with the API Gateway service, which is how access to the OTP API is managed
             for third party dev accounts

@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.bugsnag;
 import org.opentripplanner.middleware.bugsnag.response.EventException;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagProject;
+import org.opentripplanner.middleware.models.MonitoredComponent;
 
 import java.util.Date;
 import java.util.List;
@@ -32,15 +33,10 @@ public class EventSummary {
     /** Associated environment e.g. Test, Dev, Production */
     public String releaseStage;
 
-    /** The dashboard URL for the project */
-    public String htmlUrl = "Unknown";
-
-
-    public EventSummary(BugsnagProject project, BugsnagEvent bugsnagEvent) {
-        if (project != null) {
-            this.projectName = project.name;
-            this.projectId = project.id;
-            this.htmlUrl = project.htmlUrl;
+    public EventSummary(MonitoredComponent component, BugsnagEvent bugsnagEvent) {
+        if (component != null) {
+            this.projectName = component.name;
+            this.projectId = component.bugsnagProjectId;
         }
         this.errorId = bugsnagEvent.id;
         this.exceptions = bugsnagEvent.exceptions;

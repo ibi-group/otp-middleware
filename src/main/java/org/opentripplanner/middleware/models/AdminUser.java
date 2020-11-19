@@ -6,13 +6,15 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Represents an administrative user of the OTP Admin Dashboard (otp-admin-ui).
  */
 public class AdminUser extends AbstractUser {
     private static final Logger LOG = LoggerFactory.getLogger(AdminUser.class);
-    // TODO: Add admin-specific fields
-
+    public Set<Subscription> subscriptions = new HashSet<>();
     /**
      * Default constructor permits the user to manage all user types.
      * TODO: Add other constructors for varying levels of permissions/different user types?
@@ -42,5 +44,9 @@ public class AdminUser extends AbstractUser {
             LOG.warn("Aborting user deletion for {}", this.email);
             return false;
         }
+    }
+
+    public enum Subscription {
+        NEW_ERROR
     }
 }

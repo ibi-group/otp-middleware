@@ -27,13 +27,15 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+<<<<<<< Updated upstream
 import java.util.Set;
+=======
+>>>>>>> Stashed changes
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.MODE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
 
 /**
@@ -111,6 +113,9 @@ public class MonitoredTrip extends Model {
      */
     //TODO define US federal holiday source
     public boolean excludeFederalHolidays;
+
+    public JourneyState journeyState;
+
 
     /**
      * Specify if the monitored trip is active. If true, the trip will be checked.

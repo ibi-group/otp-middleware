@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -31,12 +32,15 @@ public class JourneyState extends Model {
     /**
      * The arrival/departure delay seen in the latest monitored trip check.
      */
+    @JsonIgnore
     public int lastArrivalDelay;
+    @JsonIgnore
     public int lastDepartureDelay;
 
     /**
      * Timestamp checking the last time a journey was checked.
      */
+    @JsonIgnore
     public long lastCheckedMillis;
 
     /**

@@ -1,7 +1,12 @@
 package org.opentripplanner.middleware.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
+import org.opentripplanner.middleware.bugsnag.BugsnagDispatcher;
+
+import java.util.List;
 
 /**
  * Represents a Bugsnag event request. The class is used for both Mongo storage and JSON deserialization.
@@ -28,4 +33,17 @@ public class BugsnagEventRequest extends Model {
     public BugsnagEventRequest() {
     }
 
+    /**
+     * Refresh this event data request using the requestId. This provides a convenient way to check the current status
+     * of an older {@link BugsnagEventRequest}.
+     */
+    public BugsnagEventRequest refreshEventDataRequest() {
+        return BugsnagDispatcher.makeEventDataRequest(eventDataRequestId);
+    }
+
+    @JsonIgnore
+    @BsonIgnore
+    public List<BugsnagEvent> getEventData() {
+        return BugsnagDispatcher.getEventData(url);
+    }
 }

@@ -9,8 +9,8 @@ import org.opentripplanner.middleware.bugsnag.EventSummary;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagProject;
+import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
@@ -30,16 +30,12 @@ import static org.opentripplanner.middleware.controllers.api.ApiController.OFFSE
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 
 /**
- * Responsible for providing the current set of Bugsnag events to the calling service
+ * Contains a simple "get all" HTTP interface for providing the current set of {@link BugsnagEvent} as
+ * {@link EventSummary} objects.
  */
-public class BugsnagController implements Endpoint {
-
-    private static final TypedPersistence<BugsnagEvent> bugsnagEvents = Persistence.bugsnagEvents;
-    private static final TypedPersistence<BugsnagProject> bugsnagProjects = Persistence.bugsnagProjects;
-
+public class ErrorEventsController implements Endpoint {
     private final String ROOT_ROUTE;
-
-    public BugsnagController(String apiPrefix) {
+    public ErrorEventsController(String apiPrefix) {
         this.ROOT_ROUTE = apiPrefix + "admin/bugsnag/eventsummary";
     }
 
@@ -61,7 +57,7 @@ public class BugsnagController implements Endpoint {
                 // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
                 // as the return type for this method. (It does generate the type for that class nonetheless.)
                 .withResponseAsCollection(BugsnagEvent.class),
-            BugsnagController::getEventSummaries, JsonUtils::toJson);
+            ErrorEventsController::getEventSummaries, JsonUtils::toJson);
     }
 
     /**
@@ -72,18 +68,18 @@ public class BugsnagController implements Endpoint {
         int limit = HttpUtils.getQueryParamFromRequest(req, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);
         int offset = HttpUtils.getQueryParamFromRequest(req, OFFSET_PARAM, 0, 0);
         // Get latest events from database.
-        FindIterable<BugsnagEvent> events = bugsnagEvents.getSortedIterableWithOffsetAndLimit(
+        FindIterable<BugsnagEvent> events = Persistence.bugsnagEvents.getSortedIterableWithOffsetAndLimit(
             Sorts.descending("receivedAt"),
             offset,
             limit
         );
-        // Get Bugsnag projects by id (avoid multiple queries to Mongo for the same project).
-        Map<String, BugsnagProject> projectsById = Maps.uniqueIndex(bugsnagProjects.getAll(), p -> p.projectId);
+        // Get Bugsnag projects by id.
+        Map<String, MonitoredComponent> componentsByProjectId = MonitoredComponent.getComponentsByProjectId();
         // Construct event summaries from project map.
         // FIXME: Group by error/project type?
         List<EventSummary> eventSummaries = events
-            .map(event -> new EventSummary(projectsById.get(event.projectId), event))
+            .map(event -> new EventSummary(componentsByProjectId.get(event.projectId), event))
             .into(new ArrayList<>());
-        return new ResponseList<>(EventSummary.class, eventSummaries, offset, limit, bugsnagEvents.getCount());
+        return new ResponseList<>(EventSummary.class, eventSummaries, offset, limit, Persistence.bugsnagEvents.getCount());
     }
 }

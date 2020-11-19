@@ -51,7 +51,7 @@ public class NotificationUtilsTest extends OtpMiddlewareTest {
 
     @Test
     public void canSendSparkpostEmailNotification() {
-        boolean success = NotificationUtils.sendEmailViaSparkpost(user.email, "Hi there", "This is the body", null);
+        boolean success = NotificationUtils.sendEmail(user, "Hi there", "This is the body", null);
         Assertions.assertTrue(success);
     }
 

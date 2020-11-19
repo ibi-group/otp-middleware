@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -88,6 +90,24 @@ public class JsonUtils {
             CollectionType type = mapper.getTypeFactory().constructCollectionType(List.class, clazz);
             return mapper.readValue(json, type);
         } catch (JsonProcessingException e) {
+            BugsnagReporter.reportErrorToBugsnag(
+                String.format("Unable to get POJO List from json for %s", clazz.getSimpleName()),
+                json,
+                e
+            );
+        }
+        return null;
+    }
+
+    /**
+     * Utility method to parse generic objects from JSON String and return as list
+     */
+    public static <T> List<T> getPOJOFromJSONAsList(JsonNode json, Class<T> clazz) {
+        try {
+            CollectionType type = mapper.getTypeFactory().constructCollectionType(List.class, clazz);
+            ObjectReader reader = mapper.readerFor(type);
+            return reader.readValue(json);
+        } catch (IOException e) {
             BugsnagReporter.reportErrorToBugsnag(
                 String.format("Unable to get POJO List from json for %s", clazz.getSimpleName()),
                 json,

@@ -240,12 +240,12 @@ public class CheckMonitoredTrip implements Runnable {
                 success = NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString()) != null;
                 break;
             case "email":
-                success = NotificationUtils.sendEmailViaSparkpost(otpUser.email, subject, body.toString(), null);
+                success = NotificationUtils.sendEmail(otpUser, subject, body.toString(), null);
                 break;
             case "all":
                 // TOOD better handle below when one of the following fails
                 success = NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString()) != null &&
-                    NotificationUtils.sendEmailViaSparkpost(otpUser.email, subject, body.toString(), null);
+                    NotificationUtils.sendEmail(otpUser, subject, body.toString(), null);
                 break;
             default:
                 break;
