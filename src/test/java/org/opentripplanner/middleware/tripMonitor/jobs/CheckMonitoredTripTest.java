@@ -9,7 +9,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.TestUtils;
-import org.opentripplanner.middleware.models.JourneyState;
+import org.opentripplanner.middleware.tripMonitor.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
@@ -44,7 +44,7 @@ import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
 import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTripAndJourney;
+import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTrip;
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
@@ -81,7 +81,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     public static void tearDown() {
         Persistence.otpUsers.removeById(user.id);
         for (MonitoredTrip trip : Persistence.monitoredTrips.getFiltered(eq("userId", user.id))) {
-            deleteMonitoredTripAndJourney(trip);
+            deleteMonitoredTrip(trip);
         }
     }
 
@@ -121,7 +121,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // TODO: Improve assertions to use snapshots.
         Assertions.assertEquals(checkMonitoredTrip.notifications.size(), 0);
         // Clear the created trip.
-        deleteMonitoredTripAndJourney(monitoredTrip);
+        deleteMonitoredTrip(monitoredTrip);
     }
 
     @ParameterizedTest
@@ -141,7 +141,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
 
         // should not create departure/arrival notification for on-time trip
         CheckMonitoredTrip onTimeTrip = createCheckMonitoredTrip();
-        onTimeTrip.setJourneyState(createDefaultJourneyState());
+        onTimeTrip.trip.journeyState = createDefaultJourneyState();
         testCases.add(new DelayNotificationTestCase(
             onTimeTrip,
             NotificationType.DEPARTURE_DELAY,
@@ -159,8 +159,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
             twentyMinutesLateTimeTrip.matchingItinerary,
             TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
         );
-        JourneyState twentyMinutesLateJourneyState = createDefaultJourneyState();
-        twentyMinutesLateTimeTrip.setJourneyState(twentyMinutesLateJourneyState);
+        twentyMinutesLateTimeTrip.trip.journeyState = createDefaultJourneyState();
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTimeTrip,
             NotificationType.DEPARTURE_DELAY,
@@ -189,9 +188,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
             eighteenMinutesInMilliseconds;
         twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis +=
             eighteenMinutesInMilliseconds;
-        twentyMinutesLateTripWithUpdatedThreshold.setJourneyState(
-            twentyMinutesLateJourneyStateWithUpdatedThreshold
-        );
+        twentyMinutesLateTripWithUpdatedThreshold.trip.journeyState = twentyMinutesLateJourneyStateWithUpdatedThreshold;
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTripWithUpdatedThreshold,
             NotificationType.DEPARTURE_DELAY,
@@ -209,7 +206,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         JourneyState onTimeJourneyStateWithUpdatedThreshold = createDefaultJourneyState();
         onTimeJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis += eighteenMinutesInMilliseconds;
         onTimeJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis += eighteenMinutesInMilliseconds;
-        onTimeTripWithUpdatedThreshold.setJourneyState(onTimeJourneyStateWithUpdatedThreshold);
+        onTimeTripWithUpdatedThreshold.trip.journeyState = onTimeJourneyStateWithUpdatedThreshold;
         testCases.add(new DelayNotificationTestCase(
             onTimeTripWithUpdatedThreshold,
             NotificationType.DEPARTURE_DELAY,
@@ -283,7 +280,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // Therefore, create a mock journey state and set the matching itinerary to the first itinerary in the first
         // otp mock or the mockWeekdayItinerary if no mocks are provided
         if (testCase.lastCheckedTime != null) {
-            JourneyState journeyState = trip.retrieveJourneyState();
+            JourneyState journeyState = trip.journeyState;
             if (testCase.useOtpMockWhenCreatingJourneyState && testCase.otpMocks.size() > 0) {
                 journeyState.matchingItinerary = testCase.otpMocks.get(0).plan.itineraries.get(0);
             } else {
@@ -291,7 +288,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
             }
             journeyState.targetDate = "2020-06-08";
             journeyState.lastCheckedEpochMillis = testCase.lastCheckedTime.toInstant().toEpochMilli();
-            Persistence.journeyStates.replace(journeyState.id, journeyState);
+            Persistence.monitoredTrips.replace(trip.id, trip);
         }
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(trip);
         try {

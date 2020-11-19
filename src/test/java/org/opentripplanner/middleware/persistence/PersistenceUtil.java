@@ -178,8 +178,7 @@ public class PersistenceUtil {
         return itinerary;
     }
 
-    public static void deleteMonitoredTripAndJourney(MonitoredTrip trip) {
-        trip.clearJourneyState();
+    public static void deleteMonitoredTrip(MonitoredTrip trip) {
         Persistence.monitoredTrips.removeById(trip.id);
     }
 
