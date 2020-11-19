@@ -1,6 +1,8 @@
 package org.opentripplanner.middleware.otp.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -172,6 +174,8 @@ public class Itinerary implements Cloneable {
      * Returns the scheduled start time of the itinerary in epoch milliseconds by subtracting any delay found in the
      * first transit leg if a transit leg exists.
      */
+    @JsonIgnore
+    @BsonIgnore
     public long getScheduledStartTimeEpochMillis() {
         long startTimeEpochMillis = startTime.getTime();
         for (Leg leg : legs) {
@@ -190,6 +194,8 @@ public class Itinerary implements Cloneable {
      * Returns the scheduled end time of the itinerary in epoch milliseconds by subtracting any delay found in the
      * last transit leg if a transit leg exists.
      */
+    @JsonIgnore
+    @BsonIgnore
     public long getScheduledEndTimeEpochMillis() {
         long endTimeEpochMillis = endTime.getTime();
         for (int i = legs.size() - 1; i >= 0; i--) {
