@@ -2,6 +2,7 @@ package org.opentripplanner.middleware;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
+import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,6 +20,8 @@ import java.net.http.HttpResponse;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static org.eclipse.jetty.http.HttpMethod.GET;
+import static org.eclipse.jetty.http.HttpMethod.POST;
 import static org.eclipse.jetty.http.HttpStatus.NOT_FOUND_404;
 import static org.eclipse.jetty.http.HttpStatus.OK_200;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,8 +31,6 @@ import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.auth.Auth0Connection.*;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.OtpUserController.OTP_USER_PATH;
-import static org.opentripplanner.middleware.utils.HttpUtils.REQUEST_METHOD.GET;
-import static org.opentripplanner.middleware.utils.HttpUtils.REQUEST_METHOD.POST;
 
 /**
  * Tests for select methods from {@link Auth0Connection}.
@@ -140,11 +141,11 @@ public class Auth0ConnectionTest {
      */
     private static class Auth0ConnectionTestCase {
         public final String uri;
-        public final HttpUtils.REQUEST_METHOD method;
+        public final HttpMethod method;
         public final int result;
         public final String message;
 
-        public Auth0ConnectionTestCase(HttpUtils.REQUEST_METHOD method, String uri, int result, String message) {
+        public Auth0ConnectionTestCase(HttpMethod method, String uri, int result, String message) {
             this.uri = uri;
             this.method = method;
             this.result = result;

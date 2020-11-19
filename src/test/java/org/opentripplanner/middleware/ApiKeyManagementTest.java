@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware;
 
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -162,7 +163,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     private HttpResponse<String> createApiKeyRequest(String targetUserId, AbstractUser requestingUser) {
         String path = String.format("api/secure/application/%s/apikey", targetUserId);
-        return mockAuthenticatedRequest(path, "", requestingUser, HttpUtils.REQUEST_METHOD.POST);
+        return mockAuthenticatedRequest(path, "", requestingUser, HttpMethod.POST);
     }
 
     /**

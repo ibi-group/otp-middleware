@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
@@ -30,8 +31,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
-    public enum REQUEST_METHOD {GET, POST, DELETE}
-
     /**
      * A constant for a list of MIME types containing application/json only.
      */
@@ -59,36 +58,24 @@ public class HttpUtils {
     }
 
     /**
-     * Makes an http get/post request and returns the response body. The request is based on the provided params.
-     */
-    public static String httpRequest(URI uri, int connectionTimeout, REQUEST_METHOD method,
-                                     Map<String, String> headers, String bodyContent) {
-
-        return httpRequestRawResponse(uri, connectionTimeout, method, headers, bodyContent).body();
-    }
-
-    /**
      * Makes an http get/post request and returns the response. The request is based on the provided params.
      */
-    public static HttpResponse<String> httpRequestRawResponse(URI uri, int connectionTimeout, REQUEST_METHOD method,
+    public static HttpResponse<String> httpRequestRawResponse(URI uri, int connectionTimeout, HttpMethod method,
                                                               Map<String, String> headers, String bodyContent) {
-
-
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder()
             .uri(uri)
             .timeout(Duration.ofSeconds(connectionTimeout))
             .GET();
-
-        if (method.equals(REQUEST_METHOD.GET)) {
+        if (method.equals(HttpMethod.GET)) {
             httpRequestBuilder.GET();
         }
 
-        if (method.equals(REQUEST_METHOD.DELETE)) {
+        if (method.equals(HttpMethod.DELETE)) {
             httpRequestBuilder.DELETE();
         }
 
-        if (method.equals(REQUEST_METHOD.POST)) {
+        if (method.equals(HttpMethod.POST)) {
             httpRequestBuilder.POST(HttpRequest
                 .BodyPublishers
                 .ofString(bodyContent));

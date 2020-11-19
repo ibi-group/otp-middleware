@@ -10,12 +10,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
+import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
 
 import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 
@@ -72,6 +74,27 @@ public class JsonUtils {
             );
         }
         return null;
+    }
+
+    /**
+     * Utility method to parse generic object from HTTP response.
+     */
+    public static <T> T getPOJOFromHttpBody(HttpResponse<String> response, Class<T> clazz) {
+        if (response == null || response.statusCode() >= 400) {
+            String result = response == null ? "bad response!" : response.body();
+            LOG.error("Error found in HTTP response: {}", result);
+            return null;
+        }
+        return getPOJOFromJSON(response.body(), clazz);
+    }
+
+    public static <T> List<T> getPOJOFromHttpBodyAsList(HttpResponse<String> response, Class<T> clazz) {
+        if (response == null || response.statusCode() >= 400) {
+            String result = response == null ? "bad response!" : response.body();
+            LOG.error("Error found in HTTP response: {}", result);
+            return null;
+        }
+        return getPOJOFromJSONAsList(response.body(), clazz);
     }
 
     /**

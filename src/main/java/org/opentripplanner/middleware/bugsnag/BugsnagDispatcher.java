@@ -3,7 +3,7 @@ package org.opentripplanner.middleware.bugsnag;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -15,7 +15,6 @@ import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
@@ -101,16 +100,24 @@ public class BugsnagDispatcher {
     }
 
     /**
-     * Make the initial event data request to Bugsnag. This triggers an asynchronous job to prepare the data for one
+     * Shorthand to create a Bugsnag event data request. This triggers an asynchronous job to prepare the data for one
      * single download. The returned event data request can be used to check the status of the request.
+     *
+     * The “create an event data request” allows event data for a given organization to be collated in an asynchronous job
+     * by Bugsnag. Once this job has completed a bespoke URL is provided where this data can be downloaded. Information on
+     * this approach along with the filter parameters can be reviewed here:
+     *
+     * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/create-an-event-data-request
      */
     public static BugsnagEventRequest newEventDataRequest() {
         return makeEventDataRequest(null);
     }
 
     /**
-     * Get a previously created event data request. A status of 'complete' signals that the requested data is ready to
-     * be downloaded from the populated url parameter.
+     * Get a previously created event data request (if id is non-null) OR create a new request. A status of 'complete'
+     * signals that the requested data is ready to be downloaded from the populated url parameter.
+     *
+     * More here: https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/check-the-status-of-an-event-data-request
      */
     public static BugsnagEventRequest makeEventDataRequest(String eventDataRequestId) {
         // Create new request if no ID is provided.
@@ -123,16 +130,11 @@ public class BugsnagDispatcher {
         HttpResponse<String> response = HttpUtils.httpRequestRawResponse(
             eventDataRequestUri,
             CONNECTION_TIMEOUT_IN_SECONDS,
-            create ? HttpUtils.REQUEST_METHOD.POST : HttpUtils.REQUEST_METHOD.GET,
+            create ? HttpMethod.POST : HttpMethod.GET,
             BUGSNAG_HEADERS,
             create ? EVENT_REQUEST_FILTER : null
         );
-        if (response == null || response.statusCode() >= 400) {
-            String result = response == null ? "bad response!" : response.body();
-            LOG.error("Error making Bugsnag event request: {}", result);
-            return null;
-        }
-        return JsonUtils.getPOJOFromJSON(response.body(), BugsnagEventRequest.class);
+        return JsonUtils.getPOJOFromHttpBody(response, BugsnagEventRequest.class);
     }
 
     /**
@@ -141,14 +143,13 @@ public class BugsnagDispatcher {
     public static List<BugsnagEvent> getEventData(String eventDataRequestUrl) {
         URI eventDataRequestUri = HttpUtils.buildUri(eventDataRequestUrl);
         LOG.debug("Making GET Bugsnag request: {}", eventDataRequestUri);
-        String events = HttpUtils.httpRequest(
+        HttpResponse<String> events = HttpUtils.httpRequestRawResponse(
             eventDataRequestUri,
             CONNECTION_TIMEOUT_IN_SECONDS,
-            HttpUtils.REQUEST_METHOD.GET,
+            HttpMethod.GET,
             null,
             null
         );
-
-        return JsonUtils.getPOJOFromJSONAsList(events, BugsnagEvent.class);
+        return JsonUtils.getPOJOFromHttpBodyAsList(events, BugsnagEvent.class);
     }
 }

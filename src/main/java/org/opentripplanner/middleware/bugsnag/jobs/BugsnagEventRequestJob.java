@@ -13,12 +13,6 @@ import org.slf4j.LoggerFactory;
  * This architecture is informed by Bugsnag's limit of ten API requests per minute (with the current pricing plan). This
  * places too greater limit on confidently being able to extract error and event information via the error and event
  * endpoints. Bugsnag provides a mechanism to extract event information from across all projects and events.
- *
- * The “create an event data request” allows event data for a given organization to be collated in an asynchronous job
- * by Bugsnag. Once this job has completed a bespoke URL is provided where this data can be downloaded. Information on
- * this approach along with the filter parameters can be reviewed here:
- *
- * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/create-an-event-data-request
  */
 public class BugsnagEventRequestJob implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(BugsnagEventRequestJob.class);

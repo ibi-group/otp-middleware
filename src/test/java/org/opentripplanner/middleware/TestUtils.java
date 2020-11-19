@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.AbstractUser;
@@ -126,12 +127,11 @@ public class TestUtils {
     /**
      * Send request to provided URL.
      */
-    static HttpResponse<String> makeRequest(String path, String body, HashMap<String, String> headers,
-                                            HttpUtils.REQUEST_METHOD requestMethod) {
+    static HttpResponse<String> makeRequest(String path, String body, HashMap<String, String> headers, HttpMethod method) {
         return HttpUtils.httpRequestRawResponse(
             URI.create(BASE_URL + path),
             1000,
-            requestMethod,
+            method,
             headers,
             body
         );
@@ -144,7 +144,7 @@ public class TestUtils {
         return HttpUtils.httpRequestRawResponse(
             URI.create(BASE_URL + path),
             1000,
-            HttpUtils.REQUEST_METHOD.GET,
+            HttpMethod.GET,
             headers,
             ""
         );
@@ -157,7 +157,7 @@ public class TestUtils {
         return HttpUtils.httpRequestRawResponse(
             URI.create(BASE_URL + path),
             1000,
-            HttpUtils.REQUEST_METHOD.DELETE,
+            HttpMethod.DELETE,
             headers,
             ""
         );
@@ -168,8 +168,8 @@ public class TestUtils {
      * id in the headers so that {@link RequestingUser} can check the database for a matching user.
      */
     static HttpResponse<String> mockAuthenticatedRequest(String path, String body, AbstractUser requestingUser,
-                                                         HttpUtils.REQUEST_METHOD requestMethod) {
-        return makeRequest(path, body, getMockHeaders(requestingUser), requestMethod);
+                                                         HttpMethod method) {
+        return makeRequest(path, body, getMockHeaders(requestingUser), method);
     }
 
     /**

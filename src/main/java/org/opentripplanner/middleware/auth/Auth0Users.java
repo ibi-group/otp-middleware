@@ -8,6 +8,7 @@ import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AbstractUser;
@@ -257,7 +258,7 @@ public class Auth0Users {
         return HttpUtils.httpRequestRawResponse(
             URI.create(String.format("https://%s/oauth/token", AUTH0_DOMAIN)),
             1000,
-            HttpUtils.REQUEST_METHOD.POST,
+            HttpMethod.POST,
             Collections.singletonMap("content-type", "application/x-www-form-urlencoded"),
             body
         );
