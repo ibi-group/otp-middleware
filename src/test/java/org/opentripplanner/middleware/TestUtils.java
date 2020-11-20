@@ -167,9 +167,8 @@ public class TestUtils {
      * Construct http headers according to caller request and then make an authenticated call by placing the Auth0 user
      * id in the headers so that {@link RequestingUser} can check the database for a matching user.
      */
-    static HttpResponse<String> mockAuthenticatedRequest(String path, String body, AbstractUser requestingUser,
-                                                         HttpMethod method) {
-        return makeRequest(path, body, getMockHeaders(requestingUser), method);
+    static HttpResponse<String> mockAuthenticatedRequest(String path, String body, AbstractUser user, HttpMethod method) {
+        return makeRequest(path, body, getMockHeaders(user), method);
     }
 
     /**

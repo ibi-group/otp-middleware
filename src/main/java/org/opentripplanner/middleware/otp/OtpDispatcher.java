@@ -84,7 +84,6 @@ public class OtpDispatcher {
      * returned. It will fail if a connection is not made.
      */
     private static OtpDispatcherResponse sendOtpRequest(URI uri) {
-        // FIXME: Do we need to be making multiple clients?
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
             .uri(uri)
@@ -97,7 +96,6 @@ public class OtpDispatcher {
         try {
             LOG.info("Sending request to OTP: {}", uri.toString());
             HttpResponse<String> otpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
-
             otpDispatcherResponse = new OtpDispatcherResponse(otpResponse);
         } catch (InterruptedException | IOException e) {
             LOG.error("Error requesting OTP data from {}", uri, e);

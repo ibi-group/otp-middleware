@@ -32,15 +32,12 @@ public class JourneyState extends Model {
     /**
      * The arrival/departure delay seen in the latest monitored trip check.
      */
-    @JsonIgnore
     public int lastArrivalDelay;
-    @JsonIgnore
     public int lastDepartureDelay;
 
     /**
      * Timestamp checking the last time a journey was checked.
      */
-    @JsonIgnore
     public long lastCheckedMillis;
 
     /**

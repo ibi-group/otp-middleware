@@ -41,6 +41,9 @@ public class BugsnagEventRequest extends Model {
         return BugsnagDispatcher.makeEventDataRequest(eventDataRequestId);
     }
 
+    /**
+     * Fetch the associated list of {@link BugsnagEvent} for this data request.
+     */
     @JsonIgnore
     @BsonIgnore
     public List<BugsnagEvent> getEventData() {
