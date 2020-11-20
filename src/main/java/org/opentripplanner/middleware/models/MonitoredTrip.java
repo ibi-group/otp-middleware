@@ -112,9 +112,6 @@ public class MonitoredTrip extends Model {
     //TODO define US federal holiday source
     public boolean excludeFederalHolidays;
 
-    public JourneyState journeyState;
-
-
     /**
      * Specify if the monitored trip is active. If true, the trip will be checked.
      */
