@@ -9,7 +9,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
@@ -19,24 +18,20 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
+import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedGet;
+import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 
 public class OtpUserControllerTest {
     private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake US 555 number.
     private static OtpUser otpUser;
-    private static boolean originalIsAuthDisabled;
 
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException {
         // Load config.
         OtpMiddlewareTest.setUp();
-
-        // Save original isAuthDisabled state to restore it on tear down.
-        originalIsAuthDisabled = isAuthDisabled();
+        // Ensure auth is disabled.
         setAuthDisabled(true);
-
         // Create a persisted OTP user.
         otpUser = new OtpUser();
         otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
@@ -53,7 +48,7 @@ public class OtpUserControllerTest {
         if (otpUser != null) otpUser.delete();
 
         // Restore original isAuthDisabled state.
-        setAuthDisabled(originalIsAuthDisabled);
+        restoreDefaultAuthDisabled();
     }
 
     /**
@@ -65,22 +60,20 @@ public class OtpUserControllerTest {
     public void invalidNumbersShouldProduceBadRequest(String badNumber, int statusCode) {
         // 1. Request verification SMS.
         // The invalid number should fail the call.
-        HttpResponse<String> response = mockAuthenticatedRequest(
+        HttpResponse<String> response = mockAuthenticatedGet(
             String.format("api/secure/user/%s/verify_sms/%s",
                 otpUser.id,
                 badNumber
             ),
-            otpUser,
-            HttpUtils.REQUEST_METHOD.GET
+            otpUser
         );
         assertEquals(statusCode, response.statusCode());
 
         // 2. Fetch the newly-created user.
         // The phone number should not be updated.
-        HttpResponse<String> otpUserWithPhoneRequest = mockAuthenticatedRequest(
+        HttpResponse<String> otpUserWithPhoneRequest = mockAuthenticatedGet(
             String.format("api/secure/user/%s", otpUser.id),
-            otpUser,
-            HttpUtils.REQUEST_METHOD.GET
+            otpUser
         );
         assertEquals(HttpStatus.OK_200, otpUserWithPhoneRequest.statusCode());
 

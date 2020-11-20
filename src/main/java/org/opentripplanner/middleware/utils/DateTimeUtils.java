@@ -17,6 +17,8 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.util.Date;
 
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+
 /**
  * Date and time specific utils. All timing in this application should be obtained by using this method in order to
  * ensure that the correct system clock is used. During testing, the internal clock is often set to a fixed instant to
@@ -145,7 +147,7 @@ public class DateTimeUtils {
      * timezone identifier of the first agency that it finds.
      */
     public static ZoneId getOtpZoneId() {
-        String otpTzId = ConfigUtils.getConfigPropertyAsText("OTP_TIMEZONE");
+        String otpTzId = getConfigPropertyAsText("OTP_TIMEZONE");
         if (otpTzId == null) {
             throw new RuntimeException("OTP_TIMEZONE is not defined in config!");
         }

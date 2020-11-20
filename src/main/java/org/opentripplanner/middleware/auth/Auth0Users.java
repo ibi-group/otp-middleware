@@ -3,16 +3,17 @@ package org.opentripplanner.middleware.auth;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.client.mgmt.ManagementAPI;
 import com.auth0.exception.Auth0Exception;
+import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -26,8 +27,6 @@ import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.utils.HttpUtils.httpRequestRawResponse;
-import static org.opentripplanner.middleware.utils.JsonUtils.getSingleNodeValueFromJSON;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -39,12 +38,11 @@ public class Auth0Users {
     // This client/secret pair is for making requests for an API access token used with the Management API.
     private static final String AUTH0_API_CLIENT = getConfigPropertyAsText("AUTH0_API_CLIENT");
     private static final String AUTH0_API_SECRET = getConfigPropertyAsText("AUTH0_API_SECRET");
-    private static final String AUTH0_CLIENT_ID = getConfigPropertyAsText("AUTH0_CLIENT_ID");
-    private static final String AUTH0_CLIENT_SECRET = getConfigPropertyAsText("AUTH0_CLIENT_SECRET");
     private static final String DEFAULT_CONNECTION_TYPE = "Username-Password-Authentication";
+    private static final String DEFAULT_AUDIENCE = "https://otp-middleware";
     private static final String MANAGEMENT_API_VERSION = "v2";
-    private static final String SEARCH_API_VERSION = "v3";
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
+
     /**
      * Cached API token so that we do not have to request a new one each time a Management API request is made.
      */
@@ -53,8 +51,8 @@ public class Auth0Users {
     private static final AuthAPI authAPI = new AuthAPI(AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET);
 
     /**
-     * Creates a standard user for the provided email address. Defaults to a random UUID password and connection type of
-     * {@link #DEFAULT_CONNECTION_TYPE}.
+     * Creates a standard user for the provided email address, password (Defaulted to a random UUID) and connection type
+     * of {@link #DEFAULT_CONNECTION_TYPE}.
      */
     public static User createAuth0UserForEmail(String email) throws Auth0Exception {
         return createAuth0UserForEmail(email, UUID.randomUUID().toString());
@@ -242,33 +240,39 @@ public class Auth0Users {
     }
 
     /**
-     * Get an Auth0 oauth token for use in mocking user requests by using the Auth0 'Call Your API Using Resource Owner
-     * Password Flow' approach. Auth0 setup can be reviewed here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow.
-     * If the user is successfully validated by Auth0 a bearer access token is returned, which is extracted and returned
-     * to the caller. In all other cases, null is returned.
+     * Get an Auth0 oauth token response for use in mocking user requests by using the Auth0 'Call Your API Using Resource
+     * Owner Password Flow' approach. Auth0 setup can be reviewed here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow.
+     * If token response is returned to calling methods for evaluation.
      */
-    public static String getAuth0Token(String username, String password) throws JsonProcessingException {
+    public static HttpResponse<String> getCompleteAuth0TokenResponse(String username, String password) {
         if (Auth0Connection.isAuthDisabled()) return null;
         String body = String.format(
             "grant_type=password&username=%s&password=%s&audience=%s&scope=&client_id=%s&client_secret=%s",
             username,
             password,
-            "https://otp-middleware", // must match an API identifier
-            AUTH0_CLIENT_ID, // Auth0 application client ID
-            AUTH0_CLIENT_SECRET // Auth0 application client secret
+            DEFAULT_AUDIENCE, // must match an API identifier
+            AUTH0_API_CLIENT, // Auth0 application client ID
+            AUTH0_API_SECRET // Auth0 application client secret
         );
-
-        HttpResponse<String> response = httpRequestRawResponse(
+        return HttpUtils.httpRequestRawResponse(
             URI.create(String.format("https://%s/oauth/token", AUTH0_DOMAIN)),
             1000,
             HttpUtils.REQUEST_METHOD.POST,
             Collections.singletonMap("content-type", "application/x-www-form-urlencoded"),
             body
         );
+    }
+
+    /**
+     * Extract from a complete Auth0 token just the access token. If the token is not available, return null instead.
+     */
+    public static String getAuth0AccessToken(String username, String password) {
+        HttpResponse<String> response = getCompleteAuth0TokenResponse(username, password);
         if (response == null || response.statusCode() != HttpStatus.OK_200) {
             LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}", username, response.statusCode(), response.body());
             return null;
         }
-        return getSingleNodeValueFromJSON("access_token", response.body());
+        TokenHolder token = JsonUtils.getPOJOFromJSON(response.body(), TokenHolder.class);
+        return (token == null) ? null : token.getAccessToken();
     }
 }

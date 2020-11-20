@@ -2,7 +2,7 @@ package org.opentripplanner.middleware.models;
 
 import com.auth0.exception.Auth0Exception;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.auth.Permission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +30,7 @@ public abstract class AbstractUser extends Model {
      * value, so the stored user will contain the value from Auth0 (e.g., "auth0|abcd1234").
      */
     public String auth0UserId = UUID.randomUUID().toString();
+
     /** Whether a user is also a Data Tools user */
     public boolean isDataToolsUser;
     /**
@@ -44,7 +45,7 @@ public abstract class AbstractUser extends Model {
      * permissions) or if the requesting user has permission to manage the entity type.
      */
     @Override
-    public boolean canBeManagedBy(Auth0UserProfile user) {
+    public boolean canBeManagedBy(RequestingUser user) {
         // If the user is attempting to update someone else's profile, they must be an admin.
         boolean isManagingSelf = this.auth0UserId.equals(user.auth0UserId);
         if (isManagingSelf) {

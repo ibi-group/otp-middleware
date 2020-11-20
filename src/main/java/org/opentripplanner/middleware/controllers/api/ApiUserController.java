@@ -1,9 +1,11 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.auth0.json.auth.TokenHolder;
 import com.beerboy.ss.ApiEndpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.Auth0Users;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -17,11 +19,10 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
+import java.net.http.HttpResponse;
+
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
-import static org.opentripplanner.middleware.utils.ApiGatewayUtils.deleteApiKey;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -32,9 +33,12 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     private static final Logger LOG = LoggerFactory.getLogger(ApiUserController.class);
     public static final String DEFAULT_USAGE_PLAN_ID = getConfigPropertyAsText("DEFAULT_USAGE_PLAN_ID");
     private static final String API_KEY_PATH = "/apikey";
+    public static final String AUTHENTICATE_PATH = "/authenticate";
     private static final int API_KEY_LIMIT_PER_USER = 2;
     private static final String API_KEY_ID_PARAM = "/:apiKeyId";
     public static final String API_USER_PATH = "secure/application";
+    private static final String USERNAME_PARAM = "username";
+    private static final String PASSWORD_PARAM = "password";
 
     public ApiUserController(String apiPrefix) {
         super(apiPrefix, Persistence.apiUsers, API_USER_PATH);
@@ -53,7 +57,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                     .and()
                     .withQueryParam().withName("usagePlanId").withDescription("Optional AWS API Gateway usage plan ID.")
                     .and()
-                    .withProduces(JSON_ONLY)
+                    .withProduces(HttpUtils.JSON_ONLY)
                     .withResponseType(persistence.clazz),
                 this::createApiKeyForApiUser, JsonUtils::toJson
             )
@@ -64,24 +68,49 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                     .and()
                     .withPathParam().withName("apiKeyId").withDescription("The ID of the API key.")
                     .and()
-                    .withProduces(JSON_ONLY)
+                    .withProduces(HttpUtils.JSON_ONLY)
                     .withResponseType(persistence.clazz),
-                this::deleteApiKeyForApiUser, JsonUtils::toJson
+                this::deleteApiKeyForApiUser, JsonUtils::toJson)
+            // Authenticate user with Auth0
+            .post(path(AUTHENTICATE_PATH)
+                    .withDescription("Authenticates ApiUser with Auth0.")
+                    .withQueryParam().withName(USERNAME_PARAM).withRequired(true)
+                    .withDescription("Auth0 username (usually email address).").and()
+                    .withQueryParam().withName(PASSWORD_PARAM).withRequired(true)
+                    .withDescription("Auth0 password.").and()
+                    .withProduces(HttpUtils.JSON_ONLY)
+                    .withResponseType(TokenHolder.class),
+                this::authenticateAuth0User, JsonUtils::toJson
             );
-
 
         // Add the regular CRUD methods after defining the /apikey route.
         super.buildEndpoint(modifiedEndpoint);
     }
 
     /**
-     * Shorthand method to determine if an API user exists and has an API key.
+     * Authenticate user with Auth0 based on username (email) and password. If successful, return the complete Auth0
+     * token else log message and halt.
      */
-    private boolean userHasKey(ApiUser user, String apiKeyId) {
-        return user != null &&
-            user.apiKeys
-                .stream()
-                .anyMatch(apiKey -> apiKeyId.equals(apiKey.keyId));
+    private TokenHolder authenticateAuth0User(Request req, Response res) {
+        String username = HttpUtils.getQueryParamFromRequest(req, USERNAME_PARAM, false);
+        // FIXME: Should this be encrypted?!
+        String password = HttpUtils.getQueryParamFromRequest(req, PASSWORD_PARAM, false);
+        String apiKeyFromHeader = req.headers("x-api-key");
+        ApiUser apiUser = ApiUser.userForApiKeyValue(apiKeyFromHeader);
+        if (apiKeyFromHeader == null || apiUser == null || !apiUser.email.equals(username)) {
+            logMessageAndHalt(req,
+                HttpStatus.BAD_REQUEST_400,
+                "An API key must be provided and match Api user."
+            );
+        }
+        HttpResponse<String> auth0TokenResponse = Auth0Users.getCompleteAuth0TokenResponse(username, password);
+        if (auth0TokenResponse == null || auth0TokenResponse.statusCode() != HttpStatus.OK_200) {
+            logMessageAndHalt(req,
+                auth0TokenResponse.statusCode(),
+                String.format("Cannot obtain Auth0 token for user %s", username)
+            );
+        }
+        return JsonUtils.getPOJOFromJSON(auth0TokenResponse.body(), TokenHolder.class);
     }
 
     /**
@@ -90,11 +119,11 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      */
     private ApiUser createApiKeyForApiUser(Request req, Response res) {
         ApiUser targetUser = getApiUser(req);
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         String usagePlanId = req.queryParamOrDefault("usagePlanId", DEFAULT_USAGE_PLAN_ID);
         // If requester is not an admin user, force the usage plan ID to the default and enforce key limit. A non-admin
         // user should not be able to create an API key for any usage plan.
-        if (!isUserAdmin(requestingUser)) {
+        if (!requestingUser.isAdmin()) {
             usagePlanId = DEFAULT_USAGE_PLAN_ID;
             if (targetUser.apiKeys.size() >= API_KEY_LIMIT_PER_USER) {
                 logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "User has reached API key limit.");
@@ -120,9 +149,9 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      * Delete an api key from a given user's list of api keys (if present) and from AWS api gateway.
      */
     private ApiUser deleteApiKeyForApiUser(Request req, Response res) {
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // Do not permit key deletion unless user is an admin.
-        if (!isUserAdmin(requestingUser)) {
+        if (!requestingUser.isAdmin()) {
             logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to delete an API key.");
         }
         ApiUser targetUser = getApiUser(req);
@@ -133,7 +162,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 "An api key id is required",
                 null);
         }
-        if (!userHasKey(targetUser, apiKeyId)) {
+        if (targetUser != null && !targetUser.hasApiKeyId(apiKeyId)) {
             logMessageAndHalt(req,
                 HttpStatus.NOT_FOUND_404,
                 String.format("User id (%s) does not have expected api key id (%s)", targetUser.id, apiKeyId),
@@ -141,7 +170,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         }
 
         // Delete API key from AWS.
-        boolean success = deleteApiKey(new ApiKey(apiKeyId));
+        boolean success = ApiGatewayUtils.deleteApiKey(new ApiKey(apiKeyId));
         if (success) {
             // Delete api key from user and persist
             targetUser.apiKeys.removeIf(apiKey -> apiKeyId.equals(apiKey.keyId));
@@ -155,7 +184,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
     }
 
     @Override
-    protected ApiUser getUserProfile(Auth0UserProfile profile) {
+    protected ApiUser getUserProfile(RequestingUser profile) {
         return profile.apiUser;
     }
 
@@ -199,7 +228,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
      * Get an Api user from Mongo DB based on the provided user id. Make sure user is admin or managing self.
      */
     private static ApiUser getApiUser(Request req) {
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         String userId = HttpUtils.getRequiredParamFromRequest(req, ID_PARAM);
         ApiUser apiUser = Persistence.apiUsers.getById(userId);
         if (apiUser == null) {
@@ -211,10 +240,9 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
             );
         }
 
-        if (!apiUser.canBeManagedBy(requestingUser)) {
+        if (!requestingUser.canManageEntity(apiUser)) {
             logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Must be an admin to perform this operation.");
         }
-
         return apiUser;
     }
 }

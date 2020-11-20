@@ -2,13 +2,13 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.mongodb.client.FindIterable;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-import com.mongodb.client.FindIterable;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.conversions.Bson;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
 import org.opentripplanner.middleware.auth.Permission;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -27,11 +27,13 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.MODE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
 
 /**
@@ -231,12 +233,19 @@ public class MonitoredTrip extends Model {
         int lastLegIndex = itinerary.legs.size() - 1;
         from = itinerary.legs.get(0).from;
         to = itinerary.legs.get(lastLegIndex).to;
+        Map<String, String> parsedQueryParams = parseQueryParams();
+
+        // Update modes in query params with set derived from itinerary. This ensures that, when sending requests to OTP
+        // for trip monitoring, we are querying the modes retained by the user when they saved the itinerary.
+        Set<String> modes = ItineraryUtils.deriveModesFromItinerary(itinerary);
+        parsedQueryParams.put(MODE_PARAM, String.join(",", modes));
+        this.queryParams = ItineraryUtils.toQueryString(parsedQueryParams);
 
         // Ensure the itinerary we store does not contain any realtime info.
         clearRealtimeInfo();
 
         // set the trip time by parsing the query params
-        tripTime = this.parseQueryParams().get(TIME_PARAM);
+        tripTime = parsedQueryParams.get(TIME_PARAM);
         if (tripTime == null) {
             throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
         }
@@ -283,9 +292,9 @@ public class MonitoredTrip extends Model {
     }
 
     @Override
-    public boolean canBeCreatedBy(Auth0UserProfile profile) {
-        OtpUser otpUser = profile.otpUser;
+    public boolean canBeCreatedBy(RequestingUser requestingUser) {
         if (userId == null) {
+            OtpUser otpUser = requestingUser.otpUser;
             if (otpUser == null) {
                 // The otpUser must exist (and be the requester) if the userId is null. Otherwise, there is nobody to
                 // assign the trip to.
@@ -295,35 +304,42 @@ public class MonitoredTrip extends Model {
             userId = otpUser.id;
         } else {
             // If userId was provided, follow authorization provided by canBeManagedBy
-            return canBeManagedBy(profile);
+            return canBeManagedBy(requestingUser);
         }
-        return super.canBeCreatedBy(profile);
+        return super.canBeCreatedBy(requestingUser);
     }
 
     /**
      * Confirm that the requesting user has the required permissions
      */
     @Override
-    public boolean canBeManagedBy(Auth0UserProfile user) {
+    public boolean canBeManagedBy(RequestingUser requestingUser) {
         // This should not be possible, but return false on a null userId just in case.
         if (userId == null) return false;
-        // If the user is attempting to update someone else's monitored trip, they must be admin.
+        // If the user is attempting to update someone else's monitored trip, they must be admin or an API user if the
+        // OTP user is assigned to that API.
         boolean belongsToUser = false;
         // Monitored trip can only be owned by an OtpUser (not an ApiUser or AdminUser).
-        if (user.otpUser != null) {
-            belongsToUser = userId.equals(user.otpUser.id);
+        if (requestingUser.otpUser != null) {
+            belongsToUser = userId.equals(requestingUser.otpUser.id);
         }
 
         if (belongsToUser) {
             return true;
-        } else if (user.adminUser != null) {
+        } else if (requestingUser.apiUser != null) {
+            // get the required OTP user to confirm they are associated with the requesting API user.
+            OtpUser otpUser = Persistence.otpUsers.getById(userId);
+            if (requestingUser.canManageEntity(otpUser)) {
+                return true;
+            }
+        } else if (requestingUser.isAdmin()) {
             // If not managing self, user must have manage permission.
-            for (Permission permission : user.adminUser.permissions) {
+            for (Permission permission : requestingUser.adminUser.permissions) {
                 if (permission.canManage(this.getClass())) return true;
             }
         }
         // Fallback to Model#userCanManage.
-        return super.canBeManagedBy(user);
+        return super.canBeManagedBy(requestingUser);
     }
 
     private Bson tripIdFilter() {
@@ -385,20 +401,16 @@ public class MonitoredTrip extends Model {
      * Parse the query params for this trip into a map of the variables.
      */
     public Map<String, String> parseQueryParams() throws URISyntaxException {
+        // If for some reason a leading ? is present in queryParams, skip it.
+        // (We already include a ? when calling URLEncodedUtils.parse below.)
+        String queryParamsWithoutQuestion = queryParams.startsWith("?")
+            ? queryParams.substring(1)
+            : queryParams;
+
         return URLEncodedUtils.parse(
-            new URI(String.format("http://example.com/plan?%s", queryParams)),
+            new URI(String.format("http://example.com/plan?%s", queryParamsWithoutQuestion)),
             UTF_8
         ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
-    }
-
-    /**
-     * Check if the trip is planned with the target time being an arriveBy or departAt query.
-     *
-     * @return true, if the trip's target time is for an arriveBy query
-     */
-    public boolean isArriveBy() throws URISyntaxException {
-        // if arriveBy is not included in query params, OTP will default to false, so initialize to false
-        return parseQueryParams().getOrDefault("arriveBy", "false").equals("true");
     }
 
     /**

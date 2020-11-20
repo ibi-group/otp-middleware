@@ -2,10 +2,11 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.amazonaws.services.apigateway.model.GetUsageResult;
 import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.descriptor.EndpointDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0UserProfile;
+import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUsageResult;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
@@ -21,11 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
-import static org.opentripplanner.middleware.auth.Auth0Connection.isUserAdmin;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
-import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -45,7 +43,7 @@ public class LogController implements Endpoint {
     @Override
     public void bind(final SparkSwagger restApi) {
         restApi.endpoint(
-            endpointPath(ROOT_ROUTE).withDescription("Interface for retrieving API logs from AWS."),
+            EndpointDescriptor.endpointPath(ROOT_ROUTE).withDescription("Interface for retrieving API logs from AWS."),
             HttpUtils.NO_FILTER
         ).get(path(ROOT_ROUTE)
                 .withDescription("Gets a list of all API usage logs.")
@@ -68,7 +66,7 @@ public class LogController implements Endpoint {
                     "If specified, the latest date (format %s) for which usage logs are retrieved.",
                     DEFAULT_DATE_FORMAT_PATTERN
                 )).and()
-                .withProduces(JSON_ONLY)
+                .withProduces(HttpUtils.JSON_ONLY)
                 // Note: unlike what the name suggests, withResponseAsCollection does not generate an array
                 // as the return type for this method. (It does generate the type for that class nonetheless.)
                 .withResponseAsCollection(ApiUsageResult.class),
@@ -82,9 +80,9 @@ public class LogController implements Endpoint {
     private static List<ApiUsageResult> getUsageLogs(Request req, Response res) {
         // Get list of API keys (if present) from request.
         List<ApiKey> apiKeys = getApiKeyIdsFromRequest(req);
-        Auth0UserProfile requestingUser = Auth0Connection.getUserFromRequest(req);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // If the user is not an admin, the list of API keys is defaulted to their keys.
-        if (!isUserAdmin(requestingUser)) {
+        if (!requestingUser.isAdmin()) {
             if (requestingUser.apiUser == null) {
                 logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Action is not permitted for user.");
                 return null;

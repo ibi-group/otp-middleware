@@ -19,6 +19,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -32,6 +34,7 @@ public class ItineraryUtils {
 
     public static final String IGNORE_REALTIME_UPDATES_PARAM = "ignoreRealtimeUpdates";
     public static final String DATE_PARAM = "date";
+    public static final String MODE_PARAM = "mode";
     public static final String TIME_PARAM = "time";
     public static final int ITINERARY_CHECK_WINDOW = 7;
 
@@ -103,6 +106,47 @@ public class ItineraryUtils {
     }
 
     /**
+     * Derives the set of modes for the mode query param that is needed to recreate an OTP {@link Itinerary} using the
+     * plan trip endpoint.
+     */
+    public static Set<String> deriveModesFromItinerary(Itinerary itinerary) {
+        Set<String> modes = itinerary.legs.stream()
+            .map(leg -> leg.mode)
+            .collect(Collectors.toSet());
+
+        // Remove WALK if non-car access modes are present (i.e. {BICYCLE|MICROMOBILITY}[_RENT]).
+        // Removing WALK is necessary for OTP to return certain bicycle+transit itineraries.
+        // Including WALK is necessary for OTP to return certain car+transit itineraries.
+        boolean hasAccessModes = modes.stream().anyMatch(mode -> {
+            String mainMode = mode.split("_")[0];
+            return List.of("BICYCLE", "MICROMOBILITY").contains(mainMode);
+        });
+        if (hasAccessModes) {
+            modes.remove("WALK");
+        }
+
+        // Replace the "CAR" in the set of modes with the correct CAR query mode (CAR_PARK, CAR_RENT, CAR_HAIL)
+        // (assuming there is only one car leg in an itinerary).
+        Optional<Leg> firstCarLeg = itinerary.legs.stream().filter(leg -> "CAR".equals(leg.mode)).findFirst();
+        boolean hasCarAndTransit = firstCarLeg.isPresent() && itinerary.hasTransit();
+        if (hasCarAndTransit) {
+            Leg carLeg = firstCarLeg.get();
+            String carQueryMode;
+
+            if (Boolean.TRUE.equals(carLeg.rentedCar)) {
+                carQueryMode = "CAR_RENT";
+            } else if (Boolean.TRUE.equals(carLeg.hailedCar)) {
+                carQueryMode = "CAR_HAIL";
+            } else {
+                carQueryMode = "CAR_PARK";
+            }
+            modes.remove("CAR");
+            modes.add(carQueryMode);
+        }
+        return modes;
+    }
+
+    /*
      * TODO: fully implement
      */
     public static boolean itineraryIsSavable(Itinerary itinerary) {
@@ -113,19 +157,19 @@ public class ItineraryUtils {
      * Returns true if the itineraries match for the purposes of trip monitoring.
      *
      * @param referenceItinerary The original itinerary that others are compared against.
-     * @param candidiateItinerary A new itinerary that might match the previous itinerary.
+     * @param candidateItinerary A new itinerary that might match the previous itinerary.
      */
-    public static boolean itinerariesMatch(Itinerary referenceItinerary, Itinerary candidiateItinerary) {
+    public static boolean itinerariesMatch(Itinerary referenceItinerary, Itinerary candidateItinerary) {
         // Make sure both itineraries are monitorable before continuing.
-        if (!itineraryIsSavable(referenceItinerary) || !itineraryIsSavable(candidiateItinerary)) return false;
+        if (!itineraryIsSavable(referenceItinerary) || !itineraryIsSavable(candidateItinerary)) return false;
 
         // make sure itineraries have same amount of legs
-        if (referenceItinerary.legs.size() != candidiateItinerary.legs.size()) return false;
+        if (referenceItinerary.legs.size() != candidateItinerary.legs.size()) return false;
 
         // make sure each leg matches
         for (int i = 0; i < referenceItinerary.legs.size(); i++) {
             Leg referenceItineraryLeg = referenceItinerary.legs.get(i);
-            Leg candidateItineraryLeg = candidiateItinerary.legs.get(i);
+            Leg candidateItineraryLeg = candidateItinerary.legs.get(i);
 
             if (!legsMatch(referenceItineraryLeg, candidateItineraryLeg)) return false;
         }
@@ -194,20 +238,20 @@ public class ItineraryUtils {
         // - The headsign is the same (or the reference leg had an empty headsign)
         // - The leg has the same interlining qualities with the previous leg
         if (
-            !equalsOrPreviousWasNull(referenceItineraryLeg.mode, candidateItineraryLeg.mode) ||
-                !equalsIgnoreCaseOrPreviousWasEmpty(
+            !equalsOrReferenceWasNull(referenceItineraryLeg.mode, candidateItineraryLeg.mode) ||
+                !equalsIgnoreCaseOrReferenceWasEmpty(
                     referenceItineraryLeg.agencyName,
                     candidateItineraryLeg.agencyName
                 ) ||
-                !equalsIgnoreCaseOrPreviousWasEmpty(
+                !equalsIgnoreCaseOrReferenceWasEmpty(
                     referenceItineraryLeg.routeLongName,
                     candidateItineraryLeg.routeLongName
                 ) ||
-                !equalsIgnoreCaseOrPreviousWasEmpty(
+                !equalsIgnoreCaseOrReferenceWasEmpty(
                     referenceItineraryLeg.routeShortName,
                     candidateItineraryLeg.routeShortName
                 ) ||
-                !equalsIgnoreCaseOrPreviousWasEmpty(
+                !equalsIgnoreCaseOrReferenceWasEmpty(
                     referenceItineraryLeg.headsign,
                     candidateItineraryLeg.headsign
                 ) ||
@@ -251,7 +295,7 @@ public class ItineraryUtils {
         }
 
         // stop code must match
-        if (!equalsIgnoreCaseOrPreviousWasEmpty(stopA.stopCode, stopB.stopCode)) return false;
+        if (!equalsIgnoreCaseOrReferenceWasEmpty(stopA.stopCode, stopB.stopCode)) return false;
 
         // stop positions must be no further than 5 meters apart
         double stopDistanceMeters = DistanceUtils.radians2Dist(
@@ -269,7 +313,7 @@ public class ItineraryUtils {
     /**
      * Returns true if the reference value is null. Otherwise, returns Objects.equals.
      */
-    private static boolean equalsOrPreviousWasNull (Object reference, Object candidate) {
+    private static boolean equalsOrReferenceWasNull(Object reference, Object candidate) {
         return reference == null || Objects.equals(reference, candidate);
     }
 
@@ -277,7 +321,7 @@ public class ItineraryUtils {
      * Returns true if the reference string was not present either by being null or an emptry string. Otherwise, returns
      * if the strings are equal ignoring case.
      */
-    private static boolean equalsIgnoreCaseOrPreviousWasEmpty(String reference, String candidate) {
+    private static boolean equalsIgnoreCaseOrReferenceWasEmpty(String reference, String candidate) {
         return StringUtils.isEmpty(reference) || reference.equalsIgnoreCase(candidate);
     }
 
