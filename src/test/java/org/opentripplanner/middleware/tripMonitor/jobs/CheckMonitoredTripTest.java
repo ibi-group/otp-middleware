@@ -29,7 +29,6 @@ import java.net.URISyntaxException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -257,42 +256,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     @MethodSource("createSkipTripTestCases")
     void testSkipMonitoredTripCheck(ShouldSkipTripTestCase testCase) throws Exception {
         DateTimeUtils.useFixedClockAt(testCase.mockTime);
-
-        // create a mock OTP response for planning a trip on a weekday target datetime
-        OtpResponse mockWeekdayResponse = otpDispatcherResponse.getResponse();
-        Itinerary mockWeekdayItinerary = mockWeekdayResponse.plan.itineraries.get(0);
-        updateBaseItineraryTime(
-            mockWeekdayItinerary,
-            testCase.mockTime.withYear(2020).withMonth(6).withDayOfMonth(8).withHour(8).withMinute(40).withSecond(10)
-        );
-
-        // set mocks to a list containing just the weekday response if no mocks are provided
-        TestUtils.setupOtpMocks(testCase.otpMocks == null ? List.of(mockWeekdayResponse) : testCase.otpMocks);
-
-        // create these entries in the database at this point to ensure the correct mocked time is set
-        MonitoredTrip trip = testCase.trip;
-        // if trip is null, create the default weekday trip
-        if (trip == null) {
-            trip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
-        }
-
-        // if last checked time is not null, there is an assumption that the journey state has been created before.
-        // Therefore, create a mock journey state and set the matching itinerary to the first itinerary in the first
-        // otp mock or the mockWeekdayItinerary if no mocks are provided
-        if (testCase.lastCheckedTime != null) {
-            JourneyState journeyState = trip.journeyState;
-            if (testCase.useOtpMockWhenCreatingJourneyState && testCase.otpMocks.size() > 0) {
-                journeyState.matchingItinerary = testCase.otpMocks.get(0).plan.itineraries.get(0);
-            } else {
-                journeyState.matchingItinerary = mockWeekdayItinerary;
-            }
-            journeyState.targetDate = "2020-06-08";
-            journeyState.lastCheckedEpochMillis = testCase.lastCheckedTime.toInstant().toEpochMilli();
-            Persistence.monitoredTrips.replace(trip.id, trip);
-        }
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(trip);
         try {
-            assertEquals(testCase.shouldSkipTrip, checkMonitoredTrip.shouldSkipMonitoredTripCheck(), testCase.message);
+            assertEquals(
+                testCase.shouldSkipTrip,
+                testCase.generateCheckMonitoredTrip().shouldSkipMonitoredTripCheck(),
+                testCase.message
+            );
         } finally {
             DateTimeUtils.useSystemDefaultClockAndTimezone();
         }
@@ -314,22 +283,14 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         weekendTrip.updateAllDaysOfWeek(false);
         weekendTrip.saturday = true;
         weekendTrip.sunday = true;
-        // create a mock OTP response for planning a trip on the next weekend target datetime
-        OtpResponse mockWeekendResponse = otpDispatcherResponse.getResponse();
-        Itinerary mockWeekendItinerary = mockWeekendResponse.plan.itineraries.get(0);
-        updateBaseItineraryTime(
-            mockWeekendItinerary,
-            noonMonday8June2020.withDayOfMonth(13).withHour(8).withMinute(40).withSecond(10)
-        );
-        List<OtpResponse> weekendTripOtpMocks = List.of(mockWeekendResponse);
 
-        testCases.add(new ShouldSkipTripTestCase(
+        ShouldSkipTripTestCase weekendTripOnWeekdayTestCase = new ShouldSkipTripTestCase(
             "should return true for a weekend trip when current time is on a weekday",
-            noonMonday8June2020, // mock time: June 10, 2020 (Wednesday)
-            weekendTripOtpMocks,
-            true,
-            weekendTrip
-        ));
+            noonMonday8June2020, // mock time: June 8, 2020 (Wednesday)
+            true
+        );
+        weekendTripOnWeekdayTestCase.trip = weekendTrip;
+        testCases.add(weekendTripOnWeekdayTestCase);
 
         // - Return true for weekday trip when current time is on a weekend.
         testCases.add(new ShouldSkipTripTestCase(
@@ -339,86 +300,77 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         ));
 
         // - Return true if trip is starting today, but before lead time
-        testCases.add(new ShouldSkipTripTestCase(
-            noonMonday8June2020.withHour(2).withMinute(0), // last checked at 2am
+        ShouldSkipTripTestCase weekdayTripBeforeLeadTimeTestCase = new ShouldSkipTripTestCase(
             "should return true if trip is starting today, but current time is before lead time",
             noonMonday8June2020.withHour(3).withMinute(0), // mock time: 3am,
-            Collections.EMPTY_LIST, // no mocks because OTP request occurs after skip check
             true
-        ));
+        );
+        weekdayTripBeforeLeadTimeTestCase.lastCheckedTime = noonMonday8June2020.withHour(2).withMinute(0);
+        testCases.add(weekdayTripBeforeLeadTimeTestCase);
 
         // - Return false if trip is starting in greater than 1 hr, but the last time checked was 2 hours ago
-        testCases.add(new ShouldSkipTripTestCase(
-            noonMonday8June2020.withHour(4).withMinute(0), // last checked at 4am
+        ShouldSkipTripTestCase weekdayTripChecked2HoursAgoTestCase = new ShouldSkipTripTestCase(
             "should return false if trip is starting in greater than 1 hr, but the last time checked was 2 hours ago",
             noonMonday8June2020.withHour(6).withMinute(0), // mock time: 6am
-            Collections.EMPTY_LIST, // no mocks because OTP request occurs after skip check
             false
-        ));
+        );
+        weekdayTripChecked2HoursAgoTestCase.lastCheckedTime = noonMonday8June2020.withHour(4).withMinute(0);
+        testCases.add(weekdayTripChecked2HoursAgoTestCase);
 
         // - Return true if trip is starting in greater than 1 hr, but the last time checked was 2 minutes ago
-        testCases.add(new ShouldSkipTripTestCase(
-            noonMonday8June2020.withHour(2).withMinute(58), // last checked at 2:58am
+        ShouldSkipTripTestCase weekdayTripIn1HourChecked2MinutesAgoTestCase = new ShouldSkipTripTestCase(
             "should return true if trip is starting in greater than 1 hr, but the last time checked was 2 minutes ago",
             noonMonday8June2020.withHour(3).withMinute(0), // mock time: 3am
-            Collections.EMPTY_LIST, // no mocks because OTP request occurs after skip check
             true
-        ));
+        );
+        weekdayTripIn1HourChecked2MinutesAgoTestCase.lastCheckedTime = noonMonday8June2020.withHour(2).withMinute(58);
+        testCases.add(weekdayTripIn1HourChecked2MinutesAgoTestCase);
 
         // - Return false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
-        testCases.add(new ShouldSkipTripTestCase(
-            noonMonday8June2020.withHour(7).withMinute(35), // last checked at 7:35am
+        ShouldSkipTripTestCase weekdayTripIn45MinutesChecked20MinutesAgoTestCase = new ShouldSkipTripTestCase(
             "should return false if trip is starting in 45 minutes and the last time checked was 20 minutes ago",
             noonMonday8June2020.withHour(7).withMinute(55), // mock time: 7:55am
-            Collections.EMPTY_LIST, // no mocks because OTP request occurs after skip check
             false
-        ));
+        );
+        weekdayTripIn45MinutesChecked20MinutesAgoTestCase.lastCheckedTime = noonMonday8June2020.withHour(7).withMinute(35);
+        testCases.add(weekdayTripIn45MinutesChecked20MinutesAgoTestCase);
 
         // - Return true if trip is starting in 45 minutes and the last time checked was 2 minutes ago
-        testCases.add(new ShouldSkipTripTestCase(
-            noonMonday8June2020.withHour(7).withMinute(53), // last checked at 7:53am
+        ShouldSkipTripTestCase weekdayTripIn45MinutesChecked2MinutesAgoTestCase = new ShouldSkipTripTestCase(
             "should return true if trip is starting in 45 minutes and the last time checked was 2 minutes ago",
             noonMonday8June2020.withHour(7).withMinute(55), // mock time: 7:55am
-            Collections.EMPTY_LIST, // no mocks because OTP request occurs after skip check
             true
-        ));
+        );
+        weekdayTripIn45MinutesChecked2MinutesAgoTestCase.lastCheckedTime = noonMonday8June2020.withHour(7).withMinute(53);
+        testCases.add(weekdayTripIn45MinutesChecked2MinutesAgoTestCase);
 
         // - Return false if trip is starting in 10 minutes and the last time checked was 2 minutes ago
-        testCases.add(new ShouldSkipTripTestCase(
-            noonMonday8June2020.withHour(8).withMinute(28), // last checked at 8:23am
+        ShouldSkipTripTestCase weekdayTripIn10MinutesChecked2MinutesAgoTestCase = new ShouldSkipTripTestCase(
             "should return false if trip is starting in 10 minutes and the last time checked was 2 minutes ago",
             noonMonday8June2020.withHour(8).withMinute(30), // mock time: 8:30am
-            Collections.EMPTY_LIST, // no mocks because OTP request occurs after skip check
             false
-        ));
+        );
+        weekdayTripIn10MinutesChecked2MinutesAgoTestCase.lastCheckedTime = noonMonday8June2020.withHour(8).withMinute(28);
+        testCases.add(weekdayTripIn10MinutesChecked2MinutesAgoTestCase);
 
         // - Returns false if trip still hadn't ended prior to the last checked time even though the current time is
         //   after the last known end time of the trip
-        testCases.add(new ShouldSkipTripTestCase(
-            noonMonday8June2020.withHour(8).withMinute(58).withSecond(0), // last checked at 8:58am
+        ShouldSkipTripTestCase weekdayTripNotYetEndedTestCase = new ShouldSkipTripTestCase(
             "should return false if trip hadn't ended the last time it was checked despite it being after the last known end time",
             noonMonday8June2020.withHour(8).withMinute(59), // mock time: 8:59am
-            Collections.EMPTY_LIST, // no mocks because OTP request occurs after skip check
             false
-        ));
+        );
+        weekdayTripNotYetEndedTestCase.lastCheckedTime = noonMonday8June2020.withHour(8).withMinute(58).withSecond(0);
+        testCases.add(weekdayTripNotYetEndedTestCase);
 
         // - Return true if trip has ended as of the last check 3 minutes ago
-        // create a mock OTP response for planning a trip on the next weekday target datetime
-        OtpResponse mockNextWeekdayResponse = otpDispatcherResponse.getResponse();
-        Itinerary mockNextWeekdayItinerary = mockNextWeekdayResponse.plan.itineraries.get(0);
-        updateBaseItineraryTime(
-            mockNextWeekdayItinerary,
-            noonMonday8June2020.withYear(2020).withMonth(6).withDayOfMonth(9).withHour(8).withMinute(40).withSecond(10)
-        );
-        testCases.add(new ShouldSkipTripTestCase(
-            noonMonday8June2020.withHour(8).withMinute(59), // last checked at 8:59am
+        ShouldSkipTripTestCase weekdayTripEndedTestCase = new ShouldSkipTripTestCase(
             "should return true if trip has ended as of the last check",
             noonMonday8June2020.withHour(9).withMinute(00), // mock time: 9:00am
-            List.of(mockNextWeekdayResponse), // add mock for checking the next possible trip the following day
-            true,
-            null,
-            false
-        ));
+            true
+        );
+        weekdayTripEndedTestCase.lastCheckedTime = noonMonday8June2020.withHour(8).withMinute(59);
+        testCases.add(weekdayTripEndedTestCase);
 
         return testCases;
     }
@@ -467,17 +419,17 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     }
 
     private static class ShouldSkipTripTestCase {
-        /* The last time a journey was checked */
-        public final ZonedDateTime lastCheckedTime;
+        /**
+         * The last time a journey was checked. If this is not set, it is assumed that the trip has never been checked
+         * before.
+         */
+        public ZonedDateTime lastCheckedTime;
 
         /* a helpful message describing the particular test case */
         public final String message;
 
         /* The time to mock */
         public final ZonedDateTime mockTime;
-
-        /* A list of mock responses to return from the mock OTP server */
-        public final List<OtpResponse> otpMocks;
 
         /**
          * if true, it is expected that the {@link CheckMonitoredTripTest#createSkipTripTestCases()} method should
@@ -487,79 +439,48 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
 
         /**
          * The trip for the {@link CheckMonitoredTripTest#createSkipTripTestCases()} method to calculate whether
-         * skipping trip analysis should occur.
+         * skipping trip analysis should occur. If this is not set, then a default weekday trip will be created and
+         * used.
          */
-        public final MonitoredTrip trip;
+        public MonitoredTrip trip;
 
-        /**
-         * if false, the mock journey state that gets created will use the default weekday itinerary. Otherwise the
-         * journey state will have it's matching itinerary set to the first itinerary of the first otp response in the
-         * first otp mock.
-         */
-        public final boolean useOtpMockWhenCreatingJourneyState;
-
-        // Constructor for test case for a trip that has yet to be monitored (ie the mocked time will be the first time
-        // the trip is checked).
-        private ShouldSkipTripTestCase(
-            String message,
-            ZonedDateTime mockTime,
-            List<OtpResponse> otpMocks,
-            boolean shouldSkipTrip,
-            MonitoredTrip trip
-        ) throws URISyntaxException {
-            this(null, message, mockTime, otpMocks, shouldSkipTrip, trip, true);
-        }
-
-        // Constructor for test case with the default weekday trip
-        public ShouldSkipTripTestCase(
-            String message,
-            ZonedDateTime mockTime,
-            boolean shouldSkipTrip
-        ) throws URISyntaxException {
-            this(null, message, mockTime, null, shouldSkipTrip, null, true);
-        }
-
-        public ShouldSkipTripTestCase(
-            ZonedDateTime lastCheckedTime,
-            String message,
-            ZonedDateTime mockTime,
-            boolean shouldSkipTrip
-        ) throws URISyntaxException {
-            this(lastCheckedTime, message, mockTime, null, shouldSkipTrip, null, true);
-        }
-
-        public ShouldSkipTripTestCase(
-            ZonedDateTime lastCheckedTime,
-            String message,
-            ZonedDateTime mockTime,
-            List<OtpResponse> otpMocks,
-            boolean shouldSkipTrip
-        ) throws URISyntaxException {
-            this(lastCheckedTime, message, mockTime, otpMocks, shouldSkipTrip, null, true);
-        }
-
-        // Constructor for test case that will set the JourneyState with the last checked time as needed.
-        private ShouldSkipTripTestCase(
-            ZonedDateTime lastCheckedTime,
-            String message,
-            ZonedDateTime mockTime,
-            List<OtpResponse> otpMocks,
-            boolean shouldSkipTrip,
-            MonitoredTrip trip,
-            boolean useOtpMockWhenCreatingJourneyState
-        ) throws URISyntaxException {
-            this.lastCheckedTime = lastCheckedTime;
+        private ShouldSkipTripTestCase(String message, ZonedDateTime mockTime, boolean shouldSkipTrip) {
             this.message = message;
             this.mockTime = mockTime;
-            this.otpMocks = otpMocks;
             this.shouldSkipTrip = shouldSkipTrip;
-            this.trip = trip;
-            this.useOtpMockWhenCreatingJourneyState = useOtpMockWhenCreatingJourneyState;
         }
 
         @Override
         public String toString() {
             return message;
+        }
+
+        public CheckMonitoredTrip generateCheckMonitoredTrip() throws URISyntaxException {
+            // create a mock OTP response for planning a trip on a weekday target datetime
+            OtpResponse mockWeekdayResponse = otpDispatcherResponse.getResponse();
+            Itinerary mockWeekdayItinerary = mockWeekdayResponse.plan.itineraries.get(0);
+            updateBaseItineraryTime(
+                mockWeekdayItinerary,
+                mockTime.withYear(2020).withMonth(6).withDayOfMonth(8).withHour(8).withMinute(40).withSecond(10)
+            );
+
+            // create these entries in the database at this point to ensure the correct mocked time is set
+            // if trip is null, create the default weekday trip
+            if (trip == null) {
+                trip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
+            }
+
+            // if last checked time is not null, there is an assumption that the journey state has been created before.
+            // Therefore, create a mock journey state and set the matching itinerary to be the mock weekday itinerary.
+            // Also, set the journeyState's last checked time to the provided lastCheckedTime.
+            if (lastCheckedTime != null) {
+                JourneyState journeyState = trip.journeyState;
+                journeyState.matchingItinerary = mockWeekdayItinerary;
+                journeyState.targetDate = "2020-06-08";
+                journeyState.lastCheckedEpochMillis = lastCheckedTime.toInstant().toEpochMilli();
+                Persistence.monitoredTrips.replace(trip.id, trip);
+            }
+            return new CheckMonitoredTrip(trip);
         }
     }
 
