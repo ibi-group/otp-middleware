@@ -17,7 +17,9 @@ import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.tripMonitor.jobs.MonitorAllTripsJob;
 import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Service;
@@ -26,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
@@ -63,13 +66,13 @@ public class OtpMiddlewareMain {
 
             // Schedule recurring Monitor All Trips Job.
             // TODO: Determine whether this should go in some other process.
-//            MonitorAllTripsJob monitorAllTripsJob = new MonitorAllTripsJob();
-//            Scheduler.scheduleJob(
-//                monitorAllTripsJob,
-//                0,
-//                1,
-//                TimeUnit.MINUTES
-//            );
+            MonitorAllTripsJob monitorAllTripsJob = new MonitorAllTripsJob();
+            Scheduler.scheduleJob(
+                monitorAllTripsJob,
+                0,
+                1,
+                TimeUnit.MINUTES
+            );
         }
     }
 
