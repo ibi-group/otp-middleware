@@ -125,7 +125,7 @@ public class BugsnagDispatcher {
             BUGSNAG_API_URL,
             "organizations", BUGSNAG_ORGANIZATION, "event_data_requests", eventDataRequestId
         );
-        LOG.info("Making Bugsnag request: {}", eventDataRequestUri);
+        LOG.debug("Making Bugsnag request: {}", eventDataRequestUri);
         HttpResponse<String> response = HttpUtils.httpRequestRawResponse(
             eventDataRequestUri,
             CONNECTION_TIMEOUT_IN_SECONDS,
