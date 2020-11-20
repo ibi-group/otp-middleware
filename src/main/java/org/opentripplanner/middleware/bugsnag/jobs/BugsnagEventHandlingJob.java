@@ -14,11 +14,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static j2html.TagCreator.a;
 import static j2html.TagCreator.div;
@@ -60,19 +60,19 @@ public class BugsnagEventHandlingJob implements Runnable {
         );
         if (latestRequest != null) {
             // Handle the request data if it exists.
-            manageEvents(latestRequest);
+            refreshEventRequest(latestRequest);
         } else {
             LOG.debug("No pending event data requests found.");
         }
-        // FIXME: Do we want to remove these stale events? That might be confusing for users of the system/could cause
+        // FIXME: Do we want to remove these stale events? This could be confusing for users of the system and could cause
         //  issues tracing down issues over time.
          removeStaleEvents();
     }
 
     /**
-     * Confirm that the event request has completed and update event data accordingly.
+     * Refresh the event request to check status and update event data accordingly.
      */
-    private void manageEvents(BugsnagEventRequest request) {
+    private void refreshEventRequest(BugsnagEventRequest request) {
         // Refresh the event data request.
         BugsnagEventRequest refreshedRequest = request.refreshEventDataRequest();
         if (!refreshedRequest.status.equalsIgnoreCase("completed")) {
@@ -80,33 +80,32 @@ public class BugsnagEventHandlingJob implements Runnable {
             // TODO: Update the request data in the database? What if the status has changed since the last fetch?
             return;
         }
-        // If the event data request is complete, continue processing new data.
         // First, remove "stale" requests (i.e., those that are older than this latest one).
         Persistence.bugsnagEventRequests.removeFiltered(Filters.lte("dateCreated", request.dateCreated));
-        // Next, get event data produced from original event request from Bugsnag storage
-        List<BugsnagEvent> events = refreshedRequest.getEventData();
+        // Next, get and store the new events from the completed request and notify users.
+        List<BugsnagEvent> newEvents = getNewEvents(refreshedRequest);
+        if (newEvents.size() > 0) {
+            LOG.info("Found {} new events. Storing and notifying subscribed admin users.", newEvents.size());
+            Persistence.bugsnagEvents.createMany(newEvents);
+            // Notify any subscribed users about new events.
+            sendEmailForEvents(newEvents);
+        }
+    }
+
+    /**
+     * Get the event data from the completed {@link BugsnagEventRequest}.
+     */
+    private List<BugsnagEvent> getNewEvents(BugsnagEventRequest request) {
         // Get list of all currently tracked event ids.
         HashSet<String> currentEventIds = Persistence.bugsnagEvents.getAll()
             .map(event -> event.eventDataId)
             .into(new HashSet<>());
-        // Collect new events in a list for subsequent insertion/reporting.
-        List<BugsnagEvent> newEvents = new ArrayList<>();
         Set<String> trackedProjectIds = MonitoredComponent.getComponentsByProjectId().keySet();
-        // Iterate over bugsnag events and insert them
-        for (BugsnagEvent event : events) {
-            if (!trackedProjectIds.contains(event.projectId) || currentEventIds.contains(event.eventDataId)) {
-                // Skip any error events that do not map to monitored components or already exist in our database.
-                continue;
-            }
-            newEvents.add(event);
-        }
-        if (newEvents.size() > 0) {
-            LOG.info("Found {} new events. Storing and notifying subscribed admin users.", newEvents.size());
-            Persistence.bugsnagEvents.createMany(newEvents);
-            // Notify any subscribed users.
-            // FIXME: Only email subscribers at certain intervals to avoid spam?
-            sendEmailForEvents(newEvents);
-        }
+        // Get and filter bugsnag events.
+        return request.getEventData().stream()
+            // Include error events that map to monitored components and do not already exist in our database.
+            .filter(event -> trackedProjectIds.contains(event.projectId) && !currentEventIds.contains(event.eventDataId))
+            .collect(Collectors.toList());
     }
 
     /**

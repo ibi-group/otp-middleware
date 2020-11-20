@@ -122,7 +122,8 @@ public class NotificationUtils {
      * email address is used (i.e., {@link #FROM_EMAIL}).
      */
     public static boolean sendEmail(OtpUser otpUser, String subject, String text, ContainerTag html) {
-        html.with(manageSubscriptions(OTP_UI_URL));
+        // Inject manage subscriptions tag.
+        if (html != null) html.with(manageSubscriptions(OTP_UI_URL + "/#/account"));
         return sendEmailViaSparkpost(FROM_EMAIL, otpUser.email, subject, text, html);
     }
 
@@ -131,7 +132,8 @@ public class NotificationUtils {
      * email address is used (i.e., {@link #OTP_ADMIN_DASHBOARD_EMAIL}).
      */
     public static boolean sendEmail(AdminUser adminUser, String subject, String text, ContainerTag html) {
-        html.with(manageSubscriptions(OTP_ADMIN_DASHBOARD_URL + "/profile"));
+        // Inject manage subscriptions tag.
+        if (html != null) html.with(manageSubscriptions(OTP_ADMIN_DASHBOARD_URL + "/account"));
         return sendEmailViaSparkpost(OTP_ADMIN_DASHBOARD_EMAIL, adminUser.email, subject, text, html);
     }
 
