@@ -191,7 +191,7 @@ public class ItineraryUtils {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN);
 
         Date itineraryTime = tripIsArriveBy ? itinerary.endTime : itinerary.startTime;
-        ZonedDateTime startDateTime = ZonedDateTime.ofInstant(itineraryTime.toInstant(), DateTimeUtils.getOtpZoneId());
+        ZonedDateTime startDateTime = DateTimeUtils.makeOtpZonedDateTime(itineraryTime);
 
         // If the OTP request was made at a time before SERVICE_DAY_START_HOUR
         // (for instance, a request with a departure or arrival at 12:30 am),

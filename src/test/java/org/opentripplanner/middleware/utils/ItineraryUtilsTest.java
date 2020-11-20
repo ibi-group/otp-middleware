@@ -368,7 +368,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      */
     static List<ZonedDateTime> datesToZonedDateTimes(List<String> dates) {
         return dates.stream()
-            .map(d -> DateTimeUtils.makeZonedDateTime(d, QUERY_TIME))
+            .map(d -> DateTimeUtils.makeOtpZonedDateTime(d, QUERY_TIME))
             .collect(Collectors.toList());
     }
 

@@ -474,8 +474,6 @@ public class CheckMonitoredTrip implements Runnable {
             // advance the trip to the next active date
             advanceToNextActiveTripDate();
 
-            LOG.info("Next itinerary happening on {}.", targetDate);
-
             // update journey state with baseline departure and arrival times which are the last known departure/arrival
             trip.journeyState.baselineDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
             trip.journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
@@ -561,21 +559,23 @@ public class CheckMonitoredTrip implements Runnable {
         long offsetMillis;
         if (trip.isArriveBy()) {
             // find the closest itinerary end time that does not exceed the target zoned date time
-            Instant newEndTime = matchingItinerary.endTime.toInstant();
+            ZonedDateTime newEndTime = DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.endTime);
             do {
-                newEndTime = newEndTime.plus(1, ChronoUnit.DAYS);
-            } while (newEndTime.plus(1, ChronoUnit.DAYS).isBefore(targetZonedDateTime.toInstant()));
-            offsetMillis = newEndTime.toEpochMilli() - matchingItinerary.endTime.getTime();
-            matchingItinerary.startTime = new Date(matchingItinerary.startTime.getTime() + offsetMillis);
+                newEndTime = newEndTime.plusDays(1);
+            } while (newEndTime.plusDays(1).isBefore(targetZonedDateTime));
+            offsetMillis = newEndTime.toInstant().toEpochMilli() - matchingItinerary.endTime.getTime();
         } else {
             // find the first itinerary start time that does exceeds the target zoned date time
-            Instant newStartTime = matchingItinerary.startTime.toInstant();
+            ZonedDateTime newStartTime = DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime);
             do {
-                newStartTime = newStartTime.plus(1, ChronoUnit.DAYS);
-            } while (newStartTime.isBefore(targetZonedDateTime.toInstant()));
-            offsetMillis = newStartTime.toEpochMilli() - matchingItinerary.startTime.getTime();
-            matchingItinerary.endTime = new Date(matchingItinerary.endTime.getTime() + offsetMillis);
+                newStartTime = newStartTime.plusDays(1);
+            } while (newStartTime.isBefore(targetZonedDateTime));
+            offsetMillis = newStartTime.toInstant().toEpochMilli() - matchingItinerary.startTime.getTime();
         }
+
+        // update overall itinerary and leg start/end times by adding offset
+        matchingItinerary.startTime = new Date(matchingItinerary.startTime.getTime() + offsetMillis);
+        matchingItinerary.endTime = new Date(matchingItinerary.endTime.getTime() + offsetMillis);
         for (Leg leg : matchingItinerary.legs) {
             leg.startTime = new Date(leg.startTime.getTime() + offsetMillis);
             leg.endTime = new Date(leg.endTime.getTime() + offsetMillis);
