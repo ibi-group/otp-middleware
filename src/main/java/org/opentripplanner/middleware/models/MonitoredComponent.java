@@ -42,7 +42,7 @@ public class MonitoredComponent extends Model {
         List<MonitoredComponent> configComponents;
         try {
             configComponents = JsonUtils.getPOJOFromJSONAsList(
-                ConfigUtils.getConfigPropertyAsText("MONITORED_COMPONENTS"),
+                ConfigUtils.getConfigProperty("MONITORED_COMPONENTS"),
                 MonitoredComponent.class
             );
             if (configComponents == null) {
