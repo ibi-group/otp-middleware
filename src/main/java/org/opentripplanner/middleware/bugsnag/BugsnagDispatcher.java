@@ -21,7 +21,7 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 
 /**
  * Responsible for getting {@link BugsnagEvent} information from Bugsnag. This is done by making calls to Bugsnag's API
- * endpoints with a valid authorization token (BUGSNAG_API_KEY).
+ * endpoints with a valid authorization token ({@link #BUGSNAG_API_KEY}).
  *
  * A bugsnag API key is a key that is unique to an individual Bugsnag user. This key can be obtained by logging into
  * Bugsnag (https://app.bugsnag.com), clicking on settings (top right hand corner) -> “My account settings”. From here
@@ -31,7 +31,6 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
  *
  * https://api.bugsnag.com/organizations/<organization_id>/event_data_requests
  * https://api.bugsnag.com/organizations/<organization_id>/event_data_requests/<event_data_request_id>
- * https://api.bugsnag.com/organizations/<organization_id>/projects
  */
 public class BugsnagDispatcher {
 
@@ -120,8 +119,8 @@ public class BugsnagDispatcher {
      * More here: https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/check-the-status-of-an-event-data-request
      */
     public static BugsnagEventRequest makeEventDataRequest(String eventDataRequestId) {
-        // Create new request if no ID is provided.
-        boolean create = eventDataRequestId != null;
+        // Create new request if null ID is provided.
+        boolean create = eventDataRequestId == null;
         URI eventDataRequestUri = HttpUtils.buildUri(
             BUGSNAG_API_URL,
             "organizations", BUGSNAG_ORGANIZATION, "event_data_requests", eventDataRequestId
