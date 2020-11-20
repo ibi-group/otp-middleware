@@ -14,6 +14,9 @@ import java.util.Set;
  */
 public class AdminUser extends AbstractUser {
     private static final Logger LOG = LoggerFactory.getLogger(AdminUser.class);
+    /**
+     * List of subscription topics about which an admin user will receive notifications.
+     */
     public Set<Subscription> subscriptions = new HashSet<>();
     /**
      * Default constructor permits the user to manage all user types.
@@ -46,6 +49,9 @@ public class AdminUser extends AbstractUser {
         }
     }
 
+    /**
+     * Potential subscription topics for email notifications. TODO: add more.
+     */
     public enum Subscription {
         NEW_ERROR
     }
