@@ -16,22 +16,48 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This class represents the system components (e.g., servers or UIs) that otp-middleware is expected to monitor. It
+ * should serve as a place to collect properties needed for integrations with various monitoring services (e.g.,
+ * Bugsnag).
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MonitoredComponent extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(MonitoredComponent.class);
+    /**
+     * The field that maps this component to a project in Bugsnag (this is a string UUID).
+     *
+     * See https://api.bugsnag.com/organizations/<organization_id>/projects for a list of projects.
+     */
     public String bugsnagProjectId;
+    /**
+     * The name of the component (e.g., datatools-server) to display to otp-admin-ui users.
+     */
     public String name;
 
+    /**
+     * Read in the list of {@link MonitoredComponent} from the MONITORED_COMPONENTS field in the env.yml file.
+     */
     public static void initializeMonitoredComponentsFromConfig() {
-        List<MonitoredComponent> configComponents = JsonUtils.getPOJOFromJSONAsList(
-            ConfigUtils.getConfigProperty("MONITORED_COMPONENTS"),
-            MonitoredComponent.class
-        );
+        List<MonitoredComponent> configComponents;
+        try {
+            configComponents = JsonUtils.getPOJOFromJSONAsList(
+                ConfigUtils.getConfigPropertyAsText("MONITORED_COMPONENTS"),
+                MonitoredComponent.class
+            );
+            if (configComponents == null) {
+                throw new IllegalArgumentException("MONITORED_COMPONENTS should not be missing.");
+            }
+        } catch (Exception e) {
+            LOG.error("Could not parse MONITORED_COMPONENTS from config.");
+            return;
+        }
         for (MonitoredComponent configComponent : configComponents) {
             LOG.info("Found config component: {} {}", configComponent.name, configComponent.bugsnagProjectId);
             Bson withMatchingBugsnagId = Filters.eq("bugsnagProjectId", configComponent.bugsnagProjectId);
             MonitoredComponent matchingComponent = Persistence.monitoredComponents.getOneFiltered(withMatchingBugsnagId);
             if (matchingComponent != null) {
+                // TODO: Should we instead replace the component if a new property is detected?
                 LOG.info("Skipping import of {} (bugsnagProjectId already exists in collection).", configComponent.name);
             } else {
                 LOG.info("Importing {} as new monitored component.", configComponent.name);
