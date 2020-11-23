@@ -433,7 +433,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
         Assertions.assertEquals(
             testCase.shouldBeSameDay,
-            ItineraryUtils.isSameDay(itinerary, queryDateTime, testCase.isArriveBy),
+            ItineraryUtils.occursOnServiceDay(itinerary, queryDateTime, testCase.isArriveBy),
             testCase.getMessage(OTP_ZONE_ID)
         );
     }

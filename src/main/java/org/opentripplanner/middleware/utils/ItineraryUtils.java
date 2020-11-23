@@ -181,39 +181,37 @@ public class ItineraryUtils {
     /**
      * Checks that the specified itinerary is on the same day as the specified date/time.
      * @param itinerary the itinerary to check.
-     * @param requestDateTime the request date/time to check, in the OTP's time zone.
-     * @param tripIsArriveBy true to check the itinerary endtime, false to check the startTime.
+     * @param dateTime the request date/time to check, in the OTP's time zone.
+     * @param arriveBy true to check the itinerary endtime, false to check the startTime.
      * @return true if the itinerary's startTime or endTime is one the same day as the day of the specified date and time.
      */
-    public static boolean isSameDay(Itinerary itinerary, ZonedDateTime requestDateTime, boolean tripIsArriveBy) {
+    public static boolean occursOnServiceDay(Itinerary itinerary, ZonedDateTime dateTime, boolean arriveBy) {
+        // Convert dateTimes to dates for date comparison.
+        LocalDate date = dateTime.toLocalDate();
+        ZonedDateTime tripTime = itinerary.getTripTime(arriveBy);
+        LocalDate tripDate = tripTime.toLocalDate();
+        // If time to check is before service day start,
+        // offset the trip date by one day to compensate.
+        if(!isAfterServiceStart(dateTime)) {
+            tripDate = tripDate.plusDays(1);
+        }
+        // If trip time is after service start (3am or later), the date must match the trip date.
+        // Otherwise, it must fall on the next day.
+        // FIXME: I'm still a bit confused by this logic... but the tests pass?
+        return isAfterServiceStart(tripTime)
+            ? date.equals(tripDate)
+            : date.plusDays(1).equals(tripDate);
+    }
+
+    /**
+     * Check that the input date/time occurs after the start of the service day.
+     */
+    private static boolean isAfterServiceStart(ZonedDateTime time) {
         // TODO: Make SERVICE_DAY_START_HOUR an optional config parameter.
         final int SERVICE_DAY_START_HOUR = 3;
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN);
-
-        Date itineraryTime = tripIsArriveBy ? itinerary.endTime : itinerary.startTime;
-        ZonedDateTime startDateTime = ZonedDateTime.ofInstant(itineraryTime.toInstant(), DateTimeUtils.getOtpZoneId());
-
-        // If the OTP request was made at a time before SERVICE_DAY_START_HOUR
-        // (for instance, a request with a departure or arrival at 12:30 am),
-        // then consider the request to have been made the day before.
-        // To compensate, advance startDate by one day.
-        int hour = requestDateTime.toLocalTime().getHour();
-        if (hour < SERVICE_DAY_START_HOUR) {
-            startDateTime = startDateTime.plusDays(1);
-        }
-
-        ZonedDateTime startDateTimeDayBefore = startDateTime.minusDays(1);
-
-        LocalDate requestLocalDate = requestDateTime.toLocalDate();
-        return (
-            requestLocalDate.equals(startDateTime.toLocalDate()) &&
-            startDateTime.getHour() >= SERVICE_DAY_START_HOUR
-        ) || (
-            // Trips starting between 12am and 2:59am next day are considered same-day.
-            requestLocalDate.equals(startDateTimeDayBefore.toLocalDate()) &&
-            startDateTimeDayBefore.getHour() < SERVICE_DAY_START_HOUR
-        );
+        return time.getHour() >= SERVICE_DAY_START_HOUR;
     }
+
     /**
      * Check whether a new leg of an itinerary matches the previous itinerary leg for the purposes of trip monitoring.
      */

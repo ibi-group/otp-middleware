@@ -1,7 +1,11 @@
 package org.opentripplanner.middleware.otp.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -131,6 +135,18 @@ public class Itinerary implements Cloneable {
         for (Leg leg : legs) {
             leg.alerts = null;
         }
+    }
+
+    /**
+     * Get trip time as {@link ZonedDateTime} of itinerary (use of start/end depends on arriveBy).
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public ZonedDateTime getTripTime(boolean arriveBy) {
+        return ZonedDateTime.ofInstant(
+            (arriveBy ? endTime : startTime).toInstant(),
+            DateTimeUtils.getOtpZoneId()
+        );
     }
 
     @Override

@@ -414,6 +414,16 @@ public class MonitoredTrip extends Model {
     }
 
     /**
+     * Check if the trip is planned with the target time being an arriveBy or departAt query.
+     *
+     * @return true, if the trip's target time is for an arriveBy query
+     */
+    public boolean isArriveBy() throws URISyntaxException {
+        // if arriveBy is not included in query params, OTP will default to false, so initialize to false
+        return parseQueryParams().getOrDefault("arriveBy", "false").equals("true");
+    }
+
+    /**
      * Returns the target hour of the day that the trip is either departing at or arriving by
      */
     public int tripTimeHour() {

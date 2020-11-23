@@ -186,7 +186,7 @@ public class ItineraryExistence extends Model {
             if (plan != null && plan.itineraries != null) {
                 for (Itinerary itineraryCandidate : plan.itineraries) {
                     // Make sure itinerary is same day as request date
-                    if (ItineraryUtils.isSameDay(itineraryCandidate, otpRequest.date, tripIsArriveBy)) {
+                    if (ItineraryUtils.occursOnServiceDay(itineraryCandidate, otpRequest.date, tripIsArriveBy)) {
                         // If a matching itinerary is found, save the date with the matching itinerary.
                         // The matching itinerary will replace the original trip.itinerary.
                         if (ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)) {
