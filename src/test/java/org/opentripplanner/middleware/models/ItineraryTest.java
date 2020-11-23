@@ -16,6 +16,7 @@ import java.util.stream.Stream;
  */
 public class ItineraryTest {
     private static final Itinerary blankItinerary = new Itinerary();
+    private static Itinerary itineraryWithoutTransitWithoutRentals;
     private static Itinerary itineraryWithTransitNoRentals;
     private static Itinerary itineraryWithRentalBikeWithoutTransit;
     private static Itinerary itineraryWithTransitAndRentalBike;
@@ -50,6 +51,9 @@ public class ItineraryTest {
 
         itineraryWithTransitNoRentals = new Itinerary();
         itineraryWithTransitNoRentals.legs = List.of(transitLeg, walkLeg);
+
+        itineraryWithoutTransitWithoutRentals = new Itinerary();
+        itineraryWithoutTransitWithoutRentals.legs = List.of(walkLeg);
 
         itineraryWithRentalBikeWithoutTransit = new Itinerary();
         itineraryWithRentalBikeWithoutTransit.legs = List.of(walkLeg, rentalBikeLeg);
@@ -95,6 +99,26 @@ public class ItineraryTest {
             Arguments.of(itineraryWithTransitAndRentalMicromobility, true, "Itinerary with transit and rental micromobility."),
             Arguments.of(itineraryWithTransitAndRideHail, true, "Itinerary with transit and ride hail."),
             Arguments.of(blankItinerary, false, "Blank itinerary.")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createCannotBeMonitoredTestCases")
+    public void canCheckCanBeMonitored(Itinerary itinerary, boolean expectedResult, String message) {
+        Itinerary.ItineraryCanBeMonitored canBeMonitored = itinerary.assessCanBeMonitored();
+        Assertions.assertEquals(expectedResult, canBeMonitored.overall, message);
+        Assertions.assertEquals(message, canBeMonitored.getMessage());
+    }
+
+    private static Stream<Arguments> createCannotBeMonitoredTestCases() {
+        return Stream.of(
+            Arguments.of(itineraryWithoutTransitWithoutRentals, false,
+                "This trip cannot be monitored: it does not include a transit leg."),
+            Arguments.of(itineraryWithRentalBikeWithoutTransit, false,
+                "This trip cannot be monitored: it does not include a transit leg, it includes a rental or ride hail."),
+            Arguments.of(itineraryWithTransitAndRentalBike, false,
+                "This trip cannot be monitored: it includes a rental or ride hail."),
+            Arguments.of(itineraryWithTransitNoRentals, true, "This trip can be monitored.")
         );
     }
 }

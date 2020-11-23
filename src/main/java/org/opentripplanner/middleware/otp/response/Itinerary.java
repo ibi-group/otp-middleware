@@ -189,6 +189,8 @@ public class Itinerary implements Cloneable {
     public class ItineraryCanBeMonitored {
         public final boolean hasTransit;
         public final boolean hasRentalOrRideHail;
+        // TODO: add other reasons for why a trip cannot be monitored.
+
         /**
          * True if the itinerary has transit and no rental/ride hail legs.
          */
@@ -198,6 +200,22 @@ public class Itinerary implements Cloneable {
             this.hasTransit = hasTransit();
             this.hasRentalOrRideHail = hasRentalOrRideHail();
             this.overall = hasTransit && !hasRentalOrRideHail;
+        }
+
+        /**
+         * @return a message regarding whether the trip can or cannot be monitored, and why not.
+         */
+        public String getMessage() {
+            if (!overall) {
+                List<String> reasons = new ArrayList<>();
+                if (!hasTransit) reasons.add("it does not include a transit leg");
+                if (hasRentalOrRideHail) reasons.add("it includes a rental or ride hail");
+                // TODO: add other reasons for why a trip cannot be monitored.
+
+                return String.format("This trip cannot be monitored: %s.", String.join(", ", reasons));
+            }
+
+            return "This trip can be monitored.";
         }
     }
 }

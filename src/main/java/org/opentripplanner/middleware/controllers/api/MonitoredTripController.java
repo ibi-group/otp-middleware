@@ -159,20 +159,15 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     /**
      * Checks that the given {@link MonitoredTrip} can be monitored (i.e., that the underlying
-     * {@link org.opentripplanner.middleware.otp.response.Itinerary} has transit and no rentals/ride hailing).
+     * {@link org.opentripplanner.middleware.otp.response.Itinerary} can be monitored).
      */
     private void checkTripCanBeMonitored(MonitoredTrip trip, Request request) {
         Itinerary.ItineraryCanBeMonitored canBeMonitored = trip.itinerary.assessCanBeMonitored();
         if (!canBeMonitored.overall) {
-            String rejectReason = "";
-            if (!canBeMonitored.hasTransit) rejectReason += "it does not include a transit leg";
-            if (!canBeMonitored.overall) rejectReason += ", and ";
-            if (canBeMonitored.hasRentalOrRideHail) rejectReason += "it includes a rental or ride hail";
-
             logMessageAndHalt(
                 request,
                 HttpStatus.BAD_REQUEST_400,
-                String.format("This trip cannot be monitored because %s.", rejectReason)
+                canBeMonitored.getMessage()
             );
         }
     }
