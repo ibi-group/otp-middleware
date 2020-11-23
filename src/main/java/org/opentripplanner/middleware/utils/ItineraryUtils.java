@@ -13,9 +13,7 @@ import org.opentripplanner.middleware.otp.OtpRequest;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +23,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
@@ -37,6 +36,8 @@ public class ItineraryUtils {
     public static final String MODE_PARAM = "mode";
     public static final String TIME_PARAM = "time";
     public static final int ITINERARY_CHECK_WINDOW = 7;
+    public static final int SERVICE_DAY_START_HOUR =
+        getConfigPropertyAsInt("SERVICE_DAY_START_HOUR", 3);
 
     /**
      * Converts a {@link Map} to a URL query string (does not include a leading '?').
@@ -183,9 +184,9 @@ public class ItineraryUtils {
      * @param itinerary the itinerary to check.
      * @param dateTime the request date/time to check, in the OTP's time zone.
      * @param arriveBy true to check the itinerary endtime, false to check the startTime.
-     * @return true if the itinerary's startTime or endTime is one the same day as the day of the specified date and time.
+     * @return true if the itinerary's startTime or endTime is one the same service day as the day of the specified date and time.
      */
-    public static boolean occursOnServiceDay(Itinerary itinerary, ZonedDateTime dateTime, boolean arriveBy) {
+    public static boolean occursOnSameServiceDay(Itinerary itinerary, ZonedDateTime dateTime, boolean arriveBy) {
         // Convert dateTimes to dates for date comparison.
         LocalDate date = dateTime.toLocalDate();
         ZonedDateTime tripTime = itinerary.getTripTime(arriveBy);
@@ -196,19 +197,16 @@ public class ItineraryUtils {
             tripDate = tripDate.plusDays(1);
         }
         // If trip time is after service start (3am or later), the date must match the trip date.
-        // Otherwise, it must fall on the next day.
-        // FIXME: I'm still a bit confused by this logic... but the tests pass?
+        // Otherwise, the trip is considered to fall on the previous day.
         return isAfterServiceStart(tripTime)
             ? date.equals(tripDate)
-            : date.plusDays(1).equals(tripDate);
+            : date.equals(tripDate.minusDays(1));
     }
 
     /**
      * Check that the input date/time occurs after the start of the service day.
      */
     private static boolean isAfterServiceStart(ZonedDateTime time) {
-        // TODO: Make SERVICE_DAY_START_HOUR an optional config parameter.
-        final int SERVICE_DAY_START_HOUR = 3;
         return time.getHour() >= SERVICE_DAY_START_HOUR;
     }
 

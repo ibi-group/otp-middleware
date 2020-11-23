@@ -155,7 +155,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a {@link LocalDateTime} on OTP's time zone to epoch milliseconds.
+     * Converts a {@link LocalDateTime} in OTP's time zone to epoch milliseconds.
      */
     public static long otpDateTimeAsEpochMillis(LocalDateTime otpDateTime) {
         return Instant.from(ZonedDateTime.of(otpDateTime, getOtpZoneId())).toEpochMilli();

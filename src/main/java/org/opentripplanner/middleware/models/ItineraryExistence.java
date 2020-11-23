@@ -171,7 +171,7 @@ public class ItineraryExistence extends Model {
         // Check existence of itinerary in the response for each OTP request.
         for (OtpRequest otpRequest : otpRequests) {
             boolean hasMatchingItinerary = false;
-            DayOfWeek dayOfWeek = otpRequest.date.getDayOfWeek();
+            DayOfWeek dayOfWeek = otpRequest.dateTime.getDayOfWeek();
             // Get existing result for day of week if a date for that day of week has already been processed, or create
             // a new one.
             ItineraryExistenceResult result = getResultForDayOfWeek(dayOfWeek);
@@ -186,11 +186,11 @@ public class ItineraryExistence extends Model {
             if (plan != null && plan.itineraries != null) {
                 for (Itinerary itineraryCandidate : plan.itineraries) {
                     // Make sure itinerary is same day as request date
-                    if (ItineraryUtils.occursOnServiceDay(itineraryCandidate, otpRequest.date, tripIsArriveBy)) {
+                    if (ItineraryUtils.occursOnSameServiceDay(itineraryCandidate, otpRequest.dateTime, tripIsArriveBy)) {
                         // If a matching itinerary is found, save the date with the matching itinerary.
                         // The matching itinerary will replace the original trip.itinerary.
                         if (ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)) {
-                            result.handleValidDate(otpRequest.date, itineraryCandidate);
+                            result.handleValidDate(otpRequest.dateTime, itineraryCandidate);
                             hasMatchingItinerary = true;
                         }
                     }
@@ -198,7 +198,7 @@ public class ItineraryExistence extends Model {
             }
             if (!hasMatchingItinerary) {
                 // If no match was found for the date, mark day of week as non-existent for the itinerary.
-                result.handleInvalidDate(otpRequest.date);
+                result.handleInvalidDate(otpRequest.dateTime);
             }
         }
         if (!this.allCheckedDaysAreValid()) {

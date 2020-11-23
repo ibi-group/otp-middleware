@@ -421,8 +421,8 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     }
 
     @ParameterizedTest
-    @MethodSource("createSameDayTestCases")
-    void testIsSameDay(SameDayTestCase testCase) {
+    @MethodSource("createSameServiceDayTestCases")
+    void canCheckOccursOnSameServiceDay(SameDayTestCase testCase) {
         Itinerary itinerary = simpleItinerary(testCase.tripTargetTimeEpochMillis, testCase.isArriveBy);
 
         ZonedDateTime queryDateTime = ZonedDateTime.of(
@@ -433,12 +433,12 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
         Assertions.assertEquals(
             testCase.shouldBeSameDay,
-            ItineraryUtils.occursOnServiceDay(itinerary, queryDateTime, testCase.isArriveBy),
+            ItineraryUtils.occursOnSameServiceDay(itinerary, queryDateTime, testCase.isArriveBy),
             testCase.getMessage(OTP_ZONE_ID)
         );
     }
 
-    private static List<SameDayTestCase> createSameDayTestCases() {
+    private static List<SameDayTestCase> createSameServiceDayTestCases() {
         return List.of(
             // Same-day departures
             new SameDayTestCase(QUERY_TIME, _2020_08_13__03_00_00, false, true),
