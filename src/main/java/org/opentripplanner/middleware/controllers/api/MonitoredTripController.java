@@ -7,13 +7,15 @@ import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
 import spark.Response;
 
 import java.net.URISyntaxException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
@@ -162,12 +164,15 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      * {@link org.opentripplanner.middleware.otp.response.Itinerary} can be monitored).
      */
     private void checkTripCanBeMonitored(MonitoredTrip trip, Request request) {
-        Itinerary.ItineraryCanBeMonitored canBeMonitored = trip.itinerary.assessCanBeMonitored();
-        if (!canBeMonitored.overall) {
+        Set<InvalidItineraryReason> invalidReasons = trip.itinerary.checkItineraryIsMonitorable();
+        if (invalidReasons.size() > 0) {
+            String reasonsString = invalidReasons.stream()
+                .map(InvalidItineraryReason::getMessage)
+                .collect(Collectors.joining(", "));
             logMessageAndHalt(
                 request,
                 HttpStatus.BAD_REQUEST_400,
-                canBeMonitored.getMessage()
+                String.format("Trip cannot be monitored due to: %s", reasonsString)
             );
         }
     }

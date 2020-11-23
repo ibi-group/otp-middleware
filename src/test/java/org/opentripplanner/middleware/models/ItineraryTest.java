@@ -7,8 +7,15 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.utils.InvalidItineraryReason;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -104,21 +111,20 @@ public class ItineraryTest {
 
     @ParameterizedTest
     @MethodSource("createCannotBeMonitoredTestCases")
-    public void canCheckCanBeMonitored(Itinerary itinerary, boolean expectedResult, String message) {
-        Itinerary.ItineraryCanBeMonitored canBeMonitored = itinerary.assessCanBeMonitored();
-        Assertions.assertEquals(expectedResult, canBeMonitored.overall, message);
-        Assertions.assertEquals(message, canBeMonitored.getMessage());
+    public void canCheckCanBeMonitored(Itinerary itinerary, boolean expectedResult, Set<InvalidItineraryReason> expectedReasons) {
+        Assertions.assertEquals(expectedResult, itinerary.canBeMonitored());
+        Assertions.assertEquals(expectedReasons, itinerary.checkItineraryIsMonitorable());
     }
 
     private static Stream<Arguments> createCannotBeMonitoredTestCases() {
         return Stream.of(
             Arguments.of(itineraryWithoutTransitWithoutRentals, false,
-                "This trip cannot be monitored: it does not include a transit leg."),
+                Set.of(InvalidItineraryReason.MISSING_TRANSIT)),
             Arguments.of(itineraryWithRentalBikeWithoutTransit, false,
-                "This trip cannot be monitored: it does not include a transit leg, it includes a rental or ride hail."),
+                Set.of(InvalidItineraryReason.MISSING_TRANSIT, InvalidItineraryReason.HAS_RENTAL_OR_RIDE_HAIL)),
             Arguments.of(itineraryWithTransitAndRentalBike, false,
-                "This trip cannot be monitored: it includes a rental or ride hail."),
-            Arguments.of(itineraryWithTransitNoRentals, true, "This trip can be monitored.")
+                Set.of(InvalidItineraryReason.HAS_RENTAL_OR_RIDE_HAIL)),
+            Arguments.of(itineraryWithTransitNoRentals, true, Collections.EMPTY_SET)
         );
     }
 }

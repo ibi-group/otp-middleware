@@ -1,12 +1,15 @@
 package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.lang.Boolean.TRUE;
@@ -83,18 +86,22 @@ public class Itinerary implements Cloneable {
     public List<Leg> legs = null;
 
     /**
-     * @return an {@link ItineraryCanBeMonitored} object with the outcomes of the checks regarding whether
-     * the itinerary can be monitored.
+     * @return set of reasons for why the itinerary cannot be monitored.
      */
-    public ItineraryCanBeMonitored assessCanBeMonitored() {
-        return new ItineraryCanBeMonitored();
+    public Set<InvalidItineraryReason> checkItineraryIsMonitorable() {
+        // Check the itinerary for various conditions needed for monitoring.
+        Set<InvalidItineraryReason> reasons = new HashSet<>();
+        if (!hasTransit()) reasons.add(InvalidItineraryReason.MISSING_TRANSIT);
+        if (hasRentalOrRideHail()) reasons.add(InvalidItineraryReason.HAS_RENTAL_OR_RIDE_HAIL);
+        // TODO: Add additional checks here.
+        return reasons;
     }
 
     /**
      * @return true if the itinerary can be monitored.
      */
     public boolean canBeMonitored() {
-        return assessCanBeMonitored().overall;
+        return checkItineraryIsMonitorable().isEmpty();
     }
 
     /**
@@ -180,42 +187,5 @@ public class Itinerary implements Cloneable {
             cloned.legs.add(leg.clone());
         }
         return cloned;
-    }
-
-    /**
-     * A class that holds results for method {@link #assessCanBeMonitored()},
-     * including outcomes for the checks regarding whether the itinerary can be monitored.
-     */
-    public class ItineraryCanBeMonitored {
-        public final boolean hasTransit;
-        public final boolean hasRentalOrRideHail;
-        // TODO: add other reasons for why a trip cannot be monitored.
-
-        /**
-         * True if the itinerary has transit and no rental/ride hail legs.
-         */
-        public final boolean overall;
-
-        private ItineraryCanBeMonitored() {
-            this.hasTransit = hasTransit();
-            this.hasRentalOrRideHail = hasRentalOrRideHail();
-            this.overall = hasTransit && !hasRentalOrRideHail;
-        }
-
-        /**
-         * @return a message regarding whether the trip can or cannot be monitored, and why not.
-         */
-        public String getMessage() {
-            if (!overall) {
-                List<String> reasons = new ArrayList<>();
-                if (!hasTransit) reasons.add("it does not include a transit leg");
-                if (hasRentalOrRideHail) reasons.add("it includes a rental or ride hail");
-                // TODO: add other reasons for why a trip cannot be monitored.
-
-                return String.format("This trip cannot be monitored: %s.", String.join(", ", reasons));
-            }
-
-            return "This trip can be monitored.";
-        }
     }
 }
