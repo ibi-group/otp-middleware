@@ -1063,7 +1063,7 @@ definitions:
   OtpRequest:
     type: "object"
     properties:
-      date:
+      dateTime:
         $ref: "#/definitions/ZonedDateTime"
       requestParameters:
         $ref: "#/definitions/Map"
