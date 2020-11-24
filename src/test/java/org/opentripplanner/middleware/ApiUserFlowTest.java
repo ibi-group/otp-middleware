@@ -199,7 +199,7 @@ public class ApiUserFlowTest {
         // trip for an Otp user they created.
 
         // Set mock OTP responses so that trip existence checks in the
-        // POST call below to save the monitored trip below can pass.
+        // POST call below to save the monitored trip can pass.
         TestUtils.setupOtpMocks(ItineraryUtilsTest.createMockOtpResponsesForTripExistence());
 
         HttpResponse<String> createTripResponseAsApiUser = makeRequest(

@@ -36,8 +36,7 @@ public class ItineraryUtils {
     public static final String MODE_PARAM = "mode";
     public static final String TIME_PARAM = "time";
     public static final int ITINERARY_CHECK_WINDOW = 7;
-    public static final int SERVICE_DAY_START_HOUR =
-        getConfigPropertyAsInt("SERVICE_DAY_START_HOUR", 3);
+    public static final int SERVICE_DAY_START_HOUR = getConfigPropertyAsInt("SERVICE_DAY_START_HOUR", 3);
 
     /**
      * Converts a {@link Map} to a URL query string (does not include a leading '?').

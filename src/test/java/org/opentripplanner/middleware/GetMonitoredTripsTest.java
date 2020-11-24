@@ -25,7 +25,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.*;
+import static org.opentripplanner.middleware.TestUtils.TEMP_AUTH0_USER_PASSWORD;
+import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
+import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedGet;
+import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 
@@ -152,7 +155,7 @@ public class GetMonitoredTripsTest {
         monitoredTrip.userId = otpUser.id;
 
         // Set mock OTP responses so that trip existence checks in the
-        // POST call below to save the monitored trip below can pass.
+        // POST call below to save the monitored trip can pass.
         TestUtils.setupOtpMocks(ItineraryUtilsTest.createMockOtpResponsesForTripExistence());
 
         HttpResponse<String> createTripResponse = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
