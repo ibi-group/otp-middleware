@@ -18,16 +18,25 @@ import java.util.Set;
  */
 public class JourneyState {
     /**
-     * The current arrival/departure baseline to use when checking if a new threshold has been met
+     * The current arrival/departure baseline to use when checking if a new threshold has been met for the active or
+     * upcoming itinerary. These values are updated whenever a notification has already been sent out that informed the
+     * user that the trip's estimated departure or arrival time changed. Subsequent comparisons will then check against
+     * this updated baseline to determine if this new threshold for sending an alert has been met.
+     *
+     * For example, if a trip's departure was delayed by 20 minutes and the user had a delay threshold of 15 minutes
+     * set, then the baselineArrivalTimeEpochMillis would be updated to reflect this 20 minute delay and further checks
+     * for arrival delay will be relative to this time. So a new departure alert would get generated if the delay went
+     * below 5 minutes or above 35 minutes.
      */
     public long baselineArrivalTimeEpochMillis;
     public long baselineDepartureTimeEpochMillis;
 
     /**
-     * The original arrival/departure time of the trip in a scheduled state.
+     * The arrival/departure times of the trip in a scheduled state for the active or upcoming itinerary. In other
+     * words, these start and end times are what would be expected if the itinerary were exactly on-time.
      */
-    public long originalArrivalTimeEpochMillis;
-    public long originalDepartureTimeEpochMillis;
+    public long scheduledArrivalTimeEpochMillis;
+    public long scheduledDepartureTimeEpochMillis;
 
     /**
      * Timestamp checking the last time a journey was checked.

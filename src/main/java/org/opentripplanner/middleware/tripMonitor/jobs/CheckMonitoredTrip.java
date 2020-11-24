@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.tripMonitor.jobs;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
-import org.opentripplanner.middleware.tripMonitor.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
@@ -13,6 +12,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.tripMonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
@@ -179,20 +179,22 @@ public class CheckMonitoredTrip implements Runnable {
 
     /**
      * Checks whether the trip is beginning or ending at a time greater than the allowable variance relative to the
-     * baseline itinerary arrival or departure time. This will check whether the departure or arrival time of the whole
-     * journey has deviated to the point where the absolute value of the variance has changed more than the trip's
-     * variance. If it has, a notification is generated.
+     * baseline itinerary arrival or departure time. See docs about baseline and scheduled times here:
+     * {@link JourneyState#baselineArrivalTimeEpochMillis}. This will check whether the departure or arrival time of the
+     * whole journey has deviated to the point where the absolute value of the variance has changed more than the
+     * variance threshold set for generating a notification about the trip's delays. If it has, a notification is
+     * generated.
      *
      * Example (departure):
      * - Deviation threshold: 10 minutes
-     * - Original departure time: 5:00pm
+     * - Scheduled departure time: 5:00pm
      * - Baseline departure time: 5:00pm
      * - Current realtime departure time: 5:08pm
      * - Result: The threshold is not met, so no notification is sent.
      *
      * Example (arrival):
      * - Deviation threshold: 10 minutes
-     * - Original arrival time: 6:00pm
+     * - Scheduled arrival time: 6:00pm
      * - Baseline arrival time: 6:11pm (a previous check sent out a notification once the trip become more than 10
      *     minutes late. Following that, the baseline arrival time was updated accordingly)
      * - Current realtime departure time: 5:58pm
@@ -207,18 +209,18 @@ public class CheckMonitoredTrip implements Runnable {
         // checking for departure delay, or the baseline arrival time if checking for arrival delay)
         long baselineItineraryTargetEpochMillis;
 
-        // the original target epoch millis that the trip would've started or ended at (the original departure time if
-        // checking for departure delay, or the original arrival time if checking for arrival delay)
-        long originalTargetTimeEpochMillis;
+        // the scheduled target epoch millis that the trip would've started or ended at (the scheduled departure time if
+        // checking for departure delay, or the scheduled arrival time if checking for arrival delay)
+        long scheduledTargetTimeEpochMillis;
 
         if (delayType == NotificationType.DEPARTURE_DELAY) {
             matchingItineraryTargetTime = matchingItinerary.startTime;
             baselineItineraryTargetEpochMillis = trip.journeyState.baselineDepartureTimeEpochMillis;
-            originalTargetTimeEpochMillis = trip.journeyState.originalDepartureTimeEpochMillis;
+            scheduledTargetTimeEpochMillis = trip.journeyState.scheduledDepartureTimeEpochMillis;
         } else {
             matchingItineraryTargetTime = matchingItinerary.endTime;
             baselineItineraryTargetEpochMillis = trip.journeyState.baselineArrivalTimeEpochMillis;
-            originalTargetTimeEpochMillis = trip.journeyState.originalArrivalTimeEpochMillis;
+            scheduledTargetTimeEpochMillis = trip.journeyState.scheduledArrivalTimeEpochMillis;
         }
 
         // calculate absolute deviation of current itinerary target time from the baseline target time in minutes
@@ -240,7 +242,7 @@ public class CheckMonitoredTrip implements Runnable {
 
             // create and return notification
             long delayMinutes = TimeUnit.MINUTES.convert(
-                matchingItineraryTargetTime.getTime() - originalTargetTimeEpochMillis,
+                matchingItineraryTargetTime.getTime() - scheduledTargetTimeEpochMillis,
                 TimeUnit.MILLISECONDS
             );
             return TripMonitorNotification.createDelayNotification(
@@ -392,9 +394,9 @@ public class CheckMonitoredTrip implements Runnable {
             trip.journeyState.baselineDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
             trip.journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
 
-            // update journey state with the original (scheduled departure and arrival) times.
-            trip.journeyState.originalDepartureTimeEpochMillis = matchingItinerary.getScheduledStartTimeEpochMillis();
-            trip.journeyState.originalArrivalTimeEpochMillis = matchingItinerary.getScheduledEndTimeEpochMillis();
+            // update journey state with the scheduled departure and arrival times.
+            trip.journeyState.scheduledDepartureTimeEpochMillis = matchingItinerary.getScheduledStartTimeEpochMillis();
+            trip.journeyState.scheduledArrivalTimeEpochMillis = matchingItinerary.getScheduledEndTimeEpochMillis();
 
             // save journey state with updated matching itinerary and target date
             Persistence.monitoredTrips.replace(trip.id, trip);

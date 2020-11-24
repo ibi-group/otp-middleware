@@ -242,8 +242,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     private static JourneyState createDefaultJourneyState() {
         JourneyState journeyState = new JourneyState();
         Itinerary defaultItinerary = createDefaultItinerary();
-        journeyState.originalArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
-        journeyState.originalDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
+        journeyState.scheduledArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
+        journeyState.scheduledDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
         journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
         journeyState.baselineDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
         return journeyState;
