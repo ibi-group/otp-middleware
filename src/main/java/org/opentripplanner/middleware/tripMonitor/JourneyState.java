@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.tripMonitor;
 
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
-import org.opentripplanner.middleware.models.TripStatus;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.utils.DateTimeUtils;

@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.models;
+package org.opentripplanner.middleware.tripMonitor;
 
 public enum TripStatus {
     NO_LONGER_POSSIBLE,

@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.persistence;
 import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -137,6 +138,7 @@ public class PersistenceUtil {
         // set trip time since otpDispatcherResponse doesn't have full query params in URI
         monitoredTrip.tripTime = "08:35";
         monitoredTrip.updateWeekdays(true);
+        monitoredTrip.itineraryExistence = new ItineraryExistence();
         if (persist) Persistence.monitoredTrips.create(monitoredTrip);
         return monitoredTrip;
     }
