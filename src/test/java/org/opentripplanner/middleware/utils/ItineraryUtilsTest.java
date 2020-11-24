@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 
 import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
@@ -111,23 +110,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     @MethodSource("createCheckAllItinerariesExistTestCases")
     public void canCheckAllItinerariesExist(boolean insertInvalidDay, String message) throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip();
-
-        // Set mocks to a list of responses with itineraries, ordered by day.
-        List<OtpResponse> mockOtpResponses = new ArrayList<>();
-
-        for (String dateString : MONITORED_TRIP_DATES) {
-            LocalDate monitoredDate = LocalDate.parse(dateString, DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN));
-
-            // Copy the template OTP response itinerary, and change the itinerary date to the monitored date,
-            // in order to pass with the same-day itinerary requirement.
-            OtpResponse resp = otpDispatcherPlanResponse.getResponse();
-            for (Itinerary itin : resp.plan.itineraries) {
-                itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
-                itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
-            }
-
-            mockOtpResponses.add(resp);
-        }
+        List<OtpResponse> mockOtpResponses = getMockDatedOtpResponses(MONITORED_TRIP_DATES, otpDispatcherPlanResponse);
 
         // If needed, insert a mock invalid response for one of the monitored days.
         final int INVALID_DAY_INDEX = 3;
@@ -183,13 +166,40 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     /**
      * @return The new {@link Date} object with the date portion set to the specified {@link LocalDate} in OTP timezone.
      */
-    private Date getNewItineraryDate(Date itineraryDate, LocalDate date) {
+    public static Date getNewItineraryDate(Date itineraryDate, LocalDate date) {
         Instant startInstant = itineraryDate.toInstant();
 
         return Date.from(LocalDateTime.of(
             date,
             LocalTime.ofInstant(startInstant, OTP_ZONE_ID)
         ).toInstant(OTP_ZONE_ID.getRules().getOffset(startInstant)));
+    }
+
+    /**
+     * Creates a set of mock OTP responses by making copies of the specified template response,
+     * each copy having the itinerary date set to one of the dates from the specified dates list.
+     */
+    public static List<OtpResponse> getMockDatedOtpResponses(
+        List<String> dates,
+        OtpDispatcherResponse templateResponse
+    ) {
+        // Set mocks to a list of responses with itineraries, ordered by day.
+        List<OtpResponse> mockOtpResponses = new ArrayList<>();
+
+        for (String dateString : dates) {
+            LocalDate monitoredDate = LocalDate.parse(dateString, DateTimeUtils.DEFAULT_DATE_FORMATTER);
+
+            // Copy the template OTP response itinerary, and change the itinerary date to the monitored date,
+            // in order to pass with same-day itinerary requirement.
+            OtpResponse resp = templateResponse.getResponse();
+            for (Itinerary itin : resp.plan.itineraries) {
+                itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
+                itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
+            }
+
+            mockOtpResponses.add(resp);
+        }
+        return mockOtpResponses;
     }
 
     /**
@@ -210,7 +220,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
             ZonedDateTime testDate = testDates.get(i);
             Map<String, String> newParams = requests.get(i).requestParameters;
             Assertions.assertEquals(
-                testDate.format(DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN)),
+                testDate.format(DateTimeUtils.DEFAULT_DATE_FORMATTER),
                 newParams.get(DATE_PARAM)
             );
         }
@@ -426,7 +436,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         Itinerary itinerary = simpleItinerary(testCase.tripTargetTimeEpochMillis, testCase.isArriveBy);
 
         ZonedDateTime queryDateTime = ZonedDateTime.of(
-          LocalDate.parse(QUERY_DATE, DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN)),
+          LocalDate.parse(QUERY_DATE, DateTimeUtils.DEFAULT_DATE_FORMATTER),
             LocalTime.parse(testCase.timeOfDay, DateTimeFormatter.ofPattern("H:mm")),
             OTP_ZONE_ID
         );
