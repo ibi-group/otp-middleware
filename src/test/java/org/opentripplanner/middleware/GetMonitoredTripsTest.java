@@ -12,32 +12,22 @@ import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
-import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtilsTest;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.TestUtils.*;
-import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
-import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
 
 /**
  * Tests to simulate getting trips as an Otp user with enhanced admin credentials. The following config parameters must
@@ -62,7 +52,6 @@ public class GetMonitoredTripsTest {
     private static OtpUser soloOtpUser;
     private static OtpUser multiOtpUser;
     private static final String MONITORED_TRIP_PATH = "api/secure/monitoredtrip";
-    private static List<OtpResponse> mockOtpResponsesForTripExistence;
 
     /**
      * Create Otp and Admin user accounts. Create Auth0 account for just the Otp users. If
@@ -74,26 +63,9 @@ public class GetMonitoredTripsTest {
         OtpMiddlewareTest.setUp();
         assumeTrue(isEndToEnd);
         setAuthDisabled(false);
+
         // Mock the OTP server TODO: Run a live OTP instance?
         TestUtils.mockOtpServer();
-
-        // Contains an OTP response with an itinerary found.
-        // (We are reusing an existing response. The exact contents of the response does not matter
-        // for the purposes of this class.)
-        String mockPlanResponse = FileUtils.getFileContents(
-            TEST_RESOURCE_PATH + "persistence/planResponse.json"
-        );
-        OtpDispatcherResponse otpDispatcherPlanResponse = new OtpDispatcherResponse(mockPlanResponse, DEFAULT_PLAN_URI);
-
-        // Set up monitored days and mock responses for itinerary existence check, ordered by day.
-        LocalDate today = DateTimeUtils.nowAsLocalDate();
-        List<String> monitoredTripDates = new ArrayList<>();
-        for (int i = 0; i < ItineraryUtils.ITINERARY_CHECK_WINDOW; i++) {
-            monitoredTripDates.add(DateTimeUtils.DEFAULT_DATE_FORMATTER.format(today.plusDays(i)));
-        }
-        mockOtpResponsesForTripExistence = ItineraryUtilsTest.getMockDatedOtpResponses(
-            monitoredTripDates, otpDispatcherPlanResponse
-        );
 
         // Create the different users (with different emails) for testing permissions.
         String soloUserEmail = String.format("test-%s@example.com", UUID.randomUUID().toString());
@@ -139,7 +111,7 @@ public class GetMonitoredTripsTest {
      */
     @Test
     public void canGetOwnMonitoredTrips() throws URISyntaxException, JsonProcessingException {
-        // Create a trip for the solo and multi OTP user.
+        // Create a trip for the solo and the multi OTP user.
         createMonitoredTripAsUser(soloOtpUser);
         createMonitoredTripAsUser(multiOtpUser);
 
@@ -172,16 +144,16 @@ public class GetMonitoredTripsTest {
     }
 
     /**
-     * Creates a {@link MonitoredTrip} as the specified user and asserts successful execution.
+     * Creates a {@link MonitoredTrip} for the specified user.
      */
-    private void createMonitoredTripAsUser(OtpUser otpUser) throws URISyntaxException {
+    private static void createMonitoredTripAsUser(OtpUser otpUser) throws URISyntaxException {
         MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
 
         // Set mock OTP responses so that trip existence checks in the
         // POST call below to save the monitored trip below can pass.
-        TestUtils.setupOtpMocks(mockOtpResponsesForTripExistence);
+        TestUtils.setupOtpMocks(ItineraryUtilsTest.createMockOtpResponsesForTripExistence());
 
         HttpResponse<String> createTripResponse = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),

@@ -73,29 +73,42 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     public static final long _2020_08_14__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
         2020, 8, 14, 3, 0, 0)); // Aug 14, 2020 3:00:00 AM
 
-    private static OtpDispatcherResponse otpDispatcherPlanResponse;
-    private static OtpDispatcherResponse otpDispatcherPlanErrorResponse;
-    private static Itinerary defaultItinerary;
+    /** Contains an OTP response with an itinerary. */
+    private static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_RESPONSE =
+        initializeMockPlanResponse(TEST_RESOURCE_PATH + "persistence/planResponse.json");
+    /** Contains an OTP response with no itinerary found. */
+    private static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
+        initializeMockPlanResponse(TEST_RESOURCE_PATH + "persistence/planErrorResponse.json");
+    /** Contains the verified itinerary set for a trip upon persisting. */
+    private static final Itinerary DEFAULT_ITINERARY = OTP_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
     public static final ZoneId OTP_ZONE_ID = DateTimeUtils.getOtpZoneId();
 
     @BeforeAll
-    public static void setup() throws IOException {
+    public static void setup() {
         TestUtils.mockOtpServer();
+    }
 
+    public static OtpDispatcherResponse initializeMockPlanResponse(String path) {
         // Contains an OTP response with an itinerary found.
         // (We are reusing an existing response. The exact contents of the response does not matter
         // for the purposes of this class.)
-        String mockPlanResponse = FileUtils.getFileContents(
-            TEST_RESOURCE_PATH + "persistence/planResponse.json"
-        );
-        // Contains an OTP response with no itinerary found.
-        String mockErrorResponse = FileUtils.getFileContents(
-            TEST_RESOURCE_PATH + "persistence/planErrorResponse.json"
-        );
+        String mockPlanResponse = null;
+        try {
+            mockPlanResponse = FileUtils.getFileContents(path);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new OtpDispatcherResponse(mockPlanResponse, DEFAULT_PLAN_URI);
+    }
 
-        otpDispatcherPlanResponse = new OtpDispatcherResponse(mockPlanResponse, DEFAULT_PLAN_URI);
-        otpDispatcherPlanErrorResponse = new OtpDispatcherResponse(mockErrorResponse, DEFAULT_PLAN_URI);
-        defaultItinerary = otpDispatcherPlanResponse.getResponse().plan.itineraries.get(0);
+    public static List<OtpResponse> createMockOtpResponsesForTripExistence() {
+        // Set up monitored days and mock responses for itinerary existence check, ordered by day.
+        LocalDate today = DateTimeUtils.nowAsLocalDate();
+        List<String> monitoredTripDates = new ArrayList<>();
+        for (int i = 0; i < ItineraryUtils.ITINERARY_CHECK_WINDOW; i++) {
+            monitoredTripDates.add(DateTimeUtils.DEFAULT_DATE_FORMATTER.format(today.plusDays(i)));
+        }
+        return getMockDatedOtpResponses(monitoredTripDates);
     }
 
     @AfterEach
@@ -110,12 +123,12 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     @MethodSource("createCheckAllItinerariesExistTestCases")
     public void canCheckAllItinerariesExist(boolean insertInvalidDay, String message) throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip();
-        List<OtpResponse> mockOtpResponses = getMockDatedOtpResponses(MONITORED_TRIP_DATES, otpDispatcherPlanResponse);
+        List<OtpResponse> mockOtpResponses = getMockDatedOtpResponses(MONITORED_TRIP_DATES);
 
         // If needed, insert a mock invalid response for one of the monitored days.
         final int INVALID_DAY_INDEX = 3;
         if (insertInvalidDay) {
-            mockOtpResponses.set(INVALID_DAY_INDEX, otpDispatcherPlanErrorResponse.getResponse());
+            mockOtpResponses.set(INVALID_DAY_INDEX, OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
         }
 
         TestUtils.setupOtpMocks(mockOtpResponses);
@@ -176,13 +189,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     }
 
     /**
-     * Creates a set of mock OTP responses by making copies of the specified template response,
+     * Creates a set of mock OTP responses by making copies of #OTP_DISPATCHER_PLAN_RESPONSE,
      * each copy having the itinerary date set to one of the dates from the specified dates list.
      */
-    public static List<OtpResponse> getMockDatedOtpResponses(
-        List<String> dates,
-        OtpDispatcherResponse templateResponse
-    ) {
+    private static List<OtpResponse> getMockDatedOtpResponses(List<String> dates) {
         // Set mocks to a list of responses with itineraries, ordered by day.
         List<OtpResponse> mockOtpResponses = new ArrayList<>();
 
@@ -190,8 +200,8 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
             LocalDate monitoredDate = LocalDate.parse(dateString, DateTimeUtils.DEFAULT_DATE_FORMATTER);
 
             // Copy the template OTP response itinerary, and change the itinerary date to the monitored date,
-            // in order to pass with same-day itinerary requirement.
-            OtpResponse resp = templateResponse.getResponse();
+            // in order to pass the same-day itinerary requirement.
+            OtpResponse resp = OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
             for (Itinerary itin : resp.plan.itineraries) {
                 itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
                 itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
@@ -248,9 +258,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
             // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence,
             // it should return all dates in the 7-day window regardless of the ones set in the monitored trip.
-            Arguments.of(datesToZonedDateTimes(
-                List.of(QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19")
-                ), true)
+            Arguments.of(datesToZonedDateTimes(List.of(
+                QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19")
+            ), true)
         );
     }
 
@@ -291,7 +301,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         testCases.add(
             new ItineraryMatchTestCase(
                 "Should be equal with same data",
-                defaultItinerary.clone(),
+                DEFAULT_ITINERARY.clone(),
                 true
             )
         );
@@ -299,7 +309,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         // should not be equal with a different amount of legs
         Leg extraBikeLeg = new Leg();
         extraBikeLeg.mode = "BICYCLE";
-        Itinerary itineraryWithMoreLegs = defaultItinerary.clone();
+        Itinerary itineraryWithMoreLegs = DEFAULT_ITINERARY.clone();
         itineraryWithMoreLegs.legs.add(extraBikeLeg);
         testCases.add(
             new ItineraryMatchTestCase(
@@ -310,7 +320,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         );
 
         // should be equal with realtime data on transit leg (same day)
-        Itinerary itineraryWithRealtimeTransit = defaultItinerary.clone();
+        Itinerary itineraryWithRealtimeTransit = DEFAULT_ITINERARY.clone();
         Leg transitLeg = itineraryWithRealtimeTransit.legs.get(1);
         int secondsOfDelay = 120;
         transitLeg.startTime = new Date(transitLeg.startTime.getTime() + secondsOfDelay * 1000);
@@ -326,7 +336,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         );
 
         // should be equal with scheduled data on transit leg (future date)
-        Itinerary itineraryOnFutureDate = defaultItinerary.clone();
+        Itinerary itineraryOnFutureDate = DEFAULT_ITINERARY.clone();
         Leg transitLeg2 = itineraryOnFutureDate.legs.get(1);
         transitLeg2.startTime = Date.from(transitLeg2.startTime.toInstant().plus(7, ChronoUnit.DAYS));
         transitLeg2.endTime = Date.from(transitLeg2.endTime.toInstant().plus(7, ChronoUnit.DAYS));
@@ -423,7 +433,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
             if (previousItinerary != null) {
                 this.previousItinerary = previousItinerary;
             } else {
-                this.previousItinerary = defaultItinerary;
+                this.previousItinerary = DEFAULT_ITINERARY;
             }
             this.newItinerary = newItinerary;
             this.shouldMatch = shouldMatch;

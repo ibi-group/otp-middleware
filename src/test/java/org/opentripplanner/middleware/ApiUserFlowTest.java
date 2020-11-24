@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.ItineraryUtilsTest;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -196,12 +197,21 @@ public class ApiUserFlowTest {
 
         // Create a monitored trip for an Otp user authenticating as an Api user. An Api user can create a monitored
         // trip for an Otp user they created.
+
+        // Set mock OTP responses so that trip existence checks in the
+        // POST call below to save the monitored trip below can pass.
+        TestUtils.setupOtpMocks(ItineraryUtilsTest.createMockOtpResponsesForTripExistence());
+
         HttpResponse<String> createTripResponseAsApiUser = makeRequest(
             MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
             apiUserHeaders,
             HttpUtils.REQUEST_METHOD.POST
         );
+
+        // After POST is complete, reset mock OTP responses for subsequent tests.
+        TestUtils.resetOtpMocks();
+
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.statusCode());
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(
             createTripResponseAsApiUser.body(),
