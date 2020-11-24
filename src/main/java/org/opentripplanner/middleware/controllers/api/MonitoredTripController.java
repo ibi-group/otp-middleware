@@ -172,7 +172,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             logMessageAndHalt(
                 request,
                 HttpStatus.BAD_REQUEST_400,
-                String.format("Trip cannot be monitored due to: %s", reasonsString)
+                String.format("The trip cannot be monitored: %s", reasonsString)
             );
         }
     }
