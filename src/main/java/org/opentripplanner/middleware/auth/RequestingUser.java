@@ -26,6 +26,7 @@ public class RequestingUser {
      * user else create default user.
      */
     private RequestingUser(String auth0UserId) {
+        // FIXME: This will need to change also. Might need to pass in scope value as well.
         if (auth0UserId == null) {
             this.auth0UserId = "user_id:string";
             otpUser = new OtpUser();
@@ -45,14 +46,23 @@ public class RequestingUser {
      */
     public RequestingUser(DecodedJWT jwt) {
         this.auth0UserId = jwt.getClaim("sub").asString();
-        String scope = jwt.getClaim("scope").asString();
+        // FIXME: Previously we had considered using AUth0 rules to inject "scope" like values under namespaced claims
+        //  e.g. jwt.getClaim("https://otp-middleware/roles") === 'ADMIN'
+        //  We need to figure out if getting scope is possible here.
+        String scope = jwt.getClaim("scope").asString(); // otp-user?
         Bson withAuth0UserId = Filters.eq("auth0UserId", auth0UserId);
-        if (scope.equals("otp-user")) {
-            otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
-        } else if (scope.equals(ApiUser.SCOPE)) {
-            apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
-        } else {
-            adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
+        switch (scope) {
+            case "otp-user":
+                otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
+                break;
+            case ApiUser.SCOPE:
+                apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
+                break;
+            case "admin-user":
+                adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
+                break;
+            default:
+                LOG.error("No user type for scope {} is available", scope);
         }
     }
 
