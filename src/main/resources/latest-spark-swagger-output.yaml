@@ -1163,6 +1163,15 @@ definitions:
         type: "string"
       targetDate:
         type: "string"
+      tripStatus:
+        type: "string"
+        enum:
+        - "NO_LONGER_POSSIBLE"
+        - "NEXT_TRIP_NOT_POSSIBLE"
+        - "TRIP_UPCOMING"
+        - "TRIP_ACTIVE"
+      noLongerPossible:
+        type: "boolean"
   Itinerary:
     type: "object"
     properties:
