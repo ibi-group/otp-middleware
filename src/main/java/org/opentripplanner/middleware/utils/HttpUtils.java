@@ -22,6 +22,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
+    private static final HttpClient client = HttpClient.newHttpClient();
     public enum REQUEST_METHOD {GET, POST, DELETE}
 
     /**
@@ -67,7 +68,6 @@ public class HttpUtils {
                                                               Map<String, String> headers, String bodyContent) {
 
 
-        HttpClient client = HttpClient.newHttpClient();
         HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder()
             .uri(uri)
             .timeout(Duration.ofSeconds(connectionTimeout))
