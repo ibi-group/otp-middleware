@@ -14,6 +14,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.slf4j.Logger;
@@ -22,6 +23,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Date;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +49,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
     private static OtpDispatcherResponse otpDispatcherPlanResponse;
     private static OtpDispatcherResponse otpDispatcherPlanErrorResponse;
+    private static Itinerary defaultItinerary;
 
     @BeforeAll
     public static void setup() throws IOException {
@@ -63,6 +68,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
         otpDispatcherPlanResponse = new OtpDispatcherResponse(mockPlanResponse, DEFAULT_PLAN_URI);
         otpDispatcherPlanErrorResponse = new OtpDispatcherResponse(mockErrorResponse, DEFAULT_PLAN_URI);
+        defaultItinerary = otpDispatcherPlanResponse.getResponse().plan.itineraries.get(0);
     }
 
     @AfterEach
@@ -92,15 +98,19 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         // FIXME: For now, just check that the first itinerary in the list is valid. If we expand our check window from
         //  7 days to 14 (or more) days, this may need to be adjusted.
         Assertions.assertTrue(existence.monday.isValid());
-        Assertions.assertEquals(expectedItinerary, existence.monday.itineraries.get(0));
+        Assertions.assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, existence.monday.itineraries.get(0)));
         Assertions.assertTrue(existence.tuesday.isValid());
-        Assertions.assertEquals(expectedItinerary, existence.tuesday.itineraries.get(0));
+        Assertions.assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, existence.tuesday.itineraries.get(0)));
         Assertions.assertTrue(existence.thursday.isValid());
-        Assertions.assertEquals(expectedItinerary, existence.thursday.itineraries.get(0));
+        Assertions.assertTrue(
+            ItineraryUtils.itinerariesMatch(expectedItinerary, existence.thursday.itineraries.get(0))
+        );
         Assertions.assertTrue(existence.saturday.isValid());
-        Assertions.assertEquals(expectedItinerary, existence.saturday.itineraries.get(0));
+        Assertions.assertTrue(
+            ItineraryUtils.itinerariesMatch(expectedItinerary, existence.saturday.itineraries.get(0))
+        );
         Assertions.assertTrue(existence.sunday.isValid());
-        Assertions.assertEquals(expectedItinerary, existence.sunday.itineraries.get(0));
+        Assertions.assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, existence.sunday.itineraries.get(0)));
 
         Assertions.assertNull(existence.wednesday);
         Assertions.assertNull(existence.friday);
@@ -202,6 +212,76 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     }
 
     /**
+     * Check whether certain itineraries match.
+     */
+    @ParameterizedTest
+    @MethodSource("createItineraryComparisonTestCases")
+    public void testItineraryMatches(ItineraryMatchTestCase testCase) {
+        Assertions.assertEquals(
+            testCase.shouldMatch,
+            ItineraryUtils.itinerariesMatch(testCase.previousItinerary, testCase.newItinerary),
+            testCase.name
+        );
+    }
+
+    private static List<ItineraryMatchTestCase> createItineraryComparisonTestCases() throws CloneNotSupportedException {
+        List<ItineraryMatchTestCase> testCases = new ArrayList<>();
+
+        // should match same data
+        testCases.add(
+            new ItineraryMatchTestCase(
+                "Should be equal with same data",
+                defaultItinerary.clone(),
+                true
+            )
+        );
+
+        // should not be equal with a different amount of legs
+        Leg extraBikeLeg = new Leg();
+        extraBikeLeg.mode = "BICYCLE";
+        Itinerary itineraryWithMoreLegs = defaultItinerary.clone();
+        itineraryWithMoreLegs.legs.add(extraBikeLeg);
+        testCases.add(
+            new ItineraryMatchTestCase(
+                "should not be equal with a different amount of legs",
+                itineraryWithMoreLegs,
+                false
+            )
+        );
+
+        // should be equal with realtime data on transit leg (same day)
+        Itinerary itineraryWithRealtimeTransit = defaultItinerary.clone();
+        Leg transitLeg = itineraryWithRealtimeTransit.legs.get(1);
+        int secondsOfDelay = 120;
+        transitLeg.startTime = new Date(transitLeg.startTime.getTime() + secondsOfDelay * 1000);
+        transitLeg.departureDelay = secondsOfDelay;
+        transitLeg.endTime = new Date(transitLeg.endTime.getTime() + secondsOfDelay * 1000);
+        transitLeg.arrivalDelay = secondsOfDelay;
+        testCases.add(
+            new ItineraryMatchTestCase(
+                "should be equal with realtime data on transit leg (same day)",
+                itineraryWithRealtimeTransit,
+                true
+            )
+        );
+
+        // should be equal with scheduled data on transit leg (future date)
+        Itinerary itineraryOnFutureDate = defaultItinerary.clone();
+        Leg transitLeg2 = itineraryOnFutureDate.legs.get(1);
+        transitLeg2.startTime = Date.from(transitLeg2.startTime.toInstant().plus(7, ChronoUnit.DAYS));
+        transitLeg2.endTime = Date.from(transitLeg2.endTime.toInstant().plus(7, ChronoUnit.DAYS));
+        testCases.add(
+            new ItineraryMatchTestCase(
+                "should be equal with scheduled data on transit leg (future date)",
+                itineraryOnFutureDate,
+                true
+            )
+        );
+
+        return testCases;
+    }
+
+    /**
      * Helper method to create a trip with locations, time, and queryParams populated.
      */
     private MonitoredTrip makeTestTrip() {
@@ -240,5 +320,53 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         return dates.stream()
             .map(d -> DateTimeUtils.makeZonedDateTime(d, QUERY_TIME))
             .collect(Collectors.toList());
+    }
+
+    private static class ItineraryMatchTestCase {
+        /**
+         * A descriptive name of this test case
+         */
+        public final String name;
+
+        /**
+         * The newer itinerary to compare to.
+         */
+        public final Itinerary newItinerary;
+
+        /**
+         * The previous itinerary which should be perform the baseline comparison from.
+         */
+        public final Itinerary previousItinerary;
+        /**
+         * Whether the given itineraries should match
+         */
+        public final boolean shouldMatch;
+
+        /**
+         * Constructor that uses the default itinerary as the previous itinerary.
+         */
+        public ItineraryMatchTestCase(
+            String name,
+            Itinerary newItinerary,
+            boolean shouldMatch
+        ) {
+            this(name, null, newItinerary, shouldMatch);
+        }
+
+        public ItineraryMatchTestCase(
+            String name,
+            Itinerary previousItinerary,
+            Itinerary newItinerary,
+            boolean shouldMatch
+        ) {
+            this.name = name;
+            if (previousItinerary != null) {
+                this.previousItinerary = previousItinerary;
+            } else {
+                this.previousItinerary = defaultItinerary;
+            }
+            this.newItinerary = newItinerary;
+            this.shouldMatch = shouldMatch;
+        }
     }
 }
