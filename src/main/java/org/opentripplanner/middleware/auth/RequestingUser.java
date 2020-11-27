@@ -9,6 +9,8 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 
 /**
@@ -16,6 +18,8 @@ import spark.Request;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RequestingUser {
+    private static final Logger LOG = LoggerFactory.getLogger(RequestingUser.class);
+
     public OtpUser otpUser;
     public ApiUser apiUser;
     public AdminUser adminUser;

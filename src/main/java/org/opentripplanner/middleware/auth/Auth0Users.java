@@ -248,7 +248,7 @@ public class Auth0Users {
     public static HttpResponse<String> getApiUserAuth0TokenResponse(String username, String password, String scope) {
         if (Auth0Connection.isAuthDisabled()) return null;
         String body = String.format(
-            "grant_type=password&username=%s&password=%s&audience=%s&scope=openid%%20profile%%20email%%20%s&client_id=%s&client_secret=%s",
+            "grant_type=password&username=%s&password=%s&audience=%s&scope=%s&client_id=%s&client_secret=%s&role=otp-admin",
             username,
             password,
             DEFAULT_AUDIENCE, // must match an API identifier
