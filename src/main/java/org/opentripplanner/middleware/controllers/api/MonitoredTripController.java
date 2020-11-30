@@ -165,7 +165,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      */
     private void checkTripCanBeMonitored(MonitoredTrip trip, Request request) {
         Set<InvalidItineraryReason> invalidReasons = trip.itinerary.checkItineraryIsMonitorable();
-        if (invalidReasons.size() > 0) {
+        if (!invalidReasons.isEmpty()) {
             String reasonsString = invalidReasons.stream()
                 .map(InvalidItineraryReason::getMessage)
                 .collect(Collectors.joining(", "));
