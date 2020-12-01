@@ -72,6 +72,7 @@ public class ApiGatewayUtils {
         AmazonApiGateway gateway;
         CreateApiKeyResult apiKeyResult = null;
         GetUsagePlanResult usagePlanResult;
+        String keyId = null;
         try {
             gateway = getAmazonApiGateway();
             // Before creating key, verify usage plan exists (if not an exception will be thrown and caught below).
@@ -93,15 +94,27 @@ public class ApiGatewayUtils {
                 .withEnabled(true)
                 .withSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
             apiKeyResult = gateway.createApiKey(apiKeyRequest);
-            LOG.info("Created new API key {}", apiKeyResult.getId());
-            return new ApiKey(apiKeyResult);
+            if (apiKeyResult != null) keyId = apiKeyResult.getId();
+            LOG.info("Created new API key {}", keyId);
         } catch (Exception e) {
             CreateApiKeyException createApiKeyException = new CreateApiKeyException(user.id, usagePlanId, e);
-            String keyId = apiKeyResult != null ? apiKeyResult.getId() : null;
+
             BugsnagReporter.reportErrorToBugsnag("Error creating API key", keyId, createApiKeyException);
             throw createApiKeyException;
-        } finally {
+        }
+        try {
+            // Add API key to usage plan
+            CreateUsagePlanKeyRequest usagePlanKeyRequest = new CreateUsagePlanKeyRequest()
+                .withUsagePlanId(usagePlanResult.getId())
+                .withKeyId(keyId)
+                .withKeyType("API_KEY");
+            gateway.createUsagePlanKey(usagePlanKeyRequest);
             LOG.debug("Get api key and assign to usage plan took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
+        } catch (ConflictException e) {
+            LOG.warn("API key {} already subscribed to usage plan", keyId, e);
+        } finally {
+            // Finally return API key.
+            return new ApiKey(apiKeyResult);
         }
     }
 
