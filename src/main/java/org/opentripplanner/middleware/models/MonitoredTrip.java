@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.tripMonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 
@@ -153,6 +154,8 @@ public class MonitoredTrip extends Model {
      * Records the last itinerary existence check results for this trip.
      */
     public ItineraryExistence itineraryExistence;
+
+    public JourneyState journeyState = new JourneyState();
 
     public MonitoredTrip() {
     }
@@ -347,33 +350,11 @@ public class MonitoredTrip extends Model {
     }
 
     /**
-     * Get the journey state for this trip.
-     */
-    public JourneyState retrieveJourneyState() {
-        // attempt to retrieve from the db
-        JourneyState journeyState = Persistence.journeyStates.getOneFiltered(tripIdFilter());
-        // If journey state does not exist, create and persist.
-        if (journeyState == null) {
-            journeyState = new JourneyState(this);
-            Persistence.journeyStates.create(journeyState);
-        }
-        return journeyState;
-    }
-
-    /**
      * Get the latest itinerary that was tracked in the journey state or null if the check has never been performed (or
      * a matching itinerary has never been found).
      */
     public Itinerary latestItinerary() {
-        JourneyState journeyState = retrieveJourneyState();
         return journeyState.matchingItinerary;
-    }
-
-    /**
-     * Clear journey state for the trip. TODO: remove?
-     */
-    public boolean clearJourneyState() {
-        return Persistence.journeyStates.removeFiltered(tripIdFilter());
     }
 
     /**
