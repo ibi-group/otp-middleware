@@ -1,7 +1,10 @@
-package org.opentripplanner.middleware.models;
+package org.opentripplanner.middleware.tripMonitor;
 
+import org.opentripplanner.middleware.models.Model;
+import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -13,31 +16,32 @@ import java.util.Set;
  * Tracks information during the active monitoring of a {@link org.opentripplanner.middleware.models.MonitoredTrip}
  * (e.g., last alerts encountered, last time a check was made, etc.).
  */
-public class JourneyState extends Model {
+public class JourneyState {
     /**
-     * No-arg constructor for de-serialization.
+     * The current arrival/departure baseline to use when checking if a new threshold has been met for the active or
+     * upcoming itinerary. These values are updated whenever a notification has already been sent out that informed the
+     * user that the trip's estimated departure or arrival time changed. Subsequent comparisons will then check against
+     * this updated baseline to determine if this new threshold for sending an alert has been met.
+     *
+     * For example, if a trip's departure was delayed by 20 minutes and the user had a delay threshold of 15 minutes
+     * set, then the baselineArrivalTimeEpochMillis would be updated to reflect this 20 minute delay and further checks
+     * for arrival delay will be relative to this time. So a new departure alert would get generated if the delay went
+     * below 5 minutes or above 35 minutes.
      */
-    public JourneyState() {
-    }
+    public long baselineArrivalTimeEpochMillis;
+    public long baselineDepartureTimeEpochMillis;
 
     /**
-     * Main constructor to create journey state for associated {@link MonitoredTrip}.
+     * The arrival/departure times of the trip in a scheduled state for the active or upcoming itinerary. In other
+     * words, these start and end times are what would be expected if the itinerary were exactly on-time.
      */
-    public JourneyState(MonitoredTrip monitoredTrip) {
-        this.monitoredTripId = monitoredTrip.id;
-        this.userId = monitoredTrip.userId;
-    }
-
-    /**
-     * The arrival/departure delay seen in the latest monitored trip check.
-     */
-    public int lastArrivalDelay;
-    public int lastDepartureDelay;
+    public long scheduledArrivalTimeEpochMillis;
+    public long scheduledDepartureTimeEpochMillis;
 
     /**
      * Timestamp checking the last time a journey was checked.
      */
-    public long lastCheckedMillis;
+    public long lastCheckedEpochMillis;
 
     /**
      * The notifications already sent.
@@ -67,10 +71,7 @@ public class JourneyState extends Model {
      */
     public String targetDate;
 
-    /**
-     * User ID for {@link OtpUser} that owns the {@link MonitoredTrip}.
-     */
-    private String userId;
+    public JourneyState() {}
 
     /**
      * Update journey state based on results from {@link CheckMonitoredTrip}.
@@ -79,14 +80,11 @@ public class JourneyState extends Model {
      */
     public void update(CheckMonitoredTrip checkMonitoredTripJob) {
         targetDate = checkMonitoredTripJob.targetDate;
-        lastCheckedMillis = DateTimeUtils.currentTimeMillis();
+        lastCheckedEpochMillis = DateTimeUtils.currentTimeMillis();
         matchingItinerary = checkMonitoredTripJob.matchingItinerary;
-        lastDepartureDelay = checkMonitoredTripJob.departureDelay;
-        lastArrivalDelay = checkMonitoredTripJob.arrivalDelay;
         // Update notification time if notification successfully sent.
         if (checkMonitoredTripJob.notificationTimestampMillis != -1) {
             lastNotificationTimeMillis = checkMonitoredTripJob.notificationTimestampMillis;
         }
-        Persistence.journeyStates.replace(this.id, this);
     }
 }
