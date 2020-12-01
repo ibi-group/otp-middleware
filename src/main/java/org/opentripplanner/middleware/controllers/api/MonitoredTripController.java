@@ -164,7 +164,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      * {@link org.opentripplanner.middleware.otp.response.Itinerary} can be monitored).
      */
     private void checkTripCanBeMonitored(MonitoredTrip trip, Request request) {
-        Set<InvalidItineraryReason> invalidReasons = trip.itinerary.checkItineraryIsMonitorable();
+        Set<InvalidItineraryReason> invalidReasons = trip.itinerary.checkItineraryCanBeMonitored();
         if (!invalidReasons.isEmpty()) {
             String reasonsString = invalidReasons.stream()
                 .map(InvalidItineraryReason::getMessage)

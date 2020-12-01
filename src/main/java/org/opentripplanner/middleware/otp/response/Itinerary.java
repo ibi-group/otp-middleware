@@ -91,7 +91,7 @@ public class Itinerary implements Cloneable {
     /**
      * @return set of reasons for why the itinerary cannot be monitored.
      */
-    public Set<InvalidItineraryReason> checkItineraryIsMonitorable() {
+    public Set<InvalidItineraryReason> checkItineraryCanBeMonitored() {
         // Check the itinerary for various conditions needed for monitoring.
         Set<InvalidItineraryReason> reasons = new HashSet<>();
         if (!hasTransit()) reasons.add(InvalidItineraryReason.MISSING_TRANSIT);
@@ -104,7 +104,7 @@ public class Itinerary implements Cloneable {
      * @return true if the itinerary can be monitored.
      */
     public boolean canBeMonitored() {
-        return checkItineraryIsMonitorable().isEmpty();
+        return checkItineraryCanBeMonitored().isEmpty();
     }
 
     /**

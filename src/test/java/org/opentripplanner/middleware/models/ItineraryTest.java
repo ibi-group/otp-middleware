@@ -8,14 +8,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
-import org.opentripplanner.middleware.utils.ItineraryUtils;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -113,7 +109,7 @@ public class ItineraryTest {
     @MethodSource("createCannotBeMonitoredTestCases")
     public void canCheckCanBeMonitored(Itinerary itinerary, boolean expectedResult, Set<InvalidItineraryReason> expectedReasons) {
         Assertions.assertEquals(expectedResult, itinerary.canBeMonitored());
-        Assertions.assertEquals(expectedReasons, itinerary.checkItineraryIsMonitorable());
+        Assertions.assertEquals(expectedReasons, itinerary.checkItineraryCanBeMonitored());
     }
 
     private static Stream<Arguments> createCannotBeMonitoredTestCases() {
