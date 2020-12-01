@@ -147,7 +147,7 @@ public class ItineraryUtils {
     /**
      * Returns true if the itineraries match for the purposes of trip monitoring.
      *
-     * @param referenceItinerary The original itinerary that others are compared against.
+     * @param referenceItinerary The reference itinerary that others are compared against.
      * @param candidateItinerary A new itinerary that might match the previous itinerary.
      */
     public static boolean itinerariesMatch(Itinerary referenceItinerary, Itinerary candidateItinerary) {

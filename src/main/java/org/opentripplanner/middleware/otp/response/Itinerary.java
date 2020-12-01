@@ -1,7 +1,9 @@
 package org.opentripplanner.middleware.otp.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.lang.Boolean.TRUE;
@@ -187,5 +190,46 @@ public class Itinerary implements Cloneable {
             cloned.legs.add(leg.clone());
         }
         return cloned;
+    }
+
+    /**
+     * Returns the scheduled start time of the itinerary in epoch milliseconds by subtracting any delay found in the
+     * first transit leg if a transit leg exists.
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public long getScheduledStartTimeEpochMillis() {
+        long startTimeEpochMillis = startTime.getTime();
+        for (Leg leg : legs) {
+            if (leg.transitLeg) {
+                startTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
+                    leg.departureDelay,
+                    TimeUnit.SECONDS
+                );
+                break;
+            }
+        }
+        return startTimeEpochMillis;
+    }
+
+    /**
+     * Returns the scheduled end time of the itinerary in epoch milliseconds by subtracting any delay found in the
+     * last transit leg if a transit leg exists.
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public long getScheduledEndTimeEpochMillis() {
+        long endTimeEpochMillis = endTime.getTime();
+        for (int i = legs.size() - 1; i >= 0; i--) {
+            Leg leg = legs.get(i);
+            if (leg.transitLeg) {
+                endTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
+                    leg.arrivalDelay,
+                    TimeUnit.SECONDS
+                );
+                break;
+            }
+        }
+        return endTimeEpochMillis;
     }
 }
