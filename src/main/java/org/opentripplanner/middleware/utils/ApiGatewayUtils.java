@@ -11,6 +11,8 @@ import com.amazonaws.services.apigateway.model.CreateUsagePlanKeyRequest;
 import com.amazonaws.services.apigateway.model.CreateUsagePlanKeyResult;
 import com.amazonaws.services.apigateway.model.DeleteApiKeyRequest;
 import com.amazonaws.services.apigateway.model.GetApiKeyRequest;
+import com.amazonaws.services.apigateway.model.GetUsagePlanKeysRequest;
+import com.amazonaws.services.apigateway.model.GetUsagePlanKeysResult;
 import com.amazonaws.services.apigateway.model.GetUsagePlanRequest;
 import com.amazonaws.services.apigateway.model.GetUsagePlanResult;
 import com.amazonaws.services.apigateway.model.GetUsagePlansRequest;
@@ -19,6 +21,7 @@ import com.amazonaws.services.apigateway.model.GetUsageRequest;
 import com.amazonaws.services.apigateway.model.GetUsageResult;
 import com.amazonaws.services.apigateway.model.NotFoundException;
 import com.amazonaws.services.apigateway.model.UsagePlan;
+import com.amazonaws.services.apigateway.model.UsagePlanKey;
 import com.amazonaws.services.apigateway.model.transform.ApiKeyMarshaller;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.ApiKey;
@@ -66,12 +69,15 @@ public class ApiGatewayUtils {
             throw new CreateApiKeyException("All required input parameters must be provided.");
         }
         long startTime = DateTimeUtils.currentTimeMillis();
+        AmazonApiGateway gateway;
+        CreateApiKeyResult apiKeyResult = null;
+        GetUsagePlanResult usagePlanResult;
         try {
-            AmazonApiGateway gateway = getAmazonApiGateway();
+            gateway = getAmazonApiGateway();
             // Before creating key, verify usage plan exists (if not an exception will be thrown and caught below).
             GetUsagePlanRequest usagePlanRequest = new GetUsagePlanRequest();
             usagePlanRequest.withUsagePlanId(usagePlanId);
-            GetUsagePlanResult usagePlanResult = gateway.getUsagePlan(usagePlanRequest);
+            usagePlanResult = gateway.getUsagePlan(usagePlanRequest);
             // Construct key name in the form email-planname-shortId (e.g., user@email.com-Unlimited-2). Note: shortId is
             // not intended to be unique, just for a bit of differentiation in the AWS console.
             String shortId = UUID.randomUUID().toString().substring(0, 7);
@@ -86,20 +92,13 @@ public class ApiGatewayUtils {
                 .withTags(Collections.singletonMap("userId", user.id))
                 .withEnabled(true)
                 .withSdkRequestTimeout(SDK_REQUEST_TIMEOUT);
-            CreateApiKeyResult apiKeyResult = gateway.createApiKey(apiKeyRequest);
-
-            // add API key to usage plan
-            CreateUsagePlanKeyRequest usagePlanKeyRequest = new CreateUsagePlanKeyRequest();
-            usagePlanKeyRequest
-                .withUsagePlanId(usagePlanResult.getId())
-                .withKeyId(apiKeyResult.getId())
-                .withKeyType("API_KEY");
-            gateway.createUsagePlanKey(usagePlanKeyRequest);
+            apiKeyResult = gateway.createApiKey(apiKeyRequest);
             LOG.info("Created new API key {}", apiKeyResult.getId());
             return new ApiKey(apiKeyResult);
         } catch (Exception e) {
             CreateApiKeyException createApiKeyException = new CreateApiKeyException(user.id, usagePlanId, e);
-            BugsnagReporter.reportErrorToBugsnag("Error creating API key", createApiKeyException);
+            String keyId = apiKeyResult != null ? apiKeyResult.getId() : null;
+            BugsnagReporter.reportErrorToBugsnag("Error creating API key", keyId, createApiKeyException);
             throw createApiKeyException;
         } finally {
             LOG.debug("Get api key and assign to usage plan took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
