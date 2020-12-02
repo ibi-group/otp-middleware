@@ -13,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
+import java.util.Objects;
+
 /**
  * User profile that is attached to an HTTP request.
  */
@@ -29,44 +31,46 @@ public class RequestingUser {
      * Constructor is only used for creating a test user. If an Auth0 user id is provided check persistence for matching
      * user else create default user.
      */
-    private RequestingUser(String auth0UserId) {
-        // FIXME: This will need to change also. Might need to pass in scope value as well.
-        if (auth0UserId == null) {
-            this.auth0UserId = "user_id:string";
-            otpUser = new OtpUser();
-            apiUser = new ApiUser();
-            adminUser = new AdminUser();
-        } else {
-            this.auth0UserId = auth0UserId;
-            Bson withAuth0UserId = Filters.eq("auth0UserId", auth0UserId);
-            otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
-            apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
-            adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
-        }
+    private RequestingUser(String auth0UserId, String scope) {
+        this.auth0UserId = Objects.requireNonNullElse(auth0UserId, "user_id:string");
+        defineUserFromScope(scope, true);
     }
 
     /**
-     * Create a user profile from the request's JSON web token. Check persistence for stored user.
+     * Create a user profile from the request's JSON web token.
      */
     public RequestingUser(DecodedJWT jwt) {
         this.auth0UserId = jwt.getClaim("sub").asString();
-        // FIXME: Previously we had considered using AUth0 rules to inject "scope" like values under namespaced claims
-        //  e.g. jwt.getClaim("https://otp-middleware/roles") === 'ADMIN'
-        //  We need to figure out if getting scope is possible here.
-        String scope = jwt.getClaim("scope").asString(); // otp-user?
+        String scope = jwt.getClaim("scope").asString();
+        defineUserFromScope(scope, false);
+    }
+
+    /**
+     * Check persistence for stored user restricted by the scope value provided in the scope claim. It is expected that
+     * the scope claim will include only one scope item i.e. 'otp-user', 'api-user' or 'admin-user'. if testing, create
+     * a new user else attempt to get a matching user from DB.
+     */
+    private void defineUserFromScope(String scope, boolean testing) {
         Bson withAuth0UserId = Filters.eq("auth0UserId", auth0UserId);
-        switch (scope) {
-            case "otp-user":
-                otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
-                break;
-            case ApiUser.SCOPE:
-                apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
-                break;
-            case "admin-user":
-                adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
-                break;
-            default:
-                LOG.error("No user type for scope {} is available", scope);
+        if (scope == null || scope.isEmpty()) {
+            LOG.error("Required scope claim unavailable");
+            return;
+        }
+
+        if (scope.contains(OtpUser.SCOPE)) {
+            otpUser = (testing)
+                ? new OtpUser()
+                : Persistence.otpUsers.getOneFiltered(withAuth0UserId);
+        } else if (scope.contains(ApiUser.SCOPE)) {
+            apiUser = (testing)
+                ? new ApiUser()
+                : Persistence.apiUsers.getOneFiltered(withAuth0UserId);
+        } else if (scope.contains(AdminUser.SCOPE)) {
+            adminUser = (testing)
+                ? new AdminUser()
+                : Persistence.adminUsers.getOneFiltered(withAuth0UserId);
+        } else {
+            LOG.error("No user type for scope {} is available", scope);
         }
     }
 
@@ -74,7 +78,7 @@ public class RequestingUser {
      * Utility method for creating a test user. If a Auth0 user Id is defined within the Authorization header param
      * define test user based on this.
      */
-    static RequestingUser createTestUser(Request req) {
+    static RequestingUser createTestUser(Request req, String scope) {
         String auth0UserId = null;
 
         if (Auth0Connection.isAuthHeaderPresent(req)) {
@@ -83,7 +87,7 @@ public class RequestingUser {
             auth0UserId = req.headers("Authorization");
         }
 
-        return new RequestingUser(auth0UserId);
+        return new RequestingUser(auth0UserId, scope);
     }
 
     /**
