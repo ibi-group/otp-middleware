@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.bugsnag.jobs;
 
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
@@ -10,6 +11,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
+import org.opentripplanner.middleware.utils.TemplateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,16 +111,20 @@ public class BugsnagEventHandlingJob implements Runnable {
             "subject", subject
         );
 
+        String text;
+        String html;
+        try {
+            text = TemplateUtils.renderTemplateWithData("EventErrorsText.ftl", data);
+            html = TemplateUtils.renderTemplateWithData("EventErrorsHtml.ftl", data);
+        } catch (Exception e) {
+            BugsnagReporter.reportErrorToBugsnag("Failed to render error event email", e);
+            return;
+        }
+
         // Notify subscribed users.
         for (AdminUser adminUser : Persistence.adminUsers.getAll()) {
             if (adminUser.subscriptions.contains(AdminUser.Subscription.NEW_ERROR)) {
-                NotificationUtils.sendEmail(
-                    adminUser,
-                    subject,
-                    "EventErrorsText.ftl",
-                    "EventErrorsHtml.ftl",
-                    data
-                );
+                NotificationUtils.sendEmail(adminUser, subject, text, html);
             }
         }
     }

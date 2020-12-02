@@ -1,16 +1,13 @@
 package org.opentripplanner.middleware.utils;
 
-import freemarker.cache.ClassTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
-import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.TemplateModelException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,12 +27,11 @@ public class TemplateUtils {
      */
     public static void initialize() {
         try {
+            config.setClassForTemplateLoading(TemplateUtils.class, "/templates/");
             config.setDefaultEncoding("UTF-8");
             for (String key : sharedConfigKeys) {
                 config.setSharedVariable(key, ConfigUtils.getConfigPropertyAsText(key));
             }
-            config.setTemplateLoader(new ClassTemplateLoader(TemplateUtils.class, "/templates/"));
-            config.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
         } catch (TemplateModelException e) {
             LOG.error("An error occurred while initializing FreeMarker: ", e);
             throw new RuntimeException(e);
@@ -52,19 +48,5 @@ public class TemplateUtils {
         StringWriter stringWriter = new StringWriter();
         config.getTemplate(templatePath).process(data, stringWriter);
         return stringWriter.toString();
-    }
-
-    /**
-     * Renders each template path using the given data.
-     */
-    public static List<String> renderMultipleTemplatesWithData(
-        Object data,
-        String... templatePaths
-    ) throws IOException, TemplateException {
-        List<String> result = new ArrayList<>();
-        for (String templatePath : templatePaths) {
-            result.add(renderTemplateWithData(templatePath, data));
-        }
-        return result;
     }
 }

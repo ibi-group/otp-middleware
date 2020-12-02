@@ -21,7 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -113,99 +112,24 @@ public class NotificationUtils {
      * Send a text-only notification email for {@link OtpUser}, ensuring the correct from
      * email address is used (i.e., {@link #FROM_EMAIL}).
      */
-    public static boolean sendTextOnlyEmail(
-        OtpUser otpUser,
-        String subject,
-        String text
-    ) {
-        return sendEmailViaSparkpost(
-            FROM_EMAIL,
-            otpUser.email,
-            subject,
-            text,
-            null
-        );
+    public static boolean sendTextOnlyEmail(OtpUser otpUser, String subject, String text) {
+        return sendEmailViaSparkpost(FROM_EMAIL, otpUser.email, subject, text, null);
     }
 
     /**
      * Send notification email for {@link OtpUser}, ensuring the correct from
      * email address is used (i.e., {@link #FROM_EMAIL}).
      */
-    public static boolean sendEmail(
-        OtpUser otpUser,
-        String subject,
-        String textTemplatePath,
-        String htmlTemplatePath,
-        Object templateData
-    ) {
-        return sendEmail(
-            FROM_EMAIL,
-            otpUser.email,
-            subject,
-            textTemplatePath,
-            htmlTemplatePath,
-            templateData
-        );
+    public static boolean sendEmail(OtpUser otpUser, String subject, String text, String html) {
+        return sendEmailViaSparkpost(FROM_EMAIL, otpUser.email, subject, text, html);
     }
 
     /**
      * Send notification email for {@link AdminUser}, ensuring the correct from
      * email address is used (i.e., {@link #OTP_ADMIN_DASHBOARD_EMAIL}).
      */
-    public static boolean sendEmail(
-        AdminUser adminUser,
-        String subject,
-        String textTemplatePath,
-        String htmlTemplatePath,
-        Object templateData
-    ) {
-        return sendEmail(
-            OTP_ADMIN_DASHBOARD_EMAIL,
-            adminUser.email,
-            subject,
-            textTemplatePath,
-            htmlTemplatePath,
-            templateData
-        );
-    }
-
-    /**
-     * Helper to send an email that will attempt to render the given templates into a text and html string respectively.
-     */
-    public static boolean sendEmail(
-        String fromEmail,
-        String toEmail,
-        String subject,
-        String textTemplatePath,
-        String htmlTemplatePath,
-        Object templateData
-    ) {
-        List<String> renderedData;
-        try {
-            renderedData = TemplateUtils.renderMultipleTemplatesWithData(
-                templateData,
-                textTemplatePath,
-                htmlTemplatePath
-            );
-        } catch (Exception e) {
-            BugsnagReporter.reportErrorToBugsnag(
-                String.format(
-                    "Failed to render email using text template `%s` and html template `%s`.",
-                    textTemplatePath,
-                    htmlTemplatePath
-                ),
-                e
-            );
-            return false;
-        }
-
-        return sendEmailViaSparkpost(
-            fromEmail,
-            toEmail,
-            subject,
-            renderedData.get(0),
-            renderedData.get(1)
-        );
+    public static boolean sendEmail(AdminUser adminUser, String subject, String text, String html) {
+        return sendEmailViaSparkpost(OTP_ADMIN_DASHBOARD_EMAIL, adminUser.email, subject, text, html);
     }
 
     /**
