@@ -14,8 +14,6 @@ import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
 import com.twilio.rest.verify.v2.service.VerificationCreator;
 import com.twilio.type.PhoneNumber;
-import j2html.tags.ContainerTag;
-import j2html.tags.Tag;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -23,12 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 
-import static j2html.TagCreator.a;
-import static j2html.TagCreator.join;
-import static j2html.TagCreator.p;
-import static j2html.TagCreator.small;
-import static org.opentripplanner.middleware.bugsnag.jobs.BugsnagEventHandlingJob.OTP_ADMIN_DASHBOARD_URL;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
@@ -48,8 +42,6 @@ public class NotificationUtils {
     private static final String SPARKPOST_KEY = getConfigPropertyAsText("SPARKPOST_KEY");
     private static final String FROM_EMAIL = getConfigPropertyAsText("NOTIFICATION_FROM_EMAIL");
     private static final String OTP_ADMIN_DASHBOARD_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_EMAIL");
-    private static final String OTP_UI_NAME = getConfigPropertyAsText("OTP_UI_NAME");
-    private static final String OTP_UI_URL = getConfigPropertyAsText("OTP_UI_URL");
 
     /**
      * Send a SMS message to the provided phone number
@@ -118,37 +110,115 @@ public class NotificationUtils {
     }
 
     /**
+     * Send a text-only notification email for {@link OtpUser}, ensuring the correct from
+     * email address is used (i.e., {@link #FROM_EMAIL}).
+     */
+    public static boolean sendTextOnlyEmail(
+        OtpUser otpUser,
+        String subject,
+        String text
+    ) {
+        return sendEmailViaSparkpost(
+            FROM_EMAIL,
+            otpUser.email,
+            subject,
+            text,
+            null
+        );
+    }
+
+    /**
      * Send notification email for {@link OtpUser}, ensuring the correct from
      * email address is used (i.e., {@link #FROM_EMAIL}).
      */
-    public static boolean sendEmail(OtpUser otpUser, String subject, String text, ContainerTag html) {
-        // Inject manage subscriptions tag.
-        if (html != null) html.with(manageSubscriptions(OTP_UI_URL + "/#/account"));
-        return sendEmailViaSparkpost(FROM_EMAIL, otpUser.email, subject, text, html);
+    public static boolean sendEmail(
+        OtpUser otpUser,
+        String subject,
+        String textTemplatePath,
+        String htmlTemplatePath,
+        Object templateData
+    ) {
+        return sendEmail(
+            FROM_EMAIL,
+            otpUser.email,
+            subject,
+            textTemplatePath,
+            htmlTemplatePath,
+            templateData
+        );
     }
 
     /**
      * Send notification email for {@link AdminUser}, ensuring the correct from
      * email address is used (i.e., {@link #OTP_ADMIN_DASHBOARD_EMAIL}).
      */
-    public static boolean sendEmail(AdminUser adminUser, String subject, String text, ContainerTag html) {
-        // Inject manage subscriptions tag.
-        if (html != null) html.with(manageSubscriptions(OTP_ADMIN_DASHBOARD_URL + "/account"));
-        return sendEmailViaSparkpost(OTP_ADMIN_DASHBOARD_EMAIL, adminUser.email, subject, text, html);
+    public static boolean sendEmail(
+        AdminUser adminUser,
+        String subject,
+        String textTemplatePath,
+        String htmlTemplatePath,
+        Object templateData
+    ) {
+        return sendEmail(
+            OTP_ADMIN_DASHBOARD_EMAIL,
+            adminUser.email,
+            subject,
+            textTemplatePath,
+            htmlTemplatePath,
+            templateData
+        );
     }
 
     /**
-     * @return A "Manage my subscriptions" tag for email notifications.
+     * Helper to send an email that will attempt to render the given templates into a text and html string respectively.
      */
-    public static ContainerTag manageSubscriptions(String url) {
-        return p(small(join("Manage subscriptions", a("here").withHref(url), ".")));
+    public static boolean sendEmail(
+        String fromEmail,
+        String toEmail,
+        String subject,
+        String textTemplatePath,
+        String htmlTemplatePath,
+        Object templateData
+    ) {
+        List<String> renderedData;
+        try {
+            renderedData = TemplateUtils.renderMultipleTemplatesWithData(
+                templateData,
+                textTemplatePath,
+                htmlTemplatePath
+            );
+        } catch (Exception e) {
+            BugsnagReporter.reportErrorToBugsnag(
+                String.format(
+                    "Failed to render email using text template `%s` and html template `%s`.",
+                    textTemplatePath,
+                    htmlTemplatePath
+                ),
+                e
+            );
+            return false;
+        }
+
+        return sendEmailViaSparkpost(
+            fromEmail,
+            toEmail,
+            subject,
+            renderedData.get(0),
+            renderedData.get(1)
+        );
     }
 
     /**
      * Send notification email using Sparkpost.
      * TODO: determine if we should use sparkpost or sendgrid.
      */
-    private static boolean sendEmailViaSparkpost(String fromEmail, String toEmail, String subject, String text, ContainerTag html) {
+    private static boolean sendEmailViaSparkpost(
+        String fromEmail,
+        String toEmail,
+        String subject,
+        String text,
+        String html
+    ) {
         if (SPARKPOST_KEY == null) {
             LOG.error("Notifications disabled due to missing SPARKPOST_KEY. Skipping message to {} SUBJECT: {}", toEmail, subject);
             return false;
@@ -157,10 +227,13 @@ public class NotificationUtils {
             LOG.error("Notification skipped due to invalid FROM email (check config). Skipping message to {} SUBJECT: {}", toEmail, subject);
             return false;
         }
+        if (text == null && html == null) {
+            LOG.error("Notification skipped due to empty text and html bodies");
+            return false;
+        }
         try {
             Client client = new Client(SPARKPOST_KEY);
-            String renderedHtml = html != null ? html.render() : null;
-            Response response = client.sendMessage(fromEmail, toEmail, subject, text, renderedHtml);
+            Response response = client.sendMessage(fromEmail, toEmail, subject, text, html);
             LOG.info("Notification sent to {} status: {}", toEmail, response.getResponseMessage());
             return true;
             // TODO: Is there a more specific exception we're ok with here?

@@ -240,12 +240,12 @@ public class CheckMonitoredTrip implements Runnable {
                 success = NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString()) != null;
                 break;
             case "email":
-                success = NotificationUtils.sendEmail(otpUser, subject, body.toString(), null);
+                success = NotificationUtils.sendTextOnlyEmail(otpUser, subject, body.toString());
                 break;
             case "all":
                 // TODO better handle below when one of the following fails
                 success = NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString()) != null &&
-                    NotificationUtils.sendEmail(otpUser, subject, body.toString(), null);
+                    NotificationUtils.sendTextOnlyEmail(otpUser, subject, body.toString());
                 break;
             default:
                 break;

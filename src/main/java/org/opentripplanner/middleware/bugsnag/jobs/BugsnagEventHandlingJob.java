@@ -2,12 +2,12 @@ package org.opentripplanner.middleware.bugsnag.jobs;
 
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
-import j2html.tags.ContainerTag;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
@@ -17,16 +17,9 @@ import java.time.LocalTime;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static j2html.TagCreator.a;
-import static j2html.TagCreator.div;
-import static j2html.TagCreator.h1;
-import static j2html.TagCreator.join;
-import static j2html.TagCreator.p;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
  * This job is responsible for maintaining Bugsnag event data. This is achieved by managing the event request jobs
@@ -40,12 +33,10 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
  */
 public class BugsnagEventHandlingJob implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(BugsnagEventHandlingJob.class);
-    private static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS = getConfigPropertyAsInt(
+    private static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS = ConfigUtils.getConfigPropertyAsInt(
         "BUGSNAG_REPORTING_WINDOW_IN_DAYS",
         14
     );
-    public static final String OTP_ADMIN_DASHBOARD_URL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_URL");
-    private static final String OTP_ADMIN_DASHBOARD_NAME = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_NAME");
 
     /**
      * On each cycle get the latest event data request from Mongo. These event requests are initially populated by
@@ -113,25 +104,20 @@ public class BugsnagEventHandlingJob implements Runnable {
      */
     private void sendEmailForEvents(List<BugsnagEvent> newEvents) {
         // Construct email content.
-        String dashboardUrl = OTP_ADMIN_DASHBOARD_URL + "?dashboard=errors";
         String subject = String.format("%d new error events", newEvents.size());
-        String text = String.format("Visit the %s to view new errors: %s", OTP_ADMIN_DASHBOARD_NAME, dashboardUrl);
-        ContainerTag html = div(
-            h1(subject),
-            p(join(
-                "Visit the",
-                a(OTP_ADMIN_DASHBOARD_NAME).withHref(dashboardUrl),
-                "to view new errors."
-            ))
+        Map<String, Object> data = Map.of(
+            "subject", subject
         );
+
         // Notify subscribed users.
         for (AdminUser adminUser : Persistence.adminUsers.getAll()) {
             if (adminUser.subscriptions.contains(AdminUser.Subscription.NEW_ERROR)) {
                 NotificationUtils.sendEmail(
                     adminUser,
                     subject,
-                    text,
-                    html
+                    "EventErrorsText.ftl",
+                    "EventErrorsHtml.ftl",
+                    data
                 );
             }
         }
