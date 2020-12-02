@@ -7,8 +7,11 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -16,6 +19,7 @@ import java.util.stream.Stream;
  */
 public class ItineraryTest {
     private static final Itinerary blankItinerary = new Itinerary();
+    private static Itinerary itineraryWithoutTransitWithoutRentals;
     private static Itinerary itineraryWithTransitNoRentals;
     private static Itinerary itineraryWithRentalBikeWithoutTransit;
     private static Itinerary itineraryWithTransitAndRentalBike;
@@ -50,6 +54,9 @@ public class ItineraryTest {
 
         itineraryWithTransitNoRentals = new Itinerary();
         itineraryWithTransitNoRentals.legs = List.of(transitLeg, walkLeg);
+
+        itineraryWithoutTransitWithoutRentals = new Itinerary();
+        itineraryWithoutTransitWithoutRentals.legs = List.of(walkLeg);
 
         itineraryWithRentalBikeWithoutTransit = new Itinerary();
         itineraryWithRentalBikeWithoutTransit.legs = List.of(walkLeg, rentalBikeLeg);
@@ -95,6 +102,25 @@ public class ItineraryTest {
             Arguments.of(itineraryWithTransitAndRentalMicromobility, true, "Itinerary with transit and rental micromobility."),
             Arguments.of(itineraryWithTransitAndRideHail, true, "Itinerary with transit and ride hail."),
             Arguments.of(blankItinerary, false, "Blank itinerary.")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createCannotBeMonitoredTestCases")
+    public void canCheckCanBeMonitored(Itinerary itinerary, boolean expectedResult, Set<InvalidItineraryReason> expectedReasons) {
+        Assertions.assertEquals(expectedResult, itinerary.canBeMonitored());
+        Assertions.assertEquals(expectedReasons, itinerary.checkItineraryCanBeMonitored());
+    }
+
+    private static Stream<Arguments> createCannotBeMonitoredTestCases() {
+        return Stream.of(
+            Arguments.of(itineraryWithoutTransitWithoutRentals, false,
+                Set.of(InvalidItineraryReason.MISSING_TRANSIT)),
+            Arguments.of(itineraryWithRentalBikeWithoutTransit, false,
+                Set.of(InvalidItineraryReason.MISSING_TRANSIT, InvalidItineraryReason.HAS_RENTAL_OR_RIDE_HAIL)),
+            Arguments.of(itineraryWithTransitAndRentalBike, false,
+                Set.of(InvalidItineraryReason.HAS_RENTAL_OR_RIDE_HAIL)),
+            Arguments.of(itineraryWithTransitNoRentals, true, Collections.EMPTY_SET)
         );
     }
 }

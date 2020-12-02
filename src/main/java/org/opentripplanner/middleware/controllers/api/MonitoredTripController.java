@@ -8,11 +8,14 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
 import spark.Response;
 
 import java.net.URISyntaxException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
@@ -158,22 +161,18 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     /**
      * Checks that the given {@link MonitoredTrip} can be monitored (i.e., that the underlying
-     * {@link org.opentripplanner.middleware.otp.response.Itinerary} has transit and no rentals/ride hailing).
+     * {@link org.opentripplanner.middleware.otp.response.Itinerary} can be monitored).
      */
     private void checkTripCanBeMonitored(MonitoredTrip trip, Request request) {
-        boolean hasTransit = trip.itinerary.hasTransit();
-        boolean hasRentalOrRideHail = trip.itinerary.hasRentalOrRideHail();
-
-        if (!hasTransit || hasRentalOrRideHail) {
-            String rejectReason = "";
-            if (!hasTransit) rejectReason += "it does not include a transit leg";
-            if (!hasTransit && hasRentalOrRideHail) rejectReason += ", and ";
-            if (hasRentalOrRideHail) rejectReason += "it includes a rental or ride hail";
-
+        Set<InvalidItineraryReason> invalidReasons = trip.itinerary.checkItineraryCanBeMonitored();
+        if (!invalidReasons.isEmpty()) {
+            String reasonsString = invalidReasons.stream()
+                .map(InvalidItineraryReason::getMessage)
+                .collect(Collectors.joining(", "));
             logMessageAndHalt(
                 request,
                 HttpStatus.BAD_REQUEST_400,
-                String.format("This trip cannot be monitored because %s.", rejectReason)
+                String.format("The trip cannot be monitored: %s", reasonsString)
             );
         }
     }

@@ -2,13 +2,16 @@ package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -84,6 +87,25 @@ public class Itinerary implements Cloneable {
      * Leg information for this itinerary.
      */
     public List<Leg> legs = null;
+
+    /**
+     * @return set of reasons for why the itinerary cannot be monitored.
+     */
+    public Set<InvalidItineraryReason> checkItineraryCanBeMonitored() {
+        // Check the itinerary for various conditions needed for monitoring.
+        Set<InvalidItineraryReason> reasons = new HashSet<>();
+        if (!hasTransit()) reasons.add(InvalidItineraryReason.MISSING_TRANSIT);
+        if (hasRentalOrRideHail()) reasons.add(InvalidItineraryReason.HAS_RENTAL_OR_RIDE_HAIL);
+        // TODO: Add additional checks here.
+        return reasons;
+    }
+
+    /**
+     * @return true if the itinerary can be monitored.
+     */
+    public boolean canBeMonitored() {
+        return checkItineraryCanBeMonitored().isEmpty();
+    }
 
     /**
      * Determines whether the itinerary includes transit.
