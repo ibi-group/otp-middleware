@@ -23,9 +23,6 @@ public class BugsnagJobs {
     private static final int BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES =
         getConfigPropertyAsInt("BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES", 1);
 
-    private static final int BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES =
-        getConfigPropertyAsInt("BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES", 1);
-
     private static final Logger LOG = LoggerFactory.getLogger(BugsnagReporter.class);
 
     /**

@@ -2,13 +2,11 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
-import com.google.common.collect.Maps;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Sorts;
 import org.opentripplanner.middleware.bugsnag.EventSummary;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.BugsnagEvent;
-import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -80,6 +78,7 @@ public class ErrorEventsController implements Endpoint {
         List<EventSummary> eventSummaries = events
             .map(event -> new EventSummary(componentsByProjectId.get(event.projectId), event))
             .into(new ArrayList<>());
-        return new ResponseList<>(EventSummary.class, eventSummaries, offset, limit, Persistence.bugsnagEvents.getCount());
+        long count = Persistence.bugsnagEvents.getCount();
+        return new ResponseList<>(EventSummary.class, eventSummaries, offset, limit, count);
     }
 }

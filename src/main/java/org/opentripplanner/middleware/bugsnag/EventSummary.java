@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.bugsnag;
 
 import org.opentripplanner.middleware.bugsnag.response.EventException;
 import org.opentripplanner.middleware.models.BugsnagEvent;
-import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 
 import java.util.Date;

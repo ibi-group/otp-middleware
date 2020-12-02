@@ -58,27 +58,36 @@ public class HttpUtils {
     }
 
     /**
-     * Makes an http get/post request and returns the response. The request is based on the provided params.
+     * Makes an http get/delete/post request and returns the response. The request is based on the provided params.
      */
     public static HttpResponse<String> httpRequestRawResponse(URI uri, int connectionTimeout, HttpMethod method,
                                                               Map<String, String> headers, String bodyContent) {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder()
             .uri(uri)
-            .timeout(Duration.ofSeconds(connectionTimeout))
-            .GET();
-        if (method.equals(HttpMethod.GET)) {
-            httpRequestBuilder.GET();
-        }
-
-        if (method.equals(HttpMethod.DELETE)) {
-            httpRequestBuilder.DELETE();
-        }
-
-        if (method.equals(HttpMethod.POST)) {
-            httpRequestBuilder.POST(HttpRequest
-                .BodyPublishers
-                .ofString(bodyContent));
+            .timeout(Duration.ofSeconds(connectionTimeout));
+        switch (method) {
+            case GET:
+                httpRequestBuilder.GET();
+                break;
+            case DELETE:
+                httpRequestBuilder.DELETE();
+                break;
+            case POST:
+                httpRequestBuilder.POST(HttpRequest
+                    .BodyPublishers
+                    .ofString(bodyContent));
+                break;
+            case HEAD:
+            case OPTIONS:
+            case PUT:
+            case TRACE:
+            case CONNECT:
+            case MOVE:
+            case PROXY:
+            case PRI:
+            default:
+                throw new IllegalArgumentException(String.format("HTTP method '%s' not currently supported!", method));
         }
 
         if (headers != null && !headers.isEmpty()) {

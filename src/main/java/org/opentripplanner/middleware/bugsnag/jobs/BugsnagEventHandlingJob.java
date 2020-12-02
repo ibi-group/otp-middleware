@@ -65,7 +65,8 @@ public class BugsnagEventHandlingJob implements Runnable {
             LOG.debug("No pending event data requests found.");
         }
         // FIXME: Do we want to remove these stale events? This could be confusing for users of the system and could cause
-        //  issues tracing down issues over time.
+        //  issues tracing down issues over time. Maybe the removal window could be greater than the reporting window
+        //  (BUGSNAG_REPORTING_WINDOW_IN_DAYS) to give more flexibility?
         removeStaleEvents();
     }
 

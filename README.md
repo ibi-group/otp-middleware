@@ -67,7 +67,6 @@ that don't have default values (N/A) can be obtained my following the steps in t
 | BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES | 1 | Frequency in minutes to obtain events. |
 | BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES | 5 | Frequency in minutes to trigger event requests. |
 | BUGSNAG_ORGANIZATION | N/A | The name of the organization defined within Bugsnag. This is used as a starting point with the Bugsnag API to obtain the organization ID which in-turn is use with most API calls. | 
-| BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES | 1 | Frequency in minutes to obtain projects. |
 | BUGSNAG_PROJECT_NOTIFIER_API_KEY | N/A | Used to report project errors to Bugsnag. |
 | BUGSNAG_REPORTING_WINDOW_IN_DAYS | 14 | The number of days in the past to start retrieving event information. |  
 

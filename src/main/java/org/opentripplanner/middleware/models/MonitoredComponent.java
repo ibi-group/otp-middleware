@@ -49,7 +49,7 @@ public class MonitoredComponent extends Model {
                 throw new IllegalArgumentException("MONITORED_COMPONENTS should not be missing.");
             }
         } catch (Exception e) {
-            LOG.error("Could not parse MONITORED_COMPONENTS from config.");
+            LOG.error("Could not parse MONITORED_COMPONENTS from config.", e);
             return;
         }
         for (MonitoredComponent configComponent : configComponents) {
