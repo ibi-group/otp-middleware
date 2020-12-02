@@ -26,7 +26,7 @@ public class TemplateUtilsTest extends OtpMiddlewareTest {
     @ParameterizedTest
     @MethodSource("createTemplateRenderingTestCases")
     public void canRenderTemplates(TemplateRenderingTestCase testCase) throws Exception {
-        assertThat(TemplateUtils.renderTemplateWithData(testCase.templatePath, testCase.data), matchesSnapshot());
+        assertThat(TemplateUtils.renderTemplate(testCase.templatePath, testCase.data), matchesSnapshot());
     }
 
     /**
@@ -38,18 +38,25 @@ public class TemplateUtilsTest extends OtpMiddlewareTest {
         List<TemplateRenderingTestCase> testCases = new ArrayList<>();
 
         // Event Errors (this is a template for an email that is sent in BugsnagEventHandlingJob#sendEmailForEvents)
-        Map<String, String> data = Map.of("subject", "test subject");
-        testCases.add(new TemplateRenderingTestCase(data, "EventErrorsText.ftl"));
-        testCases.add(new TemplateRenderingTestCase(data, "EventErrorsHtml.ftl"));
-
+        Map<String, String> errorEventsData = Map.of("subject", "test subject");
+        testCases.add(new TemplateRenderingTestCase(errorEventsData, "EventErrorsText.ftl"));
+        testCases.add(new TemplateRenderingTestCase(errorEventsData, "EventErrorsHtml.ftl"));
+        // Trip Monitor Notifications tests (for CheckMonitoredTrip#sendNotifications).
+        Map<String, Object> notificationsData = Map.of(
+            "tripId", "18f642d5-f7a8-475a-9469-800129e6c0b3",
+            "notifications", List.of("Test notification.", "Another notification.")
+        );
+        testCases.add(new TemplateRenderingTestCase(notificationsData, "MonitoredTripSms.ftl"));
+        testCases.add(new TemplateRenderingTestCase(notificationsData, "MonitoredTripText.ftl"));
+        testCases.add(new TemplateRenderingTestCase(notificationsData, "MonitoredTripHtml.ftl"));
         return testCases;
     }
 
     private static class TemplateRenderingTestCase {
-        public final Object data;
+        public final Map data;
         public final String templatePath;
 
-        private TemplateRenderingTestCase(Object data, String templatePath) {
+        private TemplateRenderingTestCase(Map data, String templatePath) {
             this.data = data;
             this.templatePath = templatePath;
         }

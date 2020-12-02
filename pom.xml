@@ -302,6 +302,21 @@
             <version>0.5</version>
         </dependency>
 
+        <!-- Hamcrest is an assertion library that prints pretty messages when assertions fail. -->
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- This Hamcrest dep is needed to prevent a missing a NoSuchMethodError when a snapshot mismatch occurs. -->
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-library</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Used for unit testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -315,14 +330,6 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
             <version>5.6.2</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Hamcrest is an assertion library that prints pretty messages when assertions fail -->
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>java-hamcrest</artifactId>
-            <version>2.0.0.0</version>
             <scope>test</scope>
         </dependency>
 

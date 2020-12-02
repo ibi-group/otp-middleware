@@ -1,5 +1,5 @@
 <#macro email_body>
-<#-- Provide an error message in the default case. If this hasn't been overwritten by an inhereting
+<#-- Provide an error message in the default case. If this hasn't been overwritten by an inheriting
         component, then an error has occurred. -->
 The contents of this email haven't been configured! Sorry about that! Please contact the webmaster.
 </#macro>

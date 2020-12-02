@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.utils;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateModelException;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,12 +42,14 @@ public class TemplateUtils {
     /**
      * Renders a template given an object.
      */
-    public static String renderTemplateWithData(
-        String templatePath,
-        Object data
-    ) throws IOException, TemplateException {
+    public static String renderTemplate(String templatePath, Object data) throws IOException, TemplateException {
         StringWriter stringWriter = new StringWriter();
-        config.getTemplate(templatePath).process(data, stringWriter);
-        return stringWriter.toString();
+        try {
+            config.getTemplate(templatePath).process(data, stringWriter);
+            return stringWriter.toString();
+        } catch (TemplateException | IOException e) {
+            BugsnagReporter.reportErrorToBugsnag("Failed to render template", templatePath, e);
+            throw e;
+        }
     }
 }

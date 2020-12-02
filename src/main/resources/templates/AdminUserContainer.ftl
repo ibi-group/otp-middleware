@@ -1,9 +1,9 @@
 <#include "BaseEmail.ftl">
 
 <#macro email_main>
-<#-- Provide an error message in the default case. If this hasn't been overwritten by an inhereting
+<#-- Provide an error message in the default case. If this hasn't been overwritten by an inheriting
         component, then an error has occurred. -->
-    The main content of this email haven't been configured! Sorry about that! Please contact the webmaster.
+    The main content of this email hasn't been configured! Sorry about that! Please contact the webmaster.
 </#macro>
 
 <#macro email_body>
@@ -19,7 +19,7 @@
 <div>
     <p>
         <small>
-            Manage Subscriptions <a href="${OTP_ADMIN_DASHBOARD_URL}/account">here</a>.
+            Manage subscriptions <a href="${OTP_ADMIN_DASHBOARD_URL}/account">here</a>.
         </small>
     </p>
 </div>
