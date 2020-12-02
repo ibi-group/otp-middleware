@@ -144,13 +144,6 @@ public class ItineraryUtils {
         return modes;
     }
 
-    /*
-     * TODO: fully implement
-     */
-    public static boolean itineraryIsSavable(Itinerary itinerary) {
-        return true;
-    }
-
     /**
      * Returns true if the itineraries match for the purposes of trip monitoring.
      *
@@ -159,7 +152,7 @@ public class ItineraryUtils {
      */
     public static boolean itinerariesMatch(Itinerary referenceItinerary, Itinerary candidateItinerary) {
         // Make sure both itineraries are monitorable before continuing.
-        if (!itineraryIsSavable(referenceItinerary) || !itineraryIsSavable(candidateItinerary)) return false;
+        if (!referenceItinerary.canBeMonitored() || !candidateItinerary.canBeMonitored()) return false;
 
         // make sure itineraries have same amount of legs
         if (referenceItinerary.legs.size() != candidateItinerary.legs.size()) return false;
