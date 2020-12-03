@@ -95,7 +95,7 @@ public class TestUtils {
      */
     private static HashMap<String, String> getMockHeaders(AbstractUser requestingUser) {
         HashMap<String, String> headers = new HashMap<>();
-        String scope = OtpUser.SCOPE;
+        String scope = null;
         // If auth is disabled, simply place the Auth0 user ID in the authorization header, which will be extracted from
         // the request when received.
         if (isAuthDisabled()) {
@@ -120,6 +120,7 @@ public class TestUtils {
             if (otpUserFromDB != null && otpUserFromDB.applicationId != null) {
                 return headers;
             }
+            scope = OtpUser.SCOPE;
         }
 
         // Otherwise, get a valid oauth token for the user
