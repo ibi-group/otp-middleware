@@ -53,10 +53,10 @@ public class TemplateUtilsTest extends OtpMiddlewareTest {
     }
 
     private static class TemplateRenderingTestCase {
-        public final Map data;
+        public final Object data;
         public final String templatePath;
 
-        private TemplateRenderingTestCase(Map data, String templatePath) {
+        private TemplateRenderingTestCase(Object data, String templatePath) {
             this.data = data;
             this.templatePath = templatePath;
         }
