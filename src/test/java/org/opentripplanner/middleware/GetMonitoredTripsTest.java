@@ -161,7 +161,6 @@ public class GetMonitoredTripsTest {
 
         // Set mock OTP responses so that trip existence checks in the
         // POST call below to save the monitored trip can pass.
-        // The mocks will be reset in the @AfterEach phase.
         TestUtils.setupOtpMocks(TestUtils.createMockOtpResponsesForTripExistence());
 
         HttpResponse<String> createTripResponse = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
@@ -169,6 +168,10 @@ public class GetMonitoredTripsTest {
             otpUser,
             HttpUtils.REQUEST_METHOD.POST
         );
+
+        // Reset mocks after POST, because the next call to this function will need it.
+        // (The mocks will be also reset in the @AfterEach phase if there are any failures.)
+        TestUtils.resetOtpMocks();
 
         assertEquals(HttpStatus.OK_200, createTripResponse.statusCode());
     }
