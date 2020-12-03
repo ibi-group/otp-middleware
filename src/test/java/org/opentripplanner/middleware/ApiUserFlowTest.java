@@ -205,7 +205,6 @@ public class ApiUserFlowTest {
 
         // Set mock OTP responses so that trip existence checks in the
         // POST call below to save the monitored trip can pass.
-        // The mocks will be reset in the @AfterEach phase.
         TestUtils.setupOtpMocks(TestUtils.createMockOtpResponsesForTripExistence());
 
         HttpResponse<String> createTripResponseAsApiUser = makeRequest(
@@ -214,6 +213,10 @@ public class ApiUserFlowTest {
             apiUserHeaders,
             HttpUtils.REQUEST_METHOD.POST
         );
+
+        // After POST is complete, reset mock OTP responses for subsequent mock OTP calls below.
+        // (The mocks will also be reset in the @AfterEach phase if there are failures.)
+        TestUtils.resetOtpMocks();
 
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.statusCode());
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(
