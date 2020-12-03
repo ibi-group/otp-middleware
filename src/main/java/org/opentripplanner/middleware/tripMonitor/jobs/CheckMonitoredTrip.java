@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -45,10 +44,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(
-        DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
-    );
 
     public final MonitoredTrip trip;
     /**
@@ -472,7 +467,7 @@ public class CheckMonitoredTrip implements Runnable {
         while (!trip.isActiveOnDate(targetZonedDateTime)) {
             targetZonedDateTime = targetZonedDateTime.plusDays(1);
         }
-        targetDate = targetZonedDateTime.format(DATE_FORMATTER);
+        targetDate = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
 
         // execute trip plan request for the target time
         LOG.info("Attempting to calculate next trip on target date {}", targetDate);
