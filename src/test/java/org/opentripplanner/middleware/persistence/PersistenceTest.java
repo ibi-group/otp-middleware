@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
+import static org.opentripplanner.middleware.testUtils.PersistenceTestUtils.createUser;
 
 /**
  * Tests to verify that persistence in MongoDB collections are functioning properly. A number of

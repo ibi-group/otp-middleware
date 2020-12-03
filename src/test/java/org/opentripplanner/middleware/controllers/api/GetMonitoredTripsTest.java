@@ -1,21 +1,21 @@
-package org.opentripplanner.middleware;
+package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.persistence.PersistenceUtil;
+import org.opentripplanner.middleware.testUtils.PersistenceTestUtils;
+import org.opentripplanner.middleware.testUtils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -28,12 +28,12 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.TEMP_AUTH0_USER_PASSWORD;
-import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedGet;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
+import static org.opentripplanner.middleware.testUtils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
+import static org.opentripplanner.middleware.testUtils.ApiTestUtils.mockAuthenticatedGet;
+import static org.opentripplanner.middleware.testUtils.ApiTestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.testUtils.CommonTestUtils.isEndToEnd;
 
 /**
  * Tests to simulate getting trips as an Otp user with enhanced admin credentials. The following config parameters must
@@ -71,11 +71,11 @@ public class GetMonitoredTripsTest {
         assumeTrue(isEndToEnd);
         setAuthDisabled(false);
         // Mock the OTP server TODO: Run a live OTP instance?
-        TestUtils.mockOtpServer();
+        OtpTestUtils.mockOtpServer();
         String multiUserEmail = String.format("test-%s@example.com", UUID.randomUUID().toString());
-        soloOtpUser = PersistenceUtil.createUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
-        multiOtpUser = PersistenceUtil.createUser(multiUserEmail);
-        multiAdminUser = PersistenceUtil.createAdminUser(multiUserEmail);
+        soloOtpUser = PersistenceTestUtils.createUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
+        multiOtpUser = PersistenceTestUtils.createUser(multiUserEmail);
+        multiAdminUser = PersistenceTestUtils.createAdminUser(multiUserEmail);
         try {
             // Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
             // from being able to use TEMP_AUTH0_USER_PASSWORD.
@@ -116,7 +116,7 @@ public class GetMonitoredTripsTest {
     public void canGetOwnMonitoredTrips() throws URISyntaxException, JsonProcessingException {
 
         // Create trip as Otp user 1.
-        MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = soloOtpUser.id;
         HttpResponse<String> createTrip1Response = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
@@ -127,7 +127,7 @@ public class GetMonitoredTripsTest {
         assertEquals(HttpStatus.OK_200, createTrip1Response.statusCode());
 
         // Create trip as Otp user 2.
-        monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = multiOtpUser.id;
         HttpResponse<String> createTripResponse2 = mockAuthenticatedRequest(MONITORED_TRIP_PATH,

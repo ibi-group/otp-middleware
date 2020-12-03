@@ -21,7 +21,7 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.*;
+import static org.opentripplanner.middleware.testUtils.PersistenceTestUtils.*;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserAndDateRange;
 
 /**

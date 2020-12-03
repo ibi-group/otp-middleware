@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware;
+package org.opentripplanner.middleware.utils;
 
 import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
@@ -6,15 +6,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
+import static org.opentripplanner.middleware.testUtils.CommonTestUtils.isEndToEnd;
+import static org.opentripplanner.middleware.testUtils.PersistenceTestUtils.createUser;
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**

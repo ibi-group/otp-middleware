@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware;
+package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
@@ -8,13 +8,15 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.persistence.PersistenceUtil;
+import org.opentripplanner.middleware.testUtils.PersistenceTestUtils;
+import org.opentripplanner.middleware.testUtils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -30,18 +32,18 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.TEMP_AUTH0_USER_PASSWORD;
-import static org.opentripplanner.middleware.TestUtils.makeDeleteRequest;
-import static org.opentripplanner.middleware.TestUtils.makeGetRequest;
-import static org.opentripplanner.middleware.TestUtils.makeRequest;
-import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedGet;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PROXY_ENDPOINT;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
+import static org.opentripplanner.middleware.testUtils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
+import static org.opentripplanner.middleware.testUtils.ApiTestUtils.makeDeleteRequest;
+import static org.opentripplanner.middleware.testUtils.ApiTestUtils.makeGetRequest;
+import static org.opentripplanner.middleware.testUtils.ApiTestUtils.makeRequest;
+import static org.opentripplanner.middleware.testUtils.ApiTestUtils.mockAuthenticatedGet;
+import static org.opentripplanner.middleware.testUtils.ApiTestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.testUtils.CommonTestUtils.isEndToEnd;
 
 /**
  * Tests to simulate API user flow. The following config parameters must be set in configurations/default/env.yml for
@@ -92,9 +94,9 @@ public class ApiUserFlowTest {
         OtpMiddlewareTest.setUp();
         assumeTrue(testsShouldRun());
         // Mock the OTP server TODO: Run a live OTP instance?
-        TestUtils.mockOtpServer();
+        OtpTestUtils.mockOtpServer();
         // As a pre-condition, create an API User with API key.
-        apiUser = PersistenceUtil.createApiUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
+        apiUser = PersistenceTestUtils.createApiUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
         apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
         // Create, but do not persist, an OTP user.
         otpUser = new OtpUser();
@@ -183,7 +185,7 @@ public class ApiUserFlowTest {
         OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.body(), OtpUser.class);
 
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
-        MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
         HttpResponse<String> createTripResponseAsOtpUser = mockAuthenticatedRequest(

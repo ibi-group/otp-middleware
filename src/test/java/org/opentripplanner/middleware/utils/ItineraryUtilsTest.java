@@ -8,7 +8,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
-import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
@@ -17,6 +16,8 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.testUtils.CommonTestUtils;
+import org.opentripplanner.middleware.testUtils.OtpTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,8 +33,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
-import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
+import static org.opentripplanner.middleware.testUtils.OtpTestUtils.DEFAULT_PLAN_URI;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
@@ -53,17 +53,17 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
     @BeforeAll
     public static void setup() throws IOException {
-        TestUtils.mockOtpServer();
+        OtpTestUtils.mockOtpServer();
 
         // Contains an OTP response with an itinerary found.
         // (We are reusing an existing response. The exact contents of the response does not matter
         // for the purposes of this class.)
-        String mockPlanResponse = FileUtils.getFileContents(
-            TEST_RESOURCE_PATH + "persistence/planResponse.json"
+        String mockPlanResponse = CommonTestUtils.getResourceFileContentsAsString(
+            "otp/response/planResponse.json"
         );
         // Contains an OTP response with no itinerary found.
-        String mockErrorResponse = FileUtils.getFileContents(
-            TEST_RESOURCE_PATH + "persistence/planErrorResponse.json"
+        String mockErrorResponse = CommonTestUtils.getResourceFileContentsAsString(
+            "otp/response/planErrorResponse.json"
         );
 
         otpDispatcherPlanResponse = new OtpDispatcherResponse(mockPlanResponse, DEFAULT_PLAN_URI);
@@ -73,7 +73,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
     @AfterEach
     public void tearDownAfterTest() {
-        TestUtils.resetOtpMocks();
+        OtpTestUtils.resetOtpMocks();
     }
 
     /**
@@ -85,7 +85,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
         // Set mocks to a list of responses with itineraries.
         OtpResponse resp = otpDispatcherPlanResponse.getResponse();
-        TestUtils.setupOtpMocks(List.of(resp, resp, resp, resp, resp));
+        OtpTestUtils.setupOtpMocks(List.of(resp, resp, resp, resp, resp));
 
         // Also set trip itinerary to the same for easy/lazy match.
         Itinerary expectedItinerary = resp.plan.itineraries.get(0);
@@ -126,7 +126,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
         // Set mocks to a list of responses, one without an itinerary.
         OtpResponse resp = otpDispatcherPlanResponse.getResponse();
-        TestUtils.setupOtpMocks(List.of(resp, resp, resp, otpDispatcherPlanErrorResponse.getResponse(), resp));
+        OtpTestUtils.setupOtpMocks(List.of(resp, resp, resp, otpDispatcherPlanErrorResponse.getResponse(), resp));
 
         // Also set trip itinerary to the same for easy/lazy match.
         trip.itinerary = resp.plan.itineraries.get(0);
