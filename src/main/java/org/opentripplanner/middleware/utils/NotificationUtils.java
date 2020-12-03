@@ -44,7 +44,14 @@ public class NotificationUtils {
     private static final String FROM_EMAIL = getConfigPropertyAsText("NOTIFICATION_FROM_EMAIL");
     public static final String OTP_ADMIN_DASHBOARD_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_EMAIL");
 
-    public static String sendSMS(OtpUser otpUser, String smsTemplate, Map<String, Object> data) {
+    /**
+     * Send templated SMS to {@link OtpUser}.
+     * @param otpUser       target user
+     * @param smsTemplate   template to use for SMS message
+     * @param data          template data
+     * @return              messageId if message was successful (null otherwise)
+     */
+    public static String sendSMS(OtpUser otpUser, String smsTemplate, Object data) {
         if (!otpUser.isPhoneNumberVerified) {
             LOG.error("Cannot send SMS to unverified user ({})!", otpUser.email);
             return null;
@@ -53,15 +60,17 @@ public class NotificationUtils {
             String body = TemplateUtils.renderTemplate(smsTemplate, data);
             return sendSMS(otpUser.phoneNumber, body);
         } catch (TemplateException | IOException e) {
-            // This catch indicates there was an error rendering the template.
+            // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
+            // handles Bugsnag reporting/error logging, so that is not needed here.
             return null;
         }
     }
+
     /**
-     * Send a SMS message to the provided phone number
-     * @param toPhone - e.g., +15551234
-     * @param body - SMS message body
-     * @return messageId if message was successful (null otherwise)
+     * Send a SMS message to the provided phone number.
+     * @param toPhone   e.g., +15551234
+     * @param body      SMS message body
+     * @return          messageId if message was successful (null otherwise)
      */
     public static String sendSMS(String toPhone, String body) {
         if (TWILIO_ACCOUNT_SID == null || TWILIO_AUTH_TOKEN == null) {
@@ -128,7 +137,7 @@ public class NotificationUtils {
     }
 
     /**
-     * Send notification email for {@link OtpUser}, ensuring the correct from
+     * Send notification email to {@link OtpUser}, ensuring the correct from
      * email address is used (i.e., {@link #FROM_EMAIL}).
      */
     public static boolean sendEmail(
@@ -136,24 +145,34 @@ public class NotificationUtils {
         String subject,
         String textTemplate,
         String htmlTemplate,
-        Map<String, Object> data
+        Object data
     ) {
         return sendEmail(FROM_EMAIL, otpUser.email, subject, textTemplate, htmlTemplate, data);
     }
 
+    /**
+     * Send notification email to {@link AdminUser}, ensuring the correct from
+     * email address is used (i.e., {@link #OTP_ADMIN_DASHBOARD_EMAIL}).
+     */
     public static boolean sendEmail(
         AdminUser adminUser,
         String subject,
         String textTemplate,
         String htmlTemplate,
-        Map<String, Object> data
+        Object data
     ) {
         return sendEmail(OTP_ADMIN_DASHBOARD_EMAIL, adminUser.email, subject, textTemplate, htmlTemplate, data);
     }
 
     /**
-     * Send notification email for {@link AdminUser}, ensuring the correct from
-     * email address is used (i.e., {@link #OTP_ADMIN_DASHBOARD_EMAIL}).
+     * Send templated email using SparkPost.
+     * @param fromEmail     from email address
+     * @param toEmail       recipient email address
+     * @param subject       email subject liine
+     * @param textTemplate  template to use for email in text format
+     * @param htmlTemplate  template to use for email in HTML format
+     * @param data          template data
+     * @return              whether the email was sent successfully
      */
     private static boolean sendEmail(
         String fromEmail,
@@ -161,14 +180,15 @@ public class NotificationUtils {
         String subject,
         String textTemplate,
         String htmlTemplate,
-        Map<String, Object> data
+        Object data
     ) {
         try {
             String text = TemplateUtils.renderTemplate(textTemplate, data);
             String html = TemplateUtils.renderTemplate(htmlTemplate, data);
             return sendEmailViaSparkpost(fromEmail, toEmail, subject, text, html);
         } catch (TemplateException | IOException e) {
-            // This catch indicates there was an error rendering the template.
+            // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
+            // handles Bugsnag reporting/error logging, so that is not needed here.
             return false;
         }
     }
