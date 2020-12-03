@@ -101,16 +101,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         return new OtpDispatcherResponse(mockPlanResponse, DEFAULT_PLAN_URI);
     }
 
-    public static List<OtpResponse> createMockOtpResponsesForTripExistence() {
-        // Set up monitored days and mock responses for itinerary existence check, ordered by day.
-        LocalDate today = DateTimeUtils.nowAsLocalDate();
-        List<String> monitoredTripDates = new ArrayList<>();
-        for (int i = 0; i < ItineraryUtils.ITINERARY_CHECK_WINDOW; i++) {
-            monitoredTripDates.add(DateTimeUtils.DEFAULT_DATE_FORMATTER.format(today.plusDays(i)));
-        }
-        return getMockDatedOtpResponses(monitoredTripDates);
-    }
-
     @AfterEach
     public void tearDownAfterTest() {
         TestUtils.resetOtpMocks();
@@ -179,20 +169,20 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
     /**
      * @return The new {@link Date} object with the date portion set to the specified {@link LocalDate} in OTP timezone.
      */
-    public static Date getNewItineraryDate(Date itineraryDate, LocalDate date) {
-        Instant startInstant = itineraryDate.toInstant();
-
-        return Date.from(LocalDateTime.of(
-            date,
-            LocalTime.ofInstant(startInstant, OTP_ZONE_ID)
-        ).toInstant(OTP_ZONE_ID.getRules().getOffset(startInstant)));
+    private static Date getNewItineraryDate(Date itineraryDate, LocalDate date) {
+        return new Date(
+            ZonedDateTime.ofInstant(itineraryDate.toInstant(), DateTimeUtils.getOtpZoneId())
+                .with(date)
+                .toInstant()
+                .toEpochMilli()
+        );
     }
 
     /**
      * Creates a set of mock OTP responses by making copies of #OTP_DISPATCHER_PLAN_RESPONSE,
      * each copy having the itinerary date set to one of the dates from the specified dates list.
      */
-    private static List<OtpResponse> getMockDatedOtpResponses(List<String> dates) {
+    public static List<OtpResponse> getMockDatedOtpResponses(List<String> dates) {
         // Set mocks to a list of responses with itineraries, ordered by day.
         List<OtpResponse> mockOtpResponses = new ArrayList<>();
 

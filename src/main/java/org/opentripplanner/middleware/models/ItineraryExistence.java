@@ -185,14 +185,15 @@ public class ItineraryExistence extends Model {
             // Handle response if valid itineraries exist.
             if (plan != null && plan.itineraries != null) {
                 for (Itinerary itineraryCandidate : plan.itineraries) {
-                    // Make sure itinerary is same day as request date
-                    if (ItineraryUtils.occursOnSameServiceDay(itineraryCandidate, otpRequest.dateTime, tripIsArriveBy)) {
-                        // If a matching itinerary is found, save the date with the matching itinerary.
-                        // The matching itinerary will replace the original trip.itinerary.
-                        if (ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)) {
-                            result.handleValidDate(otpRequest.dateTime, itineraryCandidate);
-                            hasMatchingItinerary = true;
-                        }
+                    // If a matching itinerary on the same service day as the request date is found,
+                    // save the date with the matching itinerary.
+                    // (The matching itinerary will replace the original trip.itinerary.)
+                    if (
+                        ItineraryUtils.occursOnSameServiceDay(itineraryCandidate, otpRequest.dateTime, tripIsArriveBy) &&
+                        ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)
+                    ) {
+                        result.handleValidDate(otpRequest.dateTime, itineraryCandidate);
+                        hasMatchingItinerary = true;
                     }
                 }
             }

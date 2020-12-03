@@ -10,8 +10,11 @@ import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
+import org.opentripplanner.middleware.utils.ItineraryUtilsTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -21,6 +24,8 @@ import spark.Service;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -276,5 +281,15 @@ public class TestUtils {
             "28.54834,-81.37745",
             "08:35"
         );
+    }
+
+    public static List<OtpResponse> createMockOtpResponsesForTripExistence() {
+        // Set up monitored days and mock responses for itinerary existence check, ordered by day.
+        LocalDate today = DateTimeUtils.nowAsLocalDate();
+        List<String> monitoredTripDates = new ArrayList<>();
+        for (int i = 0; i < ItineraryUtils.ITINERARY_CHECK_WINDOW; i++) {
+            monitoredTripDates.add(DateTimeUtils.DEFAULT_DATE_FORMATTER.format(today.plusDays(i)));
+        }
+        return ItineraryUtilsTest.getMockDatedOtpResponses(monitoredTripDates);
     }
 }

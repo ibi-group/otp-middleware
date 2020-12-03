@@ -5,6 +5,7 @@ import com.auth0.json.mgmt.users.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.auth.Auth0Users;
@@ -15,7 +16,6 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
 import org.opentripplanner.middleware.utils.HttpUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtilsTest;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
@@ -108,6 +108,11 @@ public class GetMonitoredTripsTest {
         if (multiAdminUser != null) multiAdminUser.delete();
     }
 
+    @AfterEach
+    public void tearDownAfterTest() {
+        TestUtils.resetOtpMocks();
+    }
+
     /**
      * Create trips for two different Otp users and attempt to get both trips with Otp user that has 'enhanced' admin
      * credentials.
@@ -156,16 +161,14 @@ public class GetMonitoredTripsTest {
 
         // Set mock OTP responses so that trip existence checks in the
         // POST call below to save the monitored trip can pass.
-        TestUtils.setupOtpMocks(ItineraryUtilsTest.createMockOtpResponsesForTripExistence());
+        // The mocks will be reset in the @AfterEach phase.
+        TestUtils.setupOtpMocks(TestUtils.createMockOtpResponsesForTripExistence());
 
         HttpResponse<String> createTripResponse = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
             otpUser,
             HttpUtils.REQUEST_METHOD.POST
         );
-
-        // After POST is complete, reset mock OTP responses for subsequent tests.
-        TestUtils.resetOtpMocks();
 
         assertEquals(HttpStatus.OK_200, createTripResponse.statusCode());
     }

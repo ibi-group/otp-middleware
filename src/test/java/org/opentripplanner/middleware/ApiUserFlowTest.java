@@ -6,6 +6,7 @@ import com.auth0.json.mgmt.users.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
@@ -17,7 +18,6 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtilsTest;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,6 +132,11 @@ public class ApiUserFlowTest {
         if (otpUserMatchingApiUser != null) otpUserMatchingApiUser.delete(false);
     }
 
+    @AfterEach
+    public void tearDownAfterTest() {
+        TestUtils.resetOtpMocks();
+    }
+
     /**
      * Tests to confirm that an otp user, related monitored trip and plan can be created and deleted leaving no orphaned
      * records. This also includes Auth0 users if auth is enabled. The basic script for this test is as follows:
@@ -200,7 +205,8 @@ public class ApiUserFlowTest {
 
         // Set mock OTP responses so that trip existence checks in the
         // POST call below to save the monitored trip can pass.
-        TestUtils.setupOtpMocks(ItineraryUtilsTest.createMockOtpResponsesForTripExistence());
+        // The mocks will be reset in the @AfterEach phase.
+        TestUtils.setupOtpMocks(TestUtils.createMockOtpResponsesForTripExistence());
 
         HttpResponse<String> createTripResponseAsApiUser = makeRequest(
             MONITORED_TRIP_PATH,
@@ -208,9 +214,6 @@ public class ApiUserFlowTest {
             apiUserHeaders,
             HttpUtils.REQUEST_METHOD.POST
         );
-
-        // After POST is complete, reset mock OTP responses for subsequent tests.
-        TestUtils.resetOtpMocks();
 
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.statusCode());
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(

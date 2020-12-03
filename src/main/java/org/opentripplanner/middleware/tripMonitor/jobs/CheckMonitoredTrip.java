@@ -46,8 +46,6 @@ public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
 
     public final MonitoredTrip trip;
-    public int departureDelay;
-    public int arrivalDelay;
     /**
      * Used to track the various check trip notifications and construct email/SMS messages.
      */

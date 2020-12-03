@@ -181,18 +181,18 @@ public class ItineraryUtils {
     /**
      * Checks that the specified itinerary is on the same day as the specified date/time.
      * @param itinerary the itinerary to check.
-     * @param dateTime the request date/time to check, in the OTP's time zone.
+     * @param requestDateTime the request date/time to check, in the OTP's time zone.
      * @param arriveBy true to check the itinerary endtime, false to check the startTime.
      * @return true if the itinerary's startTime or endTime is one the same service day as the day of the specified date and time.
      */
-    public static boolean occursOnSameServiceDay(Itinerary itinerary, ZonedDateTime dateTime, boolean arriveBy) {
+    public static boolean occursOnSameServiceDay(Itinerary itinerary, ZonedDateTime requestDateTime, boolean arriveBy) {
         // Convert dateTimes to dates for date comparison.
-        LocalDate date = dateTime.toLocalDate();
+        LocalDate date = requestDateTime.toLocalDate();
         ZonedDateTime tripTime = itinerary.getTripTime(arriveBy);
         LocalDate tripDate = tripTime.toLocalDate();
         // If time to check is before service day start,
         // offset the trip date by one day to compensate.
-        if(!isAfterServiceStart(dateTime)) {
+        if(!isAfterServiceStart(requestDateTime)) {
             tripDate = tripDate.plusDays(1);
         }
         // If trip time is after service start (3am or later), the date must match the trip date.
