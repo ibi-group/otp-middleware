@@ -3,9 +3,11 @@ package org.opentripplanner.middleware;
 import com.auth0.json.auth.TokenHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.AbstractUser;
+import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
@@ -101,6 +103,13 @@ public class TestUtils {
         if (isAuthDisabled()) {
             headers.put("Authorization", requestingUser.auth0UserId);
             headers.put("x-api-key", TEMP_X_API_KEY);
+            if (requestingUser instanceof OtpUser) {
+                Auth0Connection.setScope(OtpUser.SCOPE);
+            } else if (requestingUser instanceof ApiUser) {
+                Auth0Connection.setScope(ApiUser.SCOPE);
+            } else if (requestingUser instanceof AdminUser) {
+                Auth0Connection.setScope(AdminUser.SCOPE);
+            }
             return headers;
         }
 

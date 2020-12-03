@@ -148,10 +148,10 @@ public class GetMonitoredTripsTest {
         HttpResponse<String> multiTripsResponse = mockAuthenticatedGet(MONITORED_TRIP_PATH, multiOtpUser);
         ResponseList<MonitoredTrip> multiTrips = JsonUtils.getResponseListFromJSON(multiTripsResponse.body(), MonitoredTrip.class);
 
-        // Multi Otp user has 'enhanced' admin credentials both trips will be returned. The expectation here is that the UI
-        // will always provide the user id to prevent this (as with the next test).
+        // Multi Otp user has 'enhanced' admin credentials, still expect only 1 trip to be returned as the scope will
+        // limit the requesting user to a single 'opt-user' user type.
         // TODO: Determine if a separate admin endpoint should be maintained for getting all/combined trips.
-        assertEquals(2, multiTrips.data.size());
+        assertEquals(1, multiTrips.data.size());
 
         // Get trips for only the multi Otp user by specifying Otp user id.
         HttpResponse<String> tripsFilteredResponse = mockAuthenticatedGet(
