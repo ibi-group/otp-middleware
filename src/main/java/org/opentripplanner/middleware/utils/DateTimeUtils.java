@@ -28,6 +28,9 @@ public class DateTimeUtils {
     private static final Logger LOG = LoggerFactory.getLogger(DateTimeUtils.class);
 
     public static final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
+    public static final DateTimeFormatter DEFAULT_DATE_FORMATTER = DateTimeFormatter.ofPattern(
+        DEFAULT_DATE_FORMAT_PATTERN
+    );
     public static final DateTimeFormatter NOTIFICATION_TIME_FORMATTER = DateTimeFormatter.ofPattern(
         ConfigUtils.getConfigPropertyAsText("NOTIFICATION_TIME_FORMAT", "HH:mm")
     );
@@ -158,7 +161,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a {@link LocalDateTime} on OTP's time zone to epoch milliseconds.
+     * Converts a {@link LocalDateTime} in OTP's time zone to epoch milliseconds.
      */
     public static long otpDateTimeAsEpochMillis(LocalDateTime otpDateTime) {
         return Instant.from(ZonedDateTime.of(otpDateTime, getOtpZoneId())).toEpochMilli();

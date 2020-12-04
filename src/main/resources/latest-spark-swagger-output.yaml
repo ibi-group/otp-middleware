@@ -1076,7 +1076,7 @@ definitions:
   OtpRequest:
     type: "object"
     properties:
-      date:
+      dateTime:
         $ref: "#/definitions/ZonedDateTime"
       requestParameters:
         $ref: "#/definitions/Map"
@@ -1141,10 +1141,10 @@ definitions:
       baselineDepartureTimeEpochMillis:
         type: "integer"
         format: "int64"
-      originalArrivalTimeEpochMillis:
+      scheduledArrivalTimeEpochMillis:
         type: "integer"
         format: "int64"
-      originalDepartureTimeEpochMillis:
+      scheduledDepartureTimeEpochMillis:
         type: "integer"
         format: "int64"
       lastCheckedEpochMillis:

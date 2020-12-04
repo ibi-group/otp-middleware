@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
-import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.ItineraryExistence;
-import org.opentripplanner.middleware.persistence.PersistenceUtil;
+import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.tripMonitor.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -23,7 +23,6 @@ import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripMonitor.TripStatus;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,12 +40,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
-import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTrip;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.DEFAULT_PLAN_URI;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createMonitoredTrip;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createUser;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteMonitoredTrip;
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
@@ -78,10 +76,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
 
     @BeforeAll
     public static void setup() throws IOException {
-        TestUtils.mockOtpServer();
+        OtpTestUtils.mockOtpServer();
         user = createUser("user@example.com");
-        mockResponse = FileUtils.getFileContents(
-            TEST_RESOURCE_PATH + "persistence/planResponse.json"
+        mockResponse = CommonTestUtils.getTestResourceAsString(
+            "otp/response/planResponse.json"
         );
         otpDispatcherResponse = new OtpDispatcherResponse(mockResponse, DEFAULT_PLAN_URI);
     }
@@ -96,7 +94,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
 
     @AfterEach
     public void tearDownAfterTest() {
-        TestUtils.resetOtpMocks();
+        OtpTestUtils.resetOtpMocks();
         DateTimeUtils.useSystemDefaultClockAndTimezone();
     }
 
@@ -108,8 +106,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     public void canMonitorTrip() throws URISyntaxException {
         // Do not run this test on Travis CI because it requires a live OTP server
         // FIXME: Add live otp server to e2e tests.
-        assumeTrue(!isRunningCi && isEndToEnd);
-        MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        assumeTrue(!isRunningCi && IS_END_TO_END);
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = user.id;
         monitoredTrip.tripName = "My Morning Commute";
@@ -134,7 +132,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         fakeAlerts.add(new LocalizedAlert());
         mockMondayJune15Itinerary.legs.get(1).alerts = fakeAlerts;
 
-        TestUtils.setupOtpMocks(List.of(mockResponse));
+        OtpTestUtils.setupOtpMocks(List.of(mockResponse));
 
         // mock the current time to be 8:45am on Monday, June 15
         DateTimeUtils.useFixedClockAt(
@@ -272,8 +270,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     private static JourneyState createDefaultJourneyState() {
         JourneyState journeyState = new JourneyState();
         Itinerary defaultItinerary = createDefaultItinerary();
-        journeyState.originalArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
-        journeyState.originalDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
+        journeyState.scheduledArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
+        journeyState.scheduledDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
         journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
         journeyState.baselineDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
         return journeyState;
@@ -429,7 +427,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
             DateTimeUtils.makeOtpZonedDateTime(mockMondayJune15Itinerary.startTime)
                 .withDayOfMonth(15)
         );
-        TestUtils.setupOtpMocks(List.of(mockWeekdayResponse));
+        OtpTestUtils.setupOtpMocks(List.of(mockWeekdayResponse));
 
         // mock the current time to be 8:45am on Monday, June 15
         DateTimeUtils.useFixedClockAt(
@@ -503,7 +501,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
                 .withDayOfMonth(15)
                 .withMinute(22) // this will cause an itinerary mismatch
         );
-        TestUtils.setupOtpMocks(List.of(mockWeekdayResponse));
+        OtpTestUtils.setupOtpMocks(List.of(mockWeekdayResponse));
 
         // mock the current time to be 8:45am on Monday, June 15
         DateTimeUtils.useFixedClockAt(
@@ -579,7 +577,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
                 .withDayOfMonth(15)
                 .withMinute(22) // this will cause an itinerary mismatch
         );
-        TestUtils.setupOtpMocks(List.of(mockWeekdayResponse));
+        OtpTestUtils.setupOtpMocks(List.of(mockWeekdayResponse));
 
         // mock the current time to be 8:45am on Monday, June 15
         DateTimeUtils.useFixedClockAt(

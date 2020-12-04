@@ -1,6 +1,9 @@
-package org.opentripplanner.middleware.persistence;
+package org.opentripplanner.middleware.testutils;
 
-import org.opentripplanner.middleware.TestUtils;
+import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.ItineraryExistence;
@@ -9,9 +12,6 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
-import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Leg;
-import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 
 import java.io.IOException;
@@ -21,11 +21,9 @@ import java.util.*;
 /**
  * Utility class to aid with creating and storing objects in Mongo.
  */
-public class PersistenceUtil {
+public class PersistenceTestUtils {
 
     private static final String BATCH_ID = "783726";
-    private static final String resourceFilePath = "persistence/";
-
 
     /**
      * Create Otp user and store in database.
@@ -81,7 +79,7 @@ public class PersistenceUtil {
      * Create trip summary from static plan response file and store in database.
      */
     public static TripSummary createTripSummary(String tripRequestId) throws IOException {
-        OtpResponse planResponse = getPlanResponse();
+        OtpResponse planResponse = OtpTestUtils.getPlanResponse();
         TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
@@ -91,7 +89,7 @@ public class PersistenceUtil {
      * Create trip summary from static plan error response file and store in database.
      */
     public static TripSummary createTripSummaryWithError(String tripRequestId) throws IOException {
-        OtpResponse planErrorResponse = getPlanErrorResponse();
+        OtpResponse planErrorResponse = OtpTestUtils.getPlanErrorResponse();
         TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
@@ -143,7 +141,11 @@ public class PersistenceUtil {
         return monitoredTrip;
     }
 
-    private static Itinerary createItinerary() {
+    public static void deleteMonitoredTrip(MonitoredTrip trip) {
+        Persistence.monitoredTrips.removeById(trip.id);
+    }
+
+    static Itinerary createItinerary() {
         Itinerary itinerary = new Itinerary();
         itinerary.duration = 1350L;
         itinerary.elevationGained = 0.0;
@@ -178,23 +180,5 @@ public class PersistenceUtil {
         legs.add(leg);
         itinerary.legs = legs;
         return itinerary;
-    }
-
-    public static void deleteMonitoredTrip(MonitoredTrip trip) {
-        Persistence.monitoredTrips.removeById(trip.id);
-    }
-
-    /**
-     * Get successful plan response from file for creating trip summaries.
-     */
-    public static OtpResponse getPlanResponse() throws IOException {
-        return TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "planResponse.json", OtpResponse.class);
-    }
-
-    /**
-     * Get error plan response from file for creating trip summaries.
-     */
-    public static OtpResponse getPlanErrorResponse() throws IOException {
-        return TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "planErrorResponse.json", OtpResponse.class);
     }
 }

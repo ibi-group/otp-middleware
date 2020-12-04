@@ -13,9 +13,7 @@ import org.opentripplanner.middleware.otp.OtpRequest;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +23,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
@@ -37,6 +36,7 @@ public class ItineraryUtils {
     public static final String MODE_PARAM = "mode";
     public static final String TIME_PARAM = "time";
     public static final int ITINERARY_CHECK_WINDOW = 7;
+    public static final int SERVICE_DAY_START_HOUR = getConfigPropertyAsInt("SERVICE_DAY_START_HOUR", 3);
 
     /**
      * Converts a {@link Map} to a URL query string (does not include a leading '?').
@@ -146,22 +146,15 @@ public class ItineraryUtils {
         return modes;
     }
 
-    /*
-     * TODO: fully implement
-     */
-    public static boolean itineraryIsSavable(Itinerary itinerary) {
-        return true;
-    }
-
     /**
      * Returns true if the itineraries match for the purposes of trip monitoring.
      *
-     * @param referenceItinerary The original itinerary that others are compared against.
+     * @param referenceItinerary The reference itinerary that others are compared against.
      * @param candidateItinerary A new itinerary that might match the previous itinerary.
      */
     public static boolean itinerariesMatch(Itinerary referenceItinerary, Itinerary candidateItinerary) {
         // Make sure both itineraries are monitorable before continuing.
-        if (!itineraryIsSavable(referenceItinerary) || !itineraryIsSavable(candidateItinerary)) return false;
+        if (!referenceItinerary.canBeMonitored() || !candidateItinerary.canBeMonitored()) return false;
 
         // make sure itineraries have same amount of legs
         if (referenceItinerary.legs.size() != candidateItinerary.legs.size()) return false;
@@ -182,38 +175,33 @@ public class ItineraryUtils {
      * Checks that the specified itinerary is on the same day as the specified date/time.
      * @param itinerary the itinerary to check.
      * @param requestDateTime the request date/time to check, in the OTP's time zone.
-     * @param tripIsArriveBy true to check the itinerary endtime, false to check the startTime.
-     * @return true if the itinerary's startTime or endTime is one the same day as the day of the specified date and time.
+     * @param arriveBy true to check the itinerary endtime, false to check the startTime.
+     * @return true if the itinerary's startTime or endTime is one the same service day as the day of the specified date and time.
      */
-    public static boolean isSameDay(Itinerary itinerary, ZonedDateTime requestDateTime, boolean tripIsArriveBy) {
-        // TODO: Make SERVICE_DAY_START_HOUR an optional config parameter.
-        final int SERVICE_DAY_START_HOUR = 3;
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN);
-
-        Date itineraryTime = tripIsArriveBy ? itinerary.endTime : itinerary.startTime;
-        ZonedDateTime startDateTime = DateTimeUtils.makeOtpZonedDateTime(itineraryTime);
-
-        // If the OTP request was made at a time before SERVICE_DAY_START_HOUR
-        // (for instance, a request with a departure or arrival at 12:30 am),
-        // then consider the request to have been made the day before.
-        // To compensate, advance startDate by one day.
-        int hour = requestDateTime.toLocalTime().getHour();
-        if (hour < SERVICE_DAY_START_HOUR) {
-            startDateTime = startDateTime.plusDays(1);
+    public static boolean occursOnSameServiceDay(Itinerary itinerary, ZonedDateTime requestDateTime, boolean arriveBy) {
+        // Convert dateTimes to dates for date comparison.
+        LocalDate date = requestDateTime.toLocalDate();
+        ZonedDateTime tripTime = itinerary.getTripTime(arriveBy);
+        LocalDate tripDate = tripTime.toLocalDate();
+        // If time to check is before service day start,
+        // offset the trip date by one day to compensate.
+        if(!isAfterServiceStart(requestDateTime)) {
+            tripDate = tripDate.plusDays(1);
         }
-
-        ZonedDateTime startDateTimeDayBefore = startDateTime.minusDays(1);
-
-        LocalDate requestLocalDate = requestDateTime.toLocalDate();
-        return (
-            requestLocalDate.equals(startDateTime.toLocalDate()) &&
-            startDateTime.getHour() >= SERVICE_DAY_START_HOUR
-        ) || (
-            // Trips starting between 12am and 2:59am next day are considered same-day.
-            requestLocalDate.equals(startDateTimeDayBefore.toLocalDate()) &&
-            startDateTimeDayBefore.getHour() < SERVICE_DAY_START_HOUR
-        );
+        // If trip time is after service start (3am or later), the date must match the trip date.
+        // Otherwise, the trip is considered to fall on the previous day.
+        return isAfterServiceStart(tripTime)
+            ? date.equals(tripDate)
+            : date.equals(tripDate.minusDays(1));
     }
+
+    /**
+     * Check that the input date/time occurs after the start of the service day.
+     */
+    private static boolean isAfterServiceStart(ZonedDateTime time) {
+        return time.getHour() >= SERVICE_DAY_START_HOUR;
+    }
+
     /**
      * Check whether a new leg of an itinerary matches the previous itinerary leg for the purposes of trip monitoring.
      */
