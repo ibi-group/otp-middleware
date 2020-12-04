@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.opentripplanner.middleware.testutils.CommonTestUtils.TEST_RESOURCE_PATH;
 import static org.opentripplanner.middleware.testutils.OtpTestUtils.DEFAULT_PLAN_URI;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
@@ -76,10 +75,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
     /** Contains an OTP response with an itinerary. */
     private static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_RESPONSE =
-        initializeMockPlanResponse(TEST_RESOURCE_PATH + "persistence/planResponse.json");
+        initializeMockPlanResponse("otp/response/planResponse.json");
     /** Contains an OTP response with no itinerary found. */
     private static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
-        initializeMockPlanResponse(TEST_RESOURCE_PATH + "persistence/planErrorResponse.json");
+        initializeMockPlanResponse("otp/response/planErrorResponse.json");
     /** Contains the verified itinerary set for a trip upon persisting. */
     private static final Itinerary DEFAULT_ITINERARY = OTP_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
     public static final ZoneId OTP_ZONE_ID = DateTimeUtils.getOtpZoneId();
@@ -95,7 +94,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         // for the purposes of this class.)
         String mockPlanResponse = null;
         try {
-            mockPlanResponse = FileUtils.getFileContents(path);
+            mockPlanResponse = CommonTestUtils.getTestResourceAsString(path);
         } catch (IOException e) {
             e.printStackTrace();
         }
