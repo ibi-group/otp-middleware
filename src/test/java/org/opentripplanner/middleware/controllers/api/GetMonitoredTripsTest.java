@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware;
+package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
@@ -8,13 +8,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.persistence.PersistenceUtil;
+import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
@@ -25,12 +27,12 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.TEMP_AUTH0_USER_PASSWORD;
-import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedGet;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
 
 /**
  * Tests to simulate getting trips as an Otp user with enhanced admin credentials. The following config parameters must
@@ -64,18 +66,18 @@ public class GetMonitoredTripsTest {
     public static void setUp() throws IOException, InterruptedException {
         // Load config before checking if tests should run.
         OtpMiddlewareTest.setUp();
-        assumeTrue(isEndToEnd);
+        assumeTrue(IS_END_TO_END);
         setAuthDisabled(false);
 
         // Mock the OTP server TODO: Run a live OTP instance?
-        TestUtils.mockOtpServer();
+        OtpTestUtils.mockOtpServer();
 
         // Create the different users (with different emails) for testing permissions.
         String soloUserEmail = String.format("test-%s@example.com", UUID.randomUUID().toString());
-        soloOtpUser = PersistenceUtil.createUser(soloUserEmail);
+        soloOtpUser = PersistenceTestUtils.createUser(soloUserEmail);
         String multiUserEmail = String.format("test-%s@example.com", UUID.randomUUID().toString());
-        multiOtpUser = PersistenceUtil.createUser(multiUserEmail);
-        multiAdminUser = PersistenceUtil.createAdminUser(multiUserEmail);
+        multiOtpUser = PersistenceTestUtils.createUser(multiUserEmail);
+        multiAdminUser = PersistenceTestUtils.createAdminUser(multiUserEmail);
         try {
             // Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
             // from being able to use TEMP_AUTH0_USER_PASSWORD.
@@ -98,7 +100,7 @@ public class GetMonitoredTripsTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(isEndToEnd);
+        assumeTrue(IS_END_TO_END);
         restoreDefaultAuthDisabled();
         soloOtpUser = Persistence.otpUsers.getById(soloOtpUser.id);
         if (soloOtpUser != null) soloOtpUser.delete(false);
@@ -110,7 +112,7 @@ public class GetMonitoredTripsTest {
 
     @AfterEach
     public void tearDownAfterTest() {
-        TestUtils.resetOtpMocks();
+        OtpTestUtils.resetOtpMocks();
     }
 
     /**
@@ -155,13 +157,13 @@ public class GetMonitoredTripsTest {
      * Creates a {@link MonitoredTrip} for the specified user.
      */
     private static void createMonitoredTripAsUser(OtpUser otpUser) throws URISyntaxException {
-        MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
 
         // Set mock OTP responses so that trip existence checks in the
         // POST call below to save the monitored trip can pass.
-        TestUtils.setupOtpMocks(TestUtils.createMockOtpResponsesForTripExistence());
+        OtpTestUtils.setupOtpMocks(OtpTestUtils.createMockOtpResponsesForTripExistence());
 
         HttpResponse<String> createTripResponse = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
@@ -171,7 +173,7 @@ public class GetMonitoredTripsTest {
 
         // Reset mocks after POST, because the next call to this function will need it.
         // (The mocks will be also reset in the @AfterEach phase if there are any failures.)
-        TestUtils.resetOtpMocks();
+        OtpTestUtils.resetOtpMocks();
 
         assertEquals(HttpStatus.OK_200, createTripResponse.statusCode());
     }

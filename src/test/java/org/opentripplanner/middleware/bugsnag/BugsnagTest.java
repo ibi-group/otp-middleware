@@ -1,13 +1,14 @@
-package org.opentripplanner.middleware;
+package org.opentripplanner.middleware.bugsnag;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.FileUtils;
+import org.opentripplanner.middleware.testutils.CommonTestUtils;
 
 import java.io.IOException;
 
@@ -66,9 +67,18 @@ public class BugsnagTest extends OtpMiddlewareTest {
      */
     private static void createBugsnagObjects() throws IOException {
         final String resourceFilePath = "bugsnag/";
-        BUGSNAG_EVENT = TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "bugsnagEvent.json", BugsnagEvent.class);
-        BUGSNAG_EVENT_REQUEST = TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "bugsnagEventRequest.json", BugsnagEventRequest.class);
-        BUGSNAG_PROJECT = TestUtils.getResourceFileContentsAsJSON(resourceFilePath + "bugsnagProject.json", BugsnagProject.class);
+        BUGSNAG_EVENT = CommonTestUtils.getTestResourceAsJSON(
+            resourceFilePath + "bugsnagEvent.json",
+            BugsnagEvent.class
+        );
+        BUGSNAG_EVENT_REQUEST = CommonTestUtils.getTestResourceAsJSON(
+            resourceFilePath + "bugsnagEventRequest.json",
+            BugsnagEventRequest.class
+        );
+        BUGSNAG_PROJECT = CommonTestUtils.getTestResourceAsJSON(
+            resourceFilePath + "bugsnagProject.json",
+            BugsnagProject.class
+        );
     }
 
 }
