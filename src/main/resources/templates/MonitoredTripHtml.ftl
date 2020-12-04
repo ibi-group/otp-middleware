@@ -1,5 +1,10 @@
 <#include "OtpUserContainer.ftl">
 
+<#--
+    This is a template for an HTML email that gets sent when there are new notifications about an
+    OTP user's monitored trip.
+-->
+
 <#macro email_main>
     <div>
         <h2></h2>

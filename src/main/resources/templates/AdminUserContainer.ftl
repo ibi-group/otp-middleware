@@ -1,10 +1,10 @@
 <#include "BaseEmail.ftl">
 
-<#macro email_main>
-<#-- Provide an error message in the default case. If this hasn't been overwritten by an inheriting
-        component, then an error has occurred. -->
-    The main content of this email hasn't been configured! Sorry about that! Please contact the webmaster.
-</#macro>
+<#--
+    This is a template for all emails related to the OTP Admin Dashboard. Any templates that use
+    this template must implement a macro called `email_main`. The whole HTML email can then be
+    rendered by the statement <@html_email/>.
+-->
 
 <#macro email_body>
 <#-- header -->
