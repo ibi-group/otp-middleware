@@ -96,7 +96,7 @@ public class LogController implements Endpoint {
         LocalDateTime now = DateTimeUtils.nowAsLocalDateTime();
         // TODO: Future work might modify this so that we accept multiple API key IDs for a single request (depends on
         //  how third party developer accounts are structured).
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT_PATTERN);
+        DateTimeFormatter formatter = DateTimeUtils.DEFAULT_DATE_FORMATTER;
         String startDate = req.queryParamOrDefault("startDate", formatter.format(now.minusDays(30)));
         String endDate = req.queryParamOrDefault("endDate", formatter.format(now));
         try {

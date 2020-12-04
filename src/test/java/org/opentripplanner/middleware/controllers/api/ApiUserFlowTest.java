@@ -6,6 +6,7 @@ import com.auth0.json.mgmt.users.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
@@ -133,6 +134,11 @@ public class ApiUserFlowTest {
         if (otpUserMatchingApiUser != null) otpUserMatchingApiUser.delete(false);
     }
 
+    @AfterEach
+    public void tearDownAfterTest() {
+        TestUtils.resetOtpMocks();
+    }
+
     /**
      * Tests to confirm that an otp user, related monitored trip and plan can be created and deleted leaving no orphaned
      * records. This also includes Auth0 users if auth is enabled. The basic script for this test is as follows:
@@ -198,12 +204,22 @@ public class ApiUserFlowTest {
 
         // Create a monitored trip for an Otp user authenticating as an Api user. An Api user can create a monitored
         // trip for an Otp user they created.
+
+        // Set mock OTP responses so that trip existence checks in the
+        // POST call below to save the monitored trip can pass.
+        TestUtils.setupOtpMocks(TestUtils.createMockOtpResponsesForTripExistence());
+
         HttpResponse<String> createTripResponseAsApiUser = makeRequest(
             MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
             apiUserHeaders,
             HttpUtils.REQUEST_METHOD.POST
         );
+
+        // After POST is complete, reset mock OTP responses for subsequent mock OTP calls below.
+        // (The mocks will also be reset in the @AfterEach phase if there are failures.)
+        TestUtils.resetOtpMocks();
+
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.statusCode());
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(
             createTripResponseAsApiUser.body(),
