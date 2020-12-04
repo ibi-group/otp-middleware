@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.testUtils;
+package org.opentripplanner.middleware.testutils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
@@ -31,7 +31,7 @@ public class OtpTestUtils {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     /**
-     * Prevents the mock OTP server being initialized more than once
+     * Prevents the mock OTP server from being initialized more than once
      */
     private static boolean mockOtpServerSetUpIsDone = false;
 
@@ -99,7 +99,7 @@ public class OtpTestUtils {
         // mocks not setup, simply return from a file every time
         LOG.info("Returning default mock response from file");
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
-        otpDispatcherResponse.responseBody = CommonTestUtils.getResourceFileContentsAsString(
+        otpDispatcherResponse.responseBody = CommonTestUtils.getTestResourceAsString(
             "otp/response/planResponse.json"
         );
         return otpDispatcherResponse.responseBody;
@@ -151,7 +151,7 @@ public class OtpTestUtils {
      * Get successful plan response from file for creating trip summaries.
      */
     public static OtpResponse getPlanResponse() throws IOException {
-        return CommonTestUtils.getResourceFileContentsAsJSON(
+        return CommonTestUtils.getTestResourceAsJSON(
             responseResourceFilePath + "planResponse.json",
             OtpResponse.class
         );
@@ -161,46 +161,10 @@ public class OtpTestUtils {
      * Get error plan response from file for creating trip summaries.
      */
     public static OtpResponse getPlanErrorResponse() throws IOException {
-        return CommonTestUtils.getResourceFileContentsAsJSON(
+        return CommonTestUtils.getTestResourceAsJSON(
             responseResourceFilePath + "planErrorResponse.json",
             OtpResponse.class
         );
     }
 
-    static Itinerary createItinerary() {
-        Itinerary itinerary = new Itinerary();
-        itinerary.duration = 1350L;
-        itinerary.elevationGained = 0.0;
-        itinerary.elevationLost = 0.0;
-        itinerary.endTime = new Date();
-        itinerary.startTime = new Date();
-        itinerary.transfers = 0;
-        itinerary.transitTime = 150;
-        itinerary.waitingTime = 2;
-        itinerary.walkDistance = 1514.13182088778;
-        itinerary.walkLimitExceeded = false;
-
-        Leg leg = new Leg();
-        leg.startTime = new Date();
-        leg.endTime = new Date();
-        leg.departureDelay = 10;
-        leg.arrivalDelay = 10;
-        leg.realTime = true;
-        leg.distance = 1500.0;
-        leg.pathway = true;
-        leg.mode = "walk";
-
-        Place place = new Place();
-        place.lat = 28.5398938204469;
-        place.lon = -81.3772773742676;
-        place.name = "28.54894, -81.38971";
-        place.orig = "28.54894, -81.38971";
-        leg.from = place;
-        leg.to = place;
-
-        List<Leg> legs = new ArrayList<>();
-        legs.add(leg);
-        itinerary.legs = legs;
-        return itinerary;
-    }
 }

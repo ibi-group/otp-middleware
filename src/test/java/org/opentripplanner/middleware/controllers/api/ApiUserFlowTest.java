@@ -15,8 +15,8 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.testUtils.PersistenceTestUtils;
-import org.opentripplanner.middleware.testUtils.OtpTestUtils;
+import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -37,13 +37,13 @@ import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForE
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
 import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PROXY_ENDPOINT;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
-import static org.opentripplanner.middleware.testUtils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
-import static org.opentripplanner.middleware.testUtils.ApiTestUtils.makeDeleteRequest;
-import static org.opentripplanner.middleware.testUtils.ApiTestUtils.makeGetRequest;
-import static org.opentripplanner.middleware.testUtils.ApiTestUtils.makeRequest;
-import static org.opentripplanner.middleware.testUtils.ApiTestUtils.mockAuthenticatedGet;
-import static org.opentripplanner.middleware.testUtils.ApiTestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.testUtils.CommonTestUtils.isEndToEnd;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeDeleteRequest;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
 
 /**
  * Tests to simulate API user flow. The following config parameters must be set in configurations/default/env.yml for
@@ -82,7 +82,7 @@ public class ApiUserFlowTest {
      * config).
      */
     private static boolean testsShouldRun() {
-        return isEndToEnd && !isAuthDisabled();
+        return IS_END_TO_END && !isAuthDisabled();
     }
 
     /**

@@ -14,8 +14,8 @@ import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.testUtils.PersistenceTestUtils;
-import org.opentripplanner.middleware.testUtils.OtpTestUtils;
+import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -30,10 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
-import static org.opentripplanner.middleware.testUtils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
-import static org.opentripplanner.middleware.testUtils.ApiTestUtils.mockAuthenticatedGet;
-import static org.opentripplanner.middleware.testUtils.ApiTestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.testUtils.CommonTestUtils.isEndToEnd;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
 
 /**
  * Tests to simulate getting trips as an Otp user with enhanced admin credentials. The following config parameters must
@@ -68,7 +68,7 @@ public class GetMonitoredTripsTest {
     public static void setUp() throws IOException, InterruptedException {
         // Load config before checking if tests should run.
         OtpMiddlewareTest.setUp();
-        assumeTrue(isEndToEnd);
+        assumeTrue(IS_END_TO_END);
         setAuthDisabled(false);
         // Mock the OTP server TODO: Run a live OTP instance?
         OtpTestUtils.mockOtpServer();
@@ -98,7 +98,7 @@ public class GetMonitoredTripsTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(isEndToEnd);
+        assumeTrue(IS_END_TO_END);
         restoreDefaultAuthDisabled();
         soloOtpUser = Persistence.otpUsers.getById(soloOtpUser.id);
         if (soloOtpUser != null) soloOtpUser.delete(false);

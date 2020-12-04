@@ -2,7 +2,7 @@ package org.opentripplanner.middleware.otp;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.testUtils.CommonTestUtils;
+import org.opentripplanner.middleware.testutils.CommonTestUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -13,7 +13,7 @@ public class OtpDispatcherResponseTest {
 
     @Test
     public void toStringShouldExcludeResponseFieldIfNotCallingPlan() throws IOException {
-        String mockParkRideResponse = CommonTestUtils.getResourceFileContentsAsString(
+        String mockParkRideResponse = CommonTestUtils.getTestResourceAsString(
             "otp/response/parkRideResponse.json"
         );
 

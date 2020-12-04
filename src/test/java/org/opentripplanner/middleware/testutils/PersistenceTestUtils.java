@@ -1,5 +1,8 @@
-package org.opentripplanner.middleware.testUtils;
+package org.opentripplanner.middleware.testutils;
 
+import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
@@ -114,7 +117,7 @@ public class PersistenceTestUtils {
         monitoredTrip.excludeFederalHolidays = true;
         monitoredTrip.queryParams = "fromPlace=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
 
-        monitoredTrip.itinerary = OtpTestUtils.createItinerary();
+        monitoredTrip.itinerary = createItinerary();
 
         Persistence.monitoredTrips.create(monitoredTrip);
         return monitoredTrip;
@@ -140,4 +143,40 @@ public class PersistenceTestUtils {
         Persistence.monitoredTrips.removeById(trip.id);
     }
 
+    static Itinerary createItinerary() {
+        Itinerary itinerary = new Itinerary();
+        itinerary.duration = 1350L;
+        itinerary.elevationGained = 0.0;
+        itinerary.elevationLost = 0.0;
+        itinerary.endTime = new Date();
+        itinerary.startTime = new Date();
+        itinerary.transfers = 0;
+        itinerary.transitTime = 150;
+        itinerary.waitingTime = 2;
+        itinerary.walkDistance = 1514.13182088778;
+        itinerary.walkLimitExceeded = false;
+
+        Leg leg = new Leg();
+        leg.startTime = new Date();
+        leg.endTime = new Date();
+        leg.departureDelay = 10;
+        leg.arrivalDelay = 10;
+        leg.realTime = true;
+        leg.distance = 1500.0;
+        leg.pathway = true;
+        leg.mode = "walk";
+
+        Place place = new Place();
+        place.lat = 28.5398938204469;
+        place.lon = -81.3772773742676;
+        place.name = "28.54894, -81.38971";
+        place.orig = "28.54894, -81.38971";
+        leg.from = place;
+        leg.to = place;
+
+        List<Leg> legs = new ArrayList<>();
+        legs.add(leg);
+        itinerary.legs = legs;
+        return itinerary;
+    }
 }

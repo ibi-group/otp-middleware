@@ -7,7 +7,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.opentripplanner.middleware.testUtils.PersistenceTestUtils.createMonitoredTrip;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createMonitoredTrip;
 
 /**
  * Tests to verify that monitored trip persistence in MongoDB collections are functioning properly. A

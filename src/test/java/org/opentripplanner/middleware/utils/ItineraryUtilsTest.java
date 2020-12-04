@@ -16,8 +16,8 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.testUtils.CommonTestUtils;
-import org.opentripplanner.middleware.testUtils.OtpTestUtils;
+import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.opentripplanner.middleware.testUtils.OtpTestUtils.DEFAULT_PLAN_URI;
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.DEFAULT_PLAN_URI;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
@@ -58,11 +58,11 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         // Contains an OTP response with an itinerary found.
         // (We are reusing an existing response. The exact contents of the response does not matter
         // for the purposes of this class.)
-        String mockPlanResponse = CommonTestUtils.getResourceFileContentsAsString(
+        String mockPlanResponse = CommonTestUtils.getTestResourceAsString(
             "otp/response/planResponse.json"
         );
         // Contains an OTP response with no itinerary found.
-        String mockErrorResponse = CommonTestUtils.getResourceFileContentsAsString(
+        String mockErrorResponse = CommonTestUtils.getTestResourceAsString(
             "otp/response/planErrorResponse.json"
         );
 

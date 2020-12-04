@@ -9,7 +9,7 @@ import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.testUtils.PersistenceTestUtils;
+import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -25,9 +25,9 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
-import static org.opentripplanner.middleware.testUtils.ApiTestUtils.mockAuthenticatedDelete;
-import static org.opentripplanner.middleware.testUtils.ApiTestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.testUtils.CommonTestUtils.isEndToEnd;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedDelete;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
 
 /**
  * Tests for creating and deleting api keys. The following config parameters must be set in
@@ -48,7 +48,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException {
-        assumeTrue(isEndToEnd);
+        assumeTrue(IS_END_TO_END);
         // TODO: It might be useful to allow this to run without DISABLE_AUTH set to true (in an end-to-end environment
         //  using real tokens from Auth0.
         setAuthDisabled(true);
@@ -63,7 +63,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(isEndToEnd);
+        assumeTrue(IS_END_TO_END);
         // refresh API key(s)
         apiUser = Persistence.apiUsers.getById(apiUser.id);
         apiUser.delete();

@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.testUtils;
+package org.opentripplanner.middleware.testutils;
 
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;

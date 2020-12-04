@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
-import org.opentripplanner.middleware.testUtils.CommonTestUtils;
-import org.opentripplanner.middleware.testUtils.OtpTestUtils;
+import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.tripMonitor.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -39,11 +39,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.testUtils.CommonTestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.testUtils.OtpTestUtils.DEFAULT_PLAN_URI;
-import static org.opentripplanner.middleware.testUtils.PersistenceTestUtils.createMonitoredTrip;
-import static org.opentripplanner.middleware.testUtils.PersistenceTestUtils.createUser;
-import static org.opentripplanner.middleware.testUtils.PersistenceTestUtils.deleteMonitoredTrip;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.DEFAULT_PLAN_URI;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createMonitoredTrip;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createUser;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteMonitoredTrip;
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
@@ -70,7 +70,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     public static void setup() throws IOException {
         OtpTestUtils.mockOtpServer();
         user = createUser("user@example.com");
-        mockResponse = CommonTestUtils.getResourceFileContentsAsString(
+        mockResponse = CommonTestUtils.getTestResourceAsString(
             "otp/response/planResponse.json"
         );
         otpDispatcherResponse = new OtpDispatcherResponse(mockResponse, DEFAULT_PLAN_URI);
@@ -97,7 +97,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     public void canMonitorTrip() throws URISyntaxException {
         // Do not run this test on Travis CI because it requires a live OTP server
         // FIXME: Add live otp server to e2e tests.
-        assumeTrue(!isRunningCi && isEndToEnd);
+        assumeTrue(!isRunningCi && IS_END_TO_END);
         MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = user.id;

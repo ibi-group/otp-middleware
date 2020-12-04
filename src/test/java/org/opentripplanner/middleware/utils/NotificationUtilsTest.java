@@ -13,8 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.testUtils.CommonTestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.testUtils.PersistenceTestUtils.createUser;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createUser;
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
@@ -36,7 +36,7 @@ public class NotificationUtilsTest extends OtpMiddlewareTest {
     /**
      * Currently, since these tests require target email/SMS values, these tests should not run on CI.
      */
-    private static final boolean shouldTestsRun = !isRunningCi && isEndToEnd && email != null && phone != null;
+    private static final boolean shouldTestsRun = !isRunningCi && IS_END_TO_END && email != null && phone != null;
 
     @BeforeAll
     public static void setup() {

@@ -8,7 +8,7 @@ import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.testUtils.CommonTestUtils;
+import org.opentripplanner.middleware.testutils.CommonTestUtils;
 
 import java.io.IOException;
 
@@ -67,15 +67,15 @@ public class BugsnagTest extends OtpMiddlewareTest {
      */
     private static void createBugsnagObjects() throws IOException {
         final String resourceFilePath = "bugsnag/";
-        BUGSNAG_EVENT = CommonTestUtils.getResourceFileContentsAsJSON(
+        BUGSNAG_EVENT = CommonTestUtils.getTestResourceAsJSON(
             resourceFilePath + "bugsnagEvent.json",
             BugsnagEvent.class
         );
-        BUGSNAG_EVENT_REQUEST = CommonTestUtils.getResourceFileContentsAsJSON(
+        BUGSNAG_EVENT_REQUEST = CommonTestUtils.getTestResourceAsJSON(
             resourceFilePath + "bugsnagEventRequest.json",
             BugsnagEventRequest.class
         );
-        BUGSNAG_PROJECT = CommonTestUtils.getResourceFileContentsAsJSON(
+        BUGSNAG_PROJECT = CommonTestUtils.getTestResourceAsJSON(
             resourceFilePath + "bugsnagProject.json",
             BugsnagProject.class
         );
