@@ -18,8 +18,10 @@ import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripMonitor.jobs.MonitorAllTripsJob;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.Scheduler;
+import org.opentripplanner.middleware.utils.TemplateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Service;
@@ -33,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.AUTHENTICATE_PATH;
-import static org.opentripplanner.middleware.utils.ConfigUtils.loadConfig;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -47,7 +48,10 @@ public class OtpMiddlewareMain {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         // Load configuration.
-        loadConfig(args);
+        ConfigUtils.loadConfig(args);
+
+        // Initialize template engine
+        TemplateUtils.initialize();
 
         // Connect to MongoDB.
         Persistence.initialize();

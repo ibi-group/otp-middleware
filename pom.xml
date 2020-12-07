@@ -24,6 +24,11 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
+        <!--  used for importing java projects from github -->
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
     </repositories>
     <build>
         <resources>
@@ -202,22 +207,6 @@
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- Used for unit testing -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.5.2</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Used for parameterized tests -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-            <version>5.6.2</version>
-            <scope>test</scope>
-        </dependency>
-
         <!-- Handles HTTP server -->
         <dependency>
             <groupId>com.sparkjava</groupId>
@@ -284,11 +273,11 @@
             <version>1.15.0</version>
         </dependency>
 
-        <!-- HTML rendering library for nicely formatted notification emails -->
+        <!-- HTML rendering library for nicely formatted HTML emails -->
         <dependency>
-            <groupId>com.j2html</groupId>
-            <artifactId>j2html</artifactId>
-            <version>1.4.0</version>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+            <version>2.3.30</version>
         </dependency>
 
         <!--
@@ -311,6 +300,45 @@
             <groupId>com.spatial4j</groupId>
             <artifactId>spatial4j</artifactId>
             <version>0.5</version>
+        </dependency>
+
+        <!-- Hamcrest is an assertion library that prints pretty messages when assertions fail. -->
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- This Hamcrest dep is needed to prevent a missing a NoSuchMethodError when a snapshot mismatch occurs. -->
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-library</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Used for unit testing -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.5.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Used for parameterized tests -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>5.6.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Snapshotting library for testing -->
+        <dependency>
+            <groupId>com.github.conveyal</groupId>
+            <artifactId>java-snapshot-matcher</artifactId>
+            <version>3495b32f7b4d3f82590e0a2284029214070b6984</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
