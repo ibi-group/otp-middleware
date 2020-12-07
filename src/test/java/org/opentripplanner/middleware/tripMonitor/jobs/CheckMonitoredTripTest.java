@@ -8,12 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
-import org.opentripplanner.middleware.TestUtils;
-import org.opentripplanner.middleware.models.JourneyState;
+import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
+import org.opentripplanner.middleware.tripMonitor.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
@@ -21,7 +21,6 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,16 +32,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.TEST_RESOURCE_PATH;
-import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.otp.OtpDispatcherResponseTest.DEFAULT_PLAN_URI;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.createMonitoredTrip;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.createUser;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.deleteMonitoredTripAndJourney;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.DEFAULT_PLAN_URI;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createMonitoredTrip;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createUser;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteMonitoredTrip;
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
@@ -67,10 +68,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
 
     @BeforeAll
     public static void setup() throws IOException {
-        TestUtils.mockOtpServer();
+        OtpTestUtils.mockOtpServer();
         user = createUser("user@example.com");
-        mockResponse = FileUtils.getFileContents(
-            TEST_RESOURCE_PATH + "persistence/planResponse.json"
+        mockResponse = CommonTestUtils.getTestResourceAsString(
+            "otp/response/planResponse.json"
         );
         otpDispatcherResponse = new OtpDispatcherResponse(mockResponse, DEFAULT_PLAN_URI);
     }
@@ -79,13 +80,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     public static void tearDown() {
         Persistence.otpUsers.removeById(user.id);
         for (MonitoredTrip trip : Persistence.monitoredTrips.getFiltered(eq("userId", user.id))) {
-            deleteMonitoredTripAndJourney(trip);
+            deleteMonitoredTrip(trip);
         }
     }
 
     @AfterEach
     public void tearDownAfterTest() {
-        TestUtils.resetOtpMocks();
+        OtpTestUtils.resetOtpMocks();
     }
 
     /**
@@ -96,8 +97,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     public void canMonitorTrip() throws URISyntaxException {
         // Do not run this test on Travis CI because it requires a live OTP server
         // FIXME: Add live otp server to e2e tests.
-        assumeTrue(!isRunningCi && isEndToEnd);
-        MonitoredTrip monitoredTrip = new MonitoredTrip(TestUtils.sendSamplePlanRequest());
+        assumeTrue(!isRunningCi && IS_END_TO_END);
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = user.id;
         monitoredTrip.tripName = "My Morning Commute";
@@ -117,41 +118,134 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         checkMonitoredTrip.run();
         // Assert that there is one notification generated during check.
         // TODO: Improve assertions to use snapshots.
-        Assertions.assertEquals(checkMonitoredTrip.notifications.size(), 0);
+        Assertions.assertEquals(1, checkMonitoredTrip.notifications.size());
         // Clear the created trip.
-        deleteMonitoredTripAndJourney(monitoredTrip);
+        deleteMonitoredTrip(monitoredTrip);
     }
 
-    @Test
-    public void willGenerateDepartureDelayNotification() throws URISyntaxException {
-        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
-        OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
-        Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
-        // Set departure time to twenty minutes (in seconds). Default departure time variance threshold is 15 minutes.
-        simulatedItinerary.legs.get(0).departureDelay = 60 * 20;
-
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip);
-        // Set isolated departure time check for simulated itinerary.
-        checkMonitoredTrip.matchingItinerary = simulatedItinerary;
-        TripMonitorNotification notification = checkMonitoredTrip.checkTripForDepartureDelay();
-        LOG.info("Departure delay notification: {}", notification.body);
-        Assertions.assertNotNull(notification);
+    @ParameterizedTest
+    @MethodSource("createDelayNotificationTestCases")
+    void testDelayNotifications(DelayNotificationTestCase testCase) {
+        TripMonitorNotification notification = testCase.checkMonitoredTrip.checkTripForDelay(testCase.delayType);
+        if (testCase.expectedNotificationMessage == null) {
+            assertNull(notification, testCase.message);
+        } else {
+            assertNotNull(notification, String.format("Expected notification for test case: %s", testCase.message));
+            assertEquals(testCase.expectedNotificationMessage, notification.body, testCase.message);
+        }
     }
 
-    @Test
-    public void willSkipDepartureDelayNotification() throws URISyntaxException {
-        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
-        OtpDispatcherResponse simulatedResponse = otpDispatcherResponse.clone();
-        Itinerary simulatedItinerary = simulatedResponse.getResponse().plan.itineraries.get(0);
-        // Set departure time to ten minutes (in seconds). Default departure time variance threshold is 15 minutes.
-        simulatedItinerary.legs.get(0).departureDelay = 60 * 10;
+    private static List<DelayNotificationTestCase> createDelayNotificationTestCases () throws URISyntaxException {
+        List<DelayNotificationTestCase> testCases = new ArrayList<>();
 
+        // should not create departure/arrival notification for on-time trip
+        CheckMonitoredTrip onTimeTrip = createCheckMonitoredTrip();
+        onTimeTrip.trip.journeyState = createDefaultJourneyState();
+        testCases.add(new DelayNotificationTestCase(
+            onTimeTrip,
+            NotificationType.DEPARTURE_DELAY,
+            "should not create departure notification for on-time trip"
+        ));
+        testCases.add(new DelayNotificationTestCase(
+            onTimeTrip,
+            NotificationType.ARRIVAL_DELAY,
+            "should not create arrival notification for on-time trip"
+        ));
+
+        // should create a departure notification for 20 minute late trip
+        CheckMonitoredTrip twentyMinutesLateTimeTrip = createCheckMonitoredTrip();
+        offsetItineraryTime(
+            twentyMinutesLateTimeTrip.matchingItinerary,
+            TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
+        );
+        twentyMinutesLateTimeTrip.trip.journeyState = createDefaultJourneyState();
+        testCases.add(new DelayNotificationTestCase(
+            twentyMinutesLateTimeTrip,
+            NotificationType.DEPARTURE_DELAY,
+            "Your trip is now predicted to depart 20 minutes late (at 09:00).",
+            "should create a departure notification for 20 minute late trip"
+        ));
+        testCases.add(new DelayNotificationTestCase(
+            twentyMinutesLateTimeTrip,
+            NotificationType.ARRIVAL_DELAY,
+            "Your trip is now predicted to arrive 20 minutes late (at 09:18).",
+            "should create a arrival notification for 20 minute late trip"
+        ));
+
+        // should not create departure notification for 20 minute late trip w/ 15 minute threshold and 18 minute late
+        // baseline
+        // should not create arrival notification for 20 minute late trip w/ 15 minute threshold and 18 minute late
+        // baseline
+        CheckMonitoredTrip twentyMinutesLateTripWithUpdatedThreshold = createCheckMonitoredTrip();
+        offsetItineraryTime(
+            twentyMinutesLateTripWithUpdatedThreshold.matchingItinerary,
+            TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
+        );
+        JourneyState twentyMinutesLateJourneyStateWithUpdatedThreshold = createDefaultJourneyState();
+        long eighteenMinutesInMilliseconds = TimeUnit.MILLISECONDS.convert(15, TimeUnit.MINUTES);
+        twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis +=
+            eighteenMinutesInMilliseconds;
+        twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis +=
+            eighteenMinutesInMilliseconds;
+        twentyMinutesLateTripWithUpdatedThreshold.trip.journeyState = twentyMinutesLateJourneyStateWithUpdatedThreshold;
+        testCases.add(new DelayNotificationTestCase(
+            twentyMinutesLateTripWithUpdatedThreshold,
+            NotificationType.DEPARTURE_DELAY,
+            "should not create departure notification for 20 minute late trip w/ 15 minute threshold and 18 minute late baseline"
+        ));
+        testCases.add(new DelayNotificationTestCase(
+            twentyMinutesLateTripWithUpdatedThreshold,
+            NotificationType.ARRIVAL_DELAY,
+            "should not create arrival notification for 20 minute late trip w/ 15 minute threshold and 18 minute late baseline"
+        ));
+
+        // should create a departure notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline
+        // should create a arrival notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline
+        CheckMonitoredTrip onTimeTripWithUpdatedThreshold = createCheckMonitoredTrip();
+        JourneyState onTimeJourneyStateWithUpdatedThreshold = createDefaultJourneyState();
+        onTimeJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis += eighteenMinutesInMilliseconds;
+        onTimeJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis += eighteenMinutesInMilliseconds;
+        onTimeTripWithUpdatedThreshold.trip.journeyState = onTimeJourneyStateWithUpdatedThreshold;
+        testCases.add(new DelayNotificationTestCase(
+            onTimeTripWithUpdatedThreshold,
+            NotificationType.DEPARTURE_DELAY,
+            "Your trip is now predicted to depart about on time (at 08:40).",
+            "should create a departure notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline"
+        ));
+        testCases.add(new DelayNotificationTestCase(
+            onTimeTripWithUpdatedThreshold,
+            NotificationType.ARRIVAL_DELAY,
+            "Your trip is now predicted to arrive about on time (at 08:58).",
+            "should create a arrival notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline"
+        ));
+
+        return testCases;
+    }
+
+    /**
+     * Creates a new CheckMonitoredTrip instance with a new non-persisted MonitoredTrip instance. The monitored trip is
+     * created using the default OTP response. Also, creates a new matching itinerary that consists of the first
+     * itinerary in the default OTP response.
+     */
+    private static CheckMonitoredTrip createCheckMonitoredTrip() throws URISyntaxException {
+        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse, false);
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip);
-        // Run isolated departure time check for simulated itinerary.
-        checkMonitoredTrip.matchingItinerary = simulatedItinerary;
-        TripMonitorNotification notification = checkMonitoredTrip.checkTripForDepartureDelay();
-        LOG.info("Departure delay notification (should be null): {}", notification);
-        Assertions.assertNull(notification);
+        checkMonitoredTrip.matchingItinerary = createDefaultItinerary();
+        return checkMonitoredTrip;
+    }
+
+    private static Itinerary createDefaultItinerary() {
+        return otpDispatcherResponse.clone().getResponse().plan.itineraries.get(0);
+    }
+
+    private static JourneyState createDefaultJourneyState() {
+        JourneyState journeyState = new JourneyState();
+        Itinerary defaultItinerary = createDefaultItinerary();
+        journeyState.scheduledArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
+        journeyState.scheduledDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
+        journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
+        journeyState.baselineDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
+        return journeyState;
     }
 
     /**
@@ -172,7 +266,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         );
 
         // set mocks to a list containing just the weekday response if no mocks are provided
-        TestUtils.setupOtpMocks(testCase.otpMocks == null ? List.of(mockWeekdayResponse) : testCase.otpMocks);
+        OtpTestUtils.setupOtpMocks(testCase.otpMocks == null ? List.of(mockWeekdayResponse) : testCase.otpMocks);
 
         // create these entries in the database at this point to ensure the correct mocked time is set
         MonitoredTrip trip = testCase.trip;
@@ -185,15 +279,15 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // Therefore, create a mock journey state and set the matching itinerary to the first itinerary in the first
         // otp mock or the mockWeekdayItinerary if no mocks are provided
         if (testCase.lastCheckedTime != null) {
-            JourneyState journeyState = trip.retrieveJourneyState();
+            JourneyState journeyState = trip.journeyState;
             if (testCase.useOtpMockWhenCreatingJourneyState && testCase.otpMocks.size() > 0) {
                 journeyState.matchingItinerary = testCase.otpMocks.get(0).plan.itineraries.get(0);
             } else {
                 journeyState.matchingItinerary = mockWeekdayItinerary;
             }
             journeyState.targetDate = "2020-06-08";
-            journeyState.lastCheckedMillis = testCase.lastCheckedTime.toInstant().toEpochMilli();
-            Persistence.journeyStates.replace(journeyState.id, journeyState);
+            journeyState.lastCheckedEpochMillis = testCase.lastCheckedTime.toInstant().toEpochMilli();
+            Persistence.monitoredTrips.replace(trip.id, trip);
         }
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(trip);
         try {
@@ -328,6 +422,49 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         return testCases;
     }
 
+    private static class DelayNotificationTestCase {
+        /**
+         * The trip to use to test. It is assumed that the trip is completely setup with an appropriate journey state.
+         */
+        public CheckMonitoredTrip checkMonitoredTrip;
+
+        /**
+         * Whether the check is for the arrival or departure
+         */
+        public NotificationType delayType;
+
+        /**
+         * The expected body of the notification message. If this is not set, it is assumed in the test case that a
+         * notification should not be generated.
+         */
+        public String expectedNotificationMessage;
+
+        /**
+         * Message for test case
+         */
+        public String message;
+
+        public DelayNotificationTestCase(
+            CheckMonitoredTrip checkMonitoredTrip,
+            NotificationType delayType,
+            String message
+        ) {
+            this(checkMonitoredTrip, delayType, null, message);
+        }
+
+        public DelayNotificationTestCase(
+            CheckMonitoredTrip checkMonitoredTrip,
+            NotificationType delayType,
+            String expectedNotificationMessage,
+            String message
+        ) {
+            this.checkMonitoredTrip = checkMonitoredTrip;
+            this.delayType = delayType;
+            this.expectedNotificationMessage = expectedNotificationMessage;
+            this.message = message;
+        }
+    }
+
     private static class ShouldSkipTripTestCase {
         /* The last time a journey was checked */
         public final ZonedDateTime lastCheckedTime;
@@ -431,12 +568,22 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      * will be the offset that is applied to all other times in the itinerary.
      */
     private static void updateBaseItineraryTime(Itinerary mockItinerary, ZonedDateTime baseZonedDateTime) {
-        long offset = baseZonedDateTime.toEpochSecond() * 1000 - mockItinerary.startTime.getTime();
-        mockItinerary.startTime = new Date(mockItinerary.startTime.getTime() + offset);
-        mockItinerary.endTime = new Date(mockItinerary.endTime.getTime() + offset);
+        offsetItineraryTime(
+            mockItinerary,
+            baseZonedDateTime.toEpochSecond() * 1000 - mockItinerary.startTime.getTime()
+        );
+    }
+
+    /**
+     * Offsets the itinerary's timing by adding the given offset to the overall start/end time and each leg start/end
+     * times.
+     */
+    private static void offsetItineraryTime(Itinerary mockItinerary, long offsetMillis) {
+        mockItinerary.startTime = new Date(mockItinerary.startTime.getTime() + offsetMillis);
+        mockItinerary.endTime = new Date(mockItinerary.endTime.getTime() + offsetMillis);
         for (Leg leg : mockItinerary.legs) {
-            leg.startTime = new Date(leg.startTime.getTime() + offset);
-            leg.endTime = new Date(leg.endTime.getTime() + offset);
+            leg.startTime = new Date(leg.startTime.getTime() + offsetMillis);
+            leg.endTime = new Date(leg.endTime.getTime() + offsetMillis);
         }
     }
 }

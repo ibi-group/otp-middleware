@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.tripMonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 
@@ -154,6 +155,8 @@ public class MonitoredTrip extends Model {
      */
     public ItineraryExistence itineraryExistence;
 
+    public JourneyState journeyState = new JourneyState();
+
     public MonitoredTrip() {
     }
 
@@ -175,7 +178,7 @@ public class MonitoredTrip extends Model {
     public boolean checkItineraryExistence(boolean checkAllDays, boolean replaceItinerary) throws URISyntaxException {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries(checkAllDays);
-        this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary);
+        this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary, isArriveBy());
         this.itineraryExistence.checkExistence();
         boolean itineraryExists = this.itineraryExistence.allCheckedDaysAreValid();
         // If itinerary should be replaced, do so if all checked days are valid.
@@ -347,33 +350,11 @@ public class MonitoredTrip extends Model {
     }
 
     /**
-     * Get the journey state for this trip.
-     */
-    public JourneyState retrieveJourneyState() {
-        // attempt to retrieve from the db
-        JourneyState journeyState = Persistence.journeyStates.getOneFiltered(tripIdFilter());
-        // If journey state does not exist, create and persist.
-        if (journeyState == null) {
-            journeyState = new JourneyState(this);
-            Persistence.journeyStates.create(journeyState);
-        }
-        return journeyState;
-    }
-
-    /**
      * Get the latest itinerary that was tracked in the journey state or null if the check has never been performed (or
      * a matching itinerary has never been found).
      */
     public Itinerary latestItinerary() {
-        JourneyState journeyState = retrieveJourneyState();
         return journeyState.matchingItinerary;
-    }
-
-    /**
-     * Clear journey state for the trip. TODO: remove?
-     */
-    public boolean clearJourneyState() {
-        return Persistence.journeyStates.removeFiltered(tripIdFilter());
     }
 
     /**
@@ -411,6 +392,16 @@ public class MonitoredTrip extends Model {
             new URI(String.format("http://example.com/plan?%s", queryParamsWithoutQuestion)),
             UTF_8
         ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+    }
+
+    /**
+     * Check if the trip is planned with the target time being an arriveBy or departAt query.
+     *
+     * @return true, if the trip's target time is for an arriveBy query
+     */
+    public boolean isArriveBy() throws URISyntaxException {
+        // if arriveBy is not included in query params, OTP will default to false, so initialize to false
+        return parseQueryParams().getOrDefault("arriveBy", "false").equals("true");
     }
 
     /**

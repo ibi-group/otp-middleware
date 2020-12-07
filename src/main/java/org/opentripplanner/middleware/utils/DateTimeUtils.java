@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -27,6 +28,12 @@ public class DateTimeUtils {
     private static final Logger LOG = LoggerFactory.getLogger(DateTimeUtils.class);
 
     public static final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
+    public static final DateTimeFormatter DEFAULT_DATE_FORMATTER = DateTimeFormatter.ofPattern(
+        DEFAULT_DATE_FORMAT_PATTERN
+    );
+    public static final DateTimeFormatter NOTIFICATION_TIME_FORMATTER = DateTimeFormatter.ofPattern(
+        ConfigUtils.getConfigPropertyAsText("NOTIFICATION_TIME_FORMAT", "HH:mm")
+    );
 
     /**
      * These are internal variables that can be used to mock dates and times in tests
@@ -151,6 +158,13 @@ public class DateTimeUtils {
             throw new RuntimeException("OTP_TIMEZONE is not defined in config!");
         }
         return ZoneId.of(otpTzId);
+    }
+
+    /**
+     * Converts a {@link LocalDateTime} in OTP's time zone to epoch milliseconds.
+     */
+    public static long otpDateTimeAsEpochMillis(LocalDateTime otpDateTime) {
+        return Instant.from(ZonedDateTime.of(otpDateTime, getOtpZoneId())).toEpochMilli();
     }
 
     /**

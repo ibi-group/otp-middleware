@@ -1,12 +1,20 @@
 package org.opentripplanner.middleware.otp.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.opentripplanner.middleware.utils.InvalidItineraryReason;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.lang.Boolean.TRUE;
@@ -83,6 +91,25 @@ public class Itinerary implements Cloneable {
     public List<Leg> legs = null;
 
     /**
+     * @return set of reasons for why the itinerary cannot be monitored.
+     */
+    public Set<InvalidItineraryReason> checkItineraryCanBeMonitored() {
+        // Check the itinerary for various conditions needed for monitoring.
+        Set<InvalidItineraryReason> reasons = new HashSet<>();
+        if (!hasTransit()) reasons.add(InvalidItineraryReason.MISSING_TRANSIT);
+        if (hasRentalOrRideHail()) reasons.add(InvalidItineraryReason.HAS_RENTAL_OR_RIDE_HAIL);
+        // TODO: Add additional checks here.
+        return reasons;
+    }
+
+    /**
+     * @return true if the itinerary can be monitored.
+     */
+    public boolean canBeMonitored() {
+        return checkItineraryCanBeMonitored().isEmpty();
+    }
+
+    /**
      * Determines whether the itinerary includes transit.
      * @return true if at least one {@link Leg} of the itinerary is a transit leg per OTP.
      */
@@ -133,6 +160,18 @@ public class Itinerary implements Cloneable {
         }
     }
 
+    /**
+     * Get trip time as {@link ZonedDateTime} of itinerary (use of start/end depends on arriveBy).
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public ZonedDateTime getTripTime(boolean arriveBy) {
+        return ZonedDateTime.ofInstant(
+            (arriveBy ? endTime : startTime).toInstant(),
+            DateTimeUtils.getOtpZoneId()
+        );
+    }
+
     @Override
     public String toString() {
         return "Itinerary{" +
@@ -165,5 +204,46 @@ public class Itinerary implements Cloneable {
             cloned.legs.add(leg.clone());
         }
         return cloned;
+    }
+
+    /**
+     * Returns the scheduled start time of the itinerary in epoch milliseconds by subtracting any delay found in the
+     * first transit leg if a transit leg exists.
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public long getScheduledStartTimeEpochMillis() {
+        long startTimeEpochMillis = startTime.getTime();
+        for (Leg leg : legs) {
+            if (leg.transitLeg) {
+                startTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
+                    leg.departureDelay,
+                    TimeUnit.SECONDS
+                );
+                break;
+            }
+        }
+        return startTimeEpochMillis;
+    }
+
+    /**
+     * Returns the scheduled end time of the itinerary in epoch milliseconds by subtracting any delay found in the
+     * last transit leg if a transit leg exists.
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public long getScheduledEndTimeEpochMillis() {
+        long endTimeEpochMillis = endTime.getTime();
+        for (int i = legs.size() - 1; i >= 0; i--) {
+            Leg leg = legs.get(i);
+            if (leg.transitLeg) {
+                endTimeEpochMillis -= TimeUnit.MILLISECONDS.convert(
+                    leg.arrivalDelay,
+                    TimeUnit.SECONDS
+                );
+                break;
+            }
+        }
+        return endTimeEpochMillis;
     }
 }

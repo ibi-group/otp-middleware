@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware;
+package org.opentripplanner.middleware.auth;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
@@ -7,12 +7,10 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.Auth0Users;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
@@ -26,11 +24,13 @@ import static org.eclipse.jetty.http.HttpStatus.NOT_FOUND_404;
 import static org.eclipse.jetty.http.HttpStatus.OK_200;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.TEMP_AUTH0_USER_PASSWORD;
-import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
 import static org.opentripplanner.middleware.auth.Auth0Connection.*;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.OtpUserController.OTP_USER_PATH;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
 
 /**
  * Tests for select methods from {@link Auth0Connection}.
@@ -49,7 +49,7 @@ public class Auth0ConnectionTest {
 
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException {
-        assumeTrue(isEndToEnd);
+        assumeTrue(IS_END_TO_END);
         OtpMiddlewareTest.setUp();
         setAuthDisabled(false);
 
@@ -64,7 +64,7 @@ public class Auth0ConnectionTest {
     
     @AfterAll
     public static void tearDown() throws Auth0Exception {
-        assumeTrue(isEndToEnd);
+        assumeTrue(IS_END_TO_END);
         restoreDefaultAuthDisabled();
 
         // Delete the auth0 user created above.
@@ -76,7 +76,7 @@ public class Auth0ConnectionTest {
     public void canCheckIsCreatingSelf(Auth0ConnectionTestCase testCase) {
         // Simulate a yet-to-be-saved OtpUser/ApiUser sending an authenticated request to persist itself
         // (e.g. during sign up).
-        HttpResponse<String> createUserResponse = TestUtils.mockAuthenticatedRequest(testCase.uri,
+        HttpResponse<String> createUserResponse = mockAuthenticatedRequest(testCase.uri,
             String.format("{\"auth0UserId\": \"%s\",  \"email\": \"%s\"}",
                 dummyRequestingUser.auth0UserId,
                 dummyRequestingUser.email
@@ -121,7 +121,7 @@ public class Auth0ConnectionTest {
     public void canCheckIsRequestingVerificationEmail(Auth0ConnectionTestCase testCase) {
         // Simulate a yet-to-be-saved OtpUser/ApiUser sending an authenticated request to resend a verification email
         // (e.g. during sign up).
-        HttpResponse<String> sendVerificationEmailResponse = TestUtils.mockAuthenticatedGet(testCase.uri, dummyRequestingUser);
+        HttpResponse<String> sendVerificationEmailResponse = mockAuthenticatedGet(testCase.uri, dummyRequestingUser);
         assertEquals(testCase.result, sendVerificationEmailResponse.statusCode(), testCase.message);
     }
 

@@ -12,7 +12,6 @@ import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
-import org.opentripplanner.middleware.models.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -48,7 +47,6 @@ public class Persistence {
     public static TypedPersistence<TripRequest> tripRequests;
     public static TypedPersistence<TripSummary> tripSummaries;
     public static TypedPersistence<MonitoredTrip> monitoredTrips;
-    public static TypedPersistence<JourneyState> journeyStates;
 
     // admin and system reliability collections
     public static TypedPersistence<BugsnagEventRequest> bugsnagEventRequests;
@@ -95,7 +93,6 @@ public class Persistence {
         tripRequests = new TypedPersistence(mongoDatabase, TripRequest.class);
         tripSummaries = new TypedPersistence(mongoDatabase, TripSummary.class);
         monitoredTrips = new TypedPersistence(mongoDatabase, MonitoredTrip.class);
-        journeyStates = new TypedPersistence(mongoDatabase, JourneyState.class);
 
         // admin and system reliability items
         bugsnagEventRequests = new TypedPersistence(mongoDatabase, BugsnagEventRequest.class);
