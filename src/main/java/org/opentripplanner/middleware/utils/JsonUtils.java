@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,7 +9,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
-import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
@@ -77,24 +75,33 @@ public class JsonUtils {
     }
 
     /**
+     * Check if an {@link HttpResponse} is OK.
+     */
+    private static boolean isResponseOk(HttpResponse<String> response) {
+        if (response == null || response.statusCode() >= 400) {
+            String result = response == null ? "bad response!" : response.body();
+            LOG.error("Error found in HTTP response: {}", result);
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Utility method to parse generic object from HTTP response.
      */
     public static <T> T getPOJOFromHttpBody(HttpResponse<String> response, Class<T> clazz) {
-        if (response == null || response.statusCode() >= 400) {
-            String result = response == null ? "bad response!" : response.body();
-            LOG.error("Error found in HTTP response: {}", result);
-            return null;
-        }
-        return getPOJOFromJSON(response.body(), clazz);
+        return isResponseOk(response)
+            ? getPOJOFromJSON(response.body(), clazz)
+            : null;
     }
 
+    /**
+     * Utility method to parse parameterized list of objects from HTTP response.
+     */
     public static <T> List<T> getPOJOFromHttpBodyAsList(HttpResponse<String> response, Class<T> clazz) {
-        if (response == null || response.statusCode() >= 400) {
-            String result = response == null ? "bad response!" : response.body();
-            LOG.error("Error found in HTTP response: {}", result);
-            return null;
-        }
-        return getPOJOFromJSONAsList(response.body(), clazz);
+        return isResponseOk(response)
+            ? getPOJOFromJSONAsList(response.body(), clazz)
+            : null;
     }
 
     /**
