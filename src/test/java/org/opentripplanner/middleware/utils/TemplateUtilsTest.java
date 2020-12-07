@@ -16,12 +16,6 @@ import static com.zenika.snapshotmatcher.SnapshotMatcher.matchesSnapshot;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TemplateUtilsTest extends OtpMiddlewareTest {
-
-    @BeforeAll
-    public static void setup() {
-        TestUtils.mockOtpServer();
-    }
-
     /**
      * A parameterized test that checks whether various templates render in a way that matches a snapshot. The name of
      * the test case is guaranteed to be unique due to a check in the {@link TemplateRenderingTestCase} constructor. The
