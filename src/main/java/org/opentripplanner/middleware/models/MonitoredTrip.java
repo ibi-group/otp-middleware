@@ -351,14 +351,6 @@ public class MonitoredTrip extends Model {
     }
 
     /**
-     * Get the latest itinerary that was tracked in the journey state or null if the check has never been performed (or
-     * a matching itinerary has never been found).
-     */
-    public Itinerary latestItinerary() {
-        return journeyState.matchingItinerary;
-    }
-
-    /**
      * Clear real-time info from itinerary to store.
      * FIXME: Do we need to clear more than the alerts?
      */

@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.tripMonitor.JourneyState;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -127,7 +128,8 @@ public class PersistenceTestUtils {
     public static MonitoredTrip createMonitoredTrip(
         String userId,
         OtpDispatcherResponse otpDispatcherResponse,
-        boolean persist
+        boolean persist,
+        JourneyState journeyState
     ) throws URISyntaxException {
         MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
         monitoredTrip.userId = userId;
@@ -137,6 +139,7 @@ public class PersistenceTestUtils {
         monitoredTrip.tripTime = "08:35";
         monitoredTrip.updateWeekdays(true);
         monitoredTrip.itineraryExistence = new ItineraryExistence();
+        if (journeyState != null) monitoredTrip.journeyState = journeyState;
         if (persist) Persistence.monitoredTrips.create(monitoredTrip);
         return monitoredTrip;
     }

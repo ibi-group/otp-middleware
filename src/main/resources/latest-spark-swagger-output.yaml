@@ -1159,8 +1159,6 @@ definitions:
         format: "int64"
       matchingItinerary:
         $ref: "#/definitions/Itinerary"
-      monitoredTripId:
-        type: "string"
       targetDate:
         type: "string"
       tripStatus:

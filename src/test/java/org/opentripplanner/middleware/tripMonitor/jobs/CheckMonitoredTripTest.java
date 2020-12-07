@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
+import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripMonitor.JourneyState;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -22,13 +23,13 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripMonitor.TripStatus;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -40,12 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
-import static org.opentripplanner.middleware.testutils.OtpTestUtils.DEFAULT_PLAN_URI;
-import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createMonitoredTrip;
-import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createUser;
-import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteMonitoredTrip;
-import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
@@ -77,18 +72,18 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     @BeforeAll
     public static void setup() throws IOException {
         OtpTestUtils.mockOtpServer();
-        user = createUser("user@example.com");
+        user = PersistenceTestUtils.createUser("user@example.com");
         mockResponse = CommonTestUtils.getTestResourceAsString(
             "otp/response/planResponse.json"
         );
-        otpDispatcherResponse = new OtpDispatcherResponse(mockResponse, DEFAULT_PLAN_URI);
+        otpDispatcherResponse = new OtpDispatcherResponse(mockResponse, OtpTestUtils.DEFAULT_PLAN_URI);
     }
 
     @AfterAll
     public static void tearDown() {
         Persistence.otpUsers.removeById(user.id);
         for (MonitoredTrip trip : Persistence.monitoredTrips.getFiltered(eq("userId", user.id))) {
-            deleteMonitoredTrip(trip);
+            PersistenceTestUtils.deleteMonitoredTrip(trip);
         }
     }
 
@@ -103,10 +98,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      * (and OTP_PLAN_ENDPOINT) to a valid OTP server.
      */
     @Test
-    public void canMonitorTrip() throws URISyntaxException {
+    public void canMonitorTrip() throws URISyntaxException, CloneNotSupportedException {
         // Do not run this test on Travis CI because it requires a live OTP server
         // FIXME: Add live otp server to e2e tests.
-        assumeTrue(!isRunningCi && IS_END_TO_END);
+        assumeTrue(!ConfigUtils.isRunningCi && CommonTestUtils.IS_END_TO_END);
         MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = user.id;
@@ -149,7 +144,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // TODO: Improve assertions to use snapshots.
         Assertions.assertEquals(1, checkMonitoredTrip.notifications.size());
         // Clear the created trip.
-        deleteMonitoredTrip(monitoredTrip);
+        PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
     }
 
     @ParameterizedTest
@@ -164,12 +159,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         }
     }
 
-    private static List<DelayNotificationTestCase> createDelayNotificationTestCases () throws URISyntaxException {
+    private static List<DelayNotificationTestCase> createDelayNotificationTestCases ()
+        throws URISyntaxException, CloneNotSupportedException {
         List<DelayNotificationTestCase> testCases = new ArrayList<>();
 
         // should not create departure/arrival notification for on-time trip
         CheckMonitoredTrip onTimeTrip = createCheckMonitoredTrip();
-        onTimeTrip.trip.journeyState = createDefaultJourneyState();
         testCases.add(new DelayNotificationTestCase(
             onTimeTrip,
             NotificationType.DEPARTURE_DELAY,
@@ -187,7 +182,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
             twentyMinutesLateTimeTrip.matchingItinerary,
             TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
         );
-        twentyMinutesLateTimeTrip.trip.journeyState = createDefaultJourneyState();
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTimeTrip,
             NotificationType.DEPARTURE_DELAY,
@@ -205,18 +199,19 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         // baseline
         // should not create arrival notification for 20 minute late trip w/ 15 minute threshold and 18 minute late
         // baseline
-        CheckMonitoredTrip twentyMinutesLateTripWithUpdatedThreshold = createCheckMonitoredTrip();
-        offsetItineraryTime(
-            twentyMinutesLateTripWithUpdatedThreshold.matchingItinerary,
-            TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
-        );
         JourneyState twentyMinutesLateJourneyStateWithUpdatedThreshold = createDefaultJourneyState();
         long eighteenMinutesInMilliseconds = TimeUnit.MILLISECONDS.convert(15, TimeUnit.MINUTES);
         twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis +=
             eighteenMinutesInMilliseconds;
         twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis +=
             eighteenMinutesInMilliseconds;
-        twentyMinutesLateTripWithUpdatedThreshold.trip.journeyState = twentyMinutesLateJourneyStateWithUpdatedThreshold;
+        CheckMonitoredTrip twentyMinutesLateTripWithUpdatedThreshold = createCheckMonitoredTrip(
+            twentyMinutesLateJourneyStateWithUpdatedThreshold
+        );
+        offsetItineraryTime(
+            twentyMinutesLateTripWithUpdatedThreshold.matchingItinerary,
+            TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
+        );
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTripWithUpdatedThreshold,
             NotificationType.DEPARTURE_DELAY,
@@ -230,11 +225,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
 
         // should create a departure notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline
         // should create a arrival notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline
-        CheckMonitoredTrip onTimeTripWithUpdatedThreshold = createCheckMonitoredTrip();
         JourneyState onTimeJourneyStateWithUpdatedThreshold = createDefaultJourneyState();
         onTimeJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis += eighteenMinutesInMilliseconds;
         onTimeJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis += eighteenMinutesInMilliseconds;
-        onTimeTripWithUpdatedThreshold.trip.journeyState = onTimeJourneyStateWithUpdatedThreshold;
+        CheckMonitoredTrip onTimeTripWithUpdatedThreshold = createCheckMonitoredTrip(
+            onTimeJourneyStateWithUpdatedThreshold
+        );
         testCases.add(new DelayNotificationTestCase(
             onTimeTripWithUpdatedThreshold,
             NotificationType.DEPARTURE_DELAY,
@@ -252,12 +248,26 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
     }
 
     /**
+     * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
+     */
+    private static CheckMonitoredTrip createCheckMonitoredTrip() throws URISyntaxException, CloneNotSupportedException {
+        return createCheckMonitoredTrip(createDefaultJourneyState());
+    }
+
+    /**
      * Creates a new CheckMonitoredTrip instance with a new non-persisted MonitoredTrip instance. The monitored trip is
      * created using the default OTP response. Also, creates a new matching itinerary that consists of the first
      * itinerary in the default OTP response.
      */
-    private static CheckMonitoredTrip createCheckMonitoredTrip() throws URISyntaxException {
-        MonitoredTrip monitoredTrip = createMonitoredTrip(user.id, otpDispatcherResponse.clone(), false);
+    private static CheckMonitoredTrip createCheckMonitoredTrip(
+        JourneyState journeyState
+    ) throws URISyntaxException, CloneNotSupportedException {
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            otpDispatcherResponse.clone(),
+            false,
+            journeyState
+        );
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip);
         checkMonitoredTrip.matchingItinerary = createDefaultItinerary();
         return checkMonitoredTrip;
@@ -296,7 +306,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
         List<ShouldSkipTripTestCase> testCases = new ArrayList<>();
 
         // - Return true for weekend trip when current time is on a weekday.
-        MonitoredTrip weekendTrip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
+        MonitoredTrip weekendTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            otpDispatcherResponse,
+            true,
+            createDefaultJourneyState()
+        );
         weekendTrip.updateAllDaysOfWeek(false);
         weekendTrip.saturday = true;
         weekendTrip.sunday = true;
@@ -396,7 +411,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      * Tests whether an OTP request can be made and if the trip and matching itinerary gets updated properly
      */
     @Test
-    public void canMakeOTPRequestAndUpdateMatchingItineraryForPreviouslyUnmatchedItinerary() throws URISyntaxException {
+    public void canMakeOTPRequestAndUpdateMatchingItineraryForPreviouslyUnmatchedItinerary()
+        throws URISyntaxException, CloneNotSupportedException {
         // create a mock monitored trip and CheckMonitorTrip instance
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip();
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
@@ -470,7 +486,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      * matching itinerary.
      */
     @Test
-    public void canMakeOTPRequestAndResolveUnmatchedItinerary() throws URISyntaxException {
+    public void canMakeOTPRequestAndResolveUnmatchedItinerary() throws URISyntaxException, CloneNotSupportedException {
         // create a mock monitored trip and CheckMonitorTrip instance
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip();
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
@@ -544,7 +560,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
      * matching itinerary for all days of the week.
      */
     @Test
-    public void canMakeOTPRequestAndResolveNoLongerPossibleTrip() throws URISyntaxException {
+    public void canMakeOTPRequestAndResolveNoLongerPossibleTrip() throws URISyntaxException,
+        CloneNotSupportedException {
         // create a mock monitored trip and CheckMonitorTrip instance
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip();
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
@@ -695,7 +712,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
             return message;
         }
 
-        public CheckMonitoredTrip generateCheckMonitoredTrip() throws URISyntaxException {
+        public CheckMonitoredTrip generateCheckMonitoredTrip() throws URISyntaxException, CloneNotSupportedException {
             // create a mock OTP response for planning a trip on a weekday target datetime
             OtpResponse mockWeekdayResponse = otpDispatcherResponse.getResponse();
             Itinerary mockWeekdayItinerary = mockWeekdayResponse.plan.itineraries.get(0);
@@ -707,7 +724,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTest {
             // create these entries in the database at this point to ensure the correct mocked time is set
             // if trip is null, create the default weekday trip
             if (trip == null) {
-                trip = createMonitoredTrip(user.id, otpDispatcherResponse, true);
+                trip = PersistenceTestUtils
+                    .createMonitoredTrip(user.id, otpDispatcherResponse, true, createDefaultJourneyState());
             }
 
             // if last checked time is not null, there is an assumption that the journey state has been created before.
