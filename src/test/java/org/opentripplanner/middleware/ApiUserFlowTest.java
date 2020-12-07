@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -71,6 +70,7 @@ public class ApiUserFlowTest {
     private static ApiUser apiUser;
     private static OtpUser otpUser;
     private static OtpUser otpUserMatchingApiUser;
+    private static OtpUser otpUserStandalone;
     private static final String OTP_USER_PATH = "api/secure/user";
     private static final String MONITORED_TRIP_PATH = "api/secure/monitoredtrip";
 
@@ -93,12 +93,16 @@ public class ApiUserFlowTest {
         assumeTrue(testsShouldRun());
         // Mock the OTP server TODO: Run a live OTP instance?
         TestUtils.mockOtpServer();
+
+        // Create a 'standalone' OtpUser that is not managed by an ApiUser.
+        otpUserStandalone = PersistenceUtil.createUser(TestUtils.generateEmailAddress("test-stdalone-otpuser"));
+
         // As a pre-condition, create an API User with API key.
-        apiUser = PersistenceUtil.createApiUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
+        apiUser = PersistenceUtil.createApiUser(TestUtils.generateEmailAddress("test-apiuser"));
         apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
         // Create, but do not persist, an OTP user.
         otpUser = new OtpUser();
-        otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
+        otpUser.email = TestUtils.generateEmailAddress("test-api-otpuser");
         otpUser.hasConsentedToTerms = true;
         otpUser.storeTripHistory = true;
         try {
@@ -129,6 +133,8 @@ public class ApiUserFlowTest {
         if (otpUser != null) otpUser.delete(false);
         otpUserMatchingApiUser = Persistence.otpUsers.getById(otpUserMatchingApiUser.id);
         if (otpUserMatchingApiUser != null) otpUserMatchingApiUser.delete(false);
+        otpUserStandalone = Persistence.otpUsers.getById(otpUserStandalone.id);
+        if (otpUserStandalone != null) otpUserStandalone.delete(false);
     }
 
     /**
@@ -207,6 +213,17 @@ public class ApiUserFlowTest {
             createTripResponseAsApiUser.body(),
             MonitoredTrip.class
         );
+
+        // As API user, try to assign this trip to another user the API user doesn't manage.
+        monitoredTrip.userId = otpUserStandalone.id;
+        HttpResponse<String> putTripResponseAsApiUser = makeRequest(
+            MONITORED_TRIP_PATH + "/" + monitoredTrip.id,
+            JsonUtils.toJson(monitoredTrip),
+            apiUserHeaders,
+            HttpUtils.REQUEST_METHOD.PUT
+        );
+        assertEquals(HttpStatus.FORBIDDEN_403, putTripResponseAsApiUser.statusCode());
+        monitoredTrip.userId = otpUser.id;
 
         // Request all monitored trips for an Otp user authenticating as an Api user. This will work and return all trips
         // matching the user id provided.

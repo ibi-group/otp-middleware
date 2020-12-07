@@ -302,4 +302,8 @@ public class TestUtils {
             "08:35"
         );
     }
+
+    public static String generateEmailAddress(String prefix) {
+        return String.format("%s-%s@example.com", prefix, UUID.randomUUID().toString());
+    }
 }
