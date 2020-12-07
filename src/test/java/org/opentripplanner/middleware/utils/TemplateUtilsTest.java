@@ -33,7 +33,7 @@ public class TemplateUtilsTest extends OtpMiddlewareTest {
     public void canRenderTemplates(TemplateRenderingTestCase testCase) throws Exception {
         assertThat(
             TemplateUtils.renderTemplate(testCase.templatePath, testCase.data),
-            matchesSnapshot(testCase.testCaseName)
+            matchesSnapshot(testCase.testCaseName.replace(" ", "_"))
         );
     }
 

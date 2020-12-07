@@ -1,11 +1,11 @@
 <#--
     This is the root template for all emails. Stuff like overall styling should be put in here. Any
-    emails that use this must implement a macro called `email_body` and the whole html email will
-    eventually get rendered by the statement <@html_email/>.
+    emails that use this must implement a macro called `EmailBody` and the whole html email will
+    eventually get rendered by the statement <@HtmlEmail/>.
 -->
 
-<#macro html_email>
+<#macro HtmlEmail>
 <div>
-    <@email_body/>
+    <@EmailBody/>
 </div>
 </#macro>

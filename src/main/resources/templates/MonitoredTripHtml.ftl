@@ -5,9 +5,8 @@
     OTP user's monitored trip.
 -->
 
-<#macro email_main>
+<#macro EmailMain>
     <div>
-        <h2></h2>
         <p>Your trip has the following notifications:</p>
         <ul>
         <#list notifications as notification>
@@ -18,4 +17,4 @@
     </div>
 </#macro>
 
-<@html_email/>
+<@HtmlEmail/>

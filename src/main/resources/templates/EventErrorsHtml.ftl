@@ -5,7 +5,7 @@
     users should be notified about.
 -->
 
-<#macro email_main>
+<#macro EmailMain>
     <div>
         <h3>${subject}</h3>
         <p>
@@ -16,4 +16,4 @@
     </div>
 </#macro>
 
-<@html_email/>
+<@HtmlEmail/>
