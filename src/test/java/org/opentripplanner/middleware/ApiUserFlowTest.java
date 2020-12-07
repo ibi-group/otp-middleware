@@ -215,15 +215,19 @@ public class ApiUserFlowTest {
         );
 
         // As API user, try to assign this trip to another user the API user doesn't manage.
-        monitoredTrip.userId = otpUserStandalone.id;
+        // (This trip should not be persisted.)
+        MonitoredTrip monitoredTripToNonManagedUser = JsonUtils.getPOJOFromJSON(
+            createTripResponseAsApiUser.body(),
+            MonitoredTrip.class
+        );
+        monitoredTripToNonManagedUser.userId = otpUserStandalone.id;
         HttpResponse<String> putTripResponseAsApiUser = makeRequest(
-            MONITORED_TRIP_PATH + "/" + monitoredTrip.id,
-            JsonUtils.toJson(monitoredTrip),
+            MONITORED_TRIP_PATH + "/" + monitoredTripToNonManagedUser.id,
+            JsonUtils.toJson(monitoredTripToNonManagedUser),
             apiUserHeaders,
             HttpUtils.REQUEST_METHOD.PUT
         );
         assertEquals(HttpStatus.FORBIDDEN_403, putTripResponseAsApiUser.statusCode());
-        monitoredTrip.userId = otpUser.id;
 
         // Request all monitored trips for an Otp user authenticating as an Api user. This will work and return all trips
         // matching the user id provided.
