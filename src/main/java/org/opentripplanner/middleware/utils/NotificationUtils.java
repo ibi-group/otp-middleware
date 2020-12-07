@@ -42,7 +42,7 @@ public class NotificationUtils {
     public static final String FROM_PHONE = getConfigPropertyAsText("NOTIFICATION_FROM_PHONE");
     private static final String SPARKPOST_KEY = getConfigPropertyAsText("SPARKPOST_KEY");
     private static final String FROM_EMAIL = getConfigPropertyAsText("NOTIFICATION_FROM_EMAIL");
-    public static final String OTP_ADMIN_DASHBOARD_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_EMAIL");
+    public static final String OTP_ADMIN_DASHBOARD_FROM_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_FROM_EMAIL");
 
     /**
      * Send templated SMS to {@link OtpUser}.
@@ -152,7 +152,7 @@ public class NotificationUtils {
 
     /**
      * Send notification email to {@link AdminUser}, ensuring the correct from
-     * email address is used (i.e., {@link #OTP_ADMIN_DASHBOARD_EMAIL}).
+     * email address is used (i.e., {@link #OTP_ADMIN_DASHBOARD_FROM_EMAIL}).
      */
     public static boolean sendEmail(
         AdminUser adminUser,
@@ -161,7 +161,7 @@ public class NotificationUtils {
         String htmlTemplate,
         Object data
     ) {
-        return sendEmail(OTP_ADMIN_DASHBOARD_EMAIL, adminUser.email, subject, textTemplate, htmlTemplate, data);
+        return sendEmail(OTP_ADMIN_DASHBOARD_FROM_EMAIL, adminUser.email, subject, textTemplate, htmlTemplate, data);
     }
 
     /**
