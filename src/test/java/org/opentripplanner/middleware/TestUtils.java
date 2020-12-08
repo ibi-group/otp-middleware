@@ -303,6 +303,10 @@ public class TestUtils {
         );
     }
 
+    /**
+     * Generates a test email address with the specified prefix (to help trace which code created a user),
+     * followed by random UUID string.
+     */
     public static String generateEmailAddress(String prefix) {
         return String.format("%s-%s@example.com", prefix, UUID.randomUUID().toString());
     }

@@ -7,13 +7,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.TestUtils;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,7 +34,7 @@ public class OtpUserControllerTest {
         setAuthDisabled(true);
         // Create a persisted OTP user.
         otpUser = new OtpUser();
-        otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
+        otpUser.email = TestUtils.generateEmailAddress("test-otpusercont");
         otpUser.hasConsentedToTerms = true;
         otpUser.phoneNumber = INITIAL_PHONE_NUMBER;
         otpUser.isPhoneNumberVerified = true;

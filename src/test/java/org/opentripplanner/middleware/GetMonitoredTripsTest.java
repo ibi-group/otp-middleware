@@ -3,7 +3,6 @@ package org.opentripplanner.middleware;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -13,7 +12,6 @@ import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -24,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -72,8 +69,8 @@ public class GetMonitoredTripsTest {
         setAuthDisabled(false);
         // Mock the OTP server TODO: Run a live OTP instance?
         TestUtils.mockOtpServer();
-        String multiUserEmail = String.format("test-%s@example.com", UUID.randomUUID().toString());
-        soloOtpUser = PersistenceUtil.createUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
+        String multiUserEmail = TestUtils.generateEmailAddress("test-multiotpuser");
+        soloOtpUser = PersistenceUtil.createUser(TestUtils.generateEmailAddress("test-solootpuser"));
         multiOtpUser = PersistenceUtil.createUser(multiUserEmail);
         multiAdminUser = PersistenceUtil.createAdminUser(multiUserEmail);
         try {
