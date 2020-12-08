@@ -45,11 +45,6 @@ public class Auth0Connection {
     private static boolean authDisabled = getDefaultAuthDisabled();
 
     /**
-     * The scope to be used when auth is disabled, defaulted to an OTP user scope.
-     */
-    private static String scope = OtpUser.SCOPE;
-
-    /**
      * Check the incoming API request for the user token (and verify it) and assign as the "user" attribute on the
      * incoming request object for use in downstream controllers.
      *
@@ -61,7 +56,7 @@ public class Auth0Connection {
         if (isAuthDisabled()) {
             // If in a development or testing environment, assign a mock profile of a user to the request attribute based
             // on scope and skip authentication.
-            addUserToRequest(req, RequestingUser.createTestUser(req, scope));
+            addUserToRequest(req, RequestingUser.createTestUser(req));
             return;
         }
         // Admin and OTP users authenticated by Bearer token
@@ -111,6 +106,11 @@ public class Auth0Connection {
     public static boolean isAuthHeaderPresent(Request req) {
         final String authHeader = req.headers("Authorization");
         return authHeader != null;
+    }
+
+    public static boolean isScopeHeaderPresent(Request req) {
+        final String scope = req.headers("scope");
+        return scope != null;
     }
 
     /**
@@ -234,13 +234,6 @@ public class Auth0Connection {
      */
     public static void setAuthDisabled(boolean authDisabled) {
         Auth0Connection.authDisabled = authDisabled;
-    }
-
-    /**
-     * Override the current {@link #scope} value. This is used principally for setting up test environments.
-     */
-    public static void setScope(String scope) {
-        Auth0Connection.scope = scope;
     }
 
     /**

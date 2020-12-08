@@ -3,7 +3,6 @@ package org.opentripplanner.middleware;
 import com.auth0.json.auth.TokenHolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.AbstractUser;
@@ -98,17 +97,17 @@ public class TestUtils {
     private static HashMap<String, String> getMockHeaders(AbstractUser requestingUser) {
         HashMap<String, String> headers = new HashMap<>();
         String scope = null;
-        // If auth is disabled, simply place the Auth0 user ID in the authorization header, which will be extracted from
-        // the request when received.
+        // If auth is disabled, set the authorization header, x-api-key and scope accordingly, each which will be
+        // extracted from the request when received.
         if (isAuthDisabled()) {
             headers.put("Authorization", requestingUser.auth0UserId);
             headers.put("x-api-key", TEMP_X_API_KEY);
             if (requestingUser instanceof OtpUser) {
-                Auth0Connection.setScope(OtpUser.SCOPE);
+                headers.put("scope", OtpUser.AUTH0_SCOPE);
             } else if (requestingUser instanceof ApiUser) {
-                Auth0Connection.setScope(ApiUser.SCOPE);
+                headers.put("scope", ApiUser.AUTH0_SCOPE);
             } else if (requestingUser instanceof AdminUser) {
-                Auth0Connection.setScope(AdminUser.SCOPE);
+                headers.put("scope", AdminUser.AUTH0_SCOPE);
             }
             return headers;
         }
@@ -116,7 +115,7 @@ public class TestUtils {
         // If requester is an API user, add API key value as x-api-key header to simulate request over API Gateway.
         if (requestingUser instanceof ApiUser) {
             ApiUser apiUser = (ApiUser) requestingUser;
-            scope = ApiUser.SCOPE;
+            scope = ApiUser.AUTH0_SCOPE;
             if (!apiUser.apiKeys.isEmpty()) {
                 headers.put("x-api-key", apiUser.apiKeys.get(0).value);
             }
@@ -129,16 +128,20 @@ public class TestUtils {
             if (otpUserFromDB != null && otpUserFromDB.applicationId != null) {
                 return headers;
             }
-            scope = OtpUser.SCOPE;
+            scope = OtpUser.AUTH0_SCOPE;
         }
 
         // Otherwise, get a valid oauth token for the user
-        headers.put("Authorization", "Bearer " + getMockAuth0AccessToken(requestingUser.email, scope));
+        headers.put("Authorization", "Bearer " + getTestAuth0AccessToken(requestingUser.email, scope));
         return headers;
     }
 
-    private static String getMockAuth0AccessToken(String username, String scope) {
-        HttpResponse<String> response = Auth0Users.getApiUserAuth0TokenResponse(username, TestUtils.TEMP_AUTH0_USER_PASSWORD, scope);
+    /**
+     * Attempt to get Auth0 token from Auth0 tenant for the given username (email) and scope. If the response from Auth0
+     * is ok, extract the access token from the token holder response and return to caller.
+     */
+    private static String getTestAuth0AccessToken(String username, String scope) {
+        HttpResponse<String> response = Auth0Users.getAuth0TokenWithScope(username, TestUtils.TEMP_AUTH0_USER_PASSWORD, scope);
         if (response == null || response.statusCode() != HttpStatus.OK_200) {
             LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}", username, response.statusCode(), response.body());
             return null;

@@ -57,15 +57,16 @@ public class RequestingUser {
             return;
         }
 
-        if (scope.contains(OtpUser.SCOPE)) {
+        // TODO: Consider consolidating the user scope fields into a single AbstractUser user field.
+        if (scope.contains(OtpUser.AUTH0_SCOPE)) {
             otpUser = (testing)
                 ? new OtpUser()
                 : Persistence.otpUsers.getOneFiltered(withAuth0UserId);
-        } else if (scope.contains(ApiUser.SCOPE)) {
+        } else if (scope.contains(ApiUser.AUTH0_SCOPE)) {
             apiUser = (testing)
                 ? new ApiUser()
                 : Persistence.apiUsers.getOneFiltered(withAuth0UserId);
-        } else if (scope.contains(AdminUser.SCOPE)) {
+        } else if (scope.contains(AdminUser.AUTH0_SCOPE)) {
             adminUser = (testing)
                 ? new AdminUser()
                 : Persistence.adminUsers.getOneFiltered(withAuth0UserId);
@@ -76,15 +77,21 @@ public class RequestingUser {
 
     /**
      * Utility method for creating a test user. If a Auth0 user Id is defined within the Authorization header param
-     * define test user based on this.
+     * define test user based on this. If the
      */
-    static RequestingUser createTestUser(Request req, String scope) {
+    static RequestingUser createTestUser(Request req) {
         String auth0UserId = null;
+        String scope = null;
 
         if (Auth0Connection.isAuthHeaderPresent(req)) {
             // If the auth header has been provided get the Auth0 user id from it. This is different from normal
             // operation as the parameter will only contain the Auth0 user id and not "Bearer token".
             auth0UserId = req.headers("Authorization");
+        }
+
+        if (Auth0Connection.isScopeHeaderPresent(req)) {
+            // If the scope header is provided, restrict the requesting user to the type of user defined in the scope.
+            scope = req.headers("scope");
         }
 
         return new RequestingUser(auth0UserId, scope);

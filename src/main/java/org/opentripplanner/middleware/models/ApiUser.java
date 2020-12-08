@@ -15,7 +15,7 @@ import java.util.List;
  * access otp-middleware's endpoints (as well as the geocoding and OTP endpoints).
  */
 public class ApiUser extends AbstractUser {
-    public static final String SCOPE = "api-user";
+    public static final String AUTH0_SCOPE = "api-user";
     private static final Logger LOG = LoggerFactory.getLogger(ApiUser.class);
     /** Holds the API keys assigned to the user. */
     public List<ApiKey> apiKeys = new ArrayList<>();

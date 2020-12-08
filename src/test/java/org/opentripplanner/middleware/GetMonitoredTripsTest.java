@@ -3,7 +3,6 @@ package org.opentripplanner.middleware;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -13,7 +12,6 @@ import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.PersistenceUtil;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -149,7 +147,7 @@ public class GetMonitoredTripsTest {
         ResponseList<MonitoredTrip> multiTrips = JsonUtils.getResponseListFromJSON(multiTripsResponse.body(), MonitoredTrip.class);
 
         // Multi Otp user has 'enhanced' admin credentials, still expect only 1 trip to be returned as the scope will
-        // limit the requesting user to a single 'opt-user' user type.
+        // limit the requesting user to a single 'otp-user' user type.
         // TODO: Determine if a separate admin endpoint should be maintained for getting all/combined trips.
         assertEquals(1, multiTrips.data.size());
 
