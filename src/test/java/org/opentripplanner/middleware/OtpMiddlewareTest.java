@@ -1,20 +1,29 @@
 package org.opentripplanner.middleware;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpHeaders;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 
-import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 
 /**
- * This abstract class is used to start a test instance of otp-middleware that other tests can use to perform various
- * tests.
+ * This class is used to test generic endpoints of the otp-middleware server and also to start a test instance of
+ * otp-middleware that other tests can use to perform various tests.
  */
-public abstract class OtpMiddlewareTest {
+public class OtpMiddlewareTest {
     private static final Logger LOG = LoggerFactory.getLogger(OtpMiddlewareTest.class);
     private static boolean setUpIsDone = false;
 
@@ -36,7 +45,7 @@ public abstract class OtpMiddlewareTest {
         // If in the e2e environment, use the secret env.yml file to start the server.
         // TODO: When ran on Travis CI, this file will automatically be setup.
         String[] args;
-        if (isEndToEnd) {
+        if (IS_END_TO_END) {
             // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
             args = isRunningCi ? new String[]{} : new String[]{"configurations/default/env.yml"};
         } else {
@@ -52,5 +61,26 @@ public abstract class OtpMiddlewareTest {
         }
         OtpMiddlewareMain.main(args);
         setUpIsDone = true;
+    }
+
+    /**
+     * Test to confirm the correct redirect to required registration page.
+     */
+    @Test
+    public void canRegisterRedirect() {
+        String redirect = "http://localhost:3000/#/register";
+
+        String path = String.format("register?route=%s", URLEncoder.encode(redirect, StandardCharsets.UTF_8));
+        HttpResponse<String> response = HttpUtils.httpRequestRawResponse(
+            URI.create("http://localhost:4567/" + path),
+            1000,
+            HttpUtils.REQUEST_METHOD.GET,
+            null,
+            ""
+        );
+
+        assertEquals(HttpStatus.FOUND_302, response.statusCode());
+        HttpHeaders httpHeaders = response.headers();
+        assertEquals(redirect, httpHeaders.firstValue("location").get());
     }
 }

@@ -1,14 +1,15 @@
-package org.opentripplanner.middleware;
+package org.opentripplanner.middleware.controllers.api;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.persistence.PersistenceUtil;
+import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -21,12 +22,12 @@ import java.net.http.HttpResponse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.TestUtils.isEndToEnd;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedDelete;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedDelete;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
 
 /**
  * Tests for creating and deleting api keys. The following config parameters must be set in
@@ -47,14 +48,14 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @BeforeAll
     public static void setUp() throws IOException, InterruptedException {
-        assumeTrue(isEndToEnd);
+        assumeTrue(IS_END_TO_END);
         // TODO: It might be useful to allow this to run without DISABLE_AUTH set to true (in an end-to-end environment
         //  using real tokens from Auth0.
         setAuthDisabled(true);
         // Load config before checking if tests should run.
         OtpMiddlewareTest.setUp();
-        apiUser = PersistenceUtil.createApiUser("test@example.com");
-        adminUser = PersistenceUtil.createAdminUser("test@example.com");
+        apiUser = PersistenceTestUtils.createApiUser("test@example.com");
+        adminUser = PersistenceTestUtils.createAdminUser("test@example.com");
     }
 
     /**
@@ -62,7 +63,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTest {
      */
     @AfterAll
     public static void tearDown() {
-        assumeTrue(isEndToEnd);
+        assumeTrue(IS_END_TO_END);
         // refresh API key(s)
         apiUser = Persistence.apiUsers.getById(apiUser.id);
         apiUser.delete();

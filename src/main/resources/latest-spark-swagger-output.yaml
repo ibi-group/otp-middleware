@@ -1076,7 +1076,7 @@ definitions:
   OtpRequest:
     type: "object"
     properties:
-      date:
+      dateTime:
         $ref: "#/definitions/ZonedDateTime"
       requestParameters:
         $ref: "#/definitions/Map"
@@ -1114,6 +1114,8 @@ definitions:
       message:
         type: "string"
       error:
+        type: "boolean"
+      tripIsArriveBy:
         type: "boolean"
       timestamp:
         type: "string"

@@ -178,7 +178,7 @@ public class MonitoredTrip extends Model {
     public boolean checkItineraryExistence(boolean checkAllDays, boolean replaceItinerary) throws URISyntaxException {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries(checkAllDays);
-        this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary);
+        this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary, isArriveBy());
         this.itineraryExistence.checkExistence();
         boolean itineraryExists = this.itineraryExistence.allCheckedDaysAreValid();
         // If itinerary should be replaced, do so if all checked days are valid.
@@ -392,6 +392,16 @@ public class MonitoredTrip extends Model {
             new URI(String.format("http://example.com/plan?%s", queryParamsWithoutQuestion)),
             UTF_8
         ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+    }
+
+    /**
+     * Check if the trip is planned with the target time being an arriveBy or departAt query.
+     *
+     * @return true, if the trip's target time is for an arriveBy query
+     */
+    public boolean isArriveBy() throws URISyntaxException {
+        // if arriveBy is not included in query params, OTP will default to false, so initialize to false
+        return parseQueryParams().getOrDefault("arriveBy", "false").equals("true");
     }
 
     /**
