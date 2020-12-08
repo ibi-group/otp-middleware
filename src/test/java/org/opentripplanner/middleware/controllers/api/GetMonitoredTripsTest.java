@@ -15,6 +15,7 @@ import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -23,7 +24,6 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -71,11 +71,8 @@ public class GetMonitoredTripsTest {
 
         // Mock the OTP server TODO: Run a live OTP instance?
         OtpTestUtils.mockOtpServer();
-
-        // Create the different users (with different emails) for testing permissions.
-        String soloUserEmail = String.format("test-%s@example.com", UUID.randomUUID().toString());
-        soloOtpUser = PersistenceTestUtils.createUser(soloUserEmail);
-        String multiUserEmail = String.format("test-%s@example.com", UUID.randomUUID().toString());
+        String multiUserEmail = ApiTestUtils.generateEmailAddress("test-multiotpuser");
+        soloOtpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
         multiOtpUser = PersistenceTestUtils.createUser(multiUserEmail);
         multiAdminUser = PersistenceTestUtils.createAdminUser(multiUserEmail);
         try {

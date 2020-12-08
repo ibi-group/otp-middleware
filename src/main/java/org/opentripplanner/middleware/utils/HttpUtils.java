@@ -22,7 +22,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
-    public enum REQUEST_METHOD {GET, POST, DELETE}
+    public enum REQUEST_METHOD {GET, POST, PUT, DELETE} // FIXME: use sn existing library enum?
 
     /**
      * A constant for a list of MIME types containing application/json only.
@@ -61,7 +61,7 @@ public class HttpUtils {
     }
 
     /**
-     * Makes an http get/post request and returns the response. The request is based on the provided params.
+     * Makes an http request and returns the response. The request is based on the provided params.
      */
     public static HttpResponse<String> httpRequestRawResponse(URI uri, int connectionTimeout, REQUEST_METHOD method,
                                                               Map<String, String> headers, String bodyContent) {
@@ -73,18 +73,24 @@ public class HttpUtils {
             .timeout(Duration.ofSeconds(connectionTimeout))
             .GET();
 
-        if (method.equals(REQUEST_METHOD.GET)) {
-            httpRequestBuilder.GET();
-        }
-
-        if (method.equals(REQUEST_METHOD.DELETE)) {
-            httpRequestBuilder.DELETE();
-        }
-
-        if (method.equals(REQUEST_METHOD.POST)) {
-            httpRequestBuilder.POST(HttpRequest
-                .BodyPublishers
-                .ofString(bodyContent));
+        switch(method) {
+            case GET:
+                httpRequestBuilder.GET();
+                break;
+            case DELETE:
+                httpRequestBuilder.DELETE();
+                break;
+            case POST:
+                httpRequestBuilder.POST(HttpRequest
+                    .BodyPublishers
+                    .ofString(bodyContent));
+                break;
+            case PUT:
+                httpRequestBuilder.PUT(HttpRequest
+                    .BodyPublishers
+                    .ofString(bodyContent));
+                break;
+            default:
         }
 
         if (headers != null && !headers.isEmpty()) {

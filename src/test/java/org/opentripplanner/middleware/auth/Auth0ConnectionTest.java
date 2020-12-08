@@ -10,12 +10,12 @@ import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.eclipse.jetty.http.HttpStatus.NOT_FOUND_404;
@@ -54,7 +54,7 @@ public class Auth0ConnectionTest {
         setAuthDisabled(false);
 
         dummyRequestingUser = new OtpUser();
-        dummyRequestingUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
+        dummyRequestingUser.email = ApiTestUtils.generateEmailAddress("test-auth0conn");
 
         // Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
         // from being able to use TEMP_AUTH0_USER_PASSWORD.
