@@ -108,11 +108,6 @@ public class Auth0Connection {
         return authHeader != null;
     }
 
-    public static boolean isScopeHeaderPresent(Request req) {
-        final String scope = req.headers("scope");
-        return scope != null;
-    }
-
     /**
      * Assign user to request and check that the user is an admin.
      */

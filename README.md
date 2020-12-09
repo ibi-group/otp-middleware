@@ -23,8 +23,7 @@ OTP Middleware is also suitable for continuous deployment implementations.
 ## Development
 To run otp-middleware in a local, development environment:
 
-```
-bash
+```bash
 # Clone the repo.
 git clone https://github.com/ibi-group/otp-middleware.git
 cd otp-middleware
@@ -46,15 +45,15 @@ TODO: Add Auth0 setup instructions.
 
 #### Auth0 Scope
 
-The requesting user type which determines the level of authorization is based on the scope provided as part of a user's bearer token. 
-The bearer token 'scope' claim must contain one of otp-user, api-user or admin-user for the user to be correctly matched to a user held in the database.
+The requesting user type, which determines the level of authorization, is based on the scope provided as part of a user's bearer token. 
+The bearer token 'scope' claim must contain one of `otp-user`, `api-user` or `admin-user` for the user to be correctly matched to a user held in the database.
 
 ##### Auth0 Scope Rule
 
 A rule must be added to the Auth0 tenant for the scope provided by third parties to be available for authorization within the OTP-middleware.
 This rule takes the scope value provided by the caller and adds it to the access token.  
 
-```
+```javascript
 function (user, context, callback) {
     const req = context.request;
     // Retrieve scopes either from the parameters or body

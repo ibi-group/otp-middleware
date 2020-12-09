@@ -22,7 +22,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
-    public enum REQUEST_METHOD {GET, POST, PUT, DELETE} // FIXME: use sn existing library enum?
+    public enum REQUEST_METHOD {GET, POST, PUT, DELETE}
 
     /**
      * A constant for a list of MIME types containing application/json only.

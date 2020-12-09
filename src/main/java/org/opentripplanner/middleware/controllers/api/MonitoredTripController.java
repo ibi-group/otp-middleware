@@ -5,8 +5,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -90,26 +88,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      */
     private void preCreateOrUpdateChecks(MonitoredTrip monitoredTrip, Request req) {
         checkTripCanBeMonitored(monitoredTrip, req);
-        checkTripBelongsToManagedUser(monitoredTrip, req);
         processTripQueryParams(monitoredTrip, req);
-    }
-
-    /**
-     * Checks that the monitored trip to be written belongs to the requesting user
-     * or to an OtpUser managed by the requesting ApiUser.
-     *
-     * For update (PUT) requests, this check is in addition to MonitoredTrip#canBeManagedBy
-     * that checks that the requesting user can modify the existing, persisted trip.
-     */
-    private void checkTripBelongsToManagedUser(MonitoredTrip monitoredTrip, Request req) {
-        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
-        if (!requestingUser.canManageEntity(monitoredTrip)) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.FORBIDDEN_403,
-                "Requesting user not authorized to assign the specified trip to the specified user."
-            );
-        }
     }
 
     /**
