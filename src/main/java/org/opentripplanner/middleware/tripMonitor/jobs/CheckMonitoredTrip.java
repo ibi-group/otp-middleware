@@ -273,7 +273,7 @@ public class CheckMonitoredTrip implements Runnable {
             LOG.info("Last notifications match current ones. Skipping notify.");
             return;
         }
-        Map<String, Object> data = Map.of(
+        Map<String, Object> templateData = Map.of(
             "tripId", trip.id,
             "notifications", notifications.stream()
                 .map(notification -> notification.body)
@@ -285,14 +285,14 @@ public class CheckMonitoredTrip implements Runnable {
         // FIXME: This needs to be an enum.
         switch (otpUser.notificationChannel.toLowerCase()) {
             case "sms":
-                success = sendSMS(otpUser, data);
+                success = sendSMS(otpUser, templateData);
                 break;
             case "email":
-                success = sendEmail(otpUser, data);
+                success = sendEmail(otpUser, templateData);
                 break;
             case "all":
                 // TODO better handle below when one of the following fails
-                success = sendSMS(otpUser, data) && sendEmail(otpUser, data);
+                success = sendSMS(otpUser, templateData) && sendEmail(otpUser, templateData);
                 break;
             default:
                 break;

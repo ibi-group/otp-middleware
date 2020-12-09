@@ -106,7 +106,7 @@ public class BugsnagEventHandlingJob implements Runnable {
     private void sendEmailForEvents(List<BugsnagEvent> newEvents) {
         // Construct email content.
         String subject = String.format("%d new error events", newEvents.size());
-        Map<String, Object> data = Map.of(
+        Map<String, Object> templateData = Map.of(
             "subject", subject
         );
 
@@ -118,7 +118,7 @@ public class BugsnagEventHandlingJob implements Runnable {
                     subject,
                     "EventErrorsText.ftl",
                     "EventErrorsHtml.ftl",
-                    data
+                    templateData
                 );
             }
         }

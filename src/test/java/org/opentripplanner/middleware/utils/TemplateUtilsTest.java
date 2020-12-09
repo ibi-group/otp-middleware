@@ -1,10 +1,8 @@
 package org.opentripplanner.middleware.utils;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
-import org.opentripplanner.middleware.TestUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,7 +24,7 @@ public class TemplateUtilsTest extends OtpMiddlewareTest {
     @MethodSource("createTemplateRenderingTestCases")
     public void canRenderTemplates(TemplateRenderingTestCase testCase) throws Exception {
         assertThat(
-            TemplateUtils.renderTemplate(testCase.templatePath, testCase.data),
+            TemplateUtils.renderTemplate(testCase.templatePath, testCase.templateData),
             matchesSnapshot(testCase.testCaseName.replace(" ", "_"))
         );
     }
@@ -67,11 +65,11 @@ public class TemplateUtilsTest extends OtpMiddlewareTest {
 
     private static class TemplateRenderingTestCase {
         private static final Set<String> testCaseNames = new HashSet<>();
-        public final Object data;
+        public final Object templateData;
         public final String templatePath;
         public final String testCaseName;
 
-        private TemplateRenderingTestCase(Object data, String templatePath, String testCaseName) {
+        private TemplateRenderingTestCase(Object templateData, String templatePath, String testCaseName) {
             // enforce unique test case names so that snapshotting works properly
             if (testCaseNames.contains(testCaseName)) {
                 throw new IllegalArgumentException(
@@ -82,7 +80,7 @@ public class TemplateUtilsTest extends OtpMiddlewareTest {
                 );
             }
             testCaseNames.add(testCaseName);
-            this.data = data;
+            this.templateData = templateData;
             this.templatePath = templatePath;
             this.testCaseName = testCaseName;
         }

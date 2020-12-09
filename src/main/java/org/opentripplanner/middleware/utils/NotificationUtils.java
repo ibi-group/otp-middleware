@@ -45,19 +45,19 @@ public class NotificationUtils {
     public static final String OTP_ADMIN_DASHBOARD_FROM_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_FROM_EMAIL");
 
     /**
-     * Send templated SMS to {@link OtpUser}.
+     * Send templated SMS to {@link OtpUser}'s verified phone number.
      * @param otpUser       target user
      * @param smsTemplate   template to use for SMS message
-     * @param data          template data
+     * @param templateData          template data
      * @return              messageId if message was successful (null otherwise)
      */
-    public static String sendSMS(OtpUser otpUser, String smsTemplate, Object data) {
+    public static String sendSMS(OtpUser otpUser, String smsTemplate, Object templateData) {
         if (!otpUser.isPhoneNumberVerified) {
             LOG.error("Cannot send SMS to unverified user ({})!", otpUser.email);
             return null;
         }
         try {
-            String body = TemplateUtils.renderTemplate(smsTemplate, data);
+            String body = TemplateUtils.renderTemplate(smsTemplate, templateData);
             return sendSMS(otpUser.phoneNumber, body);
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
@@ -145,9 +145,9 @@ public class NotificationUtils {
         String subject,
         String textTemplate,
         String htmlTemplate,
-        Object data
+        Object templateData
     ) {
-        return sendEmail(FROM_EMAIL, otpUser.email, subject, textTemplate, htmlTemplate, data);
+        return sendEmail(FROM_EMAIL, otpUser.email, subject, textTemplate, htmlTemplate, templateData);
     }
 
     /**
@@ -159,9 +159,9 @@ public class NotificationUtils {
         String subject,
         String textTemplate,
         String htmlTemplate,
-        Object data
+        Object templateData
     ) {
-        return sendEmail(OTP_ADMIN_DASHBOARD_FROM_EMAIL, adminUser.email, subject, textTemplate, htmlTemplate, data);
+        return sendEmail(OTP_ADMIN_DASHBOARD_FROM_EMAIL, adminUser.email, subject, textTemplate, htmlTemplate, templateData);
     }
 
     /**
@@ -171,7 +171,7 @@ public class NotificationUtils {
      * @param subject       email subject liine
      * @param textTemplate  template to use for email in text format
      * @param htmlTemplate  template to use for email in HTML format
-     * @param data          template data
+     * @param templateData          template data
      * @return              whether the email was sent successfully
      */
     private static boolean sendEmail(
@@ -180,11 +180,11 @@ public class NotificationUtils {
         String subject,
         String textTemplate,
         String htmlTemplate,
-        Object data
+        Object templateData
     ) {
         try {
-            String text = TemplateUtils.renderTemplate(textTemplate, data);
-            String html = TemplateUtils.renderTemplate(htmlTemplate, data);
+            String text = TemplateUtils.renderTemplate(textTemplate, templateData);
+            String html = TemplateUtils.renderTemplate(htmlTemplate, templateData);
             return sendEmailViaSparkpost(fromEmail, toEmail, subject, text, html);
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate

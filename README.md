@@ -51,6 +51,17 @@ The follow parameters are used to interact with an OTP server.
 | OTP_API_ROOT | This is the address of the OTP server, including the root path to the OTP API, to which all OTP related requests will be sent to. | http://otp-server.example.com/otp | 
 | OTP_PLAN_ENDPOINT | This defines the plan endpoint part of the requesting URL. If a request is made to this, the assumption is that a plan request has been made and that the response should be processed accordingly. | /plan |
 
+### Monitored Components
+
+This application allows you to monitor various system components (e.g., OTP API, OTP UI, Data Tools) that work together 
+to provide a trip planning service. Each of these should be defined in the config file in the list of 
+`MONITORED_COMPONENTS` with the following properties:
+
+| Parameter | Example | Description |
+| --- | --- | --- |
+| name | `datatools-server` | Name of the system component for display in the OTP Admin UI |
+| bugsnagProjectId | `abcd1234` | Bugsnag project ID that maps to the system component. After [logging into Bugsnag](https://app.bugsnag.com), visit https://api.bugsnag.com/organizations/<ORGANIZATION_ID>/projects?sort=favorite&direction=asc&per_page=20 (make sure to add your Bugsnag organization ID) to view a list of projects with their IDs. | 
+
 ### Bugsnag
 
 Bugsnag is used to report error events that occur within the otp-middleware application or 
@@ -66,7 +77,7 @@ that don't have default values (N/A) can be obtained my following the steps in t
 | BUGSNAG_API_KEY | N/A | Used to authenticate against Bugsnag's API. |
 | BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES | 1 | Frequency in minutes to obtain events. |
 | BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES | 5 | Frequency in minutes to trigger event requests. |
-| BUGSNAG_ORGANIZATION | N/A | The name of the organization defined within Bugsnag. This is used as a starting point with the Bugsnag API to obtain the organization ID which in-turn is use with most API calls. | 
+| BUGSNAG_ORGANIZATION | N/A | The id of the organization defined within Bugsnag. This is used with most API calls. | 
 | BUGSNAG_PROJECT_NOTIFIER_API_KEY | N/A | Used to report project errors to Bugsnag. |
 | BUGSNAG_REPORTING_WINDOW_IN_DAYS | 14 | The number of days in the past to start retrieving event information. |  
 
@@ -80,10 +91,11 @@ Bugsnag (https://app.bugsnag.com), clicking on settings (top right hand corner) 
 select `Personal auth tokens` and then `Generate new token`.
 
 ##### BUGSNAG_ORGANIZATION
-A bugsnag organization contains all projects which errors/events will be reported on. The organization name and more 
-specifically its ID is the starting point for most Bugsnag API requests. The organization name can be obtained by 
-logging into Bugsnag (https://app.bugsnag.com), clicking on settings (top right hand corner) then `Organization settings`. 
-From here, click on the organization name and then copy the name from the pop-up window.
+A bugsnag organization contains all projects which errors/events will be reported on. The organization ID is the 
+starting point for most Bugsnag API requests. The organization ID can be obtained by opening the Chrome Devtools Network 
+tab, then opening the Bugsnag dashboard (https://app.bugsnag.com). Filter the network requests with 
+`https://api.bugsnag.com/organizations` and you'll see and a handful of requests that use the organization ID (it will 
+be a UUID value) in the request path.
 
 ##### BUGSNAG_PROJECT_NOTIFIER_API_KEY
 A Bugsnag project identifier key is unique to a Bugsnag project and allows errors to be saved against it. This key can 

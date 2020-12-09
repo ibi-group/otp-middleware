@@ -43,15 +43,15 @@ public class TemplateUtils {
     /**
      * Renders a template given an object.
      * @param templatePath  path to template file (.ftl that is found in the {@link #BASE_TEMPLATE_PATH} resources
-     *                     directory
-     * @param data          template data (any kind of public class that has public getXxx/isXxx methods as prescribed
-     *                     by the JavaBeans specification). This can also be a simple `Map<String, Object>`.
+     *                      directory
+     * @param templateData  template data (any kind of public class that has public getXxx/isXxx methods as
+     *                      prescribed by the JavaBeans specification). This can also be a simple `Map<String, Object>`.
      * @return              generated text output
      */
-    public static String renderTemplate(String templatePath, Object data) throws IOException, TemplateException {
+    public static String renderTemplate(String templatePath, Object templateData) throws IOException, TemplateException {
         StringWriter stringWriter = new StringWriter();
         try {
-            config.getTemplate(templatePath).process(data, stringWriter);
+            config.getTemplate(templatePath).process(templateData, stringWriter);
             return stringWriter.toString();
         } catch (TemplateException | IOException e) {
             BugsnagReporter.reportErrorToBugsnag("Failed to render template", templatePath, e);

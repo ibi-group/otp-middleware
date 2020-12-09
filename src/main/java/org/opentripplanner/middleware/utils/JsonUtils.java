@@ -75,7 +75,8 @@ public class JsonUtils {
     }
 
     /**
-     * Check if an {@link HttpResponse} is OK.
+     * Check if an {@link HttpResponse} is OK (i.e., the response object not null and HTTP status code is not in the
+     * error range).
      */
     private static boolean isResponseOk(HttpResponse<String> response) {
         if (response == null || response.statusCode() >= 400) {

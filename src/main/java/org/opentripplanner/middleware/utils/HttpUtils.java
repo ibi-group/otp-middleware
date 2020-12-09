@@ -66,6 +66,7 @@ public class HttpUtils {
         HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder()
             .uri(uri)
             .timeout(Duration.ofSeconds(connectionTimeout));
+        // Handle building requests for supported methods.
         switch (method) {
             case GET:
                 httpRequestBuilder.GET();
