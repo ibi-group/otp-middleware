@@ -192,6 +192,15 @@ public class CheckMonitoredTrip implements Runnable {
                 // Set the matching itinerary.
                 matchingItinerary = candidateItinerary;
 
+                // update the journey state with whether the matching itinerary has realtime data
+                journeyState.hasRealtimeData = false;
+                for (Leg leg : matchingItinerary.legs) {
+                    if (leg.realTime) {
+                        journeyState.hasRealtimeData = true;
+                        break;
+                    }
+                }
+
                 // set the status according to whether the current itinerary occurs in the past, present or future
                 updateTripStatus();
 
@@ -669,6 +678,8 @@ public class CheckMonitoredTrip implements Runnable {
                 break;
             }
         }
+
+        journeyState.hasRealtimeData = false;
 
         // reset the snoozed parameter to false
         trip.snoozed = false;
