@@ -579,7 +579,7 @@ public class CheckMonitoredTrip implements Runnable {
         return true;
     }
 
-    private void advanceToNextActiveTripDate() throws URISyntaxException {
+    private void advanceToNextActiveTripDate() {
         // Advance the target date/time until a day is found when the trip is active.
         while (!trip.isActiveOnDate(targetZonedDateTime)) {
             targetZonedDateTime = targetZonedDateTime.plusDays(1);
@@ -595,7 +595,7 @@ public class CheckMonitoredTrip implements Runnable {
         // avoids making calls to OTP and sets up an expected itinerary to check for even if OTP is unable to return
         // the itinerary due to it being suboptimal.
         long offsetMillis;
-        if (trip.isArriveBy()) {
+        if (trip.arriveBy) {
             // find the closest itinerary end time that does not exceed the target zoned date time
             ZonedDateTime newEndTime = DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.endTime);
             do {
