@@ -124,6 +124,12 @@ public class MonitoredTrip extends Model {
     public boolean isActive = true;
 
     /**
+     * Whether to snooze the active or upcoming trip. This is reset upon advancing to the next possible trip date in the
+     * CheckMonitoredTrip job.
+     */
+    public boolean snoozed = false;
+
+    /**
      * Query params. Query parameters influencing trip.
      */
     public String queryParams;

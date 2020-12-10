@@ -477,6 +477,12 @@ public class CheckMonitoredTrip implements Runnable {
                 return true;
             }
 
+            // skip checking the trip if it has been snoozed
+            if (trip.snoozed) {
+                LOG.info("Skipping: Trip is snoozed.");
+                return true;
+            }
+
             matchingItinerary = previousMatchingItinerary;
             targetDate = previousJourneyState.targetDate;
             targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(targetDate, trip.tripTime);
@@ -664,6 +670,8 @@ public class CheckMonitoredTrip implements Runnable {
             }
         }
 
+        // reset the snoozed parameter to false
+        trip.snoozed = false;
         updateTripStatus();
     }
 
