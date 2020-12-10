@@ -56,9 +56,10 @@ public class RequestingUser {
             LOG.error("Required scope claim unavailable");
             return;
         }
-        // TODO: Consider consolidating the user scope fields into a single AbstractUser user field.
         // Define only a single user according to the scope. Note: there is an edge case where a user logging in from
-        // the OTP Admin Dashboard may be both an AdminUser and ApiUser, for this case define both user types.
+        // the OTP Admin Dashboard may be both an AdminUser and ApiUser, but this code block will force their identity
+        // as an AdminUser.
+        // TODO: Consider consolidating the user scope fields into a single AbstractUser user field.
         if (scope.contains(OtpUser.AUTH0_SCOPE)) {
             otpUser = (testing)
                 ? new OtpUser()
@@ -69,11 +70,16 @@ public class RequestingUser {
             adminUser = (testing)
                 ? new AdminUser()
                 : Persistence.adminUsers.getOneFiltered(withAuth0UserId);
+            // Only return at this point if an AdminUser is defined. If not, fall back on defining an ApiUser. If we
+            // returned unconditionally, ApiUsers that log in via OTP Admin Dashboard would not be defined below (the
+            // final conditional block would never execute.
+            if (adminUser != null) return;
         }
         if (scope.contains(ApiUser.AUTH0_SCOPE)) {
             apiUser = (testing)
                 ? new ApiUser()
                 : Persistence.apiUsers.getOneFiltered(withAuth0UserId);
+            return;
         }
         LOG.error("No user type for scope {} is available", scope);
     }
