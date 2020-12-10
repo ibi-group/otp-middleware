@@ -538,8 +538,14 @@ public class CheckMonitoredTrip implements Runnable {
             }
 
             // Check if the CheckMonitoredTrip is being ran for the first time for this trip and if the trip's saved
-            // itinerary has already ended for the day. In that case, advance until the next day.
-            if (previousMatchingItinerary == null && trip.itinerary.endTime.before(DateTimeUtils.nowAsDate())) {
+            // itinerary has already ended. Additionally, make sure that the saved itinerary occurred on the same
+            // service day. If both of these conditions are true, then there is no need to check for the current day and
+            // the target zoned date time should be advanced to the next day.
+            if (
+                previousMatchingItinerary == null &&
+                    trip.itinerary.endTime.before(DateTimeUtils.nowAsDate()) &&
+                    ItineraryUtils.occursOnSameServiceDay(trip.itinerary, targetZonedDateTime, trip.arriveBy)
+            ) {
                 targetZonedDateTime = targetZonedDateTime.plusDays(1);
             }
 
