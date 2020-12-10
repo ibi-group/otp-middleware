@@ -466,7 +466,7 @@ public class CheckMonitoredTrip implements Runnable {
             return true;
         }
 
-        // get the most recent journey state itinerary to see when the next monitored trip is supposed to occur
+        // Check if the previous matching itinerary was null or if it has already concluded
         boolean matchingItineraryActiveOrUpcoming = previousMatchingItinerary != null &&
             previousMatchingItinerary.endTime.after(new Date(previousJourneyState.lastCheckedEpochMillis));
         if (matchingItineraryActiveOrUpcoming) {
@@ -479,6 +479,7 @@ public class CheckMonitoredTrip implements Runnable {
 
             matchingItinerary = previousMatchingItinerary;
             targetDate = previousJourneyState.targetDate;
+            targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(targetDate, trip.tripTime);
         } else {
             // Either the monitored trip hasn't ever checked on the next itinerary, or the most recent itinerary has
             // completed and the next possible one needs to be fetched in order to determine the scheduled start time of
@@ -523,7 +524,7 @@ public class CheckMonitoredTrip implements Runnable {
 
             // Check if the CheckMonitoredTrip is being ran for the first time for this trip and if the trip's saved
             // itinerary has already ended for the day. In that case, advance until the next day.
-            if (previousMatchingItinerary == null && trip.itinerary.endTime.after(DateTimeUtils.nowAsDate())) {
+            if (previousMatchingItinerary == null && trip.itinerary.endTime.before(DateTimeUtils.nowAsDate())) {
                 targetZonedDateTime = targetZonedDateTime.plusDays(1);
             }
 
@@ -619,9 +620,9 @@ public class CheckMonitoredTrip implements Runnable {
         } else {
             // find the first itinerary start time that does exceeds the target zoned date time
             ZonedDateTime newStartTime = DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime);
-            do {
+            while (newStartTime.isBefore(targetZonedDateTime)) {
                 newStartTime = newStartTime.plusDays(1);
-            } while (newStartTime.isBefore(targetZonedDateTime));
+            }
             offsetMillis = newStartTime.toInstant().toEpochMilli() - matchingItinerary.startTime.getTime();
         }
 
