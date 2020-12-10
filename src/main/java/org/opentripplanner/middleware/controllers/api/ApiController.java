@@ -311,6 +311,11 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     abstract T preCreateHook(T entityToCreate, Request req);
 
     /**
+     * Hook called after object is created in MongoDB.
+     */
+    T postCreateHook(T object, Request req) { return object; }
+
+    /**
      * Hook called before object is updated in MongoDB. Validation of entity object could go here.
      */
     abstract T preUpdateHook(T entityToUpdate, T preExistingEntity, Request req);
@@ -348,6 +353,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 // Run pre-create hook and use updated object (with potentially modified values) in create operation.
                 T updatedObject = preCreateHook(object, req);
                 persistence.create(updatedObject);
+                updatedObject = postCreateHook(object, req);
             } else {
                 String id = getIdFromRequest(req);
                 T preExistingObject = getObjectForId(req, id);

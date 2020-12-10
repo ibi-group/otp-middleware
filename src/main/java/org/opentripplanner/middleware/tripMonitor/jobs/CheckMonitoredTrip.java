@@ -209,18 +209,15 @@ public class CheckMonitoredTrip implements Runnable {
                 ) {
                     LOG.info("Matching Itinerary has concluded, advancing to next possible trip date.");
                     targetZonedDateTime = targetZonedDateTime.plusDays(1);
-                    try {
-                        advanceToNextActiveTripDate();
-                    } catch (URISyntaxException e) {
-                        // this annoying exception occurs due to parsing arriveBy, so it may never actually occur
-                    }
+                    advanceToNextActiveTripDate();
+                    updateMonitoredTrip();
+
                     // return false to indicate that no further checks for delays/alerts/etc should occur
                     return false;
                 }
 
-                updateMonitoredTrip();
                 LOG.info("Trip status set to {}", journeyState.tripStatus);
-                return true;
+                return updateMonitoredTrip();
             }
         }
 
@@ -525,7 +522,11 @@ public class CheckMonitoredTrip implements Runnable {
             advanceToNextActiveTripDate();
 
             // save journey state with updated matching itinerary and target date
-            updateMonitoredTrip();
+            if (!updateMonitoredTrip()) {
+                // trip no longer exists, skip check
+                LOG.info("Skipping: Trip no longer exists.");
+                return true;
+            }
         }
 
         Instant tripStartInstant = matchingItinerary.startTime.toInstant();
@@ -652,14 +653,18 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         updateTripStatus();
-
-        updateMonitoredTrip();
     }
 
     /**
      * Update the monitored trip with the updated journey state with updated matching itinerary and target date.
      */
-    private void updateMonitoredTrip() {
+    private boolean updateMonitoredTrip() {
+        // make sure the trip still exists before saving it. It is possible that the user deleted the trip after this
+        // job started but before this database update.
+        if (Persistence.monitoredTrips.getById(trip.id) == null) {
+            // trip has been deleted!
+            return false;
+        }
         journeyState.matchingItinerary = matchingItinerary;
         journeyState.targetDate = targetDate;
         journeyState.lastCheckedEpochMillis = DateTimeUtils.currentTimeMillis();
@@ -669,5 +674,6 @@ public class CheckMonitoredTrip implements Runnable {
         }
         trip.journeyState = journeyState;
         Persistence.monitoredTrips.replace(trip.id, trip);
+        return true;
     }
 }
