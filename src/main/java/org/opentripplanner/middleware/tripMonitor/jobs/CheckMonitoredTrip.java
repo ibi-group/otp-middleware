@@ -328,14 +328,19 @@ public class CheckMonitoredTrip implements Runnable {
         // checking for departure delay, or the scheduled arrival time if checking for arrival delay)
         long scheduledTargetTimeEpochMillis;
 
+        // the threshold of deviation to check (this can be different for arrival or departure thresholds).
+        int deviationThreshold;
+
         if (delayType == NotificationType.DEPARTURE_DELAY) {
             matchingItineraryTargetTime = matchingItinerary.startTime;
             baselineItineraryTargetEpochMillis = journeyState.baselineDepartureTimeEpochMillis;
             scheduledTargetTimeEpochMillis = journeyState.scheduledDepartureTimeEpochMillis;
+            deviationThreshold = trip.departureVarianceMinutesThreshold;
         } else {
             matchingItineraryTargetTime = matchingItinerary.endTime;
             baselineItineraryTargetEpochMillis = journeyState.baselineArrivalTimeEpochMillis;
             scheduledTargetTimeEpochMillis = journeyState.scheduledArrivalTimeEpochMillis;
+            deviationThreshold = trip.arrivalVarianceMinutesThreshold;
         }
 
         // calculate absolute deviation of current itinerary target time from the baseline target time in minutes
@@ -347,7 +352,7 @@ public class CheckMonitoredTrip implements Runnable {
         );
 
         // check if threshold met
-        if (deviationAbsoluteMinutes >= trip.departureVarianceMinutesThreshold) {
+        if (deviationAbsoluteMinutes >= deviationThreshold) {
             // threshold met, set new baseline time
             if (delayType == NotificationType.DEPARTURE_DELAY) {
                 journeyState.baselineDepartureTimeEpochMillis = matchingItineraryTargetTime.getTime();
@@ -362,7 +367,6 @@ public class CheckMonitoredTrip implements Runnable {
             );
             return TripMonitorNotification.createDelayNotification(
                 delayMinutes,
-                trip.departureVarianceMinutesThreshold,
                 matchingItineraryTargetTime,
                 delayType
             );
