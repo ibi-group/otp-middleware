@@ -1170,6 +1170,8 @@ definitions:
         - "TRIP_ACTIVE"
       noLongerPossible:
         type: "boolean"
+      hasRealtimeData:
+        type: "boolean"
   Itinerary:
     type: "object"
     properties:
@@ -1297,6 +1299,8 @@ definitions:
         $ref: "#/definitions/Place"
       to:
         $ref: "#/definitions/Place"
+      arriveBy:
+        type: "boolean"
       leadTimeInMinutes:
         type: "integer"
         format: "int32"
@@ -1317,6 +1321,8 @@ definitions:
       excludeFederalHolidays:
         type: "boolean"
       isActive:
+        type: "boolean"
+      snoozed:
         type: "boolean"
       queryParams:
         type: "string"
