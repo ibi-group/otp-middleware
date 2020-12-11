@@ -54,8 +54,8 @@ public class Auth0Connection {
         LOG.debug("Checking auth");
         // TODO Add check for testing environment
         if (isAuthDisabled()) {
-            // If in a development or testing environment, assign a mock profile of an admin user to the request
-            // attribute and skip authentication.
+            // If in a development or testing environment, assign a mock profile of a user to the request attribute based
+            // on scope and skip authentication.
             addUserToRequest(req, RequestingUser.createTestUser(req));
             return;
         }

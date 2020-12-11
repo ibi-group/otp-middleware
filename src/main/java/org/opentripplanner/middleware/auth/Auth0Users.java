@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.auth;
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.client.mgmt.ManagementAPI;
 import com.auth0.exception.Auth0Exception;
-import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
@@ -13,7 +12,6 @@ import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.HttpUtils;
-import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -244,13 +242,14 @@ public class Auth0Users {
      * Owner Password Flow' approach. Auth0 setup can be reviewed here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow.
      * If token response is returned to calling methods for evaluation.
      */
-    public static HttpResponse<String> getCompleteAuth0TokenResponse(String username, String password) {
+    public static HttpResponse<String> getAuth0TokenWithScope(String username, String password, String scope) {
         if (Auth0Connection.isAuthDisabled()) return null;
         String body = String.format(
-            "grant_type=password&username=%s&password=%s&audience=%s&scope=&client_id=%s&client_secret=%s",
+            "grant_type=password&username=%s&password=%s&audience=%s&scope=%s&client_id=%s&client_secret=%s",
             username,
             password,
             DEFAULT_AUDIENCE, // must match an API identifier
+            scope,
             AUTH0_API_CLIENT, // Auth0 application client ID
             AUTH0_API_SECRET // Auth0 application client secret
         );
@@ -261,18 +260,5 @@ public class Auth0Users {
             Collections.singletonMap("content-type", "application/x-www-form-urlencoded"),
             body
         );
-    }
-
-    /**
-     * Extract from a complete Auth0 token just the access token. If the token is not available, return null instead.
-     */
-    public static String getAuth0AccessToken(String username, String password) {
-        HttpResponse<String> response = getCompleteAuth0TokenResponse(username, password);
-        if (response == null || response.statusCode() != HttpStatus.OK_200) {
-            LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}", username, response.statusCode(), response.body());
-            return null;
-        }
-        TokenHolder token = JsonUtils.getPOJOFromJSON(response.body(), TokenHolder.class);
-        return (token == null) ? null : token.getAccessToken();
     }
 }

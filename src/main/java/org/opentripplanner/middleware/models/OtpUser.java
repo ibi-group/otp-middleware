@@ -16,6 +16,7 @@ import java.util.List;
  * can also opt-in to storing their trip planning requests/responses.
  */
 public class OtpUser extends AbstractUser {
+    public static final String AUTH0_SCOPE = "otp-user";
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(OtpUser.class);
 

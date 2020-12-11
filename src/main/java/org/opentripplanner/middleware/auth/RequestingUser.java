@@ -9,13 +9,19 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
+
+import java.util.Objects;
 
 /**
  * User profile that is attached to an HTTP request.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RequestingUser {
+    private static final Logger LOG = LoggerFactory.getLogger(RequestingUser.class);
+
     public OtpUser otpUser;
     public ApiUser apiUser;
     public AdminUser adminUser;
@@ -25,46 +31,70 @@ public class RequestingUser {
      * Constructor is only used for creating a test user. If an Auth0 user id is provided check persistence for matching
      * user else create default user.
      */
-    private RequestingUser(String auth0UserId) {
-        if (auth0UserId == null) {
-            this.auth0UserId = "user_id:string";
-            otpUser = new OtpUser();
-            apiUser = new ApiUser();
-            adminUser = new AdminUser();
-        } else {
-            this.auth0UserId = auth0UserId;
-            Bson withAuth0UserId = Filters.eq("auth0UserId", auth0UserId);
-            otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
-            apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
-            adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
-        }
+    private RequestingUser(String auth0UserId, String scope) {
+        this.auth0UserId = Objects.requireNonNullElse(auth0UserId, "user_id:string");
+        defineUserFromScope(scope, true);
     }
 
     /**
-     * Create a user profile from the request's JSON web token. Check persistence for stored user.
+     * Create a user profile from the request's JSON web token.
      */
     public RequestingUser(DecodedJWT jwt) {
         this.auth0UserId = jwt.getClaim("sub").asString();
+        String scope = jwt.getClaim("scope").asString();
+        defineUserFromScope(scope, false);
+    }
+
+    /**
+     * Check persistence for stored user restricted by the scope value provided in the scope claim. It is expected that
+     * the scope claim will include only one scope item i.e. 'otp-user', 'api-user' or 'admin-user'. if testing, create
+     * a new user else attempt to get a matching user from DB.
+     */
+    private void defineUserFromScope(String scope, boolean testing) {
         Bson withAuth0UserId = Filters.eq("auth0UserId", auth0UserId);
-        otpUser = Persistence.otpUsers.getOneFiltered(withAuth0UserId);
-        apiUser = Persistence.apiUsers.getOneFiltered(withAuth0UserId);
-        adminUser = Persistence.adminUsers.getOneFiltered(withAuth0UserId);
+        if (scope == null || scope.isEmpty()) {
+            LOG.error("Required scope claim unavailable");
+            return;
+        }
+        // Define only a single user according to the scope. Note: there is an edge case where a user logging in from
+        // the OTP Admin Dashboard may be both an AdminUser and ApiUser, but this code block will force their identity
+        // as an AdminUser.
+        // TODO: Consider consolidating the user scope fields into a single AbstractUser user field.
+        if (scope.contains(OtpUser.AUTH0_SCOPE)) {
+            otpUser = (testing)
+                ? new OtpUser()
+                : Persistence.otpUsers.getOneFiltered(withAuth0UserId);
+            return;
+        }
+        if (scope.contains(AdminUser.AUTH0_SCOPE)) {
+            adminUser = (testing)
+                ? new AdminUser()
+                : Persistence.adminUsers.getOneFiltered(withAuth0UserId);
+            // Only return at this point if an AdminUser is defined. If not, fall back on defining an ApiUser. If we
+            // returned unconditionally, ApiUsers that log in via OTP Admin Dashboard would not be defined below (the
+            // final conditional block would never execute.
+            if (adminUser != null) return;
+        }
+        if (scope.contains(ApiUser.AUTH0_SCOPE)) {
+            apiUser = (testing)
+                ? new ApiUser()
+                : Persistence.apiUsers.getOneFiltered(withAuth0UserId);
+            return;
+        }
+        LOG.error("No user type for scope {} is available", scope);
     }
 
     /**
      * Utility method for creating a test user. If a Auth0 user Id is defined within the Authorization header param
-     * define test user based on this.
+     * define the test user based on this. Restrict authorization to that defined in the scope header param.
      */
     static RequestingUser createTestUser(Request req) {
-        String auth0UserId = null;
-
-        if (Auth0Connection.isAuthHeaderPresent(req)) {
-            // If the auth header has been provided get the Auth0 user id from it. This is different from normal
-            // operation as the parameter will only contain the Auth0 user id and not "Bearer token".
-            auth0UserId = req.headers("Authorization");
-        }
-
-        return new RequestingUser(auth0UserId);
+        // If the auth header has been provided get the Auth0 user id from it. This is different from normal
+        // operation as the parameter will only contain the Auth0 user id and not "Bearer token".
+        String auth0UserId = req.headers("Authorization");
+        // Restrict authorization based on the scope value provided.
+        String scope = req.headers("scope");
+        return new RequestingUser(auth0UserId, scope);
     }
 
     /**
