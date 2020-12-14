@@ -58,7 +58,15 @@ public class HttpUtils {
     }
 
     /**
-     * Makes an http get/delete/post request and returns the response. The request is based on the provided params.
+     * Makes an http request and returns the body of the response.
+     */
+    public static String httpRequest(URI uri, int connectionTimeout, HttpMethod method,
+                                     Map<String, String> headers, String bodyContent) {
+        return httpRequestRawResponse(uri, connectionTimeout, method, headers, bodyContent).body();
+    }
+
+    /**
+     * Makes an http request and returns the response.
      */
     public static HttpResponse<String> httpRequestRawResponse(URI uri, int connectionTimeout, HttpMethod method,
                                                               Map<String, String> headers, String bodyContent) {
@@ -74,6 +82,11 @@ public class HttpUtils {
             case DELETE:
                 httpRequestBuilder.DELETE();
                 break;
+            case PUT:
+                httpRequestBuilder.PUT(HttpRequest
+                    .BodyPublishers
+                    .ofString(bodyContent));
+                break;
             case POST:
                 httpRequestBuilder.POST(HttpRequest
                     .BodyPublishers
@@ -81,7 +94,6 @@ public class HttpUtils {
                 break;
             case HEAD:
             case OPTIONS:
-            case PUT:
             case TRACE:
             case CONNECT:
             case MOVE:

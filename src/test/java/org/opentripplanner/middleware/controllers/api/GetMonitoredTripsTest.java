@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -24,7 +25,6 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -72,11 +72,8 @@ public class GetMonitoredTripsTest {
 
         // Mock the OTP server TODO: Run a live OTP instance?
         OtpTestUtils.mockOtpServer();
-
-        // Create the different users (with different emails) for testing permissions.
-        String soloUserEmail = String.format("test-%s@example.com", UUID.randomUUID().toString());
-        soloOtpUser = PersistenceTestUtils.createUser(soloUserEmail);
-        String multiUserEmail = String.format("test-%s@example.com", UUID.randomUUID().toString());
+        String multiUserEmail = ApiTestUtils.generateEmailAddress("test-multiotpuser");
+        soloOtpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
         multiOtpUser = PersistenceTestUtils.createUser(multiUserEmail);
         multiAdminUser = PersistenceTestUtils.createAdminUser(multiUserEmail);
         try {
@@ -133,10 +130,11 @@ public class GetMonitoredTripsTest {
 
         // Get trips for multi Otp user/admin user.
         ResponseList<MonitoredTrip> multiTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, multiOtpUser);
-        // Multi Otp user has 'enhanced' admin credentials both trips will be returned. The expectation here is that the UI
-        // will always provide the user id to prevent this (as with the next test).
+
+        // Multi Otp user has 'enhanced' admin credentials, still expect only 1 trip to be returned as the scope will
+        // limit the requesting user to a single 'otp-user' user type.
         // TODO: Determine if a separate admin endpoint should be maintained for getting all/combined trips.
-        assertEquals(2, multiTrips.data.size());
+        assertEquals(1, multiTrips.data.size());
 
         // Get trips for only the multi Otp user by specifying Otp user id.
         ResponseList<MonitoredTrip> tripsFiltered = getMonitoredTripsForUser(

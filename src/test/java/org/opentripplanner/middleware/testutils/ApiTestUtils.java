@@ -1,13 +1,19 @@
 package org.opentripplanner.middleware.testutils;
 
 import org.eclipse.jetty.http.HttpMethod;
+import com.auth0.json.auth.TokenHolder;
+import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.AbstractUser;
+import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.http.HttpResponse;
@@ -17,6 +23,8 @@ import java.util.UUID;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 
 public class ApiTestUtils {
+    private static final Logger LOG = LoggerFactory.getLogger(ApiTestUtils.class);
+
     /**
      * Base URL for application running during testing.
      */
@@ -30,25 +38,34 @@ public class ApiTestUtils {
     /**
      * x-api-key used when auth is disabled.
      */
-    static final String TEMP_X_API_KEY = UUID.randomUUID().toString();
+    private static final String TEMP_X_API_KEY = UUID.randomUUID().toString();
 
     /**
      * Construct http header values based on user type and status of DISABLE_AUTH config parameter. If authorization is
      * disabled, use Auth0 user ID to authenticate else attempt to get a valid 0auth token from Auth0 and use this.
      */
-    private static HashMap<String, String> getMockHeaders(AbstractUser requestingUser) {
+    public static HashMap<String, String> getMockHeaders(AbstractUser requestingUser) {
         HashMap<String, String> headers = new HashMap<>();
-        // If auth is disabled, simply place the Auth0 user ID in the authorization header, which will be extracted from
-        // the request when received.
+        String scope = null;
+        // If auth is disabled, set the authorization header, x-api-key and scope accordingly, each which will be
+        // extracted from the request when received.
         if (isAuthDisabled()) {
             headers.put("Authorization", requestingUser.auth0UserId);
             headers.put("x-api-key", TEMP_X_API_KEY);
+            if (requestingUser instanceof OtpUser) {
+                headers.put("scope", OtpUser.AUTH0_SCOPE);
+            } else if (requestingUser instanceof ApiUser) {
+                headers.put("scope", ApiUser.AUTH0_SCOPE);
+            } else if (requestingUser instanceof AdminUser) {
+                headers.put("scope", AdminUser.AUTH0_SCOPE);
+            }
             return headers;
         }
 
         // If requester is an API user, add API key value as x-api-key header to simulate request over API Gateway.
         if (requestingUser instanceof ApiUser) {
             ApiUser apiUser = (ApiUser) requestingUser;
+            scope = ApiUser.AUTH0_SCOPE;
             if (!apiUser.apiKeys.isEmpty()) {
                 headers.put("x-api-key", apiUser.apiKeys.get(0).value);
             }
@@ -61,13 +78,28 @@ public class ApiTestUtils {
             if (otpUserFromDB != null && otpUserFromDB.applicationId != null) {
                 return headers;
             }
+            scope = OtpUser.AUTH0_SCOPE;
         }
 
         // Otherwise, get a valid oauth token for the user
-        headers.put("Authorization", "Bearer " + Auth0Users
-            .getAuth0AccessToken(requestingUser.email, TEMP_AUTH0_USER_PASSWORD));
+        headers.put("Authorization", "Bearer " + getTestAuth0AccessToken(requestingUser.email, scope));
         return headers;
     }
+
+    /**
+     * Attempt to get Auth0 token from Auth0 tenant for the given username (email) and scope. If the response from Auth0
+     * is ok, extract the access token from the token holder response and return to caller.
+     */
+    private static String getTestAuth0AccessToken(String username, String scope) {
+        HttpResponse<String> response = Auth0Users.getAuth0TokenWithScope(username, TEMP_AUTH0_USER_PASSWORD, scope);
+        if (response == null || response.statusCode() != HttpStatus.OK_200) {
+            LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}", username, response.statusCode(), response.body());
+            return null;
+        }
+        TokenHolder token = JsonUtils.getPOJOFromJSON(response.body(), TokenHolder.class);
+        return (token == null) ? null : token.getAccessToken();
+    }
+
 
     /**
      * Send request to provided URL.
@@ -134,4 +166,13 @@ public class ApiTestUtils {
     public static HttpResponse<String> mockAuthenticatedDelete(String path, AbstractUser requestingUser) {
         return makeDeleteRequest(path, getMockHeaders(requestingUser));
     }
+
+    /**
+     * Generates a test email address with the specified prefix (to help trace which code created a user),
+     * followed by random UUID string.
+     */
+    public static String generateEmailAddress(String prefix) {
+        return String.format("%s-%s@example.com", prefix, UUID.randomUUID().toString());
+    }
+
 }

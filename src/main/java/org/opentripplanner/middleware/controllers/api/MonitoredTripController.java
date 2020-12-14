@@ -58,9 +58,8 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         // Ensure user has not reached their limit for number of trips.
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
-        checkTripCanBeMonitored(monitoredTrip, req);
-        processTripQueryParams(monitoredTrip, req);
-        
+        preCreateOrUpdateChecks(monitoredTrip, req);
+
         try {
             // Check itinerary existence and replace the provided trip's itinerary with a verified, non-realtime
             // version of it.
@@ -85,6 +84,14 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     }
 
     /**
+     * Performs the operations/checks common to the preCreate and preUpdate hooks.
+     */
+    private void preCreateOrUpdateChecks(MonitoredTrip monitoredTrip, Request req) {
+        checkTripCanBeMonitored(monitoredTrip, req);
+        processTripQueryParams(monitoredTrip, req);
+    }
+
+    /**
      * Processes the {@link MonitoredTrip} query parameters, so the trip's fields match the query parameters.
      * If an error occurs regarding the query params, returns a HTTP 400 status.
      */
@@ -103,8 +110,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        checkTripCanBeMonitored(monitoredTrip, req);
-        processTripQueryParams(monitoredTrip, req);
+        preCreateOrUpdateChecks(monitoredTrip, req);
 
         // TODO: Update itinerary existence record when updating a trip.
 

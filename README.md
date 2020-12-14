@@ -43,6 +43,27 @@ java -jar target/otp-middleware.jar configurations/default/env.yml
 
 TODO: Add Auth0 setup instructions.
 
+#### Auth0 Scope
+
+The requesting user type, which determines the level of authorization, is based on the scope provided as part of a user's bearer token. 
+The bearer token 'scope' claim must contain one of `otp-user`, `api-user` or `admin-user` for the user to be correctly matched to a user held in the database.
+
+##### Auth0 Scope Rule
+
+A rule must be added to the Auth0 tenant for the scope provided by third parties to be available for authorization within the OTP-middleware.
+This rule takes the scope value provided by the caller and adds it to the access token.  
+
+```javascript
+function (user, context, callback) {
+    const req = context.request;
+    // Retrieve scopes either from the parameters or body
+    const requestedScopeString = (req.query && req.query.scope) || (req.body && req.body.scope);
+    context.accessToken.scope = requestedScopeString;
+    return callback(null, user, context);
+}
+```
+
+
 ### OTP Server Proxy Setup
 The follow parameters are used to interact with an OTP server.
 

@@ -13,6 +13,7 @@ import java.util.Set;
  * Represents an administrative user of the OTP Admin Dashboard (otp-admin-ui).
  */
 public class AdminUser extends AbstractUser {
+    public static final String AUTH0_SCOPE = "admin-user";
     private static final Logger LOG = LoggerFactory.getLogger(AdminUser.class);
     /**
      * List of subscription topics about which an admin user will receive notifications.
