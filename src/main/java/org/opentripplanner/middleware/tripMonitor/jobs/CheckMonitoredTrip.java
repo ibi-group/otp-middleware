@@ -1,8 +1,6 @@
 package org.opentripplanner.middleware.tripMonitor.jobs;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.message.BasicNameValuePair;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -31,12 +29,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -73,7 +68,7 @@ public class CheckMonitoredTrip implements Runnable {
     public long notificationTimestampMillis = -1;
 
     /**
-     * The journey state that was calculated from the prevous run of this job.
+     * The journey state that was calculated from the previous run of this job.
      */
     public JourneyState previousJourneyState;
 
@@ -84,7 +79,7 @@ public class CheckMonitoredTrip implements Runnable {
 
     public String targetDate;
 
-    protected ZonedDateTime targetZonedDateTime;
+    ZonedDateTime targetZonedDateTime;
 
     public CheckMonitoredTrip(MonitoredTrip trip) throws CloneNotSupportedException {
         this.trip = trip;
@@ -159,19 +154,11 @@ public class CheckMonitoredTrip implements Runnable {
             // Generate the appropriate OTP query params for the trip for the current check by replacing the date query
             // parameter with the appropriate date.
             Map<String, String> params = trip.parseQueryParams();
-
-            // building a new list by copying all values, except for the date which is set to the target date
-            List<NameValuePair> newParams = new ArrayList<>();
-            newParams.add(new BasicNameValuePair("date", targetDate));
-            for (Map.Entry<String, String> param : params.entrySet()) {
-                if (!param.getKey().equals("date")) {
-                    newParams.add(new BasicNameValuePair(param.getKey(), param.getValue()));
-                }
-            }
-            otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(URLEncodedUtils.format(newParams, UTF_8));
+            params.put("date", targetDate);
+            otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(ItineraryUtils.toQueryString(params));
         } catch (Exception e) {
             // TODO: report bugsnag
-            LOG.error("Encountered an error while making a request ot the OTP server. error={}", e);
+            LOG.error("Encountered an error while making a request ot the OTP server.", e);
             return false;
         }
 
@@ -197,8 +184,9 @@ public class CheckMonitoredTrip implements Runnable {
 
                 // update the trip's itinerary existence data so that any invalid dates are cleared (thus resulting in
                 // that day of week saying that it is a valid day of the week).
-                trip.itineraryExistence.getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek()).invalidDates =
-                    new ArrayList<>();
+                ItineraryExistence.ItineraryExistenceResult itinExistenceTargetDay = trip.itineraryExistence
+                    .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek());
+                itinExistenceTargetDay.invalidDates = new ArrayList<>();
 
                 // If the updated trip status is upcoming and the end time of the current matching itinerary is in the
                 // past, this means the trip has completed and the next possible time the trip occurs should be
@@ -233,7 +221,7 @@ public class CheckMonitoredTrip implements Runnable {
         // was not possible on all monitored days of the previous week and if so, it updates the journeyState to say
         // that the trip is no longer possible.
         boolean noMatchingItineraryFoundOnPreviousChecks = !trip.itineraryExistence.
-            isStillPossibleOnAtLeastOneMonitoredDayOfTheWeek(
+            isPossibleOnAtLeastOneMonitoredDayOfTheWeek(
                 trip
             );
         journeyState.tripStatus = noMatchingItineraryFoundOnPreviousChecks

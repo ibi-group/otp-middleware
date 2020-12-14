@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.tripMonitor;
 
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -60,16 +61,22 @@ public class JourneyState implements Cloneable {
      */
     public String targetDate;
 
+    /**
+     * The overall status of the trip. This gets set in the {@link CheckMonitoredTrip} job.
+     */
     public TripStatus tripStatus;
 
+    /**
+     * Whether the trip is no longer possible on any day of the week that the trip is actively being monitored on.
+     */
     public boolean noLongerPossible = false;
 
     public JourneyState() {}
 
     /**
      * Clone this object.
-     * NOTE: This is used primarily during testing and only clones certain needed items so not all entities are
-     * deep-cloned. Implement this further if additional items should be deep-cloned.
+     * NOTE: This is only clones certain needed items so not all entities are deep-cloned. Implement this further if
+     * additional items should be deep-cloned.
      */
     @Override
     public JourneyState clone() throws CloneNotSupportedException {
