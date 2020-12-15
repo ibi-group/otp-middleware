@@ -246,4 +246,31 @@ public class Itinerary implements Cloneable {
         }
         return endTimeEpochMillis;
     }
+
+    /**
+     * Returns true if the current time falls between the start and end time of the itinerary
+     */
+    public boolean isActive() {
+        Date now = DateTimeUtils.nowAsDate();
+        return startTime.before(now) && endTime.after(now);
+    }
+
+    /**
+     * Returns true if the current time is after the end time of the itinerary.
+     */
+    public boolean hasEnded() {
+        return endTime.before(DateTimeUtils.nowAsDate());
+    }
+
+    /**
+     * Offsets the start time, end time and all start/end times of each leg by the given value in milliseconds.
+     */
+    public void offsetTimes(long offsetMillis) {
+        startTime = new Date(startTime.getTime() + offsetMillis);
+        endTime = new Date(endTime.getTime() + offsetMillis);
+        for (Leg leg : legs) {
+            leg.startTime = new Date(leg.startTime.getTime() + offsetMillis);
+            leg.endTime = new Date(leg.endTime.getTime() + offsetMillis);
+        }
+    }
 }

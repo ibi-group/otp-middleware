@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
-import org.opentripplanner.middleware.tripMonitor.jobs.NotificationType;
+import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
