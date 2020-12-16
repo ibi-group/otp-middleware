@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.persistence;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +15,7 @@ import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.crea
  * {@link TypedPersistence} methods are tested here, but the HTTP endpoints defined in
  * {@link org.opentripplanner.middleware.controllers.api.ApiController} are not themselves tested here.
  */
-public class PersistenceTest extends OtpMiddlewareTest {
+public class PersistenceTest {
     private static final String TEST_EMAIL = "john.doe@example.com";
     private static final Logger LOG = LoggerFactory.getLogger(PersistenceTest.class);
 

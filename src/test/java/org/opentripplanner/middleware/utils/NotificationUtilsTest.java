@@ -6,7 +6,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -22,7 +21,7 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
  * environment variables RUN_E2E=true and valid values for TEST_TO_EMAIL and TEST_TO_PHONE. Furthermore, TEST_TO_PHONE
  * must be a verified phone number in a valid Twilio account.
  */
-public class NotificationUtilsTest extends OtpMiddlewareTest {
+public class NotificationUtilsTest {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationUtilsTest.class);
     private static OtpUser user;
 

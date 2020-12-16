@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.docs;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.utils.YamlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +20,7 @@ import static org.opentripplanner.middleware.docs.VersionControlledSwaggerUpdate
  * Contains a test to verify that the swagger docs are generated correctly
  * and that there are no undocumented changes to the API endpoints.
  */
-public class SwaggerTest extends OtpMiddlewareTest {
+public class SwaggerTest {
     private static final Logger LOG = LoggerFactory.getLogger(SwaggerTest.class);
 
     /**

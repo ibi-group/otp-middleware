@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpRequest;
@@ -41,7 +40,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEp
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
 
-public class ItineraryUtilsTest extends OtpMiddlewareTest {
+public class ItineraryUtilsTest {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryUtilsTest.class);
     /** Abbreviated query for the tests */
     public static final String BASE_QUERY = "?fromPlace=2418%20Dade%20Ave&toPlace=McDonald%27s&date=2020-08-13&time=11%3A23&arriveBy=false";

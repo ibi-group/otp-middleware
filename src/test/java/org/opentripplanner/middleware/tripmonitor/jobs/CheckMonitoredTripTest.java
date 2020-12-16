@@ -7,7 +7,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
@@ -43,7 +42,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
  */
-public class CheckMonitoredTripTest extends OtpMiddlewareTest {
+public class CheckMonitoredTripTest {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTripTest.class);
     private static OtpUser user;
 

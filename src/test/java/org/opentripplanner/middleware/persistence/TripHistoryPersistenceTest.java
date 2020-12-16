@@ -5,7 +5,6 @@ import org.bson.conversions.Bson;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -29,7 +28,7 @@ import static org.opentripplanner.middleware.persistence.TypedPersistence.filter
  * number of {@link TypedPersistence} methods are tested here, but the HTTP endpoints defined in
  * {@link org.opentripplanner.middleware.controllers.api.ApiController} are not themselves tested here.
  */
-public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
+public class TripHistoryPersistenceTest {
     private static final int LIMIT = 3;
     private static final String TEST_EMAIL = "john.doe@example.com";
     private static final String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
