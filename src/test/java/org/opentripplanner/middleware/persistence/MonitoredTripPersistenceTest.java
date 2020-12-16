@@ -1,8 +1,12 @@
 package org.opentripplanner.middleware.persistence;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -16,6 +20,11 @@ import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.crea
 public class MonitoredTripPersistenceTest {
 
     MonitoredTrip monitoredTrip = null;
+
+    @BeforeAll
+    public static void setUp() throws IOException, InterruptedException {
+        OtpMiddlewareTest.setUp();
+    }
 
     @Test
     public void canCreateMonitoredTrip() {

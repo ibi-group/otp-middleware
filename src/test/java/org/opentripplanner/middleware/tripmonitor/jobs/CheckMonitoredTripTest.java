@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
@@ -46,15 +47,18 @@ public class CheckMonitoredTripTest {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTripTest.class);
     private static OtpUser user;
 
-    private static final ZonedDateTime noonMonday8June2020 = DateTimeUtils.makeOtpZonedDateTime(new Date())
-        .withYear(2020)
-        .withMonth(6)
-        .withDayOfMonth(8)
-        .withHour(12)
-        .withMinute(0);
+    // this is initialized in the setup method after the OTP_TIMEZONE config value is known.
+    private static ZonedDateTime noonMonday8June2020;
 
     @BeforeAll
-    public static void setup() throws IOException {
+    public static void setup() throws IOException, InterruptedException {
+        OtpMiddlewareTest.setUp();
+        noonMonday8June2020 = DateTimeUtils.makeOtpZonedDateTime(new Date())
+            .withYear(2020)
+            .withMonth(6)
+            .withDayOfMonth(8)
+            .withHour(12)
+            .withMinute(0);
         OtpTestUtils.mockOtpServer();
         user = PersistenceTestUtils.createUser("user@example.com");
     }

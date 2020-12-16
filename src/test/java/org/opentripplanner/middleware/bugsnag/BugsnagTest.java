@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.bugsnag;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.BugsnagProject;
@@ -20,7 +21,8 @@ public class BugsnagTest {
     private static BugsnagProject BUGSNAG_PROJECT = null;
 
     @BeforeAll
-    public static void setup() throws IOException {
+    public static void setup() throws IOException, InterruptedException {
+        OtpMiddlewareTest.setUp();
         createBugsnagObjects();
     }
 

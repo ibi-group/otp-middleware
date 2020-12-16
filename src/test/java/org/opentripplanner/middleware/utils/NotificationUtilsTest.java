@@ -6,10 +6,13 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
@@ -38,8 +41,9 @@ public class NotificationUtilsTest {
     private static final boolean shouldTestsRun = !isRunningCi && IS_END_TO_END && email != null && phone != null;
 
     @BeforeAll
-    public static void setup() {
+    public static void setup() throws IOException, InterruptedException {
         assumeTrue(shouldTestsRun);
+        OtpMiddlewareTest.setUp();
         user = createUser(email, phone);
     }
 

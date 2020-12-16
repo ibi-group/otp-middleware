@@ -5,6 +5,7 @@ import org.bson.conversions.Bson;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -41,7 +42,8 @@ public class TripHistoryPersistenceTest {
     private static List<TripRequest> tripRequests = null;
 
     @BeforeAll
-    public static void setup() throws IOException {
+    public static void setup() throws IOException, InterruptedException {
+        OtpMiddlewareTest.setUp();
         otpUser = createUser(TEST_EMAIL);
         tripRequest = createTripRequest(otpUser.id);
         tripRequests = createTripRequests(LIMIT, otpUser.id);
