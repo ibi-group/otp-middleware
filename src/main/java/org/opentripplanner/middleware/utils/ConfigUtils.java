@@ -1,6 +1,10 @@
 package org.opentripplanner.middleware.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.github.fge.jsonschema.core.exceptions.ProcessingException;
+import com.github.fge.jsonschema.core.report.ProcessingReport;
+import com.github.fge.jsonschema.main.JsonSchemaFactory;
+import com.github.fge.jsonschema.main.JsonValidator;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +22,7 @@ public class ConfigUtils {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
 
     public static final String DEFAULT_ENV = "configurations/default/env.yml";
+    public static final String DEFAULT_ENV_SCHEMA = "configurations/default/env.schema.json";
 
     private static final String JAR_PREFIX = "otp-middleware-";
 
@@ -53,6 +58,40 @@ public class ConfigUtils {
             envConfigStream = new FileInputStream(new File(args[0]));
         }
         envConfig = yamlMapper.readTree(envConfigStream);
+        validateConfig();
+    }
+
+    /**
+     * Validate the environment configuration against the environment configuration schema. If the config is not available,
+     * does not match the schema or an exception is thrown, exit the application.
+     */
+    private static void validateConfig() throws IOException {
+        if ("false".equals(getConfigPropertyAsText("VALIDATE_ENVIRONMENT_CONFIG", "true"))) {
+            LOG.warn("Environment configuration schema validation disabled.");
+            return;
+        }
+        if (envConfig == null) {
+            LOG.error("Environment configuration not available to validate!");
+            System.exit(0);
+        }
+        FileInputStream  envSchemaStream = new FileInputStream(new File(DEFAULT_ENV_SCHEMA));
+        JsonNode envSchema = yamlMapper.readTree(envSchemaStream);
+        if (envSchema == null) {
+            LOG.error("Environment configuration schema not available.");
+            System.exit(0);
+        }
+        try {
+            JsonSchemaFactory jsonSchemaFactory = JsonSchemaFactory.byDefault();
+            JsonValidator jsonValidator = jsonSchemaFactory.getValidator();
+            ProcessingReport report = jsonValidator.validate(envSchema, envConfig);
+            if (!report.isSuccess()) {
+                LOG.error(report.toString());
+                System.exit(0);
+            }
+        } catch (ProcessingException e) {
+            LOG.error("Unable to validate environment configuration.", e);
+            System.exit(0);
+        }
     }
 
     /**

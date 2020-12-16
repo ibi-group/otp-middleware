@@ -154,9 +154,6 @@ public class DateTimeUtils {
      */
     public static ZoneId getOtpZoneId() {
         String otpTzId = getConfigPropertyAsText("OTP_TIMEZONE");
-        if (otpTzId == null) {
-            throw new RuntimeException("OTP_TIMEZONE is not defined in config!");
-        }
         return ZoneId.of(otpTzId);
     }
 
