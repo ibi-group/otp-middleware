@@ -70,7 +70,7 @@ public class JourneyState implements Cloneable {
 
     /**
      * Clone this object.
-     * NOTE: This is only clones certain needed items so not all entities are deep-cloned. Implement this further if
+     * NOTE: This only clones certain needed items so not all entities are deep-cloned. Implement this further if
      * additional items should be deep-cloned.
      */
     @Override

@@ -250,6 +250,8 @@ public class Itinerary implements Cloneable {
     /**
      * Returns true if the current time falls between the start and end time of the itinerary
      */
+    @JsonIgnore
+    @BsonIgnore
     public boolean isActive() {
         Date now = DateTimeUtils.nowAsDate();
         return startTime.before(now) && endTime.after(now);
@@ -258,6 +260,8 @@ public class Itinerary implements Cloneable {
     /**
      * Returns true if the current time is after the end time of the itinerary.
      */
+    @JsonIgnore
+    @BsonIgnore
     public boolean hasEnded() {
         return endTime.before(DateTimeUtils.nowAsDate());
     }

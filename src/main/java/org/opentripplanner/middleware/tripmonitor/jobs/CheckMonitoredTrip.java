@@ -193,7 +193,7 @@ public class CheckMonitoredTrip implements Runnable {
                 // If the updated trip status is upcoming and the end time of the current matching itinerary is in the
                 // past, this means the trip has completed and the next possible time the trip occurs should be
                 // calculated
-                if (journeyState.tripStatus == TripStatus.TRIP_UPCOMING && !matchingItinerary.hasEnded()) {
+                if (journeyState.tripStatus == TripStatus.TRIP_UPCOMING && matchingItinerary.hasEnded()) {
                     LOG.info("Matching Itinerary has concluded, advancing to next possible trip date.");
                     targetZonedDateTime = targetZonedDateTime.plusDays(1);
                     try {
@@ -439,12 +439,7 @@ public class CheckMonitoredTrip implements Runnable {
         // checked here to avoid incorrectly skipping trips that are monitored on a single day of the week, but which
         // may have not had a matching itinerary on that day for one week (even though the trip could be possible the
         // next week).
-        if (
-            previousJourneyState.tripStatus != null &&
-                previousJourneyState.tripStatus.equals(TripStatus.NO_LONGER_POSSIBLE)
-        ) {
-            return true;
-        }
+        if (previousJourneyState.tripStatus == TripStatus.NO_LONGER_POSSIBLE) return true;
 
         // get the most recent journey state itinerary to see when the next monitored trip is supposed to occur
         boolean matchingItineraryActiveOrUpcoming = previousMatchingItinerary != null &&
@@ -496,8 +491,14 @@ public class CheckMonitoredTrip implements Runnable {
             }
 
             // Check if the CheckMonitoredTrip is being ran for the first time for this trip and if the trip's saved
-            // itinerary has already ended for the day. In that case, advance until the next day.
-            if (previousMatchingItinerary == null && trip.itinerary.endTime.after(DateTimeUtils.nowAsDate())) {
+            // itinerary has already ended. Additionally, make sure that the saved itinerary occurred on the same
+            // service day. If both of these conditions are true, then there is no need to check for the current day and
+            // the target zoned date time should be advanced to the next day.
+            if (
+                previousMatchingItinerary == null &&
+                    trip.itinerary.endTime.before(DateTimeUtils.nowAsDate()) &&
+                    ItineraryUtils.occursOnSameServiceDay(trip.itinerary, targetZonedDateTime, trip.isArriveBy())
+            ) {
                 targetZonedDateTime = targetZonedDateTime.plusDays(1);
             }
 
@@ -564,10 +565,10 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Advances the journey state data to point to the next actively monitored date and time that the scheduled
-     * itinerary could occur. This does not make a request to the trip planner, instead it will offset the matching
-     * itinerary and journey state data the appropriate number of days and then recalculate the new scheduled time based
-     * on the updated time in the updated itinerary.
+     * Advance the journey state data to point to the next actively monitored date and time that the scheduled itinerary
+     * could occur. This does not make a request to the trip planner, instead it will offset the matching itinerary and
+     * journey state data the appropriate number of days and then recalculate the new scheduled time based on the
+     * updated time in the updated itinerary.
      */
     private void advanceToNextActiveTripDate() throws URISyntaxException {
         // Advance the target date/time until a day is found when the trip is active.
@@ -578,26 +579,36 @@ public class CheckMonitoredTrip implements Runnable {
         LOG.info("Next itinerary happening on {}.", targetZonedDateTime);
 
         // Update the matching itinerary with the expected scheduled times for when the next trip is
-        // expected to happen. This is done by incrementing the matching itinerary's start or end time such that it
-        // would be the either the first possible itinerary happening after the target time for depart at trips or
-        // the latest possible itinerary that ends before the target time for arrive by trips. Doing so this way
-        // avoids making calls to OTP and sets up an expected itinerary to check for even if OTP is unable to return
-        // the itinerary due to it being suboptimal.
+        // expected to happen in a scheduled state.
         long offsetMillis;
         if (trip.isArriveBy()) {
-            // find the closest itinerary end time that does not exceed the target zoned date time
-            ZonedDateTime newEndTime = DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.endTime);
+            // For arrive by trips, increment the matching itinerary end time as long as it does not exceed the target
+            // zoned date time.
+            //
+            // Example: The new target time is June 15 at 9am and the previous matching itinerary ended on June 13 at
+            // 8:50am. In this case, the matching itinerary will be incremented two days so the updated matching
+            // itinerary ends at 8:50am on June 15.
+            ZonedDateTime newEndTime = DateTimeUtils.makeOtpZonedDateTime(
+                new Date(matchingItinerary.getScheduledEndTimeEpochMillis())
+            );
             do {
                 newEndTime = newEndTime.plusDays(1);
             } while (newEndTime.plusDays(1).isBefore(targetZonedDateTime));
             offsetMillis = newEndTime.toInstant().toEpochMilli() - matchingItinerary.endTime.getTime();
         } else {
-            // find the first itinerary start time that does exceeds the target zoned date time
-            ZonedDateTime newStartTime = DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime);
-            do {
+            // For depart at trips, increment the matching itinerary start time until it occurs after the target zoned
+            // date time.
+            //
+            // Example: The new target time is June 15 at 5pm and the previous matching itinerary began on June 13 at
+            // 5:08pm. In this case, the matching itinerary will be incremented two days so the updated matching
+            // itinerary begins at 5:08pm on June 15.
+            ZonedDateTime newStartTime = DateTimeUtils.makeOtpZonedDateTime(
+                new Date(matchingItinerary.getScheduledStartTimeEpochMillis())
+            );
+            while (newStartTime.isBefore(targetZonedDateTime)) {
                 newStartTime = newStartTime.plusDays(1);
-            } while (newStartTime.isBefore(targetZonedDateTime));
-            offsetMillis = newStartTime.toInstant().toEpochMilli() - matchingItinerary.startTime.getTime();
+            }
+            offsetMillis = newStartTime.toInstant().toEpochMilli() - matchingItinerary.getScheduledStartTimeEpochMillis();
         }
 
         // update overall itinerary and leg start/end times by adding offset

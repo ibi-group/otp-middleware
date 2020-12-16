@@ -44,7 +44,8 @@ class ShouldSkipTripTestCase {
         this.shouldSkipTrip = shouldSkipTrip;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return message;
     }
 

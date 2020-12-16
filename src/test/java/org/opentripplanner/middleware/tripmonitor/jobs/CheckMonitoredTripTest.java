@@ -92,8 +92,8 @@ public class CheckMonitoredTripTest {
         LOG.info("Created trip {}", monitoredTrip.id);
 
         // Setup an OTP mock response in order to trigger some of the monitor checks.
-        Itinerary mockMondayJune15Itinerary = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE
-            .getResponse().plan.itineraries.get(0);
+        OtpResponse mockResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        Itinerary mockMondayJune15Itinerary = mockResponse.plan.itineraries.get(0);
 
         // parse original itinerary date/time and then update mock itinerary to occur on Monday June 15
         OtpTestUtils.updateBaseItineraryTime(
@@ -107,7 +107,7 @@ public class CheckMonitoredTripTest {
         fakeAlerts.add(new LocalizedAlert());
         mockMondayJune15Itinerary.legs.get(1).alerts = fakeAlerts;
 
-        OtpTestUtils.setupOtpMocks(List.of(OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse()));
+        OtpTestUtils.setupOtpMocks(List.of(mockResponse));
 
         // mock the current time to be 8:45am on Monday, June 15
         DateTimeUtils.useFixedClockAt(
