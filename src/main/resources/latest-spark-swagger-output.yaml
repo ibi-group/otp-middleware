@@ -1168,8 +1168,6 @@ definitions:
         - "NEXT_TRIP_NOT_POSSIBLE"
         - "TRIP_UPCOMING"
         - "TRIP_ACTIVE"
-      noLongerPossible:
-        type: "boolean"
       hasRealtimeData:
         type: "boolean"
   Itinerary:

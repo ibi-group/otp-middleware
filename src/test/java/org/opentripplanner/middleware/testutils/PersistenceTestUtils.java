@@ -13,7 +13,7 @@ import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
-import org.opentripplanner.middleware.tripMonitor.JourneyState;
+import org.opentripplanner.middleware.tripmonitor.JourneyState;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -79,8 +79,8 @@ public class PersistenceTestUtils {
     /**
      * Create trip summary from static plan response file and store in database.
      */
-    public static TripSummary createTripSummary(String tripRequestId) throws IOException {
-        OtpResponse planResponse = OtpTestUtils.getPlanResponse();
+    public static TripSummary createTripSummary(String tripRequestId) {
+        OtpResponse planResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
         TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
@@ -89,8 +89,8 @@ public class PersistenceTestUtils {
     /**
      * Create trip summary from static plan error response file and store in database.
      */
-    public static TripSummary createTripSummaryWithError(String tripRequestId) throws IOException {
-        OtpResponse planErrorResponse = OtpTestUtils.getPlanErrorResponse();
+    public static TripSummary createTripSummaryWithError(String tripRequestId) {
+        OtpResponse planErrorResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse();
         TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
