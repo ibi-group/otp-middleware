@@ -74,7 +74,7 @@ The follow parameters are used to interact with an OTP server.
 
 ### Monitored Components
 
-This application allows you to monitor various system components (e.g., OTP API, OTP UI, Data Tools) that work together 
+This application allows you to monitor various system components (e.g., OTP API, OTP UI, and Data Tools) that work together 
 to provide a trip planning service. Each of these should be defined in the config file in the list of 
 `MONITORED_COMPONENTS` with the following properties:
 
