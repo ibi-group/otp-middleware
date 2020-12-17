@@ -591,9 +591,9 @@ public class CheckMonitoredTrip implements Runnable {
             ZonedDateTime newEndTime = DateTimeUtils.makeOtpZonedDateTime(
                 new Date(matchingItinerary.getScheduledEndTimeEpochMillis())
             );
-            do {
+            while (newEndTime.plusDays(1).isBefore(targetZonedDateTime)) {
                 newEndTime = newEndTime.plusDays(1);
-            } while (newEndTime.plusDays(1).isBefore(targetZonedDateTime));
+            }
             offsetMillis = newEndTime.toInstant().toEpochMilli() - matchingItinerary.endTime.getTime();
         } else {
             // For depart at trips, increment the matching itinerary start time until it occurs after the target zoned
