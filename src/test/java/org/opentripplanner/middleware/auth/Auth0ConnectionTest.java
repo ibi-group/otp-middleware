@@ -6,11 +6,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
@@ -28,14 +28,13 @@ import static org.opentripplanner.middleware.controllers.api.OtpUserController.O
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
 import static org.opentripplanner.middleware.utils.HttpUtils.REQUEST_METHOD.GET;
 import static org.opentripplanner.middleware.utils.HttpUtils.REQUEST_METHOD.POST;
 
 /**
  * Tests for select methods from {@link Auth0Connection}.
  */
-public class Auth0ConnectionTest {
+public class Auth0ConnectionTest extends OtpMiddlewareTestEnvironment {
 
     /**
      * This dummy AbstractUser only holds an email and auth0 id and is passed solely to generate request headers.
@@ -48,9 +47,8 @@ public class Auth0ConnectionTest {
     private static User auth0User;
 
     @BeforeAll
-    public static void setUp() throws IOException, InterruptedException {
+    public static void setUp() throws IOException {
         assumeTrue(IS_END_TO_END);
-        OtpMiddlewareTest.setUp();
         setAuthDisabled(false);
 
         dummyRequestingUser = new OtpUser();

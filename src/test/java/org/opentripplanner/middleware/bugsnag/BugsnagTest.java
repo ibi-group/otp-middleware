@@ -3,26 +3,25 @@ package org.opentripplanner.middleware.bugsnag;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BugsnagTest {
+public class BugsnagTest extends OtpMiddlewareTestEnvironment {
 
     private static BugsnagEvent BUGSNAG_EVENT = null;
     private static BugsnagEventRequest BUGSNAG_EVENT_REQUEST = null;
     private static BugsnagProject BUGSNAG_PROJECT = null;
 
     @BeforeAll
-    public static void setup() throws IOException, InterruptedException {
-        OtpMiddlewareTest.setUp();
+    public static void setup() throws IOException {
         createBugsnagObjects();
     }
 

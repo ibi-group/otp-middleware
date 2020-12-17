@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,14 +15,13 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class Auth0UsersTest {
+public class Auth0UsersTest extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(Auth0UsersTest.class);
     private static final long TOKEN_DURATION_SECONDS = 86400;
     private static ObjectMapper mapper = new ObjectMapper();
 
     @BeforeAll
-    public static void setUp() throws IOException, InterruptedException {
-        OtpMiddlewareTest.setUp();
+    public static void setUp() throws IOException {
         LOG.info("Setting up Auth0UsersTest");
         // Construct simplified token POJO that just contains expiration duration in seconds (one day).
         ObjectNode fakeToken = mapper.createObjectNode();

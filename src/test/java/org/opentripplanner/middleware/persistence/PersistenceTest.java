@@ -1,14 +1,11 @@
 package org.opentripplanner.middleware.persistence;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -19,16 +16,11 @@ import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.crea
  * {@link TypedPersistence} methods are tested here, but the HTTP endpoints defined in
  * {@link org.opentripplanner.middleware.controllers.api.ApiController} are not themselves tested here.
  */
-public class PersistenceTest {
+public class PersistenceTest extends OtpMiddlewareTestEnvironment {
     private static final String TEST_EMAIL = "john.doe@example.com";
     private static final Logger LOG = LoggerFactory.getLogger(PersistenceTest.class);
 
     OtpUser user = null;
-
-    @BeforeAll
-    public static void setUp() throws IOException, InterruptedException {
-        OtpMiddlewareTest.setUp();
-    }
 
     @Test
     public void canCreateUser() {

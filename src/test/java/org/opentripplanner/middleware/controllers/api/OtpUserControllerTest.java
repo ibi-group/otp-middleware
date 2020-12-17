@@ -6,10 +6,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
@@ -22,14 +22,12 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenti
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 
-public class OtpUserControllerTest {
+public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake US 555 number.
     private static OtpUser otpUser;
 
     @BeforeAll
-    public static void setUp() throws IOException, InterruptedException {
-        // Load config.
-        OtpMiddlewareTest.setUp();
+    public static void setUp() throws IOException {
         // Ensure auth is disabled.
         setAuthDisabled(true);
         // Create a persisted OTP user.

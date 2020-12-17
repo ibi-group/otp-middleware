@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEp
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
 
-public class ItineraryUtilsTest {
+public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryUtilsTest.class);
     /** Abbreviated query for the tests */
     public static final String BASE_QUERY = "?fromPlace=2418%20Dade%20Ave&toPlace=McDonald%27s&date=2020-08-13&time=11%3A23&arriveBy=false";
@@ -54,59 +55,29 @@ public class ItineraryUtilsTest {
         QUERY_DATE, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18"
     );
 
-    /**
-     * Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE. These are all set after
-     * the OTP_TIMEZONE config value is known after the middleware is setup.
-     */
-    public static long _2020_08_12__03_00_00; // Aug 12, 2020 3:00:00 AM
-    public static long _2020_08_12__23_59_59; // Aug 12, 2020 11:59:59 PM
-    public static long _2020_08_13__02_59_59; // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
-    public static long _2020_08_13__03_00_00; // Aug 13, 2020 3:00:00 AM
-    public static long _2020_08_13__23_59_59; // Aug 13, 2020 11:59:59 PM
-    public static long _2020_08_14__02_59_59; // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
-    public static long _2020_08_14__03_00_00; // Aug 14, 2020 3:00:00 AM
+    /** Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE. */
+    public static final long _2020_08_12__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 12, 3, 0, 0)); // Aug 12, 2020 3:00:00 AM
+    public static final long _2020_08_12__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020,8,12,23,59,59)); // Aug 12, 2020 11:59:59 PM
+    public static final long _2020_08_13__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 13, 2, 59, 59)); // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
+    public static final long _2020_08_13__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 13, 3, 0, 0)); // Aug 13, 2020 3:00:00 AM
+    public static final long _2020_08_13__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 13, 23, 59, 59)); // Aug 13, 2020 11:59:59 PM
+    public static final long _2020_08_14__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 14, 2, 59, 59)); // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
+    public static final long _2020_08_14__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
+        2020, 8, 14, 3, 0, 0)); // Aug 14, 2020 3:00:00 AM
 
     /** Contains the verified itinerary set for a trip upon persisting. */
-    private static Itinerary DEFAULT_ITINERARY;
+    private static final Itinerary DEFAULT_ITINERARY =
+        OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
 
     @BeforeAll
-    public static void setup() throws IOException, InterruptedException {
-        OtpMiddlewareTest.setUp();
+    public static void setup() throws IOException {
         OtpTestUtils.mockOtpServer();
-        initializeConfigDependentFields();
-    }
-
-    private static void initializeConfigDependentFields() {
-        // Aug 12, 2020 3:00:00 AM
-        _2020_08_12__03_00_00 = otpDateTimeAsEpochMillis(
-            LocalDateTime.of(2020, 8, 12, 3, 0, 0)
-        );
-        // Aug 12, 2020 11:59:59 PM
-        _2020_08_12__23_59_59 = otpDateTimeAsEpochMillis(
-            LocalDateTime.of(2020,8,12,23,59,59)
-        );
-        // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
-        _2020_08_13__02_59_59 = otpDateTimeAsEpochMillis(
-            LocalDateTime.of(2020, 8, 13, 2, 59, 59)
-        );
-        // Aug 13, 2020 3:00:00 AM
-        _2020_08_13__03_00_00 = otpDateTimeAsEpochMillis(
-            LocalDateTime.of(2020, 8, 13, 3, 0, 0)
-        );
-        // Aug 13, 2020 11:59:59 PM
-        _2020_08_13__23_59_59 = otpDateTimeAsEpochMillis(
-            LocalDateTime.of(2020, 8, 13, 23, 59, 59)
-        );
-        // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
-        _2020_08_14__02_59_59 = otpDateTimeAsEpochMillis(
-            LocalDateTime.of(2020, 8, 14, 2, 59, 59)
-        );
-        // Aug 14, 2020 3:00:00 AM
-        _2020_08_14__03_00_00 = otpDateTimeAsEpochMillis(
-            LocalDateTime.of(2020, 8, 14, 3, 0, 0)
-        );
-
-        DEFAULT_ITINERARY = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
     }
 
     @AfterEach
