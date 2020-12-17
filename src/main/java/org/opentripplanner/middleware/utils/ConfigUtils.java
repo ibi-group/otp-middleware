@@ -65,32 +65,30 @@ public class ConfigUtils {
      * Validate the environment configuration against the environment configuration schema. If the config is not available,
      * does not match the schema or an exception is thrown, exit the application.
      */
-    private static void validateConfig() throws IOException {
+    private static void validateConfig() {
         if ("false".equals(getConfigPropertyAsText("VALIDATE_ENVIRONMENT_CONFIG", "true"))) {
             LOG.warn("Environment configuration schema validation disabled.");
             return;
         }
-        if (envConfig == null) {
-            LOG.error("Environment configuration not available to validate!");
-            System.exit(0);
-        }
-        FileInputStream  envSchemaStream = new FileInputStream(new File(DEFAULT_ENV_SCHEMA));
-        JsonNode envSchema = yamlMapper.readTree(envSchemaStream);
-        if (envSchema == null) {
-            LOG.error("Environment configuration schema not available.");
-            System.exit(0);
-        }
         try {
-            JsonSchemaFactory jsonSchemaFactory = JsonSchemaFactory.byDefault();
-            JsonValidator jsonValidator = jsonSchemaFactory.getValidator();
-            ProcessingReport report = jsonValidator.validate(envSchema, envConfig);
-            if (!report.isSuccess()) {
-                LOG.error(report.toString());
-                System.exit(0);
+            if (envConfig == null) {
+                throw new IllegalArgumentException("Environment configuration not available to validate!");
             }
-        } catch (ProcessingException e) {
+            FileInputStream envSchemaStream = new FileInputStream(new File(DEFAULT_ENV_SCHEMA));
+            JsonNode envSchema = yamlMapper.readTree(envSchemaStream);
+            if (envSchema == null) {
+                throw new IllegalArgumentException("Environment configuration schema not available.");
+            }
+            ProcessingReport report = JsonSchemaFactory
+                    .byDefault()
+                    .getValidator()
+                    .validate(envSchema, envConfig);
+            if (!report.isSuccess()) {
+                throw new IllegalArgumentException(report.toString());
+            }
+        } catch (IOException | IllegalArgumentException | ProcessingException e) {
             LOG.error("Unable to validate environment configuration.", e);
-            System.exit(0);
+            System.exit(1);
         }
     }
 
