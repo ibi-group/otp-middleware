@@ -113,10 +113,10 @@ select `Personal auth tokens` and then `Generate new token`.
 
 ##### BUGSNAG_ORGANIZATION
 A bugsnag organization contains all projects which errors/events will be reported on. The organization ID is the 
-starting point for most Bugsnag API requests. The organization ID can be obtained by opening the Chrome Devtools Network 
-tab, then opening the Bugsnag dashboard (https://app.bugsnag.com). Filter the network requests with 
-`https://api.bugsnag.com/organizations` and you'll see and a handful of requests that use the organization ID (it will 
-be a UUID value) in the request path.
+starting point for most Bugsnag API requests. The organization ID can be obtained by by opening the Network tab in your 
+browser's developer tools, then navigating to the Bugsnag dashboard (https://app.bugsnag.com). Filter the network 
+requests with `https://api.bugsnag.com/organizations` and you'll see and a handful of requests that use the organization 
+ID (it will be a UUID value) in the request path.
 
 ##### BUGSNAG_PROJECT_NOTIFIER_API_KEY
 A Bugsnag project identifier key is unique to a Bugsnag project and allows errors to be saved against it. This key can 
