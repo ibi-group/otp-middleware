@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
+import com.zenika.snapshotmatcher.SnapshotMatcher;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
@@ -23,9 +25,9 @@ public class TemplateUtilsTest extends OtpMiddlewareTest {
     @ParameterizedTest
     @MethodSource("createTemplateRenderingTestCases")
     public void canRenderTemplates(TemplateRenderingTestCase testCase) throws Exception {
-        assertThat(
+        assertMatchesSnapshot(
             TemplateUtils.renderTemplate(testCase.templatePath, testCase.templateData),
-            matchesSnapshot(testCase.testCaseName.replace(" ", "_"))
+            testCase.testCaseName.replace(" ", "_")
         );
     }
 
@@ -88,5 +90,17 @@ public class TemplateUtilsTest extends OtpMiddlewareTest {
         @Override public String toString() {
             return testCaseName;
         }
+    }
+
+    /**
+     * Wrapper method for {@link MatcherAssert#assertThat} that handles replacing Windows system line separators with
+     * Unix line separators in the specified actual string. This ensures that tests run on Windows and Linux both use
+     * the \n character for line separators and the snapshots match across platforms.
+     *
+     * TODO: Fix this in https://github.com/conveyal/java-snapshot-matcher
+     */
+    private static <T>void assertMatchesSnapshot(String actual, String snapshotName) {
+        String actualWithStandardLineSeparators = actual.replaceAll("\r\n", "\n");
+        assertThat(actualWithStandardLineSeparators, matchesSnapshot(snapshotName));
     }
 }
