@@ -103,7 +103,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 "An API key must be provided and match Api user."
             );
         }
-        HttpResponse<String> auth0TokenResponse = Auth0Users.getCompleteAuth0TokenResponse(username, password);
+        HttpResponse<String> auth0TokenResponse = Auth0Users.getAuth0TokenWithScope(username, password, ApiUser.AUTH0_SCOPE);
         if (auth0TokenResponse == null || auth0TokenResponse.statusCode() != HttpStatus.OK_200) {
             logMessageAndHalt(req,
                 auth0TokenResponse.statusCode(),

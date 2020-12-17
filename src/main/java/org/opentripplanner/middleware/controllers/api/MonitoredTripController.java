@@ -60,9 +60,8 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         // Ensure user has not reached their limit for number of trips.
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
-        checkTripCanBeMonitored(monitoredTrip, req);
-        processTripQueryParams(monitoredTrip, req);
-        
+        preCreateOrUpdateChecks(monitoredTrip, req);
+
         try {
             // Check itinerary existence and replace the provided trip's itinerary with a verified, non-realtime
             // version of it.
@@ -110,6 +109,14 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     private MonitoredTrip runCheckMonitoredTrip(MonitoredTrip monitoredTrip) throws Exception {
         new CheckMonitoredTrip(monitoredTrip).run();
         return Persistence.monitoredTrips.getById(monitoredTrip.id);
+    }
+
+    /**
+     * Performs the operations/checks common to the preCreate and preUpdate hooks.
+     */
+    private void preCreateOrUpdateChecks(MonitoredTrip monitoredTrip, Request req) {
+        checkTripCanBeMonitored(monitoredTrip, req);
+        processTripQueryParams(monitoredTrip, req);
     }
 
     /**
@@ -165,6 +172,8 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         monitoredTripLocks.put(monitoredTrip, true);
 
         try {
+            preCreateOrUpdateChecks(monitoredTrip, req);
+
             // Forbid the editing of certain values that are analyzed and set during the CheckMonitoredTrip job.
             // For now, accomplish this by setting whatever the previous itinerary and journey state were in the preExisting
             // trip.

@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
@@ -74,6 +75,7 @@ public class ApiUserFlowTest {
     private static ApiUser apiUser;
     private static OtpUser otpUser;
     private static OtpUser otpUserMatchingApiUser;
+    private static OtpUser otpUserStandalone;
     private static final String OTP_USER_PATH = "api/secure/user";
     private static final String MONITORED_TRIP_PATH = "api/secure/monitoredtrip";
 
@@ -98,10 +100,15 @@ public class ApiUserFlowTest {
         OtpTestUtils.mockOtpServer();
         // As a pre-condition, create an API User with API key.
         apiUser = PersistenceTestUtils.createApiUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
+        // Create a 'standalone' OtpUser that is not managed by an ApiUser.
+        otpUserStandalone = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-stdalone-otpuser"));
+
+        // As a pre-condition, create an API User with API key.
+        apiUser = PersistenceTestUtils.createApiUser(ApiTestUtils.generateEmailAddress("test-apiuser"));
         apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
         // Create, but do not persist, an OTP user.
         otpUser = new OtpUser();
-        otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
+        otpUser.email = ApiTestUtils.generateEmailAddress("test-api-otpuser");
         otpUser.hasConsentedToTerms = true;
         otpUser.storeTripHistory = true;
         try {
@@ -132,6 +139,8 @@ public class ApiUserFlowTest {
         if (otpUser != null) otpUser.delete(false);
         otpUserMatchingApiUser = Persistence.otpUsers.getById(otpUserMatchingApiUser.id);
         if (otpUserMatchingApiUser != null) otpUserMatchingApiUser.delete(false);
+        otpUserStandalone = Persistence.otpUsers.getById(otpUserStandalone.id);
+        if (otpUserStandalone != null) otpUserStandalone.delete(false);
     }
 
     @AfterEach
@@ -225,6 +234,21 @@ public class ApiUserFlowTest {
             createTripResponseAsApiUser.body(),
             MonitoredTrip.class
         );
+
+        // As API user, try to assign this trip to another user the API user doesn't manage.
+        // (This trip should not be persisted.)
+        MonitoredTrip monitoredTripToNonManagedUser = JsonUtils.getPOJOFromJSON(
+            createTripResponseAsApiUser.body(),
+            MonitoredTrip.class
+        );
+        monitoredTripToNonManagedUser.userId = otpUserStandalone.id;
+        HttpResponse<String> putTripResponseAsApiUser = makeRequest(
+            MONITORED_TRIP_PATH + "/" + monitoredTripToNonManagedUser.id,
+            JsonUtils.toJson(monitoredTripToNonManagedUser),
+            apiUserHeaders,
+            HttpUtils.REQUEST_METHOD.PUT
+        );
+        assertEquals(HttpStatus.FORBIDDEN_403, putTripResponseAsApiUser.statusCode());
 
         // Request all monitored trips for an Otp user authenticating as an Api user. This will work and return all trips
         // matching the user id provided.

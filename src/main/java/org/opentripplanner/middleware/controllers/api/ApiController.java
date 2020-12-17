@@ -342,45 +342,43 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         // Save or update to database
         try {
             // Validate fields by deserializing into POJO.
-            T object = JsonUtils.getPOJOFromRequestBody(req, clazz);
+            T newEntity = JsonUtils.getPOJOFromRequestBody(req, clazz);
             if (isCreating) {
                 // Verify that the requesting user can create object.
-                if (!object.canBeCreatedBy(requestingUser)) {
+                if (!newEntity.canBeCreatedBy(requestingUser)) {
                     logMessageAndHalt(req,
                         HttpStatus.FORBIDDEN_403,
                         String.format("Requesting user not authorized to create %s.", className));
                 }
                 // Run pre-create hook and use updated object (with potentially modified values) in create operation.
-                T updatedObject = preCreateHook(object, req);
-                persistence.create(updatedObject);
-                updatedObject = postCreateHook(object, req);
+                persistence.create(preCreateHook(newEntity, req));
+                postCreateHook(newEntity, req);
             } else {
                 String id = getIdFromRequest(req);
-                T preExistingObject = getObjectForId(req, id);
-                if (preExistingObject == null) {
+                T preExistingEntity = getObjectForId(req, id);
+                if (preExistingEntity == null) {
                     logMessageAndHalt(req, 400, "Object to update does not exist!");
                     return null;
                 }
-                // Check that requesting user can manage entity.
-                if (!requestingUser.canManageEntity(preExistingObject)) {
+                // Check that requesting user can manage entity. This covers existing and new entities.
+                if (!requestingUser.canManageEntity(preExistingEntity) || !requestingUser.canManageEntity(newEntity)) {
                     logMessageAndHalt(req,
                         HttpStatus.FORBIDDEN_403,
                         String.format("Requesting user not authorized to update %s.", className));
                 }
                 // Update last updated value.
-                object.lastUpdated = DateTimeUtils.nowAsDate();
+                newEntity.lastUpdated = DateTimeUtils.nowAsDate();
                 // Pin the date created to pre-existing value.
-                object.dateCreated = preExistingObject.dateCreated;
+                newEntity.dateCreated = preExistingEntity.dateCreated;
                 // Validate that ID in JSON body matches ID param. TODO add test
-                if (!id.equals(object.id)) {
+                if (!id.equals(newEntity.id)) {
                     logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "ID in JSON body must match ID param.");
                 }
                 // Get updated object from pre-update hook method.
-                T updatedObject = preUpdateHook(object, preExistingObject, req);
-                persistence.replace(id, updatedObject);
+                persistence.replace(id, preUpdateHook(newEntity, preExistingEntity, req));
             }
             // Return object that ultimately gets stored in database.
-            return persistence.getById(object.id);
+            return persistence.getById(newEntity.id);
         } catch (HaltException e) {
             throw e;
         } catch (JsonProcessingException e) {
