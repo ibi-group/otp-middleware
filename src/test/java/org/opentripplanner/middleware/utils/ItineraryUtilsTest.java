@@ -11,13 +11,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +37,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.opentripplanner.middleware.testutils.OtpTestUtils.DEFAULT_PLAN_URI;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
 
-public class ItineraryUtilsTest extends OtpMiddlewareTest {
+public class ItineraryUtilsTest {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryUtilsTest.class);
     /** Abbreviated query for the tests */
     public static final String BASE_QUERY = "?fromPlace=2418%20Dade%20Ave&toPlace=McDonald%27s&date=2020-08-13&time=11%3A23&arriveBy=false";
@@ -57,48 +54,59 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         QUERY_DATE, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18"
     );
 
-    /** Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE. */
-    public static final long _2020_08_12__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 12, 3, 0, 0)); // Aug 12, 2020 3:00:00 AM
-    public static final long _2020_08_12__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020,8,12,23,59,59)); // Aug 12, 2020 11:59:59 PM
-    public static final long _2020_08_13__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 13, 2, 59, 59)); // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
-    public static final long _2020_08_13__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 13, 3, 0, 0)); // Aug 13, 2020 3:00:00 AM
-    public static final long _2020_08_13__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 13, 23, 59, 59)); // Aug 13, 2020 11:59:59 PM
-    public static final long _2020_08_14__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 14, 2, 59, 59)); // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
-    public static final long _2020_08_14__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 14, 3, 0, 0)); // Aug 14, 2020 3:00:00 AM
+    /**
+     * Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE. These are all set after
+     * the OTP_TIMEZONE config value is known after the middleware is setup.
+     */
+    public static long _2020_08_12__03_00_00; // Aug 12, 2020 3:00:00 AM
+    public static long _2020_08_12__23_59_59; // Aug 12, 2020 11:59:59 PM
+    public static long _2020_08_13__02_59_59; // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
+    public static long _2020_08_13__03_00_00; // Aug 13, 2020 3:00:00 AM
+    public static long _2020_08_13__23_59_59; // Aug 13, 2020 11:59:59 PM
+    public static long _2020_08_14__02_59_59; // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
+    public static long _2020_08_14__03_00_00; // Aug 14, 2020 3:00:00 AM
 
-    /** Contains an OTP response with an itinerary. */
-    private static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_RESPONSE =
-        initializeMockPlanResponse("otp/response/planResponse.json");
-    /** Contains an OTP response with no itinerary found. */
-    private static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
-        initializeMockPlanResponse("otp/response/planErrorResponse.json");
     /** Contains the verified itinerary set for a trip upon persisting. */
-    private static final Itinerary DEFAULT_ITINERARY = OTP_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
-    public static final ZoneId OTP_ZONE_ID = DateTimeUtils.getOtpZoneId();
+    private static Itinerary DEFAULT_ITINERARY;
 
     @BeforeAll
-    public static void setup() throws IOException {
+    public static void setup() throws IOException, InterruptedException {
+        OtpMiddlewareTest.setUp();
         OtpTestUtils.mockOtpServer();
+        initializeConfigDependentFields();
     }
 
-    public static OtpDispatcherResponse initializeMockPlanResponse(String path) {
-        // Contains an OTP response with an itinerary found.
-        // (We are reusing an existing response. The exact contents of the response does not matter
-        // for the purposes of this class.)
-        String mockPlanResponse = null;
-        try {
-            mockPlanResponse = CommonTestUtils.getTestResourceAsString(path);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return new OtpDispatcherResponse(mockPlanResponse, DEFAULT_PLAN_URI);
+    private static void initializeConfigDependentFields() {
+        // Aug 12, 2020 3:00:00 AM
+        _2020_08_12__03_00_00 = otpDateTimeAsEpochMillis(
+            LocalDateTime.of(2020, 8, 12, 3, 0, 0)
+        );
+        // Aug 12, 2020 11:59:59 PM
+        _2020_08_12__23_59_59 = otpDateTimeAsEpochMillis(
+            LocalDateTime.of(2020,8,12,23,59,59)
+        );
+        // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
+        _2020_08_13__02_59_59 = otpDateTimeAsEpochMillis(
+            LocalDateTime.of(2020, 8, 13, 2, 59, 59)
+        );
+        // Aug 13, 2020 3:00:00 AM
+        _2020_08_13__03_00_00 = otpDateTimeAsEpochMillis(
+            LocalDateTime.of(2020, 8, 13, 3, 0, 0)
+        );
+        // Aug 13, 2020 11:59:59 PM
+        _2020_08_13__23_59_59 = otpDateTimeAsEpochMillis(
+            LocalDateTime.of(2020, 8, 13, 23, 59, 59)
+        );
+        // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
+        _2020_08_14__02_59_59 = otpDateTimeAsEpochMillis(
+            LocalDateTime.of(2020, 8, 14, 2, 59, 59)
+        );
+        // Aug 14, 2020 3:00:00 AM
+        _2020_08_14__03_00_00 = otpDateTimeAsEpochMillis(
+            LocalDateTime.of(2020, 8, 14, 3, 0, 0)
+        );
+
+        DEFAULT_ITINERARY = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
     }
 
     @AfterEach
@@ -118,7 +126,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         // If needed, insert a mock invalid response for one of the monitored days.
         final int INVALID_DAY_INDEX = 3;
         if (insertInvalidDay) {
-            mockOtpResponses.set(INVALID_DAY_INDEX, OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
+            mockOtpResponses.set(INVALID_DAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
         }
 
         OtpTestUtils.setupOtpMocks(mockOtpResponses);
@@ -191,7 +199,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
 
             // Copy the template OTP response itinerary, and change the itinerary date to the monitored date,
             // in order to pass the same-day itinerary requirement.
-            OtpResponse resp = OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+            OtpResponse resp = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
             for (Itinerary itin : resp.plan.itineraries) {
                 itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
                 itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
@@ -378,7 +386,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
      */
     static List<ZonedDateTime> datesToZonedDateTimes(List<String> dates) {
         return dates.stream()
-            .map(d -> DateTimeUtils.makeZonedDateTime(d, QUERY_TIME))
+            .map(d -> DateTimeUtils.makeOtpZonedDateTime(d, QUERY_TIME))
             .collect(Collectors.toList());
     }
 
@@ -436,15 +444,15 @@ public class ItineraryUtilsTest extends OtpMiddlewareTest {
         Itinerary itinerary = simpleItinerary(testCase.tripTargetTimeEpochMillis, testCase.isArriveBy);
 
         ZonedDateTime queryDateTime = ZonedDateTime.of(
-          LocalDate.parse(QUERY_DATE, DateTimeUtils.DEFAULT_DATE_FORMATTER),
+            LocalDate.parse(QUERY_DATE, DateTimeUtils.DEFAULT_DATE_FORMATTER),
             LocalTime.parse(testCase.timeOfDay, DateTimeFormatter.ofPattern("H:mm")),
-            OTP_ZONE_ID
+            DateTimeUtils.getOtpZoneId()
         );
 
         Assertions.assertEquals(
             testCase.shouldBeSameDay,
             ItineraryUtils.occursOnSameServiceDay(itinerary, queryDateTime, testCase.isArriveBy),
-            testCase.getMessage(OTP_ZONE_ID)
+            testCase.getMessage(DateTimeUtils.getOtpZoneId())
         );
     }
 

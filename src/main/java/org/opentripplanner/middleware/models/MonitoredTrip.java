@@ -16,7 +16,7 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
-import org.opentripplanner.middleware.tripMonitor.JourneyState;
+import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 
@@ -151,7 +151,8 @@ public class MonitoredTrip extends Model {
     public boolean notifyOnItineraryChange = true;
 
     /**
-     * Records the last itinerary existence check results for this trip.
+     * Records the last itinerary existence check results for this trip. This keeps a record of the latest checks on
+     * whether an itinerary was possible on a certain day of the week.
      */
     public ItineraryExistence itineraryExistence;
 
@@ -347,14 +348,6 @@ public class MonitoredTrip extends Model {
 
     private Bson tripIdFilter() {
         return eq("monitoredTripId", this.id);
-    }
-
-    /**
-     * Get the latest itinerary that was tracked in the journey state or null if the check has never been performed (or
-     * a matching itinerary has never been found).
-     */
-    public Itinerary latestItinerary() {
-        return journeyState.matchingItinerary;
     }
 
     /**

@@ -14,14 +14,15 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BugsnagTest extends OtpMiddlewareTest {
+public class BugsnagTest {
 
     private static BugsnagEvent BUGSNAG_EVENT = null;
     private static BugsnagEventRequest BUGSNAG_EVENT_REQUEST = null;
     private static BugsnagProject BUGSNAG_PROJECT = null;
 
     @BeforeAll
-    public static void setup() throws IOException {
+    public static void setup() throws IOException, InterruptedException {
+        OtpMiddlewareTest.setUp();
         createBugsnagObjects();
     }
 
