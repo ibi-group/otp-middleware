@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.testutils;
 
+import org.eclipse.jetty.http.HttpMethod;
 import com.auth0.json.auth.TokenHolder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Users;
@@ -104,7 +105,7 @@ public class ApiTestUtils {
      * Send request to provided URL.
      */
     public static HttpResponse<String> makeRequest(
-        String path, String body, HashMap<String, String> headers, HttpUtils.REQUEST_METHOD requestMethod
+        String path, String body, HashMap<String, String> headers, HttpMethod requestMethod
     ) {
         return HttpUtils.httpRequestRawResponse(
             URI.create(BASE_URL + path),
@@ -122,7 +123,7 @@ public class ApiTestUtils {
         return HttpUtils.httpRequestRawResponse(
             URI.create(BASE_URL + path),
             1000,
-            HttpUtils.REQUEST_METHOD.GET,
+            HttpMethod.GET,
             headers,
             ""
         );
@@ -135,7 +136,7 @@ public class ApiTestUtils {
         return HttpUtils.httpRequestRawResponse(
             URI.create(BASE_URL + path),
             1000,
-            HttpUtils.REQUEST_METHOD.DELETE,
+            HttpMethod.DELETE,
             headers,
             ""
         );
@@ -146,7 +147,7 @@ public class ApiTestUtils {
      * id in the headers so that {@link RequestingUser} can check the database for a matching user.
      */
     public static HttpResponse<String> mockAuthenticatedRequest(
-        String path, String body, AbstractUser requestingUser, HttpUtils.REQUEST_METHOD requestMethod
+        String path, String body, AbstractUser requestingUser, HttpMethod requestMethod
     ) {
         return makeRequest(path, body, getMockHeaders(requestingUser), requestMethod);
     }

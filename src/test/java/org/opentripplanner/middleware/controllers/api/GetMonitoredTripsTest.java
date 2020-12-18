@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -166,7 +167,7 @@ public class GetMonitoredTripsTest {
         HttpResponse<String> createTripResponse = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
             otpUser,
-            HttpUtils.REQUEST_METHOD.POST
+            HttpMethod.POST
         );
 
         // Reset mocks after POST, because the next call to this function will need it.

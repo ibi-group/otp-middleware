@@ -12,7 +12,7 @@ import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
-import org.opentripplanner.middleware.models.BugsnagProject;
+import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -51,7 +51,7 @@ public class Persistence {
     // admin and system reliability collections
     public static TypedPersistence<BugsnagEventRequest> bugsnagEventRequests;
     public static TypedPersistence<BugsnagEvent> bugsnagEvents;
-    public static TypedPersistence<BugsnagProject> bugsnagProjects;
+    public static TypedPersistence<MonitoredComponent> monitoredComponents;
 
     public static void initialize () {
         // TODO Add custom codec libraries
@@ -97,7 +97,7 @@ public class Persistence {
         // admin and system reliability items
         bugsnagEventRequests = new TypedPersistence(mongoDatabase, BugsnagEventRequest.class);
         bugsnagEvents = new TypedPersistence(mongoDatabase, BugsnagEvent.class);
-        bugsnagProjects = new TypedPersistence(mongoDatabase, BugsnagProject.class);
+        monitoredComponents = new TypedPersistence(mongoDatabase, MonitoredComponent.class);
     }
 
 }

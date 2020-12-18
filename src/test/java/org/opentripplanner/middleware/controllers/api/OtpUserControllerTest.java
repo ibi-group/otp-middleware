@@ -45,6 +45,7 @@ public class OtpUserControllerTest {
     public static void tearDown() {
         // Delete the users if they were not already deleted during the test script.
         otpUser = Persistence.otpUsers.getById(otpUser.id);
+        // Delete OtpUser. No need to delete Auth0 user since one was never created above (auth is disabled).
         if (otpUser != null) otpUser.delete(false);
 
         // Restore original isAuthDisabled state.
