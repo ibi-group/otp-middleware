@@ -1,11 +1,13 @@
 package org.opentripplanner.middleware.bugsnag;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
-import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
+
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -15,7 +17,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * test\env.yml file which gets committed. If these tests are required to be run, the README explains how to get a
  * BUGSNAG_PROJECT_NOTIFIER_API_KEY from Bugsnag which can be temporarily saved to test\env.yml.
  */
-public class BugsnagReporterTest extends OtpMiddlewareTest {
+public class BugsnagReporterTest {
+
+    @BeforeAll
+    public static void setUp() throws IOException, InterruptedException {
+        OtpMiddlewareTest.setUp();
+    }
 
     @Test @Disabled
     public void createErrorReportWithExceptionContextAndMessage() {

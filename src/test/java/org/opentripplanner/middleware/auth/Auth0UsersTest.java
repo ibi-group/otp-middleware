@@ -15,7 +15,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class Auth0UsersTest extends OtpMiddlewareTest {
+public class Auth0UsersTest {
     private static final Logger LOG = LoggerFactory.getLogger(Auth0UsersTest.class);
     private static final long TOKEN_DURATION_SECONDS = 86400;
     private static ObjectMapper mapper = new ObjectMapper();

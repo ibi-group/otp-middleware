@@ -1,13 +1,8 @@
-package org.opentripplanner.middleware.tripMonitor;
+package org.opentripplanner.middleware.tripmonitor;
 
-import org.opentripplanner.middleware.models.Model;
-import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.tripMonitor.jobs.CheckMonitoredTrip;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -16,7 +11,7 @@ import java.util.Set;
  * Tracks information during the active monitoring of a {@link org.opentripplanner.middleware.models.MonitoredTrip}
  * (e.g., last alerts encountered, last time a check was made, etc.).
  */
-public class JourneyState {
+public class JourneyState implements Cloneable {
     /**
      * The current arrival/departure baseline to use when checking if a new threshold has been met for the active or
      * upcoming itinerary. These values are updated whenever a notification has already been sent out that informed the
@@ -61,30 +56,29 @@ public class JourneyState {
     public Itinerary matchingItinerary;
 
     /**
-     * The {@link MonitoredTrip} id that this journey state is tracking.
-     */
-    public String monitoredTripId;
-
-    /**
      * The current targetDate for which the trip is being monitored. This can be either a trip currently happening or
      * the next possible date a monitored trip would occur.
      */
     public String targetDate;
 
+    /**
+     * The overall status of the trip. This gets set in the {@link CheckMonitoredTrip} job.
+     */
+    public TripStatus tripStatus;
+
     public JourneyState() {}
 
     /**
-     * Update journey state based on results from {@link CheckMonitoredTrip}.
-     * TODO: This may need some tweaking depending on whether a check was successfully completed or not.
-     *   E.g., should a previous journey state be overwritten by a failed check?
+     * Clone this object.
+     * NOTE: This only clones certain needed items so not all entities are deep-cloned. Implement this further if
+     * additional items should be deep-cloned.
      */
-    public void update(CheckMonitoredTrip checkMonitoredTripJob) {
-        targetDate = checkMonitoredTripJob.targetDate;
-        lastCheckedEpochMillis = DateTimeUtils.currentTimeMillis();
-        matchingItinerary = checkMonitoredTripJob.matchingItinerary;
-        // Update notification time if notification successfully sent.
-        if (checkMonitoredTripJob.notificationTimestampMillis != -1) {
-            lastNotificationTimeMillis = checkMonitoredTripJob.notificationTimestampMillis;
+    @Override
+    public JourneyState clone() throws CloneNotSupportedException {
+        JourneyState cloned = (JourneyState) super.clone();
+        if (matchingItinerary != null) {
+            cloned.matchingItinerary = matchingItinerary.clone();
         }
+        return cloned;
     }
 }
