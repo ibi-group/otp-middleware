@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware;
 
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -74,7 +75,7 @@ public class OtpMiddlewareTest {
         HttpResponse<String> response = HttpUtils.httpRequestRawResponse(
             URI.create("http://localhost:4567/" + path),
             1000,
-            HttpUtils.REQUEST_METHOD.GET,
+            HttpMethod.GET,
             null,
             ""
         );

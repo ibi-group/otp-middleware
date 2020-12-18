@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.opentripplanner.middleware.models.ItineraryExistence;
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
@@ -32,6 +31,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -375,28 +375,26 @@ public class CheckMonitoredTrip implements Runnable {
             LOG.info("Last notifications match current ones. Skipping notify.");
             return;
         }
-        String name = trip.tripName != null ? trip.tripName : "Trip for " + otpUser.email;
-        String subject = name + " Notification";
-        StringBuilder body = new StringBuilder();
-        for (TripMonitorNotification notification : notifications) {
-            body.append(notification.body);
-        }
+        Map<String, Object> templateData = Map.of(
+            "tripId", trip.id,
+            "notifications", notifications.stream()
+                .map(notification -> notification.body)
+                .collect(Collectors.toList())
+        );
         // FIXME: Change log level
-        LOG.info("Sending notification '{}' to user {}", subject, trip.userId);
+        LOG.info("Sending notification to user {}", trip.userId);
         boolean success = false;
         // FIXME: This needs to be an enum.
         switch (otpUser.notificationChannel.toLowerCase()) {
-            // TODO: Use medium-specific messages (i.e., SMS body should be shorter/phone friendly)
             case "sms":
-                success = NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString()) != null;
+                success = sendSMS(otpUser, templateData);
                 break;
             case "email":
-                success = NotificationUtils.sendEmailViaSparkpost(otpUser.email, subject, body.toString(), null);
+                success = sendEmail(otpUser, templateData);
                 break;
             case "all":
-                // TOOD better handle below when one of the following fails
-                success = NotificationUtils.sendSMS(otpUser.phoneNumber, body.toString()) != null &&
-                    NotificationUtils.sendEmailViaSparkpost(otpUser.email, subject, body.toString(), null);
+                // TODO better handle below when one of the following fails
+                success = sendSMS(otpUser, templateData) && sendEmail(otpUser, templateData);
                 break;
             default:
                 break;
@@ -404,6 +402,28 @@ public class CheckMonitoredTrip implements Runnable {
         if (success) {
             notificationTimestampMillis = DateTimeUtils.currentTimeMillis();
         }
+    }
+
+    /**
+     * Send notification SMS in MonitoredTrip template.
+     */
+    private boolean sendSMS(OtpUser otpUser, Map<String, Object> data) {
+        return NotificationUtils.sendSMS(otpUser, "MonitoredTripSms.ftl", data) != null;
+    }
+
+    /**
+     * Send notification email in MonitoredTrip template.
+     */
+    private boolean sendEmail(OtpUser otpUser, Map<String, Object> data) {
+        String name = trip.tripName != null ? trip.tripName : "Trip for " + otpUser.email;
+        String subject = name + " Notification";
+        return NotificationUtils.sendEmail(
+            otpUser,
+            subject,
+            "MonitoredTripText.ftl",
+            "MonitoredTripHtml.ftl",
+            data
+        );
     }
 
     private void enqueueNotification(TripMonitorNotification ...tripMonitorNotifications) {

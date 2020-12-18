@@ -268,10 +268,10 @@ public class TypedPersistence<T extends Model> {
         DeleteResult result = mongoCollection.deleteMany(filter);
         long count = result.getDeletedCount();
         if (count >= 1) {
-            LOG.info("Deleted {} objects of type {}", count, collectionName);
+            LOG.debug("Deleted {} objects of type {}", count, collectionName);
             return true;
         } else {
-            LOG.warn("No objects to delete for filter");
+            LOG.debug("No objects to delete for filter");
         }
         return false;
     }
