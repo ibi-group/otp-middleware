@@ -4,9 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
-import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtilsTest;
@@ -20,9 +19,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -33,6 +32,33 @@ import static spark.Service.ignite;
 public class OtpTestUtils {
     private static final Logger LOG = LoggerFactory.getLogger(OtpTestUtils.class);
     private static final ObjectMapper mapper = new ObjectMapper();
+
+    public static final URI DEFAULT_PLAN_URI = URI.create(
+        String.format(
+            "http://test.com/otp/routers/default/plan?%s",
+            URLEncoder.encode(
+                "date=2020-06-09&mode=WALK,BUS,TRAM,RAIL,GONDOLA&arriveBy=false&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=NaN&showIntermediateStops=true&optimize=QUICK&fromPlace=1709 NW Irving St, Portland 97209::45.527817334203,-122.68865964147231&toPlace=Uncharted Realities, SW 3rd Ave, Downtown - Portland 97204::45.51639151281627,-122.67681483620306&time=08:35&maxWalkDistance=1207",
+                UTF_8
+            )
+        )
+    );
+
+    /**
+     * The response contains an itinerary with a request with the following request parameters:
+     * - arriveBy: false
+     * - date: 2020-06-09 (a Tuesday)
+     * - desired start time: 08:35
+     * - itinerary start time: 08:40:10
+     * - fromPlace: 1709 NW Irving St, Portland 97209::45.527817334203,-122.68865964147231
+     * - toPlace: Uncharted Realities, SW 3rd Ave, Downtown - Portland 97204::45.51639151281627,-122.67681483620306
+     * - first itinerary end time: 8:58:44am
+     */
+    public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_RESPONSE =
+        initializeMockPlanResponse("otp/response/planResponse.json");
+
+    /** Contains an OTP response with no itinerary found. */
+    public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
+        initializeMockPlanResponse("otp/response/planErrorResponse.json");
 
     /**
      * Prevents the mock OTP server from being initialized more than once
@@ -47,17 +73,18 @@ public class OtpTestUtils {
     private static List<OtpResponse> mockResponses = Collections.emptyList();
     private static int mockResponseIndex = -1;
 
-    private static final String responseResourceFilePath = "otp/response/";
-
-    public static final URI DEFAULT_PLAN_URI = URI.create(
-        String.format(
-            "http://test.com/otp/routers/default/plan?%s",
-            URLEncoder.encode(
-                "date=2020-06-09&mode=WALK,BUS,TRAM,RAIL,GONDOLA&arriveBy=false&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=NaN&showIntermediateStops=true&optimize=QUICK&fromPlace=1709 NW Irving St, Portland 97209::45.527817334203,-122.68865964147231&toPlace=Uncharted Realities, SW 3rd Ave, Downtown - Portland 97204::45.51639151281627,-122.67681483620306&time=08:35&maxWalkDistance=1207",
-                UTF_8
-            )
-        )
-    );
+    public static OtpDispatcherResponse initializeMockPlanResponse(String path) {
+        // Contains an OTP response with an itinerary found.
+        // (We are reusing an existing response. The exact contents of the response does not matter
+        // for the purposes of this class.)
+        String mockPlanResponse = null;
+        try {
+            mockPlanResponse = CommonTestUtils.getTestResourceAsString(path);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new OtpDispatcherResponse(mockPlanResponse, DEFAULT_PLAN_URI);
+    }
 
     /**
      * Configure a mock OTP server for providing mock OTP responses. Note: this expects the config value
@@ -102,11 +129,7 @@ public class OtpTestUtils {
 
         // mocks not setup, simply return from a file every time
         LOG.info("Returning default mock response from file");
-        OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
-        otpDispatcherResponse.responseBody = CommonTestUtils.getTestResourceAsString(
-            "otp/response/planResponse.json"
-        );
-        return otpDispatcherResponse.responseBody;
+        return OTP_DISPATCHER_PLAN_RESPONSE.responseBody;
     }
 
     /**
@@ -151,26 +174,6 @@ public class OtpTestUtils {
         );
     }
 
-    /**
-     * Get successful plan response from file for creating trip summaries.
-     */
-    public static OtpResponse getPlanResponse() throws IOException {
-        return CommonTestUtils.getTestResourceAsJSON(
-            responseResourceFilePath + "planResponse.json",
-            OtpResponse.class
-        );
-    }
-
-    /**
-     * Get error plan response from file for creating trip summaries.
-     */
-    public static OtpResponse getPlanErrorResponse() throws IOException {
-        return CommonTestUtils.getTestResourceAsJSON(
-            responseResourceFilePath + "planErrorResponse.json",
-            OtpResponse.class
-        );
-    }
-
     public static List<OtpResponse> createMockOtpResponsesForTripExistence() {
         // Set up monitored days and mock responses for itinerary existence check, ordered by day.
         LocalDate today = DateTimeUtils.nowAsLocalDate();
@@ -179,5 +182,30 @@ public class OtpTestUtils {
             monitoredTripDates.add(DateTimeUtils.DEFAULT_DATE_FORMATTER.format(today.plusDays(i)));
         }
         return ItineraryUtilsTest.getMockDatedOtpResponses(monitoredTripDates);
+    }
+
+    /**
+     * Offsets all times in the given itinerary relative to the given base time. The base time is assumed to be the new
+     * start time for the itinerary. Whatever the offset from the initial itinerary's start time and the new start time
+     * will be the offset that is applied to all other times in the itinerary.
+     */
+    public static void updateBaseItineraryTime(Itinerary mockItinerary, ZonedDateTime baseZonedDateTime) {
+        mockItinerary.offsetTimes(
+            baseZonedDateTime.toInstant().toEpochMilli() - mockItinerary.startTime.getTime()
+        );
+    }
+
+    public static Itinerary createDefaultItinerary() {
+        return OTP_DISPATCHER_PLAN_RESPONSE.clone().getResponse().plan.itineraries.get(0);
+    }
+
+    public static JourneyState createDefaultJourneyState() {
+        JourneyState journeyState = new JourneyState();
+        Itinerary defaultItinerary = createDefaultItinerary();
+        journeyState.scheduledArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
+        journeyState.scheduledDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
+        journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
+        journeyState.baselineDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
+        return journeyState;
     }
 }

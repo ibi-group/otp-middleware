@@ -180,11 +180,15 @@ public class DateTimeUtils {
     /**
      * Makes a {@link ZonedDateTime} object from a date string and a time string, using OTP's time zone.
      */
-    public static ZonedDateTime makeZonedDateTime(String dateString, String timeString) {
+    public static ZonedDateTime makeOtpZonedDateTime(String dateString, String timeString) {
         return ZonedDateTime.of(
             getDateFromString(dateString, DEFAULT_DATE_FORMAT_PATTERN),
             LocalTime.parse(timeString),
             DateTimeUtils.getOtpZoneId()
         );
+    }
+
+    public static ZonedDateTime makeOtpZonedDateTime(Date date) {
+        return ZonedDateTime.ofInstant(date.toInstant(), getOtpZoneId());
     }
 }

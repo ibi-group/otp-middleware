@@ -6,14 +6,15 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.tripmonitor.JourneyState;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
@@ -77,8 +78,8 @@ public class PersistenceTestUtils {
     /**
      * Create trip summary from static plan response file and store in database.
      */
-    public static TripSummary createTripSummary(String tripRequestId) throws IOException {
-        OtpResponse planResponse = OtpTestUtils.getPlanResponse();
+    public static TripSummary createTripSummary(String tripRequestId) {
+        OtpResponse planResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
         TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
@@ -87,8 +88,8 @@ public class PersistenceTestUtils {
     /**
      * Create trip summary from static plan error response file and store in database.
      */
-    public static TripSummary createTripSummaryWithError(String tripRequestId) throws IOException {
-        OtpResponse planErrorResponse = OtpTestUtils.getPlanErrorResponse();
+    public static TripSummary createTripSummaryWithError(String tripRequestId) {
+        OtpResponse planErrorResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse();
         TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
@@ -126,7 +127,8 @@ public class PersistenceTestUtils {
     public static MonitoredTrip createMonitoredTrip(
         String userId,
         OtpDispatcherResponse otpDispatcherResponse,
-        boolean persist
+        boolean persist,
+        JourneyState journeyState
     ) throws URISyntaxException {
         MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
         monitoredTrip.userId = userId;
@@ -135,6 +137,8 @@ public class PersistenceTestUtils {
         // set trip time since otpDispatcherResponse doesn't have full query params in URI
         monitoredTrip.tripTime = "08:35";
         monitoredTrip.updateWeekdays(true);
+        monitoredTrip.itineraryExistence = new ItineraryExistence();
+        if (journeyState != null) monitoredTrip.journeyState = journeyState;
         if (persist) Persistence.monitoredTrips.create(monitoredTrip);
         return monitoredTrip;
     }

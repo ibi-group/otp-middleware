@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.tripMonitor.jobs;
+package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.slf4j.Logger;
@@ -7,8 +7,6 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.opentripplanner.middleware.tripMonitor.jobs.MonitorAllTripsJob.monitoredTripLocks;
 
 public class TripAnalyzer implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TripAnalyzer.class);
@@ -56,7 +54,7 @@ public class TripAnalyzer implements Runnable {
                 }
 
                 // verify that a lock hasn't been placed on trip by another trip analyzer task
-                if (monitoredTripLocks.containsKey(trip)) {
+                if (MonitorAllTripsJob.monitoredTripLocks.containsKey(trip)) {
                     LOG.warn("Skipping trip analysis due to existing lock on trip: {}", trip);
                     analyzerIsIdle.set(true);
                     continue;
@@ -65,7 +63,7 @@ public class TripAnalyzer implements Runnable {
                 LOG.info("Analyzing trip {}", trip.id);
 
                 // place lock on trip
-                monitoredTripLocks.put(trip, true);
+                MonitorAllTripsJob.monitoredTripLocks.put(trip, true);
 
                 /////// BEGIN TRIP ANALYSIS
                 try {
@@ -77,7 +75,7 @@ public class TripAnalyzer implements Runnable {
                 LOG.info("Finished analyzing trip {}", trip.id);
 
                 // remove lock on trip
-                monitoredTripLocks.remove(trip);
+                MonitorAllTripsJob.monitoredTripLocks.remove(trip);
 
                 analyzerIsIdle.set(true);
             }

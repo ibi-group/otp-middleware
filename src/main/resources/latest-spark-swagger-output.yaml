@@ -1279,10 +1279,15 @@ definitions:
         format: "int64"
       matchingItinerary:
         $ref: "#/definitions/Itinerary"
-      monitoredTripId:
-        type: "string"
       targetDate:
         type: "string"
+      tripStatus:
+        type: "string"
+        enum:
+        - "NO_LONGER_POSSIBLE"
+        - "NEXT_TRIP_NOT_POSSIBLE"
+        - "TRIP_UPCOMING"
+        - "TRIP_ACTIVE"
   Itinerary:
     type: "object"
     properties:

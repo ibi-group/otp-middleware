@@ -212,6 +212,20 @@ public class ItineraryExistence extends Model {
     }
 
     /**
+     * Checks whether there is at least one day of the week where the trip is still possible. If there is, then true is
+     * returned.
+     */
+    public boolean isPossibleOnAtLeastOneMonitoredDayOfTheWeek(MonitoredTrip trip) {
+        return (trip.monday && monday != null && monday.isValid()) ||
+            (trip.tuesday && tuesday != null && tuesday.isValid()) ||
+            (trip.wednesday && wednesday != null && wednesday.isValid()) ||
+            (trip.thursday && thursday != null && thursday.isValid()) ||
+            (trip.friday && friday != null && friday.isValid()) ||
+            (trip.saturday && saturday != null && saturday.isValid()) ||
+            (trip.sunday && sunday != null && sunday.isValid());
+    }
+
+    /**
      * Holds results for an itinerary existence check for a particular day of the week.
      */
     public static class ItineraryExistenceResult {

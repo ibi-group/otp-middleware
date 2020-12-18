@@ -1,8 +1,7 @@
-package org.opentripplanner.middleware.tripMonitor;
+package org.opentripplanner.middleware.tripmonitor;
 
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.tripMonitor.jobs.MonitorAllTripsJob;
-import org.opentripplanner.middleware.utils.ConfigUtils;
+import org.opentripplanner.middleware.tripmonitor.jobs.MonitorAllTripsJob;
 import org.opentripplanner.middleware.utils.Scheduler;
 
 import java.io.IOException;

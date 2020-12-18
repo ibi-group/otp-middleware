@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
-import org.opentripplanner.middleware.tripMonitor.jobs.NotificationType;
+import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,10 +81,17 @@ public class TripMonitorNotification extends Model {
         return notification;
     }
 
-    public static TripMonitorNotification createItineraryNotFoundNotification() {
+    /**
+     * Creates a notification that the itinerary was not found on either the current day or any day of the week.
+     */
+    public static TripMonitorNotification createItineraryNotFoundNotification(
+        boolean stillPossibleOnOtherMonitoredDaysOfTheWeek
+    ) {
         TripMonitorNotification notification = new TripMonitorNotification();
         notification.type = NotificationType.ITINERARY_NOT_FOUND;
-        notification.body = "Your itinerary was not found in trip planner results";
+        notification.body = stillPossibleOnOtherMonitoredDaysOfTheWeek
+            ? "Your itinerary was not found in trip planner results for today! Please check realtime conditions and plan a new trip."
+            : "Your itinerary is no longer possible any monitored day of the week! Please plan and save a new trip.";
         return notification;
     }
 

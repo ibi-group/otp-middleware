@@ -39,7 +39,7 @@ import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO
  * - DISABLE_AUTH set to true to bypass auth checks and use users defined here.
  * - DEFAULT_USAGE_PLAN_ID set to a valid usage plan id. AWS requires this to create an api key.
  */
-public class ApiKeyManagementTest extends OtpMiddlewareTest {
+public class ApiKeyManagementTest {
     private static final Logger LOG = LoggerFactory.getLogger(ApiKeyManagementTest.class);
     private static ApiUser apiUser;
     private static AdminUser adminUser;
