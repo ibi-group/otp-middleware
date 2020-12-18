@@ -96,7 +96,7 @@ public class ConfigUtils {
      * Convenience function to get a config property (nested fields defined by dot notation "data.use_s3_storage") as
      * JsonNode. Checks env.yml and returns null if property is not found.
      */
-    private static JsonNode getConfigProperty(String name) {
+    public static JsonNode getConfigProperty(String name) {
         String[] parts = name.split("\\.");
         JsonNode node = envConfig;
         for (String part : parts) {

@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
-import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -24,7 +22,6 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;

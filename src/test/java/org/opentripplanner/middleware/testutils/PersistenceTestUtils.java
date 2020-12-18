@@ -15,7 +15,6 @@ import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 

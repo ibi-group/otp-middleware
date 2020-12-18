@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
-import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 
@@ -18,7 +17,6 @@ public class BugsnagTest {
 
     private static BugsnagEvent BUGSNAG_EVENT = null;
     private static BugsnagEventRequest BUGSNAG_EVENT_REQUEST = null;
-    private static BugsnagProject BUGSNAG_PROJECT = null;
 
     @BeforeAll
     public static void setup() throws IOException, InterruptedException {
@@ -41,13 +39,6 @@ public class BugsnagTest {
         assertEquals(BUGSNAG_EVENT_REQUEST.id, retrieved.id, "Found Bugsnag event request.");
     }
 
-    @Test
-    public void canCreateBugsnagProject() {
-        Persistence.bugsnagProjects.create(BUGSNAG_PROJECT);
-        BugsnagProject retrieved = Persistence.bugsnagProjects.getById(BUGSNAG_PROJECT.id);
-        assertEquals(BUGSNAG_PROJECT.id, retrieved.id, "Found Bugsnag project.");
-    }
-
     @AfterAll
     public static void tearDown() {
         if (BUGSNAG_EVENT != null) {
@@ -56,10 +47,6 @@ public class BugsnagTest {
 
         if (BUGSNAG_EVENT_REQUEST != null) {
             Persistence.bugsnagEventRequests.removeById(BUGSNAG_EVENT_REQUEST.id);
-        }
-
-        if (BUGSNAG_PROJECT != null) {
-            Persistence.bugsnagProjects.removeById(BUGSNAG_PROJECT.id);
         }
     }
 
@@ -75,10 +62,6 @@ public class BugsnagTest {
         BUGSNAG_EVENT_REQUEST = CommonTestUtils.getTestResourceAsJSON(
             resourceFilePath + "bugsnagEventRequest.json",
             BugsnagEventRequest.class
-        );
-        BUGSNAG_PROJECT = CommonTestUtils.getTestResourceAsJSON(
-            resourceFilePath + "bugsnagProject.json",
-            BugsnagProject.class
         );
     }
 
