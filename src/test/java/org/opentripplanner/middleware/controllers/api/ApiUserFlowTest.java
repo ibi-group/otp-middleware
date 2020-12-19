@@ -4,6 +4,7 @@ import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.mgmt.users.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -167,7 +168,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         HttpResponse<String> getTokenResponse = makeRequest(authenticateEndpoint,
             "",
             apiUserHeaders,
-            HttpUtils.REQUEST_METHOD.POST
+            HttpMethod.POST
         );
         // Note: do not log the Auth0 token (could be a security risk).
         LOG.info("Token response status: {}", getTokenResponse.statusCode());
@@ -181,7 +182,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         HttpResponse<String> createUserResponse = makeRequest(OTP_USER_PATH,
             JsonUtils.toJson(otpUser),
             apiUserHeaders,
-            HttpUtils.REQUEST_METHOD.POST
+            HttpMethod.POST
         );
 
         assertEquals(HttpStatus.OK_200, createUserResponse.statusCode());
@@ -204,7 +205,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
             MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
             otpUserResponse,
-            HttpUtils.REQUEST_METHOD.POST
+            HttpMethod.POST
         );
         assertEquals(HttpStatus.UNAUTHORIZED_401, createTripResponseAsOtpUser.statusCode());
 
@@ -219,7 +220,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
             MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
             apiUserHeaders,
-            HttpUtils.REQUEST_METHOD.POST
+            HttpMethod.POST
         );
 
         // After POST is complete, reset mock OTP responses for subsequent mock OTP calls below.
@@ -243,7 +244,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
             MONITORED_TRIP_PATH + "/" + monitoredTripToNonManagedUser.id,
             JsonUtils.toJson(monitoredTripToNonManagedUser),
             apiUserHeaders,
-            HttpUtils.REQUEST_METHOD.PUT
+            HttpMethod.PUT
         );
         assertEquals(HttpStatus.FORBIDDEN_403, putTripResponseAsApiUser.statusCode());
 
@@ -260,7 +261,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         getAllMonitoredTripsForOtpUser = makeRequest(MONITORED_TRIP_PATH,
             "",
             apiUserHeaders,
-            HttpUtils.REQUEST_METHOD.GET
+            HttpMethod.GET
         );
         assertEquals(HttpStatus.BAD_REQUEST_400, getAllMonitoredTripsForOtpUser.statusCode());
 

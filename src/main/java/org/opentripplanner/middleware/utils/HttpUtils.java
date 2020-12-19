@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
@@ -14,16 +15,22 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
-    public enum REQUEST_METHOD {GET, POST, PUT, DELETE}
-
     /**
      * A constant for a list of MIME types containing application/json only.
      */
@@ -38,59 +45,62 @@ public class HttpUtils {
     /**
      * Constructs a url based on the uri.  endpoint and query params if provided
      */
-    public static URI buildUri(String uri, String endpoint, String queryParams) {
+    public static URI buildUri(String uri, String... pathElements) {
         UriBuilder uriBuilder = UriBuilder.fromUri(uri);
-
-        if (endpoint != null) {
-            uriBuilder.path(endpoint);
-        }
-
-        if (queryParams != null) {
-            uriBuilder.replaceQuery(queryParams);
+        if (pathElements != null) {
+            // Turn path elements into string (filtering out any nulls).
+            List<String> nonNullElements = Arrays.stream(pathElements)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+            uriBuilder.path(String.join("/", nonNullElements));
         }
         return URI.create(uriBuilder.toString());
     }
 
     /**
-     * Makes an http get/post request and returns the response body. The request is based on the provided params.
+     * Makes an http request and returns the body of the response.
      */
-    public static String httpRequest(URI uri, int connectionTimeout, REQUEST_METHOD method,
+    public static String httpRequest(URI uri, int connectionTimeout, HttpMethod method,
                                      Map<String, String> headers, String bodyContent) {
-
         return httpRequestRawResponse(uri, connectionTimeout, method, headers, bodyContent).body();
     }
 
     /**
-     * Makes an http request and returns the response. The request is based on the provided params.
+     * Makes an http request and returns the response.
      */
-    public static HttpResponse<String> httpRequestRawResponse(URI uri, int connectionTimeout, REQUEST_METHOD method,
+    public static HttpResponse<String> httpRequestRawResponse(URI uri, int connectionTimeout, HttpMethod method,
                                                               Map<String, String> headers, String bodyContent) {
-
-
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder()
             .uri(uri)
-            .timeout(Duration.ofSeconds(connectionTimeout))
-            .GET();
-
-        switch(method) {
+            .timeout(Duration.ofSeconds(connectionTimeout));
+        // Handle building requests for supported methods.
+        switch (method) {
             case GET:
                 httpRequestBuilder.GET();
                 break;
             case DELETE:
                 httpRequestBuilder.DELETE();
                 break;
-            case POST:
-                httpRequestBuilder.POST(HttpRequest
-                    .BodyPublishers
-                    .ofString(bodyContent));
-                break;
             case PUT:
                 httpRequestBuilder.PUT(HttpRequest
                     .BodyPublishers
                     .ofString(bodyContent));
                 break;
+            case POST:
+                httpRequestBuilder.POST(HttpRequest
+                    .BodyPublishers
+                    .ofString(bodyContent));
+                break;
+            case HEAD:
+            case OPTIONS:
+            case TRACE:
+            case CONNECT:
+            case MOVE:
+            case PROXY:
+            case PRI:
             default:
+                throw new IllegalArgumentException(String.format("HTTP method '%s' not currently supported!", method));
         }
 
         if (headers != null && !headers.isEmpty()) {
@@ -166,6 +176,36 @@ public class HttpUtils {
                 String.format("The parameter name (%s) must be provided.", paramName));
         }
         return paramValue;
+    }
+
+    /**
+     * Get date from request parameter and convert to {@link Date} at a specific time of day. The date conversion
+     * is based on the system time zone.
+     */
+    public static Date getDate(Request request, String paramName, String paramValue, LocalTime timeOfDay) {
+
+        // no date value to work with
+        if (paramValue == null) {
+            return null;
+        }
+
+        LocalDate localDate = null;
+        try {
+            localDate = DateTimeUtils.getDateFromParam(paramName, paramValue, DEFAULT_DATE_FORMAT_PATTERN);
+        } catch (DateTimeParseException e) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400,
+                String.format("%s value: %s is not a valid date. Must be in the format: %s", paramName, paramValue,
+                    DEFAULT_DATE_FORMAT_PATTERN
+                ));
+        }
+
+        if (localDate == null) {
+            return null;
+        }
+
+        return Date.from(localDate.atTime(timeOfDay)
+            .atZone(DateTimeUtils.getSystemZoneId())
+            .toInstant());
     }
 
 }

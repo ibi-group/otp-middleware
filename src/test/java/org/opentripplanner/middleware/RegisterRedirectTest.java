@@ -2,10 +2,11 @@ package org.opentripplanner.middleware;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.utils.HttpUtils;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpHeaders;
@@ -14,11 +15,12 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * This class is used to test generic endpoints of the otp-middleware server and also to start a test instance of
- * otp-middleware that other tests can use to perform various tests.
- */
-public class OtpMiddlewareTest extends OtpMiddlewareTestEnvironment {
+public class RegisterRedirectTest {
+
+    @BeforeAll
+    public static void setUp() throws IOException, InterruptedException {
+        OtpMiddlewareTest.setUp();
+    }
 
     /**
      * Test to confirm the correct redirect to required registration page.

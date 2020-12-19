@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.auth;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
+import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -11,13 +12,14 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
-import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.util.stream.Stream;
 
+import static org.eclipse.jetty.http.HttpMethod.GET;
+import static org.eclipse.jetty.http.HttpMethod.POST;
 import static org.eclipse.jetty.http.HttpStatus.NOT_FOUND_404;
 import static org.eclipse.jetty.http.HttpStatus.OK_200;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,8 +30,6 @@ import static org.opentripplanner.middleware.controllers.api.OtpUserController.O
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.utils.HttpUtils.REQUEST_METHOD.GET;
-import static org.opentripplanner.middleware.utils.HttpUtils.REQUEST_METHOD.POST;
 
 /**
  * Tests for select methods from {@link Auth0Connection}.
@@ -139,11 +139,11 @@ public class Auth0ConnectionTest extends OtpMiddlewareTestEnvironment {
      */
     private static class Auth0ConnectionTestCase {
         public final String uri;
-        public final HttpUtils.REQUEST_METHOD method;
+        public final HttpMethod method;
         public final int result;
         public final String message;
 
-        public Auth0ConnectionTestCase(HttpUtils.REQUEST_METHOD method, String uri, int result, String message) {
+        public Auth0ConnectionTestCase(HttpMethod method, String uri, int result, String message) {
             this.uri = uri;
             this.method = method;
             this.result = result;

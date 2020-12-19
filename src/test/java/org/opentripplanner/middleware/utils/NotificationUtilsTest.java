@@ -17,6 +17,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createUser;
 import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
+import static org.opentripplanner.middleware.utils.NotificationUtils.OTP_ADMIN_DASHBOARD_FROM_EMAIL;
 
 /**
  * Contains tests for the various notification utilities to send SMS and email messages. Note: these tests require the
@@ -52,7 +53,13 @@ public class NotificationUtilsTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     public void canSendSparkpostEmailNotification() {
-        boolean success = NotificationUtils.sendEmailViaSparkpost(user.email, "Hi there", "This is the body", null);
+        boolean success = NotificationUtils.sendEmailViaSparkpost(
+            OTP_ADMIN_DASHBOARD_FROM_EMAIL,
+            user.email,
+            "Hi there",
+            "This is the body",
+            null
+        );
         Assertions.assertTrue(success);
     }
 
