@@ -2,11 +2,10 @@ package org.opentripplanner.middleware;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.utils.HttpUtils;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpHeaders;
@@ -15,12 +14,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RegisterRedirectTest {
-
-    @BeforeAll
-    public static void setUp() throws IOException, InterruptedException {
-        OtpMiddlewareTest.setUp();
-    }
+public class RegisterRedirectTest extends OtpMiddlewareTestEnvironment {
 
     /**
      * Test to confirm the correct redirect to required registration page.
