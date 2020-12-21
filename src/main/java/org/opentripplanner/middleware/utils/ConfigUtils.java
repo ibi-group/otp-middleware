@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.NotSupportedException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -86,8 +87,23 @@ public class ConfigUtils {
     private static JsonNode constructConfigFromEnvironment() {
         ObjectNode config = yamlMapper.createObjectNode();
         for (Iterator<Map.Entry<String, JsonNode>> it = ENV_SCHEMA.get("properties").fields(); it.hasNext(); ) {
-            String key = it.next().getKey();
-            config.put(key, System.getenv(key));
+            Map.Entry<String, JsonNode> property = it.next();
+            String key = property.getKey();
+            String type = property.getValue().get("type").asText();
+            String value = System.getenv(key);
+            if (value == null) continue;
+            // Parse value as specified type from schema.
+            switch (type) {
+                // TODO: Add more types
+                case "boolean":
+                    config.put(key, Boolean.parseBoolean(value));
+                case "integer":
+                    config.put(key, Integer.parseInt(value));
+                case "string":
+                    config.put(key, value);
+                default:
+                    throw new NotSupportedException(String.format("Config type %s not yet supported by parser!", type));
+            }
         }
         return config;
     }
