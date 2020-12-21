@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.YamlUtils.yamlMapper;
 
@@ -60,17 +62,20 @@ public class ConfigUtils {
      * default configuration file locations. Config fields are retrieved with getConfigProperty.
      */
     public static void loadConfig(String[] args) throws IOException {
-        // Check if running in Travis CI. If so, skip loading config (CI uses Travis environment variables).
-        if (isRunningCi) {
-            envConfig = constructConfigFromEnvironment();
-        } else if (args.length == 0) {
-            LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
-            envConfig = yamlMapper.readTree(new FileInputStream(DEFAULT_ENV));
-        } else {
-            LOG.info("Loading env.yml: {}", args[0]);
-            envConfig = yamlMapper.readTree(new FileInputStream(args[0]));
-        }
+        envConfig = constructConfigFromEnvironment();
         validateConfig();
+        return;
+//        // Check if running in Travis CI. If so, skip loading config (CI uses Travis environment variables).
+//        if (isRunningCi) {
+//            envConfig = constructConfigFromEnvironment();
+//        } else if (args.length == 0) {
+//            LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
+//            envConfig = yamlMapper.readTree(new FileInputStream(DEFAULT_ENV));
+//        } else {
+//            LOG.info("Loading env.yml: {}", args[0]);
+//            envConfig = yamlMapper.readTree(new FileInputStream(args[0]));
+//        }
+//        validateConfig();
     }
 
     /**
@@ -80,8 +85,8 @@ public class ConfigUtils {
      */
     private static JsonNode constructConfigFromEnvironment() {
         ObjectNode config = yamlMapper.createObjectNode();
-        for (JsonNode property : ENV_SCHEMA.get("properties")) {
-            String key = property.asText();
+        for (Iterator<Map.Entry<String, JsonNode>> it = ENV_SCHEMA.get("properties").fields(); it.hasNext(); ) {
+            String key = it.next().getKey();
             config.put(key, System.getenv(key));
         }
         return config;
