@@ -1,8 +1,10 @@
 package org.opentripplanner.middleware.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.github.fge.jsonschema.core.report.ProcessingReport;
+import com.github.fge.jsonschema.main.JsonSchema;
 import com.github.fge.jsonschema.main.JsonSchemaFactory;
 import com.github.fge.jsonschema.main.JsonValidator;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
@@ -23,6 +25,17 @@ public class ConfigUtils {
 
     public static final String DEFAULT_ENV = "configurations/default/env.yml";
     public static final String DEFAULT_ENV_SCHEMA = "configurations/default/env.schema.json";
+    private static JsonNode ENV_SCHEMA = null;
+
+    static {
+        // Load in env.yml schema file statically so that it is available for populating properties when running CI.
+        try {
+            ENV_SCHEMA = yamlMapper.readTree(new FileInputStream(DEFAULT_ENV_SCHEMA));
+        } catch (IOException e) {
+            LOG.error("Could not read env.yml config schema", e);
+            System.exit(1);
+        }
+    }
 
     private static final String JAR_PREFIX = "otp-middleware-";
 
@@ -47,18 +60,31 @@ public class ConfigUtils {
      * default configuration file locations. Config fields are retrieved with getConfigProperty.
      */
     public static void loadConfig(String[] args) throws IOException {
-        FileInputStream envConfigStream;
         // Check if running in Travis CI. If so, skip loading config (CI uses Travis environment variables).
-        if (isRunningCi) return;
-        if (args.length == 0) {
+        if (isRunningCi) {
+            envConfig = constructConfigFromEnvironment();
+        } else if (args.length == 0) {
             LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
-            envConfigStream = new FileInputStream(new File(DEFAULT_ENV));
+            envConfig = yamlMapper.readTree(new FileInputStream(DEFAULT_ENV));
         } else {
             LOG.info("Loading env.yml: {}", args[0]);
-            envConfigStream = new FileInputStream(new File(args[0]));
+            envConfig = yamlMapper.readTree(new FileInputStream(args[0]));
         }
-        envConfig = yamlMapper.readTree(envConfigStream);
         validateConfig();
+    }
+
+    /**
+     * Construct a config file from environment variables. If running in CI, the only way to set up the config is via
+     * environment variables. This allows us to read in these variables from the CI environment and validate it against
+     * the schema file.
+     */
+    private static JsonNode constructConfigFromEnvironment() {
+        ObjectNode config = yamlMapper.createObjectNode();
+        for (JsonNode property : ENV_SCHEMA.get("properties")) {
+            String key = property.asText();
+            config.put(key, System.getenv(key));
+        }
+        return config;
     }
 
     /**
@@ -74,19 +100,14 @@ public class ConfigUtils {
             if (envConfig == null) {
                 throw new IllegalArgumentException("Environment configuration not available to validate!");
             }
-            FileInputStream envSchemaStream = new FileInputStream(new File(DEFAULT_ENV_SCHEMA));
-            JsonNode envSchema = yamlMapper.readTree(envSchemaStream);
-            if (envSchema == null) {
-                throw new IllegalArgumentException("Environment configuration schema not available.");
-            }
             ProcessingReport report = JsonSchemaFactory
                     .byDefault()
                     .getValidator()
-                    .validate(envSchema, envConfig);
+                    .validate(ENV_SCHEMA, envConfig);
             if (!report.isSuccess()) {
                 throw new IllegalArgumentException(report.toString());
             }
-        } catch (IOException | IllegalArgumentException | ProcessingException e) {
+        } catch (IllegalArgumentException | ProcessingException e) {
             LOG.error("Unable to validate environment configuration.", e);
             System.exit(1);
         }
