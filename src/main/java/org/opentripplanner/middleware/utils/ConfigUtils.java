@@ -63,20 +63,17 @@ public class ConfigUtils {
      * default configuration file locations. Config fields are retrieved with getConfigProperty.
      */
     public static void loadConfig(String[] args) throws IOException {
-        envConfig = constructConfigFromEnvironment();
+        // Check if running in Travis CI. If so, skip loading config (CI uses Travis environment variables).
+        if (isRunningCi) {
+            envConfig = constructConfigFromEnvironment();
+        } else if (args.length == 0) {
+            LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
+            envConfig = yamlMapper.readTree(new FileInputStream(DEFAULT_ENV));
+        } else {
+            LOG.info("Loading env.yml: {}", args[0]);
+            envConfig = yamlMapper.readTree(new FileInputStream(args[0]));
+        }
         validateConfig();
-        return;
-//        // Check if running in Travis CI. If so, skip loading config (CI uses Travis environment variables).
-//        if (isRunningCi) {
-//            envConfig = constructConfigFromEnvironment();
-//        } else if (args.length == 0) {
-//            LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
-//            envConfig = yamlMapper.readTree(new FileInputStream(DEFAULT_ENV));
-//        } else {
-//            LOG.info("Loading env.yml: {}", args[0]);
-//            envConfig = yamlMapper.readTree(new FileInputStream(args[0]));
-//        }
-//        validateConfig();
     }
 
     /**
