@@ -94,10 +94,13 @@ public class ConfigUtils {
                 // TODO: Add more types
                 case "boolean":
                     config.put(key, Boolean.parseBoolean(value));
+                    break;
                 case "integer":
                     config.put(key, Integer.parseInt(value));
+                    break;
                 case "string":
                     config.put(key, value);
+                    break;
                 default:
                     throw new NotSupportedException(String.format("Config type %s not yet supported by parser!", type));
             }
