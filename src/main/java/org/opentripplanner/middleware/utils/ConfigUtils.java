@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.github.fge.jsonschema.core.report.ProcessingReport;
 import com.github.fge.jsonschema.main.JsonSchemaFactory;
@@ -8,9 +9,12 @@ import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.NotSupportedException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.YamlUtils.yamlMapper;
 
@@ -21,7 +25,18 @@ public class ConfigUtils {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
 
     public static final String DEFAULT_ENV = "configurations/default/env.yml";
-    public static final String ENV_SCHEMA = "src/main/resources/env.schema.json";
+    public static final String DEFAULT_ENV_SCHEMA = "src/main/resources/env.schema.json";
+    private static JsonNode ENV_SCHEMA = null;
+
+    static {
+        // Load in env.yml schema file statically so that it is available for populating properties when running CI.
+        try {
+            ENV_SCHEMA = yamlMapper.readTree(new FileInputStream(DEFAULT_ENV_SCHEMA));
+        } catch (IOException e) {
+            LOG.error("Could not read env.yml config schema", e);
+            System.exit(1);
+        }
+    }
 
     private static final String JAR_PREFIX = "otp-middleware-";
 
@@ -46,18 +61,49 @@ public class ConfigUtils {
      * default configuration file locations. Config fields are retrieved with getConfigProperty.
      */
     public static void loadConfig(String[] args) throws IOException {
-        FileInputStream envConfigStream;
         // Check if running in Travis CI. If so, skip loading config (CI uses Travis environment variables).
-        if (isRunningCi) return;
-        if (args.length == 0) {
+        if (isRunningCi) {
+            envConfig = constructConfigFromEnvironment();
+        } else if (args.length == 0) {
             LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
-            envConfigStream = new FileInputStream(DEFAULT_ENV);
+            envConfig = yamlMapper.readTree(new FileInputStream(DEFAULT_ENV));
         } else {
             LOG.info("Loading env.yml: {}", args[0]);
-            envConfigStream = new FileInputStream(args[0]);
+            envConfig = yamlMapper.readTree(new FileInputStream(args[0]));
         }
-        envConfig = yamlMapper.readTree(envConfigStream);
         validateConfig();
+    }
+
+    /**
+     * Construct a config file from environment variables. If running in CI, the only way to set up the config is via
+     * environment variables. This allows us to read in these variables from the CI environment and validate it against
+     * the schema file.
+     */
+    private static JsonNode constructConfigFromEnvironment() {
+        ObjectNode config = yamlMapper.createObjectNode();
+        for (Iterator<Map.Entry<String, JsonNode>> it = ENV_SCHEMA.get("properties").fields(); it.hasNext(); ) {
+            Map.Entry<String, JsonNode> property = it.next();
+            String key = property.getKey();
+            String type = property.getValue().get("type").asText();
+            String value = System.getenv(key);
+            if (value == null) continue;
+            // Parse value as specified type from schema.
+            switch (type) {
+                // TODO: Add more types
+                case "boolean":
+                    config.put(key, Boolean.parseBoolean(value));
+                    break;
+                case "integer":
+                    config.put(key, Integer.parseInt(value));
+                    break;
+                case "string":
+                    config.put(key, value);
+                    break;
+                default:
+                    throw new NotSupportedException(String.format("Config type %s not yet supported by parser!", type));
+            }
+        }
+        return config;
     }
 
     /**
@@ -69,22 +115,18 @@ public class ConfigUtils {
             LOG.warn("env.yml schema validation disabled.");
             return;
         }
-        try (FileInputStream envSchemaStream = new FileInputStream(ENV_SCHEMA)) {
+        try {
             if (envConfig == null) {
                 throw new IllegalArgumentException("env.yml not available to validate!");
-            }
-            JsonNode envSchema = yamlMapper.readTree(envSchemaStream);
-            if (envSchema == null) {
-                throw new IllegalArgumentException("env.schema.json not available to validate env.yml.");
             }
             ProcessingReport report = JsonSchemaFactory
                     .byDefault()
                     .getValidator()
-                    .validate(envSchema, envConfig);
+                    .validate(ENV_SCHEMA, envConfig);
             if (!report.isSuccess()) {
                 throw new IllegalArgumentException(report.toString());
             }
-        } catch (IOException | IllegalArgumentException | ProcessingException e) {
+        } catch (IllegalArgumentException | ProcessingException e) {
             LOG.error("Unable to validate env.yml.", e);
             System.exit(1);
         }
@@ -111,8 +153,6 @@ public class ConfigUtils {
      * "data.use_s3_storage") in env.yml.
      */
     public static boolean hasConfigProperty(String name) {
-        // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
-        if (isRunningCi) return System.getenv(name) != null;
         // try the server config first, then the main config
         return hasConfigProperty(envConfig, name);
     }
@@ -139,8 +179,6 @@ public class ConfigUtils {
      * Get a config property (nested fields defined by dot notation "data.use_s3_storage") as text.
      */
     public static String getConfigPropertyAsText(String name) {
-        // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
-        if (isRunningCi) return System.getenv(name);
         JsonNode node = getConfigProperty(name);
         if (node != null) {
             return node.asText();
@@ -155,11 +193,6 @@ public class ConfigUtils {
      * if the config value is not defined (null).
      */
     public static String getConfigPropertyAsText(String name, String defaultValue) {
-        // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
-        if (isRunningCi) {
-            String value = System.getenv(name);
-            return value == null ? defaultValue : value;
-        }
         JsonNode node = getConfigProperty(name);
         if (node != null) {
             return node.asText();

@@ -35,7 +35,7 @@ public class ReadMeEnvSchemaValuesUpdater {
      * Produce the env schema json values markdown content for {@link #LATEST_README_FILE}.
      */
     public static String generateEnvSchemaValuesContent() throws IOException {
-        FileInputStream envSchemaStream = new FileInputStream(ConfigUtils.ENV_SCHEMA);
+        FileInputStream envSchemaStream = new FileInputStream(ConfigUtils.DEFAULT_ENV_SCHEMA);
         JsonNode envSchema = yamlMapper.readTree(envSchemaStream);
         if (envSchema == null) {
             throw new IllegalArgumentException("env.schema.json not available to update README.md.");
