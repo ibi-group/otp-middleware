@@ -38,7 +38,7 @@ public class BugsnagDispatcher {
 
     private static final String BUGSNAG_API_URL = "https://api.bugsnag.com";
     private static final String BUGSNAG_API_KEY = getConfigPropertyAsText("BUGSNAG_API_KEY");
-    public static final String BUGSNAG_ORGANIZATION = getConfigPropertyAsText("BUGSNAG_ORGANIZATION");
+    static final String BUGSNAG_ORGANIZATION = getConfigPropertyAsText("BUGSNAG_ORGANIZATION");
     private static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS =
         getConfigPropertyAsInt("BUGSNAG_REPORTING_WINDOW_IN_DAYS", 14);
 

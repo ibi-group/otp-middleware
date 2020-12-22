@@ -145,3 +145,37 @@ The special E2E client settings should be defined in `env.yml`:
 | AUTH0_CLIENT_SECRET | N/A | Special E2E application client secret. |
 
 **Note:** Just to reiterate, these are different from the server application settings and are only needed for E2E testing.
+
+### env.schema.json values
+| Key | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| AUTH0_API_CLIENT | string | Required | test-auth0-client-id | API client id required to authenticate with Auth0. |
+| AUTH0_API_SECRET | string | Required | test-auth0-secret | API secret id required to authenticate with Auth0. |
+| AUTH0_DOMAIN | string | Required | test.auth0.com | Auth0 tenant URL. |
+| AWS_PROFILE | string | Optional | default | AWS profile for credentials |
+| AWS_API_SERVER | string | Optional | aws-api-id.execute-api.us-east-1.amazonaws.com | For generating the swagger document at runtime. Can be null, however that will prevent tools such as swagger-UI from submitting test requests to the API server. |
+| AWS_API_STAGE | string | Optional | stage-name | For generating the swagger document at runtime. Can be null, however that will prevent tools such as swagger-UI from submitting test requests to the API server. |
+| BUGSNAG_API_KEY | string | Required | bugsnag-api-key | A valid Bugsnag authorization token. |
+| BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES | integer | Optional | 5 | Bugsnag event request frequency. |
+| BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES | integer | Optional | 1 | Bugsnag event job frequency. |
+| BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES | integer | Optional | 1 | Bugsnag project job frequency. |
+| BUGSNAG_ORGANIZATION | string | Required | bugsnag-organization-id | A valid Bugsnag organization id. |
+| BUGSNAG_PROJECT_NOTIFIER_API_KEY | string | Required | bugsnag-project-api-key-id | A valid Bugsnag project API key. |
+| BUGSNAG_REPORTING_WINDOW_IN_DAYS | integer | Optional | 14 | Specifies how far in the past events should be retrieved. |
+| DEFAULT_USAGE_PLAN_ID | string | Required | usage-plan-id | AWS API gateway default usage plan used when creating API keys for API users. |
+| OTP_API_ROOT | string | Required | http://otp-server.example.com/otp | The URL of an operational OTP server. |
+| OTP_PLAN_ENDPOINT | string | Optional | /routers/default/plan | The path to the OTP server trip planning endpoint. |
+| OTP_TIMEZONE | string | Required | America/Los_Angeles | The timezone identifier that OTP is using to parse dates and times. OTP will use the timezone identifier that it finds in the first available agency to parse dates and times. |
+| MAXIMUM_PERMITTED_MONITORED_TRIPS | integer | Optional | 5 | The maximum number of saved monitored trips. |
+| MONGO_DB_NAME | string | Required | otp_middleware | The name of the OTP Middleware Mongo DB. |
+| MONGO_HOST | string | Optional | localhost:27017 | Mongo host address. |
+| MONGO_PROTOCOL | string | Optional | mongodb | Mongo DB protocol |
+| NOTIFICATION_FROM_EMAIL | string | Optional | noreply@email.com | The from email address used in notification emails |
+| NOTIFICATION_FROM_PHONE | string | Optional | +15551234 | The from phone number used in notification SMSs |
+| NOTIFICATION_TIME_FORMAT | string | Optional | HH:mm | The time format used in notification emails and SMSs. |
+| SENDGRID_API_KEY | string | Optional | your-api-key | Sendgrid settings available at: https://app.sendgrid.com/ |
+| SERVICE_DAY_START_HOUR | integer | Optional | 3 | Optional parameter for the hour (local time, 24-hr format) at which a service day starts. To make the service day change at 2am, enter 2. The default is 3am. |
+| SPARKPOST_KEY | string | Optional | your-api-key | Get Sparkpost key at: https://app.sparkpost.com/account/api-keys |
+| TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |
+| TWILIO_AUTH_TOKEN | string | Optional | your-auth-token | Twilio settings available at: https://twilio.com/user/account |
+| VALIDATE_ENVIRONMENT_CONFIG | boolean | Optional | true | If set to true the env.yml file is validated against this schema. |
