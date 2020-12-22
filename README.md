@@ -160,7 +160,7 @@ The special E2E client settings should be defined in `env.yml`:
 | BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES | integer | Optional | 1 | Bugsnag event job frequency. |
 | BUGSNAG_PROJECT_JOB_DELAY_IN_MINUTES | integer | Optional | 1 | Bugsnag project job frequency. |
 | BUGSNAG_ORGANIZATION | string | Required | bugsnag-organization-id | A valid Bugsnag organization id. |
-| BUGSNAG_PROJECT_NOTIFIER_API_KEY | string | Required | bugsnag-project-api-key-id | A valid Bugsnag project API key. |
+| BUGSNAG_PROJECT_NOTIFIER_API_KEY | string | Optional | bugsnag-project-api-key-id | A valid Bugsnag project API key. |
 | BUGSNAG_REPORTING_WINDOW_IN_DAYS | integer | Optional | 14 | Specifies how far in the past events should be retrieved. |
 | DEFAULT_USAGE_PLAN_ID | string | Required | usage-plan-id | AWS API gateway default usage plan used when creating API keys for API users. |
 | OTP_ADMIN_DASHBOARD_FROM_EMAIL | string | Optional | OTP Admin Dashboard <no-reply@email.com> | Config setting for linking to the OTP Admin Dashboard. |
