@@ -83,10 +83,6 @@ public class OtpRequestProcessor implements Endpoint {
      * status) is passed back to the requester.
      */
     private static String proxy(Request request, spark.Response response) {
-        if (OtpDispatcher.OTP_API_ROOT == null) {
-            logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No OTP Server provided, check config.");
-            return null;
-        }
         // If a user id is provided, the assumption is that an API user is making a plan request on behalf of an Otp user.
         String userId = request.queryParams(USER_ID_PARAM);
         String apiKeyValueFromHeader = request.headers("x-api-key");

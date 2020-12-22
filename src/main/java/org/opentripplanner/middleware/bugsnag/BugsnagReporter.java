@@ -24,11 +24,7 @@ public class BugsnagReporter {
      */
     public static void initializeBugsnagErrorReporting() {
         String apiKey = getConfigPropertyAsText("BUGSNAG_PROJECT_NOTIFIER_API_KEY");
-        if (apiKey != null) {
-            bugsnag = new Bugsnag(apiKey);
-        } else {
-            LOG.warn("Bugsnag project notifier API key not available. Bugsnag error reporting disabled.");
-        }
+        bugsnag = new Bugsnag(apiKey);
     }
 
     /**

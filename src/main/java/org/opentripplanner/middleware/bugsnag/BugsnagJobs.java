@@ -29,10 +29,6 @@ public class BugsnagJobs {
      * Schedule each Bugsnag job based on the delay configuration parameters
      */
     public static void initialize() {
-        if (BugsnagDispatcher.BUGSNAG_ORGANIZATION == null) {
-            LOG.error("WARNING: Bugsnag organization is not available. Cannot schedule bugsnag jobs.");
-            return;
-        }
         LOG.info("Scheduling Bugsnag event data requests for every {} minute(s)", BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES);
         // First, handle sending event data requests to Bugsnag on a regular basis.
         Scheduler.scheduleJob(

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.github.fge.jsonschema.core.report.ProcessingReport;
 import com.github.fge.jsonschema.main.JsonSchemaFactory;
-import com.github.fge.jsonschema.main.JsonValidator;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,7 @@ public class ConfigUtils {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
 
     public static final String DEFAULT_ENV = "configurations/default/env.yml";
-    public static final String DEFAULT_ENV_SCHEMA = "configurations/default/env.schema.json";
+    public static final String ENV_SCHEMA = "src/main/resources/env.schema.json";
 
     private static final String JAR_PREFIX = "otp-middleware-";
 
@@ -52,10 +51,10 @@ public class ConfigUtils {
         if (isRunningCi) return;
         if (args.length == 0) {
             LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
-            envConfigStream = new FileInputStream(new File(DEFAULT_ENV));
+            envConfigStream = new FileInputStream(DEFAULT_ENV);
         } else {
             LOG.info("Loading env.yml: {}", args[0]);
-            envConfigStream = new FileInputStream(new File(args[0]));
+            envConfigStream = new FileInputStream(args[0]);
         }
         envConfig = yamlMapper.readTree(envConfigStream);
         validateConfig();
@@ -67,17 +66,16 @@ public class ConfigUtils {
      */
     private static void validateConfig() {
         if ("false".equals(getConfigPropertyAsText("VALIDATE_ENVIRONMENT_CONFIG", "true"))) {
-            LOG.warn("Environment configuration schema validation disabled.");
+            LOG.warn("env.yml schema validation disabled.");
             return;
         }
-        try {
+        try (FileInputStream envSchemaStream = new FileInputStream(ENV_SCHEMA)) {
             if (envConfig == null) {
-                throw new IllegalArgumentException("Environment configuration not available to validate!");
+                throw new IllegalArgumentException("env.yml not available to validate!");
             }
-            FileInputStream envSchemaStream = new FileInputStream(new File(DEFAULT_ENV_SCHEMA));
             JsonNode envSchema = yamlMapper.readTree(envSchemaStream);
             if (envSchema == null) {
-                throw new IllegalArgumentException("Environment configuration schema not available.");
+                throw new IllegalArgumentException("env.schema.json not available to validate env.yml.");
             }
             ProcessingReport report = JsonSchemaFactory
                     .byDefault()
@@ -87,7 +85,7 @@ public class ConfigUtils {
                 throw new IllegalArgumentException(report.toString());
             }
         } catch (IOException | IllegalArgumentException | ProcessingException e) {
-            LOG.error("Unable to validate environment configuration.", e);
+            LOG.error("Unable to validate env.yml.", e);
             System.exit(1);
         }
     }
@@ -123,7 +121,7 @@ public class ConfigUtils {
      * Returns true if the given config has the requested property.
      *
      * @param config The root config object
-     * @param name The desired property in dot notation (ex: "data.use_s3_storage")
+     * @param name   The desired property in dot notation (ex: "data.use_s3_storage")
      */
     private static boolean hasConfigProperty(JsonNode config, String name) {
         String[] parts = name.split("\\.");
@@ -191,10 +189,10 @@ public class ConfigUtils {
      * (modified from https://stackoverflow.com/questions/14189162/get-name-of-running-jar-or-exe#19045510).
      * TODO: Extract git properties from JAR, see
      * https://github.com/ibi-group/datatools-server/blob/9f74b821cf351efcdaf7c9c93a3ae8b694d3c3b1/src/main/java/com/conveyal/datatools/manager/DataManager.java#L181-L212.
-     *
+     * <p>
      * "/" is used instead of File.separator, see
      * https://stackoverflow.com/questions/24749007/how-to-use-file-separator-for-a-jar-file-resource/24749976#24749976
-     *
+     * <p>
      * In a Windows environment the file separator is "\" which always fails when comparing to a resource which is "/".
      */
     public static String getVersionFromJar() {
