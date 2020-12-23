@@ -120,9 +120,9 @@ public class ConfigUtils {
                 throw new IllegalArgumentException("env.yml not available to validate!");
             }
             ProcessingReport report = JsonSchemaFactory
-                    .byDefault()
-                    .getValidator()
-                    .validate(ENV_SCHEMA, envConfig);
+                .byDefault()
+                .getValidator()
+                .validate(ENV_SCHEMA, envConfig);
             if (!report.isSuccess()) {
                 throw new IllegalArgumentException(report.toString());
             }

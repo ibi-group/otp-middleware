@@ -25,21 +25,19 @@ public class ReadMeEnvSchemaValuesTest {
     @Test
     public void envSchemaValuesAreUpToDate() throws IOException {
         String expectedEnvSchemaValues = ReadMeEnvSchemaValuesUpdater
-                .generateEnvSchemaValuesContent()
-                .trim();
+            .generateEnvSchemaValuesContent()
+            .trim();
         Path readMeFile = new File(LATEST_README_FILE).toPath();
-        String readMeContent = new String(Files.readAllBytes(readMeFile));
-        int envSchemaJsonTitleIndex = readMeContent.indexOf(ENV_SCHEMA_JSON_TITLE) + ENV_SCHEMA_JSON_TITLE.length();
+        String readMeContent = Files.readString(readMeFile);
+        int endOfEnvSchemaJsonTitle = readMeContent.indexOf(ENV_SCHEMA_JSON_TITLE) + ENV_SCHEMA_JSON_TITLE.length();
         String actualEnvSchemaValues = readMeContent
-                .substring(envSchemaJsonTitleIndex)
-                .trim();
+            .substring(endOfEnvSchemaJsonTitle)
+            .trim();
         assertEquals(expectedEnvSchemaValues, actualEnvSchemaValues,
-                String.format(
-                        "If you have modified the env.schema.json file, please also run ReadMeEnvSchemaValuesUpdater#main and commit %s.",
-                        LATEST_README_FILE
-                )
+            String.format(
+                "If you have modified the env.schema.json file, please also run ReadMeEnvSchemaValuesUpdater#main and commit %s.",
+                LATEST_README_FILE
+            )
         );
-
     }
-
 }
