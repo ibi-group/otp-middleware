@@ -27,6 +27,7 @@ public class ConfigUtils {
     public static final String DEFAULT_ENV = "configurations/default/env.yml";
     public static final String DEFAULT_ENV_SCHEMA = "src/main/resources/env.schema.json";
     private static JsonNode ENV_SCHEMA = null;
+    private static final String JAR_PREFIX = "otp-middleware-";
 
     static {
         // Load in env.yml schema file statically so that it is available for populating properties when running CI.
@@ -37,8 +38,6 @@ public class ConfigUtils {
             System.exit(1);
         }
     }
-
-    private static final String JAR_PREFIX = "otp-middleware-";
 
     /**
      * Check if running in Travis CI. A list of default environment variables from Travis is here:
@@ -76,8 +75,8 @@ public class ConfigUtils {
 
     /**
      * Construct a config file from environment variables. If running in CI, the only way to set up the config is via
-     * environment variables. This allows us to read in these variables from the CI environment and validate it against
-     * the schema file.
+     * environment variables. This allows us to read in these variables from the CI environment and validate them
+     * against the schema file.
      */
     private static JsonNode constructConfigFromEnvironment() {
         ObjectNode config = yamlMapper.createObjectNode();
@@ -222,10 +221,10 @@ public class ConfigUtils {
      * (modified from https://stackoverflow.com/questions/14189162/get-name-of-running-jar-or-exe#19045510).
      * TODO: Extract git properties from JAR, see
      * https://github.com/ibi-group/datatools-server/blob/9f74b821cf351efcdaf7c9c93a3ae8b694d3c3b1/src/main/java/com/conveyal/datatools/manager/DataManager.java#L181-L212.
-     * <p>
+     *
      * "/" is used instead of File.separator, see
      * https://stackoverflow.com/questions/24749007/how-to-use-file-separator-for-a-jar-file-resource/24749976#24749976
-     * <p>
+     *
      * In a Windows environment the file separator is "\" which always fails when comparing to a resource which is "/".
      */
     public static String getVersionFromJar() {

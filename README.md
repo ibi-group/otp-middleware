@@ -167,10 +167,10 @@ The special E2E client settings should be defined in `env.yml`:
 | MONGO_HOST | string | Optional | localhost:27017 | Mongo host address. |
 | MONGO_PASSWORD | string | Optional | (empty string) | Mongo DB password |
 | MONGO_PROTOCOL | string | Optional | mongodb | Mongo DB protocol |
-| MONGO_USER | string | Optional | (empty string | Mongo DB user name |
+| MONGO_USER | string | Optional | (empty string) | Mongo DB user name |
 | MONITORED_COMPONENTS | array | Optional | n/a | An array of monitored components. |
 | NOTIFICATION_FROM_EMAIL | string | Optional | noreply@email.com | The from email address used in notification emails |
-| NOTIFICATION_FROM_PHONE | string | Optional | +15551234 | The from phone number used in notification SMSs |
+| NOTIFICATION_FROM_PHONE | string | Optional | +15551234 | The from phone number used in notification SMSs. The phone number must be surrounded with quotes to be correctly parsed as a String. |
 | NOTIFICATION_TIME_FORMAT | string | Optional | HH:mm | The time format used in notification emails and SMSs. |
 | OTP_ADMIN_DASHBOARD_FROM_EMAIL | string | Optional | OTP Admin Dashboard <no-reply@email.com> | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_ADMIN_DASHBOARD_NAME | string | Optional | OTP Admin Dashboard | Config setting for linking to the OTP Admin Dashboard. |
