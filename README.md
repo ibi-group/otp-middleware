@@ -147,7 +147,7 @@ The special E2E client settings should be defined in `env.yml`:
 **Note:** Just to reiterate, these are different from the server application settings and are only needed for E2E testing.
 
 ### env.schema.json values
-| Key | Type | Required | Default | Description |
+| Key | Type | Required | Example | Description |
 | --- | --- | --- | --- | --- |
 | AUTH0_API_CLIENT | string | Required | test-auth0-client-id | API client id required to authenticate with Auth0. |
 | AUTH0_API_SECRET | string | Required | test-auth0-secret | API secret id required to authenticate with Auth0. |

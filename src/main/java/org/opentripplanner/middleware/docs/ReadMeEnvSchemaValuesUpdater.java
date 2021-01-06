@@ -42,7 +42,7 @@ public class ReadMeEnvSchemaValuesUpdater {
         if (envSchema == null) {
             throw new IllegalArgumentException("env.schema.json not available to update README.md.");
         }
-        StringBuilder tableData = new StringBuilder("| Key | Type | Required | Default | Description |");
+        StringBuilder tableData = new StringBuilder("| Key | Type | Required | Example | Description |");
         tableData.append(System.lineSeparator())
             .append("| --- | --- | --- | --- | --- |")
             .append(System.lineSeparator());
@@ -60,7 +60,7 @@ public class ReadMeEnvSchemaValuesUpdater {
                 .anyMatch(propertyName::equals))
                 ? "Required"
                 : "Optional";
-            String defaultValue = getJSONPropertyFieldAsString(property, "default");
+            String examples = getJSONPropertyFieldAsString(property, "examples");
             String description = getJSONPropertyFieldAsString(property, "description");
             tableData.append("| ")
                 .append(propertyName)
@@ -69,7 +69,9 @@ public class ReadMeEnvSchemaValuesUpdater {
                 .append(" | ")
                 .append(required)
                 .append(" | ")
-                .append(defaultValue.replaceAll("\"", ""))
+                .append(examples.replaceAll("\"", "")
+                    .replaceAll("\\[", "")
+                    .replaceAll("\\]", ""))
                 .append(" | ")
                 .append(description.replaceAll("\"", ""))
                 .append(" |")
