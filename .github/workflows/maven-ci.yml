@@ -23,9 +23,11 @@ jobs:
           path: ~/.m2
           key: maven-local-repo
       - name: Build with Maven (run unit tests)
-        run: mvn package
+        run: mvn --no-transfer-progress package
+        env:
+          AWS_API_SERVER: localhost:4567
       - name: Run E2E tests
-        run: mvn test
+        run: mvn --no-transfer-progress test
         env:
           RUN_E2E: true
 
