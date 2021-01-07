@@ -47,9 +47,12 @@ public class OtpMiddlewareTest {
         // TODO: When ran in a CI environment, this file will automatically be setup.
         String[] args;
         if (IS_END_TO_END) {
+            LOG.info("running E2E tests");
+            LOG.info(isRunningCi ? "In CI env" : "non-CI env");
             // Check if running in a CI environment. If so, use environment variables instead of config file.
             args = isRunningCi ? new String[]{} : new String[]{"configurations/default/env.yml"};
         } else {
+            LOG.info("running unit tests");
             // If not running E2E, use test env.yml.
             args = new String[]{"configurations/test/env.yml"};
         }
