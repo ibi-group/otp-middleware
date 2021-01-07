@@ -22,10 +22,10 @@ public class ConfigUtils {
     private static final String JAR_PREFIX = "otp-middleware-";
 
     /**
-     * Check if running in Travis CI. A list of default environment variables from Travis is here:
-     * https://docs.travis-ci.com/user/environment-variables/#default-environment-variables
+     * Check if running in GitHub Actions. A list of default environment variables from GitHub Actions is here:
+     * https://docs.github.com/en/free-pro-team@latest/actions/reference/environment-variables
      */
-    public static final boolean isRunningCi = getBooleanEnvVar("TRAVIS") && getBooleanEnvVar("CONTINUOUS_INTEGRATION");
+    public static final boolean isRunningCi = getBooleanEnvVar("GITHUB_ACTIONS");
 
     private static JsonNode envConfig;
 
@@ -43,7 +43,7 @@ public class ConfigUtils {
      */
     public static void loadConfig(String[] args) throws IOException {
         FileInputStream envConfigStream;
-        // Check if running in Travis CI. If so, skip loading config (CI uses Travis environment variables).
+        // Check if running in a CI environment. If so, skip loading config (CI uses environment variables).
         if (isRunningCi) return;
         if (args.length == 0) {
             LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
@@ -76,7 +76,7 @@ public class ConfigUtils {
      * "data.use_s3_storage") in env.yml.
      */
     public static boolean hasConfigProperty(String name) {
-        // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
+        // Check if running in a CI environment. If so, use environment variables instead of config file.
         if (isRunningCi) return System.getenv(name) != null;
         // try the server config first, then the main config
         return hasConfigProperty(envConfig, name);
@@ -104,7 +104,7 @@ public class ConfigUtils {
      * Get a config property (nested fields defined by dot notation "data.use_s3_storage") as text.
      */
     public static String getConfigPropertyAsText(String name) {
-        // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
+        // Check if running in a CI environment. If so, use environment variables instead of config file.
         if (isRunningCi) return System.getenv(name);
         JsonNode node = getConfigProperty(name);
         if (node != null) {
@@ -120,7 +120,7 @@ public class ConfigUtils {
      * if the config value is not defined (null).
      */
     public static String getConfigPropertyAsText(String name, String defaultValue) {
-        // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
+        // Check if running in a CI environment. If so, use environment variables instead of config file.
         if (isRunningCi) {
             String value = System.getenv(name);
             return value == null ? defaultValue : value;
