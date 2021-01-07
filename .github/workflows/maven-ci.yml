@@ -50,12 +50,16 @@ jobs:
         with:
           path: ~/.m2
           key: maven-local-repo
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
+      - name: Add profile credentials to ~/.aws/credentials
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_PROFILE: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-2
+        run: |
+          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID --profile $AWS_PROFILE
+          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY --profile $AWS_PROFILE
+          aws configure set region $AWS_REGION --profile $AWS_PROFILE
       - name: Build with Maven (run unit tests)
         run: mvn --no-transfer-progress package
       - name: Run E2E tests
