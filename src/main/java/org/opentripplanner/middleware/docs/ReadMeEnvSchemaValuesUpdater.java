@@ -15,8 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 
 
-import static org.opentripplanner.middleware.utils.JsonUtils.getJSONPropertyFieldAsString;
-import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromJSONAsList;
+import static org.opentripplanner.middleware.utils.JsonUtils.*;
 import static org.opentripplanner.middleware.utils.YamlUtils.yamlMapper;
 
 /**
@@ -60,7 +59,10 @@ public class ReadMeEnvSchemaValuesUpdater {
                 .anyMatch(propertyName::equals))
                 ? "Required"
                 : "Optional";
-            String examples = getJSONPropertyFieldAsString(property, "examples");
+            String fieldValue = getJSONPropertyFieldAsString(property, "examples");
+            List<String> examples = getPOJOFromJSONAsList(fieldValue, String.class);
+            if (examples == null)
+                examples = Collections.emptyList();
             String description = getJSONPropertyFieldAsString(property, "description");
             tableData.append("| ")
                 .append(propertyName)
@@ -69,9 +71,7 @@ public class ReadMeEnvSchemaValuesUpdater {
                 .append(" | ")
                 .append(required)
                 .append(" | ")
-                .append(examples.replaceAll("\"", "")
-                    .replaceAll("\\[", "")
-                    .replaceAll("\\]", ""))
+                .append(String.join(", ", examples))
                 .append(" | ")
                 .append(description.replaceAll("\"", ""))
                 .append(" |")

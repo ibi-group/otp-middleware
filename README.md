@@ -155,26 +155,26 @@ The special E2E client settings should be defined in `env.yml`:
 | AWS_PROFILE | string | Optional | default | AWS profile for credentials |
 | AWS_API_SERVER | string | Optional | aws-api-id.execute-api.us-east-1.amazonaws.com | For generating the swagger document at runtime. Can be null, however that will prevent tools such as swagger-UI from submitting test requests to the API server. |
 | AWS_API_STAGE | string | Optional | stage-name | For generating the swagger document at runtime. Can be null, however that will prevent tools such as swagger-UI from submitting test requests to the API server. |
-| BUGSNAG_API_KEY | string | Required | bugsnag-api-key | A valid Bugsnag authorization token. |
+| BUGSNAG_API_KEY | string | Required | 123e4567e89b12d3a4564266 | A valid Bugsnag authorization token. |
 | BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES | integer | Optional | 1 | Bugsnag event job frequency. |
 | BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES | integer | Optional | 5 | Bugsnag event request frequency. |
-| BUGSNAG_ORGANIZATION | string | Optional | bugsnag-organization-id | A valid Bugsnag organization id. |
-| BUGSNAG_PROJECT_NOTIFIER_API_KEY | string | Optional | bugsnag-project-api-key-id | A valid Bugsnag project API key. |
+| BUGSNAG_ORGANIZATION | string | Optional | 123e4567e89b12d3a4564266 | A valid Bugsnag organization id. |
+| BUGSNAG_PROJECT_NOTIFIER_API_KEY | string | Optional | 123e4567e89b12d3a4564266 | A valid Bugsnag project API key. |
 | BUGSNAG_REPORTING_WINDOW_IN_DAYS | integer | Optional | 14 | Specifies how far in the past events should be retrieved. |
-| DEFAULT_USAGE_PLAN_ID | string | Required | usage-plan-id | AWS API gateway default usage plan used when creating API keys for API users. |
+| DEFAULT_USAGE_PLAN_ID | string | Required | 123e45 | AWS API gateway default usage plan used when creating API keys for API users. |
 | MAXIMUM_PERMITTED_MONITORED_TRIPS | integer | Optional | 5 | The maximum number of saved monitored trips. |
 | MONGO_DB_NAME | string | Required | otp_middleware | The name of the OTP Middleware Mongo DB. |
 | MONGO_HOST | string | Optional | localhost:27017 | Mongo host address. |
-| MONGO_PASSWORD | string | Optional | (empty string) | Mongo DB password |
+| MONGO_PASSWORD | string | Optional | password | Mongo DB password |
 | MONGO_PROTOCOL | string | Optional | mongodb | Mongo DB protocol |
-| MONGO_USER | string | Optional | (empty string) | Mongo DB user name |
+| MONGO_USER | string | Optional | username | Mongo DB user name |
 | MONITORED_COMPONENTS | array | Optional | n/a | An array of monitored components. |
 | NOTIFICATION_FROM_EMAIL | string | Optional | noreply@email.com | The from email address used in notification emails |
 | NOTIFICATION_FROM_PHONE | string | Optional | +15551234 | The from phone number used in notification SMSs. The phone number must be surrounded with quotes to be correctly parsed as a String. |
 | NOTIFICATION_TIME_FORMAT | string | Optional | HH:mm | The time format used in notification emails and SMSs. |
 | OTP_ADMIN_DASHBOARD_FROM_EMAIL | string | Optional | OTP Admin Dashboard <no-reply@email.com> | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_ADMIN_DASHBOARD_NAME | string | Optional | OTP Admin Dashboard | Config setting for linking to the OTP Admin Dashboard. |
-| OTP_ADMIN_DASHBOARD_URL | string | Optional | https://otp-admin-ui.now.sh | Config setting for linking to the OTP Admin Dashboard. |
+| OTP_ADMIN_DASHBOARD_URL | string | Optional | https://admin.example.com | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_API_ROOT | string | Required | http://otp-server.example.com/otp | The URL of an operational OTP server. |
 | OTP_PLAN_ENDPOINT | string | Optional | /routers/default/plan | The path to the OTP server trip planning endpoint. |
 | OTP_TIMEZONE | string | Required | America/Los_Angeles | The timezone identifier that OTP is using to parse dates and times. OTP will use the timezone identifier that it finds in the first available agency to parse dates and times. |
