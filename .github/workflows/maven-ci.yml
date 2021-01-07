@@ -52,10 +52,7 @@ jobs:
           path: ~/.m2
           key: maven-local-repo
       - name: Add profile credentials to ~/.aws/credentials
-        run: |
-          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-          aws configure set region $AWS_REGION
+        run: ./scripts/add-aws-credentials.sh
       - name: Build with Maven (run unit tests)
         run: mvn --no-transfer-progress package
       - name: Run E2E tests
