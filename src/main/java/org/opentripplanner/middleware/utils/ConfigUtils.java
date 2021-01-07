@@ -29,6 +29,13 @@ public class ConfigUtils {
 
     private static JsonNode envConfig;
 
+    static {
+        LOG.info("Environment variables:");
+        for (String key : System.getenv().keySet()) {
+            LOG.info(key);
+        }
+    }
+
     /**
      * Returns true only if an environment variable exists and is set to "true".
      */
