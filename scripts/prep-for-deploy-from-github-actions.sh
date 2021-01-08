@@ -1,8 +1,8 @@
 export BRANCH=$(
   if [ -n "$GITHUB_HEAD_REF" ]; then
-    echo $GITHUB_HEAD_REF;
+    echo ${GITHUB_HEAD_REF#refs/heads/};
   else
-    echo $GITHUB_REF;
+    echo ${GITHUB_REF#refs/heads/};
   fi
 )
 export BRANCH_CLEAN=${BRANCH//\//_}
