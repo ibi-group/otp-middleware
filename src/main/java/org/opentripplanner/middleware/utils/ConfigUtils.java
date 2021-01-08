@@ -40,10 +40,10 @@ public class ConfigUtils {
     }
 
     /**
-     * Check if running in Travis CI. A list of default environment variables from Travis is here:
-     * https://docs.travis-ci.com/user/environment-variables/#default-environment-variables
+     * Check if running in GitHub Actions. A list of default environment variables from GitHub Actions is here:
+     * https://docs.github.com/en/free-pro-team@latest/actions/reference/environment-variables
      */
-    public static final boolean isRunningCi = getBooleanEnvVar("TRAVIS") && getBooleanEnvVar("CONTINUOUS_INTEGRATION");
+    public static final boolean isRunningCi = getBooleanEnvVar("GITHUB_ACTIONS");
 
     private static JsonNode envConfig;
 
@@ -60,7 +60,7 @@ public class ConfigUtils {
      * default configuration file locations. Config fields are retrieved with getConfigProperty.
      */
     public static void loadConfig(String[] args) throws IOException {
-        // Check if running in Travis CI. If so, skip loading config (CI uses Travis environment variables).
+        // Check if running in a CI environment. If so, skip loading config (CI uses environment variables).
         if (isRunningCi) {
             envConfig = constructConfigFromEnvironment();
         } else if (args.length == 0) {
