@@ -21,7 +21,7 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.opentripplanner.middleware.persistence.PersistenceUtil.*;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.*;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserAndDateRange;
 
 /**
@@ -29,7 +29,7 @@ import static org.opentripplanner.middleware.persistence.TypedPersistence.filter
  * number of {@link TypedPersistence} methods are tested here, but the HTTP endpoints defined in
  * {@link org.opentripplanner.middleware.controllers.api.ApiController} are not themselves tested here.
  */
-public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
+public class TripHistoryPersistenceTest {
     private static final int LIMIT = 3;
     private static final String TEST_EMAIL = "john.doe@example.com";
     private static final String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
@@ -42,7 +42,8 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTest {
     private static List<TripRequest> tripRequests = null;
 
     @BeforeAll
-    public static void setup() throws IOException {
+    public static void setup() throws IOException, InterruptedException {
+        OtpMiddlewareTest.setUp();
         otpUser = createUser(TEST_EMAIL);
         tripRequest = createTripRequest(otpUser.id);
         tripRequests = createTripRequests(LIMIT, otpUser.id);

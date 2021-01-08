@@ -3,25 +3,25 @@ package org.opentripplanner.middleware.bugsnag;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.opentripplanner.middleware.bugsnag.response.Organization;
+import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
-import org.opentripplanner.middleware.models.BugsnagProject;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.HashMap;
+import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
  * Responsible for getting {@link BugsnagEvent} information from Bugsnag. This is done by making calls to Bugsnag's API
- * endpoints with a valid authorization token (BUGSNAG_API_KEY).
+ * endpoints with a valid authorization token ({@link #BUGSNAG_API_KEY}).
  *
  * A bugsnag API key is a key that is unique to an individual Bugsnag user. This key can be obtained by logging into
  * Bugsnag (https://app.bugsnag.com), clicking on settings (top right hand corner) -> “My account settings”. From here
@@ -31,7 +31,6 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
  *
  * https://api.bugsnag.com/organizations/<organization_id>/event_data_requests
  * https://api.bugsnag.com/organizations/<organization_id>/event_data_requests/<event_data_request_id>
- * https://api.bugsnag.com/organizations/<organization_id>/projects
  */
 public class BugsnagDispatcher {
 
@@ -39,43 +38,25 @@ public class BugsnagDispatcher {
 
     private static final String BUGSNAG_API_URL = "https://api.bugsnag.com";
     private static final String BUGSNAG_API_KEY = getConfigPropertyAsText("BUGSNAG_API_KEY");
-    private static final String BUGSNAG_ORGANIZATION = getConfigPropertyAsText("BUGSNAG_ORGANIZATION");
+    static final String BUGSNAG_ORGANIZATION = getConfigPropertyAsText("BUGSNAG_ORGANIZATION");
     private static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS =
         getConfigPropertyAsInt("BUGSNAG_REPORTING_WINDOW_IN_DAYS", 14);
 
     /**
-     * Organization from which all projects and event request information will be extracted. Set once during
-     * startup.
-     */
-    // FIXME Perhaps replace with a list of required projects in the config
-    private static Organization ORGANIZATION = null;
-
-    /**
      * Headers that are required by Bugsnag for each request.
      */
-    private static HashMap<String, String> BUGSNAG_HEADERS = new HashMap<>();
+    private static final Map<String, String> BUGSNAG_HEADERS = Map.of(
+        "Authorization", "token " + BUGSNAG_API_KEY,
+        "Accept", "application/json; version=2",
+        "Content-Type", "application/json"
+    );
 
     /**
      * Filter object defining the boundaries on which event requests will be based.
      */
-    private static ObjectNode eventRequestFilter;
+    private static final String EVENT_REQUEST_FILTER = buildEventRequestFilter();
 
     private static int CONNECTION_TIMEOUT_IN_SECONDS = 5;
-
-    static {
-        setBugsnagRequestHeaders();
-        buildEventRequestFilter();
-        setOrganization();
-    }
-
-    /**
-     * Define the mandatory Bugsnag request headers.
-     */
-    private static void setBugsnagRequestHeaders() {
-        BUGSNAG_HEADERS.put("Authorization", "token " + BUGSNAG_API_KEY);
-        BUGSNAG_HEADERS.put("Accept", "application/json; version=2");
-        BUGSNAG_HEADERS.put("Content-Type", "application/json");
-    }
 
     /**
      * Build the event request filter that will be passed to Bugsnag with every event data request. The request filter
@@ -93,7 +74,7 @@ public class BugsnagDispatcher {
      * }
      *
      */
-    private static void buildEventRequestFilter() {
+    private static String buildEventRequestFilter() {
         final ObjectMapper mapper = new ObjectMapper();
 
         ObjectNode reportingWindowCondition = mapper.createObjectNode();
@@ -112,133 +93,62 @@ public class BugsnagDispatcher {
         filters.set("event.since", sinceFilters);
 
         // Defines the filters wrapper
-        eventRequestFilter = mapper.createObjectNode();
-        eventRequestFilter.set("filters", filters);
+        ObjectNode json = mapper.createObjectNode();
+        json.set("filters", filters);
+        return json.toString();
     }
 
     /**
-     * Make the initial event data request to Bugsnag. This triggers an asynchronous job to prepare the data for one
+     * Shorthand to create a Bugsnag event data request. This triggers an asynchronous job to prepare the data for one
      * single download. The returned event data request can be used to check the status of the request.
+     *
+     * The “create an event data request” allows event data for a given organization to be collated in an asynchronous job
+     * by Bugsnag. Once this job has completed a bespoke URL is provided where this data can be downloaded. Information on
+     * this approach along with the filter parameters can be reviewed here:
+     *
+     * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/create-an-event-data-request
      */
-    public static BugsnagEventRequest makeEventDataRequest() {
+    public static BugsnagEventRequest newEventDataRequest() {
+        return makeEventDataRequest(null);
+    }
 
-        if (ORGANIZATION == null) {
-            LOG.error("Required organization is not available. Unable to make event data request.");
-            return null;
-        }
-
-        URI uri = HttpUtils.buildUri(
+    /**
+     * Get a previously created event data request (if id is non-null) OR create a new request. A status of 'complete'
+     * signals that the requested data is ready to be downloaded from the populated url parameter.
+     *
+     * More here: https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/check-the-status-of-an-event-data-request
+     */
+    public static BugsnagEventRequest makeEventDataRequest(String eventDataRequestId) {
+        // Create new request if null ID is provided.
+        boolean create = eventDataRequestId == null;
+        URI eventDataRequestUri = HttpUtils.buildUri(
             BUGSNAG_API_URL,
-            "/organizations/" + ORGANIZATION.id + "/event_data_requests",
-            null);
-
-        String response = HttpUtils.httpRequest(
-            uri,
+            "organizations", BUGSNAG_ORGANIZATION, "event_data_requests", eventDataRequestId
+        );
+        LOG.debug("Making Bugsnag request: {}", eventDataRequestUri);
+        HttpResponse<String> response = HttpUtils.httpRequestRawResponse(
+            eventDataRequestUri,
             CONNECTION_TIMEOUT_IN_SECONDS,
-            HttpUtils.REQUEST_METHOD.POST,
+            create ? HttpMethod.POST : HttpMethod.GET,
             BUGSNAG_HEADERS,
-            eventRequestFilter.toString());
-
-        return JsonUtils.getPOJOFromJSON(response, BugsnagEventRequest.class);
-    }
-
-    /**
-     * Get a previously created event data request. A status of 'complete' signals that the requested data is ready to
-     * be downloaded from the populated url parameter.
-     */
-    public static BugsnagEventRequest getEventDataRequest(BugsnagEventRequest originalEventDataRequest) {
-
-        if (ORGANIZATION == null) {
-            LOG.error("Required organization is not available. Unable to get event data request.");
-            return null;
-        }
-
-        String endpoint = "/organizations/" + ORGANIZATION.id + "/event_data_requests/" +
-            originalEventDataRequest.eventDataRequestId;
-
-        URI uri = HttpUtils.buildUri(BUGSNAG_API_URL, endpoint, null);
-
-        String response = HttpUtils.httpRequest(
-            uri,
-            CONNECTION_TIMEOUT_IN_SECONDS,
-            HttpUtils.REQUEST_METHOD.GET,
-            BUGSNAG_HEADERS,
-            null);
-
-        return JsonUtils.getPOJOFromJSON(response, BugsnagEventRequest.class);
-    }
-
-    /**
-     * Get a single organization matching the organization held in the property file.
-     */
-    private static void setOrganization() {
-
-        URI uri = HttpUtils.buildUri(BUGSNAG_API_URL, "/user/organizations/", null);
-        String response = HttpUtils.httpRequest(
-            uri,
-            CONNECTION_TIMEOUT_IN_SECONDS,
-            HttpUtils.REQUEST_METHOD.GET,
-            BUGSNAG_HEADERS,
-            null);
-
-        List<Organization> organizations = JsonUtils.getPOJOFromJSONAsList(response, Organization.class);
-
-        Organization organization = null;
-        for (Organization org : organizations) {
-            if (org.name.equalsIgnoreCase(BUGSNAG_ORGANIZATION)) {
-                organization = org;
-                break;
-            }
-        }
-
-        if (organization == null) {
-            LOG.error("Can not get required organization from Bugsnag matching organization name: "
-                + BUGSNAG_ORGANIZATION);
-        } else {
-            ORGANIZATION = organization;
-        }
-
-    }
-
-    /**
-     * Get all projects configured under the provided organization id.
-     */
-    public static List<BugsnagProject> getProjects() {
-
-        if (ORGANIZATION == null) {
-            LOG.error("Required organization is not available. Unable to get Bugsnag projects.");
-            return null;
-        }
-
-        //TODO Consider limiting the projects to just that required by the admin dashboard
-        URI uri = HttpUtils.buildUri(
-            BUGSNAG_API_URL,
-            "/organizations/" + ORGANIZATION.id + "/projects",
-            null);
-
-        String response = HttpUtils.httpRequest(
-            uri,
-            CONNECTION_TIMEOUT_IN_SECONDS,
-            HttpUtils.REQUEST_METHOD.GET,
-            BUGSNAG_HEADERS,
-            null);
-
-        return JsonUtils.getPOJOFromJSONAsList(response, BugsnagProject.class);
+            create ? EVENT_REQUEST_FILTER : null
+        );
+        return JsonUtils.getPOJOFromHttpBody(response, BugsnagEventRequest.class);
     }
 
     /**
      * Get requested event data from unique url generated by Bugsnag once the requested data is ready.
      */
-    public static List<BugsnagEvent> getEventData(BugsnagEventRequest originalEventDataRequest) {
-        URI uri = HttpUtils.buildUri(originalEventDataRequest.url, null, null);
-
-        String response = HttpUtils.httpRequest(
-            uri,
+    public static List<BugsnagEvent> getEventData(String eventDataRequestUrl) {
+        URI eventDataRequestUri = HttpUtils.buildUri(eventDataRequestUrl);
+        LOG.debug("Making GET Bugsnag request: {}", eventDataRequestUri);
+        HttpResponse<String> events = HttpUtils.httpRequestRawResponse(
+            eventDataRequestUri,
             CONNECTION_TIMEOUT_IN_SECONDS,
-            HttpUtils.REQUEST_METHOD.GET,
+            HttpMethod.GET,
             null,
-            null);
-
-        return JsonUtils.getPOJOFromJSONAsList(response, BugsnagEvent.class);
+            null
+        );
+        return JsonUtils.getPOJOFromHttpBodyAsList(events, BugsnagEvent.class);
     }
 }

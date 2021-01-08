@@ -7,15 +7,12 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
 import spark.Response;
 
-import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 import java.util.Date;
 
 import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
@@ -98,9 +95,9 @@ public class TripHistoryController implements Endpoint {
         int limit = HttpUtils.getQueryParamFromRequest(request, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);
         int offset = HttpUtils.getQueryParamFromRequest(request, OFFSET_PARAM, 0, DEFAULT_OFFSET);
         String paramFromDate = HttpUtils.getQueryParamFromRequest(request, FROM_DATE_PARAM, true);
-        Date fromDate = getDate(request, FROM_DATE_PARAM, paramFromDate, LocalTime.MIDNIGHT);
+        Date fromDate = HttpUtils.getDate(request, FROM_DATE_PARAM, paramFromDate, LocalTime.MIDNIGHT);
         String paramToDate = HttpUtils.getQueryParamFromRequest(request, TO_DATE_PARAM, true);
-        Date toDate = getDate(request, TO_DATE_PARAM, paramToDate, LocalTime.MAX);
+        Date toDate = HttpUtils.getDate(request, TO_DATE_PARAM, paramToDate, LocalTime.MAX);
         // Throw halt if the date params are bad.
         if (fromDate != null && toDate != null && toDate.before(fromDate)) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400,
@@ -109,35 +106,5 @@ public class TripHistoryController implements Endpoint {
         }
         Bson filter = filterByUserAndDateRange(userId, fromDate, toDate);
         return Persistence.tripRequests.getResponseList(filter, offset, limit);
-    }
-
-    /**
-     * Get date from request parameter and convert to {@link Date} at a specific time of day. The date conversion
-     * is based on the system time zone.
-     */
-    private static Date getDate(Request request, String paramName, String paramValue, LocalTime timeOfDay) {
-
-        // no date value to work with
-        if (paramValue == null) {
-            return null;
-        }
-
-        LocalDate localDate = null;
-        try {
-            localDate = DateTimeUtils.getDateFromParam(paramName, paramValue, DEFAULT_DATE_FORMAT_PATTERN);
-        } catch (DateTimeParseException e) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400,
-                String.format("%s value: %s is not a valid date. Must be in the format: %s", paramName, paramValue,
-                    DEFAULT_DATE_FORMAT_PATTERN
-                ));
-        }
-
-        if (localDate == null) {
-            return null;
-        }
-
-        return Date.from(localDate.atTime(timeOfDay)
-            .atZone(DateTimeUtils.getSystemZoneId())
-            .toInstant());
     }
 }

@@ -9,16 +9,16 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.opentripplanner.middleware.TestUtils.mockAuthenticatedGet;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 
@@ -34,7 +34,7 @@ public class OtpUserControllerTest {
         setAuthDisabled(true);
         // Create a persisted OTP user.
         otpUser = new OtpUser();
-        otpUser.email = String.format("test-%s@example.com", UUID.randomUUID().toString());
+        otpUser.email = ApiTestUtils.generateEmailAddress("test-otpusercont");
         otpUser.hasConsentedToTerms = true;
         otpUser.phoneNumber = INITIAL_PHONE_NUMBER;
         otpUser.isPhoneNumberVerified = true;
@@ -45,7 +45,8 @@ public class OtpUserControllerTest {
     public static void tearDown() {
         // Delete the users if they were not already deleted during the test script.
         otpUser = Persistence.otpUsers.getById(otpUser.id);
-        if (otpUser != null) otpUser.delete();
+        // Delete OtpUser. No need to delete Auth0 user since one was never created above (auth is disabled).
+        if (otpUser != null) otpUser.delete(false);
 
         // Restore original isAuthDisabled state.
         restoreDefaultAuthDisabled();

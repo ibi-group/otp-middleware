@@ -8,11 +8,14 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
 import spark.Response;
 
 import java.net.URISyntaxException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
@@ -55,9 +58,8 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         // Ensure user has not reached their limit for number of trips.
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
-        checkTripCanBeMonitored(monitoredTrip, req);
-        processTripQueryParams(monitoredTrip, req);
-        
+        preCreateOrUpdateChecks(monitoredTrip, req);
+
         try {
             // Check itinerary existence and replace the provided trip's itinerary with a verified, non-realtime
             // version of it.
@@ -82,6 +84,14 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     }
 
     /**
+     * Performs the operations/checks common to the preCreate and preUpdate hooks.
+     */
+    private void preCreateOrUpdateChecks(MonitoredTrip monitoredTrip, Request req) {
+        checkTripCanBeMonitored(monitoredTrip, req);
+        processTripQueryParams(monitoredTrip, req);
+    }
+
+    /**
      * Processes the {@link MonitoredTrip} query parameters, so the trip's fields match the query parameters.
      * If an error occurs regarding the query params, returns a HTTP 400 status.
      */
@@ -100,8 +110,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        checkTripCanBeMonitored(monitoredTrip, req);
-        processTripQueryParams(monitoredTrip, req);
+        preCreateOrUpdateChecks(monitoredTrip, req);
 
         // TODO: Update itinerary existence record when updating a trip.
 
@@ -158,22 +167,18 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     /**
      * Checks that the given {@link MonitoredTrip} can be monitored (i.e., that the underlying
-     * {@link org.opentripplanner.middleware.otp.response.Itinerary} has transit and no rentals/ride hailing).
+     * {@link org.opentripplanner.middleware.otp.response.Itinerary} can be monitored).
      */
     private void checkTripCanBeMonitored(MonitoredTrip trip, Request request) {
-        boolean hasTransit = trip.itinerary.hasTransit();
-        boolean hasRentalOrRideHail = trip.itinerary.hasRentalOrRideHail();
-
-        if (!hasTransit || hasRentalOrRideHail) {
-            String rejectReason = "";
-            if (!hasTransit) rejectReason += "it does not include a transit leg";
-            if (!hasTransit && hasRentalOrRideHail) rejectReason += ", and ";
-            if (hasRentalOrRideHail) rejectReason += "it includes a rental or ride hail";
-
+        Set<InvalidItineraryReason> invalidReasons = trip.itinerary.checkItineraryCanBeMonitored();
+        if (!invalidReasons.isEmpty()) {
+            String reasonsString = invalidReasons.stream()
+                .map(InvalidItineraryReason::getMessage)
+                .collect(Collectors.joining(", "));
             logMessageAndHalt(
                 request,
                 HttpStatus.BAD_REQUEST_400,
-                String.format("This trip cannot be monitored because %s.", rejectReason)
+                String.format("The trip cannot be monitored: %s", reasonsString)
             );
         }
     }

@@ -14,10 +14,15 @@ import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
 import com.twilio.rest.verify.v2.service.VerificationCreator;
 import com.twilio.type.PhoneNumber;
+import freemarker.template.TemplateException;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.models.AdminUser;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -37,12 +42,35 @@ public class NotificationUtils {
     public static final String FROM_PHONE = getConfigPropertyAsText("NOTIFICATION_FROM_PHONE");
     private static final String SPARKPOST_KEY = getConfigPropertyAsText("SPARKPOST_KEY");
     private static final String FROM_EMAIL = getConfigPropertyAsText("NOTIFICATION_FROM_EMAIL");
+    public static final String OTP_ADMIN_DASHBOARD_FROM_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_FROM_EMAIL");
 
     /**
-     * Send a SMS message to the provided phone number
-     * @param toPhone - e.g., +15551234
-     * @param body - SMS message body
-     * @return messageId if message was sucessful (null otherwise)
+     * Send templated SMS to {@link OtpUser}'s verified phone number.
+     * @param otpUser       target user
+     * @param smsTemplate   template to use for SMS message
+     * @param templateData          template data
+     * @return              messageId if message was successful (null otherwise)
+     */
+    public static String sendSMS(OtpUser otpUser, String smsTemplate, Object templateData) {
+        if (!otpUser.isPhoneNumberVerified) {
+            LOG.error("Cannot send SMS to unverified user ({})!", otpUser.email);
+            return null;
+        }
+        try {
+            String body = TemplateUtils.renderTemplate(smsTemplate, templateData);
+            return sendSMS(otpUser.phoneNumber, body);
+        } catch (TemplateException | IOException e) {
+            // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
+            // handles Bugsnag reporting/error logging, so that is not needed here.
+            return null;
+        }
+    }
+
+    /**
+     * Send a SMS message to the provided phone number.
+     * @param toPhone   e.g., +15551234
+     * @param body      SMS message body
+     * @return          messageId if message was successful (null otherwise)
      */
     public static String sendSMS(String toPhone, String body) {
         if (TWILIO_ACCOUNT_SID == null || TWILIO_AUTH_TOKEN == null) {
@@ -68,6 +96,10 @@ public class NotificationUtils {
         }
     }
 
+    /**
+     * Send verification text to phone number (i.e., a code that the recipient will use to verify ownership of the
+     * number via the OTP web app).
+     */
     public static Verification sendVerificationText(String phoneNumber) {
         if (TWILIO_ACCOUNT_SID == null || TWILIO_AUTH_TOKEN == null) {
             LOG.error("SMS notifications not configured correctly.");
@@ -105,23 +137,96 @@ public class NotificationUtils {
     }
 
     /**
+     * Send notification email to {@link OtpUser}, ensuring the correct from
+     * email address is used (i.e., {@link #FROM_EMAIL}).
+     */
+    public static boolean sendEmail(
+        OtpUser otpUser,
+        String subject,
+        String textTemplate,
+        String htmlTemplate,
+        Object templateData
+    ) {
+        return sendEmail(FROM_EMAIL, otpUser.email, subject, textTemplate, htmlTemplate, templateData);
+    }
+
+    /**
+     * Send notification email to {@link AdminUser}, ensuring the correct from
+     * email address is used (i.e., {@link #OTP_ADMIN_DASHBOARD_FROM_EMAIL}).
+     */
+    public static boolean sendEmail(
+        AdminUser adminUser,
+        String subject,
+        String textTemplate,
+        String htmlTemplate,
+        Object templateData
+    ) {
+        return sendEmail(OTP_ADMIN_DASHBOARD_FROM_EMAIL, adminUser.email, subject, textTemplate, htmlTemplate, templateData);
+    }
+
+    /**
+     * Send templated email using SparkPost.
+     * @param fromEmail     from email address
+     * @param toEmail       recipient email address
+     * @param subject       email subject liine
+     * @param textTemplate  template to use for email in text format
+     * @param htmlTemplate  template to use for email in HTML format
+     * @param templateData          template data
+     * @return              whether the email was sent successfully
+     */
+    private static boolean sendEmail(
+        String fromEmail,
+        String toEmail,
+        String subject,
+        String textTemplate,
+        String htmlTemplate,
+        Object templateData
+    ) {
+        try {
+            String text = TemplateUtils.renderTemplate(textTemplate, templateData);
+            String html = TemplateUtils.renderTemplate(htmlTemplate, templateData);
+            return sendEmailViaSparkpost(fromEmail, toEmail, subject, text, html);
+        } catch (TemplateException | IOException e) {
+            // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
+            // handles Bugsnag reporting/error logging, so that is not needed here.
+            return false;
+        }
+    }
+
+    /**
      * Send notification email using Sparkpost.
      * TODO: determine if we should use sparkpost or sendgrid.
      */
-    public static boolean sendEmailViaSparkpost(String toEmail, String subject, String text, String html) {
-        if (SPARKPOST_KEY == null || FROM_EMAIL == null) {
-            LOG.error("Notifications disabled due to invalid config. Skipping message to {} SUBJECT: {}", toEmail, subject);
+    public static boolean sendEmailViaSparkpost(
+        String fromEmail,
+        String toEmail,
+        String subject,
+        String text,
+        String html
+    ) {
+        if (SPARKPOST_KEY == null) {
+            LOG.error("Notifications disabled due to missing SPARKPOST_KEY. Skipping message to {} SUBJECT: {}", toEmail, subject);
+            return false;
+        }
+        if (fromEmail == null) {
+            LOG.error("Notification skipped due to invalid FROM email (check config). Skipping message to {} SUBJECT: {}", toEmail, subject);
+            return false;
+        }
+        if (text == null && html == null) {
+            LOG.error("Notification skipped due to empty text and html bodies");
             return false;
         }
         try {
             Client client = new Client(SPARKPOST_KEY);
-            Response response = client.sendMessage(FROM_EMAIL, toEmail, subject, text, html);
+            Response response = client.sendMessage(fromEmail, toEmail, subject, text, html);
             LOG.info("Notification sent to {} status: {}", toEmail, response.getResponseMessage());
             return true;
             // TODO: Is there a more specific exception we're ok with here?
         } catch (Exception e) {
-            // FIXME: Add bugsnag
-            LOG.error("Could not send notification to {}", toEmail, e);
+            BugsnagReporter.reportErrorToBugsnag(
+                String.format("Could not send notification to %s", toEmail),
+                e
+            );
             return false;
         }
     }

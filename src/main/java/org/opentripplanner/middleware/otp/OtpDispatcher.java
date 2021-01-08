@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.otp;
 
+import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.slf4j.Logger;
@@ -86,7 +87,7 @@ public class OtpDispatcher {
             HttpUtils.httpRequestRawResponse(
                 uri,
                 OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS,
-                HttpUtils.REQUEST_METHOD.GET,
+                HttpMethod.GET,
                 null,
                 null);
         return new OtpDispatcherResponse(otpResponse);
