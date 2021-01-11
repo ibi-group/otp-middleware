@@ -355,8 +355,9 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                         String.format("Requesting user not authorized to create %s.", className));
                 }
                 // Run pre-create hook and use updated object (with potentially modified values) in create operation.
-                persistence.create(preCreateHook(newEntity, req));
-                postCreateHook(newEntity, req);
+                T updatedEntity = preCreateHook(newEntity, req);
+                persistence.create(updatedEntity);
+                postCreateHook(updatedEntity, req);
             } else {
                 String id = getIdFromRequest(req);
                 T preExistingEntity = getObjectForId(req, id);

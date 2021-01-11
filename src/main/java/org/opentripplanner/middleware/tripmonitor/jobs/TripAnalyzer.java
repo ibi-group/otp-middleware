@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,14 +55,14 @@ public class TripAnalyzer implements Runnable {
                 }
 
                 // verify that a lock hasn't been placed on trip by another trip analyzer task
-                if (MonitorAllTripsJob.monitoredTripLocks.containsKey(trip)) {
+                if (MonitoredTripLocks.contains(trip)) {
                     LOG.warn("Skipping trip analysis due to existing lock on trip: {}", trip);
                     analyzerIsIdle.set(true);
                     continue;
                 }
 
-                // Refetch the trip from the database. This to ensure the trip has any updates made to the trip between
-                // when the trip was placed in the analysis queue and the current time.
+                // Refetch the trip from the database. This is to ensure the trip has any updates made to the trip
+                // between when the trip was placed in the analysis queue and the current time.
                 String tripId = trip.id;
                 trip = Persistence.monitoredTrips.getById(tripId);
                 if (trip == null) {
@@ -77,7 +76,7 @@ public class TripAnalyzer implements Runnable {
                 LOG.info("Analyzing trip {}", trip.id);
 
                 // place lock on trip
-                MonitorAllTripsJob.monitoredTripLocks.put(trip, true);
+                MonitoredTripLocks.lock(trip);
 
                 /////// BEGIN TRIP ANALYSIS
                 try {
@@ -89,7 +88,7 @@ public class TripAnalyzer implements Runnable {
                 LOG.info("Finished analyzing trip {}", trip.id);
 
                 // remove lock on trip
-                MonitorAllTripsJob.monitoredTripLocks.remove(trip);
+                MonitoredTripLocks.unlock(trip);
 
                 analyzerIsIdle.set(true);
             }
