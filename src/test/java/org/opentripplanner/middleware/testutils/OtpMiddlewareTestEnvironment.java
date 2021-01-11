@@ -31,12 +31,14 @@ public class OtpMiddlewareTestEnvironment {
         LOG.info("Starting server");
         OtpMiddlewareMain.inTestEnvironment = true;
         // If in the e2e environment, use the secret env.yml file to start the server.
-        // TODO: When ran on Travis CI, this file will automatically be setup.
+        // TODO: When ran in a CI environment, this file will automatically be setup.
         String[] args;
         if (IS_END_TO_END) {
-            // Check if running in Travis CI. If so, use Travis environment variables instead of config file.
+            LOG.info("running E2E tests");
+            // Check if running in a CI environment. If so, use environment variables instead of config file.
             args = isRunningCi ? new String[]{} : new String[]{"configurations/default/env.yml"};
         } else {
+            LOG.info("running unit tests");
             // If not running E2E, use test env.yml.
             args = new String[]{"configurations/test/env.yml"};
         }

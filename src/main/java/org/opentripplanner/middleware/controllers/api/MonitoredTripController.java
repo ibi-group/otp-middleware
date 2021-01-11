@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
+import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
@@ -20,7 +21,6 @@ import java.util.stream.Collectors;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.tripmonitor.jobs.MonitorAllTripsJob.monitoredTripLocks;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
@@ -91,20 +91,21 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     @Override
     MonitoredTrip postCreateHook(MonitoredTrip monitoredTrip, Request req) {
         try {
-            monitoredTripLocks.put(monitoredTrip, true);
+            MonitoredTripLocks.lock(monitoredTrip);
             return runCheckMonitoredTrip(monitoredTrip);
         } catch (Exception e) {
             // FIXME: an error happened while checking the trip, but the trip was saved to the DB, so return the raw
             //  trip as it was saved in the db?
             return monitoredTrip;
         } finally {
-            monitoredTripLocks.remove(monitoredTrip);
+            MonitoredTripLocks.unlock(monitoredTrip);
         }
     }
 
     /**
      * Creates and runs a check monitored trip job for the specified monitoredTrip. This method assumes that the proper
-     * monitored trip locks are created and removed elsewhere.
+     * monitored trip locks are created and removed elsewhere. The monitored trip can be modified during the check
+     * monitored trip job, so return the trip as found in the database after the job completes.
      */
     private MonitoredTrip runCheckMonitoredTrip(MonitoredTrip monitoredTrip) throws Exception {
         new CheckMonitoredTrip(monitoredTrip).run();
@@ -138,38 +139,8 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        // Wait for any existing CheckMonitoredTrip jobs to complete before proceeding
-        if (monitoredTripLocks.containsKey(monitoredTrip)) {
-            int maxWaitTimeMillis = 4000;
-            int timeWaitedMillis = 0;
-            do {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    logMessageAndHalt(
-                        req,
-                        HttpStatus.INTERNAL_SERVER_ERROR_500,
-                        "The trip analyzer prevented the update of this trip. Please try again."
-                    );
-                }
-                timeWaitedMillis += 500;
-
-                // if the lock has been released, exit this wait loop
-                if (!monitoredTripLocks.containsKey(monitoredTrip)) break;
-            } while (timeWaitedMillis <= maxWaitTimeMillis);
-        }
-
-        // If a lock still exists, prevent the update
-        if (monitoredTripLocks.containsKey(monitoredTrip)) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.INTERNAL_SERVER_ERROR_500,
-                "The trip analyzer prevented the update of this trip. Please try again."
-            );
-        }
-
         // lock the trip so that the a CheckMonitoredTrip job won't concurrently analyze/update the trip.
-        monitoredTripLocks.put(monitoredTrip, true);
+        MonitoredTripLocks.lockTripForUpdating(monitoredTrip, req);
 
         try {
             preCreateOrUpdateChecks(monitoredTrip, req);
@@ -190,11 +161,11 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
             return runCheckMonitoredTrip(monitoredTrip);
         } catch (Exception e) {
-            // FIXME: an error happened while checking the trip, but the trip was saved to the DB, so return the raw
-            //  trip as it was saved in the db?
+            // FIXME: an error happened while updating the trip, but the trip might have been saved to the DB, so return
+            //  the raw trip as it was saved in the db before the check monitored trip job ran?
             return monitoredTrip;
         } finally {
-            monitoredTripLocks.remove(monitoredTrip);
+            MonitoredTripLocks.unlock(monitoredTrip);
         }
     }
 

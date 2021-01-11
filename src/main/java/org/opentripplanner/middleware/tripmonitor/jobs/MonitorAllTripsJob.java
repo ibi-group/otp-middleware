@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -18,8 +17,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class MonitorAllTripsJob implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(MonitorAllTripsJob.class);
-
-    public static final ConcurrentHashMap<MonitoredTrip, Boolean> monitoredTripLocks = new ConcurrentHashMap();
 
     private final int numCores = Runtime.getRuntime().availableProcessors();
     private final int BLOCKING_QUEUE_SIZE = numCores;

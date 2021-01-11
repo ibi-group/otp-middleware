@@ -183,13 +183,7 @@ public class CheckMonitoredTrip implements Runnable {
                 matchingItinerary = candidateItinerary;
 
                 // update the journey state with whether the matching itinerary has realtime data
-                journeyState.hasRealtimeData = false;
-                for (Leg leg : matchingItinerary.legs) {
-                    if (leg.realTime) {
-                        journeyState.hasRealtimeData = true;
-                        break;
-                    }
-                }
+                journeyState.hasRealtimeData = matchingItinerary.legs.stream().anyMatch(leg -> leg.realTime);
 
                 // set the status according to whether the current itinerary occurs in the past, present or future
                 updateTripStatus();
@@ -675,6 +669,8 @@ public class CheckMonitoredTrip implements Runnable {
         journeyState.scheduledDepartureTimeEpochMillis = matchingItinerary.getScheduledStartTimeEpochMillis();
         journeyState.scheduledArrivalTimeEpochMillis = matchingItinerary.getScheduledEndTimeEpochMillis();
 
+        // resent journey state's realtime data to be false as it has just been manually advanced without having checked
+        // the trip planner for realtime data
         journeyState.hasRealtimeData = false;
 
         // reset the snoozed parameter to false
@@ -683,7 +679,8 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Update the monitored trip with the updated journey state with updated matching itinerary and target date.
+     * Update the monitored trip with the updated journey state with updated matching itinerary and target date. Returns
+     * false if the update was unsuccessful due to the trip no longer existing in the database.
      */
     private boolean updateMonitoredTrip() {
         // make sure the trip still exists before saving it. It is possible that the user deleted the trip after this

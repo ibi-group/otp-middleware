@@ -80,7 +80,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canMonitorTrip() throws URISyntaxException, CloneNotSupportedException {
-        // Do not run this test on Travis CI because it requires a live OTP server
+        // Do not run this test in a CI environment because it requires a live OTP server
         // FIXME: Add live otp server to e2e tests.
         assumeTrue(!ConfigUtils.isRunningCi && OtpMiddlewareTestEnvironment.IS_END_TO_END);
         MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
