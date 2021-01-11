@@ -209,4 +209,13 @@ public class JsonUtils {
             .put("code", code)
             .put("detail", detail);
     }
+
+    /**
+     * Extract the String representation of a JSON node field if available, if not, return an empty String.
+     */
+    public static String getJSONPropertyFieldAsString(JsonNode property, String fieldName) {
+        return (property.get(fieldName) != null)
+            ? property.get(fieldName).toString()
+            : "";
+    }
 }
