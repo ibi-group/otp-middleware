@@ -32,7 +32,7 @@ public class ConfigUtils {
     static {
         // Load in env.yml schema file statically so that it is available for populating properties when running CI.
         try {
-            ENV_SCHEMA = yamlMapper.readTree(ConfigUtils.class.getClassLoader().getResourceAsStream(DEFAULT_ENV_SCHEMA));
+            ENV_SCHEMA = loadEnvSchema();
         } catch (IOException e) {
             LOG.error("Could not read env.yml config schema", e);
             System.exit(1);
@@ -46,6 +46,14 @@ public class ConfigUtils {
     public static final boolean isRunningCi = getBooleanEnvVar("TRAVIS") && getBooleanEnvVar("CONTINUOUS_INTEGRATION");
 
     private static JsonNode envConfig;
+
+    /**
+     * Load in the env.yml schema file. The schema file must be read in as a resource (and not as a file) to keep the
+     * context consistent across all deployments.
+     */
+    public static JsonNode loadEnvSchema() throws IOException {
+        return yamlMapper.readTree(ConfigUtils.class.getClassLoader().getResourceAsStream(DEFAULT_ENV_SCHEMA));
+    }
 
     /**
      * Returns true only if an environment variable exists and is set to "true".
