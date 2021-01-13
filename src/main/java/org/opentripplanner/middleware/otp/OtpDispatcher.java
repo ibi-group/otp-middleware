@@ -1,16 +1,14 @@
 package org.opentripplanner.middleware.otp;
 
+import org.eclipse.jetty.http.HttpMethod;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
-import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -84,22 +82,14 @@ public class OtpDispatcher {
      * returned. It will fail if a connection is not made.
      */
     private static OtpDispatcherResponse sendOtpRequest(URI uri) {
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(uri)
-            .timeout(Duration.ofSeconds(OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS))
-            .GET()
-            .build();
-
-        // Get response from OTP
-        OtpDispatcherResponse otpDispatcherResponse = null;
-        try {
-            LOG.info("Sending request to OTP: {}", uri.toString());
-            HttpResponse<String> otpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
-            otpDispatcherResponse = new OtpDispatcherResponse(otpResponse);
-        } catch (InterruptedException | IOException e) {
-            LOG.error("Error requesting OTP data from {}", uri, e);
-        }
-        return otpDispatcherResponse;
+        LOG.info("Sending request to OTP: {}", uri.toString());
+        HttpResponse<String> otpResponse =
+            HttpUtils.httpRequestRawResponse(
+                uri,
+                OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS,
+                HttpMethod.GET,
+                null,
+                null);
+        return new OtpDispatcherResponse(otpResponse);
     }
 }

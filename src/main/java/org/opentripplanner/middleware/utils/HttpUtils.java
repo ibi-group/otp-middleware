@@ -31,6 +31,13 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class HttpUtils {
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
+
+    /**
+     * A single HttpClient must be declared and reused to prevent the exception "Too many files open". See:
+     * https://stackoverflow.com/questions/55271192/connections-leaking-with-state-close-wait-with-httpclient
+     */
+    private static final HttpClient client = HttpClient.newHttpClient();
+
     /**
      * A constant for a list of MIME types containing application/json only.
      */
@@ -68,12 +75,11 @@ public class HttpUtils {
     /**
      * Makes an http request and returns the response.
      */
-    public static HttpResponse<String> httpRequestRawResponse(URI uri, int connectionTimeout, HttpMethod method,
+    public static HttpResponse<String> httpRequestRawResponse(URI uri, int timeoutInSeconds, HttpMethod method,
                                                               Map<String, String> headers, String bodyContent) {
-        HttpClient client = HttpClient.newHttpClient();
         HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder()
             .uri(uri)
-            .timeout(Duration.ofSeconds(connectionTimeout));
+            .timeout(Duration.ofSeconds(timeoutInSeconds));
         // Handle building requests for supported methods.
         switch (method) {
             case GET:
