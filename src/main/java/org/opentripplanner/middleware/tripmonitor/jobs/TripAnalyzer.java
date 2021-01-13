@@ -55,7 +55,7 @@ public class TripAnalyzer implements Runnable {
                 }
 
                 // verify that a lock hasn't been placed on trip by another trip analyzer task
-                if (MonitoredTripLocks.contains(trip)) {
+                if (MonitoredTripLocks.isLocked(trip)) {
                     LOG.warn("Skipping trip analysis due to existing lock on trip: {}", trip);
                     analyzerIsIdle.set(true);
                     continue;
@@ -73,7 +73,7 @@ public class TripAnalyzer implements Runnable {
                     continue;
                 }
 
-                LOG.info("Analyzing trip {}", trip.id);
+                LOG.info("Analyzing trip {}", tripId);
 
                 // place lock on trip
                 MonitoredTripLocks.lock(trip);
@@ -85,7 +85,7 @@ public class TripAnalyzer implements Runnable {
                     LOG.error("Error encountered while checking monitored trip", e);
                     // FIXME bugsnag
                 }
-                LOG.info("Finished analyzing trip {}", trip.id);
+                LOG.info("Finished analyzing trip {}", tripId);
 
                 // remove lock on trip
                 MonitoredTripLocks.unlock(trip);
