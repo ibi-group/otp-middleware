@@ -75,11 +75,11 @@ public class HttpUtils {
     /**
      * Makes an http request and returns the response.
      */
-    public static HttpResponse<String> httpRequestRawResponse(URI uri, int connectionTimeout, HttpMethod method,
+    public static HttpResponse<String> httpRequestRawResponse(URI uri, int timeoutInSeconds, HttpMethod method,
                                                               Map<String, String> headers, String bodyContent) {
         HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder()
             .uri(uri)
-            .timeout(Duration.ofSeconds(connectionTimeout));
+            .timeout(Duration.ofSeconds(timeoutInSeconds));
         // Handle building requests for supported methods.
         switch (method) {
             case GET:
