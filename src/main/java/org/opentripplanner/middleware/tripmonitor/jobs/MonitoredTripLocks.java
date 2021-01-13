@@ -36,7 +36,7 @@ public class MonitoredTripLocks {
     /**
      * Returns true if a lock exists for the given MonitoredTrip
      */
-    public static boolean contains(MonitoredTrip trip) {
+    public static boolean isLocked(MonitoredTrip trip) {
         return locks.containsKey(trip);
     }
 
@@ -48,7 +48,7 @@ public class MonitoredTripLocks {
     public static void lockTripForUpdating(MonitoredTrip monitoredTrip, Request req) {
         // Wait for any existing CheckMonitoredTrip jobs to complete before proceeding
         String busyMessage = "A trip monitor check prevented the trip from being updated. Please try again in a moment.";
-        if (MonitoredTripLocks.contains(monitoredTrip)) {
+        if (isLocked(monitoredTrip)) {
             int timeWaitedMillis = 0;
             do {
                 try {
@@ -59,16 +59,17 @@ public class MonitoredTripLocks {
                 timeWaitedMillis += LOCK_CHECK_WAIT_MILLIS;
 
                 // if the lock has been released, exit this wait loop
-                if (!MonitoredTripLocks.contains(monitoredTrip)) break;
+                if (!isLocked(monitoredTrip)) break;
             } while (timeWaitedMillis <= MAX_UNLOCKING_WAIT_TIME_MILLIS);
         }
 
         // If a lock still exists, prevent the update
-        if (MonitoredTripLocks.contains(monitoredTrip)) {
+        if (isLocked(monitoredTrip)) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, busyMessage);
+            return;
         }
 
         // lock the trip so that the a CheckMonitoredTrip job won't concurrently analyze/update the trip.
-        MonitoredTripLocks.lock(monitoredTrip);
+        lock(monitoredTrip);
     }
 }

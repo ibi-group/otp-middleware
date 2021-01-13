@@ -25,14 +25,14 @@ public class ConfigUtils {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigUtils.class);
 
     public static final String DEFAULT_ENV = "configurations/default/env.yml";
-    public static final String DEFAULT_ENV_SCHEMA = "src/main/resources/env.schema.json";
+    public static final String DEFAULT_ENV_SCHEMA = "env.schema.json";
     private static JsonNode ENV_SCHEMA = null;
     private static final String JAR_PREFIX = "otp-middleware-";
 
     static {
         // Load in env.yml schema file statically so that it is available for populating properties when running CI.
         try {
-            ENV_SCHEMA = yamlMapper.readTree(new FileInputStream(DEFAULT_ENV_SCHEMA));
+            ENV_SCHEMA = loadEnvSchema();
         } catch (IOException e) {
             LOG.error("Could not read env.yml config schema", e);
             System.exit(1);
@@ -46,6 +46,14 @@ public class ConfigUtils {
     public static final boolean isRunningCi = getBooleanEnvVar("GITHUB_ACTIONS");
 
     private static JsonNode envConfig;
+
+    /**
+     * Load in the env.yml schema file. The schema file must be read in as a resource (and not as a file) to keep the
+     * context consistent across all deployments.
+     */
+    public static JsonNode loadEnvSchema() throws IOException {
+        return yamlMapper.readTree(ConfigUtils.class.getClassLoader().getResourceAsStream(DEFAULT_ENV_SCHEMA));
+    }
 
     /**
      * Returns true only if an environment variable exists and is set to "true".
@@ -118,6 +126,9 @@ public class ConfigUtils {
             if (envConfig == null) {
                 throw new IllegalArgumentException("env.yml not available to validate!");
             }
+            // FIXME: Json schema validator (https://github.com/java-json-tools/json-schema-validator) only supports
+            //  JSON schema draft v4. We are using JSON schema draft v7 to make use of the "examples" parameter.
+            //  When validating this warning is produced: "the following keywords are unknown and will be ignored: [examples]"
             ProcessingReport report = JsonSchemaFactory
                 .byDefault()
                 .getValidator()
