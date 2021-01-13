@@ -315,6 +315,11 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     abstract T preCreateHook(T entityToCreate, Request req);
 
     /**
+     * Hook called after object is created in MongoDB.
+     */
+    T postCreateHook(T object, Request req) { return object; }
+
+    /**
      * Hook called before object is updated in MongoDB. Validation of entity object could go here.
      */
     abstract T preUpdateHook(T entityToUpdate, T preExistingEntity, Request req);
@@ -350,7 +355,9 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                         String.format("Requesting user not authorized to create %s.", className));
                 }
                 // Run pre-create hook and use updated object (with potentially modified values) in create operation.
-                persistence.create(preCreateHook(newEntity, req));
+                T updatedEntity = preCreateHook(newEntity, req);
+                persistence.create(updatedEntity);
+                postCreateHook(updatedEntity, req);
             } else {
                 String id = getIdFromRequest(req);
                 T preExistingEntity = getObjectForId(req, id);

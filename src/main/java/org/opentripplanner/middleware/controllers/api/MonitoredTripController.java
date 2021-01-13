@@ -8,6 +8,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
+import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
@@ -84,6 +86,33 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     }
 
     /**
+     * Run a CheckMonitoredTrip job immediately after creation.
+     */
+    @Override
+    MonitoredTrip postCreateHook(MonitoredTrip monitoredTrip, Request req) {
+        try {
+            MonitoredTripLocks.lock(monitoredTrip);
+            return runCheckMonitoredTrip(monitoredTrip);
+        } catch (Exception e) {
+            // FIXME: an error happened while checking the trip, but the trip was saved to the DB, so return the raw
+            //  trip as it was saved in the db?
+            return monitoredTrip;
+        } finally {
+            MonitoredTripLocks.unlock(monitoredTrip);
+        }
+    }
+
+    /**
+     * Creates and runs a check monitored trip job for the specified monitoredTrip. This method assumes that the proper
+     * monitored trip locks are created and removed elsewhere. The monitored trip can be modified during the check
+     * monitored trip job, so return the trip as found in the database after the job completes.
+     */
+    private MonitoredTrip runCheckMonitoredTrip(MonitoredTrip monitoredTrip) throws Exception {
+        new CheckMonitoredTrip(monitoredTrip).run();
+        return Persistence.monitoredTrips.getById(monitoredTrip.id);
+    }
+
+    /**
      * Performs the operations/checks common to the preCreate and preUpdate hooks.
      */
     private void preCreateOrUpdateChecks(MonitoredTrip monitoredTrip, Request req) {
@@ -110,11 +139,34 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        preCreateOrUpdateChecks(monitoredTrip, req);
+        // lock the trip so that the a CheckMonitoredTrip job won't concurrently analyze/update the trip.
+        MonitoredTripLocks.lockTripForUpdating(monitoredTrip, req);
 
-        // TODO: Update itinerary existence record when updating a trip.
+        try {
+            preCreateOrUpdateChecks(monitoredTrip, req);
 
-        return monitoredTrip;
+            // Forbid the editing of certain values that are analyzed and set during the CheckMonitoredTrip job.
+            // For now, accomplish this by setting whatever the previous itinerary and journey state were in the preExisting
+            // trip.
+            monitoredTrip.itinerary = preExisting.itinerary;
+            monitoredTrip.journeyState = preExisting.journeyState;
+
+            checkTripCanBeMonitored(monitoredTrip, req);
+            processTripQueryParams(monitoredTrip, req);
+
+            // TODO: Update itinerary existence record when updating a trip.
+
+            // perform the database update here before releasing the lock to be sure that the record is updated in the
+            // database before a CheckMonitoredTripJob analyzes the data
+            Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
+            return runCheckMonitoredTrip(monitoredTrip);
+        } catch (Exception e) {
+            // FIXME: an error happened while updating the trip, but the trip might have been saved to the DB, so return
+            //  the raw trip as it was saved in the db before the check monitored trip job ran?
+            return monitoredTrip;
+        } finally {
+            MonitoredTripLocks.unlock(monitoredTrip);
+        }
     }
 
     @Override

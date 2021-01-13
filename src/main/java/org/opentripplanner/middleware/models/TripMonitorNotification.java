@@ -45,13 +45,11 @@ public class TripMonitorNotification extends Model {
      * Create a new notification about a change in the trip's arrival or departure time exceeding a threshold.
      *
      * @param delayInMinutes The delay in minutes (negative values indicate early times).
-     * @param delayThresholdMinutes The user's threshold for delay notifications in minutes.
      * @param targetDatetime The actual arrival or departure of the trip
      * @param delayType Whether the notification is for an arrival or departure delay
      */
     public static TripMonitorNotification createDelayNotification(
         long delayInMinutes,
-        int delayThresholdMinutes,
         Date targetDatetime,
         NotificationType delayType
     ) {

@@ -1288,6 +1288,8 @@ definitions:
         - "NEXT_TRIP_NOT_POSSIBLE"
         - "TRIP_UPCOMING"
         - "TRIP_ACTIVE"
+      hasRealtimeData:
+        type: "boolean"
   Itinerary:
     type: "object"
     properties:
@@ -1415,6 +1417,8 @@ definitions:
         $ref: "#/definitions/Place"
       to:
         $ref: "#/definitions/Place"
+      arriveBy:
+        type: "boolean"
       leadTimeInMinutes:
         type: "integer"
         format: "int32"
@@ -1435,6 +1439,8 @@ definitions:
       excludeFederalHolidays:
         type: "boolean"
       isActive:
+        type: "boolean"
+      snoozed:
         type: "boolean"
       queryParams:
         type: "string"

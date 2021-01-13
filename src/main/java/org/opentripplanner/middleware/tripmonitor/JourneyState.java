@@ -66,6 +66,13 @@ public class JourneyState implements Cloneable {
      */
     public TripStatus tripStatus;
 
+    /**
+     * Whether the last checked matching itinerary has realtime data that came directly from an OTP response. Since the
+     * matching itinerary is sometimes cloned and manipulated to have updated start/end times, this field serves as a
+     * source-of-truth for whether realtime data is actually present in the matching itinerary.
+     */
+    public boolean hasRealtimeData = false;
+
     public JourneyState() {}
 
     /**
