@@ -10,7 +10,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -18,6 +17,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
@@ -46,7 +46,6 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetReque
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO_END;
 
 /**
  * Tests to simulate API user flow. The following config parameters must be set in configurations/default/env.yml for
@@ -71,7 +70,7 @@ import static org.opentripplanner.middleware.testutils.CommonTestUtils.IS_END_TO
  *
  * Auth0 must be correctly configured as described here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
  */
-public class ApiUserFlowTest {
+public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(ApiUserFlowTest.class);
     private static ApiUser apiUser;
     private static OtpUser otpUser;
@@ -93,9 +92,7 @@ public class ApiUserFlowTest {
      * Create an {@link ApiUser} and an {@link OtpUser} prior to unit tests
      */
     @BeforeAll
-    public static void setUp() throws IOException, InterruptedException, CreateApiKeyException {
-        // Load config before checking if tests should run.
-        OtpMiddlewareTest.setUp();
+    public static void setUp() throws IOException, CreateApiKeyException {
         assumeTrue(testsShouldRun());
         // Mock the OTP server TODO: Run a live OTP instance?
         OtpTestUtils.mockOtpServer();

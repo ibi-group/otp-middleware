@@ -1,10 +1,9 @@
 package org.opentripplanner.middleware.utils;
 
-import com.zenika.snapshotmatcher.SnapshotMatcher;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -15,7 +14,7 @@ import java.util.Set;
 import static com.zenika.snapshotmatcher.SnapshotMatcher.matchesSnapshot;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class TemplateUtilsTest extends OtpMiddlewareTest {
+public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
     /**
      * A parameterized test that checks whether various templates render in a way that matches a snapshot. The name of
      * the test case is guaranteed to be unique due to a check in the {@link TemplateRenderingTestCase} constructor. The

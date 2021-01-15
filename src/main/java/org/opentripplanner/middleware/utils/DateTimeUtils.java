@@ -165,6 +165,19 @@ public class DateTimeUtils {
     }
 
     /**
+     * Calculates the epoch milliseconds in OTP's time zone from the given parameters. The parameters match those found
+     * in a constructor for {@link LocalDateTime}.
+     */
+    public static long otpDateTimeAsEpochMillis(int year, int month, int dayOfMonth, int hour, int minute, int second) {
+        return Instant.from(
+            ZonedDateTime.of(
+                LocalDateTime.of(year, month, dayOfMonth, hour, minute, second),
+                getOtpZoneId()
+            )
+        ).toEpochMilli();
+    }
+
+    /**
      * Converts a {@link LocalDate} object from the 'date' query parameter string,
      * or returns today's date if that parameter is null.
      */

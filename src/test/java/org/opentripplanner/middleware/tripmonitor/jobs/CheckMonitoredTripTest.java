@@ -7,9 +7,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.ItineraryExistence;
-import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
@@ -43,22 +42,20 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
  */
-public class CheckMonitoredTripTest {
+public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTripTest.class);
     private static OtpUser user;
 
     // this is initialized in the setup method after the OTP_TIMEZONE config value is known.
-    private static ZonedDateTime noonMonday8June2020;
+    private static ZonedDateTime noonMonday8June2020 = DateTimeUtils.makeOtpZonedDateTime(new Date())
+        .withYear(2020)
+        .withMonth(6)
+        .withDayOfMonth(8)
+        .withHour(12)
+        .withMinute(0);
 
     @BeforeAll
-    public static void setup() throws IOException, InterruptedException {
-        OtpMiddlewareTest.setUp();
-        noonMonday8June2020 = DateTimeUtils.makeOtpZonedDateTime(new Date())
-            .withYear(2020)
-            .withMonth(6)
-            .withDayOfMonth(8)
-            .withHour(12)
-            .withMinute(0);
+    public static void setup() throws IOException {
         OtpTestUtils.mockOtpServer();
         user = PersistenceTestUtils.createUser("user@example.com");
     }
@@ -85,7 +82,7 @@ public class CheckMonitoredTripTest {
     public void canMonitorTrip() throws URISyntaxException, CloneNotSupportedException {
         // Do not run this test in a CI environment because it requires a live OTP server
         // FIXME: Add live otp server to e2e tests.
-        assumeTrue(!ConfigUtils.isRunningCi && CommonTestUtils.IS_END_TO_END);
+        assumeTrue(!ConfigUtils.isRunningCi && OtpMiddlewareTestEnvironment.IS_END_TO_END);
         MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = user.id;

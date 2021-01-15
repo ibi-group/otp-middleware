@@ -5,11 +5,11 @@ import org.bson.conversions.Bson;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.io.IOException;
@@ -29,7 +29,7 @@ import static org.opentripplanner.middleware.persistence.TypedPersistence.filter
  * number of {@link TypedPersistence} methods are tested here, but the HTTP endpoints defined in
  * {@link org.opentripplanner.middleware.controllers.api.ApiController} are not themselves tested here.
  */
-public class TripHistoryPersistenceTest {
+public class TripHistoryPersistenceTest extends OtpMiddlewareTestEnvironment {
     private static final int LIMIT = 3;
     private static final String TEST_EMAIL = "john.doe@example.com";
     private static final String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
@@ -42,8 +42,7 @@ public class TripHistoryPersistenceTest {
     private static List<TripRequest> tripRequests = null;
 
     @BeforeAll
-    public static void setup() throws IOException, InterruptedException {
-        OtpMiddlewareTest.setUp();
+    public static void setup() throws IOException {
         otpUser = createUser(TEST_EMAIL);
         tripRequest = createTripRequest(otpUser.id);
         tripRequests = createTripRequests(LIMIT, otpUser.id);
