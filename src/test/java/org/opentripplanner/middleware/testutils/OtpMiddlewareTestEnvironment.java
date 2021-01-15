@@ -26,7 +26,7 @@ public class OtpMiddlewareTestEnvironment {
     static final String TEST_RESOURCE_PATH = "src/test/resources/org/opentripplanner/middleware/";
 
     static {
-        LOG.info("OtpMiddlewareTest setup");
+        LOG.info("OtpMiddlewareTestEnvironment setup");
 
         LOG.info("Starting server");
         OtpMiddlewareMain.inTestEnvironment = true;

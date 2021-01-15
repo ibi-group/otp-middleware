@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opentripplanner.middleware.OtpMiddlewareTest;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpRequest;
@@ -56,20 +55,41 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     );
 
     /** Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE. */
-    public static final long _2020_08_12__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 12, 3, 0, 0)); // Aug 12, 2020 3:00:00 AM
-    public static final long _2020_08_12__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020,8,12,23,59,59)); // Aug 12, 2020 11:59:59 PM
-    public static final long _2020_08_13__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 13, 2, 59, 59)); // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
-    public static final long _2020_08_13__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 13, 3, 0, 0)); // Aug 13, 2020 3:00:00 AM
-    public static final long _2020_08_13__23_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 13, 23, 59, 59)); // Aug 13, 2020 11:59:59 PM
-    public static final long _2020_08_14__02_59_59 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 14, 2, 59, 59)); // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
-    public static final long _2020_08_14__03_00_00 = otpDateTimeAsEpochMillis(LocalDateTime.of(
-        2020, 8, 14, 3, 0, 0)); // Aug 14, 2020 3:00:00 AM
+
+    // Aug 12, 2020 3:00:00 AM
+    public static final long _2020_08_12__03_00_00 = otpDateTimeAsEpochMillis(
+        2020, 8, 12, 3, 0, 0
+    );
+
+    // Aug 12, 2020 11:59:59 PM
+    public static final long _2020_08_12__23_59_59 = otpDateTimeAsEpochMillis(
+        2020,8,12,23,59,59
+    );
+
+    // Aug 13, 2020 2:59:59 AM, considered to be Aug 12.
+    public static final long _2020_08_13__02_59_59 = otpDateTimeAsEpochMillis(
+        2020, 8, 13, 2, 59, 59
+    );
+
+    // Aug 13, 2020 3:00:00 AM
+    public static final long _2020_08_13__03_00_00 = otpDateTimeAsEpochMillis(
+        2020, 8, 13, 3, 0, 0
+    );
+
+    // Aug 13, 2020 11:59:59 PM
+    public static final long _2020_08_13__23_59_59 = otpDateTimeAsEpochMillis(
+        2020, 8, 13, 23, 59, 59
+    );
+
+    // Aug 14, 2020 2:59:59 AM, considered to be Aug 13.
+    public static final long _2020_08_14__02_59_59 = otpDateTimeAsEpochMillis(
+        2020, 8, 14, 2, 59, 59
+    );
+
+    // Aug 14, 2020 3:00:00 AM
+    public static final long _2020_08_14__03_00_00 = otpDateTimeAsEpochMillis(
+        2020, 8, 14, 3, 0, 0
+    );
 
     /** Contains the verified itinerary set for a trip upon persisting. */
     private static final Itinerary DEFAULT_ITINERARY =
