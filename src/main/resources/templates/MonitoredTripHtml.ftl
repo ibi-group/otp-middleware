@@ -13,7 +13,7 @@
           <li>${notification}</li>
         </#list>
         </ul>
-        <p>View trip <a href="${OTP_UI_URL}/#/savedtrips/${tripId}">here</a>.
+        <p>View trip <a href="${OTP_UI_URL}${TRIPS_PATH}/${tripId}">here</a>.
     </div>
 </#macro>
 
