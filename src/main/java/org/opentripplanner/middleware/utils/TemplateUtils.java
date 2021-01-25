@@ -34,6 +34,7 @@ public class TemplateUtils {
             for (String key : sharedConfigKeys) {
                 config.setSharedVariable(key, ConfigUtils.getConfigPropertyAsText(key));
             }
+            config.setSharedVariable("TRIPS_PATH", "/#/account/trips");
         } catch (TemplateModelException e) {
             LOG.error("An error occurred while initializing FreeMarker: ", e);
             throw new RuntimeException(e);

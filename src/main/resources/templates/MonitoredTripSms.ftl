@@ -8,6 +8,6 @@ Your trip has the following notifications:
   -${notification}
 </#list>
 
-View trip: ${OTP_UI_URL}/#/savedtrips/${tripId}
+View trip: ${OTP_UI_URL}${TRIPS_PATH}/${tripId}
 
 To stop receiving notifications, reply STOP.
