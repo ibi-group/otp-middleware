@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.utils.HttpUtils;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -19,7 +20,7 @@ public class RegisterRedirectTest extends OtpMiddlewareTestEnvironment {
      * Test to confirm the correct redirect to required registration page.
      */
     @Test
-    public void canRegisterRedirect() {
+    public void canRegisterRedirect() throws IOException  {
         String redirect = "http://localhost:3000/#/register";
 
         String path = String.format("register?route=%s", URLEncoder.encode(redirect, StandardCharsets.UTF_8));
@@ -28,7 +29,8 @@ public class RegisterRedirectTest extends OtpMiddlewareTestEnvironment {
             1000,
             HttpMethod.GET,
             null,
-            ""
+            "",
+            false
         );
 
         assertEquals(HttpStatus.FOUND_302, response.getStatusLine().getStatusCode());

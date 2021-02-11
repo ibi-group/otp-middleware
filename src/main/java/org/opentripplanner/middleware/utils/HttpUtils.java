@@ -3,16 +3,13 @@ package org.opentripplanner.middleware.utils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -26,7 +23,6 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -72,92 +68,25 @@ public class HttpUtils {
     }
 
     /**
-     * Makes an http request and returns the response.
-     */
-//    public static HttpResponseWrapper httpRequestRawResponse(URI uri, int timeoutInSeconds, HttpMethod method,
-//                                                      Map<String, String> headers, String bodyContent) {
-//        int timeoutInMilliSeconds = timeoutInSeconds * 1000;
-//        RequestConfig timeoutConfig = RequestConfig.custom()
-//            .setConnectionRequestTimeout(timeoutInMilliSeconds)
-//            .setConnectTimeout(timeoutInMilliSeconds)
-//            .setSocketTimeout(timeoutInMilliSeconds)
-//            .build();
-//
-//        HttpUriRequest httpUriRequest;
-//
-//        // Handle building requests for supported methods.
-//        switch (method) {
-//            case GET:
-//                HttpGet getRequest = new HttpGet(uri);
-//                getRequest.setConfig(timeoutConfig);
-//                httpUriRequest = getRequest;
-//                break;
-//            case DELETE:
-//                HttpDelete deleteRequest = new HttpDelete(uri);
-//                deleteRequest.setConfig(timeoutConfig);
-//                httpUriRequest = deleteRequest;
-//                break;
-//            case PUT:
-//                try {
-//                    HttpPut putRequest = new HttpPut(uri);
-//                    putRequest.setEntity(new StringEntity(bodyContent));
-//                    putRequest.setConfig(timeoutConfig);
-//                    httpUriRequest = putRequest;
-//                } catch (UnsupportedEncodingException e) {
-//                    LOG.error("Unsupported encoding type", e);
-//                    return null;
-//                }
-//                break;
-//            case POST:
-//                try {
-//                    HttpPost postRequest = new HttpPost(uri);
-//                    postRequest.setEntity(new StringEntity(bodyContent));
-//                    postRequest.setConfig(timeoutConfig);
-//                    httpUriRequest = postRequest;
-//                } catch (UnsupportedEncodingException e) {
-//                    LOG.error("Unsupported encoding type", e);
-//                    return null;
-//                }
-//                break;
-//            case HEAD:
-//            case OPTIONS:
-//            case TRACE:
-//            case CONNECT:
-//            case MOVE:
-//            case PROXY:
-//            case PRI:
-//            default:
-//                throw new IllegalArgumentException(String.format("HTTP method '%s' not currently supported!", method));
-//        }
-//
-//        if (headers != null && !headers.isEmpty()) {
-//            for (Map.Entry<String, String> e : headers.entrySet()) {
-//                httpUriRequest.setHeader(e.getKey(), e.getValue());
-//            }
-//        }
-//
-//        // Execute the request, extract the response and then close the connection.
-//        try (CloseableHttpClient httpClient = HttpClients.createDefault();
-//             CloseableHttpResponse response = httpClient.execute(httpUriRequest)) {
-//            // Get the response before the connection is closed.
-//            return new HttpResponseWrapper(
-//                uri,
-//                response,
-//                getResponseBodyAsString(response),
-//                response.getStatusLine().getStatusCode());
-//        } catch (HttpTimeoutException e) {
-//            LOG.error("Request to {} timed out after {} seconds.", uri, timeoutInSeconds, e);
-//        } catch (IOException e) {
-//            BugsnagReporter.reportErrorToBugsnag("Error requesting data from URI", uri, e);
-//        }
-//        return null;
-//    }
-
-    /**
-     * Makes an http request and returns the response.
+     * Makes an http request (following redirects if triggered) and return the response. All I/O exceptions are reported
+     * to Bugsnag.
      */
     public static HttpResponse httpRequestRawResponse(URI uri, int timeoutInSeconds, HttpMethod method,
                                                       Map<String, String> headers, String bodyContent) {
+        try {
+            return httpRequestRawResponse(uri, timeoutInSeconds, method, headers, bodyContent, true);
+        } catch (IOException e) {
+            BugsnagReporter.reportErrorToBugsnag("Error requesting data from URI", uri, e);
+        }
+        return null;
+    }
+
+    /**
+     * Makes an http request and returns the response. All I/O exceptions are deferred to the calling method.
+     */
+    public static HttpResponse httpRequestRawResponse(URI uri, int timeoutInSeconds, HttpMethod method,
+                                                      Map<String, String> headers, String bodyContent,
+                                                      boolean allowRedirects) throws IOException {
         int timeoutInMilliSeconds = timeoutInSeconds * 1000;
         RequestConfig timeoutConfig = RequestConfig.custom()
             .setConnectionRequestTimeout(timeoutInMilliSeconds)
@@ -218,15 +147,11 @@ public class HttpUtils {
             }
         }
 
-        HttpClient client = HttpClientBuilder.create().build();
-        try {
-            return client.execute(httpUriRequest);
-        } catch (HttpTimeoutException e) {
-            LOG.error("Request to {} timed out after {} seconds.", uri, timeoutInSeconds, e);
-        } catch (IOException e) {
-            BugsnagReporter.reportErrorToBugsnag("Error requesting data from URI", uri, e);
-        }
-        return null;
+        HttpClient client = allowRedirects
+            ? HttpClientBuilder.create().build()
+            : HttpClientBuilder.create().disableRedirectHandling().build();
+
+        return client.execute(httpUriRequest);
     }
 
     /**

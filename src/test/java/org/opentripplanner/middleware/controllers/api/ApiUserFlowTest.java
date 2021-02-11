@@ -27,7 +27,6 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.UUID;
@@ -92,7 +91,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
      * Create an {@link ApiUser} and an {@link OtpUser} prior to unit tests
      */
     @BeforeAll
-    public static void setUp() throws IOException, CreateApiKeyException {
+    public static void setUp() throws CreateApiKeyException {
         assumeTrue(testsShouldRun());
         // Mock the OTP server TODO: Run a live OTP instance?
         OtpTestUtils.mockOtpServer();
@@ -228,18 +227,13 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         // (The mocks will also be reset in the @AfterEach phase if there are failures.)
         OtpTestUtils.resetOtpMocks();
 
+        String responseBody = HttpUtils.getResponseBodyAsString(createTripResponseAsApiUser);
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.getStatusLine().getStatusCode());
-        MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(
-            HttpUtils.getResponseBodyAsString(createTripResponseAsApiUser),
-            MonitoredTrip.class
-        );
+        MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(responseBody, MonitoredTrip.class);
 
         // As API user, try to assign this trip to another user the API user doesn't manage.
         // (This trip should not be persisted.)
-        MonitoredTrip monitoredTripToNonManagedUser = JsonUtils.getPOJOFromJSON(
-            HttpUtils.getResponseBodyAsString(createTripResponseAsApiUser),
-            MonitoredTrip.class
-        );
+        MonitoredTrip monitoredTripToNonManagedUser = JsonUtils.getPOJOFromJSON(responseBody, MonitoredTrip.class);
         monitoredTripToNonManagedUser.userId = otpUserStandalone.id;
         HttpResponse putTripResponseAsApiUser = makeRequest(
             MONITORED_TRIP_PATH + "/" + monitoredTripToNonManagedUser.id,

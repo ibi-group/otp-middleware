@@ -12,7 +12,9 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpTimeoutException;
 import java.util.List;
 import java.util.Map;
 
@@ -126,14 +128,23 @@ public class BugsnagDispatcher {
             "organizations", BUGSNAG_ORGANIZATION, "event_data_requests", eventDataRequestId
         );
         LOG.debug("Making Bugsnag request: {}", eventDataRequestUri);
-        HttpResponse response = HttpUtils.httpRequestRawResponse(
-            eventDataRequestUri,
-            CONNECTION_TIMEOUT_IN_SECONDS,
-            create ? HttpMethod.POST : HttpMethod.GET,
-            BUGSNAG_HEADERS,
-            create ? EVENT_REQUEST_FILTER : null
-        );
-        return JsonUtils.getPOJOFromHttpBody(response, BugsnagEventRequest.class);
+
+        try {
+            HttpResponse response = HttpUtils.httpRequestRawResponse(
+                eventDataRequestUri,
+                CONNECTION_TIMEOUT_IN_SECONDS,
+                create ? HttpMethod.POST : HttpMethod.GET,
+                BUGSNAG_HEADERS,
+                create ? EVENT_REQUEST_FILTER : null,
+                true
+            );
+            return JsonUtils.getPOJOFromHttpBody(response, BugsnagEventRequest.class);
+        } catch (HttpTimeoutException e) {
+            LOG.error("Request to {} timed out after {} seconds.", eventDataRequestUri, CONNECTION_TIMEOUT_IN_SECONDS, e);
+        } catch (IOException e) {
+            BugsnagReporter.reportErrorToBugsnag("Error requesting data from URI", eventDataRequestUri, e);
+        }
+        return null;
     }
 
     /**
@@ -142,13 +153,21 @@ public class BugsnagDispatcher {
     public static List<BugsnagEvent> getEventData(String eventDataRequestUrl) {
         URI eventDataRequestUri = HttpUtils.buildUri(eventDataRequestUrl);
         LOG.debug("Making GET Bugsnag request: {}", eventDataRequestUri);
-        HttpResponse events = HttpUtils.httpRequestRawResponse(
-            eventDataRequestUri,
-            CONNECTION_TIMEOUT_IN_SECONDS,
-            HttpMethod.GET,
-            null,
-            null
-        );
-        return JsonUtils.getPOJOFromHttpBodyAsList(events, BugsnagEvent.class);
+        try {
+            HttpResponse events = HttpUtils.httpRequestRawResponse(
+                eventDataRequestUri,
+                CONNECTION_TIMEOUT_IN_SECONDS,
+                HttpMethod.GET,
+                null,
+                null,
+                true
+            );
+            return JsonUtils.getPOJOFromHttpBodyAsList(events, BugsnagEvent.class);
+        } catch (HttpTimeoutException e) {
+            LOG.error("Request to {} timed out after {} seconds.", eventDataRequestUri, CONNECTION_TIMEOUT_IN_SECONDS, e);
+        } catch (IOException e) {
+            BugsnagReporter.reportErrorToBugsnag("Error requesting data from URI", eventDataRequestUri, e);
+        }
+        return null;
     }
 }
