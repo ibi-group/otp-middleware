@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import org.apache.http.HttpResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -10,10 +11,10 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
-import java.net.http.HttpResponse;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,24 +60,24 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     public void invalidNumbersShouldProduceBadRequest(String badNumber, int statusCode) {
         // 1. Request verification SMS.
         // The invalid number should fail the call.
-        HttpResponse<String> response = mockAuthenticatedGet(
+        HttpResponse response = mockAuthenticatedGet(
             String.format("api/secure/user/%s/verify_sms/%s",
                 otpUser.id,
                 badNumber
             ),
             otpUser
         );
-        assertEquals(statusCode, response.statusCode());
+        assertEquals(statusCode, response.getStatusLine().getStatusCode());
 
         // 2. Fetch the newly-created user.
         // The phone number should not be updated.
-        HttpResponse<String> otpUserWithPhoneRequest = mockAuthenticatedGet(
+        HttpResponse otpUserWithPhoneRequest = mockAuthenticatedGet(
             String.format("api/secure/user/%s", otpUser.id),
             otpUser
         );
-        assertEquals(HttpStatus.OK_200, otpUserWithPhoneRequest.statusCode());
+        assertEquals(HttpStatus.OK_200, otpUserWithPhoneRequest.getStatusLine().getStatusCode());
 
-        OtpUser otpUserWithPhone = JsonUtils.getPOJOFromJSON(otpUserWithPhoneRequest.body(), OtpUser.class);
+        OtpUser otpUserWithPhone = JsonUtils.getPOJOFromJSON(HttpUtils.getResponseBodyAsString(otpUserWithPhoneRequest), OtpUser.class);
         assertEquals(INITIAL_PHONE_NUMBER, otpUserWithPhone.phoneNumber);
         assertTrue(otpUserWithPhone.isPhoneNumberVerified);
     }

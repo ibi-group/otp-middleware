@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.auth;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
+import org.apache.http.HttpResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -12,10 +13,10 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
-import java.net.http.HttpResponse;
 import java.util.stream.Stream;
 
 import static org.eclipse.jetty.http.HttpMethod.GET;
@@ -74,7 +75,7 @@ public class Auth0ConnectionTest extends OtpMiddlewareTestEnvironment {
     public void canCheckIsCreatingSelf(Auth0ConnectionTestCase testCase) {
         // Simulate a yet-to-be-saved OtpUser/ApiUser sending an authenticated request to persist itself
         // (e.g. during sign up).
-        HttpResponse<String> createUserResponse = mockAuthenticatedRequest(testCase.uri,
+        HttpResponse  createUserResponse = mockAuthenticatedRequest(testCase.uri,
             String.format("{\"auth0UserId\": \"%s\",  \"email\": \"%s\"}",
                 dummyRequestingUser.auth0UserId,
                 dummyRequestingUser.email
@@ -83,19 +84,19 @@ public class Auth0ConnectionTest extends OtpMiddlewareTestEnvironment {
             testCase.method
         );
 
-        assertEquals(testCase.result, createUserResponse.statusCode(), testCase.message);
+        assertEquals(testCase.result, createUserResponse.getStatusLine().getStatusCode(), testCase.message);
 
         // Delete the created user (but keep the auth0 account through the entire test).
         if (testCase.result == OK_200) {
             boolean creatingOtpUser = testCase.uri.endsWith(OTP_USER_PATH);
             boolean creatingApiUser = testCase.uri.endsWith(API_USER_PATH);
             if (creatingOtpUser) {
-                OtpUser createdUser = JsonUtils.getPOJOFromJSON(createUserResponse.body(), OtpUser.class);
+                OtpUser createdUser = JsonUtils.getPOJOFromJSON(HttpUtils.getResponseBodyAsString(createUserResponse), OtpUser.class);
                 if (createdUser != null) {
                     createdUser.delete(false);
                 }
             } else if (creatingApiUser) {
-                ApiUser createdUser = JsonUtils.getPOJOFromJSON(createUserResponse.body(), ApiUser.class);
+                ApiUser createdUser = JsonUtils.getPOJOFromJSON(HttpUtils.getResponseBodyAsString(createUserResponse), ApiUser.class);
                 if (createdUser != null) {
                     createdUser.delete(false);
                 }
@@ -119,8 +120,8 @@ public class Auth0ConnectionTest extends OtpMiddlewareTestEnvironment {
     public void canCheckIsRequestingVerificationEmail(Auth0ConnectionTestCase testCase) {
         // Simulate a yet-to-be-saved OtpUser/ApiUser sending an authenticated request to resend a verification email
         // (e.g. during sign up).
-        HttpResponse<String> sendVerificationEmailResponse = mockAuthenticatedGet(testCase.uri, dummyRequestingUser);
-        assertEquals(testCase.result, sendVerificationEmailResponse.statusCode(), testCase.message);
+        HttpResponse sendVerificationEmailResponse = mockAuthenticatedGet(testCase.uri, dummyRequestingUser);
+        assertEquals(testCase.result, sendVerificationEmailResponse.getStatusLine().getStatusCode(), testCase.message);
     }
 
     private static Stream<Auth0ConnectionTestCase> createIsRequestingVerificationEmailTestCases() {

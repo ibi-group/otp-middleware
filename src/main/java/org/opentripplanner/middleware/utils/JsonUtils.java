@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import org.apache.http.HttpResponse;
+import org.apache.http.util.EntityUtils;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.slf4j.Logger;
@@ -15,7 +17,6 @@ import spark.HaltException;
 import spark.Request;
 
 import java.io.IOException;
-import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 
@@ -78,9 +79,9 @@ public class JsonUtils {
      * Check if an {@link HttpResponse} is OK (i.e., the response object not null and HTTP status code is not in the
      * error range).
      */
-    private static boolean isResponseOk(HttpResponse<String> response) {
-        if (response == null || response.statusCode() >= 400) {
-            String result = response == null ? "bad response!" : response.body();
+    private static boolean isResponseOk(HttpResponse response) {
+        if (response == null || response.getStatusLine().getStatusCode() >= 400) {
+            String result = response == null ? "bad response!" : HttpUtils.getResponseBodyAsString(response);
             LOG.error("Error found in HTTP response: {}", result);
             return false;
         }
@@ -90,18 +91,18 @@ public class JsonUtils {
     /**
      * Utility method to parse generic object from HTTP response.
      */
-    public static <T> T getPOJOFromHttpBody(HttpResponse<String> response, Class<T> clazz) {
+    public static <T> T getPOJOFromHttpBody(HttpResponse response, Class<T> clazz) {
         return isResponseOk(response)
-            ? getPOJOFromJSON(response.body(), clazz)
+            ? getPOJOFromJSON(HttpUtils.getResponseBodyAsString(response), clazz)
             : null;
     }
 
     /**
      * Utility method to parse parameterized list of objects from HTTP response.
      */
-    public static <T> List<T> getPOJOFromHttpBodyAsList(HttpResponse<String> response, Class<T> clazz) {
+    public static <T> List<T> getPOJOFromHttpBodyAsList(HttpResponse response, Class<T> clazz) {
         return isResponseOk(response)
-            ? getPOJOFromJSONAsList(response.body(), clazz)
+            ? getPOJOFromJSONAsList(HttpUtils.getResponseBodyAsString(response), clazz)
             : null;
     }
 
