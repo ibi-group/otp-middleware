@@ -1,7 +1,5 @@
 package org.opentripplanner.middleware.utils;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -9,8 +7,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
@@ -23,6 +21,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -68,25 +67,19 @@ public class HttpUtils {
     }
 
     /**
-     * Makes an http request (following redirects if triggered) and return the response. All I/O exceptions are reported
-     * to Bugsnag.
+     * Makes an http request (following redirects if triggered) and return the response.
      */
-    public static HttpResponse httpRequestRawResponse(URI uri, int timeoutInSeconds, HttpMethod method,
+    public static HttpResponseValues httpRequestRawResponse(URI uri, int timeoutInSeconds, HttpMethod method,
                                                       Map<String, String> headers, String bodyContent) {
-        try {
-            return httpRequestRawResponse(uri, timeoutInSeconds, method, headers, bodyContent, true);
-        } catch (IOException e) {
-            BugsnagReporter.reportErrorToBugsnag("Error requesting data from URI", uri, e);
-        }
-        return null;
+        return httpRequestRawResponse(uri, timeoutInSeconds, method, headers, bodyContent, true);
     }
 
     /**
-     * Makes an http request and returns the response. All I/O exceptions are deferred to the calling method.
+     * Makes an http request and returns the response.
      */
-    public static HttpResponse httpRequestRawResponse(URI uri, int timeoutInSeconds, HttpMethod method,
+    public static HttpResponseValues httpRequestRawResponse(URI uri, int timeoutInSeconds, HttpMethod method,
                                                       Map<String, String> headers, String bodyContent,
-                                                      boolean allowRedirects) throws IOException {
+                                                      boolean allowRedirects) {
         int timeoutInMilliSeconds = timeoutInSeconds * 1000;
         RequestConfig timeoutConfig = RequestConfig.custom()
             .setConnectionRequestTimeout(timeoutInMilliSeconds)
@@ -147,25 +140,18 @@ public class HttpUtils {
             }
         }
 
-        HttpClient client = allowRedirects
+        CloseableHttpClient httpClient = allowRedirects
             ? HttpClientBuilder.create().build()
             : HttpClientBuilder.create().disableRedirectHandling().build();
 
-        return client.execute(httpUriRequest);
-    }
-
-    /**
-     * Extract the response body as a String. If an exception occurs return null.
-     */
-    public static String getResponseBodyAsString(HttpResponse response) {
-        String responseBody = null;
-        try {
-            responseBody = EntityUtils.toString(response.getEntity());
-            EntityUtils.consume(response.getEntity());
+        try  {
+            return httpClient.execute(httpUriRequest, new HttpResponseHandler());
+        } catch (HttpTimeoutException e) {
+            LOG.error("Request to {} timed out after {} seconds.", uri, timeoutInSeconds, e);
         } catch (IOException e) {
-            LOG.error("Unable to get response body", e);
+            BugsnagReporter.reportErrorToBugsnag("Error requesting data from URI", uri, e);
         }
-        return responseBody;
+        return null;
     }
 
     /**

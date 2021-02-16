@@ -7,12 +7,12 @@ import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
 import com.auth0.net.AuthRequest;
 import org.apache.commons.validator.routines.EmailValidator;
-import org.apache.http.HttpResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -243,7 +243,7 @@ public class Auth0Users {
      * Owner Password Flow' approach. Auth0 setup can be reviewed here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow.
      * If token response is returned to calling methods for evaluation.
      */
-    public static HttpResponse getAuth0TokenWithScope(String username, String password, String scope) {
+    public static HttpResponseValues getAuth0TokenWithScope(String username, String password, String scope) {
         if (Auth0Connection.isAuthDisabled()) return null;
         String body = String.format(
             "grant_type=password&username=%s&password=%s&audience=%s&scope=%s&client_id=%s&client_secret=%s",

@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.json.auth.TokenHolder;
 import com.beerboy.ss.ApiEndpoint;
-import org.apache.http.HttpResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0Users;
@@ -12,6 +11,7 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
+import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -102,14 +102,14 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 "An API key must be provided and match Api user."
             );
         }
-        HttpResponse auth0TokenResponse = Auth0Users.getAuth0TokenWithScope(username, password, ApiUser.AUTH0_SCOPE);
-        if (auth0TokenResponse == null || auth0TokenResponse.getStatusLine().getStatusCode() != HttpStatus.OK_200) {
+        HttpResponseValues auth0TokenResponse = Auth0Users.getAuth0TokenWithScope(username, password, ApiUser.AUTH0_SCOPE);
+        if (auth0TokenResponse == null || auth0TokenResponse.status != HttpStatus.OK_200) {
             logMessageAndHalt(req,
-                auth0TokenResponse.getStatusLine().getStatusCode(),
+                auth0TokenResponse.status,
                 String.format("Cannot obtain Auth0 token for user %s", username)
             );
         }
-        return JsonUtils.getPOJOFromJSON(HttpUtils.getResponseBodyAsString(auth0TokenResponse), TokenHolder.class);
+        return JsonUtils.getPOJOFromJSON(auth0TokenResponse.responseBody, TokenHolder.class);
     }
 
     /**

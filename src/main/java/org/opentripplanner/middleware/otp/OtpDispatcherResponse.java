@@ -2,9 +2,8 @@ package org.opentripplanner.middleware.otp;
 
 
 import org.apache.commons.lang3.SerializationUtils;
-import org.apache.http.HttpResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
-import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,10 +23,10 @@ public class OtpDispatcherResponse implements Serializable {
     /** Empty constructor used for testing */
     public OtpDispatcherResponse() {}
 
-    public OtpDispatcherResponse(HttpResponse otpResponse, URI uri) {
+    public OtpDispatcherResponse(HttpResponseValues otpResponse, URI uri) {
         requestUri = uri;
-        responseBody = HttpUtils.getResponseBodyAsString(otpResponse);
-        statusCode = otpResponse.getStatusLine().getStatusCode();
+        responseBody = otpResponse.responseBody;
+        statusCode = otpResponse.status;
         LOG.debug("Response from OTP server: {}", toString());
     }
 

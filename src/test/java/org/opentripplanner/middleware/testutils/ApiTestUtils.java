@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.testutils;
 
-import org.apache.http.HttpResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import com.auth0.json.auth.TokenHolder;
 import org.eclipse.jetty.http.HttpStatus;
@@ -11,6 +10,7 @@ import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -91,15 +91,15 @@ public class ApiTestUtils {
      * is ok, extract the access token from the token holder response and return to caller.
      */
     private static String getTestAuth0AccessToken(String username, String scope) {
-        HttpResponse response = Auth0Users.getAuth0TokenWithScope(username, TEMP_AUTH0_USER_PASSWORD, scope);
-        if (response == null || response.getStatusLine().getStatusCode() != HttpStatus.OK_200) {
+        HttpResponseValues response = Auth0Users.getAuth0TokenWithScope(username, TEMP_AUTH0_USER_PASSWORD, scope);
+        if (response == null || response.status != HttpStatus.OK_200) {
             LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}",
                 username,
-                response.getStatusLine().getStatusCode(),
-                HttpUtils.getResponseBodyAsString(response));
+                response.status,
+                response.responseBody);
             return null;
         }
-        TokenHolder token = JsonUtils.getPOJOFromJSON(HttpUtils.getResponseBodyAsString(response), TokenHolder.class);
+        TokenHolder token = JsonUtils.getPOJOFromJSON(response.responseBody, TokenHolder.class);
         return (token == null) ? null : token.getAccessToken();
     }
 
@@ -107,7 +107,7 @@ public class ApiTestUtils {
     /**
      * Send request to provided URL.
      */
-    public static HttpResponse makeRequest(
+    public static HttpResponseValues makeRequest(
         String path, String body, HashMap<String, String> headers, HttpMethod requestMethod
     ) {
         return HttpUtils.httpRequestRawResponse(
@@ -122,7 +122,7 @@ public class ApiTestUtils {
     /**
      * Send 'get' request to provided URL.
      */
-    public static HttpResponse makeGetRequest(String path, HashMap<String, String> headers) {
+    public static HttpResponseValues makeGetRequest(String path, HashMap<String, String> headers) {
         return HttpUtils.httpRequestRawResponse(
             URI.create(BASE_URL + path),
             1000,
@@ -135,7 +135,7 @@ public class ApiTestUtils {
     /**
      * Send 'delete' request to provided URL.
      */
-    public static HttpResponse makeDeleteRequest(String path, HashMap<String, String> headers) {
+    public static HttpResponseValues makeDeleteRequest(String path, HashMap<String, String> headers) {
         return HttpUtils.httpRequestRawResponse(
             URI.create(BASE_URL + path),
             1000,
@@ -149,7 +149,7 @@ public class ApiTestUtils {
      * Construct http headers according to caller request and then make an authenticated call by placing the Auth0 user
      * id in the headers so that {@link RequestingUser} can check the database for a matching user.
      */
-    public static HttpResponse mockAuthenticatedRequest(
+    public static HttpResponseValues mockAuthenticatedRequest(
         String path, String body, AbstractUser requestingUser, HttpMethod requestMethod
     ) {
         return makeRequest(path, body, getMockHeaders(requestingUser), requestMethod);
@@ -158,7 +158,7 @@ public class ApiTestUtils {
     /**
      * Construct http headers according to caller request and then make an authenticated 'get' call.
      */
-    public static HttpResponse mockAuthenticatedGet(String path, AbstractUser requestingUser) {
+    public static HttpResponseValues mockAuthenticatedGet(String path, AbstractUser requestingUser) {
         return makeGetRequest(path, getMockHeaders(requestingUser));
     }
 
@@ -166,7 +166,7 @@ public class ApiTestUtils {
      * Construct http headers according to caller request and then make an authenticated call by placing the Auth0 user
      * id in the headers so that {@link RequestingUser} can check the database for a matching user.
      */
-    public static HttpResponse mockAuthenticatedDelete(String path, AbstractUser requestingUser) {
+    public static HttpResponseValues mockAuthenticatedDelete(String path, AbstractUser requestingUser) {
         return makeDeleteRequest(path, getMockHeaders(requestingUser));
     }
 
