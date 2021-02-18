@@ -6,13 +6,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
+import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 
@@ -126,12 +126,14 @@ public class BugsnagDispatcher {
             "organizations", BUGSNAG_ORGANIZATION, "event_data_requests", eventDataRequestId
         );
         LOG.debug("Making Bugsnag request: {}", eventDataRequestUri);
-        HttpResponse<String> response = HttpUtils.httpRequestRawResponse(
+
+        HttpResponseValues response = HttpUtils.httpRequestRawResponse(
             eventDataRequestUri,
             CONNECTION_TIMEOUT_IN_SECONDS,
             create ? HttpMethod.POST : HttpMethod.GET,
             BUGSNAG_HEADERS,
-            create ? EVENT_REQUEST_FILTER : null
+            create ? EVENT_REQUEST_FILTER : null,
+            true
         );
         return JsonUtils.getPOJOFromHttpBody(response, BugsnagEventRequest.class);
     }
@@ -142,12 +144,13 @@ public class BugsnagDispatcher {
     public static List<BugsnagEvent> getEventData(String eventDataRequestUrl) {
         URI eventDataRequestUri = HttpUtils.buildUri(eventDataRequestUrl);
         LOG.debug("Making GET Bugsnag request: {}", eventDataRequestUri);
-        HttpResponse<String> events = HttpUtils.httpRequestRawResponse(
+        HttpResponseValues events = HttpUtils.httpRequestRawResponse(
             eventDataRequestUri,
             CONNECTION_TIMEOUT_IN_SECONDS,
             HttpMethod.GET,
             null,
-            null
+            null,
+            true
         );
         return JsonUtils.getPOJOFromHttpBodyAsList(events, BugsnagEvent.class);
     }

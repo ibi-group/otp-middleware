@@ -19,12 +19,11 @@ import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
-import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.http.HttpResponse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -145,8 +144,8 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
      * Helper method to get trips for user.
      */
     private ResponseList<MonitoredTrip> getMonitoredTripsForUser(String path, OtpUser otpUser) throws JsonProcessingException {
-        HttpResponse<String> soloTripsResponse = mockAuthenticatedGet(path, otpUser);
-        return JsonUtils.getResponseListFromJSON(soloTripsResponse.body(), MonitoredTrip.class);
+        HttpResponseValues soloTripsResponse = mockAuthenticatedGet(path, otpUser);
+        return JsonUtils.getResponseListFromJSON(soloTripsResponse.responseBody, MonitoredTrip.class);
     }
 
     /**
@@ -161,7 +160,7 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         // POST call below to save the monitored trip can pass.
         OtpTestUtils.setupOtpMocks(OtpTestUtils.createMockOtpResponsesForTripExistence());
 
-        HttpResponse<String> createTripResponse = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
+        HttpResponseValues createTripResponse = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
             otpUser,
             HttpMethod.POST
@@ -171,6 +170,6 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         // (The mocks will be also reset in the @AfterEach phase if there are any failures.)
         OtpTestUtils.resetOtpMocks();
 
-        assertEquals(HttpStatus.OK_200, createTripResponse.statusCode());
+        assertEquals(HttpStatus.OK_200, createTripResponse.status);
     }
 }

@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
+import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -18,8 +19,6 @@ import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
 import spark.Response;
-
-import java.net.http.HttpResponse;
 
 import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
@@ -103,14 +102,14 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 "An API key must be provided and match Api user."
             );
         }
-        HttpResponse<String> auth0TokenResponse = Auth0Users.getAuth0TokenWithScope(username, password, ApiUser.AUTH0_SCOPE);
-        if (auth0TokenResponse == null || auth0TokenResponse.statusCode() != HttpStatus.OK_200) {
+        HttpResponseValues auth0TokenResponse = Auth0Users.getAuth0TokenWithScope(username, password, ApiUser.AUTH0_SCOPE);
+        if (auth0TokenResponse == null || auth0TokenResponse.status != HttpStatus.OK_200) {
             logMessageAndHalt(req,
-                auth0TokenResponse.statusCode(),
+                auth0TokenResponse.status,
                 String.format("Cannot obtain Auth0 token for user %s", username)
             );
         }
-        return JsonUtils.getPOJOFromJSON(auth0TokenResponse.body(), TokenHolder.class);
+        return JsonUtils.getPOJOFromJSON(auth0TokenResponse.responseBody, TokenHolder.class);
     }
 
     /**

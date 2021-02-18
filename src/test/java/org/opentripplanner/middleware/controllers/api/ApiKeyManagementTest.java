@@ -12,13 +12,12 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
-import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.http.HttpResponse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -74,9 +73,9 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canCreateApiKeyForSelf() {
-        HttpResponse<String> response = createApiKeyRequest(apiUser.id, apiUser);
-        assertEquals(HttpStatus.OK_200, response.statusCode());
-        ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
+        HttpResponseValues response = createApiKeyRequest(apiUser.id, apiUser);
+        assertEquals(HttpStatus.OK_200, response.status);
+        ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.responseBody, ApiUser.class);
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
         LOG.info("API user successfully created API key id {}", userFromResponse.apiKeys.get(0).keyId);
@@ -88,9 +87,9 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void adminCanCreateApiKeyForApiUser() {
-        HttpResponse<String> response = createApiKeyRequest(apiUser.id, adminUser);
-        assertEquals(HttpStatus.OK_200, response.statusCode());
-        ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
+        HttpResponseValues response = createApiKeyRequest(apiUser.id, adminUser);
+        assertEquals(HttpStatus.OK_200, response.status);
+        ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.responseBody, ApiUser.class);
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
         LOG.info("Admin user successfully created API key id {}", userFromResponse.apiKeys.get(0).keyId);
@@ -107,10 +106,9 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
         int initialKeyCount = apiUser.apiKeys.size();
         // delete key
         String keyId = apiUser.apiKeys.get(0).keyId;
-        HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, apiUser);
-        int status = response.statusCode();
-        assertEquals(HttpStatus.FORBIDDEN_403, status);
-        LOG.info("Delete key request status: {}", status);
+        HttpResponseValues response = deleteApiKeyRequest(apiUser.id, keyId, apiUser);
+        assertEquals(HttpStatus.FORBIDDEN_403, response.status);
+        LOG.info("Delete key request status: {}", response.status);
         // Ensure key count is the same after delete request.
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
         assertEquals(initialKeyCount, userFromDb.apiKeys.size());
@@ -124,9 +122,9 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
         ensureApiKeyExists();
         // delete key
         String keyId = apiUser.apiKeys.get(0).keyId;
-        HttpResponse<String> response = deleteApiKeyRequest(apiUser.id, keyId, adminUser);
-        assertEquals(HttpStatus.OK_200, response.statusCode());
-        ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.body(), ApiUser.class);
+        HttpResponseValues response = deleteApiKeyRequest(apiUser.id, keyId, adminUser);
+        assertEquals(HttpStatus.OK_200, response.status);
+        ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.responseBody, ApiUser.class);
         assertTrue(userFromResponse.apiKeys.isEmpty());
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
@@ -157,7 +155,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
     /**
      * Create API key for target user based on authorization of requesting user
      */
-    private HttpResponse<String> createApiKeyRequest(String targetUserId, AbstractUser requestingUser) {
+    private HttpResponseValues createApiKeyRequest(String targetUserId, AbstractUser requestingUser) {
         String path = String.format("api/secure/application/%s/apikey", targetUserId);
         return mockAuthenticatedRequest(path, "", requestingUser, HttpMethod.POST);
     }
@@ -165,7 +163,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
     /**
      * Delete API key for target user based on authorization of requesting user
      */
-    private static HttpResponse<String> deleteApiKeyRequest(String targetUserId, String apiKeyId, AbstractUser requestingUser) {
+    private static HttpResponseValues deleteApiKeyRequest(String targetUserId, String apiKeyId, AbstractUser requestingUser) {
         String path = String.format("api/secure/application/%s/apikey/%s", targetUserId, apiKeyId);
         return mockAuthenticatedDelete(path, requestingUser);
     }

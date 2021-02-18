@@ -10,10 +10,10 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
-import java.net.http.HttpResponse;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,24 +59,24 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     public void invalidNumbersShouldProduceBadRequest(String badNumber, int statusCode) {
         // 1. Request verification SMS.
         // The invalid number should fail the call.
-        HttpResponse<String> response = mockAuthenticatedGet(
+        HttpResponseValues response = mockAuthenticatedGet(
             String.format("api/secure/user/%s/verify_sms/%s",
                 otpUser.id,
                 badNumber
             ),
             otpUser
         );
-        assertEquals(statusCode, response.statusCode());
+        assertEquals(statusCode, response.status);
 
         // 2. Fetch the newly-created user.
         // The phone number should not be updated.
-        HttpResponse<String> otpUserWithPhoneRequest = mockAuthenticatedGet(
+        HttpResponseValues otpUserWithPhoneRequest = mockAuthenticatedGet(
             String.format("api/secure/user/%s", otpUser.id),
             otpUser
         );
-        assertEquals(HttpStatus.OK_200, otpUserWithPhoneRequest.statusCode());
+        assertEquals(HttpStatus.OK_200, otpUserWithPhoneRequest.status);
 
-        OtpUser otpUserWithPhone = JsonUtils.getPOJOFromJSON(otpUserWithPhoneRequest.body(), OtpUser.class);
+        OtpUser otpUserWithPhone = JsonUtils.getPOJOFromJSON(otpUserWithPhoneRequest.responseBody, OtpUser.class);
         assertEquals(INITIAL_PHONE_NUMBER, otpUserWithPhone.phoneNumber);
         assertTrue(otpUserWithPhone.isPhoneNumberVerified);
     }
