@@ -9,11 +9,15 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 /**
- * Extracts the required values from an {@link HttpResponse} and populate an instance of {@link HttpResponseValues}.
+ * Extracts the required values from an {@link HttpResponse} and populates an instance of {@link HttpResponseValues}.
  */
 public class HttpResponseHandler implements ResponseHandler<HttpResponseValues> {
     private static final Logger LOG = LoggerFactory.getLogger(HttpResponseHandler.class);
 
+    /**
+     * Populates the {@link HttpResponseValues} with required values. Once this method completes the http connection
+     * is closed.
+     */
     public HttpResponseValues handleResponse(final HttpResponse response) {
         return new HttpResponseValues(response, getResponseBodyAsString(response));
     }

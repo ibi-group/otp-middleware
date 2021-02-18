@@ -125,6 +125,14 @@
         </plugins>
     </build>
     <dependencies>
+
+        <!-- Require for HTTP calls -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>4.4.14</version>
+        </dependency>
+
         <!-- Required for file IO -->
         <dependency>
             <groupId>commons-io</groupId>

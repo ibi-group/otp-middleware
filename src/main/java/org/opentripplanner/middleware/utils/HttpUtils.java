@@ -145,6 +145,7 @@ public class HttpUtils {
             : HttpClientBuilder.create().disableRedirectHandling().build();
 
         try  {
+            // Extract required information from the response and return to caller. The connection is closed once complete.
             return httpClient.execute(httpUriRequest, new HttpResponseHandler());
         } catch (HttpTimeoutException e) {
             LOG.error("Request to {} timed out after {} seconds.", uri, timeoutInSeconds, e);
