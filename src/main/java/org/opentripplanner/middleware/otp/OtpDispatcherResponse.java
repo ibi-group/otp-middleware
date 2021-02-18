@@ -23,8 +23,8 @@ public class OtpDispatcherResponse implements Serializable {
     /** Empty constructor used for testing */
     public OtpDispatcherResponse() {}
 
-    public OtpDispatcherResponse(HttpResponseValues otpResponse, URI uri) {
-        requestUri = uri;
+    public OtpDispatcherResponse(HttpResponseValues otpResponse) {
+        requestUri = otpResponse.uri;
         responseBody = otpResponse.responseBody;
         statusCode = otpResponse.status;
         LOG.debug("Response from OTP server: {}", toString());
