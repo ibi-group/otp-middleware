@@ -143,10 +143,10 @@ public class HttpUtils {
         CloseableHttpClient httpClient = allowRedirects
             ? HttpClientBuilder.create().build()
             : HttpClientBuilder.create().disableRedirectHandling().build();
-        HttpResponseHandler httpResponseHandler = new HttpResponseHandler(httpUriRequest);
+
         try  {
             // Extract required information from the response and return to caller. The connection is closed once complete.
-            return httpClient.execute(httpUriRequest, httpResponseHandler);
+            return httpClient.execute(httpUriRequest, new HttpResponseHandler(httpUriRequest));
         } catch (HttpTimeoutException e) {
             LOG.error("Request to {} timed out after {} seconds.", uri, timeoutInSeconds, e);
         } catch (IOException e) {
