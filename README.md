@@ -180,7 +180,6 @@ The special E2E client settings should be defined in `env.yml`:
 | OTP_TIMEZONE | string | Required | America/Los_Angeles | The timezone identifier that OTP is using to parse dates and times. OTP will use the timezone identifier that it finds in the first available agency to parse dates and times. |
 | OTP_UI_NAME | string | Optional | Trip Planner | Config setting for linking to the OTP UI (trip planner). |
 | OTP_UI_URL | string | Optional | https://plan.example.com | Config setting for linking to the OTP UI (trip planner). |
-| SENDGRID_API_KEY | string | Optional | your-api-key | Sendgrid settings available at: https://app.sendgrid.com/ |
 | SERVICE_DAY_START_HOUR | integer | Optional | 3 | Optional parameter for the hour (local time, 24-hr format) at which a service day starts. To make the service day change at 2am, enter 2. The default is 3am. |
 | SPARKPOST_KEY | string | Optional | your-api-key | Get Sparkpost key at: https://app.sparkpost.com/account/api-keys |
 | TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |

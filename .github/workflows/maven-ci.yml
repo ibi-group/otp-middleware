@@ -29,7 +29,6 @@ jobs:
       OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
       OTP_TIMEZONE: ${{ secrets.OTP_TIMEZONE }}
       OTP_UI_URL: ${{ secrets.OTP_UI_URL }}
-      SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
       SPARKPOST_KEY: ${{ secrets.SPARKPOST_KEY }}
       TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
       TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
