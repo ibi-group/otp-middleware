@@ -60,9 +60,6 @@ jobs:
           RUN_E2E: true
 
       # if this point it reached, the CI build has succeeded
-      - name: Codecov
-        uses: codecov/codecov-action@v1.2.0
-        continue-on-error: true
 
       # only prepare deploy files on push events to avoid duplicate pushes to s3 when a commit is
       # pushed to a branch with an open pull request
