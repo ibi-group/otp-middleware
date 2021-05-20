@@ -1,11 +1,5 @@
 package org.opentripplanner.middleware.utils;
 
-import com.sendgrid.Content;
-import com.sendgrid.Email;
-import com.sendgrid.Mail;
-import com.sendgrid.Method;
-import com.sendgrid.Request;
-import com.sendgrid.SendGrid;
 import com.sparkpost.Client;
 import com.sparkpost.model.responses.Response;
 import com.twilio.Twilio;
@@ -22,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -195,7 +188,6 @@ public class NotificationUtils {
 
     /**
      * Send notification email using Sparkpost.
-     * TODO: determine if we should use sparkpost or sendgrid.
      */
     public static boolean sendEmailViaSparkpost(
         String fromEmail,
@@ -229,38 +221,6 @@ public class NotificationUtils {
             );
             return false;
         }
-    }
-
-    /**
-     * Send notification email using Sendgrid.
-     * TODO: determine if we should use sparkpost or sendgrid.
-     */
-    public static boolean sendEmailViaSendGrid(String toEmail, String subject, String text, String html) {
-        String SENDGRID_API_KEY = getConfigPropertyAsText("SENDGRID_API_KEY");
-        if (SENDGRID_API_KEY == null || FROM_EMAIL == null) {
-            LOG.error("Notifications disabled due to invalid config. Skipping message to {} SUBJECT: {}", toEmail, subject);
-            return false;
-        }
-        Email from = new Email(FROM_EMAIL);
-        Email to = new Email(toEmail);
-        Content content = new Content("text/plain", text);
-        Mail mail = new Mail(from, subject, to, content);
-
-        SendGrid sg = new SendGrid(SENDGRID_API_KEY);
-        Request request = new Request();
-        try {
-            request.setMethod(Method.POST);
-            request.setEndpoint("mail/send");
-            request.setBody(mail.build());
-            com.sendgrid.Response response = sg.api(request);
-            LOG.info("Message status: {}", response.getStatusCode());
-            return response.getStatusCode() < 400;
-        } catch (IOException e) {
-            LOG.error("Could not send notification to " + to.getEmail(), e);
-            // FIXME: bugsnag
-            return false;
-        }
-
     }
 }
 
