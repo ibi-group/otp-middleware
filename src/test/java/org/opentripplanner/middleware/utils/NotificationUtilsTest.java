@@ -64,6 +64,17 @@ public class NotificationUtilsTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
+    public void canSendSendGridEmailNotification() {
+        boolean success = NotificationUtils.sendEmailViaSendGrid(
+            user.email,
+            "Hi there",
+            "This is the body",
+            null
+        );
+        Assertions.assertTrue(success);
+    }
+
+    @Test
     public void canSendSmsNotification() {
         // Note: toPhone must be verified.
         String messageId = NotificationUtils.sendSMS(
