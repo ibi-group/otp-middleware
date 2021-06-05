@@ -26,7 +26,6 @@ jobs:
         run: ./scripts/add-aws-credentials.sh
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_PROFILE: default
           AWS_REGION: us-east-1
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Build with Maven (run unit tests)
@@ -63,6 +62,7 @@ jobs:
           AUTH0_API_CLIENT: ${{ secrets.AUTH0_API_CLIENT }}
           AUTH0_API_SECRET: ${{ secrets.AUTH0_API_SECRET }}
           AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          AWS_PROFILE: default
           BUGSNAG_API_KEY: ${{ secrets.BUGSNAG_API_KEY }}
           BUGSNAG_ORGANIZATION: ${{ secrets.BUGSNAG_ORGANIZATION }}
           BUGSNAG_PROJECT_NOTIFIER_API_KEY: ${{ secrets.BUGSNAG_PROJECT_NOTIFIER_API_KEY }}
