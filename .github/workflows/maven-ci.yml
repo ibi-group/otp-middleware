@@ -6,34 +6,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    env:
-      OTP_ADMIN_DASHBOARD_NAME: OTP Admin Dashboard
-      OTP_ADMIN_DASHBOARD_FROM_EMAIL: OTP Admin Dashboard <no-reply@email.com>
-      OTP_UI_NAME: Trip Planner
-      AUTH0_API_CLIENT: ${{ secrets.AUTH0_API_CLIENT }}
-      AUTH0_API_SECRET: ${{ secrets.AUTH0_API_SECRET }}
-      AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_PROFILE: default
-      AWS_REGION: us-east-1
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      BUGSNAG_API_KEY: ${{ secrets.BUGSNAG_API_KEY }}
-      BUGSNAG_ORGANIZATION: ${{ secrets.BUGSNAG_ORGANIZATION }}
-      BUGSNAG_PROJECT_NOTIFIER_API_KEY: ${{ secrets.BUGSNAG_PROJECT_NOTIFIER_API_KEY }}
-      DEFAULT_USAGE_PLAN_ID: ${{ secrets.DEFAULT_USAGE_PLAN_ID }}
-      MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
-      NOTIFICATION_FROM_EMAIL: ${{ secrets.NOTIFICATION_FROM_EMAIL }}
-      NOTIFICATION_FROM_PHONE: ${{ secrets.NOTIFICATION_FROM_PHONE }}
-      OTP_ADMIN_DASHBOARD_URL: ${{ secrets.OTP_ADMIN_DASHBOARD_URL }}
-      OTP_API_ROOT: ${{ secrets.OTP_API_ROOT }}
-      OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
-      OTP_TIMEZONE: ${{ secrets.OTP_TIMEZONE }}
-      OTP_UI_URL: ${{ secrets.OTP_UI_URL }}
-      SPARKPOST_KEY: ${{ secrets.SPARKPOST_KEY }}
-      TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-      TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-      TWILIO_VERIFICATION_SERVICE_SID: ${{ secrets.TWILIO_VERIFICATION_SERVICE_SID }}
-
     steps:
       - uses: actions/checkout@v2
       - name: Start MongoDB
@@ -52,11 +24,61 @@ jobs:
           key: maven-local-repo
       - name: Add profile credentials to ~/.aws/credentials
         run: ./scripts/add-aws-credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_PROFILE: default
+          AWS_REGION: us-east-1
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Build with Maven (run unit tests)
         run: mvn --no-transfer-progress package
+        env:
+          OTP_ADMIN_DASHBOARD_NAME: OTP Admin Dashboard
+          OTP_ADMIN_DASHBOARD_FROM_EMAIL: OTP Admin Dashboard <no-reply@email.com>
+          OTP_UI_NAME: Trip Planner
+          AUTH0_API_CLIENT: ${{ secrets.AUTH0_API_CLIENT }}
+          AUTH0_API_SECRET: ${{ secrets.AUTH0_API_SECRET }}
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          BUGSNAG_API_KEY: ${{ secrets.BUGSNAG_API_KEY }}
+          BUGSNAG_ORGANIZATION: ${{ secrets.BUGSNAG_ORGANIZATION }}
+          BUGSNAG_PROJECT_NOTIFIER_API_KEY: ${{ secrets.BUGSNAG_PROJECT_NOTIFIER_API_KEY }}
+          DEFAULT_USAGE_PLAN_ID: ${{ secrets.DEFAULT_USAGE_PLAN_ID }}
+          MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+          NOTIFICATION_FROM_EMAIL: ${{ secrets.NOTIFICATION_FROM_EMAIL }}
+          NOTIFICATION_FROM_PHONE: ${{ secrets.NOTIFICATION_FROM_PHONE }}
+          OTP_ADMIN_DASHBOARD_URL: ${{ secrets.OTP_ADMIN_DASHBOARD_URL }}
+          OTP_API_ROOT: ${{ secrets.OTP_API_ROOT }}
+          OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
+          OTP_TIMEZONE: ${{ secrets.OTP_TIMEZONE }}
+          OTP_UI_URL: ${{ secrets.OTP_UI_URL }}
+          SPARKPOST_KEY: ${{ secrets.SPARKPOST_KEY }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_VERIFICATION_SERVICE_SID: ${{ secrets.TWILIO_VERIFICATION_SERVICE_SID }}
       - name: Run E2E tests
         run: mvn --no-transfer-progress test
         env:
+          OTP_ADMIN_DASHBOARD_NAME: OTP Admin Dashboard
+          OTP_ADMIN_DASHBOARD_FROM_EMAIL: OTP Admin Dashboard <no-reply@email.com>
+          OTP_UI_NAME: Trip Planner
+          AUTH0_API_CLIENT: ${{ secrets.AUTH0_API_CLIENT }}
+          AUTH0_API_SECRET: ${{ secrets.AUTH0_API_SECRET }}
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          BUGSNAG_API_KEY: ${{ secrets.BUGSNAG_API_KEY }}
+          BUGSNAG_ORGANIZATION: ${{ secrets.BUGSNAG_ORGANIZATION }}
+          BUGSNAG_PROJECT_NOTIFIER_API_KEY: ${{ secrets.BUGSNAG_PROJECT_NOTIFIER_API_KEY }}
+          DEFAULT_USAGE_PLAN_ID: ${{ secrets.DEFAULT_USAGE_PLAN_ID }}
+          MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+          NOTIFICATION_FROM_EMAIL: ${{ secrets.NOTIFICATION_FROM_EMAIL }}
+          NOTIFICATION_FROM_PHONE: ${{ secrets.NOTIFICATION_FROM_PHONE }}
+          OTP_ADMIN_DASHBOARD_URL: ${{ secrets.OTP_ADMIN_DASHBOARD_URL }}
+          OTP_API_ROOT: ${{ secrets.OTP_API_ROOT }}
+          OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
+          OTP_TIMEZONE: ${{ secrets.OTP_TIMEZONE }}
+          OTP_UI_URL: ${{ secrets.OTP_UI_URL }}
+          SPARKPOST_KEY: ${{ secrets.SPARKPOST_KEY }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_VERIFICATION_SERVICE_SID: ${{ secrets.TWILIO_VERIFICATION_SERVICE_SID }}
           RUN_E2E: true
 
       # if this point it reached, the CI build has succeeded
