@@ -63,6 +63,7 @@ jobs:
           AUTH0_API_SECRET: ${{ secrets.AUTH0_API_SECRET }}
           AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
           AWS_PROFILE: default
+          AWS_REGION: us-east-1
           BUGSNAG_API_KEY: ${{ secrets.BUGSNAG_API_KEY }}
           BUGSNAG_ORGANIZATION: ${{ secrets.BUGSNAG_ORGANIZATION }}
           BUGSNAG_PROJECT_NOTIFIER_API_KEY: ${{ secrets.BUGSNAG_PROJECT_NOTIFIER_API_KEY }}
