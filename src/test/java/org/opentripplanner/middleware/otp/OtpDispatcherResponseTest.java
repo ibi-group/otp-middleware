@@ -3,13 +3,14 @@ package org.opentripplanner.middleware.otp;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 
 import java.io.IOException;
 import java.net.URI;
 
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 
-public class OtpDispatcherResponseTest {
+public class OtpDispatcherResponseTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     public void toStringShouldExcludeResponseFieldIfNotCallingPlan() throws IOException {
