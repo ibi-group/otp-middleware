@@ -158,8 +158,6 @@ public class CheckMonitoredTrip implements Runnable {
             // parameter with the appropriate date.
             Map<String, String> params = trip.parseQueryParams();
             params.put(ItineraryUtils.DATE_PARAM, targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER));
-            LOG.info("makeOTPRequestAndUpdateMatchingItinerary params");
-            LOG.info(params.toString());
             otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(ItineraryUtils.toQueryString(params));
         } catch (Exception e) {
             // TODO: report bugsnag
