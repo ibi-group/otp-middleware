@@ -70,6 +70,7 @@ public class ConfigUtils {
     public static void loadConfig(String[] args) throws IOException {
         // Check if running in a CI environment. If so, skip loading config (CI uses environment variables).
         if (isRunningCi) {
+            LOG.info("Constructing env config from environment variables");
             envConfig = constructConfigFromEnvironment();
         } else if (args.length == 0) {
             LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
