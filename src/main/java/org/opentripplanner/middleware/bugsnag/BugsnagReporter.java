@@ -60,7 +60,7 @@ public class BugsnagReporter {
         // Finally, construct report and send to bugsnag.
         Report report = bugsnag.buildReport(throwable);
         report.setContext(message);
-        report.setAppInfo("entity", badEntity != null ? badEntity.toString() : "N/A");
+        report.addToTab("debugging", "bad entity", badEntity != null ? badEntity.toString() : "N/A");
         report.setSeverity(Severity.ERROR);
         return bugsnag.notify(report);
     }
