@@ -166,7 +166,7 @@
         <!-- Required to communicate with Bugsnag's API -->
         <dependency>
             <groupId>com.bugsnag</groupId>
-            <version>3.4.4</version>
+            <version>3.6.2</version>
             <artifactId>bugsnag</artifactId>
         </dependency>
         <dependency>
