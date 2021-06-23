@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
@@ -10,6 +11,8 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
@@ -27,6 +30,8 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  * particular day of the week.
  */
 public class ItineraryExistence extends Model {
+    private static final Logger LOG = LoggerFactory.getLogger(ItineraryExistence.class);
+
     /**
      * Initial set of requests on which to base the itinerary existence checks. We do not want these persisted.
      */
@@ -181,7 +186,12 @@ public class ItineraryExistence extends Model {
             }
             // Send off each plan query to OTP.
             OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(otpRequest);
-            TripPlan plan = response.getResponse().plan;
+            TripPlan plan = null;
+            try {
+                plan = response.getResponse().plan;
+            } catch (JsonProcessingException e) {
+                LOG.error("Encountered a parse exception for otpRequest {}", otpRequest, e);
+            }
             // Handle response if valid itineraries exist.
             if (plan != null && plan.itineraries != null) {
                 for (Itinerary itineraryCandidate : plan.itineraries) {

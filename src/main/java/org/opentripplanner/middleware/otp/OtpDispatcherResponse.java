@@ -1,7 +1,9 @@
 package org.opentripplanner.middleware.otp;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.SerializationUtils;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -27,7 +29,7 @@ public class OtpDispatcherResponse implements Serializable {
         requestUri = otpResponse.uri;
         responseBody = otpResponse.responseBody;
         statusCode = otpResponse.status;
-        LOG.debug("Response from OTP server: {}", toString());
+        LOG.debug("Response from OTP server: {}", this);
     }
 
     /**
@@ -37,7 +39,7 @@ public class OtpDispatcherResponse implements Serializable {
         this.requestUri = requestUri;
         responseBody = otpResponse;
         statusCode = 200;
-        LOG.debug("Response from OTP server: {}", toString());
+        LOG.debug("Response from OTP server: {}", this);
     }
 
     /**
@@ -57,8 +59,13 @@ public class OtpDispatcherResponse implements Serializable {
      * Response. POJO version of response from an OTP server.
      * Do not persist in case these classes change. This should always be re-instantiated from responseBody if needed.
      */
-    public OtpResponse getResponse() {
-        return JsonUtils.getPOJOFromJSON(responseBody, OtpResponse.class);
+    public OtpResponse getResponse() throws JsonProcessingException {
+        try {
+            return JsonUtils.getPOJOFromJSON(responseBody, OtpResponse.class);
+        } catch (JsonProcessingException e) {
+            BugsnagReporter.reportErrorToBugsnag("Failed to parse OTP response!", responseBody, e);
+            throw e;
+        }
     }
 
     public void setResponse(OtpResponse response) {
@@ -70,9 +77,15 @@ public class OtpDispatcherResponse implements Serializable {
     public String toString() {
         // Only include the plan response if requestUri.path ends with OTP_PLAN_ENDPOINT.
         // Without this check, we are sending valid responses from non-plan OTP endpoints to Bugsnag as errors.
-        String planResponse = requestUri.getPath().endsWith(OTP_PLAN_ENDPOINT)
-                ? ", response=" + getResponse()
-                : "";
+        String planResponse = null;
+        try {
+            planResponse = requestUri.getPath().endsWith(OTP_PLAN_ENDPOINT)
+                    ? ", response=" + getResponse()
+                    : "";
+        } catch (JsonProcessingException e) {
+            LOG.error("Encountered exception wile parsing OTP_PLAN_ENDPOINT response", e);
+            planResponse = "PARSE_EXCEPTION";
+        }
 
         return "OtpDispatcherResponse{" +
                 "statusCode=" + statusCode +

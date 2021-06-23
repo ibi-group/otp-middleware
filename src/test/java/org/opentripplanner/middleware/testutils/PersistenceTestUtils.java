@@ -15,7 +15,6 @@ import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 
-import java.net.URISyntaxException;
 import java.util.*;
 
 /**
@@ -78,7 +77,7 @@ public class PersistenceTestUtils {
     /**
      * Create trip summary from static plan response file and store in database.
      */
-    public static TripSummary createTripSummary(String tripRequestId) {
+    public static TripSummary createTripSummary(String tripRequestId) throws Exception {
         OtpResponse planResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
         TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
@@ -88,7 +87,7 @@ public class PersistenceTestUtils {
     /**
      * Create trip summary from static plan error response file and store in database.
      */
-    public static TripSummary createTripSummaryWithError(String tripRequestId) {
+    public static TripSummary createTripSummaryWithError(String tripRequestId) throws Exception {
         OtpResponse planErrorResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse();
         TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId);
         Persistence.tripSummaries.create(tripSummary);
@@ -129,7 +128,7 @@ public class PersistenceTestUtils {
         OtpDispatcherResponse otpDispatcherResponse,
         boolean persist,
         JourneyState journeyState
-    ) throws URISyntaxException {
+    ) throws Exception {
         MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "test trip";

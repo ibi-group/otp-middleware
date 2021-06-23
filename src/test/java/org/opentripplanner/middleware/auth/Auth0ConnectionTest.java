@@ -71,7 +71,7 @@ public class Auth0ConnectionTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("createIsCreatingSelfTestCases")
-    public void canCheckIsCreatingSelf(Auth0ConnectionTestCase testCase) {
+    public void canCheckIsCreatingSelf(Auth0ConnectionTestCase testCase) throws Exception {
         // Simulate a yet-to-be-saved OtpUser/ApiUser sending an authenticated request to persist itself
         // (e.g. during sign up).
         HttpResponseValues createUserResponse = mockAuthenticatedRequest(testCase.uri,
@@ -91,14 +91,10 @@ public class Auth0ConnectionTest extends OtpMiddlewareTestEnvironment {
             boolean creatingApiUser = testCase.uri.endsWith(API_USER_PATH);
             if (creatingOtpUser) {
                 OtpUser createdUser = JsonUtils.getPOJOFromJSON(createUserResponse.responseBody, OtpUser.class);
-                if (createdUser != null) {
-                    createdUser.delete(false);
-                }
+                createdUser.delete(false);
             } else if (creatingApiUser) {
                 ApiUser createdUser = JsonUtils.getPOJOFromJSON(createUserResponse.responseBody, ApiUser.class);
-                if (createdUser != null) {
-                    createdUser.delete(false);
-                }
+                createdUser.delete(false);
             }
         }
     }
@@ -116,7 +112,7 @@ public class Auth0ConnectionTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("createIsRequestingVerificationEmailTestCases")
-    public void canCheckIsRequestingVerificationEmail(Auth0ConnectionTestCase testCase) {
+    public void canCheckIsRequestingVerificationEmail(Auth0ConnectionTestCase testCase) throws Exception {
         // Simulate a yet-to-be-saved OtpUser/ApiUser sending an authenticated request to resend a verification email
         // (e.g. during sign up).
         HttpResponseValues sendVerificationEmailResponse = mockAuthenticatedGet(testCase.uri, dummyRequestingUser);

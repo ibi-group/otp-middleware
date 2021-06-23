@@ -67,6 +67,10 @@ public class BugsnagEventHandlingJob implements Runnable {
     private void refreshEventRequest(BugsnagEventRequest request) {
         // Refresh the event data request.
         BugsnagEventRequest refreshedRequest = request.refreshEventDataRequest();
+        if (refreshedRequest == null) {
+            LOG.error("Failed to refresh event request");
+            return;
+        }
         if (!refreshedRequest.status.equalsIgnoreCase("completed")) {
             // Request not completed by Bugsnag yet. Return and await the next cycle/refresh.
             // TODO: Update the request data in the database? What if the status has changed since the last fetch?

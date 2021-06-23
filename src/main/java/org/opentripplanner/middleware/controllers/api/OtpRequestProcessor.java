@@ -4,6 +4,7 @@ import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.descriptor.EndpointDescriptor;
 import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
@@ -125,7 +126,14 @@ public class OtpRequestProcessor implements Endpoint {
         }
         // If the request path ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
         if (otpRequestPath.endsWith(OtpDispatcher.OTP_PLAN_ENDPOINT) && otpUser != null) {
-            handlePlanTripResponse(request, otpDispatcherResponse, otpUser);
+            if(!handlePlanTripResponse(request, otpDispatcherResponse, otpUser)) {
+                logMessageAndHalt(
+                    request,
+                    HttpStatus.INTERNAL_SERVER_ERROR_500,
+                    "Failed to save trip history."
+                );
+                return null;
+            }
         }
         // provide response to requester as received from OTP server
         response.type(MediaType.APPLICATION_JSON);
@@ -135,10 +143,10 @@ public class OtpRequestProcessor implements Endpoint {
 
     /**
      * Process plan response from OTP. Store the response if consent is given. Handle the process and all exceptions
-     * seamlessly so as not to affect the response provided to the requester.
+     * seamlessly so as not to affect the response provided to the requester. Returns false if there was an error.
      */
-    private static void handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse, OtpUser otpUser) {
-
+    private static boolean handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse, OtpUser otpUser) {
+        boolean result = true;
         String batchId = request.queryParams("batchId");
         if (batchId == null) {
             //TODO place holder for now
@@ -149,12 +157,22 @@ public class OtpRequestProcessor implements Endpoint {
         if (!otpUser.storeTripHistory) {
             LOG.debug("User does not want trip history stored");
         } else {
-            OtpResponse otpResponse = otpDispatcherResponse.getResponse();
-            if (otpResponse == null) {
-                LOG.warn("OTP response is null, cannot save trip history for user!");
-            } else {
-                TripRequest tripRequest = new TripRequest(otpUser.id, batchId, request.queryParams("fromPlace"),
-                    request.queryParams("toPlace"), request.queryString());
+            OtpResponse otpResponse = null;
+            try {
+                otpResponse = otpDispatcherResponse.getResponse();
+            } catch (JsonProcessingException e) {
+                // errors are logged elsewhere
+                result = false;
+            }
+
+            if (otpResponse != null) {
+                TripRequest tripRequest = new TripRequest(
+                    otpUser.id,
+                    batchId,
+                    request.queryParams("fromPlace"),
+                    request.queryParams("toPlace"),
+                    request.queryString()
+                );
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
                 if (tripRequestSaved) {
@@ -162,9 +180,11 @@ public class OtpRequestProcessor implements Endpoint {
                     Persistence.tripSummaries.create(tripSummary);
                 } else {
                     LOG.warn("Unable to save trip request, orphaned trip summary not saved");
+                    result = false;
                 }
             }
         }
         LOG.debug("Trip storage added {} ms", DateTimeUtils.currentTimeMillis() - tripStorageStartTime);
+        return result;
     }
 }

@@ -174,7 +174,7 @@ public class OtpTestUtils {
         );
     }
 
-    public static List<OtpResponse> createMockOtpResponsesForTripExistence() {
+    public static List<OtpResponse> createMockOtpResponsesForTripExistence() throws Exception {
         // Set up monitored days and mock responses for itinerary existence check, ordered by day.
         LocalDate today = DateTimeUtils.nowAsLocalDate();
         List<String> monitoredTripDates = new ArrayList<>();
@@ -195,11 +195,11 @@ public class OtpTestUtils {
         );
     }
 
-    public static Itinerary createDefaultItinerary() {
+    public static Itinerary createDefaultItinerary() throws Exception {
         return OTP_DISPATCHER_PLAN_RESPONSE.clone().getResponse().plan.itineraries.get(0);
     }
 
-    public static JourneyState createDefaultJourneyState() {
+    public static JourneyState createDefaultJourneyState() throws Exception {
         JourneyState journeyState = new JourneyState();
         Itinerary defaultItinerary = createDefaultItinerary();
         journeyState.scheduledArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();

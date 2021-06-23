@@ -44,7 +44,7 @@ public class ApiTestUtils {
      * Construct http header values based on user type and status of DISABLE_AUTH config parameter. If authorization is
      * disabled, use Auth0 user ID to authenticate else attempt to get a valid 0auth token from Auth0 and use this.
      */
-    public static HashMap<String, String> getMockHeaders(AbstractUser requestingUser) {
+    public static HashMap<String, String> getMockHeaders(AbstractUser requestingUser) throws Exception {
         HashMap<String, String> headers = new HashMap<>();
         String scope = null;
         // If auth is disabled, set the authorization header, x-api-key and scope accordingly, each which will be
@@ -90,7 +90,7 @@ public class ApiTestUtils {
      * Attempt to get Auth0 token from Auth0 tenant for the given username (email) and scope. If the response from Auth0
      * is ok, extract the access token from the token holder response and return to caller.
      */
-    private static String getTestAuth0AccessToken(String username, String scope) {
+    private static String getTestAuth0AccessToken(String username, String scope) throws Exception {
         HttpResponseValues response = Auth0Users.getAuth0TokenWithScope(username, TEMP_AUTH0_USER_PASSWORD, scope);
         if (response == null || response.status != HttpStatus.OK_200) {
             LOG.error("Cannot obtain Auth0 token for user {}. response: {} - {}",
@@ -151,14 +151,14 @@ public class ApiTestUtils {
      */
     public static HttpResponseValues mockAuthenticatedRequest(
         String path, String body, AbstractUser requestingUser, HttpMethod requestMethod
-    ) {
+    ) throws Exception {
         return makeRequest(path, body, getMockHeaders(requestingUser), requestMethod);
     }
 
     /**
      * Construct http headers according to caller request and then make an authenticated 'get' call.
      */
-    public static HttpResponseValues mockAuthenticatedGet(String path, AbstractUser requestingUser) {
+    public static HttpResponseValues mockAuthenticatedGet(String path, AbstractUser requestingUser) throws Exception {
         return makeGetRequest(path, getMockHeaders(requestingUser));
     }
 
@@ -166,7 +166,8 @@ public class ApiTestUtils {
      * Construct http headers according to caller request and then make an authenticated call by placing the Auth0 user
      * id in the headers so that {@link RequestingUser} can check the database for a matching user.
      */
-    public static HttpResponseValues mockAuthenticatedDelete(String path, AbstractUser requestingUser) {
+    public static HttpResponseValues mockAuthenticatedDelete(String path, AbstractUser requestingUser)
+        throws Exception {
         return makeDeleteRequest(path, getMockHeaders(requestingUser));
     }
 
