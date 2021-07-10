@@ -190,7 +190,7 @@ public class ItineraryExistence extends Model {
             try {
                 plan = response.getResponse().plan;
             } catch (JsonProcessingException e) {
-                LOG.error("Encountered a parse exception for otpRequest {}", otpRequest, e);
+                LOG.error("Could not parse plan response for otpRequest {}", otpRequest, e);
             }
             // Handle response if valid itineraries exist.
             if (plan != null && plan.itineraries != null) {
