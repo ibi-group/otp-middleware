@@ -9,7 +9,6 @@ import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 
-import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
 
 class ShouldSkipTripTestCase {
@@ -49,9 +48,7 @@ class ShouldSkipTripTestCase {
         return message;
     }
 
-    public CheckMonitoredTrip generateCheckMonitoredTrip(
-        OtpUser user
-    ) throws URISyntaxException, CloneNotSupportedException {
+    public CheckMonitoredTrip generateCheckMonitoredTrip(OtpUser user) throws Exception {
         // create a mock OTP response for planning a trip on a weekday target datetime
         OtpResponse mockWeekdayResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
         Itinerary mockWeekdayItinerary = mockWeekdayResponse.plan.itineraries.get(0);

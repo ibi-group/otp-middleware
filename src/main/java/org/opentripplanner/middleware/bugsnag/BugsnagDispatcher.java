@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.bugsnag;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -135,7 +136,16 @@ public class BugsnagDispatcher {
             create ? EVENT_REQUEST_FILTER : null,
             true
         );
-        return JsonUtils.getPOJOFromHttpBody(response, BugsnagEventRequest.class);
+        try {
+            return JsonUtils.getPOJOFromHttpBody(response, BugsnagEventRequest.class);
+        } catch (JsonProcessingException e) {
+            BugsnagReporter.reportErrorToBugsnag(
+                "Failed to make Bugsnag event data request",
+                eventDataRequestUri,
+                e
+            );
+            return null;
+        }
     }
 
     /**

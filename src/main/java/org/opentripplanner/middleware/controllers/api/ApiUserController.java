@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.json.auth.TokenHolder;
 import com.beerboy.ss.ApiEndpoint;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0Users;
@@ -109,7 +110,17 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                 String.format("Cannot obtain Auth0 token for user %s", username)
             );
         }
-        return JsonUtils.getPOJOFromJSON(auth0TokenResponse.responseBody, TokenHolder.class);
+        try {
+            return JsonUtils.getPOJOFromJSON(auth0TokenResponse.responseBody, TokenHolder.class);
+        } catch (JsonProcessingException e) {
+            logMessageAndHalt(
+                req,
+                500,
+                String.format("Encountered an error while trying to obtain Auth0 token for user %s", username),
+                e
+            );
+            return null;
+        }
     }
 
     /**

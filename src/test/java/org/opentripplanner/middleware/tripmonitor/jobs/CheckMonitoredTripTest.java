@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -79,7 +78,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      * (and OTP_PLAN_ENDPOINT) to a valid OTP server.
      */
     @Test
-    public void canMonitorTrip() throws URISyntaxException, CloneNotSupportedException {
+    public void canMonitorTrip() throws Exception {
         // Do not run this test in a CI environment because it requires a live OTP server
         // FIXME: Add live otp server to e2e tests.
         assumeTrue(!ConfigUtils.isRunningCi && OtpMiddlewareTestEnvironment.IS_END_TO_END);
@@ -140,8 +139,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         }
     }
 
-    private static List<DelayNotificationTestCase> createDelayNotificationTestCases ()
-        throws URISyntaxException, CloneNotSupportedException {
+    private static List<DelayNotificationTestCase> createDelayNotificationTestCases () throws Exception {
         List<DelayNotificationTestCase> testCases = new ArrayList<>();
 
         // should not create departure/arrival notification for on-time trip
@@ -229,7 +227,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     /**
      * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
      */
-    private static CheckMonitoredTrip createCheckMonitoredTrip() throws URISyntaxException, CloneNotSupportedException {
+    private static CheckMonitoredTrip createCheckMonitoredTrip() throws Exception {
         return createCheckMonitoredTrip(OtpTestUtils.createDefaultJourneyState());
     }
 
@@ -238,9 +236,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      * created using the default OTP response. Also, creates a new matching itinerary that consists of the first
      * itinerary in the default OTP response.
      */
-    private static CheckMonitoredTrip createCheckMonitoredTrip(
-        JourneyState journeyState
-    ) throws URISyntaxException, CloneNotSupportedException {
+    private static CheckMonitoredTrip createCheckMonitoredTrip(JourneyState journeyState) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
             OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.clone(),
@@ -267,7 +263,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         );
     }
 
-    static List<ShouldSkipTripTestCase> createSkipTripTestCases() throws URISyntaxException {
+    static List<ShouldSkipTripTestCase> createSkipTripTestCases() throws Exception {
         List<ShouldSkipTripTestCase> testCases = new ArrayList<>();
 
         // - Return true for weekend trip when current time is on a weekday.
@@ -376,8 +372,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      * Tests whether an OTP request can be made and if the trip and matching itinerary gets updated properly
      */
     @Test
-    public void canMakeOTPRequestAndUpdateMatchingItineraryForPreviouslyUnmatchedItinerary()
-        throws URISyntaxException, CloneNotSupportedException {
+    public void canMakeOTPRequestAndUpdateMatchingItineraryForPreviouslyUnmatchedItinerary() throws Exception {
         // create a mock monitored trip and CheckMonitorTrip instance
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip();
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
@@ -443,7 +438,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      * matching itinerary.
      */
     @Test
-    public void canMakeOTPRequestAndResolveUnmatchedItinerary() throws URISyntaxException, CloneNotSupportedException {
+    public void canMakeOTPRequestAndResolveUnmatchedItinerary() throws Exception {
         // create a mock monitored trip and CheckMonitorTrip instance
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip();
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
@@ -521,8 +516,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      * matching itinerary for all days of the week.
      */
     @Test
-    public void canMakeOTPRequestAndResolveNoLongerPossibleTrip() throws URISyntaxException,
-        CloneNotSupportedException {
+    public void canMakeOTPRequestAndResolveNoLongerPossibleTrip() throws Exception {
         // create a mock monitored trip and CheckMonitorTrip instance
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip();
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;

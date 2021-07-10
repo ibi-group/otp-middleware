@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.FindIterable;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -172,7 +173,11 @@ public class MonitoredTrip extends Model {
     public MonitoredTrip() {
     }
 
-    public MonitoredTrip(OtpDispatcherResponse otpDispatcherResponse) throws URISyntaxException {
+    /**
+     * Used only during testing
+     */
+    public MonitoredTrip(OtpDispatcherResponse otpDispatcherResponse) throws URISyntaxException,
+        JsonProcessingException {
         queryParams = otpDispatcherResponse.requestUri.getQuery();
         TripPlan plan = otpDispatcherResponse.getResponse().plan;
         itinerary = plan.itineraries.get(0);

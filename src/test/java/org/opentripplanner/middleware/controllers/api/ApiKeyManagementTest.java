@@ -72,7 +72,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
      * Ensure that an {@link ApiUser} can create an API key for self.
      */
     @Test
-    public void canCreateApiKeyForSelf() {
+    public void canCreateApiKeyForSelf() throws Exception {
         HttpResponseValues response = createApiKeyRequest(apiUser.id, apiUser);
         assertEquals(HttpStatus.OK_200, response.status);
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.responseBody, ApiUser.class);
@@ -86,7 +86,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
      * Ensure that an {@link AdminUser} can create an API key for an {@link ApiUser}.
      */
     @Test
-    public void adminCanCreateApiKeyForApiUser() {
+    public void adminCanCreateApiKeyForApiUser() throws Exception {
         HttpResponseValues response = createApiKeyRequest(apiUser.id, adminUser);
         assertEquals(HttpStatus.OK_200, response.status);
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.responseBody, ApiUser.class);
@@ -101,7 +101,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
      * limits).
      */
     @Test
-    public void cannotDeleteApiKeyForSelf() {
+    public void cannotDeleteApiKeyForSelf() throws Exception {
         ensureApiKeyExists();
         int initialKeyCount = apiUser.apiKeys.size();
         // delete key
@@ -118,7 +118,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
      * Ensure that an {@link AdminUser} can delete an API key for an {@link ApiUser}.
      */
     @Test
-    public void adminCanDeleteApiKeyForApiUser() {
+    public void adminCanDeleteApiKeyForApiUser() throws Exception {
         ensureApiKeyExists();
         // delete key
         String keyId = apiUser.apiKeys.get(0).keyId;
@@ -155,7 +155,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
     /**
      * Create API key for target user based on authorization of requesting user
      */
-    private HttpResponseValues createApiKeyRequest(String targetUserId, AbstractUser requestingUser) {
+    private HttpResponseValues createApiKeyRequest(String targetUserId, AbstractUser requestingUser) throws Exception {
         String path = String.format("api/secure/application/%s/apikey", targetUserId);
         return mockAuthenticatedRequest(path, "", requestingUser, HttpMethod.POST);
     }
@@ -163,7 +163,8 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
     /**
      * Delete API key for target user based on authorization of requesting user
      */
-    private static HttpResponseValues deleteApiKeyRequest(String targetUserId, String apiKeyId, AbstractUser requestingUser) {
+    private static HttpResponseValues deleteApiKeyRequest(String targetUserId, String apiKeyId, AbstractUser requestingUser)
+        throws Exception {
         String path = String.format("api/secure/application/%s/apikey/%s", targetUserId, apiKeyId);
         return mockAuthenticatedDelete(path, requestingUser);
     }

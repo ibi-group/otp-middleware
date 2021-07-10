@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.controllers.api;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.auth.TokenHolder;
 import com.auth0.json.mgmt.users.User;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
@@ -26,7 +25,6 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -154,7 +152,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
      *   5. Delete user and verify that their associated objects are also deleted.
      */
     @Test
-    public void canSimulateApiUserFlow() throws URISyntaxException, JsonProcessingException {
+    public void canSimulateApiUserFlow() throws Exception {
 
         // Define the header values to be used in requests from this point forward.
         HashMap<String, String> apiUserHeaders = new HashMap<>();

@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
@@ -23,7 +22,6 @@ import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -114,7 +112,7 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
      * credentials.
      */
     @Test
-    public void canGetOwnMonitoredTrips() throws URISyntaxException, JsonProcessingException {
+    public void canGetOwnMonitoredTrips() throws Exception {
         // Create a trip for the solo and the multi OTP user.
         createMonitoredTripAsUser(soloOtpUser);
         createMonitoredTripAsUser(multiOtpUser);
@@ -143,7 +141,7 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
     /**
      * Helper method to get trips for user.
      */
-    private ResponseList<MonitoredTrip> getMonitoredTripsForUser(String path, OtpUser otpUser) throws JsonProcessingException {
+    private ResponseList<MonitoredTrip> getMonitoredTripsForUser(String path, OtpUser otpUser) throws Exception {
         HttpResponseValues soloTripsResponse = mockAuthenticatedGet(path, otpUser);
         return JsonUtils.getResponseListFromJSON(soloTripsResponse.responseBody, MonitoredTrip.class);
     }
@@ -151,7 +149,7 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
     /**
      * Creates a {@link MonitoredTrip} for the specified user.
      */
-    private static void createMonitoredTripAsUser(OtpUser otpUser) throws URISyntaxException {
+    private static void createMonitoredTripAsUser(OtpUser otpUser) throws Exception {
         MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;

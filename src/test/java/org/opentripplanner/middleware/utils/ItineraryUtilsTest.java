@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -92,8 +91,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     );
 
     /** Contains the verified itinerary set for a trip upon persisting. */
-    private static final Itinerary DEFAULT_ITINERARY =
-        OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
+    public static Itinerary getDefaultItinerary() throws Exception {
+        return OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
+    }
 
     @BeforeAll
     public static void setup() throws IOException {
@@ -110,7 +110,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      */
     @ParameterizedTest
     @MethodSource("createCheckAllItinerariesExistTestCases")
-    public void canCheckAllItinerariesExist(boolean insertInvalidDay, String message) throws URISyntaxException {
+    public void canCheckAllItinerariesExist(boolean insertInvalidDay, String message) throws Exception {
         MonitoredTrip trip = makeTestTrip();
         List<OtpResponse> mockOtpResponses = getMockDatedOtpResponses(MONITORED_TRIP_DATES);
 
@@ -181,7 +181,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      * Creates a set of mock OTP responses by making copies of #OTP_DISPATCHER_PLAN_RESPONSE,
      * each copy having the itinerary date set to one of the dates from the specified dates list.
      */
-    public static List<OtpResponse> getMockDatedOtpResponses(List<String> dates) {
+    public static List<OtpResponse> getMockDatedOtpResponses(List<String> dates) throws Exception {
         // Set mocks to a list of responses with itineraries, ordered by day.
         List<OtpResponse> mockOtpResponses = new ArrayList<>();
 
@@ -283,14 +283,14 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         );
     }
 
-    private static List<ItineraryMatchTestCase> createItineraryComparisonTestCases() throws CloneNotSupportedException {
+    private static List<ItineraryMatchTestCase> createItineraryComparisonTestCases() throws Exception {
         List<ItineraryMatchTestCase> testCases = new ArrayList<>();
 
         // should match same data
         testCases.add(
             new ItineraryMatchTestCase(
                 "Should be equal with same data",
-                DEFAULT_ITINERARY.clone(),
+                getDefaultItinerary().clone(),
                 true
             )
         );
@@ -298,7 +298,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         // should not be equal with a different amount of legs
         Leg extraBikeLeg = new Leg();
         extraBikeLeg.mode = "BICYCLE";
-        Itinerary itineraryWithMoreLegs = DEFAULT_ITINERARY.clone();
+        Itinerary itineraryWithMoreLegs = getDefaultItinerary().clone();
         itineraryWithMoreLegs.legs.add(extraBikeLeg);
         testCases.add(
             new ItineraryMatchTestCase(
@@ -309,7 +309,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         );
 
         // should be equal with realtime data on transit leg (same day)
-        Itinerary itineraryWithRealtimeTransit = DEFAULT_ITINERARY.clone();
+        Itinerary itineraryWithRealtimeTransit = getDefaultItinerary().clone();
         Leg transitLeg = itineraryWithRealtimeTransit.legs.get(1);
         int secondsOfDelay = 120;
         transitLeg.startTime = new Date(transitLeg.startTime.getTime() + secondsOfDelay * 1000);
@@ -325,7 +325,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         );
 
         // should be equal with scheduled data on transit leg (future date)
-        Itinerary itineraryOnFutureDate = DEFAULT_ITINERARY.clone();
+        Itinerary itineraryOnFutureDate = getDefaultItinerary().clone();
         Leg transitLeg2 = itineraryOnFutureDate.legs.get(1);
         transitLeg2.startTime = Date.from(transitLeg2.startTime.toInstant().plus(7, ChronoUnit.DAYS));
         transitLeg2.endTime = Date.from(transitLeg2.endTime.toInstant().plus(7, ChronoUnit.DAYS));
@@ -408,7 +408,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             String name,
             Itinerary newItinerary,
             boolean shouldMatch
-        ) {
+        ) throws Exception {
             this(name, null, newItinerary, shouldMatch);
         }
 
@@ -417,12 +417,12 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             Itinerary previousItinerary,
             Itinerary newItinerary,
             boolean shouldMatch
-        ) {
+        ) throws Exception {
             this.name = name;
             if (previousItinerary != null) {
                 this.previousItinerary = previousItinerary;
             } else {
-                this.previousItinerary = DEFAULT_ITINERARY;
+                this.previousItinerary = getDefaultItinerary();
             }
             this.newItinerary = newItinerary;
             this.shouldMatch = shouldMatch;

@@ -61,17 +61,13 @@ public class JsonUtils {
     /**
      * Utility method to parse generic object from JSON String.
      */
-    public static <T> T getPOJOFromJSON(String json, Class<T> clazz) {
+    public static <T> T getPOJOFromJSON(String json, Class<T> clazz) throws JsonProcessingException {
         try {
             return mapper.readValue(json, clazz);
         } catch (JsonProcessingException e) {
-            BugsnagReporter.reportErrorToBugsnag(
-                String.format("Unable to get POJO from json for %s", clazz.getSimpleName()),
-                json,
-                e
-            );
+            LOG.error("Could not parse JSON `{}` into POJO for class {}", json, clazz, e);
+            throw e;
         }
-        return null;
     }
 
     /**
@@ -90,7 +86,8 @@ public class JsonUtils {
     /**
      * Utility method to parse generic object from HTTP response.
      */
-    public static <T> T getPOJOFromHttpBody(HttpResponseValues response, Class<T> clazz) {
+    public static <T> T getPOJOFromHttpBody(HttpResponseValues response, Class<T> clazz)
+        throws JsonProcessingException {
         return isResponseOk(response)
             ? getPOJOFromJSON(response.responseBody, clazz)
             : null;

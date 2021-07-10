@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -160,19 +162,31 @@ public class CheckMonitoredTrip implements Runnable {
             params.put(ItineraryUtils.DATE_PARAM, targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER));
             otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(ItineraryUtils.toQueryString(params));
         } catch (Exception e) {
-            // TODO: report bugsnag
-            LOG.error("Encountered an error while making a request ot the OTP server.", e);
+            BugsnagReporter.reportErrorToBugsnag(
+                "Encountered an error while making a request ot the OTP server.",
+                e
+            );
             return false;
         }
 
         if (otpDispatcherResponse == null) return false;
 
         if (otpDispatcherResponse.statusCode >= 400) {
-            // TODO: report bugsnag
-            LOG.error("Received an error from the OTP server. status={}", otpDispatcherResponse.statusCode);
+            BugsnagReporter.reportErrorToBugsnag(
+                "Received an error from the OTP server.",
+                otpDispatcherResponse,
+                null
+            );
             return false;
         }
-        OtpResponse otpResponse = otpDispatcherResponse.getResponse();
+        OtpResponse otpResponse = null;
+        try {
+            otpResponse = otpDispatcherResponse.getResponse();
+        } catch (JsonProcessingException e) {
+            // don't report to Bugsnag since the getResponse method will already have reported to Bugsnag.
+            LOG.error("Unable to parse OTP response!", e);
+            return false;
+        }
         for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
             Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
             if (ItineraryUtils.itinerariesMatch(trip.itinerary, candidateItinerary)) {

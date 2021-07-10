@@ -56,7 +56,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
      */
     @ParameterizedTest
     @MethodSource("createBadPhoneNumbers")
-    public void invalidNumbersShouldProduceBadRequest(String badNumber, int statusCode) {
+    public void invalidNumbersShouldProduceBadRequest(String badNumber, int statusCode) throws Exception {
         // 1. Request verification SMS.
         // The invalid number should fail the call.
         HttpResponseValues response = mockAuthenticatedGet(

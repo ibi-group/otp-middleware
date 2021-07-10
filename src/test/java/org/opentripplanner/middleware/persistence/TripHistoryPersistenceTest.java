@@ -12,7 +12,6 @@ import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Date;
@@ -42,7 +41,7 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTestEnvironment {
     private static List<TripRequest> tripRequests = null;
 
     @BeforeAll
-    public static void setup() throws IOException {
+    public static void setup() throws Exception {
         otpUser = createUser(TEST_EMAIL);
         tripRequest = createTripRequest(otpUser.id);
         tripRequests = createTripRequests(LIMIT, otpUser.id);
