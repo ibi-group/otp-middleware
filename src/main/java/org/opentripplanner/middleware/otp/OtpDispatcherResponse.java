@@ -83,7 +83,7 @@ public class OtpDispatcherResponse implements Serializable {
                 ? ", response=" + getResponse()
                 : "";
         } catch (JsonProcessingException e) {
-            LOG.error("Encountered exception wile parsing OTP_PLAN_ENDPOINT response", e);
+            LOG.error("Encountered exception while parsing OTP_PLAN_ENDPOINT response", e);
             planResponse = "PARSE_EXCEPTION";
         }
 
