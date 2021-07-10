@@ -80,8 +80,8 @@ public class OtpDispatcherResponse implements Serializable {
         String planResponse = null;
         try {
             planResponse = requestUri.getPath().endsWith(OTP_PLAN_ENDPOINT)
-                    ? ", response=" + getResponse()
-                    : "";
+                ? ", response=" + getResponse()
+                : "";
         } catch (JsonProcessingException e) {
             LOG.error("Encountered exception wile parsing OTP_PLAN_ENDPOINT response", e);
             planResponse = "PARSE_EXCEPTION";
