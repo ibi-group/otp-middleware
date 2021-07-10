@@ -143,7 +143,8 @@ public class OtpRequestProcessor implements Endpoint {
 
     /**
      * Process plan response from OTP. Store the response if consent is given. Handle the process and all exceptions
-     * seamlessly so as not to affect the response provided to the requester. Returns false if there was an error.
+     * seamlessly so as not to affect the response provided to the requester.
+     * @return Returns false if there was an error.
      */
     private static boolean handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse, OtpUser otpUser) {
         boolean result = true;
