@@ -156,10 +156,12 @@ The special E2E client settings should be defined in `env.yml`:
 | AWS_API_SERVER | string | Optional | aws-api-id.execute-api.us-east-1.amazonaws.com | For generating the swagger document at runtime. Can be null, however that will prevent tools such as swagger-UI from submitting test requests to the API server. |
 | AWS_API_STAGE | string | Optional | stage-name | For generating the swagger document at runtime. Can be null, however that will prevent tools such as swagger-UI from submitting test requests to the API server. |
 | BUGSNAG_API_KEY | string | Required | 123e4567e89b12d3a4564266 | A valid Bugsnag authorization token. |
+| BUGSNAG_APP_TYPE | string | Optional | my-application | An identifier of the app type of this otp-middleware instance. This can be used to segment errors within the Bugsnag dashboard. |
 | BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES | integer | Optional | 1 | Bugsnag event job frequency. |
 | BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES | integer | Optional | 5 | Bugsnag event request frequency. |
 | BUGSNAG_ORGANIZATION | string | Optional | 123e4567e89b12d3a4564266 | A valid Bugsnag organization id. |
 | BUGSNAG_PROJECT_NOTIFIER_API_KEY | string | Optional | 123e4567e89b12d3a4564266 | A valid Bugsnag project API key. |
+| BUGSNAG_RELEASE_STAGE | string | Optional | staging | An identifier of the release stage of this otp-middleware instance. This can be used to segment errors within the Bugsnag dashboard. |
 | BUGSNAG_REPORTING_WINDOW_IN_DAYS | integer | Optional | 14 | Specifies how far in the past events should be retrieved. |
 | DEFAULT_USAGE_PLAN_ID | string | Required | 123e45 | AWS API gateway default usage plan used when creating API keys for API users. |
 | MAXIMUM_PERMITTED_MONITORED_TRIPS | integer | Optional | 5 | The maximum number of saved monitored trips. |
