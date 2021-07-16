@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.bugsnag;
 import com.bugsnag.Bugsnag;
 import com.bugsnag.Report;
 import com.bugsnag.Severity;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,16 @@ public class BugsnagReporter {
         String apiKey = getConfigPropertyAsText("BUGSNAG_PROJECT_NOTIFIER_API_KEY");
         if (apiKey != null) {
             bugsnag = new Bugsnag(apiKey);
+            bugsnag.setAppVersion(ConfigUtils.getVersionFromJar());
+            String releaseStage = getConfigPropertyAsText("BUGSNAG_RELEASE_STAGE");
+            if (releaseStage != null) {
+                bugsnag.setReleaseStage(releaseStage);
+            }
+            String appType = getConfigPropertyAsText("BUGSNAG_APP_TYPE");
+            if (appType != null) {
+                bugsnag.setAppType(appType);
+            }
+            LOG.info("Bugsnag reporting enabled.");
         } else {
             LOG.warn("Bugsnag project notifier API key not available. Bugsnag error reporting disabled.");
         }

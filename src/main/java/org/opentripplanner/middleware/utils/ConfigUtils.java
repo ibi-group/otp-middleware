@@ -249,10 +249,15 @@ public class ConfigUtils {
         } else {
             String jarPath = path.substring(0, path.lastIndexOf('!'));
             String jarName = jarPath.substring(jarPath.lastIndexOf(File.separatorChar) + 1);
-            String version = jarName.substring(JAR_PREFIX.length(), jarName.lastIndexOf(".jar"));
-            if (version.length() == 0) version = "No Version Info";
-
-            return version;
+            int jarPrefixLength = JAR_PREFIX.length();
+            int lastDotJarIndex = jarName.lastIndexOf(".jar");
+            // If running `mvn --clean package` with uncommited changes(?), this might result in generating a filename
+            // `otp-middleware.jar`, so make this check to avoid an a StringIndexOutOfBoundsException.
+            if (jarPrefixLength < lastDotJarIndex) {
+                return jarName.substring(jarPrefixLength, lastDotJarIndex);
+            } else {
+                return "No Version Info";
+            }
         }
     }
 }
