@@ -90,6 +90,9 @@ public class OtpDispatcher {
                 HttpMethod.GET,
                 null,
                 null);
+        if (otpResponse == null) {
+            return null;
+        }
         return new OtpDispatcherResponse(otpResponse);
     }
 }

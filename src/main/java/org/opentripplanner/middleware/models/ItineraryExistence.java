@@ -187,10 +187,12 @@ public class ItineraryExistence extends Model {
             // Send off each plan query to OTP.
             OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(otpRequest);
             TripPlan plan = null;
-            try {
-                plan = response.getResponse().plan;
-            } catch (JsonProcessingException e) {
-                LOG.error("Could not parse plan response for otpRequest {}", otpRequest, e);
+            if (response != null) {
+                try {
+                    plan = response.getResponse().plan;
+                } catch (JsonProcessingException e) {
+                    LOG.error("Could not parse plan response for otpRequest {}", otpRequest, e);
+                }
             }
             // Handle response if valid itineraries exist.
             if (plan != null && plan.itineraries != null) {

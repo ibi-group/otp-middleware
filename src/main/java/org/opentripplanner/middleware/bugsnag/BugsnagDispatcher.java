@@ -136,6 +136,9 @@ public class BugsnagDispatcher {
             create ? EVENT_REQUEST_FILTER : null,
             true
         );
+        if (response == null) {
+            return null;
+        }
         try {
             return JsonUtils.getPOJOFromHttpBody(response, BugsnagEventRequest.class);
         } catch (JsonProcessingException e) {

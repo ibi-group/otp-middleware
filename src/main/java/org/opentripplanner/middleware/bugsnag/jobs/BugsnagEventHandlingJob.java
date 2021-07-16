@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -98,7 +99,11 @@ public class BugsnagEventHandlingJob implements Runnable {
             .into(new HashSet<>());
         Set<String> trackedProjectIds = MonitoredComponent.getComponentsByProjectId().keySet();
         // Get and filter bugsnag events.
-        return request.getEventData().stream()
+        List<BugsnagEvent> eventData = request.getEventData();
+        if (eventData == null) {
+            eventData = new ArrayList<>();
+        }
+        return eventData.stream()
             // Include error events that map to monitored components and do not already exist in our database.
             .filter(event -> trackedProjectIds.contains(event.projectId) && !currentEventIds.contains(event.eventDataId))
             .collect(Collectors.toList());

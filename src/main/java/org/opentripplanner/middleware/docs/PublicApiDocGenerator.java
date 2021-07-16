@@ -407,8 +407,12 @@ public class PublicApiDocGenerator {
     }
 
     /** Convenience method to get swagger docs as string. */
-    static String getSwaggerDocsAsString() {
-        return getSwaggerDocs().responseBody;
+    static String getSwaggerDocsAsString() throws IOException {
+        HttpResponseValues swaggerDocsResponse = getSwaggerDocs();
+        if (swaggerDocsResponse == null) {
+            throw new IOException("Failed to create Swagger Docs");
+        }
+        return swaggerDocsResponse.responseBody;
     }
 
     /**

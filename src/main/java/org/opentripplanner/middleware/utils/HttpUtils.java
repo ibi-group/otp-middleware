@@ -20,6 +20,7 @@ import spark.Request;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
@@ -147,7 +148,7 @@ public class HttpUtils {
         try  {
             // Extract required information from the response and return to caller. The connection is closed once complete.
             return httpClient.execute(httpUriRequest, new HttpResponseHandler(httpUriRequest));
-        } catch (HttpTimeoutException e) {
+        } catch (HttpTimeoutException | SocketTimeoutException e) {
             LOG.error("Request to {} timed out after {} seconds.", uri, timeoutInSeconds, e);
         } catch (IOException e) {
             BugsnagReporter.reportErrorToBugsnag("Error requesting data from URI", uri, e);
