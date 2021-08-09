@@ -90,15 +90,14 @@ OpenTripPlanner components that it is monitoring.
 
 #### Bugsnag Configuration Parameters
 
-These values can used as defined here (were applicable), or commented out so the default values are used. Parameters 
-that don't have default values (N/A) can be obtained my following the steps in the next section.
+These values can be used as defined here (were applicable), or commented out, so the default values are used. Parameters 
+that don't have default values (N/A) can be obtained by following the steps in the next section.
 
 | Parameter | Default | Description |
 | --- | --- | --- |
 | BUGSNAG_API_KEY | N/A | Used to authenticate against Bugsnag's API. |
 | BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES | 1 | Frequency in minutes to obtain events. |
-| BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_MINUTES | 5 | Frequency in minutes to trigger event requests. |
-| BUGSNAG_ORGANIZATION | N/A | The id of the organization defined within Bugsnag. This is used with most API calls. | 
+| BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS | 24 | Frequency in hours to trigger event requests. |
 | BUGSNAG_PROJECT_NOTIFIER_API_KEY | N/A | Used to report project errors to Bugsnag. |
 | BUGSNAG_REPORTING_WINDOW_IN_DAYS | 14 | The number of days in the past to start retrieving event information. |  
 
@@ -108,15 +107,8 @@ Where default parameters cannot be used, these steps describe how to obtain each
 
 ##### BUGSNAG_API_KEY
 A bugsnag API key is a key that is unique to an individual Bugsnag user. This key can be obtained by logging into 
-Bugsnag (https://app.bugsnag.com), clicking on settings (top right hand corner) then `My account settings`. From here 
+Bugsnag (https://app.bugsnag.com), clicking on settings (top right-hand corner) then `My account settings`. From here 
 select `Personal auth tokens` and then `Generate new token`.
-
-##### BUGSNAG_ORGANIZATION
-A bugsnag organization contains all projects which errors/events will be reported on. The organization ID is the 
-starting point for most Bugsnag API requests. The organization ID can be obtained by by opening the Network tab in your 
-browser's developer tools, then navigating to the Bugsnag dashboard (https://app.bugsnag.com). Filter the network 
-requests with `https://api.bugsnag.com/organizations` and you'll see and a handful of requests that use the organization 
-ID (it will be a UUID value) in the request path.
 
 ##### BUGSNAG_PROJECT_NOTIFIER_API_KEY
 A Bugsnag project identifier key is unique to a Bugsnag project and allows errors to be saved against it. This key can 
