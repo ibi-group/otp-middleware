@@ -10,7 +10,6 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
-import org.opentripplanner.middleware.models.BugsnagConfig;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.MonitoredComponent;
@@ -53,7 +52,6 @@ public class Persistence {
     public static TypedPersistence<BugsnagEventRequest> bugsnagEventRequests;
     public static TypedPersistence<BugsnagEvent> bugsnagEvents;
     public static TypedPersistence<MonitoredComponent> monitoredComponents;
-    public static TypedPersistence<BugsnagConfig> bugsnagConfig;
 
     public static void initialize () {
         // TODO Add custom codec libraries
@@ -100,7 +98,6 @@ public class Persistence {
         bugsnagEventRequests = new TypedPersistence(mongoDatabase, BugsnagEventRequest.class);
         bugsnagEvents = new TypedPersistence(mongoDatabase, BugsnagEvent.class);
         monitoredComponents = new TypedPersistence(mongoDatabase, MonitoredComponent.class);
-        bugsnagConfig = new TypedPersistence(mongoDatabase, BugsnagConfig.class);
     }
 
 }

@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,14 +38,9 @@ public class BugsnagDispatcher {
 
     private static final Logger LOG = LoggerFactory.getLogger(BugsnagDispatcher.class);
 
-    public enum EventDataRequestType {
-        SEED, // Request the last 14 days of Bugsnag events.
-        DAILY // Request the last 24 hours of Bugsnag events.
-    }
-
     private static final String BUGSNAG_API_URL = "https://api.bugsnag.com";
     private static final String BUGSNAG_API_KEY = getConfigPropertyAsText("BUGSNAG_API_KEY");
-    private static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS =
+    public static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS =
         getConfigPropertyAsInt("BUGSNAG_REPORTING_WINDOW_IN_DAYS", 14);
 
     /**
@@ -56,11 +52,7 @@ public class BugsnagDispatcher {
         "Content-Type", "application/json"
     );
 
-    /**
-     * Filter objects defining the boundaries on which event requests will be based.
-     */
-    private static final String EVENT_REQUEST_FILTER_SEED = buildEventRequestFilter(BUGSNAG_REPORTING_WINDOW_IN_DAYS);
-    private static final String EVENT_REQUEST_FILTER_DAILY = buildEventRequestFilter(1);
+    private static final Map<Integer, String> REQUEST_FILTERS = new HashMap<>();
 
     private static final int CONNECTION_TIMEOUT_IN_SECONDS = 5;
 
@@ -87,6 +79,8 @@ public class BugsnagDispatcher {
 
         // Specifies how far in the past events should be retrieved. Instead of specifying a date, Bugsnag allows a
         // number of days to be defined. It is very important to include the 'd' value, else the filter fails.
+        // FIXME: It might be better to just build the event data request filter with "hours since" rather than days
+        //  to be more precise... but maybe it doesn't really matter.
         reportingWindowCondition.put("type", "eq");
         reportingWindowCondition.put("value", reportingWindow + "d");
 
@@ -114,8 +108,15 @@ public class BugsnagDispatcher {
      *
      * https://bugsnagapiv2.docs.apiary.io/#reference/projects/event-data-requests/create-an-event-data-request
      */
-    public static BugsnagEventRequest newEventDataRequest(String projectId, EventDataRequestType requestType) {
-        return makeEventDataRequest(null, projectId, requestType);
+    public static BugsnagEventRequest newEventDataRequest(String projectId, int daysInPast) {
+        return makeEventDataRequest(null, projectId, daysInPast);
+    }
+
+    /**
+     * Shorthand to check a previously created Bugsnag event data request.
+     */
+    public static BugsnagEventRequest checkEventDataRequest(String eventDataRequestId, String projectId) {
+        return makeEventDataRequest(eventDataRequestId, projectId, -1);
     }
 
     /**
@@ -127,13 +128,8 @@ public class BugsnagDispatcher {
     public static BugsnagEventRequest makeEventDataRequest(
         String eventDataRequestId,
         String projectId,
-        EventDataRequestType requestType) {
-
-        String eventRequestFilter =
-            (requestType == EventDataRequestType.SEED)
-                ? EVENT_REQUEST_FILTER_SEED
-                : EVENT_REQUEST_FILTER_DAILY;
-
+        int daysInPast
+    ) {
         // Create new request if null ID is provided.
         boolean create = eventDataRequestId == null;
         URI eventDataRequestUri = HttpUtils.buildUri(
@@ -141,25 +137,22 @@ public class BugsnagDispatcher {
             "projects", projectId, "event_data_requests", eventDataRequestId
         );
         LOG.debug("Making Bugsnag request: {}", eventDataRequestUri);
-
+        String filter = create
+            ? REQUEST_FILTERS.computeIfAbsent(daysInPast, BugsnagDispatcher::buildEventRequestFilter)
+            : null;
         HttpResponseValues response = HttpUtils.httpRequestRawResponse(
             eventDataRequestUri,
             CONNECTION_TIMEOUT_IN_SECONDS,
             create ? HttpMethod.POST : HttpMethod.GET,
             BUGSNAG_HEADERS,
-            create ? eventRequestFilter : null,
+            filter,
             true
         );
         try {
-            BugsnagEventRequest bugsnagEventRequest = JsonUtils.getPOJOFromHttpBody(response, BugsnagEventRequest.class);
-            if (bugsnagEventRequest != null) {
-                // Add the project id for subsequent calls as it is not provided in the response.
-                bugsnagEventRequest.projectId = projectId;
-            }
-            return bugsnagEventRequest;
+            return BugsnagEventRequest.createFromRequest(response, projectId, daysInPast);
         } catch (JsonProcessingException e) {
             BugsnagReporter.reportErrorToBugsnag(
-                "Failed to make Bugsnag event data request",
+                "Failed to parse Bugsnag event data response",
                 eventDataRequestUri,
                 e
             );
