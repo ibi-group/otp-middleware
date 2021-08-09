@@ -1,24 +1,27 @@
 package org.opentripplanner.middleware.bugsnag.jobs;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.bugsnag.BugsnagWebHookDelivery;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
-import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Request;
 
 import java.time.LocalTime;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -28,8 +31,8 @@ import java.util.stream.Collectors;
  * Event requests triggered by {@link BugsnagEventRequestJob} are not completed immediately. Rather a job is started by
  * Bugsnag and the 'pending' event request is returned. This event request is then checked with Bugsnag every minute
  * until the status becomes 'completed'. At this point the event data compiled by the original request made by
- * {@link BugsnagEventHandlingJob} is available for download from a unique URL now present in the updated event request. This is
- * downloaded and saved to Mongo. Any event data that is older than the reporting window is then deleted.
+ * {@link BugsnagEventHandlingJob} is available for download from a unique URL now present in the updated event request.
+ * This is downloaded and saved to Mongo. Any event data that is older than the reporting window is then deleted.
  */
 public class BugsnagEventHandlingJob implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(BugsnagEventHandlingJob.class);
@@ -84,7 +87,7 @@ public class BugsnagEventHandlingJob implements Runnable {
             LOG.info("Found {} new events. Storing and notifying subscribed admin users.", newEvents.size());
             Persistence.bugsnagEvents.createMany(newEvents);
             // Notify any subscribed users about new events.
-            sendEmailForEvents(newEvents);
+            sendEmailForEvents(newEvents.size());
         }
     }
 
@@ -96,20 +99,19 @@ public class BugsnagEventHandlingJob implements Runnable {
         HashSet<String> currentEventIds = Persistence.bugsnagEvents.getAll()
             .map(event -> event.eventDataId)
             .into(new HashSet<>());
-        Set<String> trackedProjectIds = MonitoredComponent.getComponentsByProjectId().keySet();
         // Get and filter bugsnag events.
         return request.getEventData().stream()
-            // Include error events that map to monitored components and do not already exist in our database.
-            .filter(event -> trackedProjectIds.contains(event.projectId) && !currentEventIds.contains(event.eventDataId))
+            // Include error events that do not already exist in our database.
+            .filter(event -> !currentEventIds.contains(event.eventDataId))
             .collect(Collectors.toList());
     }
 
     /**
      * Convenience method to send email notification to all subscribed users.
      */
-    private void sendEmailForEvents(List<BugsnagEvent> newEvents) {
+    private static void sendEmailForEvents(int numberOfNewEvents) {
         // Construct email content.
-        String subject = String.format("%d new error events", newEvents.size());
+        String subject = String.format("%d new error events", numberOfNewEvents);
         Map<String, Object> templateData = Map.of(
             "subject", subject
         );
@@ -141,5 +143,24 @@ public class BugsnagEventHandlingJob implements Runnable {
                 .toInstant()
         );
         Persistence.bugsnagEvents.removeFiltered(Filters.lte("receivedAt", reportingWindowCutoff));
+    }
+
+    /**
+     * Extract Bugsnag project error from webhook delivery.
+     */
+    public static void processWebHookDelivery(Request request) {
+        String projectErrorJSON = request.body();
+        try {
+            BugsnagWebHookDelivery webHookDelivery =
+                JsonUtils.getPOJOFromJSON(projectErrorJSON, BugsnagWebHookDelivery.class);
+            if (webHookDelivery != null) {
+                LOG.info("New event delivered via the Bugsnag webhook. Storing and notifying subscribed admin users.");
+                Persistence.bugsnagEvents.create(new BugsnagEvent(webHookDelivery));
+                // Notify any subscribed users about new events.
+                sendEmailForEvents(1);
+            }
+        } catch (JsonProcessingException e) {
+            BugsnagReporter.reportErrorToBugsnag("Failed to parse webhook delivery!", projectErrorJSON, e);
+        }
     }
 }

@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Represents a Bugsnag event request. The class is used for both Mongo storage and JSON deserialization.
  * Information relating to this can be found here:
- * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/create-an-event-data-request
+ * https://bugsnagapiv2.docs.apiary.io/#reference/projects/event-data-requests/create-an-event-data-request
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BugsnagEventRequest extends Model {
@@ -29,6 +29,10 @@ public class BugsnagEventRequest extends Model {
     /** URL for downloading the report of the requested event data */
     public String url;
 
+    /** Event request project id. This is not provided with the event request response so must be added separately so
+     * that subsequent calls can be made. */
+    public String projectId;
+
     /** This no-arg constructor exists to make MongoDB happy. */
     public BugsnagEventRequest() {
     }
@@ -38,7 +42,7 @@ public class BugsnagEventRequest extends Model {
      * of an older {@link BugsnagEventRequest}.
      */
     public BugsnagEventRequest refreshEventDataRequest() {
-        return BugsnagDispatcher.makeEventDataRequest(eventDataRequestId);
+        return BugsnagDispatcher.makeEventDataRequest(eventDataRequestId, projectId, null);
     }
 
     /**
