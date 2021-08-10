@@ -19,30 +19,34 @@ import java.util.Set;
  */
 public class BugsnagEventRequestJob implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(BugsnagEventRequestJob.class);
+    private final Set<String> projectIds;
+
+    public BugsnagEventRequestJob(Set<String> projectIds) {
+        this.projectIds = projectIds;
+    }
+
+    public BugsnagEventRequestJob() {
+        this.projectIds = MonitoredComponent.getComponentsByProjectId().keySet();
+    }
 
     /**
      * On each cycle, trigger a new daily event data request to Bugsnag.
      */
     public void run() {
-        triggerNewEventDataRequest(BugsnagDispatcher.EventDataRequestType.DAILY);
+        this.projectIds.forEach(projectId -> triggerEventDataRequestForProject(projectId, 1));
     }
 
     /**
      * For each project make an event data request to Bugsnag and store the response for retrieval by
      * {@link BugsnagEventHandlingJob}.
      */
-    public static void triggerNewEventDataRequest(BugsnagDispatcher.EventDataRequestType eventDataRequestType) {
-        Set<String> projectIds = MonitoredComponent.getComponentsByProjectId().keySet();
-        projectIds.forEach(projectId ->
-            {
-                BugsnagEventRequest request = BugsnagDispatcher.newEventDataRequest(projectId, eventDataRequestType);
-                if (request != null) {
-                    LOG.debug("Triggered Bugsnag event request (current status={})", request.status);
-                    Persistence.bugsnagEventRequests.create(request);
-                } else {
-                    LOG.error("Unknown error encountered while triggering Bugsnag event data request!");
-                }
-            }
-        );
+    public static void triggerEventDataRequestForProject(String projectId, int daysInPast) {
+        BugsnagEventRequest request = BugsnagDispatcher.newEventDataRequest(projectId, daysInPast);
+        if (request != null) {
+            LOG.debug("Triggered Bugsnag event request (current status={})", request.status);
+            Persistence.bugsnagEventRequests.create(request);
+        } else {
+            LOG.error("Unknown error encountered while triggering Bugsnag event data request!");
+        }
     }
 }

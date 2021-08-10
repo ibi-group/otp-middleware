@@ -2,12 +2,13 @@ package org.opentripplanner.middleware.bugsnag.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Sorts;
+import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.bugsnag.BugsnagWebHookDelivery;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
+import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -22,6 +23,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -47,16 +49,16 @@ public class BugsnagEventHandlingJob implements Runnable {
      * and remove any that have expired according to the Bugsnag reporting window.
      */
     public void run() {
-        // Get latest "incomplete" request.
-        BugsnagEventRequest latestRequest = Persistence.bugsnagEventRequests.getOneFiltered(
-            Filters.ne("status", "complete"),
-            Sorts.descending("dateCreated")
-        );
-        if (latestRequest != null) {
+        // Get latest "incomplete" request per project.
+        Set<String> projectIds = MonitoredComponent.getComponentsByProjectId().keySet();
+        for (String projectId : projectIds) {
+            BugsnagEventRequest latestIncompleteRequest = BugsnagJobs.getLatestIncompleteRequestForProject(projectId);
+            if (latestIncompleteRequest == null) {
+                LOG.debug("No pending event data requests found for project {}.", projectId);
+                continue;
+            }
             // Handle the request data if it exists.
-            refreshEventRequest(latestRequest);
-        } else {
-            LOG.debug("No pending event data requests found.");
+            refreshEventRequest(latestIncompleteRequest);
         }
         // FIXME: Do we want to remove these stale events? This could be confusing for users of the system and could cause
         //  issues tracing down issues over time. Maybe the removal window could be greater than the reporting window
@@ -74,20 +76,27 @@ public class BugsnagEventHandlingJob implements Runnable {
             LOG.error("Failed to refresh event request");
             return;
         }
-        if (!refreshedRequest.status.equalsIgnoreCase("completed")) {
-            // Request not completed by Bugsnag yet. Return and await the next cycle/refresh.
-            // TODO: Update the request data in the database? What if the status has changed since the last fetch?
-            return;
-        }
-        // First, remove "stale" requests (i.e., those that are older than this latest one).
-        Persistence.bugsnagEventRequests.removeFiltered(Filters.lte("dateCreated", request.dateCreated));
-        // Next, get and store the new events from the completed request and notify users.
-        List<BugsnagEvent> newEvents = getNewEvents(refreshedRequest);
-        if (newEvents.size() > 0) {
-            LOG.info("Found {} new events. Storing and notifying subscribed admin users.", newEvents.size());
-            Persistence.bugsnagEvents.createMany(newEvents);
-            // Notify any subscribed users about new events.
-            sendEmailForEvents(newEvents.size());
+        switch (refreshedRequest.status.toLowerCase()) {
+            case "completed": {
+                // First, remove "stale" requests (i.e., those that are older than this latest one).
+                Persistence.bugsnagEventRequests.removeFiltered(Filters.lte("dateCreated", request.dateCreated));
+                // Next, get and store the new events from the completed request and notify users.
+                List<BugsnagEvent> newEvents = getNewEvents(refreshedRequest);
+                if (newEvents.size() > 0) {
+                    LOG.info("Found {} new events. Storing and notifying subscribed admin users.", newEvents.size());
+                    Persistence.bugsnagEvents.createMany(newEvents);
+                    // Notify any subscribed users about new events.
+                    sendEmailForEvents(newEvents.size());
+                }
+            }
+            case "expired": {
+                LOG.info("Event data request for project {} is expired. Removing from database.", request.projectId);
+                Persistence.bugsnagEventRequests.removeById(request.id);
+            }
+            default: {
+                // Request not completed by Bugsnag yet. Do nothing and await the next cycle/refresh.
+                // TODO: Update the request data in the database? What if the status has changed since the last fetch?
+            }
         }
     }
 
