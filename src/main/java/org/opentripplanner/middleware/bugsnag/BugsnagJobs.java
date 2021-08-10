@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.bugsnag.BugsnagDispatcher.BUGSNAG_REPORTING_WINDOW_IN_DAYS;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 
@@ -38,7 +37,7 @@ public class BugsnagJobs {
     private static final Logger LOG = LoggerFactory.getLogger(BugsnagJobs.class);
 
     /**
-     * Schedule each Bugsnag job based on the delay configuration parameters
+     * Schedule each Bugsnag job based on the delay configuration parameters.
      */
     public static void initialize() {
         // Get latest sync tracker from database to determine how far back we need to sync.
@@ -54,7 +53,7 @@ public class BugsnagJobs {
             TimeUnit.HOURS);
         // Schedule projects already requested to offset by the job delay period.
         Scheduler.scheduleJob(
-            new BugsnagEventRequestJob(projectsNotImmediatelyRequested),
+            new BugsnagEventRequestJob(projectsRequested),
             BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS,
             BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS,
             TimeUnit.HOURS);
@@ -67,13 +66,16 @@ public class BugsnagJobs {
             TimeUnit.MINUTES);
     }
 
+    /**
+     * Seed a project if the last event data request is greater than a day.
+     */
     private static Set<String> seedDataIfNeeded() {
         Set<String> projectsRequested = new HashSet<>();
         Set<String> projectIds = MonitoredComponent.getComponentsByProjectId().keySet();
         projectIds.forEach(projectId ->
             {
                 int hoursSinceLastRequest = getHoursSinceLastRequest(projectId);
-                // Only seed data if days since is greater than one day (otherwise we're duplicating the scheduled
+                // Only seed data if days since is greater than one day (otherwise we're duplicating the scheduled)
                 if (hoursSinceLastRequest > BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS) {
                     LOG.debug("Triggered Bugsnag event request for project {}", projectId);
                     BugsnagEventRequestJob.triggerEventDataRequestForProject(projectId, hoursSinceLastRequest / 24);
@@ -84,6 +86,10 @@ public class BugsnagJobs {
         return projectsRequested;
     }
 
+    /**
+     * Define how long in hours since a project's last event data request took place. Restrict to
+     * {@link BugsnagDispatcher#BUGSNAG_REPORTING_WINDOW_IN_DAYS} (in hours) if greater than this.
+     */
     private static int getHoursSinceLastRequest(String projectId) {
         int hoursSinceLastRequest = 0;
         // Get latest successful request for project.
@@ -95,21 +101,23 @@ public class BugsnagJobs {
             long hours = TimeUnit.HOURS.convert(reportingGapMillis, TimeUnit.MILLISECONDS);
             hoursSinceLastRequest = Math.toIntExact(hours) + 1;
         }
-        return Math.max(hoursSinceLastRequest, BUGSNAG_REPORTING_WINDOW_IN_DAYS);
+        // Restrict the hours since last request if greater than the reporting window.
+        return Math.max(hoursSinceLastRequest, BUGSNAG_REPORTING_WINDOW_IN_DAYS * 24);
     }
 
+    /**
+     * Retrieve the latest event request for a project.
+     */
     private static BugsnagEventRequest getLatestComparisonRequest(String projectId) {
-        BugsnagEventRequest lastCompleted = getLatestCompleteRequestForProject(projectId);
+        BugsnagEventRequest lastCompleted = getLatestCompletedRequestForProject(projectId);
         BugsnagEventRequest lastIncomplete = getLatestIncompleteRequestForProject(projectId);
         if (lastIncomplete == null) return lastCompleted;
-        boolean lastIsExpired = lastIncomplete.status.equalsIgnoreCase("expired");
-        if (lastCompleted == null) return lastIsExpired ? null : lastIncomplete;
+        boolean lastIncompleteIsExpired = lastIncomplete.status.equalsIgnoreCase("expired");
+        if (lastCompleted == null) return lastIncompleteIsExpired ? null : lastIncomplete;
         // Determine which request we should use to determine what gap we need to fill.
         // If the latest incomplete is newer and not expired, BugsnagEventHandlingJob will await the completion of that
         // request.
-        // TODO: But check to see if we need to fill any gaps that might exist between the incomplete request's time
-        //  window and now.
-        return lastIncomplete.getTimeWindowEndInMillis() > lastCompleted.getTimeWindowEndInMillis() && !lastIsExpired
+        return lastIncomplete.getTimeWindowEndInMillis() > lastCompleted.getTimeWindowEndInMillis() && !lastIncompleteIsExpired
             ? lastIncomplete
             : lastCompleted;
     }
@@ -124,11 +132,11 @@ public class BugsnagJobs {
         );
     }
 
-    public static BugsnagEventRequest getLatestCompleteRequestForProject(String projectId) {
-        return getLatestRequestForProject(projectId, Filters.ne("status", "completed"));
+    public static BugsnagEventRequest getLatestCompletedRequestForProject(String projectId) {
+        return getLatestRequestForProject(projectId, Filters.eq("status", "completed"));
     }
 
     public static BugsnagEventRequest getLatestIncompleteRequestForProject(String projectId) {
-        return getLatestRequestForProject(projectId, Filters.eq("status", "completed"));
+        return getLatestRequestForProject(projectId, Filters.ne("status", "completed"));
     }
 }

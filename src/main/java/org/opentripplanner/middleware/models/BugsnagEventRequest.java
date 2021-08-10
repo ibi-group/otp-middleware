@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.bugsnag.BugsnagDispatcher;
-import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
@@ -31,6 +30,7 @@ public class BugsnagEventRequest extends Model {
     /** The total number of events that are expected to be returned */
     public int total;
 
+    /** How far back the event data request should go. Populates "event.since" in filter. **/
     public int daysInPast;
 
     /** URL for downloading the report of the requested event data */

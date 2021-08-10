@@ -26,6 +26,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.lte;
+
 /**
  * This job is responsible for maintaining Bugsnag event data. This is achieved by managing the event request jobs
  * triggered by {@link BugsnagEventRequestJob}, obtaining event data from Bugsnag storage and removing stale events.
@@ -78,8 +81,13 @@ public class BugsnagEventHandlingJob implements Runnable {
         }
         switch (refreshedRequest.status.toLowerCase()) {
             case "completed": {
-                // First, remove "stale" requests (i.e., those that are older than this latest one).
-                Persistence.bugsnagEventRequests.removeFiltered(Filters.lte("dateCreated", request.dateCreated));
+                // First, remove "stale" requests (i.e., those that are older than this latest one) for this project.
+                Persistence.bugsnagEventRequests.removeFiltered(
+                    Filters.and(
+                        lte("dateCreated", request.dateCreated),
+                        eq("projectId", request.projectId)
+                    )
+                );
                 // Next, get and store the new events from the completed request and notify users.
                 List<BugsnagEvent> newEvents = getNewEvents(refreshedRequest);
                 if (newEvents.size() > 0) {
@@ -94,8 +102,9 @@ public class BugsnagEventHandlingJob implements Runnable {
                 Persistence.bugsnagEventRequests.removeById(request.id);
             }
             default: {
-                // Request not completed by Bugsnag yet. Do nothing and await the next cycle/refresh.
-                // TODO: Update the request data in the database? What if the status has changed since the last fetch?
+                // Request not completed by Bugsnag yet. Update the event request to record new status (this may not have
+                // changed) and await the next cycle/refresh.
+                Persistence.bugsnagEventRequests.replace(request.id, refreshedRequest);
             }
         }
     }
