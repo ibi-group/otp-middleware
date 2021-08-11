@@ -90,7 +90,7 @@ OpenTripPlanner components that it is monitoring.
 
 #### Bugsnag Configuration Parameters
 
-These values can be used as defined here (were applicable), or commented out, so the default values are used. Parameters 
+These values can be used as defined here (where applicable), or commented out, so the default values are used. Parameters 
 that don't have default values (N/A) can be obtained by following the steps in the next section.
 
 | Parameter | Default | Description |
