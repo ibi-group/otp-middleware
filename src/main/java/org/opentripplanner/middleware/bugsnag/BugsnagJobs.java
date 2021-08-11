@@ -46,17 +46,9 @@ public class BugsnagJobs {
         Set<String> projectsNotImmediatelyRequested = Sets.difference(allProjects, projectsRequested);
         LOG.info("Scheduling Bugsnag event data requests for every {} hours", BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS);
         // Schedule projects not included in the seed data requests to begin immediately.
-        Scheduler.scheduleJob(
-            new BugsnagEventRequestJob(projectsNotImmediatelyRequested),
-            0,
-            BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS,
-            TimeUnit.HOURS);
+        scheduleEventRequestJob(projectsNotImmediatelyRequested, 0);
         // Schedule projects already requested to offset by the job delay period.
-        Scheduler.scheduleJob(
-            new BugsnagEventRequestJob(projectsRequested),
-            BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS,
-            BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS,
-            TimeUnit.HOURS);
+        scheduleEventRequestJob(projectsRequested, BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS);
         LOG.info("Scheduling Bugsnag request handling for every {} minute(s)", BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES);
         // Next, schedule the job to handle the event data that comes back and sync with the existing database.
         Scheduler.scheduleJob(
@@ -64,6 +56,17 @@ public class BugsnagJobs {
             0,
             BUGSNAG_EVENT_JOB_DELAY_IN_MINUTES,
             TimeUnit.MINUTES);
+    }
+
+    /**
+     * Schedule event request jobs.
+     */
+    private static void scheduleEventRequestJob(Set<String> projectIds, int initialDelay) {
+        Scheduler.scheduleJob(
+            new BugsnagEventRequestJob(projectIds),
+            initialDelay,
+            BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS,
+            TimeUnit.HOURS);
     }
 
     /**

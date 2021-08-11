@@ -26,9 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Filters.lte;
-
 /**
  * This job is responsible for maintaining Bugsnag event data. This is achieved by managing the event request jobs
  * triggered by {@link BugsnagEventRequestJob}, obtaining event data from Bugsnag storage and removing stale events.
@@ -80,14 +77,10 @@ public class BugsnagEventHandlingJob implements Runnable {
             return;
         }
         switch (refreshedRequest.status.toLowerCase()) {
-            case "completed": {
-                // First, remove "stale" requests (i.e., those that are older than this latest one) for this project.
-                Persistence.bugsnagEventRequests.removeFiltered(
-                    Filters.and(
-                        lte("dateCreated", request.dateCreated),
-                        eq("projectId", request.projectId)
-                    )
-                );
+            case "completed":
+                // First, remove this completed request.
+                LOG.info("Event data request for project {} is complete! Removing from database.", request.projectId);
+                Persistence.bugsnagEventRequests.removeById(request.id);
                 // Next, get and store the new events from the completed request and notify users.
                 List<BugsnagEvent> newEvents = getNewEvents(refreshedRequest);
                 if (newEvents.size() > 0) {
@@ -96,15 +89,22 @@ public class BugsnagEventHandlingJob implements Runnable {
                     // Notify any subscribed users about new events.
                     sendEmailForEvents(newEvents.size());
                 }
-            }
-            case "expired": {
-                LOG.info("Event data request for project {} is expired. Removing from database.", request.projectId);
+                break;
+            case "expired":
+                // First, remove the expired request.
+                LOG.info("Event data request for project {} has expired. Removing from database.", request.projectId);
                 Persistence.bugsnagEventRequests.removeById(request.id);
-            }
+                // Next, immediately trigger a new event data request to replace the expired one.
+                LOG.info("Triggering a new event data request for project {} to replace previously expired.", request.projectId);
+                BugsnagEventRequestJob.triggerEventDataRequestForProject(request.projectId, request.daysInPast);
+                break;
             default: {
                 // Request not completed by Bugsnag yet. Update the event request to record new status (this may not have
                 // changed) and await the next cycle/refresh.
-                Persistence.bugsnagEventRequests.replace(request.id, refreshedRequest);
+                Persistence.bugsnagEventRequests.replace(
+                    request.id,
+                    refreshedRequest.update(request.projectId, request.daysInPast)
+                );
             }
         }
     }

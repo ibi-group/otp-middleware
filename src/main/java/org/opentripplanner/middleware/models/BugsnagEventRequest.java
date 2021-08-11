@@ -56,6 +56,15 @@ public class BugsnagEventRequest extends Model {
         return bugsnagEventRequest;
     }
 
+    /**
+     * Retain the project id and days in past when refreshing a event data request.
+     */
+    public BugsnagEventRequest update(String projectId, int daysInPast) {
+        this.projectId = projectId;
+        this.daysInPast = daysInPast;
+        return this;
+    }
+
     @JsonIgnore
     @BsonIgnore
     public long getTimeWindowEndInMillis() {
