@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.bugsnag.BugsnagDispatcher;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
@@ -20,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BugsnagEventRequest extends Model {
 
+    //// Fields attached to the JSON response from Bugsnag. ////
+
     /** Event data request id which is unique to this request */
     @JsonProperty("id")
     public String eventDataRequestId;
@@ -30,11 +33,13 @@ public class BugsnagEventRequest extends Model {
     /** The total number of events that are expected to be returned */
     public int total;
 
-    /** How far back the event data request should go. Populates "event.since" in filter. **/
-    public int daysInPast;
-
     /** URL for downloading the report of the requested event data */
     public String url;
+
+    //// Fields added by otp-middleware for our own tracking purposes. ////
+
+    /** How far back the event data request should go. Populates "event.since" in filter. **/
+    public int daysInPast;
 
     /** Event request project id. This is not provided with the event request response so must be added separately so
      * that subsequent calls can be made. */
@@ -57,12 +62,20 @@ public class BugsnagEventRequest extends Model {
     }
 
     /**
-     * Retain the project id and days in past when refreshing a event data request.
+     * Update this request with a more recent request status from Bugsnag. This handles copying over otp-middleware
+     * specific fields and replacing this instance in MongoDB.
      */
-    public BugsnagEventRequest update(String projectId, int daysInPast) {
-        this.projectId = projectId;
-        this.daysInPast = daysInPast;
-        return this;
+    public void update(BugsnagEventRequest updatedRequest) {
+        // Update fields maintained separately from the Bugsnag JSON response.
+        updatedRequest.projectId = projectId;
+        updatedRequest.daysInPast = daysInPast;
+        // Replace original request with updated request.
+        Persistence.bugsnagEventRequests.replace(id, updatedRequest);
+    }
+
+    @Override
+    public boolean delete() {
+        return Persistence.bugsnagEventRequests.removeById(id);
     }
 
     @JsonIgnore

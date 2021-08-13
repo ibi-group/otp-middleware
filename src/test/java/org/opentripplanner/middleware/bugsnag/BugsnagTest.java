@@ -45,7 +45,7 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
         }
 
         if (BUGSNAG_EVENT_REQUEST != null) {
-            Persistence.bugsnagEventRequests.removeById(BUGSNAG_EVENT_REQUEST.id);
+            BUGSNAG_EVENT_REQUEST.delete();
         }
     }
 
