@@ -13,8 +13,11 @@ import javax.ws.rs.NotSupportedException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import static org.opentripplanner.middleware.utils.YamlUtils.yamlMapper;
 
@@ -193,6 +196,20 @@ public class ConfigUtils {
         JsonNode node = getConfigProperty(name);
         if (node != null) {
             return node.asText();
+        } else {
+            LOG.warn("Config property {} not found! Returning null.", name);
+            return null;
+        }
+    }
+
+    /**
+     * Get a config property (nested fields defined by dot notation "data.use_s3_storage") as a Set<String> separated
+     * by commas.
+     */
+    public static Set<String> getConfigPropertyAsStringSet(String name) {
+        JsonNode node = getConfigProperty(name);
+        if (node != null) {
+            return new HashSet<>(Arrays.asList(node.asText().split(",")));
         } else {
             LOG.warn("Config property {} not found! Returning null.", name);
             return null;

@@ -100,6 +100,7 @@ that don't have default values (N/A) can be obtained by following the steps in t
 | BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS | 24 | Frequency in hours to trigger event requests. |
 | BUGSNAG_PROJECT_NOTIFIER_API_KEY | N/A | Used to report project errors to Bugsnag. |
 | BUGSNAG_REPORTING_WINDOW_IN_DAYS | 14 | The number of days in the past to start retrieving event information. |  
+| BUGSNAG_WEBHOOK_PERMITTED_IPS | 104.196.245.109, 104.196.254.247 | Bugsnag IP addresses which webhook requests are expected to come from. |  
 
 
 #### Bugsnag Setup

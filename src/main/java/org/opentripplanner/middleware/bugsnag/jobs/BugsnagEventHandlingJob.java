@@ -42,6 +42,8 @@ public class BugsnagEventHandlingJob implements Runnable {
         "BUGSNAG_REPORTING_WINDOW_IN_DAYS",
         14
     );
+    private static final Set<String> BUGSNAG_WEBHOOK_PERMITTED_IPS =
+        ConfigUtils.getConfigPropertyAsStringSet("BUGSNAG_WEBHOOK_PERMITTED_IPS");
 
     /**
      * On each cycle get the latest event data request from Mongo. These event requests are initially populated by
@@ -167,10 +169,16 @@ public class BugsnagEventHandlingJob implements Runnable {
      * Extract Bugsnag project error from webhook delivery.
      */
     public static void processWebHookDelivery(Request request) {
-        String projectErrorJSON = request.body();
+        if (BUGSNAG_WEBHOOK_PERMITTED_IPS == null) {
+            LOG.warn("Bugsnag webhook permitted IPs not defined. Caller IP not validated nor content processed.");
+            return;
+        } else if(!BUGSNAG_WEBHOOK_PERMITTED_IPS.contains(request.ip())) {
+            LOG.warn("Bugsnag webhook delivery called from unauthorized IP: {}. Request rejected.", request.ip());
+            return;
+        }
         try {
             BugsnagWebHookDelivery webHookDelivery =
-                JsonUtils.getPOJOFromJSON(projectErrorJSON, BugsnagWebHookDelivery.class);
+                JsonUtils.getPOJOFromJSON(request.body(), BugsnagWebHookDelivery.class);
             if (webHookDelivery != null) {
                 LOG.info("New event delivered via the Bugsnag webhook. Storing and notifying subscribed admin users.");
                 Persistence.bugsnagEvents.create(new BugsnagEvent(webHookDelivery));
@@ -178,7 +186,7 @@ public class BugsnagEventHandlingJob implements Runnable {
                 sendEmailForEvents(1);
             }
         } catch (JsonProcessingException e) {
-            BugsnagReporter.reportErrorToBugsnag("Failed to parse webhook delivery!", projectErrorJSON, e);
+            BugsnagReporter.reportErrorToBugsnag("Failed to parse webhook delivery!", request.body(), e);
         }
     }
 }

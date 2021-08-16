@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.bugsnag.jobs;
 
 import org.opentripplanner.middleware.bugsnag.BugsnagDispatcher;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
-import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,10 +22,6 @@ public class BugsnagEventRequestJob implements Runnable {
 
     public BugsnagEventRequestJob(Set<String> projectIds) {
         this.projectIds = projectIds;
-    }
-
-    public BugsnagEventRequestJob() {
-        this.projectIds = MonitoredComponent.getComponentsByProjectId().keySet();
     }
 
     /**
