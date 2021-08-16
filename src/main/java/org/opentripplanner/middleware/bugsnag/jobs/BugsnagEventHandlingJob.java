@@ -1,28 +1,21 @@
 package org.opentripplanner.middleware.bugsnag.jobs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
-import org.opentripplanner.middleware.bugsnag.BugsnagWebHookDelivery;
-import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.JsonUtils;
-import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.Request;
 
 import java.time.LocalTime;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,8 +35,6 @@ public class BugsnagEventHandlingJob implements Runnable {
         "BUGSNAG_REPORTING_WINDOW_IN_DAYS",
         14
     );
-    private static final Set<String> BUGSNAG_WEBHOOK_PERMITTED_IPS =
-        ConfigUtils.getConfigPropertyAsStringSet("BUGSNAG_WEBHOOK_PERMITTED_IPS");
 
     /**
      * On each cycle get the latest event data request from Mongo. These event requests are initially populated by
@@ -92,7 +83,7 @@ public class BugsnagEventHandlingJob implements Runnable {
                     LOG.info("Found {} new events. Storing and notifying subscribed admin users.", newEvents.size());
                     Persistence.bugsnagEvents.createMany(newEvents);
                     // Notify any subscribed users about new events.
-                    sendEmailForEvents(newEvents.size());
+                    BugsnagReporter.sendEmailForEvents(newEvents.size());
                 }
                 break;
             case "expired":
@@ -127,30 +118,6 @@ public class BugsnagEventHandlingJob implements Runnable {
     }
 
     /**
-     * Convenience method to send email notification to all subscribed users.
-     */
-    private static void sendEmailForEvents(int numberOfNewEvents) {
-        // Construct email content.
-        String subject = String.format("%d new error events", numberOfNewEvents);
-        Map<String, Object> templateData = Map.of(
-            "subject", subject
-        );
-
-        // Notify subscribed users.
-        for (AdminUser adminUser : Persistence.adminUsers.getAll()) {
-            if (adminUser.subscriptions.contains(AdminUser.Subscription.NEW_ERROR)) {
-                NotificationUtils.sendEmail(
-                    adminUser,
-                    subject,
-                    "EventErrorsText.ftl",
-                    "EventErrorsHtml.ftl",
-                    templateData
-                );
-            }
-        }
-    }
-
-    /**
      * Remove events that are older than the reporting window.
      */
     private void removeStaleEvents() {
@@ -165,28 +132,4 @@ public class BugsnagEventHandlingJob implements Runnable {
         Persistence.bugsnagEvents.removeFiltered(Filters.lte("receivedAt", reportingWindowCutoff));
     }
 
-    /**
-     * Extract Bugsnag project error from webhook delivery.
-     */
-    public static void processWebHookDelivery(Request request) {
-        if (BUGSNAG_WEBHOOK_PERMITTED_IPS == null) {
-            LOG.warn("Bugsnag webhook permitted IPs not defined. Caller IP not validated nor content processed.");
-            return;
-        } else if(!BUGSNAG_WEBHOOK_PERMITTED_IPS.contains(request.ip())) {
-            LOG.warn("Bugsnag webhook delivery called from unauthorized IP: {}. Request rejected.", request.ip());
-            return;
-        }
-        try {
-            BugsnagWebHookDelivery webHookDelivery =
-                JsonUtils.getPOJOFromJSON(request.body(), BugsnagWebHookDelivery.class);
-            if (webHookDelivery != null) {
-                LOG.info("New event delivered via the Bugsnag webhook. Storing and notifying subscribed admin users.");
-                Persistence.bugsnagEvents.create(new BugsnagEvent(webHookDelivery));
-                // Notify any subscribed users about new events.
-                sendEmailForEvents(1);
-            }
-        } catch (JsonProcessingException e) {
-            BugsnagReporter.reportErrorToBugsnag("Failed to parse webhook delivery!", request.body(), e);
-        }
-    }
 }
