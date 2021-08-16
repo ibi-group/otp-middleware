@@ -78,10 +78,13 @@ public class BugsnagEventHandlingJob implements Runnable {
         }
         switch (refreshedRequest.status.toLowerCase()) {
             case "completed":
-                // First, remove this completed request.
-                LOG.info("Event data request for project {} is complete! Removing from database.", request.projectId);
-                Persistence.bugsnagEventRequests.removeById(request.id);
-                // Next, get and store the new events from the completed request and notify users.
+                // First, delete the last completed request for the project.
+                BugsnagEventRequest latestCompletedRequestForProject =
+                    BugsnagJobs.getLatestCompletedRequestForProject(request.projectId);
+                latestCompletedRequestForProject.delete();
+                // Next, replace the newly completed request.
+                request.update(refreshedRequest);
+                // Finally, get and store the new events from the completed request and notify users.
                 List<BugsnagEvent> newEvents = getNewEvents(refreshedRequest);
                 if (newEvents.size() > 0) {
                     LOG.info("Found {} new events. Storing and notifying subscribed admin users.", newEvents.size());
@@ -93,7 +96,7 @@ public class BugsnagEventHandlingJob implements Runnable {
             case "expired":
                 // First, remove the expired request.
                 LOG.info("Event data request for project {} has expired. Removing from database.", request.projectId);
-                Persistence.bugsnagEventRequests.removeById(request.id);
+                request.delete();
                 // Next, immediately trigger a new event data request to replace the expired one.
                 LOG.info("Triggering a new event data request for project {} to replace previously expired.", request.projectId);
                 BugsnagEventRequestJob.triggerEventDataRequestForProject(request.projectId, request.daysInPast);
@@ -101,10 +104,7 @@ public class BugsnagEventHandlingJob implements Runnable {
             default: {
                 // Request not completed by Bugsnag yet. Update the event request to record new status (this may not have
                 // changed) and await the next cycle/refresh.
-                Persistence.bugsnagEventRequests.replace(
-                    request.id,
-                    refreshedRequest.update(request.projectId, request.daysInPast)
-                );
+                request.update(refreshedRequest);
             }
         }
     }
