@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.opentripplanner.middleware.bugsnag.jobs.BugsnagEventHandlingJob.processWebHookDelivery;
+import static org.opentripplanner.middleware.bugsnag.BugsnagWebhook.processWebHookDelivery;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.AUTHENTICATE_PATH;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;

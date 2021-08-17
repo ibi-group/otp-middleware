@@ -3,8 +3,13 @@ package org.opentripplanner.middleware.bugsnag;
 import com.bugsnag.Bugsnag;
 import com.bugsnag.Report;
 import com.bugsnag.Severity;
+import org.opentripplanner.middleware.models.AdminUser;
+import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -63,5 +68,29 @@ public class BugsnagReporter {
         report.addToTab("debugging", "bad entity", badEntity != null ? badEntity.toString() : "N/A");
         report.setSeverity(Severity.ERROR);
         return bugsnag.notify(report);
+    }
+
+    /**
+     * Convenience method to send email notification to all subscribed users.
+     */
+    public static void sendEmailForEvents(int numberOfNewEvents) {
+        // Construct email content.
+        String subject = String.format("%d new error events", numberOfNewEvents);
+        Map<String, Object> templateData = Map.of(
+            "subject", subject
+        );
+
+        // Notify subscribed users.
+        for (AdminUser adminUser : Persistence.adminUsers.getAll()) {
+            if (adminUser.subscriptions.contains(AdminUser.Subscription.NEW_ERROR)) {
+                NotificationUtils.sendEmail(
+                    adminUser,
+                    subject,
+                    "EventErrorsText.ftl",
+                    "EventErrorsHtml.ftl",
+                    templateData
+                );
+            }
+        }
     }
 }
