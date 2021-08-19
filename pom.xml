@@ -343,5 +343,14 @@
             <version>3495b32f7b4d3f82590e0a2284029214070b6984</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- wiremock is used to mock http requests in unit tests -->
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>2.14.0</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 </project>

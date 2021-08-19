@@ -93,19 +93,32 @@ public class BugsnagJobs {
      * Define how long in hours since a project's last event data request took place. Restrict to
      * {@link BugsnagDispatcher#BUGSNAG_REPORTING_WINDOW_IN_DAYS} (in hours) if greater than this.
      */
-    private static int getHoursSinceLastRequest(String projectId) {
+    public static int getHoursSinceLastRequest(String projectId) {
         int hoursSinceLastRequest = 0;
         // Get latest successful request for project.
         BugsnagEventRequest compareRequest = getLatestComparisonRequest(projectId);
         if (compareRequest != null) {
             // Otherwise, determine how many hours have passed since the end of the last request's time window.
-            long reportingGapMillis = new Date().getTime() - compareRequest.getTimeWindowEndInMillis();
-            // TimeUnit#convert truncates/rounds down, so add one to account for partial hours.
-            long hours = TimeUnit.HOURS.convert(reportingGapMillis, TimeUnit.MILLISECONDS);
-            hoursSinceLastRequest = Math.toIntExact(hours) + 1;
+            hoursSinceLastRequest = getHoursRoundedToWholeDaySinceDate(compareRequest.getTimeWindowEndInMillis());
         }
         // Restrict the hours since last request if greater than the reporting window.
-        return Math.max(hoursSinceLastRequest, BUGSNAG_REPORTING_WINDOW_IN_DAYS * 24);
+        return (compareRequest != null)
+            ? Math.min(hoursSinceLastRequest, BUGSNAG_REPORTING_WINDOW_IN_DAYS * 24)
+            : BUGSNAG_REPORTING_WINDOW_IN_DAYS * 24;
+    }
+
+    /**
+     * Return the number of hours (rounded to a whole day) that have passed since the date provided.
+     */
+    public static int getHoursRoundedToWholeDaySinceDate(long historicDateInMillis) {
+        long reportingGapMillis = new Date().getTime() - historicDateInMillis;
+        // TimeUnit#convert truncates/rounds down, so add one to account for partial hours.
+        long hours = TimeUnit.HOURS.convert(reportingGapMillis, TimeUnit.MILLISECONDS);
+        int hoursSinceLastRequest = Math.toIntExact(hours) + 1;
+        // Round up to a whole day so as not to loose the part day when rounding.
+        return (hoursSinceLastRequest % 24 != 0)
+            ? hoursSinceLastRequest + (24 - hoursSinceLastRequest % 24)
+            : hoursSinceLastRequest;
     }
 
     /**
@@ -114,10 +127,16 @@ public class BugsnagJobs {
     private static BugsnagEventRequest getLatestComparisonRequest(String projectId) {
         BugsnagEventRequest lastCompleted = getLatestCompletedRequestForProject(projectId);
         BugsnagEventRequest lastIncomplete = getLatestIncompleteRequestForProject(projectId);
-        if (lastIncomplete == null) return lastCompleted;
+        if (lastIncomplete == null) {
+            // If there are no incomplete requests, return the last completed (this may well be null as well).
+            return lastCompleted;
+        }
         boolean lastIncompleteIsExpired = lastIncomplete.status.equalsIgnoreCase("expired");
-        if (lastCompleted == null) return lastIncompleteIsExpired ? null : lastIncomplete;
-        // Determine which request we should use to determine what gap we need to fill.
+        if (lastCompleted == null) {
+            // If there are no completed requests and the last incomplete has not expired return this.
+            return lastIncompleteIsExpired ? null : lastIncomplete;
+        }
+        // Determine which request we should use to define what gap we need to fill.
         // If the latest incomplete is newer and not expired, BugsnagEventHandlingJob will await the completion of that
         // request.
         return lastIncomplete.getTimeWindowEndInMillis() > lastCompleted.getTimeWindowEndInMillis() && !lastIncompleteIsExpired

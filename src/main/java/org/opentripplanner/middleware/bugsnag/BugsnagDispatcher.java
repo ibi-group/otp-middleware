@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,9 +38,20 @@ public class BugsnagDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(BugsnagDispatcher.class);
 
     private static final String BUGSNAG_API_URL = "https://api.bugsnag.com";
+    public static final int TEST_BUGSNAG_PORT = 8089;
+    public static final String TEST_BUGSNAG_DOMAIN = String.format("http://localhost:%d", TEST_BUGSNAG_PORT);
+    private static String baseBugsnagUrl = BUGSNAG_API_URL;
     private static final String BUGSNAG_API_KEY = getConfigPropertyAsText("BUGSNAG_API_KEY");
     public static final int BUGSNAG_REPORTING_WINDOW_IN_DAYS =
         getConfigPropertyAsInt("BUGSNAG_REPORTING_WINDOW_IN_DAYS", 14);
+
+    /**
+     * Used to override the base url for making requests to Bugsnag. This is primarily used for testing purposes to set
+     * the url to something that is stubbed with WireMock.
+     */
+    public static void setBaseUsersUrl(String url) {
+        baseBugsnagUrl = url;
+    }
 
     /**
      * Headers that are required by Bugsnag for each request.
@@ -51,8 +61,6 @@ public class BugsnagDispatcher {
         "Accept", "application/json; version=2",
         "Content-Type", "application/json"
     );
-
-    private static final Map<Integer, String> REQUEST_FILTERS = new HashMap<>();
 
     private static final int CONNECTION_TIMEOUT_IN_SECONDS = 5;
 
@@ -133,12 +141,12 @@ public class BugsnagDispatcher {
         // Create new request if null ID is provided.
         boolean create = eventDataRequestId == null;
         URI eventDataRequestUri = HttpUtils.buildUri(
-            BUGSNAG_API_URL,
+            baseBugsnagUrl,
             "projects", projectId, "event_data_requests", eventDataRequestId
         );
         LOG.debug("Making Bugsnag request: {}", eventDataRequestUri);
         String filter = create
-            ? REQUEST_FILTERS.computeIfAbsent(daysInPast, BugsnagDispatcher::buildEventRequestFilter)
+            ? buildEventRequestFilter(daysInPast)
             : null;
         HttpResponseValues response = HttpUtils.httpRequestRawResponse(
             eventDataRequestUri,

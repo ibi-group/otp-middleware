@@ -1,0 +1,28 @@
+[
+  {
+    "id": "60d2162c007f5f1743610000",
+    "project_id": "5ee8f4026c0a34000e1b1394",
+    "error_id": "60d2162ce7393f0007df5d1c",
+    "received_at": "2021-06-22T16:56:12.649Z",
+    "exceptions": [
+      {
+        "errorClass": "java.net.SocketTimeoutException",
+        "message": "Read timed out"
+      }
+    ],
+    "severity": "error",
+    "context": "Error requesting data from URI",
+    "unhandled": false,
+    "app": {
+      "releaseStage": "production"
+    },
+    "metaData": {
+      "device": {
+        "osArch": "amd64"
+      },
+      "app": {
+        "entity": "https://api.bugsnag.com/organizations/59d66b6e7ccbd50026f5b259/event_data_requests/60d215eb1e88f548791a2e79"
+      }
+    }
+  }
+]

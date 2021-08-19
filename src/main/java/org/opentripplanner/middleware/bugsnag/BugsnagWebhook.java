@@ -21,11 +21,7 @@ public class BugsnagWebhook {
      * Extract Bugsnag project error from webhook delivery.
      */
     public static void processWebHookDelivery(Request request) {
-        if (BUGSNAG_WEBHOOK_PERMITTED_IPS == null) {
-            LOG.warn("Bugsnag webhook permitted IPs not defined. Caller IP not validated nor content processed.");
-            return;
-        } else if(!BUGSNAG_WEBHOOK_PERMITTED_IPS.contains(request.ip())) {
-            LOG.warn("Bugsnag webhook delivery called from unauthorized IP: {}. Request rejected.", request.ip());
+        if (!authorizedCaller(request.ip())){
             return;
         }
         try {
@@ -40,5 +36,22 @@ public class BugsnagWebhook {
         } catch (JsonProcessingException e) {
             BugsnagReporter.reportErrorToBugsnag("Failed to parse webhook delivery!", request.body(), e);
         }
+    }
+
+    /**
+     * Authorize the caller IP address. This should be either Bugsnag or localhost.
+     */
+    private static boolean authorizedCaller(String callerIP) {
+        if (callerIP.equals("127.0.0.1")) {
+            // Allow local host for testing purposes.
+            return true;
+        } else if (BUGSNAG_WEBHOOK_PERMITTED_IPS == null) {
+            LOG.warn("Bugsnag webhook authorized IPs not defined. Caller IP not validated nor content processed.");
+            return false;
+        } else if (BUGSNAG_WEBHOOK_PERMITTED_IPS.contains(callerIP)) {
+            return true;
+        }
+        LOG.warn("Bugsnag webhook delivery called from unauthorized IP: {}. Request rejected.", callerIP);
+        return false;
     }
 }

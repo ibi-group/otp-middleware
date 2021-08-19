@@ -67,10 +67,11 @@ public class BugsnagEventRequest extends Model {
      */
     public void update(BugsnagEventRequest updatedRequest) {
         // Update fields maintained separately from the Bugsnag JSON response.
-        updatedRequest.projectId = projectId;
-        updatedRequest.daysInPast = daysInPast;
+        this.status = updatedRequest.status;
+        this.total = updatedRequest.total;
+        this.url = updatedRequest.url;
         // Replace original request with updated request.
-        Persistence.bugsnagEventRequests.replace(id, updatedRequest);
+        Persistence.bugsnagEventRequests.replace(id, this);
     }
 
     @Override

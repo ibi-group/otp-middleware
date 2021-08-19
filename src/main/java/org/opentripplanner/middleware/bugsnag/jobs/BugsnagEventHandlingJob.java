@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.bugsnag.BugsnagJobs.getHoursSinceLastRequest;
+
 /**
  * This job is responsible for maintaining Bugsnag event data. This is achieved by managing the event request jobs
  * triggered by {@link BugsnagEventRequestJob}, obtaining event data from Bugsnag storage and removing stale events.
@@ -62,7 +64,7 @@ public class BugsnagEventHandlingJob implements Runnable {
     /**
      * Refresh the event request to check status and update event data accordingly.
      */
-    private void refreshEventRequest(BugsnagEventRequest request) {
+    public void refreshEventRequest(BugsnagEventRequest request) {
         // Refresh the event data request.
         BugsnagEventRequest refreshedRequest = request.refreshEventDataRequest();
         if (refreshedRequest == null) {
@@ -74,7 +76,10 @@ public class BugsnagEventHandlingJob implements Runnable {
                 // First, delete the last completed request for the project.
                 BugsnagEventRequest latestCompletedRequestForProject =
                     BugsnagJobs.getLatestCompletedRequestForProject(request.projectId);
-                latestCompletedRequestForProject.delete();
+                if (latestCompletedRequestForProject != null) {
+                    // May never have completed a request previously!
+                    latestCompletedRequestForProject.delete();
+                }
                 // Next, replace the newly completed request.
                 request.update(refreshedRequest);
                 // Finally, get and store the new events from the completed request and notify users.
@@ -87,12 +92,15 @@ public class BugsnagEventHandlingJob implements Runnable {
                 }
                 break;
             case "expired":
-                // First, remove the expired request.
+                // First, get the number of hours since the last request to refresh the number of past days to be covered.
+                int hoursSinceLastRequest = getHoursSinceLastRequest(request.projectId);
+                // Next, trigger a new event data request to replace the expired one using the recalibrated days in past.
+                LOG.info("Triggering a new event data request for project {} to replace previously expired.", request.projectId);
+                BugsnagEventRequestJob.triggerEventDataRequestForProject(request.projectId, hoursSinceLastRequest / 24);
+                // Finally, remove the expired request. This must be done after the recalibration of days in past so
+                // this request is included.
                 LOG.info("Event data request for project {} has expired. Removing from database.", request.projectId);
                 request.delete();
-                // Next, immediately trigger a new event data request to replace the expired one.
-                LOG.info("Triggering a new event data request for project {} to replace previously expired.", request.projectId);
-                BugsnagEventRequestJob.triggerEventDataRequestForProject(request.projectId, request.daysInPast);
                 break;
             default: {
                 // Request not completed by Bugsnag yet. Update the event request to record new status (this may not have
