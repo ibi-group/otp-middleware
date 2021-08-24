@@ -82,8 +82,7 @@ public class BugsnagEventRequest extends Model {
     @JsonIgnore
     @BsonIgnore
     public long getTimeWindowEndInMillis() {
-        long timeWindowMillis = TimeUnit.MILLISECONDS.convert(this.daysInPast, TimeUnit.DAYS);
-        return this.dateCreated.getTime() + timeWindowMillis;
+        return this.dateCreated.getTime();
     }
 
     /**
