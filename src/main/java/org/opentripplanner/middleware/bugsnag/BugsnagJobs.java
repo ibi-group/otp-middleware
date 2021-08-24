@@ -111,7 +111,7 @@ public class BugsnagJobs {
      * Return the number of hours (rounded to a whole day) that have passed since the date provided.
      */
     public static int getHoursRoundedToWholeDaySinceDate(long historicDateInMillis) {
-        long reportingGapMillis = new Date().getTime() - historicDateInMillis;
+        long reportingGapMillis = DateTimeUtils.currentTimeMillis() - historicDateInMillis;
         // TimeUnit#convert truncates/rounds down, so add one to account for partial hours.
         long hours = TimeUnit.HOURS.convert(reportingGapMillis, TimeUnit.MILLISECONDS);
         int hoursSinceLastRequest = Math.toIntExact(hours) + 1;
