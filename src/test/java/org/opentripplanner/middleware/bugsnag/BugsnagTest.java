@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.mongodb.client.model.Filters;
 import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.bugsnag.jobs.BugsnagEventHandlingJob;
@@ -37,6 +38,9 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 public class BugsnagTest extends OtpMiddlewareTestEnvironment {
 
     private static WireMockServer wireMockServer;
+    private static BugsnagEvent bugsnagEvent = null;
+    private static BugsnagEventRequest bugsnagEventRequest1 = null;
+    private static BugsnagEventRequest bugsnagEventRequest2 = null;
 
     @BeforeAll
     public static void setup() throws IOException {
@@ -56,6 +60,22 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
         wireMockServer.stop();
     }
 
+    @AfterEach
+    public void afterEach() {
+        if (bugsnagEvent != null) {
+            Persistence.bugsnagEvents.removeById(bugsnagEvent.id);
+            bugsnagEvent = null;
+        }
+        if (bugsnagEventRequest1 != null) {
+            bugsnagEventRequest1.delete();
+            bugsnagEventRequest1 = null;
+        }
+        if (bugsnagEventRequest2 != null) {
+            bugsnagEventRequest2.delete();
+            bugsnagEventRequest2 = null;
+        }
+    }
+
     /**
      * Test to confirm an event data requests can be correctly processed and saved.
      */
@@ -71,10 +91,8 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
                 )
         );
         BugsnagEventRequestJob.triggerEventDataRequestForProject(projectId, 14);
-        BugsnagEventRequest bugsnagEventRequest =
-            Persistence.bugsnagEventRequests.getOneFiltered(Filters.eq("projectId", projectId));
-        assertNotNull(bugsnagEventRequest);
-        bugsnagEventRequest.delete();
+        bugsnagEventRequest1 = Persistence.bugsnagEventRequests.getOneFiltered(Filters.eq("projectId", projectId));
+        assertNotNull(bugsnagEventRequest1);
     }
 
     /**
@@ -90,7 +108,7 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
     public void processCompletedEventRequest() {
         String projectId = "5ee8f4026c0a34000e1b1394"; // Must match the project id value in eventDataResponse.json
         String eventDataRequestId = "611a9123b6e99d4fcec2dc5c"; // Must match the id value in createEventDataRequest.json
-        BugsnagEventRequest bugsnagEventRequest =
+        bugsnagEventRequest1 =
             createBugsnagEventRequest(
                 projectId,
                 eventDataRequestId,
@@ -114,13 +132,11 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
                 )
         );
         BugsnagEventHandlingJob bugsnagEventHandlingJob = new BugsnagEventHandlingJob();
-        bugsnagEventHandlingJob.refreshEventRequest(bugsnagEventRequest);
-        BugsnagEventRequest updatedBugsnagEventRequest = Persistence.bugsnagEventRequests.getById(bugsnagEventRequest.id);
+        bugsnagEventHandlingJob.refreshEventRequest(bugsnagEventRequest1);
+        BugsnagEventRequest updatedBugsnagEventRequest = Persistence.bugsnagEventRequests.getById(bugsnagEventRequest1.id);
         assertEquals(updatedBugsnagEventRequest.status, "COMPLETED");
-        bugsnagEventRequest.delete();
-        BugsnagEvent bugsnagEvent = Persistence.bugsnagEvents.getOneFiltered(Filters.eq("projectId", projectId));
+        bugsnagEvent = Persistence.bugsnagEvents.getOneFiltered(Filters.eq("projectId", projectId));
         assertNotNull(bugsnagEvent);
-        Persistence.bugsnagEvents.removeById(bugsnagEvent.id);
     }
 
     /**
@@ -135,7 +151,7 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
         String expiredEventDataRequestId = "611a9123b6e99d4fcec2dc5c";
         // Must match the id value in replacedEventDataRequest.json
         String replacedEventDataRequestId = "5948fhf734h362";
-        BugsnagEventRequest bugsnagEventRequest =
+        bugsnagEventRequest1 =
             createBugsnagEventRequest(
                 projectId,
                 expiredEventDataRequestId,
@@ -159,7 +175,7 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
                 )
         );
         BugsnagEventHandlingJob bugsnagEventHandlingJob = new BugsnagEventHandlingJob();
-        bugsnagEventHandlingJob.refreshEventRequest(bugsnagEventRequest);
+        bugsnagEventHandlingJob.refreshEventRequest(bugsnagEventRequest1);
         BugsnagEventRequest removedBugsnagEventRequest =
             Persistence.bugsnagEventRequests.getOneFiltered(
                 Filters.and(
@@ -169,18 +185,17 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
             );
         assertNull(removedBugsnagEventRequest);
 
-        BugsnagEventRequest newBugsnagEventRequest =
+        bugsnagEventRequest1 =
             Persistence.bugsnagEventRequests.getOneFiltered(
                 Filters.and(
                     Filters.eq("projectId", projectId),
                     Filters.eq("eventDataRequestId", replacedEventDataRequestId)
                 )
             );
-        assertNotNull(newBugsnagEventRequest);
+        assertNotNull(bugsnagEventRequest1);
         // Rounding hour to nearest whole day bumps this by a day from the original 2 to 3 days.
-        assertEquals(3, newBugsnagEventRequest.daysInPast);
-        assertEquals("PREPARING", newBugsnagEventRequest.status);
-        newBugsnagEventRequest.delete();
+        assertEquals(3, bugsnagEventRequest1.daysInPast);
+        assertEquals("PREPARING", bugsnagEventRequest1.status);
     }
 
     /**
@@ -191,9 +206,8 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
         String projectId = "56b9ca7f17025f8756f69054"; // Must match the project id value in bugsnagWebhookDelivery.json
         String payload = CommonTestUtils.getTestResourceAsString("bugsnag/bugsnagWebhookDelivery.json");
         makeRequest("/api/bugsnagwebhook", payload, null, HttpMethod.POST);
-        BugsnagEvent bugsnagEvent = Persistence.bugsnagEvents.getOneFiltered(Filters.eq("projectId", projectId));
+        bugsnagEvent = Persistence.bugsnagEvents.getOneFiltered(Filters.eq("projectId", projectId));
         assertNotNull(bugsnagEvent);
-        Persistence.bugsnagEvents.removeById(bugsnagEvent.id);
     }
 
     /**
@@ -203,14 +217,13 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
     @Test
     public void maximumReportingWindowNotExceeded() {
         String projectId = UUID.randomUUID().toString();
-        BugsnagEventRequest bugsnagEventRequest =
+        bugsnagEventRequest1 =
             createBugsnagEventRequest(
                 projectId,
                 "completed",
                 getDateInPast(BugsnagDispatcher.BUGSNAG_REPORTING_WINDOW_IN_DAYS + 1)
             );
         assertEquals(BugsnagDispatcher.BUGSNAG_REPORTING_WINDOW_IN_DAYS * 24, getHoursSinceLastRequest(projectId));
-        bugsnagEventRequest.delete();
     }
 
     /**
@@ -220,9 +233,8 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
     @Test
     public void maximumReportingWindowUsed() {
         String projectId = UUID.randomUUID().toString();
-        BugsnagEventRequest bugsnagEventRequest = createBugsnagEventRequest(projectId, "expired", getDateInPast(10));
+        bugsnagEventRequest1 = createBugsnagEventRequest(projectId, "expired", getDateInPast(10));
         assertEquals(BugsnagDispatcher.BUGSNAG_REPORTING_WINDOW_IN_DAYS * 24, getHoursSinceLastRequest(projectId));
-        bugsnagEventRequest.delete();
     }
 
     /**
@@ -232,9 +244,8 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
     public void lastIncompleteIsUsed() {
         String projectId = UUID.randomUUID().toString();
         Date date = getDateInPast(10);
-        BugsnagEventRequest bugsnagEventRequest = createBugsnagEventRequest( projectId,  "preparing", date);
+        bugsnagEventRequest1 = createBugsnagEventRequest( projectId,  "preparing", date);
         assertEquals(getHoursRoundedToWholeDaySinceDate(date.getTime()), getHoursSinceLastRequest(projectId));
-        bugsnagEventRequest.delete();
     }
 
     /**
@@ -245,11 +256,9 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
     public void lastIncompleteHasPrecedence() {
         String projectId = UUID.randomUUID().toString();
         Date incompleteDate = getDateInPast(9);
-        BugsnagEventRequest incomplete = createBugsnagEventRequest(projectId, "preparing", incompleteDate);
-        BugsnagEventRequest complete = createBugsnagEventRequest(projectId, "completed", getDateInPast(10));
+        bugsnagEventRequest1 = createBugsnagEventRequest(projectId, "preparing", incompleteDate);
+        bugsnagEventRequest2 = createBugsnagEventRequest(projectId, "completed", getDateInPast(10));
         assertEquals(getHoursRoundedToWholeDaySinceDate(incompleteDate.getTime()), getHoursSinceLastRequest(projectId));
-        incomplete.delete();
-        complete.delete();
     }
 
     /**
@@ -258,12 +267,10 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
     @Test
     public void lastCompleteHasPrecedence() {
         String projectId = UUID.randomUUID().toString();
-        BugsnagEventRequest incomplete = createBugsnagEventRequest(projectId, "expired", getDateInPast(9));
+        bugsnagEventRequest1 = createBugsnagEventRequest(projectId, "expired", getDateInPast(9));
         Date completeDate = getDateInPast(10);
-        BugsnagEventRequest complete = createBugsnagEventRequest(projectId, "completed", completeDate);
+        bugsnagEventRequest2 = createBugsnagEventRequest(projectId, "completed", completeDate);
         assertEquals(getHoursRoundedToWholeDaySinceDate(completeDate.getTime()), getHoursSinceLastRequest(projectId));
-        incomplete.delete();
-        complete.delete();
     }
 
     /**
