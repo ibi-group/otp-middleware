@@ -83,7 +83,7 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
      * (eventDataResponse.json) and save the Bugsnag event. Confirm that the refreshed event request status has been
      * updated to 'completed' and that the Bugsnag event has been saved.
      *
-     * Note: the CompletedEventDataRequest.son contains a hardcoded reference to the wiremock URL:
+     * Note: the CompletedEventDataRequest.json contains a hardcoded reference to the wiremock URL:
      * http://localhost:8089/bugsnag-event-data-requests/611a9123b6e99d4fcec2dc5c
      */
     @Test
