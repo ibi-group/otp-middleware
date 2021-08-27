@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.opentripplanner.middleware.bugsnag.BugsnagWebhook.processWebHookDelivery;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.AUTHENTICATE_PATH;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -115,6 +116,21 @@ public class OtpMiddlewareMain {
         spark.get("/docs", (request, response) -> {
             response.type("text/yaml");
             return Files.readString(publicDocPath);
+        });
+
+        /**
+         * End point to receive project errors as soon as they are processed by Bugsnag. Information on Bugsnag's
+         * webhook can be found here: https://docs.bugsnag.com/product/integrations/data-forwarding/webhook/
+         *
+         * A project has to be individually configured to push errors to this end point. This can be done by:
+         * 1) Selecting the desired project.
+         * 2) Under "Integrations and email" select "Data forwarding".
+         * 3) Under "Available integrations" select "Webhook".
+         * 4) Enter the URL you would like Bugsnag to push project errors to e.g. <host>:<port>/api/bugsnagwebhook.
+         */
+        spark.post("/api/bugsnagwebhook", (request, response) -> {
+            processWebHookDelivery(request);
+            return "";
         });
 
         /**
