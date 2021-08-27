@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opentripplanner.middleware.bugsnag.response.App;
+import org.opentripplanner.middleware.bugsnag.BugsnagWebHookDelivery;
 import org.opentripplanner.middleware.bugsnag.response.EventException;
 
 import java.util.Date;
@@ -11,7 +12,7 @@ import java.util.List;
 /**
  * Represents a Bugsnag event. This class is used for both Mongo storage and JSON deserialization.
  * Information relating to this can be found here:
- * https://bugsnagapiv2.docs.apiary.io/#reference/organizations/event-data-requests/create-an-event-data-request
+ * https://bugsnagapiv2.docs.apiary.io/#reference/projects/event-data-requests/create-an-event-data-request
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BugsnagEvent extends Model {
@@ -56,4 +57,19 @@ public class BugsnagEvent extends Model {
     public BugsnagEvent() {
     }
 
+    /**
+     * Create a Bugsnag event from a Bugsnag webhook delivery. EventDataId and exceptions are not available via the
+     * webhook. In order to provide a unique reference the eventDataId will be a combination of project and error ids.
+     */
+    public BugsnagEvent(BugsnagWebHookDelivery bugsnagWebHookDelivery) {
+        // Create unique eventDataId reference.
+        this.eventDataId = String.format("%s-%s", bugsnagWebHookDelivery.project.id, bugsnagWebHookDelivery.error.errorId);
+        this.projectId = bugsnagWebHookDelivery.project.id;
+        this.errorId = bugsnagWebHookDelivery.error.errorId;
+        this.receivedAt = bugsnagWebHookDelivery.error.receivedAt;
+        this.severity = bugsnagWebHookDelivery.error.severity;
+        this.context = bugsnagWebHookDelivery.error.context;
+        this.unhandled = bugsnagWebHookDelivery.error.unhandled;
+        this.app = bugsnagWebHookDelivery.error.app;
+    }
 }

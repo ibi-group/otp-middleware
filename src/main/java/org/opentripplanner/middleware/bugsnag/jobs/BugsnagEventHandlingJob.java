@@ -1,15 +1,14 @@
 package org.opentripplanner.middleware.bugsnag.jobs;
 
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Sorts;
-import org.opentripplanner.middleware.models.AdminUser;
+import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.BugsnagEvent;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,9 +16,10 @@ import java.time.LocalTime;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.opentripplanner.middleware.bugsnag.BugsnagJobs.getHoursSinceLastRequest;
 
 /**
  * This job is responsible for maintaining Bugsnag event data. This is achieved by managing the event request jobs
@@ -28,8 +28,8 @@ import java.util.stream.Collectors;
  * Event requests triggered by {@link BugsnagEventRequestJob} are not completed immediately. Rather a job is started by
  * Bugsnag and the 'pending' event request is returned. This event request is then checked with Bugsnag every minute
  * until the status becomes 'completed'. At this point the event data compiled by the original request made by
- * {@link BugsnagEventHandlingJob} is available for download from a unique URL now present in the updated event request. This is
- * downloaded and saved to Mongo. Any event data that is older than the reporting window is then deleted.
+ * {@link BugsnagEventHandlingJob} is available for download from a unique URL now present in the updated event request.
+ * This is downloaded and saved to Mongo. Any event data that is older than the reporting window is then deleted.
  */
 public class BugsnagEventHandlingJob implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(BugsnagEventHandlingJob.class);
@@ -44,16 +44,16 @@ public class BugsnagEventHandlingJob implements Runnable {
      * and remove any that have expired according to the Bugsnag reporting window.
      */
     public void run() {
-        // Get latest "incomplete" request.
-        BugsnagEventRequest latestRequest = Persistence.bugsnagEventRequests.getOneFiltered(
-            Filters.ne("status", "complete"),
-            Sorts.descending("dateCreated")
-        );
-        if (latestRequest != null) {
+        // Get latest "incomplete" request per project.
+        Set<String> projectIds = MonitoredComponent.getComponentsByProjectId().keySet();
+        for (String projectId : projectIds) {
+            BugsnagEventRequest latestIncompleteRequest = BugsnagJobs.getLatestIncompleteRequestForProject(projectId);
+            if (latestIncompleteRequest == null) {
+                LOG.debug("No pending event data requests found for project {}.", projectId);
+                continue;
+            }
             // Handle the request data if it exists.
-            refreshEventRequest(latestRequest);
-        } else {
-            LOG.debug("No pending event data requests found.");
+            refreshEventRequest(latestIncompleteRequest);
         }
         // FIXME: Do we want to remove these stale events? This could be confusing for users of the system and could cause
         //  issues tracing down issues over time. Maybe the removal window could be greater than the reporting window
@@ -64,27 +64,49 @@ public class BugsnagEventHandlingJob implements Runnable {
     /**
      * Refresh the event request to check status and update event data accordingly.
      */
-    private void refreshEventRequest(BugsnagEventRequest request) {
+    public void refreshEventRequest(BugsnagEventRequest request) {
         // Refresh the event data request.
         BugsnagEventRequest refreshedRequest = request.refreshEventDataRequest();
         if (refreshedRequest == null) {
             LOG.error("Failed to refresh event request");
             return;
         }
-        if (!refreshedRequest.status.equalsIgnoreCase("completed")) {
-            // Request not completed by Bugsnag yet. Return and await the next cycle/refresh.
-            // TODO: Update the request data in the database? What if the status has changed since the last fetch?
-            return;
-        }
-        // First, remove "stale" requests (i.e., those that are older than this latest one).
-        Persistence.bugsnagEventRequests.removeFiltered(Filters.lte("dateCreated", request.dateCreated));
-        // Next, get and store the new events from the completed request and notify users.
-        List<BugsnagEvent> newEvents = getNewEvents(refreshedRequest);
-        if (newEvents.size() > 0) {
-            LOG.info("Found {} new events. Storing and notifying subscribed admin users.", newEvents.size());
-            Persistence.bugsnagEvents.createMany(newEvents);
-            // Notify any subscribed users about new events.
-            sendEmailForEvents(newEvents);
+        switch (refreshedRequest.status.toLowerCase()) {
+            case "completed":
+                // First, delete the last completed request for the project.
+                BugsnagEventRequest latestCompletedRequestForProject =
+                    BugsnagJobs.getLatestCompletedRequestForProject(request.projectId);
+                if (latestCompletedRequestForProject != null) {
+                    // May never have completed a request previously!
+                    latestCompletedRequestForProject.delete();
+                }
+                // Next, replace the newly completed request.
+                request.update(refreshedRequest);
+                // Finally, get and store the new events from the completed request and notify users.
+                List<BugsnagEvent> newEvents = getNewEvents(refreshedRequest);
+                if (newEvents.size() > 0) {
+                    LOG.info("Found {} new events. Storing and notifying subscribed admin users.", newEvents.size());
+                    Persistence.bugsnagEvents.createMany(newEvents);
+                    // Notify any subscribed users about new events.
+                    BugsnagReporter.sendEmailForEvents(newEvents.size());
+                }
+                break;
+            case "expired":
+                // First, get the number of hours since the last request to refresh the number of past days to be covered.
+                int hoursSinceLastRequest = getHoursSinceLastRequest(request.projectId);
+                // Next, trigger a new event data request to replace the expired one using the recalibrated days in past.
+                LOG.info("Triggering a new event data request for project {} to replace previously expired.", request.projectId);
+                BugsnagEventRequestJob.triggerEventDataRequestForProject(request.projectId, hoursSinceLastRequest / 24);
+                // Finally, remove the expired request. This must be done after the recalibration of days in past so
+                // this request is included.
+                LOG.info("Event data request for project {} has expired. Removing from database.", request.projectId);
+                request.delete();
+                break;
+            default: {
+                // Request not completed by Bugsnag yet. Update the event request to record new status (this may not have
+                // changed) and await the next cycle/refresh.
+                request.update(refreshedRequest);
+            }
         }
     }
 
@@ -96,36 +118,11 @@ public class BugsnagEventHandlingJob implements Runnable {
         HashSet<String> currentEventIds = Persistence.bugsnagEvents.getAll()
             .map(event -> event.eventDataId)
             .into(new HashSet<>());
-        Set<String> trackedProjectIds = MonitoredComponent.getComponentsByProjectId().keySet();
         // Get and filter bugsnag events.
         return request.getEventData().stream()
-            // Include error events that map to monitored components and do not already exist in our database.
-            .filter(event -> trackedProjectIds.contains(event.projectId) && !currentEventIds.contains(event.eventDataId))
+            // Include error events that do not already exist in our database.
+            .filter(event -> !currentEventIds.contains(event.eventDataId))
             .collect(Collectors.toList());
-    }
-
-    /**
-     * Convenience method to send email notification to all subscribed users.
-     */
-    private void sendEmailForEvents(List<BugsnagEvent> newEvents) {
-        // Construct email content.
-        String subject = String.format("%d new error events", newEvents.size());
-        Map<String, Object> templateData = Map.of(
-            "subject", subject
-        );
-
-        // Notify subscribed users.
-        for (AdminUser adminUser : Persistence.adminUsers.getAll()) {
-            if (adminUser.subscriptions.contains(AdminUser.Subscription.NEW_ERROR)) {
-                NotificationUtils.sendEmail(
-                    adminUser,
-                    subject,
-                    "EventErrorsText.ftl",
-                    "EventErrorsHtml.ftl",
-                    templateData
-                );
-            }
-        }
     }
 
     /**
@@ -142,4 +139,5 @@ public class BugsnagEventHandlingJob implements Runnable {
         );
         Persistence.bugsnagEvents.removeFiltered(Filters.lte("receivedAt", reportingWindowCutoff));
     }
+
 }
