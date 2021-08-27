@@ -134,7 +134,7 @@ public class ConnectedDataManager {
         incompleteUploads.forEach(tripHistoryUpload -> {
             if (compileAndUploadTripHistory(tripHistoryUpload.uploadDate)) {
                 // Update the status to 'completed' if successfully compiled and uploaded.
-                tripHistoryUpload.status = TripHistoryUploadStatus.COMPLETED;
+                tripHistoryUpload.status = TripHistoryUploadStatus.COMPLETED.getValue();
                 Persistence.tripHistoryUploads.replace(tripHistoryUpload.id, tripHistoryUpload);
             }
         });
