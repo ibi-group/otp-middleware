@@ -16,6 +16,8 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -154,6 +156,9 @@ public class DateTimeUtils {
      */
     public static ZoneId getOtpZoneId() {
         String otpTzId = getConfigPropertyAsText("OTP_TIMEZONE");
+        if (otpTzId == null) {
+            return ZoneId.systemDefault();
+        }
         return ZoneId.of(otpTzId);
     }
 
@@ -200,5 +205,65 @@ public class DateTimeUtils {
 
     public static ZonedDateTime makeOtpZonedDateTime(Date date) {
         return ZonedDateTime.ofInstant(date.toInstant(), getOtpZoneId());
+    }
+
+    /**
+     * Converts a {@link LocalDateTime} object into a {@link Date} object using the Otp zone id.
+     */
+    public static Date convertToDate(LocalDateTime dateToConvert) {
+        return Date.from(dateToConvert.atZone(getOtpZoneId()).toInstant());
+    }
+
+    /**
+     * Converts a {@link LocalDate} object into a {@link Date} object using the Otp zone id.
+     */
+    public static Date convertToDate(LocalDate dateToConvert) {
+        return Date.from(dateToConvert.atStartOfDay(getOtpZoneId()).toInstant());
+    }
+
+    /**
+     * Converts a {@link Date} object into a {@link LocalDate} object using the Otp zone id.
+     */
+    public static LocalDate convertToLocalDate(Date dateToConvert) {
+        return dateToConvert.toInstant().atZone(getOtpZoneId()).toLocalDate();
+    }
+
+    /**
+     * Get the start of a day from a {@link LocalDate} object which is returned as a {@link Date} object.
+     */
+    public static Date getStartOfDay(LocalDate dateToConvert) {
+        return convertToDate(dateToConvert.atStartOfDay());
+    }
+
+    /**
+     * Get the start of a day from a {@link Date} object which is returned as a {@link Date} object.
+     */
+    public static Date getStartOfDay(Date dateToConvert) {
+        return convertToDate(convertToLocalDate(dateToConvert).atStartOfDay());
+    }
+
+    /**
+     * Get the end of a day from a {@link Date} object which is returned as a {@link Date} object.
+     */
+    public static Date getEndOfDay(Date dateToConvert) {
+        return convertToDate(convertToLocalDate(dateToConvert).atTime(LocalTime.MAX));
+    }
+
+    /**
+     * Get the dates between two {@link Date} objects. The list of {@link LocalDate} objects returned does not include
+     * the originally provided dates.
+     */
+    public static List<LocalDate> getDatesBetween(Date startDate, Date endDate) {
+        return convertToLocalDate(startDate)
+            .datesUntil(convertToLocalDate(endDate))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Converts a {@link Date} object to a {@link LocalDate} object and subtracts the required amount of days. The
+     * {@link LocalDate} is finally converted back to a {@link Date} object and returned.
+     */
+    public static Date getDateMinusNumberOfDays(Date date, int minusDays) {
+        return convertToDate(convertToLocalDate(date).minusDays(minusDays));
     }
 }

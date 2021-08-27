@@ -224,6 +224,13 @@ public class TypedPersistence<T extends Model> {
     }
 
     /**
+     * Get all objects matching the supplied filter and ordered by the supplied sortBy.
+     */
+    public FindIterable<T> getFiltered(Bson filter, Bson sortBy) {
+        return mongoCollection.find(filter).sort(sortBy);
+    }
+
+    /**
      * Expose the internal MongoCollection to the caller. This ties our persistence directly to Mongo for now but is
      * expedient. We will write all the queries we need in the calling methods, then make an abstraction here on
      * TypedPersistence once we see everything we need to support.

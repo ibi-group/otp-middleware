@@ -15,6 +15,7 @@ import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.slf4j.Logger;
@@ -44,6 +45,7 @@ public class Persistence {
     public static TypedPersistence<OtpUser> otpUsers;
     public static TypedPersistence<AdminUser> adminUsers;
     public static TypedPersistence<ApiUser> apiUsers;
+    public static TypedPersistence<TripHistoryUpload> tripHistoryUploads;
     public static TypedPersistence<TripRequest> tripRequests;
     public static TypedPersistence<TripSummary> tripSummaries;
     public static TypedPersistence<MonitoredTrip> monitoredTrips;
@@ -90,6 +92,7 @@ public class Persistence {
         otpUsers = new TypedPersistence(mongoDatabase, OtpUser.class);
         adminUsers = new TypedPersistence(mongoDatabase, AdminUser.class);
         apiUsers = new TypedPersistence(mongoDatabase, ApiUser.class);
+        tripHistoryUploads = new TypedPersistence(mongoDatabase, TripHistoryUpload.class);
         tripRequests = new TypedPersistence(mongoDatabase, TripRequest.class);
         tripSummaries = new TypedPersistence(mongoDatabase, TripSummary.class);
         monitoredTrips = new TypedPersistence(mongoDatabase, MonitoredTrip.class);
