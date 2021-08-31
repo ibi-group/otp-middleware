@@ -17,6 +17,7 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
@@ -253,10 +254,10 @@ public class DateTimeUtils {
      * Get the dates between two {@link Date} objects. The list of {@link LocalDate} objects returned does not include
      * the originally provided dates.
      */
-    public static List<LocalDate> getDatesBetween(Date startDate, Date endDate) {
+    public static Set<LocalDate> getDatesBetween(Date startDate, Date endDate) {
         return convertToLocalDate(startDate)
             .datesUntil(convertToLocalDate(endDate))
-            .collect(Collectors.toList());
+            .collect(Collectors.toSet());
     }
 
     /**
@@ -265,5 +266,13 @@ public class DateTimeUtils {
      */
     public static Date getDateMinusNumberOfDays(Date date, int minusDays) {
         return convertToDate(convertToLocalDate(date).minusDays(minusDays));
+    }
+
+    /**
+     * Converts a {@link Date} object to a {@link LocalDate} object and adds the required amount of days. The
+     * {@link LocalDate} is finally converted back to a {@link Date} object and returned.
+     */
+    public static Date getDatePlusNumberOfDays(Date date, int plusDays) {
+        return convertToDate(convertToLocalDate(date).plusDays(plusDays));
     }
 }

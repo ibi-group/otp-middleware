@@ -8,7 +8,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.opentripplanner.middleware.utils.PutObjectException;
+import org.opentripplanner.middleware.utils.S3Exception;
 import org.opentripplanner.middleware.utils.S3Utils;
 import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
@@ -29,6 +29,7 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToLocalDate;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getDateMinusNumberOfDays;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getDatePlusNumberOfDays;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getEndOfDay;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getStartOfDay;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDate;
@@ -39,15 +40,19 @@ public class ConnectedDataManager {
     // tests instead).
     public static boolean IS_TEST;
 
+    public static final String FILE_NAME_SUFFIX = "anon-trip-data";
+    public static final String ZIP_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".zip";
+    public static final String DATA_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".json";
+
     private static final int CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_DELAY_IN_MINUTES =
         getConfigPropertyAsInt("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_DELAY_IN_MINUTES", 5);
 
     private static final Logger LOG = LoggerFactory.getLogger(ConnectedDataManager.class);
 
-    private static final String CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME =
+    public static final String CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME");
 
-    private static final String CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME =
+    public static final String CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME");
 
     public static void scheduleTripHistoryUploadJob() {
@@ -57,7 +62,6 @@ public class ConnectedDataManager {
             0,
             CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_DELAY_IN_MINUTES,
             TimeUnit.MINUTES);
-
     }
 
     /**
@@ -66,9 +70,6 @@ public class ConnectedDataManager {
      */
     public static void removeUsersTripHistory(String userId) {
         Set<Date> userTripDates = new HashSet<>();
-        for (TripSummary summary : TripSummary.summariesForUser(userId)) {
-            userTripDates.add(getStartOfDay(summary.dateCreated));
-        }
         for (TripRequest request : TripRequest.requestsForUser(userId)) {
             userTripDates.add(getStartOfDay(request.dateCreated));
             // This will delete the trip summaries as well.
@@ -79,11 +80,15 @@ public class ConnectedDataManager {
         // Save all new dates for uploading.
         Set<Date> newDates = Sets.difference(userTripDates, incompleteUploads);
         TripHistoryUpload first = TripHistoryUpload.getFirst();
-        newDates.forEach(date -> {
-            if (first != null && first.uploadDate.before(date)) {
-                // If the new date is after the first ever upload date, add it to the upload list. This acts as a
-                // back stop to prevent historic uploads being created indefinitely.
-                Persistence.tripHistoryUploads.create(new TripHistoryUpload(date));
+        newDates.forEach(newDate -> {
+            if (first != null &&
+                (newDate.getTime() == first.uploadDate.getTime() || newDate.after(first.uploadDate) &&
+                newDate.before(getStartOfDay(new Date())))
+            ) {
+                // If the new date is the same or after the first ever upload date, add it to the upload list. This acts
+                // as a back stop to prevent historic uploads being created indefinitely. Also, make sure the new date
+                // is before today because the trip data for it isn't uploaded until after midnight.
+                Persistence.tripHistoryUploads.create(new TripHistoryUpload(newDate));
             }
         });
         // Kick-off trip data processing to recompile and upload trip data to S3 minus the user's trip history.
@@ -118,7 +123,10 @@ public class ConnectedDataManager {
                     )
                 ));
         } else {
-            List<LocalDate> betweenDays = DateTimeUtils.getDatesBetween(latest.uploadDate, now);
+            Set<LocalDate> betweenDays = DateTimeUtils.getDatesBetween(
+                getDatePlusNumberOfDays(latest.uploadDate,1),
+                now
+            );
             betweenDays.forEach(day -> {
                 Persistence.tripHistoryUploads.create(new TripHistoryUpload(getStartOfDay(day)));
             });
@@ -146,27 +154,24 @@ public class ConnectedDataManager {
      */
     private static boolean compileAndUploadTripHistory(Date date) {
         Date startOfDay = getStartOfDay(date);
-        String dateStr = getStringFromDate(convertToLocalDate(startOfDay), DEFAULT_DATE_FORMAT_PATTERN);
-        String zipFileName = String.format("%s-anon-trip-data.zip", dateStr);
+        String zipFileName = getFileName(startOfDay, ZIP_FILE_NAME_SUFFIX);
         File tempZipFile = null;
         try {
             String tempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
             FileUtils.writeFileToZip(
                 tempFile,
-                String.format("%s-anon-trip-data.json", dateStr),
+                getFileName(startOfDay, DATA_FILE_NAME_SUFFIX),
                 getAnonymizedTripHistory(startOfDay, getEndOfDay(date))
             );
             // Get the complete zip file from the local file system.
             tempZipFile = new File(tempFile);
-            if (!IS_TEST) {
-                S3Utils.putObject(
-                    CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
-                    CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME + zipFileName,
-                    tempZipFile
-                );
-            }
+            S3Utils.putObject(
+                CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
+                CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME + "/" + zipFileName,
+                tempZipFile
+            );
             return true;
-        } catch (PutObjectException | IOException e) {
+        } catch (S3Exception | IOException e) {
             LOG.error("Failed to process trip data for {}", startOfDay, e);
             return false;
         } finally {
@@ -199,5 +204,16 @@ public class ConnectedDataManager {
             incomplete.add(tripHistoryUpload);
         }
         return incomplete;
+    }
+
+    /**
+     * Produce file name.
+     */
+    public static String getFileName(Date startOfDay, String fileNameSuffix) {
+        return String.format(
+            "%s-%s",
+            getStringFromDate(convertToLocalDate(startOfDay), DEFAULT_DATE_FORMAT_PATTERN),
+            fileNameSuffix
+        );
     }
 }

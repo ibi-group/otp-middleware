@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.models;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
+import org.opentripplanner.middleware.cdp.AnonymizedTripSummary;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.PlannerError;
@@ -48,15 +49,14 @@ public class TripSummary extends Model {
         this.itineraries = itineraries;
     }
 
-    private TripSummary getAnonimized() {
+    private AnonymizedTripSummary getAnonimized() {
         // TODO: More work is needed in this area to define required parameters.
-        return new TripSummary(itineraries);
+        return new AnonymizedTripSummary(itineraries);
     }
 
-    public static FindIterable<TripSummary> summariesForUser(String userId) {
-        return Persistence.tripSummaries.getFiltered(filterByUserId(userId));
-    }
-
+    /**
+     * Get all trip summaries between two dates.
+     */
     private static FindIterable<TripSummary> getTripSummaries(Date start, Date end) {
         return Persistence.tripSummaries.getFiltered(
             Filters.and(
@@ -67,12 +67,15 @@ public class TripSummary extends Model {
         );
     }
 
-    public static List<TripSummary> getAnonymizedTripSummaries(Date start, Date end) {
-        List<TripSummary> tripSummaries = new ArrayList<>();
+    /**
+     * Get all trip summaries between two dates, extract qualifying anonymous data and return.
+     */
+    public static List<AnonymizedTripSummary> getAnonymizedTripSummaries(Date start, Date end) {
+        List<AnonymizedTripSummary> anonymizedTripSummaries = new ArrayList<>();
         for (TripSummary tripSummary : getTripSummaries(start, end)) {
-            tripSummaries.add(tripSummary.getAnonimized());
+            anonymizedTripSummaries.add(tripSummary.getAnonimized());
         }
-        return tripSummaries;
+        return anonymizedTripSummaries;
     }
 
     @Override

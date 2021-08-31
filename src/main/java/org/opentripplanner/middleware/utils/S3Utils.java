@@ -35,16 +35,36 @@ public class S3Utils {
      */
     public static void putObject(String bucketName,
                                  String folderAndFileName,
-                                 File file) throws PutObjectException {
+                                 File file) throws S3Exception {
         try {
             AmazonS3 s3Client = getAmazonS3();
             s3Client.putObject(bucketName, folderAndFileName, file);
             LOG.info("Uploading to AWS: {}/{}", bucketName, folderAndFileName);
         } catch (Exception e) {
             // If some unexpected exception is thrown by AWS, catch it, report to Bugsnag, and throw.
-            PutObjectException putObjectException = new PutObjectException(bucketName, folderAndFileName, e);
-            BugsnagReporter.reportErrorToBugsnag("Error putting object on S3", folderAndFileName, putObjectException);
-            throw putObjectException;
+            String message = "Unable to create object";
+            S3Exception S3Exception = new S3Exception(bucketName, folderAndFileName, message, e);
+            BugsnagReporter.reportErrorToBugsnag(message, folderAndFileName, S3Exception);
+            throw S3Exception;
+        }
+    }
+
+    /**
+     * Delete an object on S3.
+     */
+    public static void deleteObject(String bucketName, String folderAndFileName) throws Exception {
+        try {
+            AmazonS3 s3Client = getAmazonS3();
+            if (s3Client.doesObjectExist(bucketName, folderAndFileName)) {
+                LOG.info("Removing {} from s3 bucket {}", folderAndFileName, bucketName);
+                s3Client.deleteObject(bucketName, folderAndFileName);
+            }
+        } catch (Exception e) {
+            // If some unexpected exception is thrown by AWS, catch it, report to Bugsnag, and throw.
+            String message = "Unable to delete object";
+            S3Exception S3Exception = new S3Exception(bucketName, folderAndFileName, message, e);
+            BugsnagReporter.reportErrorToBugsnag(message, folderAndFileName, S3Exception);
+            throw S3Exception;
         }
     }
 }

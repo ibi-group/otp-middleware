@@ -11,11 +11,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -75,4 +78,28 @@ public class FileUtils {
         return new File(System.getProperty("java.io.tmpdir"));
     }
 
+    /**
+     * Extracts the contents of a file contented within a zip file.
+     */
+    public static String getContentsOfFileInZip(String zipFileNameAndPath, String fileName) throws IOException {
+        String contents = null;
+        ZipFile zipFile = null;
+        try {
+            zipFile = new ZipFile(zipFileNameAndPath);
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                if (entry.getName().equals(fileName)) {
+                    InputStream stream = zipFile.getInputStream(entry);
+                    contents = new String(stream.readAllBytes());
+                    stream.close();
+                }
+            }
+        } finally {
+            if (zipFile != null) {
+                zipFile.close();
+            }
+        }
+        return contents;
+    }
 }

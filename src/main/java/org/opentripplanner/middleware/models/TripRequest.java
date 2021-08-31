@@ -1,8 +1,10 @@
 package org.opentripplanner.middleware.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
+import org.opentripplanner.middleware.cdp.AnonymizedTripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +48,7 @@ public class TripRequest extends Model {
      * Query params. Query parameters influencing trip.
      */
     //TODO: This could be the request parameters returned as part of the plan response. Would be POJO based instead of just text.
+    @JsonIgnore
     public String queryParams;
 
     /**
@@ -76,6 +79,9 @@ public class TripRequest extends Model {
             '}';
     }
 
+    /**
+     * Get all trip requests for a given user id.
+     */
     public static FindIterable<TripRequest> requestsForUser(String userId) {
         return Persistence.tripRequests.getFiltered(filterByUserId(userId));
     }
@@ -89,10 +95,13 @@ public class TripRequest extends Model {
         return Persistence.tripRequests.removeById(this.id);
     }
 
-    private TripRequest getAnonimized() {
-        return new TripRequest(userId, batchId, fromPlace, toPlace, null);
+    private AnonymizedTripRequest getAnonimized() {
+        return new AnonymizedTripRequest(userId, batchId, fromPlace, toPlace);
     }
 
+    /**
+     * Get all trip requests between two dates.
+     */
     private static FindIterable<TripRequest> getTripRequests(Date start, Date end) {
         return Persistence.tripRequests.getFiltered(
             Filters.and(
@@ -103,12 +112,15 @@ public class TripRequest extends Model {
         );
     }
 
-    public static List<TripRequest> getAnonymizedTripRequests(Date start, Date end) {
-        List<TripRequest> tripRequests = new ArrayList<>();
+    /**
+     * Get all trip requests between two dates, extract qualifying anonymous data and return.
+     */
+    public static List<AnonymizedTripRequest> getAnonymizedTripRequests(Date start, Date end) {
+        List<AnonymizedTripRequest> anonymizedTripRequests = new ArrayList<>();
         for (TripRequest tripRequest : getTripRequests(start, end)) {
-            tripRequests.add(tripRequest.getAnonimized());
+            anonymizedTripRequests.add(tripRequest.getAnonimized());
         }
-        return tripRequests;
+        return anonymizedTripRequests;
     }
 
 }

@@ -62,24 +62,38 @@ public class PersistenceTestUtils {
         return user;
     }
 
+    public static TripRequest createTripRequest(String userId) {
+        return createTripRequest(userId, null);
+    }
+
     /**
      * Create trip request and store in database.
      */
-    public static TripRequest createTripRequest(String userId) {
+    public static TripRequest createTripRequest(String userId, Date createDate) {
         String fromPlace = "28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034";
         String toPlace = "28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759";
         String queryParams = "arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
         TripRequest tripRequest = new TripRequest(userId, BATCH_ID, fromPlace, toPlace, queryParams);
+        if (createDate != null) {
+            tripRequest.dateCreated = createDate;
+        }
         Persistence.tripRequests.create(tripRequest);
         return tripRequest;
+    }
+
+    public static TripSummary createTripSummary(String tripRequestId) throws Exception {
+        return createTripSummary(tripRequestId, null);
     }
 
     /**
      * Create trip summary from static plan response file and store in database.
      */
-    public static TripSummary createTripSummary(String tripRequestId) throws Exception {
+    public static TripSummary createTripSummary(String tripRequestId, Date createDate) throws Exception {
         OtpResponse planResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
         TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId);
+        if (createDate != null) {
+            tripSummary.dateCreated = createDate;
+        }
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
     }
