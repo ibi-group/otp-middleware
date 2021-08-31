@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
@@ -48,7 +47,6 @@ public class TripRequest extends Model {
      * Query params. Query parameters influencing trip.
      */
     //TODO: This could be the request parameters returned as part of the plan response. Would be POJO based instead of just text.
-    @JsonIgnore
     public String queryParams;
 
     /**
