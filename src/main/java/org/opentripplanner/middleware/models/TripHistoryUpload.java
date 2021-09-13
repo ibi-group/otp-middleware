@@ -13,7 +13,7 @@ import java.util.Date;
 public class TripHistoryUpload extends Model {
 
     public Date uploadDate;
-    public String status = TripHistoryUploadStatus.PENDING.getValue();;
+    public String status = TripHistoryUploadStatus.PENDING.getValue();
 
     /** This no-arg constructor exists to make MongoDB happy. */
     public TripHistoryUpload() {

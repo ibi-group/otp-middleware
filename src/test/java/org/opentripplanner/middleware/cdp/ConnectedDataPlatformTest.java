@@ -137,8 +137,9 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         ConnectedDataManager.IS_TEST = true;
 
         String userId = UUID.randomUUID().toString();
+        String batchId = UUID.randomUUID().toString();
         Date startOfYesterday = getStartOfDay(getDateMinusNumberOfDays(new Date(), 1));
-        tripRequest = PersistenceTestUtils.createTripRequest(userId, startOfYesterday);
+        tripRequest = PersistenceTestUtils.createTripRequest(userId, batchId, startOfYesterday);
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequest.id, startOfYesterday);
         ConnectedDataManager.stageUploadDays();
         ConnectedDataManager.processTripHistory();
@@ -153,7 +154,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             getFileName(startOfYesterday, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
         );
         TripHistory tripHistory = JsonUtils.getPOJOFromJSON(fileContents, TripHistory.class);
-        assertTrue(tripHistory.tripRequests.stream().anyMatch(tripRequest -> tripRequest.userId.equals(userId)));
+        assertTrue(tripHistory.tripRequests.stream().anyMatch(tripRequest -> tripRequest.batchId.equals(batchId)));
         ConnectedDataManager.removeUsersTripHistory(userId);
         // Trip request and summary are removed as part of the 'removeUsersTripHistory' method. Setting these to null
         // prevents a delete error under the tidy-up process.
@@ -164,7 +165,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             getFileName(startOfYesterday, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
         );
         tripHistory = JsonUtils.getPOJOFromJSON(fileContents, TripHistory.class);
-        assertTrue(tripHistory.tripRequests.stream().noneMatch(tripRequest -> tripRequest.userId.equals(userId)));
+        assertTrue(tripHistory.tripRequests.stream().noneMatch(tripRequest -> tripRequest.batchId.equals(batchId)));
     }
 
     /**
@@ -217,6 +218,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             otpUser,
             HttpMethod.PUT
         );
+        // Only expecting one trip history upload entry matching the date the trip request and summary were made.
         assertEquals(
             1,
             Persistence.tripHistoryUploads.getCountFiltered(Filters.eq("uploadDate", tenDaysInThePast))

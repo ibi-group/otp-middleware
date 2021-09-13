@@ -63,17 +63,21 @@ public class PersistenceTestUtils {
     }
 
     public static TripRequest createTripRequest(String userId) {
-        return createTripRequest(userId, null);
+        return createTripRequest(userId, BATCH_ID, null);
+    }
+
+    public static TripRequest createTripRequest(String userId, Date createDate) {
+        return createTripRequest(userId, BATCH_ID, null);
     }
 
     /**
      * Create trip request and store in database.
      */
-    public static TripRequest createTripRequest(String userId, Date createDate) {
+    public static TripRequest createTripRequest(String userId, String batchId, Date createDate) {
         String fromPlace = "28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034";
         String toPlace = "28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759";
         String queryParams = "arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
-        TripRequest tripRequest = new TripRequest(userId, BATCH_ID, fromPlace, toPlace, queryParams);
+        TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, queryParams);
         if (createDate != null) {
             tripRequest.dateCreated = createDate;
         }

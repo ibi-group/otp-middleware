@@ -44,8 +44,8 @@ public class ConnectedDataManager {
     public static final String ZIP_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".zip";
     public static final String DATA_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".json";
 
-    private static final int CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_DELAY_IN_MINUTES =
-        getConfigPropertyAsInt("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_DELAY_IN_MINUTES", 5);
+    private static final int CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES =
+        getConfigPropertyAsInt("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES", 5);
 
     private static final Logger LOG = LoggerFactory.getLogger(ConnectedDataManager.class);
 
@@ -56,11 +56,11 @@ public class ConnectedDataManager {
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME");
 
     public static void scheduleTripHistoryUploadJob() {
-        LOG.info("Scheduling trip history upload for every {} minute(s)", CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_DELAY_IN_MINUTES);
+        LOG.info("Scheduling trip history upload for every {} minute(s)", CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES);
         Scheduler.scheduleJob(
             new TripHistoryUploadJob(),
             0,
-            CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_DELAY_IN_MINUTES,
+            CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
             TimeUnit.MINUTES);
     }
 
@@ -76,7 +76,8 @@ public class ConnectedDataManager {
             request.delete();
         }
         // Get all dates that have already been earmarked for uploading.
-        Set<Date> incompleteUploads = getIncompleteUploadsAsSet();
+        Set<Date> incompleteUploads = new HashSet<>();
+        getIncompleteUploads().forEach(tripHistoryUpload -> incompleteUploads.add(tripHistoryUpload.uploadDate));
         // Save all new dates for uploading.
         Set<Date> newDates = Sets.difference(userTripDates, incompleteUploads);
         TripHistoryUpload first = TripHistoryUpload.getFirst();
@@ -179,20 +180,15 @@ public class ConnectedDataManager {
             try {
                 if (tempZipFile != null && !IS_TEST) {
                     FileUtils.deleteFile(tempZipFile);
+                } else if (tempZipFile != null) {
+                    LOG.warn("In test mode, temp zip file {} not deleted. This is expected to be deleted by the calling test",
+                        tempZipFile.getAbsolutePath()
+                    );
                 }
             } catch (IOException e) {
                 LOG.error("Failed to delete temp zip file {}", tempZipFile.getAbsolutePath(), e);
             }
         }
-    }
-
-    /**
-     * Get all dates that have not been uploaded and place in a Set class.
-     */
-    private static Set<Date> getIncompleteUploadsAsSet() {
-        Set<Date> incomplete = new HashSet<>();
-        getIncompleteUploads().forEach(tripHistoryUpload -> incomplete.add(tripHistoryUpload.uploadDate));
-        return incomplete;
     }
 
     /**

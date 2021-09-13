@@ -94,7 +94,7 @@ public class TripRequest extends Model {
     }
 
     private AnonymizedTripRequest getAnonimized() {
-        return new AnonymizedTripRequest(userId, batchId, fromPlace, toPlace);
+        return new AnonymizedTripRequest(batchId, fromPlace, toPlace);
     }
 
     /**
