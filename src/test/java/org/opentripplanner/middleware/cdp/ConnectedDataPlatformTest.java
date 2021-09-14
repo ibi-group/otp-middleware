@@ -86,6 +86,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             Persistence.otpUsers.removeById(otpUser.id);
         }
     }
+
     /**
      * Make sure that the first upload is created and contains the correct upload date.
      */
@@ -236,6 +237,5 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             FileUtils.getTempDirectory().getAbsolutePath(),
             zipFileName
         );
-
     }
 }

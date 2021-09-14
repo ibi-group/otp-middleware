@@ -67,7 +67,7 @@ public class PersistenceTestUtils {
     }
 
     public static TripRequest createTripRequest(String userId, Date createDate) {
-        return createTripRequest(userId, BATCH_ID, null);
+        return createTripRequest(userId, BATCH_ID, createDate);
     }
 
     /**

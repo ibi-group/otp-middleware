@@ -82,8 +82,9 @@ public class ConnectedDataManager {
         Set<Date> newDates = Sets.difference(userTripDates, incompleteUploads);
         TripHistoryUpload first = TripHistoryUpload.getFirst();
         newDates.forEach(newDate -> {
-            if (first != null &&
-                (newDate.getTime() == first.uploadDate.getTime() || newDate.after(first.uploadDate) &&
+            if (first == null ||
+                newDate.getTime() == first.uploadDate.getTime() ||
+                (newDate.after(first.uploadDate) &&
                 newDate.before(getStartOfDay(new Date())))
             ) {
                 // If the new date is the same or after the first ever upload date, add it to the upload list. This acts
