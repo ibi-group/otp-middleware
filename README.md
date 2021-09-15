@@ -134,6 +134,44 @@ In some restricted environments such as AWS Security Groups, you may need to whi
 so that Bugsnag can post error notifications to OTP Middleware and that the errors appear in the admin dashboard.
 Refer to your cloud service for whitelisting IP addresses.
 
+### Connected Data Platform
+
+#### AWS S3 Policy configuration
+An IAM access management S3 policy is required in order for an IAM user to write/delete objects on the Connected Data 
+Platform S3 bucket. 
+
+The following permissions are required:
+1) ListBucket
+2) GetObject
+3) DeleteObject
+4) PutObject
+5) PutObjectAcl
+
+The following snippet is an example policy which can be used/modified to allow access to the CDP S3 bucket:
+```bash
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "VisualEditor0",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:DeleteObject",
+        "s3:PutObjectAcl"
+      ],
+      "Resource": [
+        "arn:aws:s3:::cdp-bucket-name/*",
+        "arn:aws:s3:::cdp-bucket-name"
+      ]
+    }
+  ]
+}
+```
+
+
 ## Testing
 
 ### End-to-end (E2E)
