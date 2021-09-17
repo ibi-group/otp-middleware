@@ -43,11 +43,6 @@ public class TripSummary extends Model {
         this.tripRequestId = tripRequestId;
     }
 
-    public AnonymizedTripSummary getAnonimized() {
-        // TODO: More work is needed in this area to define required parameters.
-        return new AnonymizedTripSummary(itineraries);
-    }
-
     @Override
     public String toString() {
         return "TripSummary{" +

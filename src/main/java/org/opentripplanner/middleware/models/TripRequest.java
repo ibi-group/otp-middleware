@@ -86,9 +86,4 @@ public class TripRequest extends Model {
         }
         return Persistence.tripRequests.removeById(this.id);
     }
-
-    public AnonymizedTripRequest getAnonimized() {
-        return new AnonymizedTripRequest(batchId, fromPlace, toPlace);
-    }
-
 }
