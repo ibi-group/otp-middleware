@@ -7,7 +7,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.auth.Auth0Users;
-import org.opentripplanner.middleware.cdp.ConnectedDataManager;
+import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
+import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadJob;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
@@ -123,9 +124,12 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
             OtpUser otpUser = (OtpUser) user;
             OtpUser existingOtpUser = (OtpUser) preExistingUser;
             if(!otpUser.storeTripHistory && existingOtpUser.storeTripHistory) {
-                // If an OTP user no longer wants their trip history stored, remove all history from MongoDB and all
-                // files previously uploaded to S3.
+                // If an OTP user no longer wants their trip history stored, remove all history from MongoDB.
                 ConnectedDataManager.removeUsersTripHistory(otpUser.id);
+                // Kick-off a trip history upload job to recompile and upload trip data to S3 minus the user's trip
+                // history.
+                TripHistoryUploadJob tripHistoryUploadJob = new TripHistoryUploadJob();
+                tripHistoryUploadJob.run();
             }
         }
         return user;

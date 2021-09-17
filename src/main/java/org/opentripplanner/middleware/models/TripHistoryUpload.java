@@ -5,11 +5,16 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.conversions.Bson;
-import org.opentripplanner.middleware.cdp.TripHistoryUploadStatus;
+import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
 import org.opentripplanner.middleware.persistence.Persistence;
 
 import java.util.Date;
 
+/**
+ * A trip history upload represents an historic date where trip history was or is planned to be uploaded to S3. If the
+ * status is 'pending' the trip history is waiting to be uploaded. If the status is 'complete' the trip history has been
+ * uploaded.
+ */
 public class TripHistoryUpload extends Model {
 
     public Date uploadDate;
@@ -22,16 +27,6 @@ public class TripHistoryUpload extends Model {
     public TripHistoryUpload(Date uploadDate) {
         this.uploadDate = uploadDate;
         this.status = TripHistoryUploadStatus.PENDING.getValue();
-    }
-
-    /**
-     * Get all incomplete uploads.
-     */
-    @BsonIgnore
-    public static FindIterable<TripHistoryUpload> getIncompleteUploads() {
-        return Persistence.tripHistoryUploads.getFiltered(
-            Filters.ne("status", TripHistoryUploadStatus.COMPLETED.getValue())
-        );
     }
 
     /**
@@ -62,5 +57,4 @@ public class TripHistoryUpload extends Model {
             sortBy
         );
     }
-
 }

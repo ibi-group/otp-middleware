@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.cdp;
+package org.opentripplanner.middleware.connecteddataplatform;
 
 import org.opentripplanner.middleware.otp.response.Itinerary;
 

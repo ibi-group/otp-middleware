@@ -5,18 +5,17 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -44,22 +43,39 @@ public class FileUtils {
     }
 
     /**
-     * Writes the file contents to a file and then writes that file to a zip file.
-     * For info: https://stackoverflow.com/questions/14462371/preferred-way-to-use-java-zipoutputstream-and-bufferedoutputstream/17190212#17190212
+     * Adds a single existing file to a new zip file. The contents of the file is streamed to avoid out-of-memory
+     * errors.
      */
-    public static void writeFileToZip(String zipPathAndFileName, String fileName, String contents) throws IOException {
+    public static void addSingleFileToZip(String pathToFile, String zipPathAndFileName) throws IOException {
+        Path source = Paths.get(pathToFile);
+        try (
+            ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipPathAndFileName));
+            FileInputStream fis = new FileInputStream(source.toFile());
+        ) {
+            ZipEntry zipEntry = new ZipEntry(source.getFileName().toString());
+            zos.putNextEntry(zipEntry);
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = fis.read(buffer)) > 0) {
+                zos.write(buffer, 0, len);
+            }
+        }
+    }
 
-        ZipOutputStream zos = null;
+    /**
+     * Writes content to a file. If the file does not exist it is created. The file contents will either be written over
+     * or appended to depending on the append parameter.
+     */
+    public static void writeToFile(String pathAndFileName, boolean append, String contents) throws IOException {
+        FileWriter fileWriter = null;
         try {
-            zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipPathAndFileName)));
-            zos.putNextEntry(new ZipEntry(fileName));
-            zos.write(contents.getBytes());
-            zos.closeEntry();
+            fileWriter = new FileWriter(pathAndFileName, append);
+            fileWriter.write(contents);
         } finally {
             try {
-                if (zos != null) zos.close();
+                if (fileWriter != null) fileWriter.close();
             } catch (IOException e) {
-                LOG.error("Cannot close zip output stream.");
+                LOG.error("Cannot close file writer.", e);
             }
         }
     }
@@ -67,8 +83,8 @@ public class FileUtils {
     /**
      * Delete file on disk.
      */
-    public static void deleteFile(File pathAndFileName) throws IOException {
-        Files.deleteIfExists(pathAndFileName.toPath());
+    public static void deleteFile(String pathAndFileName) throws IOException {
+        Files.deleteIfExists(new File(pathAndFileName).toPath());
     }
 
     /**
@@ -79,7 +95,8 @@ public class FileUtils {
     }
 
     /**
-     * Extracts the contents of a file contented within a zip file.
+     * Extracts the contents of a file contented within a zip file. This method will read the entire contents of a file
+     * into memory and could cause an out-of-memory error if the file is too large.
      */
     public static String getContentsOfFileInZip(String zipFileNameAndPath, String fileName) throws IOException {
         String contents = null;

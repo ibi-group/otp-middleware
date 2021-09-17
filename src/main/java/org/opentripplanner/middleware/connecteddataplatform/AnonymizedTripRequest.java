@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.cdp;
+package org.opentripplanner.middleware.connecteddataplatform;
 
 /**
  * Class to hold anonymized trip requests only.

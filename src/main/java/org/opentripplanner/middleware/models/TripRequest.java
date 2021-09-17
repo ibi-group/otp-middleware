@@ -1,16 +1,10 @@
 package org.opentripplanner.middleware.models;
 
 import com.mongodb.client.FindIterable;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Sorts;
-import org.opentripplanner.middleware.cdp.AnonymizedTripRequest;
+import org.opentripplanner.middleware.connecteddataplatform.AnonymizedTripRequest;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
@@ -93,32 +87,8 @@ public class TripRequest extends Model {
         return Persistence.tripRequests.removeById(this.id);
     }
 
-    private AnonymizedTripRequest getAnonimized() {
+    public AnonymizedTripRequest getAnonimized() {
         return new AnonymizedTripRequest(batchId, fromPlace, toPlace);
-    }
-
-    /**
-     * Get all trip requests between two dates.
-     */
-    private static FindIterable<TripRequest> getTripRequests(Date start, Date end) {
-        return Persistence.tripRequests.getFiltered(
-            Filters.and(
-                Filters.gte("dateCreated", start),
-                Filters.lte("dateCreated", end)
-            ),
-            Sorts.descending("dateCreated")
-        );
-    }
-
-    /**
-     * Get all trip requests between two dates, extract qualifying anonymous data and return.
-     */
-    public static List<AnonymizedTripRequest> getAnonymizedTripRequests(Date start, Date end) {
-        List<AnonymizedTripRequest> anonymizedTripRequests = new ArrayList<>();
-        for (TripRequest tripRequest : getTripRequests(start, end)) {
-            anonymizedTripRequests.add(tripRequest.getAnonimized());
-        }
-        return anonymizedTripRequests;
     }
 
 }

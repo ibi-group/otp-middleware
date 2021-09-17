@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.cdp;
+package org.opentripplanner.middleware.connecteddataplatform;
 
 /**
  * Used to define a trip data upload status. Trip uploads will remain 'pending' until successfully uploaded, at which

@@ -116,10 +116,17 @@ public class PersistenceTestUtils {
      * Create multiple trip requests and store in database.
      */
     public static List<TripRequest> createTripRequests(int amount, String userId) {
+        return createTripRequests(amount, userId, null);
+    }
+
+    /**
+     * Create multiple trip requests and store in database.
+     */
+    public static List<TripRequest> createTripRequests(int amount, String userId, Date createDate) {
         List<TripRequest> tripRequests = new ArrayList<>();
         int i = 0;
         while (i < amount) {
-            tripRequests.add(createTripRequest(userId));
+            tripRequests.add(createTripRequest(userId, createDate));
             i++;
         }
         return tripRequests;
