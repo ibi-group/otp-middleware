@@ -132,9 +132,15 @@ public class ConnectedDataManager {
             );
 
             // Extract trip requests and convert to anonymized trip request list.
-            // TODO: More work is needed in this area to define required parameters.
             List<AnonymizedTripRequest> anonymizedTripRequests = tripRequests
-                .map(trip -> new AnonymizedTripRequest(trip.batchId, trip.fromPlace, trip.toPlace))
+                .map(trip -> new AnonymizedTripRequest(
+                    trip.batchId,
+                    trip.fromPlace,
+                    trip.fromPlaceIsPublic,
+                    trip.toPlace,
+                    trip.toPlaceIsPublic,
+                    trip.requestParameters)
+                )
                 .into(new ArrayList<>());
 
             // Append content to file
@@ -178,7 +184,7 @@ public class ConnectedDataManager {
 
             // Extract trip summaries and convert to anonymized trip summaries list.
             List<AnonymizedTripSummary> anonymizedTripSummaries = tripSummaries
-                .map(trip -> new AnonymizedTripSummary(trip.itineraries))
+                .map(trip -> new AnonymizedTripSummary(trip.batchId, trip.date, trip.itineraries))
                 .into(new ArrayList<>());
 
             // Append content to file

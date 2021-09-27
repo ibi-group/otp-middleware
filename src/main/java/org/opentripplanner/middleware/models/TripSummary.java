@@ -1,16 +1,10 @@
 package org.opentripplanner.middleware.models;
 
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Sorts;
-import org.opentripplanner.middleware.connecteddataplatform.AnonymizedTripSummary;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.PlannerError;
 import org.opentripplanner.middleware.otp.response.TripPlan;
-import org.opentripplanner.middleware.persistence.Persistence;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -19,6 +13,9 @@ import java.util.List;
  */
 public class TripSummary extends Model {
     private static final long serialVersionUID = 1L;
+
+    public Date date;
+
     public Place fromPlace;
 
     public Place toPlace;
@@ -29,31 +26,34 @@ public class TripSummary extends Model {
 
     public String tripRequestId;
 
+    public String batchId;
+
     /** This no-arg constructor exists to make MongoDB happy. */
     public TripSummary() {
     }
 
-    public TripSummary(TripPlan tripPlan, PlannerError error, String tripRequestId) {
+    public TripSummary(TripPlan tripPlan, PlannerError error, String tripRequestId, String batchId) {
         if (tripPlan != null) {
+            this.date = tripPlan.date;
             this.fromPlace = tripPlan.from;
             this.toPlace = tripPlan.to;
             this.itineraries = tripPlan.itineraries;
         }
         this.error = error;
         this.tripRequestId = tripRequestId;
+        this.batchId = batchId;
     }
 
     @Override
     public String toString() {
         return "TripSummary{" +
-            "fromPlace=" + fromPlace +
+            "date=" + date +
+            ", fromPlace=" + fromPlace +
             ", toPlace=" + toPlace +
             ", error=" + error +
             ", itineraries=" + itineraries +
             ", tripRequestId='" + tripRequestId + '\'' +
-            ", id='" + id + '\'' +
-            ", lastUpdated=" + lastUpdated +
-            ", dateCreated=" + dateCreated +
+            ", batchId='" + batchId + '\'' +
             '}';
     }
 }

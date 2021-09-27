@@ -14,6 +14,7 @@ import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -126,7 +127,7 @@ public class OtpRequestProcessor implements Endpoint {
         }
         // If the request path ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
         if (otpRequestPath.endsWith(OtpDispatcher.OTP_PLAN_ENDPOINT) && otpUser != null) {
-            if(!handlePlanTripResponse(request, otpDispatcherResponse, otpUser)) {
+            if (!handlePlanTripResponse(request, otpDispatcherResponse, otpUser)) {
                 logMessageAndHalt(
                     request,
                     HttpStatus.INTERNAL_SERVER_ERROR_500,
@@ -144,6 +145,7 @@ public class OtpRequestProcessor implements Endpoint {
     /**
      * Process plan response from OTP. Store the response if consent is given. Handle the process and all exceptions
      * seamlessly so as not to affect the response provided to the requester.
+     *
      * @return Returns false if there was an error.
      */
     private static boolean handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse, OtpUser otpUser) {
@@ -172,12 +174,14 @@ public class OtpRequestProcessor implements Endpoint {
                     batchId,
                     request.queryParams("fromPlace"),
                     request.queryParams("toPlace"),
-                    request.queryString()
+                    otpResponse.requestParameters,
+                    areAllLegsTransit(otpResponse.plan, true),
+                    areAllLegsTransit(otpResponse.plan, false)
                 );
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
                 if (tripRequestSaved) {
-                    TripSummary tripSummary = new TripSummary(otpResponse.plan, otpResponse.error, tripRequest.id);
+                    TripSummary tripSummary = new TripSummary(otpResponse.plan, otpResponse.error, tripRequest.id, batchId);
                     Persistence.tripSummaries.create(tripSummary);
                 } else {
                     LOG.warn("Unable to save trip request, orphaned trip summary not saved");
@@ -187,5 +191,31 @@ public class OtpRequestProcessor implements Endpoint {
         }
         LOG.debug("Trip storage added {} ms", DateTimeUtils.currentTimeMillis() - tripStorageStartTime);
         return result;
+    }
+
+    /**
+     * Define whether or not all first or all last legs within all itineraries are transit legs. If all legs are transit,
+     * return true, else return false. If there are any issues return false. The result of this is used ultimately by
+     * the connected data platform. E.g. If all the first legs are transit, the related 'fromPlace' lat/long is not
+     * randomized because the starting point is public.
+     */
+    private static boolean areAllLegsTransit(TripPlan plan, boolean isFirstLeg) {
+        try {
+            if (plan != null && plan.itineraries != null) {
+                return plan
+                    .itineraries
+                    .stream()
+                    .anyMatch(itinerary -> {
+                        if (isFirstLeg) {
+                            return !itinerary.legs.get(0).transitLeg;
+                        } else {
+                            return !itinerary.legs.get(itinerary.legs.size()-1).transitLeg;
+                        }
+                    });
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
     }
 }

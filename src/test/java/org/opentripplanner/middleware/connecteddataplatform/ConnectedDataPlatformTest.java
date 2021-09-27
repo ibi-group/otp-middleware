@@ -18,6 +18,7 @@ import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.LatLongUtils;
 import org.opentripplanner.middleware.utils.S3Utils;
 
 import java.io.IOException;
@@ -129,11 +130,13 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     public void canCreateZipFileWithContent() throws Exception {
         assumeTrue(IS_END_TO_END);
         ConnectedDataManager.IS_TEST = true;
+        LatLongUtils.IS_TEST = true;
 
         String userId = UUID.randomUUID().toString();
+        String batchId = "783726";
         Date startOfYesterday = getStartOfDay(getDateMinusNumberOfDays(new Date(), 1));
-        tripRequest = PersistenceTestUtils.createTripRequest(userId, startOfYesterday);
-        tripSummary = PersistenceTestUtils.createTripSummary(tripRequest.id, startOfYesterday);
+        tripRequest = PersistenceTestUtils.createTripRequest(userId, batchId, startOfYesterday);
+        tripSummary = PersistenceTestUtils.createTripSummary(tripRequest.id, batchId, startOfYesterday);
         TripHistoryUploadJob.stageUploadDays();
         TripHistoryUploadJob.processTripHistory();
         zipFileName = getFileName(startOfYesterday, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
@@ -162,7 +165,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         String batchId = UUID.randomUUID().toString();
         Date startOfYesterday = getStartOfDay(getDateMinusNumberOfDays(new Date(), 1));
         tripRequestRemovedByTest = PersistenceTestUtils.createTripRequest(userId, batchId, startOfYesterday);
-        tripSummaryRemovedByTest = PersistenceTestUtils.createTripSummary(tripRequestRemovedByTest.id, startOfYesterday);
+        tripSummaryRemovedByTest = PersistenceTestUtils.createTripSummary(tripRequestRemovedByTest.id, batchId, startOfYesterday);
 
         TripHistoryUploadJob.stageUploadDays();
         TripHistoryUploadJob.processTripHistory();

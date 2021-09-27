@@ -1471,8 +1471,12 @@ definitions:
         type: "string"
       toPlace:
         type: "string"
-      queryParams:
-        type: "string"
+      requestParameters:
+        $ref: "#/definitions/HashMap"
+      fromPlaceIsPublic:
+        type: "boolean"
+      toPlaceIsPublic:
+        type: "boolean"
   MonitoredComponent:
     type: "object"
     properties:

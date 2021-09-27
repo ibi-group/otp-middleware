@@ -1,0 +1,57 @@
+package org.opentripplanner.middleware.connecteddataplatform;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * Anonymous version of {@link org.opentripplanner.middleware.otp.response.Itinerary} containing only parameters
+ * flagged as anonymous.
+ */
+public class AnonymizedItinerary {
+
+    /**
+     * Duration of the trip on this itinerary, in seconds.
+     */
+    public Long duration = 0L;
+
+    /**
+     * Time that the trip departs.
+     */
+    public Date startTime = null;
+
+    /**
+     * Time that the trip arrives.
+     */
+    public Date endTime = null;
+
+    /**
+     * The number of transfers this trip has.
+     */
+    public Integer transfers = 0;
+
+    /**
+     * How much time is spent on transit, in seconds.
+     */
+    public long transitTime = 0;
+
+    /**
+     * How much time is spent waiting for transit to arrive, in seconds.
+     */
+    public long waitingTime = 0;
+
+    /**
+     * How far the user has to walk, in meters.
+     */
+    public Double walkDistance = 0.0;
+
+    /**
+     * How much time is spent walking, in seconds.
+     */
+    public long walkTime = 0;
+
+    /**
+     * Anonymous leg information for this itinerary.
+     */
+    public List<AnonymizedLeg> legs = new ArrayList<>();
+}
