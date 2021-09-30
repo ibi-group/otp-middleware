@@ -12,6 +12,8 @@ public class AnonymizedPlace {
     public Date departure;
     public Double lon;
     public Double lat;
+
+    // Transit leg only.
     public String name;
     public String stopCode;
     public String stopId;

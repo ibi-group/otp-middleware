@@ -45,6 +45,7 @@ public class Leg implements Cloneable {
     public Integer routeType;
     public String routeId;
     public String agencyId;
+    public String tripBlockId;
     public String tripId;
     public String serviceDate;
     public List<EncodedPolyline> interStopGeometry = null;

@@ -1,7 +1,9 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
 import com.google.common.collect.Sets;
+import com.mongodb.client.DistinctIterable;
 import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
@@ -39,7 +42,6 @@ public class ConnectedDataManager {
     // the unit tests instead.
     public static boolean IS_TEST;
 
-    public static final int DATA_RETRIEVAL_LIMIT = 10;
     public static final String FILE_NAME_SUFFIX = "anon-trip-data";
     public static final String ZIP_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".zip";
     public static final String DATA_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".json";
@@ -96,126 +98,97 @@ public class ConnectedDataManager {
     }
 
     /**
-     * Get all trip requests and trip summaries between the provided dates. Anonymize the data, serialize to JSON and
-     * write to temp file.
-     */
-    private static void streamTripHistoryToFile(String pathAndFileName, Date start, Date end) throws IOException {
-        // By not appending here the contents of a potentially existing file will be overwritten.
-        FileUtils.writeToFile(pathAndFileName, false, "{");
-        streamTripRequestsToFile(pathAndFileName, start, end);
-        FileUtils.writeToFile(pathAndFileName, true, ",");
-        streamTripSummariesToFile(pathAndFileName, start, end);
-        FileUtils.writeToFile(pathAndFileName, true, "}");
-    }
-
-    /**
      * Stream trip requests to file. This approach is used to avoid having a large amount of data in memory which could
      * cause an out-of-memory error if there are a lot of trip requests to process.
+     *
+     * Process:
+     *
+     * 1) Extract unique batch ids between two dates.
+     * 2) For each batch id get matching trip requests.
+     * 3) Workout which trip request uses the most modes.
+     * 4) Anonymize trip request with the most modes.
+     * 5) Get related trip summaries and anonymize.
+     * 6) Write anonymized data to file.
      */
-    private static void streamTripRequestsToFile(String pathAndFileName, Date start, Date end) throws IOException {
-        int offset = 0;
-
-        long numberOfTripRequests = Persistence.tripRequests.getCountFiltered(
+    private static void streamAnonymousTripsToFile(String pathAndFileName, Date start, Date end) throws IOException {
+        // Get distinct batchId values between two dates.
+        DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
+            "batchId",
             Filters.and(
                 Filters.gte("dateCreated", start),
                 Filters.lte("dateCreated", end)
-            )
+            ),
+            String.class
         );
 
-        FileUtils.writeToFile(pathAndFileName, true, "\"tripRequests\":[");
-        while (offset < numberOfTripRequests) {
-            // Get limited dataset from db.
-            FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getSortedIterableWithOffsetAndLimit(
-                Sorts.descending("dateCreated"),
-                offset,
-                DATA_RETRIEVAL_LIMIT
-            );
-
-            // Extract trip requests and convert to anonymized trip request list.
-            List<AnonymizedTripRequest> anonymizedTripRequests = tripRequests
-                .map(trip -> new AnonymizedTripRequest(
-                    trip.batchId,
-                    trip.fromPlace,
-                    trip.fromPlaceIsPublic,
-                    trip.toPlace,
-                    trip.toPlaceIsPublic,
-                    trip.requestParameters)
-                )
-                .into(new ArrayList<>());
-
-            // Append content to file
-            FileUtils.writeToFile(
-                pathAndFileName,
-                true,
-                correctJson(
-                    JsonUtils.toJson(anonymizedTripRequests),
-                    offset,
-                    anonymizedTripRequests.size(),
-                    numberOfTripRequests
-                )
-            );
-            offset += DATA_RETRIEVAL_LIMIT;
+        int numberOfUniqueBatchIds = 0;
+        MongoCursor<String> iterator = uniqueBatchIds.iterator();
+        while (iterator.hasNext()) {
+            iterator.next();
+            numberOfUniqueBatchIds++;
         }
-        FileUtils.writeToFile(pathAndFileName, true, "]");
-    }
 
-    /**
-     * Stream trip summaries to file. This approach is used to avoid having a large amount of data in memory which could
-     * cause an out-of-memory error if there are a lot of trip summaries to process.
-     */
-    private static void streamTripSummariesToFile(String pathAndFileName, Date start, Date end) throws IOException {
-        int offset = 0;
+        int pos = 0;
+        FileUtils.writeToFile(pathAndFileName, false, "[");
+        for (String uniqueBatchId : uniqueBatchIds) {
+            pos++;
+            // Get trip request batch.
+            FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getFiltered(
+                Filters.and(
+                    Filters.gte("dateCreated", start),
+                    Filters.lte("dateCreated", end),
+                    Filters.eq("batchId", uniqueBatchId)
+                ),
+                Sorts.descending("dateCreated", "batchId")
+            );
 
-        long numberOfTripSummaries = Persistence.tripSummaries.getCountFiltered(
-            Filters.and(
-                Filters.gte("dateCreated", start),
-                Filters.lte("dateCreated", end)
-            )
-        );
+            TripRequest tripRequest = getTripRequestWithMaxModes(tripRequests);
 
-        FileUtils.writeToFile(pathAndFileName, true, "\"tripSummaries\":[");
-        while (offset < numberOfTripSummaries) {
-            // Get limited dataset from db.
-            FindIterable<TripSummary> tripSummaries = Persistence.tripSummaries.getSortedIterableWithOffsetAndLimit(
-                Sorts.descending("dateCreated"),
-                offset,
-                DATA_RETRIEVAL_LIMIT
+            // Anonymize trip request.
+            AnonymizedTripRequest anonymizedTripRequest = new AnonymizedTripRequest(tripRequest);
+
+            // Get related trip summaries
+            FindIterable<TripSummary> tripSummaries = Persistence.tripSummaries.getFiltered(
+                eq("tripRequestId", tripRequest.id),
+                Sorts.descending("dateCreated")
             );
 
             // Extract trip summaries and convert to anonymized trip summaries list.
             List<AnonymizedTripSummary> anonymizedTripSummaries = tripSummaries
-                .map(trip -> new AnonymizedTripSummary(trip.batchId, trip.date, trip.itineraries))
+                .map(tripSummary -> new AnonymizedTripSummary(tripSummary, anonymizedTripRequest))
                 .into(new ArrayList<>());
 
             // Append content to file
             FileUtils.writeToFile(
                 pathAndFileName,
                 true,
-                correctJson(
-                    JsonUtils.toJson(anonymizedTripSummaries),
-                    offset,
-                    anonymizedTripSummaries.size(),
-                    numberOfTripSummaries
-                )
+                JsonUtils.toJson(new AnonymizedTrip(anonymizedTripRequest, anonymizedTripSummaries))
             );
-            offset += DATA_RETRIEVAL_LIMIT;
+            if (pos < numberOfUniqueBatchIds) {
+                // A comma is not required if processing the last item in the list. This is to prevent JSON formatting
+                // errors.
+                FileUtils.writeToFile(pathAndFileName, true, ",");
+            }
         }
         FileUtils.writeToFile(pathAndFileName, true, "]");
     }
 
     /**
-     * Alter the Json formatting so that the file content will validate correctly once complete.
+     * Extract the trip request that uses the most modes.
      */
-    private static String correctJson(String fileContent, int offset, int numberOfItems, long totalNumberOfItems) {
-        // remove the '[' reference as we only want it in the file once.
-        fileContent = fileContent.replaceFirst("\\[", "");
-        // remove the final ']' as we only want it in the file once.
-        fileContent = fileContent.substring(0, fileContent.length() - 1);
-        if (offset + numberOfItems < totalNumberOfItems) {
-            // Add a comma to separate this list of items from the next.
-            fileContent += ",";
+    private static TripRequest getTripRequestWithMaxModes(FindIterable<TripRequest> tripRequests) {
+        TripRequest requestMaxModes = null;
+        for (TripRequest tripRequest : tripRequests) {
+            if (requestMaxModes == null) {
+                requestMaxModes = tripRequest;
+            } else if (
+                tripRequest.requestParameters.get("mode").length() >
+                requestMaxModes.requestParameters.get("mode").length()
+            ) {
+                requestMaxModes = tripRequest;
+            }
         }
-        return fileContent;
+        return requestMaxModes;
     }
 
     /**
@@ -232,7 +205,7 @@ public class ConnectedDataManager {
             getFileName(startOfDay, DATA_FILE_NAME_SUFFIX)
         );
         try {
-            streamTripHistoryToFile(tempDataFile, startOfDay, getEndOfDay(date));
+            streamAnonymousTripsToFile(tempDataFile, startOfDay, getEndOfDay(date));
             FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
             S3Utils.putObject(
                 CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,

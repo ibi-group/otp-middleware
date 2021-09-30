@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.persistence;
 
+import com.mongodb.client.DistinctIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -283,5 +284,11 @@ public class TypedPersistence<T extends Model> {
         return false;
     }
 
+    /**
+     * Get distinct field values within the filter parameters.
+     */
+    public <X> DistinctIterable<X> getDistinctFieldValues(String field, Bson filter, Class<X> clazz) {
+        return mongoCollection.distinct(field, filter, clazz);
+    }
 }
 

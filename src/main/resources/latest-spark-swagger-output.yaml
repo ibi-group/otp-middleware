@@ -1175,6 +1175,8 @@ definitions:
         type: "string"
       agencyId:
         type: "string"
+      tripBlockId:
+        type: "string"
       tripId:
         type: "string"
       serviceDate:

@@ -1,20 +1,40 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
+import java.util.Date;
+
 /**
  * Anonymous version of {@link org.opentripplanner.middleware.otp.response.Leg} containing only parameters
  * flagged as anonymous.
  */
 public class AnonymizedLeg {
 
-    public Boolean interlineWithPreviousLeg;
+    // Parameters for both transit and non transit legs.
+    public Double distance;
+    public Double duration;
+    public Date startTime;
+    public Date endTime;
     public String mode;
+    public Boolean transitLeg;
+    public AnonymizedPlace from;
+    public AnonymizedPlace to;
+
+    // Parameters for a transit leg.
+    public String agencyId;
+    public Boolean interlineWithPreviousLeg;
     public Boolean realTime;
     public String routeId;
     public String routeShortName;
     public String routeLongName;
     public Integer routeType;
-    public Boolean transitLeg;
+    public String tripBlockId;
     public String tripId;
-    public AnonymizedPlace from;
-    public AnonymizedPlace to;
+
+    // Parameters for non transit leg.
+    public Boolean hailedCar;
+    public Boolean rentedBike;
+    public Boolean rentedCar;
+    public Boolean rentedVehicle;
+
+
+
 }

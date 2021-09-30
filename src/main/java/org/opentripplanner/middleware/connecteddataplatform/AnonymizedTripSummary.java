@@ -1,9 +1,6 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
-import org.opentripplanner.middleware.otp.response.Itinerary;
-
-import java.util.Date;
-import java.util.List;
+import org.opentripplanner.middleware.models.TripSummary;
 
 /**
  * Class to hold anonymized trip summaries only.
@@ -17,9 +14,12 @@ public class AnonymizedTripSummary {
 
     public AnonymizedTripPlan tripPlan;
 
-    public AnonymizedTripSummary(String batchId, Date date, List<Itinerary> itineraries) {
-        this.batchId = batchId;
-        this.tripPlan = new AnonymizedTripPlan(date, itineraries);
+    public AnonymizedTripSummary(
+        TripSummary tripSummary,
+        AnonymizedTripRequest anonymizedTripRequest
+    ) {
+        this.batchId = tripSummary.batchId;
+        this.tripPlan = new AnonymizedTripPlan(tripSummary.date, tripSummary.itineraries, anonymizedTripRequest);
     }
 
     /**

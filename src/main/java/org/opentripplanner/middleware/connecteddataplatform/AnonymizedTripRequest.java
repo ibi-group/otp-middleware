@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
+import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.utils.LatLongUtils;
 
 import java.util.HashMap;
@@ -15,14 +16,24 @@ public class AnonymizedTripRequest {
     public String batchId;
 
     /**
-     * From place. Trip starting point.
+     * From place Lat. Trip starting point.
      */
-    public String fromPlace;
+    public Double fromPlaceLat;
 
     /**
-     * To place. Trip end point.
+     * From place Lon. Trip starting point.
      */
-    public String toPlace;
+    public Double fromPlaceLon;
+
+    /**
+     * To place Lat. Trip end point.
+     */
+    public Double toPlaceLat;
+
+    /**
+     * To place Lon. Trip end point.
+     */
+    public Double toPlaceLon;
 
     /** The date the trip request was made. */
     public String date;
@@ -47,29 +58,26 @@ public class AnonymizedTripRequest {
     public AnonymizedTripRequest() {
     }
 
-    public AnonymizedTripRequest(
-        String batchId,
-        String fromPlace,
-        boolean fromPlaceIsPublic,
-        String toPlace,
-        boolean toPlaceIsPublic,
-        HashMap<String, String> requestParameters
-    ) {
-        this.batchId = batchId;
-        this.fromPlace = getPlaceCoordinates(fromPlaceIsPublic, fromPlace);
-        this.toPlace = getPlaceCoordinates(toPlaceIsPublic, toPlace);
-        if (requestParameters != null) {
-            this.date = requestParameters.get("date");
-            this.time = requestParameters.get("time");
-            this.arriveBy = requestParameters.get("arriveBy");
+    public AnonymizedTripRequest(TripRequest tripRequest) {
+        this.batchId = tripRequest.batchId;
+        LatLongUtils.Coordinates fromCoords = getPlaceCoordinates(tripRequest.fromPlaceIsPublic, tripRequest.fromPlace);
+        this.fromPlaceLat = fromCoords.latitude;
+        this.fromPlaceLon = fromCoords.longitude;
+        LatLongUtils.Coordinates toCoords = getPlaceCoordinates(tripRequest.toPlaceIsPublic, tripRequest.toPlace);
+        this.toPlaceLat = toCoords.latitude;
+        this.toPlaceLon = toCoords.longitude;
+        if (tripRequest. requestParameters != null) {
+            this.date = tripRequest.requestParameters.get("date");
+            this.time = tripRequest.requestParameters.get("time");
+            this.arriveBy = tripRequest.requestParameters.get("arriveBy");
             if (arriveBy != null && arriveBy.equalsIgnoreCase("true")) {
                 arriveBy = "Arrive By";
             } else if (arriveBy != null && arriveBy.equalsIgnoreCase("false")) {
                 arriveBy = "Depart At";
             }
-            this.mode = requestParameters.get("mode");
-            this.maxWalkDistance = requestParameters.get("maxWalkDistance");
-            this.optimize = requestParameters.get("optimize");
+            this.mode = tripRequest.requestParameters.get("mode");
+            this.maxWalkDistance = tripRequest.requestParameters.get("maxWalkDistance");
+            this.optimize = tripRequest.requestParameters.get("optimize");
         }
     }
 
@@ -78,20 +86,12 @@ public class AnonymizedTripRequest {
      * 'location :: lat,long'. If the place is deemed to be public, return the coordinates as provided by OTP. If not,
      * randomize and return.
      */
-    private String getPlaceCoordinates(boolean isPublic, String place) {
-        String coordinates = place.split("::")[1].trim();
-        return isPublic ? coordinates : getRandomizedCoordinates(coordinates);
-    }
-
-    /**
-     * This method randomizes the provided coordinates and returns it as a comma separated pair.
-     */
-    private String getRandomizedCoordinates(String coords) {
+    private LatLongUtils.Coordinates getPlaceCoordinates(boolean isPublic, String place) {
+        String coords = place.split("::")[1].trim();
         LatLongUtils.Coordinates coordinates = new LatLongUtils.Coordinates(
             Double.parseDouble(coords.split(",")[0]),
             Double.parseDouble(coords.split(",")[1])
         );
-        LatLongUtils.Coordinates randomized = LatLongUtils.getRandomizedCoordinates(coordinates);
-        return randomized.latitude + "," + randomized.longitude;
+        return isPublic ? coordinates : LatLongUtils.getRandomizedCoordinates(coordinates);
     }
 }

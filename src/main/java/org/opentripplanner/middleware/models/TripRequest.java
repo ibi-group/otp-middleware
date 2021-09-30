@@ -41,10 +41,10 @@ public class TripRequest extends Model {
     /** A dictionary of the parameters provided in the request that triggered this response. */
     public HashMap<String, String> requestParameters;
 
-    /** All first legs within a OTP trip plan itinerary are public. */
+    /** True if all first legs within a OTP trip plan itinerary are public. */
     public boolean fromPlaceIsPublic;
 
-    /** All last legs within a OTP trip plan itinerary are public. */
+    /** True if all last legs within a OTP trip plan itinerary are public. */
     public boolean toPlaceIsPublic;
 
     /**

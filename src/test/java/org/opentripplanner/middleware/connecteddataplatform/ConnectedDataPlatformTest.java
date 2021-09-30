@@ -69,7 +69,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             Persistence.tripSummaries.removeById(tripSummary.id);
             tripSummary = null;
         }
-        for(TripHistoryUpload tripHistoryUpload : Persistence.tripHistoryUploads.getAll()) {
+        for (TripHistoryUpload tripHistoryUpload : Persistence.tripHistoryUploads.getAll()) {
             Persistence.tripHistoryUploads.removeById(tripHistoryUpload.id);
         }
         if (tempFile != null) {
@@ -179,9 +179,9 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             tempFile,
             getFileName(startOfYesterday, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
         );
-        TripHistory tripHistory = JsonUtils.getPOJOFromJSON(fileContents, TripHistory.class);
+        List<AnonymizedTrip> anonymizedTrips = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTrip.class);
         // Confirm that the user's trip request saved to file contains the expected batch id.
-        assertTrue(tripHistory.tripRequests.stream().anyMatch(tripRequest -> tripRequest.batchId.equals(batchId)));
+        assertEquals(anonymizedTrips.get(0).tripRequest.batchId, batchId);
 
         ConnectedDataManager.removeUsersTripHistory(userId);
         TripHistoryUploadJob.processTripHistory();
@@ -189,10 +189,10 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             tempFile,
             getFileName(startOfYesterday, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
         );
-        tripHistory = JsonUtils.getPOJOFromJSON(fileContents, TripHistory.class);
+        anonymizedTrips = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTrip.class);
         // Confirm that once the user's trip data has been removed the file contents does not contain any trip requests
         // matching the related batch id.
-        assertTrue(tripHistory.tripRequests.stream().noneMatch(tripRequest -> tripRequest.batchId.equals(batchId)));
+        assertTrue(anonymizedTrips.isEmpty());
     }
 
     /**
@@ -203,7 +203,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     public void canCorrectlyStageDays() {
         Date sevenDaysAgo = getStartOfDay(getDateMinusNumberOfDays(new Date(), 7));
         Set<LocalDate> betweenDays = DateTimeUtils.getDatesBetween(
-            getDatePlusNumberOfDays(sevenDaysAgo,1),
+            getDatePlusNumberOfDays(sevenDaysAgo, 1),
             new Date()
         );
         TripHistoryUpload tripHistoryUpload = new TripHistoryUpload(sevenDaysAgo);
