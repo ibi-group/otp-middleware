@@ -41,12 +41,6 @@ public class TripRequest extends Model {
     /** A dictionary of the parameters provided in the request that triggered this response. */
     public HashMap<String, String> requestParameters;
 
-    /** True if all first legs within a OTP trip plan itinerary are public. */
-    public boolean fromPlaceIsPublic;
-
-    /** True if all last legs within a OTP trip plan itinerary are public. */
-    public boolean toPlaceIsPublic;
-
     /**
      * This no-arg constructor exists to make MongoDB happy.
      */
@@ -58,17 +52,13 @@ public class TripRequest extends Model {
         String batchId,
         String fromPlace,
         String toPlace,
-        HashMap<String, String> requestParameters,
-        boolean fromPlaceIsPublic,
-        boolean toPlaceIsPublic
+        HashMap<String, String> requestParameters
     ) {
         this.userId = userId;
         this.batchId = batchId;
         this.fromPlace = fromPlace;
         this.toPlace = toPlace;
         this.requestParameters = requestParameters;
-        this.fromPlaceIsPublic = fromPlaceIsPublic;
-        this.toPlaceIsPublic = toPlaceIsPublic;
     }
 
     @Override
@@ -79,8 +69,6 @@ public class TripRequest extends Model {
             ", fromPlace='" + fromPlace + '\'' +
             ", toPlace='" + toPlace + '\'' +
             ", requestParameters=" + requestParameters +
-            ", fromPlaceIsPublic=" + fromPlaceIsPublic +
-            ", toPlaceIsPublic=" + toPlaceIsPublic +
             '}';
     }
 

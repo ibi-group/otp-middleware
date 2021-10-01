@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -16,14 +17,17 @@ public class LatLongUtils {
     private static final int MINIMUM_DISTANCE_IN_METRES = 50;
     private static final int MAXIMUM_DISTANCE_IN_METRES = 100;
 
+    public static final double TEST_LAT = 33.64070037704429;
+    public static final double TEST_LON = -84.44622866991179;
+
     /**
      * Generate randomized lat/long values at a random distance and bearing from the original values.
      */
     public static Coordinates getRandomizedCoordinates(Coordinates coordinates) {
         if (IS_TEST) {
-            // If testing, don't randomize the coordinates. This is to make sure the response is consistent for comparing
-            // to snapshot.
-            return coordinates;
+            // If testing, return a fixed location (Atlanta airport). This is to make sure the response is consistent
+            // for comparing to snapshot.
+            return new Coordinates(TEST_LAT, TEST_LON);
         }
 
         Random r = new Random();
@@ -83,6 +87,19 @@ public class LatLongUtils {
         public Coordinates(double latitude, double longitude) {
             this.latitude = latitude;
             this.longitude = longitude;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Coordinates that = (Coordinates) o;
+            return Double.compare(that.latitude, latitude) == 0 && Double.compare(that.longitude, longitude) == 0;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(latitude, longitude);
         }
     }
 }

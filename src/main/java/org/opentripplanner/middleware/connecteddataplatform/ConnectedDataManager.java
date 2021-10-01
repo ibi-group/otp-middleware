@@ -9,9 +9,11 @@ import com.mongodb.client.model.Sorts;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.LatLongUtils;
 import org.opentripplanner.middleware.utils.S3Exception;
 import org.opentripplanner.middleware.utils.S3Utils;
 import org.opentripplanner.middleware.utils.Scheduler;
@@ -36,6 +38,9 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.getEndOfDay;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getStartOfDay;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDate;
 
+/**
+ * Responsible for collating, a
+ */
 public class ConnectedDataManager {
 
     // If set to true, no files are upload to S3 or deleted from the local disk. This is expected to be carried out by
@@ -106,9 +111,10 @@ public class ConnectedDataManager {
      * 1) Extract unique batch ids between two dates.
      * 2) For each batch id get matching trip requests.
      * 3) Workout which trip request uses the most modes.
-     * 4) Anonymize trip request with the most modes.
-     * 5) Get related trip summaries and anonymize.
-     * 6) Write anonymized data to file.
+     * 4) Define lat/lon for 'from' and 'to' places.
+     * 5) Anonymize trip request with the most modes.
+     * 6) Get related trip summaries and anonymize.
+     * 7) Write anonymized trip request and related summaries to file.
      */
     private static void streamAnonymousTripsToFile(String pathAndFileName, Date start, Date end) throws IOException {
         // Get distinct batchId values between two dates.
@@ -132,6 +138,7 @@ public class ConnectedDataManager {
         FileUtils.writeToFile(pathAndFileName, false, "[");
         for (String uniqueBatchId : uniqueBatchIds) {
             pos++;
+
             // Get trip request batch.
             FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getFiltered(
                 Filters.and(
@@ -144,18 +151,34 @@ public class ConnectedDataManager {
 
             TripRequest tripRequest = getTripRequestWithMaxModes(tripRequests);
 
-            // Anonymize trip request.
-            AnonymizedTripRequest anonymizedTripRequest = new AnonymizedTripRequest(tripRequest);
-
-            // Get related trip summaries
+            // Get all trip summaries matching the batch id.
             FindIterable<TripSummary> tripSummaries = Persistence.tripSummaries.getFiltered(
-                eq("tripRequestId", tripRequest.id),
+                eq("batchId", uniqueBatchId),
                 Sorts.descending("dateCreated")
+            );
+
+            // Get place coordinates.
+            LatLongUtils.Coordinates fromCoordinates = getPlaceCoordinates(
+                tripSummaries,
+                true,
+                tripRequest.fromPlace
+            );
+            LatLongUtils.Coordinates toCoordinates = getPlaceCoordinates(
+                tripSummaries,
+                false,
+                tripRequest.toPlace
+            );
+
+            // Anonymize trip request.
+            AnonymizedTripRequest anonymizedTripRequest = new AnonymizedTripRequest(
+                tripRequest,
+                fromCoordinates,
+                toCoordinates
             );
 
             // Extract trip summaries and convert to anonymized trip summaries list.
             List<AnonymizedTripSummary> anonymizedTripSummaries = tripSummaries
-                .map(tripSummary -> new AnonymizedTripSummary(tripSummary, anonymizedTripRequest))
+                .map(tripSummary -> new AnonymizedTripSummary(tripSummary, fromCoordinates, toCoordinates))
                 .into(new ArrayList<>());
 
             // Append content to file
@@ -174,6 +197,32 @@ public class ConnectedDataManager {
     }
 
     /**
+     * Workout if the first or last leg is public (a transit leg). If the leg is public the coordinates provided by OTP
+     * can be used. If not they are randomized. The place value is assumed to be in the format 'location :: lat,lon'.
+     */
+    private static LatLongUtils.Coordinates getPlaceCoordinates(
+        FindIterable<TripSummary> tripSummaries,
+        boolean isFirstLeg,
+        String place
+    ) {
+        boolean placeIsPublic = true;
+        for (TripSummary tripSummary : tripSummaries) {
+            placeIsPublic = isLegTransit(tripSummary.itineraries, isFirstLeg);
+            if (!placeIsPublic) {
+                // if a single trip summary is not public the place lat/lon must be randomized.
+                break;
+            }
+        }
+
+        String coords = place.split("::")[1].trim();
+        LatLongUtils.Coordinates coordinates = new LatLongUtils.Coordinates(
+            Double.parseDouble(coords.split(",")[0]),
+            Double.parseDouble(coords.split(",")[1])
+        );
+        return placeIsPublic ? coordinates : LatLongUtils.getRandomizedCoordinates(coordinates);
+    }
+
+    /**
      * Extract the trip request that uses the most modes.
      */
     private static TripRequest getTripRequestWithMaxModes(FindIterable<TripRequest> tripRequests) {
@@ -183,12 +232,31 @@ public class ConnectedDataManager {
                 requestMaxModes = tripRequest;
             } else if (
                 tripRequest.requestParameters.get("mode").length() >
-                requestMaxModes.requestParameters.get("mode").length()
+                    requestMaxModes.requestParameters.get("mode").length()
             ) {
                 requestMaxModes = tripRequest;
             }
         }
         return requestMaxModes;
+    }
+
+    /**
+     * Using the legs from the first itinerary, define whether or not the first or last leg is a transit leg. It is
+     * assumed that the first and last legs are the same for all itineraries. If the leg is transit, return true else
+     * false. E.g. If the first leg is non transit, the related 'fromPlace' lat/lon is randomized because it is not
+     * a public location.
+     */
+    private static boolean isLegTransit(List<Itinerary> itineraries, boolean isFirstLeg) {
+        if (itineraries != null &&
+            !itineraries.isEmpty() &&
+            itineraries.get(0).legs != null &&
+            !itineraries.get(0).legs.isEmpty()
+        ) {
+            return (isFirstLeg)
+                ? itineraries.get(0).legs.get(0).transitLeg
+                : itineraries.get(0).legs.get(itineraries.get(0).legs.size() - 1).transitLeg;
+        }
+        return false;
     }
 
     /**

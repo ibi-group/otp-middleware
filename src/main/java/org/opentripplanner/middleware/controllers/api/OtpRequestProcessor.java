@@ -14,7 +14,6 @@ import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
-import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -121,7 +120,7 @@ public class OtpRequestProcessor implements Endpoint {
         String otpRequestPath = request.uri().replaceFirst(OTP_PROXY_ENDPOINT, "");
         // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
-        if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
+        if (otpDispatcherResponse.responseBody == null) {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
             return null;
         }
@@ -174,9 +173,7 @@ public class OtpRequestProcessor implements Endpoint {
                     batchId,
                     request.queryParams("fromPlace"),
                     request.queryParams("toPlace"),
-                    otpResponse.requestParameters,
-                    areAllLegsTransit(otpResponse.plan, true),
-                    areAllLegsTransit(otpResponse.plan, false)
+                    otpResponse.requestParameters
                 );
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
@@ -193,29 +190,4 @@ public class OtpRequestProcessor implements Endpoint {
         return result;
     }
 
-    /**
-     * Define whether or not all first or all last legs within all itineraries are transit legs. If all legs are transit,
-     * return true, else return false. If there are any issues return false. The result of this is used ultimately by
-     * the connected data platform. E.g. If all the first legs are transit, the related 'fromPlace' lat/long is not
-     * randomized because the starting point is public.
-     */
-    private static boolean areAllLegsTransit(TripPlan plan, boolean isFirstLeg) {
-        try {
-            if (plan != null && plan.itineraries != null) {
-                return plan
-                    .itineraries
-                    .stream()
-                    .anyMatch(itinerary -> {
-                        if (isFirstLeg) {
-                            return !itinerary.legs.get(0).transitLeg;
-                        } else {
-                            return !itinerary.legs.get(itinerary.legs.size()-1).transitLeg;
-                        }
-                    });
-            }
-        } catch (Exception e) {
-            return false;
-        }
-        return false;
-    }
 }

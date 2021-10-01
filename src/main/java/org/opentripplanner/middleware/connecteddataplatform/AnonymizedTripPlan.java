@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.connecteddataplatform;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.utils.LatLongUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -13,10 +14,14 @@ import java.util.List;
  * flagged as anonymous.
  */
 public class AnonymizedTripPlan {
-    /**  The time and date of travel */
+    /**
+     * The time and date of travel
+     */
     public Date date = null;
 
-    /** A list of possible itineraries */
+    /**
+     * A list of possible itineraries
+     */
     public List<AnonymizedItinerary> itineraries = new ArrayList<>();
 
     /**
@@ -29,7 +34,12 @@ public class AnonymizedTripPlan {
      * Create an {@link AnonymizedTripPlan} containing {@link AnonymizedItinerary}s and {@link AnonymizedLeg}s from
      * required anonymous parameters in related classes.
      */
-    public AnonymizedTripPlan(Date date, List<Itinerary> itineraries, AnonymizedTripRequest anonymizedTripRequest) {
+    public AnonymizedTripPlan(
+        Date date,
+        List<Itinerary> itineraries,
+        LatLongUtils.Coordinates fromCoordinates,
+        LatLongUtils.Coordinates toCoordinates
+    ) {
         this.date = date;
         itineraries.forEach(itinerary -> {
             AnonymizedItinerary itin = new AnonymizedItinerary();
@@ -41,7 +51,7 @@ public class AnonymizedTripPlan {
             itin.waitingTime = 0;
             itin.walkDistance = 0.0;
             itin.walkTime = 0;
-            for (int i=0; i<itinerary.legs.size(); i++) {
+            for (int i = 0; i < itinerary.legs.size(); i++) {
                 Leg leg = itinerary.legs.get(i);
                 AnonymizedLeg anonymizedLeg = new AnonymizedLeg();
                 // Parameters for both transit and non transit legs.
@@ -53,18 +63,16 @@ public class AnonymizedTripPlan {
                 anonymizedLeg.transitLeg = leg.transitLeg;
                 boolean isFirstOrLastLegOfTrip = i == 0 || i == itinerary.legs.size() - 1;
                 anonymizedLeg.from = getAnonymizedPlace(
-                    true,
                     leg.transitLeg,
                     isFirstOrLastLegOfTrip,
                     leg.from,
-                    anonymizedTripRequest
+                    fromCoordinates
                 );
                 anonymizedLeg.to = getAnonymizedPlace(
-                    false,
                     leg.transitLeg,
                     isFirstOrLastLegOfTrip,
                     leg.to,
-                    anonymizedTripRequest
+                    toCoordinates
                 );
                 if (leg.transitLeg) {
                     // Parameters for a transit leg.
@@ -94,11 +102,10 @@ public class AnonymizedTripPlan {
      * Create an {@link AnonymizedPlace} containing required anonymous parameters from {@link Place}.
      */
     private AnonymizedPlace getAnonymizedPlace(
-        boolean isFromPlace,
         boolean isTransitLeg,
         boolean isFirstOrLastLegOfTrip,
         Place place,
-        AnonymizedTripRequest anonymizedTripRequest
+        LatLongUtils.Coordinates coordinates
     ) {
         AnonymizedPlace anonymizedPlace = new AnonymizedPlace();
         anonymizedPlace.arrival = place.arrival;
@@ -111,16 +118,10 @@ public class AnonymizedTripPlan {
             anonymizedPlace.stopId = place.stopId;
             anonymizedPlace.stopSequence = place.stopSequence;
         } else {
-            // non transit leg
-            if (isFirstOrLastLegOfTrip) {
-                // replace lat/lon values with the randomized values created for the trip request. The start and end legs
-                // will then be consistent with the trip's 'to' and 'from' place.
-                anonymizedPlace.lon = (isFromPlace) ? anonymizedTripRequest.fromPlaceLon : anonymizedTripRequest.toPlaceLon;
-                anonymizedPlace.lat = (isFromPlace) ? anonymizedTripRequest.fromPlaceLat : anonymizedTripRequest.toPlaceLat;
-            } else {
-                anonymizedPlace.lon = place.lon;
-                anonymizedPlace.lat = place.lat;
-            }
+            // replace lat/lon values with the lat/lon values created for the trip request. The start and end legs
+            // will then be consistent with the trip's 'to' and 'from' place.
+            anonymizedPlace.lon = (isFirstOrLastLegOfTrip) ? coordinates.longitude : place.lon;
+            anonymizedPlace.lat = (isFirstOrLastLegOfTrip) ? coordinates.latitude : place.lat;
         }
         return anonymizedPlace;
     }

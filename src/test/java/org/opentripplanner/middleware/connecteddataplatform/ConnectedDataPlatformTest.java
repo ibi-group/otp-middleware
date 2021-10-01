@@ -21,8 +21,8 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.LatLongUtils;
 import org.opentripplanner.middleware.utils.S3Utils;
 
-import java.io.IOException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -30,6 +30,8 @@ import java.util.UUID;
 
 import static com.zenika.snapshotmatcher.SnapshotMatcher.matchesSnapshot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -43,7 +45,8 @@ import static org.opentripplanner.middleware.utils.FileUtils.getContentsOfFileIn
 
 public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
-    private static List<TripRequest> tripRequests;
+    private static List<TripRequest> tripRequests = new ArrayList<>();
+    private static List<TripSummary> tripSummaries = new ArrayList<>();
     private TripRequest tripRequest;
     private TripSummary tripSummary;
     private static TripRequest tripRequestRemovedByTest;
@@ -83,6 +86,10 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             );
             zipFileName = null;
         }
+        tripRequests.forEach(tripRequest -> Persistence.tripRequests.removeById(tripRequest.id));
+        tripRequests.clear();
+        tripSummaries.forEach(tripSummary1 -> Persistence.tripSummaries.removeById(tripSummary1.id));
+        tripSummaries.clear();
     }
 
     @AfterAll
@@ -104,10 +111,6 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         ) {
             Persistence.tripSummaries.removeById(tripSummaryRemovedByTest.id);
         }
-
-        if (tripRequests != null) {
-            tripRequests.forEach(tripRequest -> Persistence.tripRequests.removeById(tripRequest.id));
-        }
     }
 
     /**
@@ -124,7 +127,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
     /**
      * Confirm that a single zip file is created which contains a single JSON file. Also confirm that the contents
-     * written to the JSON file is correct and covers a single day's worth of trip data.
+     * written to the JSON file is correct and covers a single day's worth of trip data and that the correct lat/log
+     * have been randomized.
      */
     @Test
     public void canCreateZipFileWithContent() throws Exception {
@@ -150,6 +154,69 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             getFileName(startOfYesterday, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
         );
         MatcherAssert.assertThat(fileContents, matchesSnapshot());
+
+        // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
+        List<AnonymizedTrip> anonymizedTrips = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTrip.class);
+        assertNotNull(anonymizedTrips);
+        assertEquals(LatLongUtils.TEST_LAT, anonymizedTrips.get(0).tripRequest.fromPlaceLat);
+        assertEquals(LatLongUtils.TEST_LON, anonymizedTrips.get(0).tripRequest.fromPlaceLon);
+        assertEquals(LatLongUtils.TEST_LAT, anonymizedTrips.get(0).tripRequest.toPlaceLat);
+        assertEquals(LatLongUtils.TEST_LON, anonymizedTrips.get(0).tripRequest.toPlaceLon);
+        anonymizedTrips.get(0).tripSummaries.forEach(tripSummary -> {
+            tripSummary.tripPlan.itineraries.forEach(intin -> {
+                intin.legs.forEach(leg -> {
+                    if (leg.transitLeg) {
+                        assertNotEquals(LatLongUtils.TEST_LAT, leg.from.lat);
+                        assertNotEquals(LatLongUtils.TEST_LON, leg.from.lon);
+                        assertNotEquals(LatLongUtils.TEST_LAT, leg.to.lat);
+                        assertNotEquals(LatLongUtils.TEST_LON, leg.to.lon);
+                    } else {
+                        assertEquals(LatLongUtils.TEST_LAT, leg.from.lat);
+                        assertEquals(LatLongUtils.TEST_LON, leg.from.lon);
+                        assertEquals(LatLongUtils.TEST_LAT, leg.to.lat);
+                        assertEquals(LatLongUtils.TEST_LON, leg.to.lon);
+                    }
+                });
+            });
+        });
+
+    }
+
+    /**
+     * Confirm that the trip request with the most modes is used.
+     */
+    @Test
+    public void canCreateContentWithTripRequestWithMaxModes() throws Exception {
+        assumeTrue(IS_END_TO_END);
+        ConnectedDataManager.IS_TEST = true;
+        LatLongUtils.IS_TEST = true;
+
+        String userId = UUID.randomUUID().toString();
+        String batchId = "12345678";
+        String mode = "WALK%2CBUS%2CRAIL%2TRAM";
+        Date startOfYesterday = getStartOfDay(getDateMinusNumberOfDays(new Date(), 1));
+        TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(userId, batchId, startOfYesterday, mode);
+        TripRequest tripRequestTwo = PersistenceTestUtils.createTripRequest(userId, batchId, startOfYesterday, "WALK");
+        tripRequests.clear();
+        tripRequests.add(tripRequestOne);
+        tripRequests.add(tripRequestTwo);
+        tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchId, startOfYesterday);
+        TripHistoryUploadJob.stageUploadDays();
+        TripHistoryUploadJob.processTripHistory();
+        zipFileName = getFileName(startOfYesterday, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
+        tempFile = String.join(
+            "/",
+            FileUtils.getTempDirectory().getAbsolutePath(),
+            zipFileName
+        );
+        String fileContents = getContentsOfFileInZip(
+            tempFile,
+            getFileName(startOfYesterday, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+        );
+        // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
+        List<AnonymizedTrip> anonymizedTrips = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTrip.class);
+        assertNotNull(anonymizedTrips);
+        assertEquals(mode, anonymizedTrips.get(0).tripRequest.mode);
     }
 
     /**
@@ -161,11 +228,19 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         assumeTrue(IS_END_TO_END);
         ConnectedDataManager.IS_TEST = true;
 
-        String userId = UUID.randomUUID().toString();
-        String batchId = UUID.randomUUID().toString();
+        String userIdOne = UUID.randomUUID().toString();
+        String batchIdOne = "2222222222";
         Date startOfYesterday = getStartOfDay(getDateMinusNumberOfDays(new Date(), 1));
-        tripRequestRemovedByTest = PersistenceTestUtils.createTripRequest(userId, batchId, startOfYesterday);
-        tripSummaryRemovedByTest = PersistenceTestUtils.createTripSummary(tripRequestRemovedByTest.id, batchId, startOfYesterday);
+        tripRequestRemovedByTest = PersistenceTestUtils.createTripRequest(userIdOne, batchIdOne, startOfYesterday);
+        tripSummaryRemovedByTest = PersistenceTestUtils.createTripSummary(tripRequestRemovedByTest.id, batchIdOne, startOfYesterday);
+
+        // Additional trip request and summary which should remain after the first user's trip data is removed.
+        String userIdTwo = UUID.randomUUID().toString();
+        String batchIdTwo = "777777777";
+        TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(userIdTwo, batchIdTwo, startOfYesterday);
+        tripRequests.clear();
+        tripRequests.add(tripRequestOne);
+        tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdTwo, startOfYesterday);
 
         TripHistoryUploadJob.stageUploadDays();
         TripHistoryUploadJob.processTripHistory();
@@ -180,19 +255,22 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             getFileName(startOfYesterday, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
         );
         List<AnonymizedTrip> anonymizedTrips = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTrip.class);
-        // Confirm that the user's trip request saved to file contains the expected batch id.
-        assertEquals(anonymizedTrips.get(0).tripRequest.batchId, batchId);
+        // Confirm that the user's trip request saved to file contains the expected batch ids.
+        assertNotNull(anonymizedTrips);
+        assertTrue(anonymizedTrips.stream().anyMatch(anonymizedTrip -> anonymizedTrip.tripRequest.batchId.equals(batchIdOne)));
+        assertTrue(anonymizedTrips.stream().anyMatch(anonymizedTrip -> anonymizedTrip.tripRequest.batchId.equals(batchIdTwo)));
 
-        ConnectedDataManager.removeUsersTripHistory(userId);
+        ConnectedDataManager.removeUsersTripHistory(userIdOne);
         TripHistoryUploadJob.processTripHistory();
         fileContents = getContentsOfFileInZip(
             tempFile,
             getFileName(startOfYesterday, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
         );
         anonymizedTrips = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTrip.class);
-        // Confirm that once the user's trip data has been removed the file contents does not contain any trip requests
-        // matching the related batch id.
-        assertTrue(anonymizedTrips.isEmpty());
+        assertNotNull(anonymizedTrips);
+        // Confirm that once the user's trip data has been removed the file contents only the second batch id.
+        assertFalse(anonymizedTrips.stream().anyMatch(anonymizedTrip -> anonymizedTrip.tripRequest.batchId.equals(batchIdOne)));
+        assertTrue(anonymizedTrips.stream().anyMatch(anonymizedTrip -> anonymizedTrip.tripRequest.batchId.equals(batchIdTwo)));
     }
 
     /**
@@ -261,14 +339,31 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
-     * Confirm that the correct number of trip requests are written to file. This is primarily to test streaming trip
-     * requests to file and that none are missed.
+     * Confirm that the correct number of trip requests and related summaries are written to file.
      */
     @Test
-    public void canStreamTheCorrectNumberOfTripRequest() throws IOException {
+    public void canStreamTheCorrectNumberOfTrips() throws Exception {
         assumeTrue(IS_END_TO_END);
         ConnectedDataManager.IS_TEST = true;
+        LatLongUtils.IS_TEST = true;
         String userId = UUID.randomUUID().toString();
+        String batchIdOne = "99999999";
+        String batchIdTwo = "11111111";
+        Date startOfYesterday = getStartOfDay(getDateMinusNumberOfDays(new Date(), 1));
+
+        // Create required trip requests and add to list for deletion once the test has completed.
+        TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(userId, batchIdOne, startOfYesterday);
+        TripRequest tripRequestTwo = PersistenceTestUtils.createTripRequest(userId, batchIdTwo, startOfYesterday);
+        tripRequests.clear();
+        tripRequests.add(tripRequestOne);
+        tripRequests.add(tripRequestTwo);
+
+        // Create required trip summaries and add to list for deletion once the test has completed.
+        tripSummaries.clear();
+        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdOne, startOfYesterday));
+        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdOne, startOfYesterday));
+        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestTwo.id, batchIdTwo, startOfYesterday));
+        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestTwo.id, batchIdTwo, startOfYesterday));
 
         // Set back stop. This allows dates after this to trigger an upload.
         Date twentyDaysInThePast = getStartOfDay(getDateMinusNumberOfDays(new Date(), 20));
@@ -278,7 +373,6 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
         // Create trip requests for required date.
         Date yesterday = getStartOfDay(getDateMinusNumberOfDays(new Date(), 1));
-        tripRequests = PersistenceTestUtils.createTripRequests(15, userId, yesterday);
 
         // Create trip history upload for required date.
         tripHistoryUpload = new TripHistoryUpload(yesterday);
@@ -298,5 +392,15 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             getFileName(yesterday, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
         );
         MatcherAssert.assertThat(fileContents, matchesSnapshot());
+    }
+
+    /**
+     * Test to confirm that the coordinates provided for randomizing do not match those returned.
+     */
+    @Test
+    public void canRandomizeLatLon() {
+        LatLongUtils.Coordinates coordinates = new LatLongUtils.Coordinates(33.64070037704429,-84.44622866991179);
+        LatLongUtils.Coordinates randomized = LatLongUtils.getRandomizedCoordinates(coordinates);
+        assertNotEquals(coordinates, randomized);
     }
 }

@@ -74,19 +74,30 @@ public class PersistenceTestUtils {
      * Create trip request and store in database.
      */
     public static TripRequest createTripRequest(String userId, String batchId, Date createDate) {
+        return createTripRequest(userId, batchId, createDate, null);
+    }
+
+    /**
+     * Create trip request and store in database.
+     */
+    public static TripRequest createTripRequest(String userId, String batchId, Date createDate, String mode) {
         String fromPlace = "Airport, College Park, GA, USA :: 33.64070037704429,-84.44622866991179";
         String toPlace = "177 Gibson Street SE, Atlanta, GA, USA :: 33.748893261983575,-84.35611735540574";
         HashMap<String, String> requestParameters = new HashMap<>();
         requestParameters.put("date", " 2021-09-22");
         requestParameters.put("time", "15:54");
         requestParameters.put("arriveBy", "false");
-        requestParameters.put("mode", "WALK%2CBUS%2CRAIL");
+        if (mode != null) {
+            requestParameters.put("mode", mode);
+        } else {
+            requestParameters.put("mode", "WALK%2CBUS%2CRAIL");
+        }
         requestParameters.put("showIntermediateStops", "true");
         requestParameters.put("maxWalkDistance", "1027");
         requestParameters.put("optimize", "QUICK");
         requestParameters.put("walkSpeed", "1.34");
         requestParameters.put("ignoreRealtimeUpdates", "true");
-        TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, requestParameters, true, true);
+        TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, requestParameters);
         if (createDate != null) {
             tripRequest.dateCreated = createDate;
         }
