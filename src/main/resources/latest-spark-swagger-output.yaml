@@ -1475,10 +1475,6 @@ definitions:
         type: "string"
       requestParameters:
         $ref: "#/definitions/HashMap"
-      fromPlaceIsPublic:
-        type: "boolean"
-      toPlaceIsPublic:
-        type: "boolean"
   MonitoredComponent:
     type: "object"
     properties:
