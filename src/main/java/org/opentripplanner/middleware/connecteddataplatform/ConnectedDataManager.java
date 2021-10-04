@@ -39,7 +39,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.getStartOfDay;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDate;
 
 /**
- * Responsible for collating, a
+ * Responsible for collating, anonymizing and uploading to AWS s3 trip requests and related trip summaries.
  */
 public class ConnectedDataManager {
 
