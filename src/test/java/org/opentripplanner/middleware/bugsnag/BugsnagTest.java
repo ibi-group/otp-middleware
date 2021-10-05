@@ -29,6 +29,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.bugsnag.BugsnagDispatcher.TEST_BUGSNAG_DOMAIN;
 import static org.opentripplanner.middleware.bugsnag.BugsnagDispatcher.TEST_BUGSNAG_PORT;
 import static org.opentripplanner.middleware.bugsnag.BugsnagJobs.getHoursRoundedToWholeDaySinceDate;
@@ -193,8 +194,9 @@ public class BugsnagTest extends OtpMiddlewareTestEnvironment {
                 )
             );
         assertNotNull(bugsnagEventRequest1);
-        // Rounding hour to nearest whole day bumps this by a day from the original 2 to 3 days.
-        assertEquals(3, bugsnagEventRequest1.daysInPast);
+        // Rounding hour to nearest whole day bumps this by a day from the original 2 to 3 days if after midday. The
+        // result will change depending on what time of day the test is run.
+        assertTrue(bugsnagEventRequest1.daysInPast == 2 || bugsnagEventRequest1.daysInPast == 3);
         assertEquals("PREPARING", bugsnagEventRequest1.status);
     }
 
