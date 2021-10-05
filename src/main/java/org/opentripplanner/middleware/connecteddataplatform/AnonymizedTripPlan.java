@@ -3,7 +3,7 @@ package org.opentripplanner.middleware.connecteddataplatform;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.utils.LatLongUtils;
+import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -37,20 +37,20 @@ public class AnonymizedTripPlan {
     public AnonymizedTripPlan(
         Date date,
         List<Itinerary> itineraries,
-        LatLongUtils.Coordinates fromCoordinates,
-        LatLongUtils.Coordinates toCoordinates
+        Coordinates fromCoordinates,
+        Coordinates toCoordinates
     ) {
         this.date = date;
         itineraries.forEach(itinerary -> {
             AnonymizedItinerary itin = new AnonymizedItinerary();
             itin.duration = itinerary.duration;
             itin.startTime = itinerary.startTime;
-            itin.endTime = null;
-            itin.transfers = 0;
-            itin.transitTime = 0;
-            itin.waitingTime = 0;
-            itin.walkDistance = 0.0;
-            itin.walkTime = 0;
+            itin.endTime = itinerary.endTime;
+            itin.transfers = itinerary.transfers;
+            itin.transitTime = itinerary.transitTime;
+            itin.waitingTime = itinerary.waitingTime;
+            itin.walkDistance = itinerary.walkDistance;
+            itin.walkTime = itinerary.walkTime;
             for (int i = 0; i < itinerary.legs.size(); i++) {
                 Leg leg = itinerary.legs.get(i);
                 AnonymizedLeg anonymizedLeg = new AnonymizedLeg();
@@ -105,14 +105,14 @@ public class AnonymizedTripPlan {
         boolean isTransitLeg,
         boolean isFirstOrLastLegOfTrip,
         Place place,
-        LatLongUtils.Coordinates coordinates
+        Coordinates coordinates
     ) {
         AnonymizedPlace anonymizedPlace = new AnonymizedPlace();
         anonymizedPlace.arrival = place.arrival;
         anonymizedPlace.departure = place.departure;
+        Coordinates placeCoordinates = new Coordinates(place.lat, place.lon);
         if (isTransitLeg) {
-            anonymizedPlace.lon = place.lon;
-            anonymizedPlace.lat = place.lat;
+            anonymizedPlace.coordinates = placeCoordinates;
             anonymizedPlace.name = place.name;
             anonymizedPlace.stopCode = place.stopCode;
             anonymizedPlace.stopId = place.stopId;
@@ -120,8 +120,7 @@ public class AnonymizedTripPlan {
         } else {
             // replace lat/lon values with the lat/lon values created for the trip request. The start and end legs
             // will then be consistent with the trip's 'to' and 'from' place.
-            anonymizedPlace.lon = (isFirstOrLastLegOfTrip) ? coordinates.longitude : place.lon;
-            anonymizedPlace.lat = (isFirstOrLastLegOfTrip) ? coordinates.latitude : place.lat;
+            anonymizedPlace.coordinates = (isFirstOrLastLegOfTrip) ? coordinates : placeCoordinates;
         }
         return anonymizedPlace;
     }

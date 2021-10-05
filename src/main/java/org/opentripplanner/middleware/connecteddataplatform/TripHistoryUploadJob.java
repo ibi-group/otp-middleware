@@ -20,11 +20,11 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.getStartOfDay;
  */
 public class TripHistoryUploadJob implements Runnable {
 
-    private static int HISTORIC_UPLOAD_DAYS_BACK_STOP = 20;
+    private static final int HISTORIC_UPLOAD_DAYS_BACK_STOP = 20;
 
     public void run() {
         stageUploadDays();
-        processTripHistory();
+        processTripHistory(false);
     }
 
     /**
@@ -71,10 +71,10 @@ public class TripHistoryUploadJob implements Runnable {
      * Process incomplete upload dates. This will be uploads which are flagged as 'pending'. If the upload date is
      * compiled and uploaded successfully, it is flagged as 'complete'.
      */
-    public static void processTripHistory() {
+    public static void processTripHistory(boolean isTest) {
         List<TripHistoryUpload> incompleteUploads = ConnectedDataManager.getIncompleteUploads();
         incompleteUploads.forEach(tripHistoryUpload -> {
-            if (ConnectedDataManager.compileAndUploadTripHistory(tripHistoryUpload.uploadDate)) {
+            if (ConnectedDataManager.compileAndUploadTripHistory(tripHistoryUpload.uploadDate, isTest)) {
                 // Update the status to 'completed' if successfully compiled and uploaded.
                 tripHistoryUpload.status = TripHistoryUploadStatus.COMPLETED.getValue();
                 Persistence.tripHistoryUploads.replace(tripHistoryUpload.id, tripHistoryUpload);

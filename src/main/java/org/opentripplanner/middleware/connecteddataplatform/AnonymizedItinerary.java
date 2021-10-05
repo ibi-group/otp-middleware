@@ -33,12 +33,12 @@ public class AnonymizedItinerary {
     /**
      * How much time is spent on transit, in seconds.
      */
-    public long transitTime = 0;
+    public Long transitTime = 0L;
 
     /**
      * How much time is spent waiting for transit to arrive, in seconds.
      */
-    public long waitingTime = 0;
+    public Long waitingTime = 0L;
 
     /**
      * How far the user has to walk, in meters.

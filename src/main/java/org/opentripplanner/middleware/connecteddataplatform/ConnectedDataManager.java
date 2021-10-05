@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.LatLongUtils;
@@ -42,10 +43,6 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDa
  * Responsible for collating, anonymizing and uploading to AWS s3 trip requests and related trip summaries.
  */
 public class ConnectedDataManager {
-
-    // If set to true, no files are upload to S3 or deleted from the local disk. This is expected to be carried out by
-    // the unit tests instead.
-    public static boolean IS_TEST;
 
     public static final String FILE_NAME_SUFFIX = "anon-trip-data";
     public static final String ZIP_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".zip";
@@ -116,7 +113,13 @@ public class ConnectedDataManager {
      * 6) Get related trip summaries and anonymize.
      * 7) Write anonymized trip request and related summaries to file.
      */
-    private static void streamAnonymousTripsToFile(String pathAndFileName, Date start, Date end) throws IOException {
+    private static void streamAnonymousTripsToFile(
+        String pathAndFileName,
+        Date start,
+        Date end,
+        boolean isTest
+    ) throws IOException {
+
         // Get distinct batchId values between two dates.
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
             "batchId",
@@ -158,15 +161,17 @@ public class ConnectedDataManager {
             );
 
             // Get place coordinates.
-            LatLongUtils.Coordinates fromCoordinates = getPlaceCoordinates(
+            Coordinates fromCoordinates = getPlaceCoordinates(
                 tripSummaries,
                 true,
-                tripRequest.fromPlace
+                tripRequest.fromPlace,
+                isTest
             );
-            LatLongUtils.Coordinates toCoordinates = getPlaceCoordinates(
+            Coordinates toCoordinates = getPlaceCoordinates(
                 tripSummaries,
                 false,
-                tripRequest.toPlace
+                tripRequest.toPlace,
+                isTest
             );
 
             // Anonymize trip request.
@@ -200,10 +205,11 @@ public class ConnectedDataManager {
      * Workout if the first or last leg is public (a transit leg). If the leg is public the coordinates provided by OTP
      * can be used. If not they are randomized. The place value is assumed to be in the format 'location :: lat,lon'.
      */
-    private static LatLongUtils.Coordinates getPlaceCoordinates(
+    private static Coordinates getPlaceCoordinates(
         FindIterable<TripSummary> tripSummaries,
         boolean isFirstLeg,
-        String place
+        String place,
+        boolean isTest
     ) {
         boolean placeIsPublic = true;
         for (TripSummary tripSummary : tripSummaries) {
@@ -215,11 +221,11 @@ public class ConnectedDataManager {
         }
 
         String coords = place.split("::")[1].trim();
-        LatLongUtils.Coordinates coordinates = new LatLongUtils.Coordinates(
+        Coordinates coordinates = new Coordinates(
             Double.parseDouble(coords.split(",")[0]),
             Double.parseDouble(coords.split(",")[1])
         );
-        return placeIsPublic ? coordinates : LatLongUtils.getRandomizedCoordinates(coordinates);
+        return placeIsPublic ? coordinates : LatLongUtils.getRandomizedCoordinates(coordinates, isTest);
     }
 
     /**
@@ -259,11 +265,15 @@ public class ConnectedDataManager {
         return false;
     }
 
+    public static boolean compileAndUploadTripHistory(Date date) {
+        return compileAndUploadTripHistory(date, false);
+    }
+
     /**
      * Obtain anonymize trip data for the given date, write to zip file, upload the zip file to S3 and finally delete
      * the data and zip files from local disk.
      */
-    public static boolean compileAndUploadTripHistory(Date date) {
+    public static boolean compileAndUploadTripHistory(Date date, boolean isTest) {
         Date startOfDay = getStartOfDay(date);
         String zipFileName = getFileName(startOfDay, ZIP_FILE_NAME_SUFFIX);
         String tempZipFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
@@ -273,7 +283,7 @@ public class ConnectedDataManager {
             getFileName(startOfDay, DATA_FILE_NAME_SUFFIX)
         );
         try {
-            streamAnonymousTripsToFile(tempDataFile, startOfDay, getEndOfDay(date));
+            streamAnonymousTripsToFile(tempDataFile, startOfDay, getEndOfDay(date), isTest);
             FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
             S3Utils.putObject(
                 CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
@@ -288,7 +298,7 @@ public class ConnectedDataManager {
             // Delete the temporary files. This is done here in case the S3 upload fails.
             try {
                 FileUtils.deleteFile(tempDataFile);
-                if (!IS_TEST) {
+                if (!isTest) {
                     FileUtils.deleteFile(tempZipFile);
                 } else {
                     LOG.warn("In test mode, temp zip file {} not deleted. This is expected to be deleted by the calling test.",

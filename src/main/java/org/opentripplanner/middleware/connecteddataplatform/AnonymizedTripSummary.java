@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
 import org.opentripplanner.middleware.models.TripSummary;
-import org.opentripplanner.middleware.utils.LatLongUtils;
+import org.opentripplanner.middleware.utils.Coordinates;
 
 /**
  * Class to hold anonymized trip summaries only.
@@ -17,8 +17,8 @@ public class AnonymizedTripSummary {
 
     public AnonymizedTripSummary(
         TripSummary tripSummary,
-        LatLongUtils.Coordinates fromCoordinates,
-        LatLongUtils.Coordinates toCoordinates
+        Coordinates fromCoordinates,
+        Coordinates toCoordinates
     ) {
         this.batchId = tripSummary.batchId;
         this.tripPlan = new AnonymizedTripPlan(

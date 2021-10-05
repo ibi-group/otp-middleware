@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
+import org.opentripplanner.middleware.utils.Coordinates;
+
 import java.util.Date;
 
 /**
@@ -10,8 +12,7 @@ public class AnonymizedPlace {
 
     public Date arrival;
     public Date departure;
-    public Double lon;
-    public Double lat;
+    public Coordinates coordinates;
 
     // Transit leg only.
     public String name;

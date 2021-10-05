@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
 import org.opentripplanner.middleware.models.TripRequest;
-import org.opentripplanner.middleware.utils.LatLongUtils;
+import org.opentripplanner.middleware.utils.Coordinates;
 
 /**
  * Class to hold anonymized trip requests only.
@@ -14,24 +14,14 @@ public class AnonymizedTripRequest {
     public String batchId;
 
     /**
-     * From place Lat. Trip starting point.
+     * From place. Trip starting point.
      */
-    public Double fromPlaceLat;
+    public Coordinates fromPlace;
 
     /**
-     * From place Lon. Trip starting point.
+     * To place. Trip end point.
      */
-    public Double fromPlaceLon;
-
-    /**
-     * To place Lat. Trip end point.
-     */
-    public Double toPlaceLat;
-
-    /**
-     * To place Lon. Trip end point.
-     */
-    public Double toPlaceLon;
+    public Coordinates toPlace;
 
     /** The date the trip request was made. */
     public String date;
@@ -40,7 +30,7 @@ public class AnonymizedTripRequest {
     public String time;
 
     /** Either 'arrive by' or 'depart at'. */
-    public String tripType;
+    public AnonymousTripType tripType;
 
     /** Transit modes selected by user. */
     public String mode;
@@ -59,22 +49,21 @@ public class AnonymizedTripRequest {
 
     public AnonymizedTripRequest(
         TripRequest tripRequest,
-        LatLongUtils.Coordinates fromCoordinates,
-        LatLongUtils.Coordinates toCoordinates
+        Coordinates fromCoordinates,
+        Coordinates toCoordinates
     ) {
         this.batchId = tripRequest.batchId;
-        this.fromPlaceLat = fromCoordinates.latitude;
-        this.fromPlaceLon = fromCoordinates.longitude;
-        this.toPlaceLat = toCoordinates.latitude;
-        this.toPlaceLon = toCoordinates.longitude;
+        this.fromPlace = fromCoordinates;
+        this.fromPlace = fromCoordinates;
+        this.toPlace = toCoordinates;
         if (tripRequest. requestParameters != null) {
             this.date = tripRequest.requestParameters.get("date");
             this.time = tripRequest.requestParameters.get("time");
-            this.tripType = tripRequest.requestParameters.get("arriveBy");
+            String tripType = tripRequest.requestParameters.get("arriveBy");
             if (tripType != null && tripType.equalsIgnoreCase("true")) {
-                tripType = "Arrive By";
+                this.tripType = AnonymousTripType.ARRIVE_BY;
             } else if (tripType != null && tripType.equalsIgnoreCase("false")) {
-                tripType = "Depart At";
+                this.tripType = AnonymousTripType.DEPART_AT;
             }
             this.mode = tripRequest.requestParameters.get("mode");
             this.maxWalkDistance = tripRequest.requestParameters.get("maxWalkDistance");
