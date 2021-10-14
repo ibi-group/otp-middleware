@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.models;
 
-import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
@@ -8,7 +7,7 @@ import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
 import org.opentripplanner.middleware.persistence.Persistence;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 /**
  * A trip history upload represents an historic date where trip history was or is planned to be uploaded to S3. If the
@@ -17,14 +16,14 @@ import java.util.Date;
  */
 public class TripHistoryUpload extends Model {
 
-    public Date uploadDate;
+    public LocalDate uploadDate;
     public String status = TripHistoryUploadStatus.PENDING.getValue();
 
     /** This no-arg constructor exists to make MongoDB happy. */
     public TripHistoryUpload() {
     }
 
-    public TripHistoryUpload(Date uploadDate) {
+    public TripHistoryUpload(LocalDate uploadDate) {
         this.uploadDate = uploadDate;
         this.status = TripHistoryUploadStatus.PENDING.getValue();
     }

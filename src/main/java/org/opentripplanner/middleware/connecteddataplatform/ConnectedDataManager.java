@@ -12,6 +12,7 @@ import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.Coordinates;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.LatLongUtils;
@@ -23,8 +24,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -34,8 +36,6 @@ import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToLocalDate;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getEndOfDay;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getStartOfDay;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDate;
 
@@ -60,7 +60,8 @@ public class ConnectedDataManager {
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME");
 
     public static void scheduleTripHistoryUploadJob() {
-        LOG.info("Scheduling trip history upload for every {} minute(s)", CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES);
+        LOG.info("Scheduling trip history upload for every {} minute(s)",
+            CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES);
         Scheduler.scheduleJob(
             new TripHistoryUploadJob(),
             0,
@@ -73,23 +74,24 @@ public class ConnectedDataManager {
      * data previously uploaded to s3 can be recompiled and uploaded again.
      */
     public static void removeUsersTripHistory(String userId) {
-        Set<Date> userTripDates = new HashSet<>();
+        Set<LocalDate> userTripDates = new HashSet<>();
         for (TripRequest request : TripRequest.requestsForUser(userId)) {
             userTripDates.add(getStartOfDay(request.dateCreated));
             // This will delete the trip summaries as well.
             request.delete();
         }
         // Get all dates that have already been earmarked for uploading.
-        Set<Date> incompleteUploads = new HashSet<>();
+        Set<LocalDate> incompleteUploads = new HashSet<>();
         getIncompleteUploads().forEach(tripHistoryUpload -> incompleteUploads.add(tripHistoryUpload.uploadDate));
         // Save all new dates for uploading.
-        Set<Date> newDates = Sets.difference(userTripDates, incompleteUploads);
+        Set<LocalDate> newDates = Sets.difference(userTripDates, incompleteUploads);
         TripHistoryUpload first = TripHistoryUpload.getFirst();
+        LocalDate startOfToday = LocalDate.now().atStartOfDay().toLocalDate();
         newDates.forEach(newDate -> {
             if (first == null ||
-                newDate.getTime() == first.uploadDate.getTime() ||
-                (newDate.after(first.uploadDate) &&
-                    newDate.before(getStartOfDay(new Date())))
+                newDate.isEqual(first.uploadDate) ||
+                (newDate.isAfter(first.uploadDate) &&
+                    newDate.isBefore(startOfToday))
             ) {
                 // If the new date is the same or after the first ever upload date, add it to the upload list. This acts
                 // as a back stop to prevent historic uploads being created indefinitely. Also, make sure the new date
@@ -115,8 +117,8 @@ public class ConnectedDataManager {
      */
     private static void streamAnonymousTripsToFile(
         String pathAndFileName,
-        Date start,
-        Date end,
+        LocalDate start,
+        LocalDate end,
         boolean isTest
     ) throws IOException {
 
@@ -124,8 +126,8 @@ public class ConnectedDataManager {
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
             "batchId",
             Filters.and(
-                Filters.gte("dateCreated", start),
-                Filters.lte("dateCreated", end)
+                Filters.gte("dateCreated", DateTimeUtils.convertToDate(start)),
+                Filters.lte("dateCreated", DateTimeUtils.convertToDate(end))
             ),
             String.class
         );
@@ -145,8 +147,8 @@ public class ConnectedDataManager {
             // Get trip request batch.
             FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getFiltered(
                 Filters.and(
-                    Filters.gte("dateCreated", start),
-                    Filters.lte("dateCreated", end),
+                    Filters.gte("dateCreated", DateTimeUtils.convertToDate(start)),
+                    Filters.lte("dateCreated", DateTimeUtils.convertToDate(end)),
                     Filters.eq("batchId", uniqueBatchId)
                 ),
                 Sorts.descending("dateCreated", "batchId")
@@ -265,16 +267,13 @@ public class ConnectedDataManager {
         return false;
     }
 
-    public static boolean compileAndUploadTripHistory(Date date) {
-        return compileAndUploadTripHistory(date, false);
-    }
-
     /**
      * Obtain anonymize trip data for the given date, write to zip file, upload the zip file to S3 and finally delete
      * the data and zip files from local disk.
      */
-    public static boolean compileAndUploadTripHistory(Date date, boolean isTest) {
-        Date startOfDay = getStartOfDay(date);
+    public static boolean compileAndUploadTripHistory(LocalDate date, boolean isTest) {
+        LocalDate startOfDay = date.atStartOfDay().toLocalDate();
+        LocalDate endOfDay = date.atTime(LocalTime.MAX).toLocalDate();
         String zipFileName = getFileName(startOfDay, ZIP_FILE_NAME_SUFFIX);
         String tempZipFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
         String tempDataFile = String.join(
@@ -283,7 +282,7 @@ public class ConnectedDataManager {
             getFileName(startOfDay, DATA_FILE_NAME_SUFFIX)
         );
         try {
-            streamAnonymousTripsToFile(tempDataFile, startOfDay, getEndOfDay(date), isTest);
+            streamAnonymousTripsToFile(tempDataFile, startOfDay, endOfDay, isTest);
             FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
             S3Utils.putObject(
                 CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
@@ -324,10 +323,10 @@ public class ConnectedDataManager {
     /**
      * Produce file name.
      */
-    public static String getFileName(Date startOfDay, String fileNameSuffix) {
+    public static String getFileName(LocalDate startOfDay, String fileNameSuffix) {
         return String.format(
             "%s-%s",
-            getStringFromDate(convertToLocalDate(startOfDay), DEFAULT_DATE_FORMAT_PATTERN),
+            getStringFromDate(startOfDay, DEFAULT_DATE_FORMAT_PATTERN),
             fileNameSuffix
         );
     }

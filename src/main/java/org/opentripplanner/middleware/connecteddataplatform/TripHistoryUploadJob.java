@@ -5,14 +5,8 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
-
-import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToLocalDate;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getDateMinusNumberOfDays;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getDatePlusNumberOfDays;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getStartOfDay;
 
 /**
  * This job is responsible for keeping the trip history held on s3 up-to-date by defining the days which should be
@@ -32,25 +26,22 @@ public class TripHistoryUploadJob implements Runnable {
      * passed midnight and any days missed due to downtime.
      */
     public static void stageUploadDays() {
-        Date now = new Date();
+        LocalDate now = LocalDate.now();
         TripHistoryUpload latest = TripHistoryUpload.getLatest();
         if (latest == null) {
             // No data held, add the previous day as the first day to be uploaded.
             Persistence.tripHistoryUploads.create(
-                new TripHistoryUpload(
-                    getStartOfDay(
-                        getDateMinusNumberOfDays(now, 1)
-                    )
-                ));
+                new TripHistoryUpload(now.minusDays(1).atStartOfDay().toLocalDate())
+            );
         } else {
             Set<LocalDate> betweenDays = DateTimeUtils.getDatesBetween(
-                getDatePlusNumberOfDays(latest.uploadDate,1),
+                latest.uploadDate.plusDays(1),
                 now
             );
             LocalDate historicDateBackStop = getHistoricDateBackStop();
             betweenDays.forEach(day -> {
                 if (day.isAfter(historicDateBackStop)) {
-                    Persistence.tripHistoryUploads.create(new TripHistoryUpload(getStartOfDay(day)));
+                    Persistence.tripHistoryUploads.create(new TripHistoryUpload(day.atStartOfDay().toLocalDate()));
                 }
             });
         }
@@ -62,9 +53,7 @@ public class TripHistoryUploadJob implements Runnable {
      * start-up which could hinder performance.
      */
     private static LocalDate getHistoricDateBackStop() {
-        return convertToLocalDate(getStartOfDay(
-            getDateMinusNumberOfDays(new Date(), HISTORIC_UPLOAD_DAYS_BACK_STOP)
-        ));
+        return LocalDate.now().minusDays(HISTORIC_UPLOAD_DAYS_BACK_STOP);
     }
 
     /**
