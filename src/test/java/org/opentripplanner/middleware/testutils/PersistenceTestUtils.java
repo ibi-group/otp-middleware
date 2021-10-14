@@ -76,7 +76,11 @@ public class PersistenceTestUtils {
      * Create trip request and store in database.
      */
     public static TripRequest createTripRequest(String userId, String batchId, LocalDate createDate) {
-        return createTripRequest(userId, batchId, DateTimeUtils.convertToDate(createDate), null);
+        if (createDate != null) {
+            return createTripRequest(userId, batchId, DateTimeUtils.convertToDate(createDate), null);
+        } else {
+            return createTripRequest(userId, batchId, null, null);
+        }
     }
 
     /**
