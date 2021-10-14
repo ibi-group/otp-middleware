@@ -129,7 +129,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canCreateZipFileWithContent() throws Exception {
-        assumeTrue(IS_END_TO_END);
+//        assumeTrue(IS_END_TO_END);
 
         String userId = UUID.randomUUID().toString();
         String batchId = "783726";
@@ -178,11 +178,44 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
+     * Confirm that a single zip file is created which contains a single JSON file. Also confirm that the contents
+     * written to the JSON file is correct and includes no itineraries and an error message.
+     */
+    @Test
+    public void canCreateZipFileForTripSummaryWithError() throws Exception {
+//        assumeTrue(IS_END_TO_END);
+
+        String userId = UUID.randomUUID().toString();
+        String batchId = "783726";
+        LocalDate startOfYesterday = LocalDate.now().minusDays(1).atStartOfDay().toLocalDate();
+        tripRequest = PersistenceTestUtils.createTripRequest(userId, batchId, startOfYesterday);
+        tripSummary = PersistenceTestUtils.createTripSummaryWithError(tripRequest.id, batchId, startOfYesterday);
+        TripHistoryUploadJob.stageUploadDays();
+        TripHistoryUploadJob.processTripHistory(true);
+        zipFileName = getFileName(startOfYesterday, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
+        tempFile = String.join(
+            "/",
+            FileUtils.getTempDirectory().getAbsolutePath(),
+            zipFileName
+        );
+        String fileContents = getContentsOfFileInZip(
+            tempFile,
+            getFileName(startOfYesterday, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+        );
+        MatcherAssert.assertThat(fileContents, matchesSnapshot());
+
+        // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
+        List<AnonymizedTrip> anonymizedTrips = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTrip.class);
+        assertNotNull(anonymizedTrips);
+    }
+
+
+    /**
      * Confirm that the trip request with the most modes is used.
      */
     @Test
     public void canCreateContentWithTripRequestWithMaxModes() throws Exception {
-        assumeTrue(IS_END_TO_END);
+//        assumeTrue(IS_END_TO_END);
 
         String userId = UUID.randomUUID().toString();
         String batchId = "12345678";
@@ -228,7 +261,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canRemoveUsersTripDataFromFile() throws Exception {
-        assumeTrue(IS_END_TO_END);
+//        assumeTrue(IS_END_TO_END);
 
         String userIdOne = UUID.randomUUID().toString();
         String batchIdOne = "2222222222";
@@ -300,7 +333,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canRemoveTripHistoryViaAPI() throws Exception {
-        assumeTrue(IS_END_TO_END);
+//        assumeTrue(IS_END_TO_END);
 
         // Set back stop. This allows dates after this to trigger an upload.
         LocalDate twentyDaysInThePast = LocalDate.now().minusDays(20).atStartOfDay().toLocalDate();
@@ -334,7 +367,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canStreamTheCorrectNumberOfTrips() throws Exception {
-        assumeTrue(IS_END_TO_END);
+//        assumeTrue(IS_END_TO_END);
 
         String userId = UUID.randomUUID().toString();
         String batchIdOne = "99999999";

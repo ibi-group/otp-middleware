@@ -22,8 +22,7 @@ public class AnonymizedTripSummary {
     ) {
         this.batchId = tripSummary.batchId;
         this.tripPlan = new AnonymizedTripPlan(
-            tripSummary.date,
-            tripSummary.itineraries,
+            tripSummary,
             fromCoordinates,
             toCoordinates
         );

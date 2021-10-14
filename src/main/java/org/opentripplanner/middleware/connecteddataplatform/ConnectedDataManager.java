@@ -25,8 +25,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -117,11 +119,10 @@ public class ConnectedDataManager {
      */
     private static void streamAnonymousTripsToFile(
         String pathAndFileName,
-        LocalDate start,
-        LocalDate end,
+        LocalDateTime start,
+        LocalDateTime end,
         boolean isTest
     ) throws IOException {
-
         // Get distinct batchId values between two dates.
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
             "batchId",
@@ -272,14 +273,14 @@ public class ConnectedDataManager {
      * the data and zip files from local disk.
      */
     public static boolean compileAndUploadTripHistory(LocalDate date, boolean isTest) {
-        LocalDate startOfDay = date.atStartOfDay().toLocalDate();
-        LocalDate endOfDay = date.atTime(LocalTime.MAX).toLocalDate();
-        String zipFileName = getFileName(startOfDay, ZIP_FILE_NAME_SUFFIX);
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
+        String zipFileName = getFileName(startOfDay.toLocalDate(), ZIP_FILE_NAME_SUFFIX);
         String tempZipFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
         String tempDataFile = String.join(
             "/",
             FileUtils.getTempDirectory().getAbsolutePath(),
-            getFileName(startOfDay, DATA_FILE_NAME_SUFFIX)
+            getFileName(startOfDay.toLocalDate(), DATA_FILE_NAME_SUFFIX)
         );
         try {
             streamAnonymousTripsToFile(tempDataFile, startOfDay, endOfDay, isTest);

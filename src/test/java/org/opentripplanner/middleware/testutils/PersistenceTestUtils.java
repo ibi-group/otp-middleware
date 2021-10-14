@@ -142,8 +142,18 @@ public class PersistenceTestUtils {
      * Create trip summary from static plan error response file and store in database.
      */
     public static TripSummary createTripSummaryWithError(String tripRequestId) throws Exception {
+        return createTripSummaryWithError(tripRequestId, BATCH_ID, null);
+    }
+
+    /**
+     * Create trip summary from static plan error response file and store in database.
+     */
+    public static TripSummary createTripSummaryWithError(String tripRequestId, String batchId, LocalDate createDate) throws Exception {
         OtpResponse planErrorResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse();
-        TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId, BATCH_ID);
+        TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId, batchId);
+        if (createDate != null) {
+            tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
+        }
         Persistence.tripSummaries.create(tripSummary);
         return tripSummary;
     }

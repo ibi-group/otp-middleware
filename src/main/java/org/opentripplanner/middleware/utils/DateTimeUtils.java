@@ -210,7 +210,7 @@ public class DateTimeUtils {
     /**
      * Converts a {@link LocalDateTime} object into a {@link Date} object using the Otp zone id.
      */
-    private static Date convertToDate(LocalDateTime dateToConvert) {
+    public static Date convertToDate(LocalDateTime dateToConvert) {
         return Date.from(dateToConvert.atZone(getOtpZoneId()).toInstant());
     }
 

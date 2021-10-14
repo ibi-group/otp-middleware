@@ -1,8 +1,10 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
+import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.PlannerError;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.util.ArrayList;
@@ -25,6 +27,11 @@ public class AnonymizedTripPlan {
     public List<AnonymizedItinerary> itineraries = new ArrayList<>();
 
     /**
+     * If the trip has errors, record the message here. This will cover requested trips that are not possible.
+     */
+    public String errorMessage;
+
+    /**
      * This no-arg constructor exists for JSON deserialization.
      */
     public AnonymizedTripPlan() {
@@ -35,13 +42,18 @@ public class AnonymizedTripPlan {
      * required anonymous parameters in related classes.
      */
     public AnonymizedTripPlan(
-        Date date,
-        List<Itinerary> itineraries,
+        TripSummary tripSummary,
         Coordinates fromCoordinates,
         Coordinates toCoordinates
     ) {
-        this.date = date;
-        itineraries.forEach(itinerary -> {
+        this.date = tripSummary.date;
+        if (tripSummary.error != null) {
+            this.errorMessage = tripSummary.error.msg;
+        }
+        if (tripSummary.itineraries == null) {
+            return;
+        }
+        tripSummary.itineraries.forEach(itinerary -> {
             AnonymizedItinerary itin = new AnonymizedItinerary();
             itin.duration = itinerary.duration;
             itin.startTime = itinerary.startTime;
