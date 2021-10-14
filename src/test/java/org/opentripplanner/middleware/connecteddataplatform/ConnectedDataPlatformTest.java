@@ -129,7 +129,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canCreateZipFileWithContent() throws Exception {
-//        assumeTrue(IS_END_TO_END);
+        assumeTrue(IS_END_TO_END);
 
         String userId = UUID.randomUUID().toString();
         String batchId = "783726";
@@ -183,7 +183,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canCreateZipFileForTripSummaryWithError() throws Exception {
-//        assumeTrue(IS_END_TO_END);
+        assumeTrue(IS_END_TO_END);
 
         String userId = UUID.randomUUID().toString();
         String batchId = "783726";
@@ -215,7 +215,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canCreateContentWithTripRequestWithMaxModes() throws Exception {
-//        assumeTrue(IS_END_TO_END);
+        assumeTrue(IS_END_TO_END);
 
         String userId = UUID.randomUUID().toString();
         String batchId = "12345678";
@@ -261,7 +261,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canRemoveUsersTripDataFromFile() throws Exception {
-//        assumeTrue(IS_END_TO_END);
+        assumeTrue(IS_END_TO_END);
 
         String userIdOne = UUID.randomUUID().toString();
         String batchIdOne = "2222222222";
@@ -333,7 +333,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canRemoveTripHistoryViaAPI() throws Exception {
-//        assumeTrue(IS_END_TO_END);
+        assumeTrue(IS_END_TO_END);
 
         // Set back stop. This allows dates after this to trigger an upload.
         LocalDate twentyDaysInThePast = LocalDate.now().minusDays(20).atStartOfDay().toLocalDate();
@@ -367,7 +367,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canStreamTheCorrectNumberOfTrips() throws Exception {
-//        assumeTrue(IS_END_TO_END);
+        assumeTrue(IS_END_TO_END);
 
         String userId = UUID.randomUUID().toString();
         String batchIdOne = "99999999";
