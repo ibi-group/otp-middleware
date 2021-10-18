@@ -45,10 +45,6 @@ public class OtpRequestProcessor implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
 
     /**
-     * Endpoint for the OTP Middleware's OTP proxy
-     */
-    public static final String OTP_PROXY_ENDPOINT = "/otp";
-    /**
      * URL to OTP's documentation.
      */
     private static final String OTP_DOC_URL = "http://otp-docs.ibi-transit.com/api/index.html";
@@ -77,13 +73,13 @@ public class OtpRequestProcessor implements Endpoint {
             .withDescription("If a third-party application is making a trip plan request on behalf of an end user (OtpUser), the user id must be specified.")
             .build();
         restApi.endpoint(
-            EndpointDescriptor.endpointPath(OTP_PROXY_ENDPOINT).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_LINK),
+            EndpointDescriptor.endpointPath(basePath).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_LINK),
             HttpUtils.NO_FILTER
-        ).get(path(basePath + "*")
+        ).get(path("/*")
                 .withDescription("Forwards any GET request to OTP. " + OTP_DOC_LINK)
                 .withQueryParam(USER_ID)
                 .withProduces(List.of(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)),
-                (request, response) -> OtpRequestProcessor.proxy(otpVersion, request, response)
+                (request, response) -> OtpRequestProcessor.proxy(otpVersion, basePath, request, response)
         );
     }
 
@@ -93,7 +89,7 @@ public class OtpRequestProcessor implements Endpoint {
      * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
      * status) is passed back to the requester.
      */
-    private static String proxy(OtpVersion version, Request request, spark.Response response) {
+    private static String proxy(OtpVersion version, String basePath, Request request, spark.Response response) {
         // If a user id is provided, the assumption is that an API user is making a plan request on behalf of an Otp user.
         String userId = request.queryParams(USER_ID_PARAM);
         String apiKeyValueFromHeader = request.headers("x-api-key");
@@ -127,7 +123,7 @@ public class OtpRequestProcessor implements Endpoint {
                 "Unauthorized trip request, authorization required.");
         }
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
-        String otpRequestPath = request.uri().replaceFirst(OTP_PROXY_ENDPOINT, "");
+        String otpRequestPath = request.uri().replaceFirst(basePath, "");
         // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(version, request.queryString(), otpRequestPath);
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {

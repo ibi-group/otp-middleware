@@ -98,7 +98,7 @@ public class OtpMiddlewareMain {
                     new OtpUserController(API_PREFIX),
                     new LogController(API_PREFIX),
                     new ErrorEventsController(API_PREFIX),
-                    new OtpRequestProcessor("/", OtpVersion.OTP1),
+                    new OtpRequestProcessor("/otp", OtpVersion.OTP1),
                     new OtpRequestProcessor("/otp2", OtpVersion.OTP2)
                     // TODO Add other models.
                 ))

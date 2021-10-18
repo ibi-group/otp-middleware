@@ -34,6 +34,9 @@ tags:
 - name: "otp"
   description: "Proxy interface for OTP endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
+- name: "otp2"
+  description: "Proxy interface for OTP endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+    \ API documentation</a> for OTP's supported API resources."
 schemes:
 - "https"
 paths:
@@ -920,10 +923,10 @@ paths:
       responses:
         "200":
           description: "successful operation"
-  /otp/otp2*:
+  /otp2/*:
     get:
       tags:
-      - "otp"
+      - "otp2"
       description: "Forwards any GET request to OTP. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
       produces:
