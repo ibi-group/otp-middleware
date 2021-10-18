@@ -4,7 +4,8 @@ import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 /**
- * Class to hold anonymized trip requests only.
+ * Anonymous version of {@link org.opentripplanner.middleware.models.TripRequest} containing only parameters
+ * that don't contain precise user or location data.
  */
 public class AnonymizedTripRequest {
 
@@ -53,7 +54,6 @@ public class AnonymizedTripRequest {
         Coordinates toCoordinates
     ) {
         this.batchId = tripRequest.batchId;
-        this.fromPlace = fromCoordinates;
         this.fromPlace = fromCoordinates;
         this.toPlace = toCoordinates;
         if (tripRequest. requestParameters != null) {

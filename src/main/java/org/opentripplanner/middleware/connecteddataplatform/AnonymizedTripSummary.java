@@ -4,7 +4,8 @@ import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 /**
- * Class to hold anonymized trip summaries only.
+ * Anonymous version of {@link org.opentripplanner.middleware.models.TripSummary} containing only parameters
+ * that don't contain precise user or location data.
  */
 public class AnonymizedTripSummary {
 

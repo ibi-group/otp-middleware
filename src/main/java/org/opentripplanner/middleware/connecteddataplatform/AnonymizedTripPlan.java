@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * Anonymous version of {@link org.opentripplanner.middleware.otp.response.TripPlan} containing only parameters
- * flagged as anonymous.
+ * that don't contain precise user or location data.
  */
 public class AnonymizedTripPlan {
     /**

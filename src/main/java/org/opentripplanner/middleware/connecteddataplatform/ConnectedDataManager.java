@@ -28,7 +28,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -112,7 +111,7 @@ public class ConnectedDataManager {
      * 1) Extract unique batch ids between two dates.
      * 2) For each batch id get matching trip requests.
      * 3) Workout which trip request uses the most modes.
-     * 4) Define lat/lon for 'from' and 'to' places.
+     * 4) Define lat/lon for 'from' and 'to' places, scrambling location coordinates for non-public locations.
      * 5) Anonymize trip request with the most modes.
      * 6) Get related trip summaries and anonymize.
      * 7) Write anonymized trip request and related summaries to file.
@@ -155,7 +154,7 @@ public class ConnectedDataManager {
                 Sorts.descending("dateCreated", "batchId")
             );
 
-            TripRequest tripRequest = getTripRequestWithMaxModes(tripRequests);
+            TripRequest tripRequest = getTripRequestWithMostModes(tripRequests);
 
             // Get all trip summaries matching the batch id.
             FindIterable<TripSummary> tripSummaries = Persistence.tripSummaries.getFiltered(
@@ -223,7 +222,9 @@ public class ConnectedDataManager {
             }
         }
 
-        String coords = place.split("::")[1].trim();
+        // The UI might send just the coordinates (if the geocoder does not return anything, which is unlikely).
+        // If that happens, the format will just be lat,lon and :: will not be present.
+        String coords = (place.contains("::")) ? place.split("::")[1].trim() : place;
         Coordinates coordinates = new Coordinates(
             Double.parseDouble(coords.split(",")[0]),
             Double.parseDouble(coords.split(",")[1])
@@ -232,21 +233,22 @@ public class ConnectedDataManager {
     }
 
     /**
-     * Extract the trip request that uses the most modes.
+     * A single trip query results in many calls from the UI to OTP covering different combinations of modes. The trip
+     * request to be included in the anonymous trip data must be the one which uses the most modes.
      */
-    private static TripRequest getTripRequestWithMaxModes(FindIterable<TripRequest> tripRequests) {
-        TripRequest requestMaxModes = null;
+    private static TripRequest getTripRequestWithMostModes(FindIterable<TripRequest> tripRequests) {
+        TripRequest requestWithMostModes = null;
         for (TripRequest tripRequest : tripRequests) {
-            if (requestMaxModes == null) {
-                requestMaxModes = tripRequest;
+            if (requestWithMostModes == null) {
+                requestWithMostModes = tripRequest;
             } else if (
                 tripRequest.requestParameters.get("mode").length() >
-                    requestMaxModes.requestParameters.get("mode").length()
+                requestWithMostModes.requestParameters.get("mode").length()
             ) {
-                requestMaxModes = tripRequest;
+                requestWithMostModes = tripRequest;
             }
         }
-        return requestMaxModes;
+        return requestWithMostModes;
     }
 
     /**
@@ -269,7 +271,7 @@ public class ConnectedDataManager {
     }
 
     /**
-     * Obtain anonymize trip data for the given date, write to zip file, upload the zip file to S3 and finally delete
+     * Obtain anonymized trip data for the given date, write to zip file, upload the zip file to S3 and finally delete
      * the data and zip files from local disk.
      */
     public static boolean compileAndUploadTripHistory(LocalDate date, boolean isTest) {

@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * Anonymous version of {@link org.opentripplanner.middleware.otp.response.Itinerary} containing only parameters
- * flagged as anonymous.
+ * that don't contain precise user or location data.
  */
 public class AnonymizedItinerary {
 
@@ -48,7 +48,7 @@ public class AnonymizedItinerary {
     /**
      * How much time is spent walking, in seconds.
      */
-    public long walkTime = 0;
+    public Long walkTime = 0L;
 
     /**
      * Anonymous leg information for this itinerary.

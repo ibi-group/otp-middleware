@@ -22,20 +22,21 @@ public class TripHistoryUploadJob implements Runnable {
     }
 
     /**
-     * Add to the upload list any dates between now and the last upload date. This will cover a new day once
-     * passed midnight and any days missed due to downtime.
+     * Add to the trip history upload list any dates between the day before now and the last created (pending or
+     * completed) trip history upload. This will cover a new day once passed midnight and any days missed due to
+     * downtime.
      */
     public static void stageUploadDays() {
         LocalDate now = LocalDate.now();
-        TripHistoryUpload latest = TripHistoryUpload.getLatest();
-        if (latest == null) {
+        TripHistoryUpload lastCreated = TripHistoryUpload.getLastCreated();
+        if (lastCreated == null) {
             // No data held, add the previous day as the first day to be uploaded.
             Persistence.tripHistoryUploads.create(
                 new TripHistoryUpload(now.minusDays(1).atStartOfDay().toLocalDate())
             );
         } else {
             Set<LocalDate> betweenDays = DateTimeUtils.getDatesBetween(
-                latest.uploadDate.plusDays(1),
+                lastCreated.uploadDate.plusDays(1),
                 now
             );
             LocalDate historicDateBackStop = getHistoricDateBackStop();

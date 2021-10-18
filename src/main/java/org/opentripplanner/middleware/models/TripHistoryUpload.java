@@ -29,15 +29,15 @@ public class TripHistoryUpload extends Model {
     }
 
     /**
-     * Get the last created upload.
+     * Get the last created trip history upload regardless of status.
      */
     @BsonIgnore
-    public static TripHistoryUpload getLatest() {
+    public static TripHistoryUpload getLastCreated() {
         return getOneOrdered(Sorts.descending("dateCreated"));
     }
 
     /**
-     * Get the first created uploaded.
+     * Get the first created trip history upload regardless of status.
      */
     @BsonIgnore
     public static TripHistoryUpload getFirst() {

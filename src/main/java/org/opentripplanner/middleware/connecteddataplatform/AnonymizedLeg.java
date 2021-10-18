@@ -4,7 +4,7 @@ import java.util.Date;
 
 /**
  * Anonymous version of {@link org.opentripplanner.middleware.otp.response.Leg} containing only parameters
- * flagged as anonymous.
+ * that don't contain precise user or location data.
  */
 public class AnonymizedLeg {
 

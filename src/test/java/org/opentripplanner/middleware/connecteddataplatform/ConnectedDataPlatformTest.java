@@ -153,28 +153,22 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
         List<AnonymizedTrip> anonymizedTrips = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTrip.class);
         assertNotNull(anonymizedTrips);
-        assertEquals(LatLongUtils.TEST_LAT, anonymizedTrips.get(0).tripRequest.fromPlace.lat);
-        assertEquals(LatLongUtils.TEST_LON, anonymizedTrips.get(0).tripRequest.fromPlace.lon);
-        assertEquals(LatLongUtils.TEST_LAT, anonymizedTrips.get(0).tripRequest.toPlace.lat);
-        assertEquals(LatLongUtils.TEST_LON, anonymizedTrips.get(0).tripRequest.toPlace.lon);
+        Coordinates testCoordinates = new Coordinates(LatLongUtils.TEST_LAT, LatLongUtils.TEST_LON);
+        assertEquals(testCoordinates, anonymizedTrips.get(0).tripRequest.fromPlace);
+        assertEquals(testCoordinates, anonymizedTrips.get(0).tripRequest.toPlace);
         anonymizedTrips.get(0).tripSummaries.forEach(tripSummary -> {
             tripSummary.tripPlan.itineraries.forEach(intin -> {
                 intin.legs.forEach(leg -> {
                     if (leg.transitLeg) {
-                        assertNotEquals(LatLongUtils.TEST_LAT, leg.from.coordinates.lat);
-                        assertNotEquals(LatLongUtils.TEST_LON, leg.from.coordinates.lon);
-                        assertNotEquals(LatLongUtils.TEST_LAT, leg.to.coordinates.lat);
-                        assertNotEquals(LatLongUtils.TEST_LON, leg.to.coordinates.lon);
+                        assertNotEquals(testCoordinates, leg.from.coordinates);
+                        assertNotEquals(testCoordinates, leg.to.coordinates);
                     } else {
-                        assertEquals(LatLongUtils.TEST_LAT, leg.from.coordinates.lat);
-                        assertEquals(LatLongUtils.TEST_LON, leg.from.coordinates.lon);
-                        assertEquals(LatLongUtils.TEST_LAT, leg.to.coordinates.lat);
-                        assertEquals(LatLongUtils.TEST_LON, leg.to.coordinates.lon);
+                        assertEquals(testCoordinates, leg.from.coordinates);
+                        assertEquals(testCoordinates, leg.to.coordinates);
                     }
                 });
             });
         });
-
     }
 
     /**

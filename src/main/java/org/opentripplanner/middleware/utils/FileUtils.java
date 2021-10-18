@@ -95,7 +95,7 @@ public class FileUtils {
     }
 
     /**
-     * Extracts the contents of a file contented within a zip file. This method will read the entire contents of a file
+     * Extracts the contents of a file contained within a zip file. This method will read the entire contents of a file
      * into memory and could cause an out-of-memory error if the file is too large.
      */
     public static String getContentsOfFileInZip(String zipFileNameAndPath, String fileName) throws IOException {
