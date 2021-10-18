@@ -920,6 +920,25 @@ paths:
       responses:
         "200":
           description: "successful operation"
+  /otp/otp2*:
+    get:
+      tags:
+      - "otp"
+      description: "Forwards any GET request to OTP. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+        \ API documentation</a> for OTP's supported API resources."
+      produces:
+      - "application/json"
+      - "application/xml"
+      parameters:
+      - name: "userId"
+        in: "query"
+        description: "If a third-party application is making a trip plan request on\
+          \ behalf of an end user (OtpUser), the user id must be specified."
+        required: false
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
 definitions:
   AdminUser:
     type: "object"
