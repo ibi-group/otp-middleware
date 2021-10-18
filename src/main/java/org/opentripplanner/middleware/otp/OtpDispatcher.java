@@ -18,6 +18,24 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
  * response can be provided to the requester.
  */
 public class OtpDispatcher {
+
+    public enum OtpVersion {
+        OTP1("OTP_API_ROOT"), OTP2("OTP2_API_ROOT");
+
+        private final String uri;
+
+        OtpVersion(String configName) {
+            uri = getConfigPropertyAsText(configName);
+        }
+        /**
+         * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
+         * return OTP version info.
+         */
+        public String uri() {
+            return uri;
+        }
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcher.class);
 
     /**
@@ -25,51 +43,45 @@ public class OtpDispatcher {
      */
     public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
 
-    /**
-     * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
-     * return OTP version info.
-     */
-    public static final String OTP_API_ROOT = getConfigPropertyAsText("OTP_API_ROOT");
-
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
     /**
      * Provides a response from the OTP server target service based on the query parameters provided.
      */
-    public static OtpDispatcherResponse sendOtpRequest(String query, String path) {
+    public static OtpDispatcherResponse sendOtpRequest(OtpVersion version, String query, String path) {
         LOG.debug("Original query string: {}", query);
-        return sendOtpRequest(buildOtpUri(query, path));
+        return sendOtpRequest(buildOtpUri(version, query, path));
     }
 
     /**
      * Provides a response from the OTP server target service based on the query parameters provided.
      */
-    public static OtpDispatcherResponse sendOtpPlanRequest(String query) {
+    public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, String query) {
         LOG.debug("Original query string: {}", query);
-        return sendOtpRequest(buildOtpUri(query, OTP_PLAN_ENDPOINT));
+        return sendOtpRequest(buildOtpUri(version, query, OTP_PLAN_ENDPOINT));
     }
 
     /**
      * Provides a response from the OTP server target service based on the input {@link OtpRequest}.
      */
-    public static OtpDispatcherResponse sendOtpPlanRequest(OtpRequest otpRequest) {
-        return sendOtpPlanRequest(ItineraryUtils.toQueryString(otpRequest.requestParameters));
+    public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, OtpRequest otpRequest) {
+        return sendOtpPlanRequest(version, ItineraryUtils.toQueryString(otpRequest.requestParameters));
     }
 
     /**
      * Provides a response from the OTP server target service based on the query parameters provided. This is used only
      * during testing.
      */
-    public static OtpDispatcherResponse sendOtpPlanRequest(String from, String to, String time) {
-        return sendOtpPlanRequest(String.format("fromPlace=%s&toPlace=%s&time=%s", from, to, time));
+    public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, String from, String to, String time) {
+        return sendOtpPlanRequest(version, String.format("fromPlace=%s&toPlace=%s&time=%s", from, to, time));
     }
 
     /**
      * Constructs a URL based on the otp server URL and the requester's target service (e.g. plan) and query
      * parameters.
      */
-    private static URI buildOtpUri(String params, String path) {
-        UriBuilder uriBuilder = UriBuilder.fromUri(OTP_API_ROOT)
+    private static URI buildOtpUri(OtpVersion version, String params, String path) {
+        UriBuilder uriBuilder = UriBuilder.fromUri(version.uri())
             .path(path)
             .replaceQuery(params);
         URI uri = URI.create(uriBuilder.toString());

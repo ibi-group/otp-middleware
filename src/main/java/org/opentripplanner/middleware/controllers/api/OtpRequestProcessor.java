@@ -12,6 +12,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
+import org.opentripplanner.middleware.otp.OtpDispatcher.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -37,6 +38,10 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * status) is passed back to the requester.
  */
 public class OtpRequestProcessor implements Endpoint {
+
+    private final String basePath;
+    private final OtpVersion otpVersion;
+
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
 
     /**
@@ -55,6 +60,11 @@ public class OtpRequestProcessor implements Endpoint {
         OTP_DOC_URL
     );
 
+    public OtpRequestProcessor(String basePath, OtpVersion otpVersion) {
+        this.basePath = basePath;
+        this.otpVersion = otpVersion;
+    }
+
     /**
      * Register http endpoint with {@link spark.Spark} instance based on the OTP root endpoint. An OTP root endpoint is
      * required to distinguish between OTP and other middleware requests.
@@ -69,11 +79,11 @@ public class OtpRequestProcessor implements Endpoint {
         restApi.endpoint(
             EndpointDescriptor.endpointPath(OTP_PROXY_ENDPOINT).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_LINK),
             HttpUtils.NO_FILTER
-        ).get(path("/*")
+        ).get(path(basePath + "*")
                 .withDescription("Forwards any GET request to OTP. " + OTP_DOC_LINK)
                 .withQueryParam(USER_ID)
                 .withProduces(List.of(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)),
-            OtpRequestProcessor::proxy
+                (request, response) -> OtpRequestProcessor.proxy(otpVersion, request, response)
         );
     }
 
@@ -83,7 +93,7 @@ public class OtpRequestProcessor implements Endpoint {
      * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
      * status) is passed back to the requester.
      */
-    private static String proxy(Request request, spark.Response response) {
+    private static String proxy(OtpVersion version, Request request, spark.Response response) {
         // If a user id is provided, the assumption is that an API user is making a plan request on behalf of an Otp user.
         String userId = request.queryParams(USER_ID_PARAM);
         String apiKeyValueFromHeader = request.headers("x-api-key");
@@ -119,7 +129,7 @@ public class OtpRequestProcessor implements Endpoint {
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replaceFirst(OTP_PROXY_ENDPOINT, "");
         // attempt to get response from OTP server based on requester's query parameters
-        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(request.queryString(), otpRequestPath);
+        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(version, request.queryString(), otpRequestPath);
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
             return null;

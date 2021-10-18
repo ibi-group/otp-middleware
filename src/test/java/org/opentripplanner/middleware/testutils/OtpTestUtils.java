@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.testutils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
+import org.opentripplanner.middleware.otp.OtpDispatcher.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
@@ -168,6 +169,7 @@ public class OtpTestUtils {
         // Submit a query to the OTP server.
         // From P&R to Downtown Orlando
         return OtpDispatcher.sendOtpPlanRequest(
+            OtpVersion.OTP1,
             "28.45119,-81.36818",
             "28.54834,-81.37745",
             "08:35"
