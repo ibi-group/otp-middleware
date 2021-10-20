@@ -56,6 +56,10 @@ public class OtpRequestProcessor implements Endpoint {
         OTP_DOC_URL
     );
 
+    /**
+     * @param basePath The root path under which is proxy is accessible.
+     * @param otpVersion Which version of OTP this path proxies.
+     */
     public OtpRequestProcessor(String basePath, OtpVersion otpVersion) {
         this.basePath = basePath;
         this.otpVersion = otpVersion;
@@ -79,7 +83,7 @@ public class OtpRequestProcessor implements Endpoint {
                 .withDescription("Forwards any GET request to OTP. " + OTP_DOC_LINK)
                 .withQueryParam(USER_ID)
                 .withProduces(List.of(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)),
-                (request, response) -> OtpRequestProcessor.proxy(otpVersion, basePath, request, response)
+                this::proxy
         );
     }
 
@@ -89,7 +93,7 @@ public class OtpRequestProcessor implements Endpoint {
      * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
      * status) is passed back to the requester.
      */
-    private static String proxy(OtpVersion version, String basePath, Request request, spark.Response response) {
+    private String proxy(Request request, spark.Response response) {
         // If a user id is provided, the assumption is that an API user is making a plan request on behalf of an Otp user.
         String userId = request.queryParams(USER_ID_PARAM);
         String apiKeyValueFromHeader = request.headers("x-api-key");
@@ -125,7 +129,7 @@ public class OtpRequestProcessor implements Endpoint {
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replaceFirst(basePath, "");
         // attempt to get response from OTP server based on requester's query parameters
-        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(version, request.queryString(), otpRequestPath);
+        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(otpVersion, request.queryString(), otpRequestPath);
         if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
             return null;
