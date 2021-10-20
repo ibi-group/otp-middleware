@@ -20,12 +20,15 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 public class OtpDispatcher {
 
     public enum OtpVersion {
-        OTP1("OTP_API_ROOT"), OTP2("OTP2_API_ROOT");
+        OTP1("OTP_API_ROOT", "OTP 1"),
+        OTP2("OTP2_API_ROOT", "OTP 2");
 
         private final String uri;
+        private final String name;
 
-        OtpVersion(String configName) {
+        OtpVersion(String configName, String name) {
             uri = getConfigPropertyAsText(configName);
+            this.name = name;
         }
         /**
          * URI location of the OpenTripPlanner API (e.g., https://otp-server.com/otp). Requests sent to this URI should
@@ -34,6 +37,7 @@ public class OtpDispatcher {
         public String uri() {
             return uri;
         }
+        public String toString() { return name; }
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcher.class);

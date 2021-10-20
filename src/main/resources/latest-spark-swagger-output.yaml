@@ -32,10 +32,10 @@ tags:
 - name: "api/admin/bugsnag/eventsummary"
   description: "Interface for reporting and retrieving application errors using Bugsnag."
 - name: "otp"
-  description: "Proxy interface for OTP endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+  description: "Proxy interface for OTP 1 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
 - name: "otp2"
-  description: "Proxy interface for OTP endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+  description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
 schemes:
 - "https"
@@ -908,7 +908,7 @@ paths:
     get:
       tags:
       - "otp"
-      description: "Forwards any GET request to OTP. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+      description: "Forwards any GET request to OTP 1. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
       produces:
       - "application/json"
@@ -927,7 +927,7 @@ paths:
     get:
       tags:
       - "otp2"
-      description: "Forwards any GET request to OTP. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+      description: "Forwards any GET request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
       produces:
       - "application/json"

@@ -77,10 +77,10 @@ public class OtpRequestProcessor implements Endpoint {
             .withDescription("If a third-party application is making a trip plan request on behalf of an end user (OtpUser), the user id must be specified.")
             .build();
         restApi.endpoint(
-            EndpointDescriptor.endpointPath(basePath).withDescription("Proxy interface for OTP endpoints. " + OTP_DOC_LINK),
+            EndpointDescriptor.endpointPath(basePath).withDescription("Proxy interface for " + otpVersion.toString() + " endpoints. " + OTP_DOC_LINK),
             HttpUtils.NO_FILTER
         ).get(path("/*")
-                .withDescription("Forwards any GET request to OTP. " + OTP_DOC_LINK)
+                .withDescription("Forwards any GET request to " + otpVersion.toString() + ". " + OTP_DOC_LINK)
                 .withQueryParam(USER_ID)
                 .withProduces(List.of(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)),
                 this::proxy
