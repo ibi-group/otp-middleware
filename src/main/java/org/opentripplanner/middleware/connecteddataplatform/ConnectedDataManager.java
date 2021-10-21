@@ -6,6 +6,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
@@ -294,7 +295,10 @@ public class ConnectedDataManager {
             );
             return true;
         } catch (S3Exception | IOException e) {
-            LOG.error("Failed to process trip data for {}", startOfDay, e);
+            BugsnagReporter.reportErrorToBugsnag(
+                String.format("Failed to process trip data for (%s)", startOfDay),
+                e
+            );
             return false;
         } finally {
             // Delete the temporary files. This is done here in case the S3 upload fails.
