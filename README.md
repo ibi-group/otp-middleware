@@ -227,7 +227,8 @@ The special E2E client settings should be defined in `env.yml`:
 | OTP_ADMIN_DASHBOARD_FROM_EMAIL | string | Optional | OTP Admin Dashboard <no-reply@email.com> | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_ADMIN_DASHBOARD_NAME | string | Optional | OTP Admin Dashboard | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_ADMIN_DASHBOARD_URL | string | Optional | https://admin.example.com | Config setting for linking to the OTP Admin Dashboard. |
-| OTP_API_ROOT | string | Required | http://otp-server.example.com/otp | The URL of an operational OTP server. |
+| OTP_API_ROOT | string | Required | http://otp-server.example.com/otp | The URL of an operational OTP1 server. |
+| OTP2_API_ROOT | string | Optional | http://otp2-server.example.com/otp | The URL of an operational OTP2 server. |
 | OTP_PLAN_ENDPOINT | string | Optional | /routers/default/plan | The path to the OTP server trip planning endpoint. |
 | OTP_TIMEZONE | string | Required | America/Los_Angeles | The timezone identifier that OTP is using to parse dates and times. OTP will use the timezone identifier that it finds in the first available agency to parse dates and times. |
 | OTP_UI_NAME | string | Optional | Trip Planner | Config setting for linking to the OTP UI (trip planner). |

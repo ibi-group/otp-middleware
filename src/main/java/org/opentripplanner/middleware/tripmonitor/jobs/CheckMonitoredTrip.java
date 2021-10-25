@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
+import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
@@ -160,7 +161,7 @@ public class CheckMonitoredTrip implements Runnable {
             // parameter with the appropriate date.
             Map<String, String> params = trip.parseQueryParams();
             params.put(ItineraryUtils.DATE_PARAM, targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER));
-            otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(ItineraryUtils.toQueryString(params));
+            otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP1, ItineraryUtils.toQueryString(params));
         } catch (Exception e) {
             BugsnagReporter.reportErrorToBugsnag(
                 "Encountered an error while making a request ot the OTP server.",

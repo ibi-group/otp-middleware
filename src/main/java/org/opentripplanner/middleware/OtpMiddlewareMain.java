@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
 import org.opentripplanner.middleware.models.MonitoredComponent;
+import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitorAllTripsJob;
 import org.opentripplanner.middleware.utils.ConfigUtils;
@@ -99,7 +100,8 @@ public class OtpMiddlewareMain {
                     new OtpUserController(API_PREFIX),
                     new LogController(API_PREFIX),
                     new ErrorEventsController(API_PREFIX),
-                    new OtpRequestProcessor()
+                    new OtpRequestProcessor("/otp", OtpVersion.OTP1),
+                    new OtpRequestProcessor("/otp2", OtpVersion.OTP2)
                     // TODO Add other models.
                 ))
                 // Spark-swagger auto-generates a swagger document at localhost:4567/doc.yaml.

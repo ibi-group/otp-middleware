@@ -34,7 +34,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
-import static org.opentripplanner.middleware.controllers.api.OtpRequestProcessor.OTP_PROXY_ENDPOINT;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeDeleteRequest;
@@ -74,6 +73,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser otpUserStandalone;
     private static final String OTP_USER_PATH = "api/secure/user";
     private static final String MONITORED_TRIP_PATH = "api/secure/monitoredtrip";
+    private static final String OTP_PROXY_ENDPOINT = "/otp";
 
     /**
      * Whether tests for this class should run. End to End must be enabled and Auth must NOT be disabled. This should be
