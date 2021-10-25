@@ -16,7 +16,7 @@ import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
 import org.opentripplanner.middleware.models.MonitoredComponent;
-import org.opentripplanner.middleware.otp.OtpDispatcher.OtpVersion;
+import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitorAllTripsJob;
 import org.opentripplanner.middleware.utils.ConfigUtils;

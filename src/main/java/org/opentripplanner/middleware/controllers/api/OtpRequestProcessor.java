@@ -12,7 +12,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
-import org.opentripplanner.middleware.otp.OtpDispatcher.OtpVersion;
+import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;

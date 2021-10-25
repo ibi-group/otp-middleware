@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
-import org.opentripplanner.middleware.otp.OtpDispatcher.OtpVersion;
+import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;

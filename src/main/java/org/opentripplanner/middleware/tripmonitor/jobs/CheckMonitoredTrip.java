@@ -6,7 +6,7 @@ import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
-import org.opentripplanner.middleware.otp.OtpDispatcher.OtpVersion;
+import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;

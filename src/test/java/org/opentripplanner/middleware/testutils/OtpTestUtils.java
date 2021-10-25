@@ -2,7 +2,7 @@ package org.opentripplanner.middleware.testutils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
-import org.opentripplanner.middleware.otp.OtpDispatcher.OtpVersion;
+import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
