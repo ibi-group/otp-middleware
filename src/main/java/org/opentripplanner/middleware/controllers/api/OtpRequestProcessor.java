@@ -5,6 +5,9 @@ import com.beerboy.ss.descriptor.EndpointDescriptor;
 import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Objects;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
@@ -83,7 +86,11 @@ public class OtpRequestProcessor implements Endpoint {
                 .withDescription("Forwards any GET request to " + otpVersion.toString() + ". " + OTP_DOC_LINK)
                 .withQueryParam(USER_ID)
                 .withProduces(List.of(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)),
-                this::proxy
+                this::proxyGET
+        ).post(path("/*")
+                .withDescription("Forwards any POST request to " + otpVersion.toString() + ". " + OTP_DOC_LINK)
+                .withQueryParam(USER_ID),
+                this::proxyPOST
         );
     }
 
@@ -93,39 +100,8 @@ public class OtpRequestProcessor implements Endpoint {
      * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
      * status) is passed back to the requester.
      */
-    private String proxy(Request request, spark.Response response) {
-        // If a user id is provided, the assumption is that an API user is making a plan request on behalf of an Otp user.
-        String userId = request.queryParams(USER_ID_PARAM);
-        String apiKeyValueFromHeader = request.headers("x-api-key");
-        OtpUser otpUser = null;
-        // If the Auth header is present, this indicates that the request was made by a logged in user.
-        if (isAuthHeaderPresent(request)) {
-            checkUser(request);
-            RequestingUser requestingUser = getUserFromRequest(request);
-            if (requestingUser.otpUser != null && userId == null) {
-                // Otp user making a trip request for self.
-                otpUser = requestingUser.otpUser;
-            } else if (requestingUser.apiUser != null) {
-                Auth0Connection.ensureApiUserHasApiKey(request);
-                // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
-                // as a query parameter.
-                otpUser = Persistence.otpUsers.getById(userId);
-                if (otpUser == null && userId != null) {
-                    logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "The specified user id was not found.");
-                } else if (!requestingUser.canManageEntity(otpUser)) {
-                    logMessageAndHalt(request,
-                        HttpStatus.FORBIDDEN_403,
-                        String.format("User: %s not authorized to make trip requests for user: %s",
-                            requestingUser.apiUser.email,
-                            otpUser.email));
-                }
-            }
-        } else if (userId != null && apiKeyValueFromHeader == null) {
-            // User id has been provided, but no means to authorize the requesting user.
-            logMessageAndHalt(request,
-                HttpStatus.UNAUTHORIZED_401,
-                "Unauthorized trip request, authorization required.");
-        }
+    private String proxyGET(Request request, spark.Response response) {
+        OtpUser otpUser = checkUserPermissions(request);
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replaceFirst(basePath, "");
         // attempt to get response from OTP server based on requester's query parameters
@@ -149,6 +125,77 @@ public class OtpRequestProcessor implements Endpoint {
         response.type(MediaType.APPLICATION_JSON);
         response.status(otpDispatcherResponse.statusCode);
         return otpDispatcherResponse.responseBody;
+    }
+
+    /**
+     * Responsible for proxying any and all requests made to its HTTP endpoint to OTP. If the target service is of
+     * interest (e.g., requests made to the plan trip endpoint are currently logged if the user has consented to storing
+     * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
+     * status) is passed back to the requester.
+     */
+    private String proxyPOST(Request request, spark.Response response) {
+        checkUserPermissions(request);
+
+        // Get request path intended for OTP API by removing the proxy endpoint (/otp).
+        String otpRequestPath = request.uri().replaceFirst(basePath, "");
+
+        var headers = new HashMap<String, String>();
+        request.headers().forEach(h -> {
+            if(!Objects.equals(h, "Host")) {
+                headers.put(h, request.headers(h));
+            }
+        });
+
+        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPostRequest(
+                otpVersion,
+                request.queryString(),
+                otpRequestPath,
+                headers,
+                request.body()
+        );
+
+        // provide response to requester as received from OTP server
+        Arrays.stream(otpDispatcherResponse.headers).forEach(header -> response.header(header.getName(), header.getValue()));
+        response.status(otpDispatcherResponse.statusCode);
+        return otpDispatcherResponse.responseBody;
+    }
+
+    private OtpUser checkUserPermissions(Request request) {
+        // If a user id is provided, the assumption is that an API user is making a plan request on behalf of an Otp user.
+        String userId = request.queryParams(USER_ID_PARAM);
+        String apiKeyValueFromHeader = request.headers("x-api-key");
+        OtpUser otpUser = null;
+        // If the Auth header is present, this indicates that the request was made by a logged in user.
+        if (isAuthHeaderPresent(request)) {
+            checkUser(request);
+            RequestingUser requestingUser = getUserFromRequest(request);
+            if (requestingUser.otpUser != null && userId == null) {
+                // Otp user making a trip request for self.
+                otpUser = requestingUser.otpUser;
+            } else if (requestingUser.apiUser != null) {
+                Auth0Connection.ensureApiUserHasApiKey(request);
+                // Api user making a trip request on behalf of an Otp user. In this case, the Otp user id must be provided
+                // as a query parameter.
+                otpUser = Persistence.otpUsers.getById(userId);
+                if (otpUser == null && userId != null) {
+                    logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "The specified user id was not found.");
+                } else if (!requestingUser.canManageEntity(otpUser)) {
+                    logMessageAndHalt(
+                            request,
+                        HttpStatus.FORBIDDEN_403,
+                        String.format("User: %s not authorized to make trip requests for user: %s",
+                            requestingUser.apiUser.email,
+                            otpUser.email));
+                }
+            }
+        } else if (userId != null && apiKeyValueFromHeader == null) {
+            // User id has been provided, but no means to authorize the requesting user.
+            logMessageAndHalt(
+                    request,
+                HttpStatus.UNAUTHORIZED_401,
+                "Unauthorized trip request, authorization required.");
+        }
+        return otpUser;
     }
 
     /**
