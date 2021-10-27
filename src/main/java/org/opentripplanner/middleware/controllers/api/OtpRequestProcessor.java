@@ -45,6 +45,12 @@ public class OtpRequestProcessor implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
 
     /**
+     * If the batch id is missing this value is used. Trip requests and summaries are not anonymized under the connected
+     * data platform unless the batch id is provided.
+     */
+    public static final String BATCH_ID_NOT_PROVIDED = "Batch Id not provided by caller.";
+
+    /**
      * URL to OTP's documentation.
      */
     private static final String OTP_DOC_URL = "http://otp-docs.ibi-transit.com/api/index.html";
@@ -161,8 +167,7 @@ public class OtpRequestProcessor implements Endpoint {
         boolean result = true;
         String batchId = request.queryParams("batchId");
         if (batchId == null) {
-            //TODO place holder for now
-            batchId = "-1";
+            batchId = BATCH_ID_NOT_PROVIDED;
         }
         long tripStorageStartTime = DateTimeUtils.currentTimeMillis();
         // only save trip details if the user has given consent and a response from OTP is provided

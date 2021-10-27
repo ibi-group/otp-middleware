@@ -6,7 +6,9 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
+import org.apache.commons.lang3.StringUtils;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
@@ -29,6 +31,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -123,12 +126,13 @@ public class ConnectedDataManager {
         LocalDateTime end,
         boolean isTest
     ) throws IOException {
-        // Get distinct batchId values between two dates.
+        // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
             "batchId",
             Filters.and(
                 Filters.gte("dateCreated", DateTimeUtils.convertToDate(start)),
-                Filters.lte("dateCreated", DateTimeUtils.convertToDate(end))
+                Filters.lte("dateCreated", DateTimeUtils.convertToDate(end)),
+                Filters.ne("batchId", OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
             ),
             String.class
         );
@@ -155,7 +159,7 @@ public class ConnectedDataManager {
                 Sorts.descending("dateCreated", "batchId")
             );
 
-            TripRequest tripRequest = getTripRequestWithMostModes(tripRequests);
+            TripRequest tripRequest = getAllModesUsedInBatch(tripRequests);
 
             // Get all trip summaries matching the batch id.
             FindIterable<TripSummary> tripSummaries = Persistence.tripSummaries.getFiltered(
@@ -235,21 +239,27 @@ public class ConnectedDataManager {
 
     /**
      * A single trip query results in many calls from the UI to OTP covering different combinations of modes. The trip
-     * request to be included in the anonymous trip data must be the one which uses the most modes.
+     * request to be included in the anonymous trip data must include all modes used across all trip requests within a
+     * batch.
      */
-    private static TripRequest getTripRequestWithMostModes(FindIterable<TripRequest> tripRequests) {
-        TripRequest requestWithMostModes = null;
+    private static TripRequest getAllModesUsedInBatch(FindIterable<TripRequest> tripRequests) {
+        TripRequest request = null;
+        Set<String> allUniqueModes = new HashSet<>();
         for (TripRequest tripRequest : tripRequests) {
-            if (requestWithMostModes == null) {
-                requestWithMostModes = tripRequest;
-            } else if (
-                tripRequest.requestParameters.get("mode").length() >
-                requestWithMostModes.requestParameters.get("mode").length()
-            ) {
-                requestWithMostModes = tripRequest;
+            if (request == null) {
+                // Select the first request. All subsequent requests will be the same apart from the mode (which is
+                // overwritten at the end of this method).
+                request = tripRequest;
             }
+            Set<String> uniqueModesForRequest = new HashSet<>(
+                // Expecting the comma separating modes to be encoded as '%2C'.
+                Arrays.asList(tripRequest.requestParameters.get("mode").split("%2C"))
+            );
+            allUniqueModes.addAll(uniqueModesForRequest);
         }
-        return requestWithMostModes;
+        // Replace the mode parameter in the first request with all unique modes from across the batch.
+        request.requestParameters.put("mode", StringUtils.join(allUniqueModes, ","));
+        return request;
     }
 
     /**
