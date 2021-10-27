@@ -106,7 +106,7 @@ public class OtpRequestProcessor implements Endpoint {
     }
 
     /**
-     * Responsible for proxying any and all requests made to its HTTP endpoint to OTP. If the target service is of
+     * Responsible for proxying all GET requests made to its HTTP endpoint to OTP. If the target service is of
      * interest (e.g., requests made to the plan trip endpoint are currently logged if the user has consented to storing
      * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
      * status) is passed back to the requester.
@@ -139,10 +139,10 @@ public class OtpRequestProcessor implements Endpoint {
     }
 
     /**
-     * Responsible for proxying any and all requests made to its HTTP endpoint to OTP. If the target service is of
-     * interest (e.g., requests made to the plan trip endpoint are currently logged if the user has consented to storing
-     * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
-     * status) is passed back to the requester.
+     * Responsible for proxying all POST requests made to its HTTP endpoint to OTP.
+     *
+     * Since we will use the REST API (GET) for routing requests for the foreseeable future the
+     * POST requests are not logged.
      */
     private String proxyPOST(Request request, spark.Response response) {
         checkUserPermissions(request);
@@ -171,6 +171,10 @@ public class OtpRequestProcessor implements Endpoint {
         return otpDispatcherResponse.responseBody;
     }
 
+    /**
+     * Checks if the request contains the required api key to proceed.
+     * If it doesn't then a HaltException is thrown leading this request to fail.
+     */
     private OtpUser checkUserPermissions(Request request) {
         // If a user id is provided, the assumption is that an API user is making a plan request on behalf of an Otp user.
         String userId = request.queryParams(USER_ID_PARAM);
