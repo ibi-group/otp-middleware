@@ -7,7 +7,9 @@ import com.beerboy.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
@@ -46,6 +48,15 @@ public class OtpRequestProcessor implements Endpoint {
     private final OtpVersion otpVersion;
 
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
+
+    /**
+     * When sending POST headers we generally want to forward all headers that the client sends
+     * to OTP, however there are a few that are already set by the HTTP framework and setting
+     * them as well causes problems.
+     */
+    private static final Set<String> HEADERS_NOT_TO_FORWARD = Stream.of("Host", "Content-Length")
+            .map(String::toLowerCase)
+            .collect(Collectors.toSet());
 
     /**
      * URL to OTP's documentation.
@@ -141,7 +152,7 @@ public class OtpRequestProcessor implements Endpoint {
 
         var headers = new HashMap<String, String>();
         request.headers().forEach(h -> {
-            if(!Objects.equals(h, "Host")) {
+            if(!HEADERS_NOT_TO_FORWARD.contains(h.toLowerCase())) {
                 headers.put(h, request.headers(h));
             }
         });
