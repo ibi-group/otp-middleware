@@ -213,7 +213,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
         String userId = UUID.randomUUID().toString();
         String batchId = "12345678";
-        String mode = "WALK%2CBUS%2CRAIL%2TRAM";
+        String mode = "WALK%2CBUS%2CRAIL%2CTRAM";
         LocalDate startOfYesterday = LocalDate.now().minusDays(1).atStartOfDay().toLocalDate();
         TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(
             userId,
