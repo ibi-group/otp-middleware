@@ -246,7 +246,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
         List<AnonymizedTrip> anonymizedTrips = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTrip.class);
         assertNotNull(anonymizedTrips);
-        assertEquals(mode, anonymizedTrips.get(0).tripRequest.mode);
+        assertEquals(mode.replaceAll("%2C",","), anonymizedTrips.get(0).tripRequest.mode);
     }
 
     /**
