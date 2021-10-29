@@ -928,6 +928,8 @@ paths:
       - "otp"
       description: "Forwards any POST request to OTP 1. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
+      produces:
+      - "application/json"
       parameters:
       - name: "userId"
         in: "query"
@@ -962,6 +964,8 @@ paths:
       - "otp2"
       description: "Forwards any POST request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
+      produces:
+      - "application/json"
       parameters:
       - name: "userId"
         in: "query"
