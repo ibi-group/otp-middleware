@@ -50,6 +50,12 @@ public class OtpRequestProcessor implements Endpoint {
     private static final Logger LOG = LoggerFactory.getLogger(OtpRequestProcessor.class);
 
     /**
+     * If the batch id is missing this value is used. Trip requests and summaries are not anonymized under the connected
+     * data platform unless the batch id is provided.
+     */
+    public static final String BATCH_ID_NOT_PROVIDED = "Batch Id not provided by caller.";
+
+    /**
      * When sending POST headers we generally want to forward all headers that the client sends
      * to OTP, however there are a few that are already set by the HTTP framework and setting
      * them as well causes problems.
@@ -118,7 +124,7 @@ public class OtpRequestProcessor implements Endpoint {
         String otpRequestPath = request.uri().replaceFirst(basePath, "");
         // attempt to get response from OTP server based on requester's query parameters
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(otpVersion, request.queryString(), otpRequestPath);
-        if (otpDispatcherResponse == null || otpDispatcherResponse.responseBody == null) {
+        if (otpDispatcherResponse.responseBody == null) {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
             return null;
         }
@@ -217,14 +223,14 @@ public class OtpRequestProcessor implements Endpoint {
     /**
      * Process plan response from OTP. Store the response if consent is given. Handle the process and all exceptions
      * seamlessly so as not to affect the response provided to the requester.
+     *
      * @return Returns false if there was an error.
      */
     private static boolean handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse, OtpUser otpUser) {
         boolean result = true;
         String batchId = request.queryParams("batchId");
         if (batchId == null) {
-            //TODO place holder for now
-            batchId = "-1";
+            batchId = BATCH_ID_NOT_PROVIDED;
         }
         long tripStorageStartTime = DateTimeUtils.currentTimeMillis();
         // only save trip details if the user has given consent and a response from OTP is provided
@@ -245,12 +251,12 @@ public class OtpRequestProcessor implements Endpoint {
                     batchId,
                     request.queryParams("fromPlace"),
                     request.queryParams("toPlace"),
-                    request.queryString()
+                    otpResponse.requestParameters
                 );
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
                 if (tripRequestSaved) {
-                    TripSummary tripSummary = new TripSummary(otpResponse.plan, otpResponse.error, tripRequest.id);
+                    TripSummary tripSummary = new TripSummary(otpResponse.plan, otpResponse.error, tripRequest.id, batchId);
                     Persistence.tripSummaries.create(tripSummary);
                 } else {
                     LOG.warn("Unable to save trip request, orphaned trip summary not saved");
@@ -261,4 +267,5 @@ public class OtpRequestProcessor implements Endpoint {
         LOG.debug("Trip storage added {} ms", DateTimeUtils.currentTimeMillis() - tripStorageStartTime);
         return result;
     }
+
 }

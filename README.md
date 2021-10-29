@@ -134,6 +134,44 @@ In some restricted environments such as AWS Security Groups, you may need to whi
 so that Bugsnag can post error notifications to OTP Middleware and that the errors appear in the admin dashboard.
 Refer to your cloud service for whitelisting IP addresses.
 
+### Connected Data Platform
+
+#### AWS S3 Policy configuration
+An IAM access management S3 policy is required in order for an IAM user to write/delete objects on the Connected Data 
+Platform S3 bucket. 
+
+The following permissions are required:
+1) ListBucket
+2) GetObject
+3) DeleteObject
+4) PutObject
+5) PutObjectAcl
+
+The following snippet is an example policy which can be used/modified to allow access to the CDP S3 bucket:
+```bash
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "VisualEditor0",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:DeleteObject",
+        "s3:PutObjectAcl"
+      ],
+      "Resource": [
+        "arn:aws:s3:::cdp-bucket-name/*",
+        "arn:aws:s3:::cdp-bucket-name"
+      ]
+    }
+  ]
+}
+```
+
+
 ## Testing
 
 ### End-to-end (E2E)
@@ -171,6 +209,9 @@ The special E2E client settings should be defined in `env.yml`:
 | BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS | integer | Optional | 24 | Frequency in hours to trigger event requests. |
 | BUGSNAG_PROJECT_NOTIFIER_API_KEY | string | Optional | 123e4567e89b12d3a4564266 | A valid Bugsnag project API key. |
 | BUGSNAG_REPORTING_WINDOW_IN_DAYS | integer | Optional | 14 | Specifies how far in the past events should be retrieved. |
+| CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME | string | Optional | bucket-name | Specifies the S3 bucket name for the CDP trip history push. |
+| CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME | string | Optional | folder-name | Specifies the S3 folder name for the CDP trip history push. |
+| CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES | integer | Optional | 5 | CDP trip history upload frequency. |
 | BUGSNAG_WEBHOOK_PERMITTED_IPS | string | Optional | 104.196.245.109, 104.196.254.247 | Bugsnag IP addresses which webhook requests are expected to come from. |
 | DEFAULT_USAGE_PLAN_ID | string | Required | 123e45 | AWS API gateway default usage plan used when creating API keys for API users. |
 | MAXIMUM_PERMITTED_MONITORED_TRIPS | integer | Optional | 5 | The maximum number of saved monitored trips. |

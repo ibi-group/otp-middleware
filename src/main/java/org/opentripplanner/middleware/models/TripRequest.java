@@ -5,6 +5,8 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
 
@@ -36,11 +38,8 @@ public class TripRequest extends Model {
      */
     public String toPlace;
 
-    /**
-     * Query params. Query parameters influencing trip.
-     */
-    //TODO: This could be the request parameters returned as part of the plan response. Would be POJO based instead of just text.
-    public String queryParams;
+    /** A dictionary of the parameters provided in the request that triggered this response. */
+    public HashMap<String, String> requestParameters;
 
     /**
      * This no-arg constructor exists to make MongoDB happy.
@@ -48,12 +47,18 @@ public class TripRequest extends Model {
     public TripRequest() {
     }
 
-    public TripRequest(String userId, String batchId, String fromPlace, String toPlace, String queryParams) {
+    public TripRequest(
+        String userId,
+        String batchId,
+        String fromPlace,
+        String toPlace,
+        HashMap<String, String> requestParameters
+    ) {
         this.userId = userId;
         this.batchId = batchId;
         this.fromPlace = fromPlace;
         this.toPlace = toPlace;
-        this.queryParams = queryParams;
+        this.requestParameters = requestParameters;
     }
 
     @Override
@@ -63,13 +68,13 @@ public class TripRequest extends Model {
             ", batchId='" + batchId + '\'' +
             ", fromPlace='" + fromPlace + '\'' +
             ", toPlace='" + toPlace + '\'' +
-            ", queryParams='" + queryParams + '\'' +
-            ", id='" + id + '\'' +
-            ", lastUpdated=" + lastUpdated +
-            ", dateCreated=" + dateCreated +
+            ", requestParameters=" + requestParameters +
             '}';
     }
 
+    /**
+     * Get all trip requests for a given user id.
+     */
     public static FindIterable<TripRequest> requestsForUser(String userId) {
         return Persistence.tripRequests.getFiltered(filterByUserId(userId));
     }

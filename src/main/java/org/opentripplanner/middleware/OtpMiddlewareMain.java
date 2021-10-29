@@ -5,6 +5,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.ErrorEventsController;
@@ -66,9 +67,10 @@ public class OtpMiddlewareMain {
         if (!inTestEnvironment) {
             // Schedule Bugsnag jobs to start retrieving Bugsnag event/error data
             BugsnagJobs.initialize();
-
             // Initialize Bugsnag in order to report application errors
             BugsnagReporter.initializeBugsnagErrorReporting();
+            // Schedule trip history uploads.
+            ConnectedDataManager.scheduleTripHistoryUploadJob();
 
             // Schedule recurring Monitor All Trips Job.
             // TODO: Determine whether this should go in some other process.

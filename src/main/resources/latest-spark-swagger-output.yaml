@@ -1231,6 +1231,8 @@ definitions:
         type: "string"
       agencyId:
         type: "string"
+      tripBlockId:
+        type: "string"
       tripId:
         type: "string"
       serviceDate:
@@ -1527,8 +1529,8 @@ definitions:
         type: "string"
       toPlace:
         type: "string"
-      queryParams:
-        type: "string"
+      requestParameters:
+        $ref: "#/definitions/HashMap"
   MonitoredComponent:
     type: "object"
     properties:
