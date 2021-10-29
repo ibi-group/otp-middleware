@@ -97,11 +97,12 @@ public class OtpRequestProcessor implements Endpoint {
                 .withDescription("Forwards any GET request to " + otpVersion.toString() + ". " + OTP_DOC_LINK)
                 .withQueryParam(USER_ID)
                 .withProduces(List.of(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)),
-                this::proxyGET
+                this::proxyGet
         ).post(path("/*")
                 .withDescription("Forwards any POST request to " + otpVersion.toString() + ". " + OTP_DOC_LINK)
-                .withQueryParam(USER_ID),
-                this::proxyPOST
+                .withQueryParam(USER_ID)
+                .withProduces(List.of(MediaType.APPLICATION_JSON)),
+                this::proxyPost
         );
     }
 
@@ -111,7 +112,7 @@ public class OtpRequestProcessor implements Endpoint {
      * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
      * status) is passed back to the requester.
      */
-    private String proxyGET(Request request, spark.Response response) {
+    private String proxyGet(Request request, spark.Response response) {
         OtpUser otpUser = checkUserPermissions(request);
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replaceFirst(basePath, "");
@@ -144,7 +145,7 @@ public class OtpRequestProcessor implements Endpoint {
      * Since we will use the REST API (GET) for routing requests for the foreseeable future the
      * POST requests are not logged.
      */
-    private String proxyPOST(Request request, spark.Response response) {
+    private String proxyPost(Request request, spark.Response response) {
         checkUserPermissions(request);
 
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
