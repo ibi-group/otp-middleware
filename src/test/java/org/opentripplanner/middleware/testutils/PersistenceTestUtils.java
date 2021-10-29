@@ -96,7 +96,7 @@ public class PersistenceTestUtils {
         if (mode != null) {
             requestParameters.put("mode", mode);
         } else {
-            requestParameters.put("mode", "WALK%2CBUS%2CRAIL");
+            requestParameters.put("mode", "WALK,BUS,RAIL");
         }
         requestParameters.put("showIntermediateStops", "true");
         requestParameters.put("maxWalkDistance", "1027");

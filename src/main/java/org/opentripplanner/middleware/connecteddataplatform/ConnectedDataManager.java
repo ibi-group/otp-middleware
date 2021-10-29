@@ -251,11 +251,9 @@ public class ConnectedDataManager {
                 // overwritten at the end of this method).
                 request = tripRequest;
             }
-            Set<String> uniqueModesForRequest = new HashSet<>(
-                // Expecting the comma separating modes to be encoded as '%2C'.
-                Arrays.asList(tripRequest.requestParameters.get("mode").split("%2C"))
+            allUniqueModes.addAll(
+                Arrays.asList(tripRequest.requestParameters.get("mode").split(","))
             );
-            allUniqueModes.addAll(uniqueModesForRequest);
         }
         // Replace the mode parameter in the first request with all unique modes from across the batch.
         request.requestParameters.put("mode", StringUtils.join(allUniqueModes, ","));

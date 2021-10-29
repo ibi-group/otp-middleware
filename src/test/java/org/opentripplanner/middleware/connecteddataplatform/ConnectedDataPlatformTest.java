@@ -213,7 +213,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
         String userId = UUID.randomUUID().toString();
         String batchId = "12345678";
-        String mode = "WALK%2CBUS%2CRAIL%2CTRAM";
+        String mode = "WALK,BUS,RAIL,TRAM";
         LocalDate startOfYesterday = LocalDate.now().minusDays(1).atStartOfDay().toLocalDate();
         TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(
             userId,
@@ -246,7 +246,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
         List<AnonymizedTrip> anonymizedTrips = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTrip.class);
         assertNotNull(anonymizedTrips);
-        assertEquals(mode.replaceAll("%2C",","), anonymizedTrips.get(0).tripRequest.mode);
+        assertEquals(mode, anonymizedTrips.get(0).tripRequest.mode);
     }
 
     /**
