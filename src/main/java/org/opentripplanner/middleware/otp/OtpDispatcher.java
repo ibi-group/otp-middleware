@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.otp;
 
+import java.util.Map;
 import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -34,6 +35,21 @@ public class OtpDispatcher {
     public static OtpDispatcherResponse sendOtpRequest(OtpVersion version, String query, String path) {
         LOG.debug("Original query string: {}", query);
         return sendOtpRequest(buildOtpUri(version, query, path));
+    }
+
+    /**
+     * Sends a POST request to OTP where all the HTTP entities (path, query, headers, body) are
+     * settable.
+     */
+    public static OtpDispatcherResponse sendOtpPostRequest(
+            OtpVersion version,
+            String query,
+            String path,
+            Map<String, String> headers,
+            String bodyContent
+    ) {
+        LOG.debug("Original query string: {}", query);
+        return sendOtpRequest(buildOtpUri(version, query, path), HttpMethod.POST, headers, bodyContent);
     }
 
     /**
@@ -73,18 +89,30 @@ public class OtpDispatcher {
     }
 
     /**
+     * Simplified version of method that provides an easy interface if you don't care about setting
+     * method, headers or body.
+     */
+    private static OtpDispatcherResponse sendOtpRequest(URI uri) {
+       return sendOtpRequest(uri, HttpMethod.GET, null, null);
+    }
+    /**
      * Makes a call to the OTP server end point. The original response and status are wrapped in a single object and
      * returned. It will fail if a connection is not made.
      */
-    private static OtpDispatcherResponse sendOtpRequest(URI uri) {
+    private static OtpDispatcherResponse sendOtpRequest(
+            URI uri,
+            HttpMethod method,
+            Map<String, String> headers,
+            String bodyContent
+    ) {
         LOG.info("Sending request to OTP: {}", uri.toString());
         HttpResponseValues otpResponse =
             HttpUtils.httpRequestRawResponse(
                 uri,
                 OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS,
-                HttpMethod.GET,
-                null,
-                null);
+                method,
+                headers,
+                bodyContent);
         return new OtpDispatcherResponse(otpResponse);
     }
 }

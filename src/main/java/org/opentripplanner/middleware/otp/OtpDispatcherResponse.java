@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.otp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.SerializationUtils;
+import org.apache.http.Header;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
@@ -22,13 +23,13 @@ import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT
 public class OtpDispatcherResponse implements Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcherResponse.class);
 
-    /** Empty constructor used for testing */
     public OtpDispatcherResponse() {}
 
     public OtpDispatcherResponse(HttpResponseValues otpResponse) {
         requestUri = otpResponse.uri;
         responseBody = otpResponse.responseBody;
         statusCode = otpResponse.status;
+        headers = otpResponse.originalClosedResponse.getAllHeaders();
         LOG.debug("Response from OTP server: {}", this);
     }
 
@@ -46,6 +47,11 @@ public class OtpDispatcherResponse implements Serializable {
      * Status code. Status code returned with response from an OTP server.
      */
     public int statusCode;
+
+    /**
+     * The headers returned by OTP.
+     */
+    public Header[] headers;
 
     /** URI (for the OTP server) that the request was sent to */
     public URI requestUri;

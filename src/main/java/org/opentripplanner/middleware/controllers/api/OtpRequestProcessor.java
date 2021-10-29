@@ -5,6 +5,11 @@ import com.beerboy.ss.descriptor.EndpointDescriptor;
 import com.beerboy.ss.descriptor.ParameterDescriptor;
 import com.beerboy.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
@@ -51,6 +56,15 @@ public class OtpRequestProcessor implements Endpoint {
     public static final String BATCH_ID_NOT_PROVIDED = "Batch Id not provided by caller.";
 
     /**
+     * When sending POST headers we generally want to forward all headers that the client sends
+     * to OTP, however there are a few that are already set by the HTTP framework and setting
+     * them as well causes problems.
+     */
+    private static final Set<String> HEADERS_NOT_TO_FORWARD = Stream.of("Host", "Content-Length")
+            .map(String::toLowerCase)
+            .collect(Collectors.toSet());
+
+    /**
      * URL to OTP's documentation.
      */
     private static final String OTP_DOC_URL = "http://otp-docs.ibi-transit.com/api/index.html";
@@ -89,17 +103,86 @@ public class OtpRequestProcessor implements Endpoint {
                 .withDescription("Forwards any GET request to " + otpVersion.toString() + ". " + OTP_DOC_LINK)
                 .withQueryParam(USER_ID)
                 .withProduces(List.of(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)),
-                this::proxy
+                this::proxyGet
+        ).post(path("/*")
+                .withDescription("Forwards any POST request to " + otpVersion.toString() + ". " + OTP_DOC_LINK)
+                .withQueryParam(USER_ID)
+                .withProduces(List.of(MediaType.APPLICATION_JSON)),
+                this::proxyPost
         );
     }
 
     /**
-     * Responsible for proxying any and all requests made to its HTTP endpoint to OTP. If the target service is of
+     * Responsible for proxying all GET requests made to its HTTP endpoint to OTP. If the target service is of
      * interest (e.g., requests made to the plan trip endpoint are currently logged if the user has consented to storing
      * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
      * status) is passed back to the requester.
      */
-    private String proxy(Request request, spark.Response response) {
+    private String proxyGet(Request request, spark.Response response) {
+        OtpUser otpUser = checkUserPermissions(request);
+        // Get request path intended for OTP API by removing the proxy endpoint (/otp).
+        String otpRequestPath = request.uri().replaceFirst(basePath, "");
+        // attempt to get response from OTP server based on requester's query parameters
+        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(otpVersion, request.queryString(), otpRequestPath);
+        if (otpDispatcherResponse.responseBody == null) {
+            logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
+            return null;
+        }
+        // If the request path ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
+        if (otpRequestPath.endsWith(OtpDispatcher.OTP_PLAN_ENDPOINT) && otpUser != null) {
+            if(!handlePlanTripResponse(request, otpDispatcherResponse, otpUser)) {
+                logMessageAndHalt(
+                    request,
+                    HttpStatus.INTERNAL_SERVER_ERROR_500,
+                    "Failed to save trip history."
+                );
+                return null;
+            }
+        }
+        // provide response to requester as received from OTP server
+        response.type(MediaType.APPLICATION_JSON);
+        response.status(otpDispatcherResponse.statusCode);
+        return otpDispatcherResponse.responseBody;
+    }
+
+    /**
+     * Responsible for proxying all POST requests made to its HTTP endpoint to OTP.
+     *
+     * Since we will use the REST API (GET) for routing requests for the foreseeable future the
+     * POST requests are not logged.
+     */
+    private String proxyPost(Request request, spark.Response response) {
+        checkUserPermissions(request);
+
+        // Get request path intended for OTP API by removing the proxy endpoint (/otp).
+        String otpRequestPath = request.uri().replaceFirst(basePath, "");
+
+        var headers = new HashMap<String, String>();
+        request.headers().forEach(h -> {
+            if(!HEADERS_NOT_TO_FORWARD.contains(h.toLowerCase())) {
+                headers.put(h, request.headers(h));
+            }
+        });
+
+        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPostRequest(
+                otpVersion,
+                request.queryString(),
+                otpRequestPath,
+                headers,
+                request.body()
+        );
+
+        // provide response to requester as received from OTP server
+        Arrays.stream(otpDispatcherResponse.headers).forEach(header -> response.header(header.getName(), header.getValue()));
+        response.status(otpDispatcherResponse.statusCode);
+        return otpDispatcherResponse.responseBody;
+    }
+
+    /**
+     * Checks if the request contains the required api key to proceed.
+     * If it doesn't then a HaltException is thrown leading this request to fail.
+     */
+    private OtpUser checkUserPermissions(Request request) {
         // If a user id is provided, the assumption is that an API user is making a plan request on behalf of an Otp user.
         String userId = request.queryParams(USER_ID_PARAM);
         String apiKeyValueFromHeader = request.headers("x-api-key");
@@ -119,7 +202,8 @@ public class OtpRequestProcessor implements Endpoint {
                 if (otpUser == null && userId != null) {
                     logMessageAndHalt(request, HttpStatus.NOT_FOUND_404, "The specified user id was not found.");
                 } else if (!requestingUser.canManageEntity(otpUser)) {
-                    logMessageAndHalt(request,
+                    logMessageAndHalt(
+                            request,
                         HttpStatus.FORBIDDEN_403,
                         String.format("User: %s not authorized to make trip requests for user: %s",
                             requestingUser.apiUser.email,
@@ -128,33 +212,12 @@ public class OtpRequestProcessor implements Endpoint {
             }
         } else if (userId != null && apiKeyValueFromHeader == null) {
             // User id has been provided, but no means to authorize the requesting user.
-            logMessageAndHalt(request,
+            logMessageAndHalt(
+                    request,
                 HttpStatus.UNAUTHORIZED_401,
                 "Unauthorized trip request, authorization required.");
         }
-        // Get request path intended for OTP API by removing the proxy endpoint (/otp).
-        String otpRequestPath = request.uri().replaceFirst(basePath, "");
-        // attempt to get response from OTP server based on requester's query parameters
-        OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpRequest(otpVersion, request.queryString(), otpRequestPath);
-        if (otpDispatcherResponse.responseBody == null) {
-            logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
-            return null;
-        }
-        // If the request path ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
-        if (otpRequestPath.endsWith(OtpDispatcher.OTP_PLAN_ENDPOINT) && otpUser != null) {
-            if (!handlePlanTripResponse(request, otpDispatcherResponse, otpUser)) {
-                logMessageAndHalt(
-                    request,
-                    HttpStatus.INTERNAL_SERVER_ERROR_500,
-                    "Failed to save trip history."
-                );
-                return null;
-            }
-        }
-        // provide response to requester as received from OTP server
-        response.type(MediaType.APPLICATION_JSON);
-        response.status(otpDispatcherResponse.statusCode);
-        return otpDispatcherResponse.responseBody;
+        return otpUser;
     }
 
     /**
