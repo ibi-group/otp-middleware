@@ -37,6 +37,10 @@ public class OtpDispatcher {
         return sendOtpRequest(buildOtpUri(version, query, path));
     }
 
+    /**
+     * Sends a POST request to OTP where all the HTTP entities (path, query, headers, body) are
+     * settable.
+     */
     public static OtpDispatcherResponse sendOtpPostRequest(
             OtpVersion version,
             String query,
@@ -84,6 +88,10 @@ public class OtpDispatcher {
         return uri;
     }
 
+    /**
+     * Simplified version of method that provides an easy interface if you don't care about setting
+     * method, headers or body.
+     */
     private static OtpDispatcherResponse sendOtpRequest(URI uri) {
        return sendOtpRequest(uri, HttpMethod.GET, null, null);
     }
