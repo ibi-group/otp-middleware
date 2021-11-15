@@ -20,6 +20,9 @@ public class OtpUser extends AbstractUser {
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(OtpUser.class);
 
+    /** Whether the user would like accessible routes by default. */
+    public boolean accessibilityRoutingByDefault;
+
     /** Whether the user has consented to terms of use. */
     public boolean hasConsentedToTerms;
 
