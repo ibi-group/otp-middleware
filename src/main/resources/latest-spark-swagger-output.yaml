@@ -1567,6 +1567,8 @@ definitions:
   OtpUser:
     type: "object"
     properties:
+      accessibilityRoutingByDefault:
+        type: "boolean"
       hasConsentedToTerms:
         type: "boolean"
       isPhoneNumberVerified:
