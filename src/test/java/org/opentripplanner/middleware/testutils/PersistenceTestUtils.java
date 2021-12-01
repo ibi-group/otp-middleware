@@ -220,8 +220,8 @@ public class PersistenceTestUtils {
     static Itinerary createItinerary() {
         Itinerary itinerary = new Itinerary();
         itinerary.duration = 1350L;
-        itinerary.elevationGained = 0.0;
-        itinerary.elevationLost = 0.0;
+        itinerary.elevationGained = 0;
+        itinerary.elevationLost = 0;
         itinerary.endTime = new Date();
         itinerary.startTime = new Date();
         itinerary.transfers = 0;
