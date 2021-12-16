@@ -2,7 +2,6 @@
 swagger: "2.0"
 info:
   description: "OpenTripPlanner Middleware API"
-  version: ""
   title: "OTP Middleware"
   termsOfService: ""
   contact:
@@ -51,9 +50,32 @@ paths:
       parameters: []
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/AdminUser"
           schema:
             $ref: "#/definitions/AdminUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/admin/user/verification-email:
     get:
       tags:
@@ -63,6 +85,8 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/Job"
           schema:
             $ref: "#/definitions/Job"
   /api/admin/user:
@@ -93,6 +117,8 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/ResponseList"
           schema:
             $ref: "#/definitions/ResponseList"
     post:
@@ -105,15 +131,39 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
+        name: "body"
         description: "Body object description"
         required: true
         schema:
           $ref: "#/definitions/AdminUser"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/AdminUser"
           schema:
             $ref: "#/definitions/AdminUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/admin/user/{id}:
     get:
       tags:
@@ -130,9 +180,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/AdminUser"
           schema:
             $ref: "#/definitions/AdminUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
     put:
       tags:
       - "api/admin/user"
@@ -149,15 +222,39 @@ paths:
         required: true
         type: "string"
       - in: "body"
+        name: "body"
         description: "Body object description"
         required: true
         schema:
           $ref: "#/definitions/AdminUser"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/AdminUser"
           schema:
             $ref: "#/definitions/AdminUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
     delete:
       tags:
       - "api/admin/user"
@@ -172,9 +269,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/AdminUser"
           schema:
             $ref: "#/definitions/AdminUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/application/{id}/apikey:
     post:
       tags:
@@ -196,9 +316,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
           schema:
             $ref: "#/definitions/ApiUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/application/{id}/apikey/{apiKeyId}:
     delete:
       tags:
@@ -219,9 +362,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
           schema:
             $ref: "#/definitions/ApiUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/application/authenticate:
     post:
       tags:
@@ -233,16 +399,18 @@ paths:
       - name: "username"
         in: "query"
         description: "Auth0 username (usually email address)."
-        required: false
+        required: true
         type: "string"
       - name: "password"
         in: "query"
         description: "Auth0 password."
-        required: false
+        required: true
         type: "string"
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/TokenHolder"
           schema:
             $ref: "#/definitions/TokenHolder"
   /api/secure/application/fromtoken:
@@ -256,9 +424,32 @@ paths:
       parameters: []
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
           schema:
             $ref: "#/definitions/ApiUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/application/verification-email:
     get:
       tags:
@@ -268,6 +459,8 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/Job"
           schema:
             $ref: "#/definitions/Job"
   /api/secure/application:
@@ -298,6 +491,8 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/ResponseList"
           schema:
             $ref: "#/definitions/ResponseList"
     post:
@@ -310,15 +505,39 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
+        name: "body"
         description: "Body object description"
         required: true
         schema:
           $ref: "#/definitions/ApiUser"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
           schema:
             $ref: "#/definitions/ApiUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/application/{id}:
     get:
       tags:
@@ -335,9 +554,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
           schema:
             $ref: "#/definitions/ApiUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
     put:
       tags:
       - "api/secure/application"
@@ -354,15 +596,39 @@ paths:
         required: true
         type: "string"
       - in: "body"
+        name: "body"
         description: "Body object description"
         required: true
         schema:
           $ref: "#/definitions/ApiUser"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
           schema:
             $ref: "#/definitions/ApiUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
     delete:
       tags:
       - "api/secure/application"
@@ -377,9 +643,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
           schema:
             $ref: "#/definitions/ApiUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/monitoredtrip/checkitinerary:
     post:
       tags:
@@ -390,15 +679,39 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
+        name: "body"
         description: "Body object description"
         required: true
         schema:
           $ref: "#/definitions/MonitoredTrip"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ItineraryExistence"
           schema:
             $ref: "#/definitions/ItineraryExistence"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/monitoredtrip:
     get:
       tags:
@@ -427,6 +740,8 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/ResponseList"
           schema:
             $ref: "#/definitions/ResponseList"
     post:
@@ -439,15 +754,39 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
+        name: "body"
         description: "Body object description"
         required: true
         schema:
           $ref: "#/definitions/MonitoredTrip"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredTrip"
           schema:
             $ref: "#/definitions/MonitoredTrip"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/monitoredtrip/{id}:
     get:
       tags:
@@ -464,9 +803,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredTrip"
           schema:
             $ref: "#/definitions/MonitoredTrip"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
     put:
       tags:
       - "api/secure/monitoredtrip"
@@ -483,15 +845,39 @@ paths:
         required: true
         type: "string"
       - in: "body"
+        name: "body"
         description: "Body object description"
         required: true
         schema:
           $ref: "#/definitions/MonitoredTrip"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredTrip"
           schema:
             $ref: "#/definitions/MonitoredTrip"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
     delete:
       tags:
       - "api/secure/monitoredtrip"
@@ -507,9 +893,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredTrip"
           schema:
             $ref: "#/definitions/MonitoredTrip"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/triprequests:
     get:
       tags:
@@ -521,7 +930,7 @@ paths:
       - name: "userId"
         in: "query"
         description: "The OTP user for which to retrieve trip requests."
-        required: false
+        required: true
         type: "string"
       - name: "limit"
         in: "query"
@@ -554,8 +963,14 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            type: "array"
+            items:
+              $ref: "#/definitions/TripRequest"
           schema:
-            $ref: "#/definitions/TripRequest"
+            type: "array"
+            items:
+              $ref: "#/definitions/TripRequest"
   /api/secure/monitoredcomponent:
     get:
       tags:
@@ -584,6 +999,8 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/ResponseList"
           schema:
             $ref: "#/definitions/ResponseList"
     post:
@@ -596,15 +1013,39 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
+        name: "body"
         description: "Body object description"
         required: true
         schema:
           $ref: "#/definitions/MonitoredComponent"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
           schema:
             $ref: "#/definitions/MonitoredComponent"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/monitoredcomponent/{id}:
     get:
       tags:
@@ -621,9 +1062,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
           schema:
             $ref: "#/definitions/MonitoredComponent"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
     put:
       tags:
       - "api/secure/monitoredcomponent"
@@ -640,15 +1104,39 @@ paths:
         required: true
         type: "string"
       - in: "body"
+        name: "body"
         description: "Body object description"
         required: true
         schema:
           $ref: "#/definitions/MonitoredComponent"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
           schema:
             $ref: "#/definitions/MonitoredComponent"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
     delete:
       tags:
       - "api/secure/monitoredcomponent"
@@ -664,9 +1152,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
           schema:
             $ref: "#/definitions/MonitoredComponent"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/user/{id}/verify_sms/{phoneNumber}:
     get:
       tags:
@@ -686,6 +1197,8 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/VerificationResult"
           schema:
             $ref: "#/definitions/VerificationResult"
   /api/secure/user/{id}/verify_sms/{code}:
@@ -707,6 +1220,8 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/VerificationResult"
           schema:
             $ref: "#/definitions/VerificationResult"
   /api/secure/user/fromtoken:
@@ -720,9 +1235,32 @@ paths:
       parameters: []
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/OtpUser"
           schema:
             $ref: "#/definitions/OtpUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/user/verification-email:
     get:
       tags:
@@ -732,6 +1270,8 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/Job"
           schema:
             $ref: "#/definitions/Job"
   /api/secure/user:
@@ -762,6 +1302,8 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/ResponseList"
           schema:
             $ref: "#/definitions/ResponseList"
     post:
@@ -774,15 +1316,39 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
+        name: "body"
         description: "Body object description"
         required: true
         schema:
           $ref: "#/definitions/OtpUser"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/OtpUser"
           schema:
             $ref: "#/definitions/OtpUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/user/{id}:
     get:
       tags:
@@ -799,9 +1365,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/OtpUser"
           schema:
             $ref: "#/definitions/OtpUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
     put:
       tags:
       - "api/secure/user"
@@ -818,15 +1407,39 @@ paths:
         required: true
         type: "string"
       - in: "body"
+        name: "body"
         description: "Body object description"
         required: true
         schema:
           $ref: "#/definitions/OtpUser"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/OtpUser"
           schema:
             $ref: "#/definitions/OtpUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
     delete:
       tags:
       - "api/secure/user"
@@ -841,9 +1454,32 @@ paths:
         type: "string"
       responses:
         "200":
-          description: "successful operation"
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/OtpUser"
           schema:
             $ref: "#/definitions/OtpUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
   /api/secure/logs:
     get:
       tags:
@@ -877,8 +1513,14 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            type: "array"
+            items:
+              $ref: "#/definitions/ApiUsageResult"
           schema:
-            $ref: "#/definitions/ApiUsageResult"
+            type: "array"
+            items:
+              $ref: "#/definitions/ApiUsageResult"
   /api/admin/bugsnag/eventsummary:
     get:
       tags:
@@ -902,8 +1544,14 @@ paths:
       responses:
         "200":
           description: "successful operation"
+          responseSchema:
+            type: "array"
+            items:
+              $ref: "#/definitions/BugsnagEvent"
           schema:
-            $ref: "#/definitions/BugsnagEvent"
+            type: "array"
+            items:
+              $ref: "#/definitions/BugsnagEvent"
   /otp/*:
     get:
       tags:
@@ -977,15 +1625,6 @@ paths:
         "200":
           description: "successful operation"
 definitions:
-  AdminUser:
-    type: "object"
-    properties:
-      subscriptions:
-        type: "array"
-        items:
-          type: "string"
-          enum:
-          - "NEW_ERROR"
   Job:
     type: "object"
     properties:
@@ -1006,7 +1645,7 @@ definitions:
       data:
         type: "array"
         items:
-          type: "string"
+          $ref: "#/definitions/Object"
       offset:
         type: "integer"
         format: "int32"
@@ -1019,6 +1658,29 @@ definitions:
       timestamp:
         type: "string"
         format: "date"
+  AdminUser:
+    type: "object"
+    properties:
+      subscriptions:
+        type: "array"
+        items:
+          type: "string"
+          enum:
+          - "NEW_ERROR"
+  TokenHolder:
+    type: "object"
+    properties:
+      accessToken:
+        type: "string"
+      idToken:
+        type: "string"
+      refreshToken:
+        type: "string"
+      tokenType:
+        type: "string"
+      expiresIn:
+        type: "integer"
+        format: "int64"
   ApiKey:
     type: "object"
     properties:
@@ -1047,20 +1709,6 @@ definitions:
         type: "boolean"
       name:
         type: "string"
-  TokenHolder:
-    type: "object"
-    properties:
-      accessToken:
-        type: "string"
-      idToken:
-        type: "string"
-      refreshToken:
-        type: "string"
-      tokenType:
-        type: "string"
-      expiresIn:
-        type: "integer"
-        format: "int64"
   TripMonitorNotification:
     type: "object"
     properties:

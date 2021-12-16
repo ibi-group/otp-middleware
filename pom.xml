@@ -14,16 +14,6 @@
     </properties>
     <repositories>
         <!-- To create Swagger API docs with spark-java -->
-        <repository>
-            <id>manusant-beerRepo</id>
-            <url>https://packagecloud.io/manusant/beerRepo/maven2</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
         <!--  used for importing java projects from github -->
         <repository>
             <id>jitpack.io</id>
@@ -257,9 +247,9 @@
 
         <!-- To create Swagger API docs with spark-java -->
         <dependency>
-            <groupId>com.beerboy.ss</groupId>
+            <groupId>com.github.manusant</groupId>
             <artifactId>spark-swagger</artifactId>
-            <version>1.0.0.48</version>
+            <version>2.0.2</version>
         </dependency>
 
         <!-- Auth0 Client library for using Management API  -->
