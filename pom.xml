@@ -261,6 +261,12 @@
             <artifactId>spark-swagger</artifactId>
             <version>1.0.0.48</version>
         </dependency>
+        <!-- temporary override for spark-swagger log4j dependency -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.16.0</version>
+        </dependency>
 
         <!-- Auth0 Client library for using Management API  -->
         <dependency>
