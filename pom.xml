@@ -13,7 +13,8 @@
         <awsjavasdk.version>1.11.728</awsjavasdk.version>
     </properties>
     <repositories>
-        <!-- For this repo to work locally, follow this set-up: https://github.com/manusant/spark-swagger#maven -->
+        <!-- To create Swagger API docs with spark-java. For this repo to work, follow this
+        set-up: https://github.com/manusant/spark-swagger#maven -->
         <repository>
             <id>github</id>
             <name>Spark-Swagger Packages</name>
