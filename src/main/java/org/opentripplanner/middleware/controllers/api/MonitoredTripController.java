@@ -1,8 +1,8 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.beerboy.ss.ApiEndpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
+import io.github.manusant.ss.ApiEndpoint;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.ItineraryExistence;
@@ -19,7 +19,7 @@ import java.net.URISyntaxException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;

@@ -2,7 +2,7 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
-import com.beerboy.ss.ApiEndpoint;
+import io.github.manusant.ss.ApiEndpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**

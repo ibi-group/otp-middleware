@@ -1,9 +1,9 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.beerboy.ss.ApiEndpoint;
-import com.beerboy.ss.SparkSwagger;
-import com.beerboy.ss.descriptor.ParameterDescriptor;
-import com.beerboy.ss.rest.Endpoint;
+import io.github.manusant.ss.ApiEndpoint;
+import io.github.manusant.ss.SparkSwagger;
+import io.github.manusant.ss.descriptor.ParameterDescriptor;
+import io.github.manusant.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
@@ -24,8 +24,8 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
-import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static io.github.manusant.ss.descriptor.EndpointDescriptor.endpointPath;
+import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.HttpUtils.getRequiredParamFromRequest;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
