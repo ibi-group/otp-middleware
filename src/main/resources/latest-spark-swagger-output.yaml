@@ -2,6 +2,7 @@
 swagger: "2.0"
 info:
   description: "OpenTripPlanner Middleware API"
+  version: ""
   title: "OTP Middleware"
   termsOfService: ""
   contact:
@@ -53,8 +54,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/AdminUser"
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
   /api/admin/user/verification-email:
     get:
       tags:
@@ -65,8 +64,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/Job"
-          responseSchema:
             $ref: "#/definitions/Job"
   /api/admin/user:
     get:
@@ -98,8 +95,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ResponseList"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/admin/user"
@@ -110,7 +105,6 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
-        name: "body"
         description: "Body object description"
         required: true
         schema:
@@ -119,8 +113,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/AdminUser"
-          responseSchema:
             $ref: "#/definitions/AdminUser"
   /api/admin/user/{id}:
     get:
@@ -141,8 +133,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/AdminUser"
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
     put:
       tags:
       - "api/admin/user"
@@ -159,7 +149,6 @@ paths:
         required: true
         type: "string"
       - in: "body"
-        name: "body"
         description: "Body object description"
         required: true
         schema:
@@ -168,8 +157,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/AdminUser"
-          responseSchema:
             $ref: "#/definitions/AdminUser"
     delete:
       tags:
@@ -187,8 +174,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/AdminUser"
-          responseSchema:
             $ref: "#/definitions/AdminUser"
   /api/secure/application/{id}/apikey:
     post:
@@ -214,8 +199,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ApiUser"
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
   /api/secure/application/{id}/apikey/{apiKeyId}:
     delete:
       tags:
@@ -239,8 +222,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ApiUser"
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
   /api/secure/application/authenticate:
     post:
       tags:
@@ -252,19 +233,17 @@ paths:
       - name: "username"
         in: "query"
         description: "Auth0 username (usually email address)."
-        required: true
+        required: false
         type: "string"
       - name: "password"
         in: "query"
         description: "Auth0 password."
-        required: true
+        required: false
         type: "string"
       responses:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/TokenHolder"
-          responseSchema:
             $ref: "#/definitions/TokenHolder"
   /api/secure/application/fromtoken:
     get:
@@ -280,8 +259,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ApiUser"
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
   /api/secure/application/verification-email:
     get:
       tags:
@@ -292,8 +269,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/Job"
-          responseSchema:
             $ref: "#/definitions/Job"
   /api/secure/application:
     get:
@@ -325,8 +300,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ResponseList"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/secure/application"
@@ -337,7 +310,6 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
-        name: "body"
         description: "Body object description"
         required: true
         schema:
@@ -346,8 +318,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/ApiUser"
-          responseSchema:
             $ref: "#/definitions/ApiUser"
   /api/secure/application/{id}:
     get:
@@ -368,8 +338,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ApiUser"
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
     put:
       tags:
       - "api/secure/application"
@@ -386,7 +354,6 @@ paths:
         required: true
         type: "string"
       - in: "body"
-        name: "body"
         description: "Body object description"
         required: true
         schema:
@@ -395,8 +362,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/ApiUser"
-          responseSchema:
             $ref: "#/definitions/ApiUser"
     delete:
       tags:
@@ -415,8 +380,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ApiUser"
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
   /api/secure/monitoredtrip/checkitinerary:
     post:
       tags:
@@ -427,7 +390,6 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
-        name: "body"
         description: "Body object description"
         required: true
         schema:
@@ -436,8 +398,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/ItineraryExistence"
-          responseSchema:
             $ref: "#/definitions/ItineraryExistence"
   /api/secure/monitoredtrip:
     get:
@@ -469,8 +429,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ResponseList"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/secure/monitoredtrip"
@@ -481,7 +439,6 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
-        name: "body"
         description: "Body object description"
         required: true
         schema:
@@ -490,8 +447,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/MonitoredTrip"
-          responseSchema:
             $ref: "#/definitions/MonitoredTrip"
   /api/secure/monitoredtrip/{id}:
     get:
@@ -512,8 +467,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/MonitoredTrip"
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
     put:
       tags:
       - "api/secure/monitoredtrip"
@@ -530,7 +483,6 @@ paths:
         required: true
         type: "string"
       - in: "body"
-        name: "body"
         description: "Body object description"
         required: true
         schema:
@@ -539,8 +491,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/MonitoredTrip"
-          responseSchema:
             $ref: "#/definitions/MonitoredTrip"
     delete:
       tags:
@@ -560,8 +510,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/MonitoredTrip"
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
   /api/secure/triprequests:
     get:
       tags:
@@ -573,7 +521,7 @@ paths:
       - name: "userId"
         in: "query"
         description: "The OTP user for which to retrieve trip requests."
-        required: true
+        required: false
         type: "string"
       - name: "limit"
         in: "query"
@@ -607,13 +555,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/TripRequest"
-          responseSchema:
-            type: "array"
-            items:
-              $ref: "#/definitions/TripRequest"
+            $ref: "#/definitions/TripRequest"
   /api/secure/monitoredcomponent:
     get:
       tags:
@@ -644,8 +586,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ResponseList"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/secure/monitoredcomponent"
@@ -656,7 +596,6 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
-        name: "body"
         description: "Body object description"
         required: true
         schema:
@@ -665,8 +604,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/MonitoredComponent"
-          responseSchema:
             $ref: "#/definitions/MonitoredComponent"
   /api/secure/monitoredcomponent/{id}:
     get:
@@ -687,8 +624,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/MonitoredComponent"
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
     put:
       tags:
       - "api/secure/monitoredcomponent"
@@ -705,7 +640,6 @@ paths:
         required: true
         type: "string"
       - in: "body"
-        name: "body"
         description: "Body object description"
         required: true
         schema:
@@ -714,8 +648,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/MonitoredComponent"
-          responseSchema:
             $ref: "#/definitions/MonitoredComponent"
     delete:
       tags:
@@ -734,8 +666,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/MonitoredComponent"
-          responseSchema:
             $ref: "#/definitions/MonitoredComponent"
   /api/secure/user/{id}/verify_sms/{phoneNumber}:
     get:
@@ -758,8 +688,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/VerificationResult"
-          responseSchema:
-            $ref: "#/definitions/VerificationResult"
   /api/secure/user/{id}/verify_sms/{code}:
     post:
       tags:
@@ -781,8 +709,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/VerificationResult"
-          responseSchema:
-            $ref: "#/definitions/VerificationResult"
   /api/secure/user/fromtoken:
     get:
       tags:
@@ -797,8 +723,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/OtpUser"
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
   /api/secure/user/verification-email:
     get:
       tags:
@@ -809,8 +733,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/Job"
-          responseSchema:
             $ref: "#/definitions/Job"
   /api/secure/user:
     get:
@@ -842,8 +764,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ResponseList"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
     post:
       tags:
       - "api/secure/user"
@@ -854,7 +774,6 @@ paths:
       - "application/json"
       parameters:
       - in: "body"
-        name: "body"
         description: "Body object description"
         required: true
         schema:
@@ -863,8 +782,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/OtpUser"
-          responseSchema:
             $ref: "#/definitions/OtpUser"
   /api/secure/user/{id}:
     get:
@@ -885,8 +802,6 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/OtpUser"
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
     put:
       tags:
       - "api/secure/user"
@@ -903,7 +818,6 @@ paths:
         required: true
         type: "string"
       - in: "body"
-        name: "body"
         description: "Body object description"
         required: true
         schema:
@@ -912,8 +826,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/OtpUser"
-          responseSchema:
             $ref: "#/definitions/OtpUser"
     delete:
       tags:
@@ -931,8 +843,6 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/OtpUser"
-          responseSchema:
             $ref: "#/definitions/OtpUser"
   /api/secure/logs:
     get:
@@ -968,13 +878,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/ApiUsageResult"
-          responseSchema:
-            type: "array"
-            items:
-              $ref: "#/definitions/ApiUsageResult"
+            $ref: "#/definitions/ApiUsageResult"
   /api/admin/bugsnag/eventsummary:
     get:
       tags:
@@ -999,13 +903,7 @@ paths:
         "200":
           description: "successful operation"
           schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/BugsnagEvent"
-          responseSchema:
-            type: "array"
-            items:
-              $ref: "#/definitions/BugsnagEvent"
+            $ref: "#/definitions/BugsnagEvent"
   /otp/*:
     get:
       tags:
@@ -1108,7 +1006,7 @@ definitions:
       data:
         type: "array"
         items:
-          $ref: "#/definitions/Object"
+          type: "string"
       offset:
         type: "integer"
         format: "int32"
