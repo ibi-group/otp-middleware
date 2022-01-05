@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware;
 
-import io.github.manusant.ss.SparkSwagger;
+import com.beerboy.ss.SparkSwagger;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.bugsnag.BugsnagJobs;

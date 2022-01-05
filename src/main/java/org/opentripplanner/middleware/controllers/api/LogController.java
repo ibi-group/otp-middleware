@@ -1,9 +1,9 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.amazonaws.services.apigateway.model.GetUsageResult;
-import io.github.manusant.ss.SparkSwagger;
-import io.github.manusant.ss.descriptor.EndpointDescriptor;
-import io.github.manusant.ss.rest.Endpoint;
+import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.descriptor.EndpointDescriptor;
+import com.beerboy.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 

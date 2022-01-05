@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import io.github.manusant.ss.SparkSwagger;
-import io.github.manusant.ss.rest.Endpoint;
+import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.rest.Endpoint;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Sorts;
 import org.opentripplanner.middleware.bugsnag.EventSummary;
@@ -18,8 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static io.github.manusant.ss.descriptor.EndpointDescriptor.endpointPath;
-import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
+import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_LIMIT;
 import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT;
 import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT_PARAM;
@@ -59,7 +59,8 @@ public class ErrorEventsController implements Endpoint {
     }
 
     /**
-     * Get the latest Bugsnag {@link EventSummary} from MongoDB.
+     * Get the latest Bugsnag {@link EventSummary} from MongoDB (event summary is composed of {@link BugsnagEvent} and
+     * {@link BugsnagProject}.
      */
     private static ResponseList<EventSummary> getEventSummaries(Request req, Response res) {
         int limit = HttpUtils.getQueryParamFromRequest(req, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);

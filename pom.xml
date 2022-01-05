@@ -13,16 +13,20 @@
         <awsjavasdk.version>1.11.728</awsjavasdk.version>
     </properties>
     <repositories>
-        <!-- To create Swagger API docs with spark-java. For this repo to work, follow this
-        set-up: https://github.com/manusant/spark-swagger#maven -->
+        <!-- To create Swagger API docs with spark-java -->
         <repository>
-            <id>github</id>
-            <name>Spark-Swagger Packages</name>
-            <url>https://maven.pkg.github.com/manusant/spark-swagger</url>
+            <id>manusant-beerRepo</id>
+            <url>https://packagecloud.io/manusant/beerRepo/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
+        <!--  used for importing java projects from github -->
         <repository>
             <id>jitpack.io</id>
-            <name>Used for importing java projects from github</name>
             <url>https://jitpack.io</url>
         </repository>
     </repositories>
@@ -252,16 +256,10 @@
         </dependency>
 
         <!-- To create Swagger API docs with spark-java -->
-<!--        <dependency>-->
-<!--            <groupId>com.beerboy.ss</groupId>-->
-<!--            <artifactId>spark-swagger</artifactId>-->
-<!--            <version>1.0.0.48</version>-->
-<!--        </dependency>-->
-        <!-- https://mvnrepository.com/artifact/io.github.manusant/spark-swagger -->
         <dependency>
-            <groupId>io.github.manusant</groupId>
+            <groupId>com.beerboy.ss</groupId>
             <artifactId>spark-swagger</artifactId>
-            <version>2.0.2</version>
+            <version>1.0.0.48</version>
         </dependency>
 
         <!-- Auth0 Client library for using Management API  -->

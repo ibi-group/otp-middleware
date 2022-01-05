@@ -1,9 +1,8 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.json.auth.TokenHolder;
-
+import com.beerboy.ss.ApiEndpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.github.manusant.ss.ApiEndpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0Users;
@@ -22,7 +21,7 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
-import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 

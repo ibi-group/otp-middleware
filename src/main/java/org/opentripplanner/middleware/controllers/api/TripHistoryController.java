@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import io.github.manusant.ss.SparkSwagger;
-import io.github.manusant.ss.rest.Endpoint;
+import com.beerboy.ss.SparkSwagger;
+import com.beerboy.ss.rest.Endpoint;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
@@ -15,8 +15,8 @@ import spark.Response;
 import java.time.LocalTime;
 import java.util.Date;
 
-import static io.github.manusant.ss.descriptor.EndpointDescriptor.endpointPath;
-import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
+import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
+import static com.beerboy.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
 import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_LIMIT;
 import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_OFFSET;
