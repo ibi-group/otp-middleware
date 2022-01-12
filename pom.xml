@@ -245,7 +245,7 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>3.11.2</version>
+            <version>4.4.1</version>
         </dependency>
 
         <!-- Used for things like validating email addresses. -->
