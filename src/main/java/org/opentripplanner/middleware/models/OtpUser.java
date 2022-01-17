@@ -20,9 +20,6 @@ public class OtpUser extends AbstractUser {
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(OtpUser.class);
 
-    /** The user's preferred language **/
-    public String preferredLanguage;
-
     /** Whether the user would like accessible routes by default. */
     public boolean accessibilityRoutingByDefault;
 
@@ -43,6 +40,9 @@ public class OtpUser extends AbstractUser {
      * Verified phone number for SMS notifications, in +15551234 format (E.164 format, includes country code, no spaces).
      */
     public String phoneNumber;
+
+    /** The user's preferred language **/
+    public String preferredLanguage;
 
     /** Locations that the user has saved. */
     public List<UserLocation> savedLocations = new ArrayList<>();
