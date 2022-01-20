@@ -1577,7 +1577,7 @@ definitions:
         type: "string"
       phoneNumber:
         type: "string"
-      preferredLanguage:
+      preferredLocale:
         type: "string"
       savedLocations:
         type: "array"
