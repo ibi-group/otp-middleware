@@ -41,7 +41,10 @@ public class OtpUser extends AbstractUser {
      */
     public String phoneNumber;
 
-    /** The user's preferred language **/
+    /**
+     *  The user's preferred language, in language tag format
+     *  e.g. 'en-US', 'fr-FR', 'es-ES', 'zh-CN', etc.
+     * **/
     public String preferredLanguage;
 
     /** Locations that the user has saved. */
