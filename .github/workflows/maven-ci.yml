@@ -29,7 +29,7 @@ jobs:
           AWS_REGION: us-east-1
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: discover OTP paths
-        run: echo $OTP_PLAN_ENDPOINT && echo $OTP_API_ROOT
+        run: echo $OTP_PLAN_ENDPOINT | sed 's/./& /g' && echo $OTP_API_ROOT | sed 's/./& /g'
         env:
           OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
           OTP_API_ROOT: ${{ secrets.OTP_API_ROOT }}
