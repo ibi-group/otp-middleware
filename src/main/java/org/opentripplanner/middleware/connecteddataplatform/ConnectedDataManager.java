@@ -7,6 +7,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
@@ -65,13 +66,17 @@ public class ConnectedDataManager {
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME");
 
     public static void scheduleTripHistoryUploadJob() {
-        LOG.info("Scheduling trip history upload for every {} minute(s)",
-            CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES);
-        Scheduler.scheduleJob(
-            new TripHistoryUploadJob(),
-            0,
-            CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
-            TimeUnit.MINUTES);
+        if (shouldProcessTripHistory(CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME)) {
+            LOG.info("Scheduling trip history upload for every {} minute(s)",
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES);
+            Scheduler.scheduleJob(
+                new TripHistoryUploadJob(),
+                0,
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
+                TimeUnit.MINUTES);
+        } else {
+            LOG.warn("Not scheduling trip history upload (CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME is not set).");
+        }
     }
 
     /**
@@ -345,4 +350,13 @@ public class ConnectedDataManager {
             fileNameSuffix
         );
     }
+
+    /**
+     * Determines whether trip history should be processed based on the configured bucket name.
+     * @return true if trip history should be processed, false otherwise.
+     */
+    public static boolean shouldProcessTripHistory(String configBucketName) {
+        return !Strings.isBlank(configBucketName);
+    }
+
 }

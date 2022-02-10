@@ -417,4 +417,11 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         Coordinates randomized = LatLongUtils.getRandomizedCoordinates(coordinates);
         assertNotEquals(coordinates, randomized);
     }
+
+    @Test
+    void shouldProcessTripHistory() {
+        assertTrue(ConnectedDataManager.shouldProcessTripHistory("some-bucket-name"));
+        assertFalse(ConnectedDataManager.shouldProcessTripHistory(null));
+        assertFalse(ConnectedDataManager.shouldProcessTripHistory(""));
+    }
 }
