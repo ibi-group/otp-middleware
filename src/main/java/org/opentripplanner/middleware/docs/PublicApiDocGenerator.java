@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
@@ -28,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
@@ -55,6 +57,17 @@ public class PublicApiDocGenerator {
         "otp",
         "pelias"
     };
+    /**
+     * Basic map of types to path
+     */
+    private static final Map<String, String> TYPES_TO_PATH = new HashMap<>() {
+        {
+            put("OtpUser", "user");
+            put("MonitoredTrip", "monitoredtrip");
+            put("TripRequest", "triprequests");
+        }
+    };
+
     private static final String DEFINITIONS_REF = "#/definitions/";
     private static final String REF_FIELD = "$ref";
     private static final String ABSTRACT_USER = "AbstractUser";
@@ -65,6 +78,7 @@ public class PublicApiDocGenerator {
 
     private static final String AWS_API_SERVER = getConfigPropertyAsText("AWS_API_SERVER");
     private static final String AWS_API_STAGE = getConfigPropertyAsText("AWS_API_STAGE");
+    public static final String RESPONSE_LIST = "ResponseList";
 
     // Cached variables.
     private final ObjectNode swaggerRoot;
@@ -98,6 +112,7 @@ public class PublicApiDocGenerator {
         addAuthorizationParams(supplements.get("securityDefinitions"));
         insertMethodResponses(supplements.get("responses"));
         insertAbstractUserRefs(supplements.get("definitions"));
+        insertResponseListRefs(supplements.get("definitions"));
         inlineArrayDefinitions();
         // TODO: Add description to the fields of generated types?
 
@@ -398,12 +413,53 @@ public class PublicApiDocGenerator {
 
         // On the OtpUser type, insert an "allOf" entry to include the ref to AbstractUser.
         ObjectNode userNode = (ObjectNode) definitions.get(OTP_USER);
+        userNode.put("description", "A user of the trip planner UI");
         ArrayNode allOfNode = JsonNodeFactory.instance.arrayNode()
             .add(abstractUserRefNode.deepCopy())
             .add(userNode);
         ObjectNode newUserNode = JsonNodeFactory.instance.objectNode()
             .set("allOf", allOfNode);
         definitions.set(OTP_USER, newUserNode);
+    }
+
+    /**
+     * Add and extend the definition of {@link ResponseList} for each endpoint that returns it.
+     */
+    private void insertResponseListRefs(JsonNode definitionsTemplate) {
+        // A ref node for the generic ResponseList node.
+        ObjectNode responseListRefNode = JsonNodeFactory.instance.objectNode();
+        responseListRefNode.put(REF_FIELD, DEFINITIONS_REF + RESPONSE_LIST);
+
+        // Template node for the data attribute of ResponseList.
+        JsonNode dataFieldTemplate = definitionsTemplate.get("ResponseListData");
+
+        TYPES_TO_PATH.entrySet().forEach(
+            e -> {
+                String type = e.getKey();
+                String path = e.getValue();
+                String responseType = String.format("%s<%s>", RESPONSE_LIST, type);
+
+                // Definition for the data field in the returned type
+                ObjectNode dataFieldNode = dataFieldTemplate.deepCopy();
+                ((ObjectNode)dataFieldNode.at("/properties/data/items")).put(REF_FIELD, DEFINITIONS_REF + type);
+
+                // Add a ResponseList subtype for each.
+                ArrayNode allOfNode = JsonNodeFactory.instance.arrayNode()
+                    .add(responseListRefNode.deepCopy())
+                    .add(dataFieldNode);
+                ObjectNode responseListSubtypeNode = JsonNodeFactory.instance.objectNode()
+                    .set("allOf", allOfNode);
+                definitions.set(responseType, responseListSubtypeNode);
+
+                // Replace the return type with the one created for that type.
+                JsonNode pathNode = paths.get(String.format("/api/secure/%s", path));
+                JsonNode response200Node = pathNode.at("/get/responses/200");
+                ((ObjectNode) response200Node.get("responseSchema")).put(
+                    REF_FIELD, DEFINITIONS_REF + responseType);
+                ((ObjectNode) response200Node.get("schema")).put(
+                    REF_FIELD, DEFINITIONS_REF + responseType);
+            }
+        );
     }
 
     /** Convenience method to get swagger docs as string. */

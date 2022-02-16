@@ -44,6 +44,13 @@ definitions:
         type: "boolean"
         description: "Determines whether this user has access to OTP Data Tools."
     description: "An abstract user."
+  ResponseListData:
+      type: "object"
+      properties:
+        data:
+          type: "array"
+          items:
+            $ref: "#/definitions/Object"
 paths:
   # Note to implementers:
   # This path corresponds to a proxy route that must be configured in AWS API Gateway.

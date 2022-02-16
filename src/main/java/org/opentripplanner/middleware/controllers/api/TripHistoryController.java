@@ -48,19 +48,19 @@ public class TripHistoryController implements Endpoint {
      */
     @Override
     public void bind(final SparkSwagger restApi) {
-       restApi.endpoint(
+        restApi.endpoint(
             endpointPath(ROOT_ROUTE).withDescription("Interface for retrieving trip requests."),
-           HttpUtils.NO_FILTER
-       ).get(
-           path(ROOT_ROUTE)
+            HttpUtils.NO_FILTER
+        ).get(
+            path(ROOT_ROUTE)
                 .withDescription("Gets a paginated list of the most recent trip requests for a user.")
                 .withQueryParam()
-                    .withName("userId")
+                .withName("userId")
                     .withRequired(true)
                     .withDescription("The OTP user for which to retrieve trip requests.").and()
-               .withQueryParam(LIMIT)
-               .withQueryParam(OFFSET)
-               .withQueryParam()
+                .withQueryParam(LIMIT)
+                .withQueryParam(OFFSET)
+                .withQueryParam()
                     .withName(FROM_DATE_PARAM)
                     .withPattern(DEFAULT_DATE_FORMAT_PATTERN)
                     .withDefaultValue("The current date")
@@ -68,17 +68,17 @@ public class TripHistoryController implements Endpoint {
                         "If specified, the earliest date (format %s) for which trip requests are retrieved.",
                         DEFAULT_DATE_FORMAT_PATTERN
                     )).and()
-               .withQueryParam()
-               .withName(TO_DATE_PARAM)
+                .withQueryParam()
+                .withName(TO_DATE_PARAM)
                     .withPattern(DEFAULT_DATE_FORMAT_PATTERN)
                     .withDefaultValue("The current date")
                     .withDescription(String.format(
                         "If specified, the latest date (format %s) for which trip requests are retrieved.",
                         DEFAULT_DATE_FORMAT_PATTERN
                     )).and()
-               .withProduces(JSON_ONLY)
-               .withResponseAsCollection(TripRequest.class),
-           TripHistoryController::getTripRequests, JsonUtils::toJson);
+                .withProduces(JSON_ONLY)
+                .withResponseType(TripRequest.class),
+            TripHistoryController::getTripRequests, JsonUtils::toJson);
     }
 
     /**

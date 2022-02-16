@@ -49,13 +49,6 @@ paths:
       - "application/json"
       parameters: []
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
-          schema:
-            $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -76,6 +69,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/AdminUser"
+          schema:
+            $ref: "#/definitions/AdminUser"
   /api/admin/user/verification-email:
     get:
       tags:
@@ -137,13 +137,6 @@ paths:
         schema:
           $ref: "#/definitions/AdminUser"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
-          schema:
-            $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -164,6 +157,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/AdminUser"
+          schema:
+            $ref: "#/definitions/AdminUser"
   /api/admin/user/{id}:
     get:
       tags:
@@ -179,13 +179,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
-          schema:
-            $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -206,6 +199,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/AdminUser"
+          schema:
+            $ref: "#/definitions/AdminUser"
     put:
       tags:
       - "api/admin/user"
@@ -228,13 +228,6 @@ paths:
         schema:
           $ref: "#/definitions/AdminUser"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
-          schema:
-            $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -255,6 +248,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/AdminUser"
+          schema:
+            $ref: "#/definitions/AdminUser"
     delete:
       tags:
       - "api/admin/user"
@@ -268,13 +268,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
-          schema:
-            $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -295,6 +288,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/AdminUser"
+          schema:
+            $ref: "#/definitions/AdminUser"
   /api/secure/application/{id}/apikey:
     post:
       tags:
@@ -315,13 +315,6 @@ paths:
         required: false
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
-          schema:
-            $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -342,6 +335,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
+          schema:
+            $ref: "#/definitions/ApiUser"
   /api/secure/application/{id}/apikey/{apiKeyId}:
     delete:
       tags:
@@ -361,13 +361,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
-          schema:
-            $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -388,6 +381,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
+          schema:
+            $ref: "#/definitions/ApiUser"
   /api/secure/application/authenticate:
     post:
       tags:
@@ -423,13 +423,6 @@ paths:
       - "application/json"
       parameters: []
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
-          schema:
-            $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -450,6 +443,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
+          schema:
+            $ref: "#/definitions/ApiUser"
   /api/secure/application/verification-email:
     get:
       tags:
@@ -511,13 +511,6 @@ paths:
         schema:
           $ref: "#/definitions/ApiUser"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
-          schema:
-            $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -538,6 +531,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
+          schema:
+            $ref: "#/definitions/ApiUser"
   /api/secure/application/{id}:
     get:
       tags:
@@ -553,13 +553,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
-          schema:
-            $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -580,6 +573,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
+          schema:
+            $ref: "#/definitions/ApiUser"
     put:
       tags:
       - "api/secure/application"
@@ -602,13 +602,6 @@ paths:
         schema:
           $ref: "#/definitions/ApiUser"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
-          schema:
-            $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -629,6 +622,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
+          schema:
+            $ref: "#/definitions/ApiUser"
     delete:
       tags:
       - "api/secure/application"
@@ -642,13 +642,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
-          schema:
-            $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -669,6 +662,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ApiUser"
+          schema:
+            $ref: "#/definitions/ApiUser"
   /api/secure/monitoredtrip/checkitinerary:
     post:
       tags:
@@ -685,13 +685,6 @@ paths:
         schema:
           $ref: "#/definitions/MonitoredTrip"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/ItineraryExistence"
-          schema:
-            $ref: "#/definitions/ItineraryExistence"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -712,6 +705,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/ItineraryExistence"
+          schema:
+            $ref: "#/definitions/ItineraryExistence"
   /api/secure/monitoredtrip:
     get:
       tags:
@@ -760,13 +760,6 @@ paths:
         schema:
           $ref: "#/definitions/MonitoredTrip"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
-          schema:
-            $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -787,6 +780,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredTrip"
+          schema:
+            $ref: "#/definitions/MonitoredTrip"
   /api/secure/monitoredtrip/{id}:
     get:
       tags:
@@ -802,13 +802,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
-          schema:
-            $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -829,6 +822,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredTrip"
+          schema:
+            $ref: "#/definitions/MonitoredTrip"
     put:
       tags:
       - "api/secure/monitoredtrip"
@@ -851,13 +851,6 @@ paths:
         schema:
           $ref: "#/definitions/MonitoredTrip"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
-          schema:
-            $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -878,6 +871,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredTrip"
+          schema:
+            $ref: "#/definitions/MonitoredTrip"
     delete:
       tags:
       - "api/secure/monitoredtrip"
@@ -892,13 +892,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
-          schema:
-            $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -919,6 +912,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredTrip"
+          schema:
+            $ref: "#/definitions/MonitoredTrip"
   /api/secure/triprequests:
     get:
       tags:
@@ -964,13 +964,9 @@ paths:
         "200":
           description: "successful operation"
           responseSchema:
-            type: "array"
-            items:
-              $ref: "#/definitions/TripRequest"
+            $ref: "#/definitions/TripRequest"
           schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/TripRequest"
+            $ref: "#/definitions/TripRequest"
   /api/secure/monitoredcomponent:
     get:
       tags:
@@ -1019,13 +1015,6 @@ paths:
         schema:
           $ref: "#/definitions/MonitoredComponent"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
-          schema:
-            $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -1046,6 +1035,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
+          schema:
+            $ref: "#/definitions/MonitoredComponent"
   /api/secure/monitoredcomponent/{id}:
     get:
       tags:
@@ -1061,13 +1057,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
-          schema:
-            $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -1088,6 +1077,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
+          schema:
+            $ref: "#/definitions/MonitoredComponent"
     put:
       tags:
       - "api/secure/monitoredcomponent"
@@ -1110,13 +1106,6 @@ paths:
         schema:
           $ref: "#/definitions/MonitoredComponent"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
-          schema:
-            $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -1137,6 +1126,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
+          schema:
+            $ref: "#/definitions/MonitoredComponent"
     delete:
       tags:
       - "api/secure/monitoredcomponent"
@@ -1151,13 +1147,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
-          schema:
-            $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -1178,6 +1167,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
+          schema:
+            $ref: "#/definitions/MonitoredComponent"
   /api/secure/user/{id}/verify_sms/{phoneNumber}:
     get:
       tags:
@@ -1234,13 +1230,6 @@ paths:
       - "application/json"
       parameters: []
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
-          schema:
-            $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -1261,6 +1250,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/OtpUser"
+          schema:
+            $ref: "#/definitions/OtpUser"
   /api/secure/user/verification-email:
     get:
       tags:
@@ -1322,13 +1318,6 @@ paths:
         schema:
           $ref: "#/definitions/OtpUser"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
-          schema:
-            $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -1349,6 +1338,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/OtpUser"
+          schema:
+            $ref: "#/definitions/OtpUser"
   /api/secure/user/{id}:
     get:
       tags:
@@ -1364,13 +1360,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
-          schema:
-            $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -1391,6 +1380,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/OtpUser"
+          schema:
+            $ref: "#/definitions/OtpUser"
     put:
       tags:
       - "api/secure/user"
@@ -1413,13 +1409,6 @@ paths:
         schema:
           $ref: "#/definitions/OtpUser"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
-          schema:
-            $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -1440,6 +1429,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/OtpUser"
+          schema:
+            $ref: "#/definitions/OtpUser"
     delete:
       tags:
       - "api/secure/user"
@@ -1453,13 +1449,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
-          schema:
-            $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -1480,6 +1469,13 @@ paths:
         "404":
           description: "The requested item was not found."
           examples: {}
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/OtpUser"
+          schema:
+            $ref: "#/definitions/OtpUser"
   /api/secure/logs:
     get:
       tags:
