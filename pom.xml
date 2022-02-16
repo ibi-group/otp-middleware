@@ -214,7 +214,7 @@
         <dependency>
             <groupId>com.sparkpost</groupId>
             <artifactId>sparkpost-lib</artifactId>
-            <version>0.22</version>
+            <version>0.27</version>
         </dependency>
 
         <!-- Used for logging -->
@@ -235,7 +235,7 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
-            <version>3.11.2</version>
+            <version>4.4.1</version>
         </dependency>
 
         <!-- Used for things like validating email addresses. -->
