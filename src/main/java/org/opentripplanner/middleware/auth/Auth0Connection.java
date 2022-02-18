@@ -243,7 +243,7 @@ public class Auth0Connection {
      * Confirm that the user exists in at least one of the MongoDB user collections.
      */
     private static boolean isValidUser(RequestingUser profile) {
-        return profile != null && (profile.adminUser != null || profile.otpUser != null || profile.apiUser != null);
+        return profile != null && (profile.adminUser != null || profile.otpUser != null || profile.apiUser != null || profile.cdpUser != null);
     }
 
     /**

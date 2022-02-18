@@ -62,6 +62,7 @@ public class RequestingUser {
         // the OTP Admin Dashboard may be both an AdminUser and ApiUser, but this code block will force their identity
         // as an AdminUser.
         // TODO: Consider consolidating the user scope fields into a single AbstractUser user field.
+        // TODO: move this to a switch block
         if (scope.contains(OtpUser.AUTH0_SCOPE)) {
             otpUser = (testing)
                 ? new OtpUser()
@@ -81,6 +82,11 @@ public class RequestingUser {
             apiUser = (testing)
                 ? new ApiUser()
                 : Persistence.apiUsers.getOneFiltered(withAuth0UserId);
+        }
+        if (scope.contains(CDPUser.AUTH0_SCOPE)) {
+            cdpUser = (testing)
+                    ? new CDPUser()
+                    : Persistence.cdpUsers.getOneFiltered(withAuth0UserId);
             return;
         }
         LOG.error("No user type for scope {} is available", scope);
