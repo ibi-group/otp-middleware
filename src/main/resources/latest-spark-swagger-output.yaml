@@ -19,6 +19,8 @@ tags:
   description: "Interface for querying and managing 'AdminUser' entities."
 - name: "api/secure/application"
   description: "Interface for querying and managing 'ApiUser' entities."
+- name: "api/secure/cdp"
+  description: "Interface for querying and managing 'CDPUser' entities."
 - name: "api/secure/monitoredtrip"
   description: "Interface for querying and managing 'MonitoredTrip' entities."
 - name: "api/secure/triprequests"
@@ -380,6 +382,141 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/ApiUser"
+  /api/secure/cdp/fromtoken:
+    get:
+      tags:
+      - "api/secure/cdp"
+      description: "Retrieves an CDPUser entity using an Auth0 access token passed\
+        \ in an Authorization header."
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/CDPUser"
+  /api/secure/cdp/verification-email:
+    get:
+      tags:
+      - "api/secure/cdp"
+      description: "Triggers a job to resend the Auth0 verification email."
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Job"
+  /api/secure/cdp:
+    get:
+      tags:
+      - "api/secure/cdp"
+      description: "Gets a paginated list of all 'CDPUser' entities."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ResponseList"
+    post:
+      tags:
+      - "api/secure/cdp"
+      description: "Creates a 'CDPUser' entity."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/CDPUser"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/CDPUser"
+  /api/secure/cdp/{id}:
+    get:
+      tags:
+      - "api/secure/cdp"
+      description: "Returns the 'CDPUser' entity with the specified id, or 404 if\
+        \ not found."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/CDPUser"
+    put:
+      tags:
+      - "api/secure/cdp"
+      description: "Updates and returns the 'CDPUser' entity with the specified id,\
+        \ or 404 if not found."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/CDPUser"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/CDPUser"
+    delete:
+      tags:
+      - "api/secure/cdp"
+      description: "Deletes the 'CDPUser' entity with the specified id if it exists."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/CDPUser"
   /api/secure/monitoredtrip/checkitinerary:
     post:
       tags:
@@ -1061,6 +1198,11 @@ definitions:
       expiresIn:
         type: "integer"
         format: "int64"
+  CDPUser:
+    type: "object"
+    properties:
+      name:
+        type: "string"
   TripMonitorNotification:
     type: "object"
     properties:
