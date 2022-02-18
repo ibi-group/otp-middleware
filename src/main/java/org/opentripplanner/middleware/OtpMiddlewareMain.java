@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
+import org.opentripplanner.middleware.controllers.api.CDPUserController;
 import org.opentripplanner.middleware.controllers.api.ErrorEventsController;
 import org.opentripplanner.middleware.controllers.api.LogController;
 import org.opentripplanner.middleware.controllers.api.MonitoredComponentController;
@@ -94,6 +95,7 @@ public class OtpMiddlewareMain {
                 .endpoints(() -> List.of(
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
+                    new CDPUserController(API_PREFIX),
                     new MonitoredTripController(API_PREFIX),
                     new TripHistoryController(API_PREFIX),
                     new MonitoredComponentController(API_PREFIX),

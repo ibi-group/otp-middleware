@@ -6,6 +6,7 @@ import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.CDPUser;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -24,6 +25,7 @@ public class RequestingUser {
 
     public OtpUser otpUser;
     public ApiUser apiUser;
+    public CDPUser cdpUser;
     public AdminUser adminUser;
     public String auth0UserId;
 

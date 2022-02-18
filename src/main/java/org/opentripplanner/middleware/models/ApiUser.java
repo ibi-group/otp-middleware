@@ -32,7 +32,6 @@ public class ApiUser extends AbstractUser {
     /** The company or organization that this user belongs to. */
     public String company;
 
-    // FIXME: Move this member to AbstractUser?
     /** Whether the user has consented to terms of use. */
     public boolean hasConsentedToTerms;
 
