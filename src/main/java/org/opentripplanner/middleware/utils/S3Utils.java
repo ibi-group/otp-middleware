@@ -3,11 +3,16 @@ package org.opentripplanner.middleware.utils;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.ConfigUtils.hasConfigProperty;
@@ -28,6 +33,30 @@ public class S3Utils {
             amazonS3ClientBuilder.withCredentials(new ProfileCredentialsProvider(getConfigPropertyAsText("AWS_PROFILE")));
         }
         return amazonS3ClientBuilder.build();
+    }
+
+    /**
+     * Get a list of items in a folder inside a bucket. An empty string or "/" as the folderName will return the
+     * list of files at the root of a bucket.
+     */
+    public static List<CDPFile> getFolderListing(String bucketName, String folderName) {
+        AmazonS3 s3Client = getAmazonS3();
+        List<CDPFile> cdpFiles = new ArrayList<>();
+        ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                .withBucketName(bucketName);
+        ObjectListing objectListing;
+
+        do {
+            objectListing = s3Client.listObjects(listObjectsRequest);
+            for (S3ObjectSummary objectSummary :
+                    objectListing.getObjectSummaries()) {
+                // TODO: a less brittle way of getting the name, will probably be related to folder-based filtering
+                cdpFiles.add(new CDPFile(objectSummary.getKey(), objectSummary.getKey().substring(folderName.length() + 1), objectSummary.getSize()));
+            }
+            listObjectsRequest.setMarker(objectListing.getNextMarker());
+        } while (objectListing.isTruncated());
+
+        return cdpFiles;
     }
 
     /**

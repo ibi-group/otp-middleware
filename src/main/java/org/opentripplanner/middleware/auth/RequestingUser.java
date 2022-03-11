@@ -118,6 +118,13 @@ public class RequestingUser {
     }
 
     /**
+     * Determine if user is a CDP user
+     */
+    public boolean isCDPUser() {
+        return cdpUser != null;
+    }
+
+    /**
      * Check if the incoming user is an admin user.
      */
     public boolean isAdmin() {
