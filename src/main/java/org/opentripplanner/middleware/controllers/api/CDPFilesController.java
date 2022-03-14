@@ -2,17 +2,13 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.beerboy.ss.SparkSwagger;
 import com.beerboy.ss.rest.Endpoint;
-import com.mongodb.client.model.Filters;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
-import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.CDPFile;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.opentripplanner.middleware.utils.S3Exception;
 import spark.Request;
 import spark.Response;
 
@@ -28,13 +24,15 @@ import static org.opentripplanner.middleware.utils.S3Utils.getFolderListing;
 
 public class CDPFilesController implements Endpoint {
     private final String ROOT_ROUTE;
+    private static final String SECURE = "secure/";
+
     public static final String CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME =
             getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME");
     public static final String CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME =
             getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME");
 
     public CDPFilesController(String apiPrefix) {
-        this.ROOT_ROUTE = apiPrefix + "cdp";
+        this.ROOT_ROUTE = apiPrefix + SECURE + "connected-data";
     }
 
     /**

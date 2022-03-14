@@ -33,6 +33,8 @@ tags:
   description: "Interface for retrieving API logs from AWS."
 - name: "api/admin/bugsnag/eventsummary"
   description: "Interface for reporting and retrieving application errors using Bugsnag."
+- name: "api/cdp"
+  description: "Interface for listing and downloading CDP files from S3."
 - name: "otp"
   description: "Proxy interface for OTP 1 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
@@ -1041,6 +1043,31 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/BugsnagEvent"
+  /api/cdp:
+    get:
+      tags:
+      - "api/cdp"
+      description: "Gets a paginated list of CDP zip files in the configured S3 bucket."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/CDPFile"
   /otp/*:
     get:
       tags:
@@ -1783,6 +1810,16 @@ definitions:
         type: "string"
       message:
         type: "string"
+  CDPFile:
+    type: "object"
+    properties:
+      key:
+        type: "string"
+      name:
+        type: "string"
+      size:
+        type: "integer"
+        format: "int64"
 externalDocs:
   description: ""
   url: ""
