@@ -33,7 +33,7 @@ tags:
   description: "Interface for retrieving API logs from AWS."
 - name: "api/admin/bugsnag/eventsummary"
   description: "Interface for reporting and retrieving application errors using Bugsnag."
-- name: "api/cdp"
+- name: "api/secure/connected-data"
   description: "Interface for listing and downloading CDP files from S3."
 - name: "otp"
   description: "Proxy interface for OTP 1 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
@@ -1043,10 +1043,10 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/BugsnagEvent"
-  /api/cdp:
+  /api/secure/connected-data:
     get:
       tags:
-      - "api/cdp"
+      - "api/secure/connected-data"
       description: "Gets a paginated list of CDP zip files in the configured S3 bucket."
       produces:
       - "application/json"
@@ -1068,6 +1068,25 @@ paths:
           description: "successful operation"
           schema:
             $ref: "#/definitions/CDPFile"
+  /api/secure/connected-data/download:
+    get:
+      tags:
+      - "api/secure/connected-data"
+      description: "Generates a download link for a specified object within the CDP\
+        \ bucket."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "/download"
+        in: "query"
+        description: "The key of the object to generate a link for."
+        required: false
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/URL"
   /otp/*:
     get:
       tags:
@@ -1820,6 +1839,37 @@ definitions:
       size:
         type: "integer"
         format: "int64"
+  URL:
+    type: "object"
+    properties:
+      protocol:
+        type: "string"
+      host:
+        type: "string"
+      port:
+        type: "integer"
+        format: "int32"
+      file:
+        type: "string"
+      query:
+        type: "string"
+      authority:
+        type: "string"
+      path:
+        type: "string"
+      userInfo:
+        type: "string"
+      ref:
+        type: "string"
+      hostAddress:
+        $ref: "#/definitions/InetAddress"
+      handler:
+        $ref: "#/definitions/URLStreamHandler"
+      hashCode:
+        type: "integer"
+        format: "int32"
+      tempState:
+        $ref: "#/definitions/UrlDeserializedState"
 externalDocs:
   description: ""
   url: ""

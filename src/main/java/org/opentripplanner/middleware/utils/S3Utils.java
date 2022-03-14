@@ -1,17 +1,23 @@
 package org.opentripplanner.middleware.utils;
 
+import com.amazonaws.HttpMethod;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
@@ -57,6 +63,27 @@ public class S3Utils {
         } while (objectListing.isTruncated());
 
         return cdpFiles;
+    }
+
+    /**
+     * This method will generate a download link for a specific file in a specific bucket.
+     * The download link is set to expire after 5 minutes by default.
+     */
+    public static URL getTemporaryDownloadLinkForObject(String bucketName, String fileKey) {
+        // Default of 5 minutes
+        return getTemporaryDownloadLinkForObject(bucketName, fileKey, 300000);
+    }
+    public static URL getTemporaryDownloadLinkForObject(String bucketName, String fileKey, int expiration) {
+        AmazonS3 s3Client = getAmazonS3();
+        Date formalExpiration = new java.util.Date();
+        long expirationTimeStamp = formalExpiration.getTime() + expiration;
+        formalExpiration.setTime(expirationTimeStamp);
+
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(bucketName, fileKey)
+                        .withMethod(HttpMethod.GET)
+                        .withExpiration(formalExpiration);
+        return s3Client.generatePresignedUrl(generatePresignedUrlRequest);
     }
 
     /**

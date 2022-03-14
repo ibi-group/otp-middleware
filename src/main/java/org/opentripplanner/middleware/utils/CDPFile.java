@@ -17,6 +17,5 @@ public class CDPFile {
         this.key = key;
         this.name = name;
         this.size = size;
-
     }
 }
