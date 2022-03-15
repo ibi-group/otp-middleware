@@ -8,6 +8,8 @@ services:
       - type: bind
         source: ./configurations/default/env.docker.yml
         target: /config/env.yml
+    depends_on:
+      - mongo
   mongo:
     image: mongo
     restart: always
