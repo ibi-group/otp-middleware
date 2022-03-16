@@ -25,6 +25,6 @@ public class CDPUser extends AbstractUser {
             LOG.warn("Aborting user deletion for {}", this.email);
             return false;
         }
-        return Persistence.apiUsers.removeById(this.id);
+        return Persistence.cdpUsers.removeById(this.id);
     }
 }
