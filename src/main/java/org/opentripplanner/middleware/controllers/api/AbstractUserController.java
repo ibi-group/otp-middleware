@@ -77,6 +77,12 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
      */
     private U getUserFromRequest(Request req, Response res) {
         RequestingUser profile = Auth0Connection.getUserFromRequest(req);
+        if (profile == null) {
+            logMessageAndHalt(req,
+                    HttpStatus.NOT_FOUND_404,
+                    String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, null),
+                    null);
+        }
         U user = getUserProfile(profile);
 
         // If the user object is null, it is most likely because it was not created yet,
