@@ -6,6 +6,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.CDPFile;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -104,6 +105,13 @@ public class CDPFilesController implements Endpoint {
         }
 
         String fileKey = HttpUtils.getQueryParamFromRequest(req, OBJECT_KEY_PARAM, false);
+
+        // Update last downloaded time
+        if (requestingUser.isCDPUser()) {
+            long unixTime = System.currentTimeMillis();
+            requestingUser.cdpUser.S3DownloadTimes.put(fileKey, unixTime);
+            Persistence.cdpUsers.replace(requestingUser.cdpUser.id, requestingUser.cdpUser);
+        }
 
         return getTemporaryDownloadLinkForObject(CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME, fileKey);
     }
