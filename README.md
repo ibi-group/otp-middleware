@@ -16,7 +16,21 @@ otp-middleware is a potential way for agencies to fill in those gaps. It provide
 - and other features (TODO).
 
 ## Deployment
-TODO - One-time deployment.
+The easiest way to deploy otp-middleware is to use the included Docker Compose configuration.
+
+There are three compose configs. All build upon the "standard" config. The `dev` config exposes the Mongo instance, and saves the database data outside of the container. The `e2e` configuration also exposes the Mongo instance, and pre-seeds the database using the files in the `configurations/e2e-mongo-seed` directory. Please note that the seed files do not work out of the box. Fields which require input are clearly marked.
+
+The `configurations/default/docker.env.yml` contains a configuration file that makes it easy to get started. However, **there are fields which need to be manually set**. These fields are clearly marked within the file.
+
+##### Running otp-middleware via Docker Compose
+```bash
+docker compose -f docker-compose.yml up
+```
+
+##### Running otp-middleware in dev mode via Docker Compose
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
 
 OTP Middleware is also suitable for continuous deployment implementations.
 
@@ -36,6 +50,8 @@ cp configurations/default/env.yml.tmp configurations/default/env.yml
 mvn package
 java -jar target/otp-middleware.jar configurations/default/env.yml
 ```
+
+It's also possible to run otp-middleware via Docker (see Deployment above)
 
 ## Configuration
 
