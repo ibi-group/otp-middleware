@@ -11,7 +11,10 @@ services:
         target: /config/env.yml
       - type: bind
         source: ./configurations/default/aws-credentials
-        target: /home/app/.aws/credentials
+        target: /root/.aws/credentials
+      - type: bind
+        source: ./configurations/default/aws-config
+        target: /root/.aws/config
     depends_on:
       - mongo
   mongo:
