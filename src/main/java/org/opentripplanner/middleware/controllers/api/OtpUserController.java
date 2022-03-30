@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.beerboy.ss.ApiEndpoint;
+import io.github.manusant.ss.ApiEndpoint;
 import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
 import org.apache.commons.lang3.StringUtils;
@@ -19,7 +19,7 @@ import spark.Response;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**

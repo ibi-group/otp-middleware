@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.beerboy.ss.ApiEndpoint;
+import io.github.manusant.ss.ApiEndpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
@@ -12,6 +12,7 @@ import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.SwaggerUtils;
 import spark.Request;
 import spark.Response;
 
@@ -19,7 +20,7 @@ import java.net.URISyntaxException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
@@ -46,7 +47,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                     .withDescription("Returns the itinerary existence check results for a monitored trip.")
                     .withRequestType(MonitoredTrip.class)
                     .withProduces(JSON_ONLY)
-                    .withResponseType(ItineraryExistence.class),
+                    .withResponses(SwaggerUtils.createStandardResponses(ItineraryExistence.class)),
                 MonitoredTripController::checkItinerary, JsonUtils::toJson);
         // Add the regular CRUD methods after defining the controller-specific routes.
         super.buildEndpoint(modifiedEndpoint);

@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.json.auth.TokenHolder;
-import com.beerboy.ss.ApiEndpoint;
+import io.github.manusant.ss.ApiEndpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
@@ -21,7 +21,7 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -58,7 +58,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                     .withQueryParam().withName("usagePlanId").withDescription("Optional AWS API Gateway usage plan ID.")
                     .and()
                     .withProduces(HttpUtils.JSON_ONLY)
-                    .withResponseType(persistence.clazz),
+                    .withResponses(stdResponses),
                 this::createApiKeyForApiUser, JsonUtils::toJson
             )
             // Delete API key
@@ -69,7 +69,7 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
                     .withPathParam().withName("apiKeyId").withDescription("The ID of the API key.")
                     .and()
                     .withProduces(HttpUtils.JSON_ONLY)
-                    .withResponseType(persistence.clazz),
+                    .withResponses(stdResponses),
                 this::deleteApiKeyForApiUser, JsonUtils::toJson)
             // Authenticate user with Auth0
             .post(path(AUTHENTICATE_PATH)

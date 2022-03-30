@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.beerboy.ss.SparkSwagger;
-import com.beerboy.ss.rest.Endpoint;
+import io.github.manusant.ss.SparkSwagger;
+import io.github.manusant.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
@@ -16,8 +16,8 @@ import spark.Response;
 import java.net.URL;
 import java.util.List;
 
-import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static io.github.manusant.ss.descriptor.EndpointDescriptor.endpointPath;
+import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT;
 import static org.opentripplanner.middleware.controllers.api.ApiController.OFFSET;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
