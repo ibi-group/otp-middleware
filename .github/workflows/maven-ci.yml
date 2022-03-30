@@ -115,4 +115,5 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: user/app:latest
+          # Temporary! Update to real account
+          tags: milesgrantibigroup/otp-middleware-test:"${GITHUB_REF#refs/heads/}.${GITHUB_SHA}"
