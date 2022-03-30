@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.beerboy.ss.SparkSwagger;
-import com.beerboy.ss.rest.Endpoint;
+import io.github.manusant.ss.SparkSwagger;
+import io.github.manusant.ss.rest.Endpoint;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
@@ -15,8 +15,8 @@ import spark.Response;
 import java.time.LocalTime;
 import java.util.Date;
 
-import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import static io.github.manusant.ss.descriptor.EndpointDescriptor.endpointPath;
+import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthorized;
 import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_LIMIT;
 import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_OFFSET;
@@ -48,19 +48,19 @@ public class TripHistoryController implements Endpoint {
      */
     @Override
     public void bind(final SparkSwagger restApi) {
-       restApi.endpoint(
+        restApi.endpoint(
             endpointPath(ROOT_ROUTE).withDescription("Interface for retrieving trip requests."),
-           HttpUtils.NO_FILTER
-       ).get(
-           path(ROOT_ROUTE)
+            HttpUtils.NO_FILTER
+        ).get(
+            path(ROOT_ROUTE)
                 .withDescription("Gets a paginated list of the most recent trip requests for a user.")
                 .withQueryParam()
-                    .withName("userId")
+                .withName("userId")
                     .withRequired(true)
                     .withDescription("The OTP user for which to retrieve trip requests.").and()
-               .withQueryParam(LIMIT)
-               .withQueryParam(OFFSET)
-               .withQueryParam()
+                .withQueryParam(LIMIT)
+                .withQueryParam(OFFSET)
+                .withQueryParam()
                     .withName(FROM_DATE_PARAM)
                     .withPattern(DEFAULT_DATE_FORMAT_PATTERN)
                     .withDefaultValue("The current date")
@@ -68,19 +68,17 @@ public class TripHistoryController implements Endpoint {
                         "If specified, the earliest date (format %s) for which trip requests are retrieved.",
                         DEFAULT_DATE_FORMAT_PATTERN
                     )).and()
-               .withQueryParam()
-               .withName(TO_DATE_PARAM)
+                .withQueryParam()
+                .withName(TO_DATE_PARAM)
                     .withPattern(DEFAULT_DATE_FORMAT_PATTERN)
                     .withDefaultValue("The current date")
                     .withDescription(String.format(
                         "If specified, the latest date (format %s) for which trip requests are retrieved.",
                         DEFAULT_DATE_FORMAT_PATTERN
                     )).and()
-               .withProduces(JSON_ONLY)
-               // Note: unlike the name suggests, withResponseAsCollection does not generate an array
-               // as the return type for this method. (It does generate the type for that class nonetheless.)
-               .withResponseAsCollection(TripRequest.class),
-           TripHistoryController::getTripRequests, JsonUtils::toJson);
+                .withProduces(JSON_ONLY)
+                .withResponseType(TripRequest.class),
+            TripHistoryController::getTripRequests, JsonUtils::toJson);
     }
 
     /**
