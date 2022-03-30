@@ -9,21 +9,10 @@
     <version>1.0-SNAPSHOT</version>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jackson.version>2.12.1</jackson.version>
+        <jackson.version>2.13.1</jackson.version>
         <awsjavasdk.version>1.11.728</awsjavasdk.version>
     </properties>
     <repositories>
-        <!-- To create Swagger API docs with spark-java -->
-        <repository>
-            <id>manusant-beerRepo</id>
-            <url>https://packagecloud.io/manusant/beerRepo/maven2</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
         <!--  used for importing java projects from github -->
         <repository>
             <id>jitpack.io</id>
@@ -102,7 +91,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.5</version>
+                <version>0.8.7</version>
                 <executions>
                     <execution>
                         <goals>
@@ -227,13 +216,6 @@
             <version>0.27</version>
         </dependency>
 
-        <!-- Used for logging -->
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
-        </dependency>
-
         <!-- Used to send SMS notifications for users monitoring trips. -->
         <dependency>
             <groupId>com.twilio.sdk</groupId>
@@ -257,9 +239,10 @@
 
         <!-- To create Swagger API docs with spark-java -->
         <dependency>
-            <groupId>com.beerboy.ss</groupId>
+            <groupId>com.github.manusant</groupId>
             <artifactId>spark-swagger</artifactId>
-            <version>1.0.0.48</version>
+            <!-- Version corresponds to IBI PRs 33 and 34 https://github.com/manusant/spark-swagger/pull/34 -->
+            <version>6095ab19fcdbfa5889f316e1e45133a80a459438</version>
         </dependency>
 
         <!-- Auth0 Client library for using Management API  -->

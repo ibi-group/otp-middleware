@@ -1,9 +1,9 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.beerboy.ss.ApiEndpoint;
-import com.beerboy.ss.SparkSwagger;
-import com.beerboy.ss.descriptor.ParameterDescriptor;
-import com.beerboy.ss.rest.Endpoint;
+import io.github.manusant.ss.ApiEndpoint;
+import io.github.manusant.ss.SparkSwagger;
+import io.github.manusant.ss.descriptor.ParameterDescriptor;
+import io.github.manusant.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
@@ -18,14 +18,17 @@ import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.SwaggerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.HaltException;
 import spark.Request;
 import spark.Response;
 
-import static com.beerboy.ss.descriptor.EndpointDescriptor.endpointPath;
-import static com.beerboy.ss.descriptor.MethodDescriptor.path;
+import java.util.Map;
+
+import static io.github.manusant.ss.descriptor.EndpointDescriptor.endpointPath;
+import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.HttpUtils.getRequiredParamFromRequest;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -66,6 +69,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         .withName(USER_ID_PARAM)
         .withRequired(false)
         .withDescription("If specified, the required user id.").build();
+    protected final Map<String, io.github.manusant.ss.model.Response> stdResponses;
 
     /**
      * @param apiPrefix string prefix to use in determining the resource location
@@ -86,6 +90,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         // Default resource to class name.
         if (resource == null) resource = SECURE + className.toLowerCase();
         this.ROOT_ROUTE = apiPrefix + resource;
+
+        this.stdResponses = SwaggerUtils.createStandardResponses(clazz);
     }
 
     /**
@@ -124,7 +130,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         LOG.info("Registering routes and enabling docs for {}", ROOT_ROUTE);
 
         // Careful here!
-        // If using lambdas with the GET method, a bug in spark-swagger
+        // If using lambdas with the GET method, a bug in spark-swagger 1.x and 2.0.2
         // requires you to write path(<entire_route>).
         // If you use `new GsonRoute() {...}` with the GET method, you only need to write path(<relative_to_endpointPath>).
         // Other HTTP methods are not affected by this bug.
@@ -145,9 +151,8 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             .get(path(ROOT_ROUTE + ID_PATH)
                     .withDescription("Returns the '" + className + "' entity with the specified id, or 404 if not found.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to search.").and()
-                    // .withResponses(...) // FIXME: not implemented (requires source change).
                     .withProduces(HttpUtils.JSON_ONLY)
-                    .withResponseType(clazz),
+                    .withResponses(stdResponses),
                 this::getEntityForId, JsonUtils::toJson
             )
 
@@ -157,7 +162,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     .withConsumes(HttpUtils.JSON_ONLY)
                     .withRequestType(clazz)
                     .withProduces(HttpUtils.JSON_ONLY)
-                    .withResponseType(clazz),
+                    .withResponses(stdResponses),
                 this::createOrUpdate, JsonUtils::toJson
             )
 
@@ -168,10 +173,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     .withConsumes(HttpUtils.JSON_ONLY)
                     .withRequestType(clazz)
                     .withProduces(HttpUtils.JSON_ONLY)
-                    // FIXME: `withResponses` is supposed to document the expected HTTP responses (200, 403, 404)...
-                    //  but that doesn't appear to be implemented in spark-swagger.
-                    // .withResponses(...)
-                    .withResponseType(clazz),
+                    .withResponses(stdResponses),
                 this::createOrUpdate, JsonUtils::toJson
             )
 
@@ -180,7 +182,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                     .withDescription("Deletes the '" + className + "' entity with the specified id if it exists.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the entity to delete.").and()
                     .withProduces(HttpUtils.JSON_ONLY)
-                    .withResponseType(clazz),
+                    .withResponses(stdResponses),
                 this::deleteOne, JsonUtils::toJson
             );
     }
