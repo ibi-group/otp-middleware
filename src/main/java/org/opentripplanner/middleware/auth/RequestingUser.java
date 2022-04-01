@@ -80,8 +80,8 @@ public class RequestingUser {
         }
         if (scope.contains(ApiUser.AUTH0_SCOPE)) {
             apiUser = (testing)
-                ? new ApiUser()
-                : Persistence.apiUsers.getOneFiltered(withAuth0UserId);
+                    ? new ApiUser()
+                    : Persistence.apiUsers.getOneFiltered(withAuth0UserId);
         }
         if (scope.contains(CDPUser.AUTH0_SCOPE)) {
             cdpUser = (testing)
@@ -112,7 +112,7 @@ public class RequestingUser {
      * endpoint (/api/secure/application/authenticate). OtpUsers created for third party API users enjoy a more limited
      * range of activities (e.g., they cannot receive email/SMS notifications from otp-middleware).
      */
-    public boolean isThirdPartyUser() {
+    public boolean isAPIUser() {
         // TODO: Look to enhance api user check. Perhaps define specific field to indicate this?
         return apiUser != null;
     }

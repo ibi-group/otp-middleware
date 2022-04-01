@@ -262,11 +262,11 @@ public class Auth0Connection {
                 // Otp user requesting their item.
                 return;
             }
-            if (requestingUser.isThirdPartyUser() && requestingUser.apiUser.id.equals(userId)) {
+            if (requestingUser.isAPIUser() && requestingUser.apiUser.id.equals(userId)) {
                 // Api user requesting their item.
                 return;
             }
-            if (requestingUser.isThirdPartyUser()) {
+            if (requestingUser.isAPIUser()) {
                 // Api user potentially requesting an item on behalf of an Otp user they created.
                 OtpUser otpUser = Persistence.otpUsers.getById(userId);
                 if (requestingUser.canManageEntity(otpUser)) {
