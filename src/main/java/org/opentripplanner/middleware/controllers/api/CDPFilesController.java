@@ -73,9 +73,9 @@ public class CDPFilesController implements Endpoint {
     }
 
     /**
-     * Get all zip files from the main S3 bucket, if user is a CDPUser or an admin.
+     * Check that the user making the request is allowed to see CDP content
      */
-    private static ResponseList<CDPFile> getAllFiles(Request req, Response res) {
+    private static RequestingUser checkPermissions(Request req, Response res) {
         // Check for permissions (admin user or CDP user)
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         if (requestingUser == null) {
@@ -86,6 +86,16 @@ public class CDPFilesController implements Endpoint {
             res.status(HttpStatus.FORBIDDEN_403);
             return null;
         }
+
+        return requestingUser;
+    }
+
+    /**
+     * Get all zip files from the main S3 bucket, if user is a CDPUser or an admin.
+     */
+    private static ResponseList<CDPFile> getAllFiles(Request req, Response res) {
+        if (checkPermissions(req, res) == null) return null;
+
         List<CDPFile> cdpFiles = getFolderListing(CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME, CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME);
 
         long count = cdpFiles.size();
@@ -93,16 +103,8 @@ public class CDPFilesController implements Endpoint {
     }
 
     private static URL getFile(Request req, Response res) {
-        // Check for permissions (admin user or CDP user)
-        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
-        if (requestingUser == null) {
-            res.status(HttpStatus.BAD_REQUEST_400);
-            return null;
-        }
-        if (!requestingUser.isCDPUser() && !requestingUser.isAdmin()) {
-            res.status(HttpStatus.FORBIDDEN_403);
-            return null;
-        }
+        RequestingUser requestingUser = checkPermissions(req, res);
+        if (requestingUser == null) return null;
 
         String fileKey = HttpUtils.getQueryParamFromRequest(req, OBJECT_KEY_PARAM, false);
 

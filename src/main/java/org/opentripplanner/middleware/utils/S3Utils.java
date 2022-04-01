@@ -5,10 +5,8 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
@@ -54,8 +52,7 @@ public class S3Utils {
 
         do {
             objectListing = s3Client.listObjects(listObjectsRequest);
-            for (S3ObjectSummary objectSummary :
-                    objectListing.getObjectSummaries()) {
+            for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
                 // TODO: a less brittle way of getting the name, will probably be related to folder-based filtering
                 cdpFiles.add(new CDPFile(objectSummary.getKey(), objectSummary.getKey().substring(folderName.length() + 1), objectSummary.getSize()));
             }
@@ -76,8 +73,7 @@ public class S3Utils {
     public static URL getTemporaryDownloadLinkForObject(String bucketName, String fileKey, int expiration) {
         AmazonS3 s3Client = getAmazonS3();
         Date formalExpiration = new java.util.Date();
-        long expirationTimeStamp = formalExpiration.getTime() + expiration;
-        formalExpiration.setTime(expirationTimeStamp);
+        formalExpiration.setTime(formalExpiration.getTime() + expiration);
 
         GeneratePresignedUrlRequest generatePresignedUrlRequest =
                 new GeneratePresignedUrlRequest(bucketName, fileKey)
