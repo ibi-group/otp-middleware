@@ -243,7 +243,7 @@ public class Auth0Connection {
      * Confirm that the user exists in at least one of the MongoDB user collections.
      */
     private static boolean isValidUser(RequestingUser profile) {
-        return profile != null && (profile.adminUser != null || profile.otpUser != null || profile.apiUser != null);
+        return profile != null && (profile.adminUser != null || profile.otpUser != null || profile.apiUser != null || profile.cdpUser != null);
     }
 
     /**
@@ -262,11 +262,11 @@ public class Auth0Connection {
                 // Otp user requesting their item.
                 return;
             }
-            if (requestingUser.isThirdPartyUser() && requestingUser.apiUser.id.equals(userId)) {
+            if (requestingUser.isAPIUser() && requestingUser.apiUser.id.equals(userId)) {
                 // Api user requesting their item.
                 return;
             }
-            if (requestingUser.isThirdPartyUser()) {
+            if (requestingUser.isAPIUser()) {
                 // Api user potentially requesting an item on behalf of an Otp user they created.
                 OtpUser otpUser = Persistence.otpUsers.getById(userId);
                 if (requestingUser.canManageEntity(otpUser)) {

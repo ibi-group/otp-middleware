@@ -18,6 +18,8 @@ tags:
   description: "Interface for querying and managing 'AdminUser' entities."
 - name: "api/secure/application"
   description: "Interface for querying and managing 'ApiUser' entities."
+- name: "api/secure/cdp"
+  description: "Interface for querying and managing 'CDPUser' entities."
 - name: "api/secure/monitoredtrip"
   description: "Interface for querying and managing 'MonitoredTrip' entities."
 - name: "api/secure/triprequests"
@@ -30,6 +32,8 @@ tags:
   description: "Interface for retrieving API logs from AWS."
 - name: "api/admin/bugsnag/eventsummary"
   description: "Interface for reporting and retrieving application errors using Bugsnag."
+- name: "api/secure/connected-data"
+  description: "Interface for listing and downloading CDP files from S3."
 - name: "otp"
   description: "Proxy interface for OTP 1 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
@@ -49,12 +53,6 @@ paths:
       - "application/json"
       parameters: []
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -71,6 +69,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -137,12 +141,6 @@ paths:
         schema:
           $ref: "#/definitions/AdminUser"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -159,6 +157,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -179,12 +183,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -201,6 +199,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -228,12 +232,6 @@ paths:
         schema:
           $ref: "#/definitions/AdminUser"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -250,6 +248,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -268,12 +272,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -290,6 +288,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -315,12 +319,6 @@ paths:
         required: false
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -337,6 +335,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -361,12 +365,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -383,6 +381,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -423,12 +427,6 @@ paths:
       - "application/json"
       parameters: []
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -445,6 +443,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -511,12 +515,6 @@ paths:
         schema:
           $ref: "#/definitions/ApiUser"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -533,6 +531,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -553,12 +557,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -575,6 +573,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -602,12 +606,6 @@ paths:
         schema:
           $ref: "#/definitions/ApiUser"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -624,6 +622,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -642,12 +646,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -664,6 +662,268 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+  /api/secure/cdp/fromtoken:
+    get:
+      tags:
+      - "api/secure/cdp"
+      description: "Retrieves an CDPUser entity using an Auth0 access token passed\
+        \ in an Authorization header."
+      produces:
+      - "application/json"
+      parameters: []
+      responses:
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/CDPUser"
+          schema:
+            $ref: "#/definitions/CDPUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+  /api/secure/cdp/verification-email:
+    get:
+      tags:
+      - "api/secure/cdp"
+      description: "Triggers a job to resend the Auth0 verification email."
+      parameters: []
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/Job"
+          schema:
+            $ref: "#/definitions/Job"
+  /api/secure/cdp:
+    get:
+      tags:
+      - "api/secure/cdp"
+      description: "Gets a paginated list of all 'CDPUser' entities."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/ResponseList"
+          schema:
+            $ref: "#/definitions/ResponseList"
+    post:
+      tags:
+      - "api/secure/cdp"
+      description: "Creates a 'CDPUser' entity."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/CDPUser"
+      responses:
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/CDPUser"
+          schema:
+            $ref: "#/definitions/CDPUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+  /api/secure/cdp/{id}:
+    get:
+      tags:
+      - "api/secure/cdp"
+      description: "Returns the 'CDPUser' entity with the specified id, or 404 if\
+        \ not found."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/CDPUser"
+          schema:
+            $ref: "#/definitions/CDPUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+    put:
+      tags:
+      - "api/secure/cdp"
+      description: "Updates and returns the 'CDPUser' entity with the specified id,\
+        \ or 404 if not found."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/CDPUser"
+      responses:
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/CDPUser"
+          schema:
+            $ref: "#/definitions/CDPUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+    delete:
+      tags:
+      - "api/secure/cdp"
+      description: "Deletes the 'CDPUser' entity with the specified id if it exists."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/CDPUser"
+          schema:
+            $ref: "#/definitions/CDPUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -685,12 +945,6 @@ paths:
         schema:
           $ref: "#/definitions/MonitoredTrip"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -707,6 +961,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -760,12 +1020,6 @@ paths:
         schema:
           $ref: "#/definitions/MonitoredTrip"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -782,6 +1036,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -802,12 +1062,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -824,6 +1078,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -851,12 +1111,6 @@ paths:
         schema:
           $ref: "#/definitions/MonitoredTrip"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -873,6 +1127,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -892,12 +1152,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -914,6 +1168,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -1015,12 +1275,6 @@ paths:
         schema:
           $ref: "#/definitions/MonitoredComponent"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -1037,6 +1291,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -1057,12 +1317,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -1079,6 +1333,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -1106,12 +1366,6 @@ paths:
         schema:
           $ref: "#/definitions/MonitoredComponent"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -1128,6 +1382,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -1147,12 +1407,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -1169,6 +1423,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -1230,12 +1490,6 @@ paths:
       - "application/json"
       parameters: []
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -1252,6 +1506,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -1318,12 +1578,6 @@ paths:
         schema:
           $ref: "#/definitions/OtpUser"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -1340,6 +1594,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -1360,12 +1620,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -1382,6 +1636,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -1409,12 +1669,6 @@ paths:
         schema:
           $ref: "#/definitions/OtpUser"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -1431,6 +1685,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -1449,12 +1709,6 @@ paths:
         required: true
         type: "string"
       responses:
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
         "200":
           description: "Successful operation"
           examples: {}
@@ -1471,6 +1725,12 @@ paths:
           description: "The server was not able to authenticate the request. This\
             \ can happen if authentication headers are missing or malformed, or the\
             \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
           examples: {}
         "500":
           description: "An error occurred while performing the request. Contact an\
@@ -1548,6 +1808,62 @@ paths:
             type: "array"
             items:
               $ref: "#/definitions/BugsnagEvent"
+  /api/secure/connected-data:
+    get:
+      tags:
+      - "api/secure/connected-data"
+      description: "Gets a paginated list of CDP zip files in the configured S3 bucket."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            type: "array"
+            items:
+              $ref: "#/definitions/CDPFile"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/CDPFile"
+  /api/secure/connected-data/download:
+    get:
+      tags:
+      - "api/secure/connected-data"
+      description: "Generates a download link for a specified object within the CDP\
+        \ bucket."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "/download"
+        in: "query"
+        description: "The key of the object to generate a link for."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            type: "array"
+            items:
+              $ref: "#/definitions/URL"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/URL"
   /otp/*:
     get:
       tags:
@@ -1705,6 +2021,13 @@ definitions:
         type: "boolean"
       name:
         type: "string"
+  CDPUser:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      S3DownloadTimes:
+        $ref: "#/definitions/Map"
   TripMonitorNotification:
     type: "object"
     properties:
@@ -2287,6 +2610,47 @@ definitions:
         type: "string"
       message:
         type: "string"
+  CDPFile:
+    type: "object"
+    properties:
+      key:
+        type: "string"
+      name:
+        type: "string"
+      size:
+        type: "integer"
+        format: "int64"
+  URL:
+    type: "object"
+    properties:
+      protocol:
+        type: "string"
+      host:
+        type: "string"
+      port:
+        type: "integer"
+        format: "int32"
+      file:
+        type: "string"
+      query:
+        type: "string"
+      authority:
+        type: "string"
+      path:
+        type: "string"
+      userInfo:
+        type: "string"
+      ref:
+        type: "string"
+      hostAddress:
+        $ref: "#/definitions/InetAddress"
+      handler:
+        $ref: "#/definitions/URLStreamHandler"
+      hashCode:
+        type: "integer"
+        format: "int32"
+      tempState:
+        $ref: "#/definitions/UrlDeserializedState"
 externalDocs:
   description: ""
   url: ""

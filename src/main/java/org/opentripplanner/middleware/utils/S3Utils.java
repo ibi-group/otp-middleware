@@ -1,13 +1,22 @@
 package org.opentripplanner.middleware.utils;
 
+import com.amazonaws.HttpMethod;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.ConfigUtils.hasConfigProperty;
@@ -28,6 +37,49 @@ public class S3Utils {
             amazonS3ClientBuilder.withCredentials(new ProfileCredentialsProvider(getConfigPropertyAsText("AWS_PROFILE")));
         }
         return amazonS3ClientBuilder.build();
+    }
+
+    /**
+     * Get a list of items in a folder inside a bucket. An empty string or "/" as the folderName will return the
+     * list of files at the root of a bucket.
+     */
+    public static List<CDPFile> getFolderListing(String bucketName, String folderName) {
+        AmazonS3 s3Client = getAmazonS3();
+        List<CDPFile> cdpFiles = new ArrayList<>();
+        ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+                .withBucketName(bucketName);
+        ObjectListing objectListing;
+
+        do {
+            objectListing = s3Client.listObjects(listObjectsRequest);
+            for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
+                // TODO: a less brittle way of getting the name, will probably be related to folder-based filtering
+                cdpFiles.add(new CDPFile(objectSummary.getKey(), objectSummary.getKey().substring(folderName.length() + 1), objectSummary.getSize()));
+            }
+            listObjectsRequest.setMarker(objectListing.getNextMarker());
+        } while (objectListing.isTruncated());
+
+        return cdpFiles;
+    }
+
+    /**
+     * This method will generate a download link for a specific file in a specific bucket.
+     * The download link is set to expire after 5 minutes by default.
+     */
+    public static URL getTemporaryDownloadLinkForObject(String bucketName, String fileKey) {
+        // Default of 5 minutes
+        return getTemporaryDownloadLinkForObject(bucketName, fileKey, 300000);
+    }
+    public static URL getTemporaryDownloadLinkForObject(String bucketName, String fileKey, int expiration) {
+        AmazonS3 s3Client = getAmazonS3();
+        Date formalExpiration = new java.util.Date();
+        formalExpiration.setTime(formalExpiration.getTime() + expiration);
+
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(bucketName, fileKey)
+                        .withMethod(HttpMethod.GET)
+                        .withExpiration(formalExpiration);
+        return s3Client.generatePresignedUrl(generatePresignedUrlRequest);
     }
 
     /**
