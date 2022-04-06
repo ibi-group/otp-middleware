@@ -6,6 +6,7 @@ import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.CDPUser;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -24,6 +25,7 @@ public class RequestingUser {
 
     public OtpUser otpUser;
     public ApiUser apiUser;
+    public CDPUser cdpUser;
     public AdminUser adminUser;
     public String auth0UserId;
 
@@ -60,6 +62,7 @@ public class RequestingUser {
         // the OTP Admin Dashboard may be both an AdminUser and ApiUser, but this code block will force their identity
         // as an AdminUser.
         // TODO: Consider consolidating the user scope fields into a single AbstractUser user field.
+        // TODO: move this to a switch block
         if (scope.contains(OtpUser.AUTH0_SCOPE)) {
             otpUser = (testing)
                 ? new OtpUser()
@@ -77,8 +80,13 @@ public class RequestingUser {
         }
         if (scope.contains(ApiUser.AUTH0_SCOPE)) {
             apiUser = (testing)
-                ? new ApiUser()
-                : Persistence.apiUsers.getOneFiltered(withAuth0UserId);
+                    ? new ApiUser()
+                    : Persistence.apiUsers.getOneFiltered(withAuth0UserId);
+        }
+        if (scope.contains(CDPUser.AUTH0_SCOPE)) {
+            cdpUser = (testing)
+                    ? new CDPUser()
+                    : Persistence.cdpUsers.getOneFiltered(withAuth0UserId);
             return;
         }
         LOG.error("No user type for scope {} is available", scope);
@@ -104,9 +112,16 @@ public class RequestingUser {
      * endpoint (/api/secure/application/authenticate). OtpUsers created for third party API users enjoy a more limited
      * range of activities (e.g., they cannot receive email/SMS notifications from otp-middleware).
      */
-    public boolean isThirdPartyUser() {
+    public boolean isAPIUser() {
         // TODO: Look to enhance api user check. Perhaps define specific field to indicate this?
         return apiUser != null;
+    }
+
+    /**
+     * Determine if user is a CDP user
+     */
+    public boolean isCDPUser() {
+        return cdpUser != null;
     }
 
     /**

@@ -221,7 +221,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
                 ? Filters.eq("applicationId", requestingUser.apiUser.id)
                 : Filters.eq("_id", requestingUser.otpUser.id);
             return persistence.getResponseList(filter, offset, limit);
-        } else if (requestingUser.isThirdPartyUser()) {
+        } else if (requestingUser.isAPIUser()) {
             // A user id must be provided if the request is being made by a third party user.
             logMessageAndHalt(req,
                 HttpStatus.BAD_REQUEST_400,
