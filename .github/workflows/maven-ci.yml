@@ -116,4 +116,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           # Temporary! Update to real account
-          tags: milesgrantibigroup/otp-middleware-test:${{ github.sha }}
+          tags:
+            - milesgrantibigroup/otp-middleware-test:${{ github.sha }}
+            - milesgrantibigroup/otp-middleware-test:latest

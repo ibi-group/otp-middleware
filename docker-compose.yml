@@ -1,8 +1,7 @@
 version: '3.8'
 services:
   otp-middleware:
-    # Temporary! move back to "latest"
-    image: milesgrantibigroup/otp-middleware-test:cdp
+    image: milesgrantibigroup/otp-middleware-test:latest
     ports:
       - "4567:4567"
     volumes:
