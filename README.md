@@ -18,7 +18,7 @@ otp-middleware is a potential way for agencies to fill in those gaps. It provide
 ## Deployment
 The easiest way to deploy otp-middleware is to use the included Docker Compose configuration.
 
-There are three compose configs. All build upon the "standard" config. The `dev` config exposes the Mongo instance, and saves the database data outside of the container. The `e2e` configuration also exposes the Mongo instance, and pre-seeds the database using the files in the `configurations/e2e-mongo-seed` directory. Please note that the seed files do not work out of the box. Fields which require input are clearly marked.
+There are three compose configs. All build upon the "standard" config. The `dev` config exposes the Mongo instance, and saves the database data outside of the container. The path the database data is saved to is by default set to the directory homebrew installs Mongo into. This can be changed to any Mongo installation directory. The `e2e` configuration also exposes the Mongo instance, and pre-seeds the database using the files in the `configurations/e2e-mongo-seed` directory. Please note that the seed files do not work out of the box -- valid auth0 users are needed, and their information needs to be pasted into the seed json files. Fields which require input are clearly marked.
 
 The `configurations/default/docker.env.yml` contains a configuration file that makes it easy to get started. However, **there are fields which need to be manually set**. These fields are clearly marked within the file.
 
@@ -30,6 +30,13 @@ docker compose -f docker-compose.yml up
 ##### Running otp-middleware in dev mode via Docker Compose
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
+
+##### Running otp-middleware in e2e mode via Docker Compose
+Note: you will need to populate `env.docker.yml`, `admin-e2euser.json`, `api-e2euser.json` and `aws-credentials`
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml up
 ```
 
 OTP Middleware is also suitable for continuous deployment implementations.
@@ -193,6 +200,8 @@ The following snippet is an example policy which can be used/modified to allow a
 ### End-to-end (E2E)
 
 In order to run E2E tests, specific configuration and environment variables must be used.
+
+Please note the e2e Dockerfile is __not__ used to run the otp-middleware e2e tests. These are instead used to instantiate a standard otp-middleware instance which can be used by other application's e2e tests. 
 
 #### Auth0
 The standard Auth0 configuration can be used for the server settings. However, some additional settings must be applied
