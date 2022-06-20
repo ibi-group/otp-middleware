@@ -26,3 +26,5 @@ env.yml-original
 server.yml
 # Test config is OK.
 !configurations/test/env.yml
+# e2e seed is OK.
+!configurations/e2e-mongo-seed

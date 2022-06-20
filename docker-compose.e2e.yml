@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  otp-middleware:
+    depends_on:
+      - mongo-seed
+  mongo:
+    ports:
+      - "27017:27017"
+  mongo-seed:
+    build: ./configurations/e2e-mongo-seed
+    depends_on:
+      - mongo

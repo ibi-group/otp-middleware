@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  mongo:
+    volumes:
+      - type: bind
+        source: /opt/homebrew/var/mongodb
+        target: /data/db
+    ports:
+      - "27017:27017"

@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  otp-middleware:
+    image: milesgrantibigroup/otp-middleware-test:latest
+    ports:
+      - "4567:4567"
+    volumes:
+      - type: bind
+        source: ./configurations/default/env.docker.yml
+        target: /config/env.yml
+      - type: bind
+        source: ./configurations/default/aws-credentials
+        target: /root/.aws/credentials
+      - type: bind
+        source: ./configurations/default/aws-config
+        target: /root/.aws/config
+    depends_on:
+      - mongo
+  mongo:
+    image: mongo
+    restart: always

@@ -1,0 +1,1 @@
+{"_id":"api-e2euser","auth0UserId":"<FILL ME IN>","dateCreated":{"$date":"2000-01-01T01:01:01Z"},"email":"<FILL ME IN>","isDataToolsUser":false,"appPurpose": "e2e test app purpose","lastUpdated":{"$date":"2000-01-01T01:01:01Z"},"subscriptions":[]}
