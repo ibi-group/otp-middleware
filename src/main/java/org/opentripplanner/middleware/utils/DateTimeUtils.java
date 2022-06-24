@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
+import jersey.repackaged.com.google.common.collect.Lists;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,9 +16,11 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Set;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -27,6 +30,11 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
  * test time-dependent code.
  */
 public class DateTimeUtils {
+
+    private DateTimeUtils() {
+        throw new IllegalStateException("Utility class.");
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(DateTimeUtils.class);
 
     public static final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
@@ -80,6 +88,15 @@ public class DateTimeUtils {
         return localDate.format(expectedDateFormat);
     }
 
+    public static String getStringFromDate(LocalDateTime localDate, String expectedDatePattern) throws DateTimeParseException {
+        DateTimeFormatter expectedDateFormat = new DateTimeFormatterBuilder()
+            .appendPattern(expectedDatePattern)
+            .parseDefaulting(ChronoField.NANO_OF_DAY, 0)
+            .toFormatter()
+            .withZone(zoneId);
+        return localDate.format(expectedDateFormat);
+    }
+
     public static Date nowAsDate() {
         return new Date(currentTimeMillis());
     }
@@ -93,13 +110,6 @@ public class DateTimeUtils {
      */
     public static LocalDateTime nowAsLocalDateTime() {
         return LocalDateTime.now(clock);
-    }
-
-    /**
-     * Returns the current time according to the currently set Clock given a specific timezone.
-     */
-    public static LocalDateTime nowAsLocalDateTime(ZoneId zoneId) {
-        return LocalDateTime.now(clock.withZone(zoneId));
     }
 
     /**
@@ -138,7 +148,7 @@ public class DateTimeUtils {
         LOG.info(
             "{} The current time is now: {} ({})",
             messagePrefix,
-            nowAsLocalDateTime().toString(),
+            nowAsLocalDateTime(),
             zoneId.getId()
         );
     }
@@ -215,38 +225,63 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a {@link LocalDate} object into a {@link Date} object using the Otp zone id.
+     * Converts a {@link Date} object into a {@link LocalDateTime} object using the Otp zone id.
      */
-    public static Date convertToDate(LocalDate dateToConvert) {
-        return Date.from(dateToConvert.atStartOfDay(getOtpZoneId()).toInstant());
+    public static LocalDateTime convertToLocalDateTime(Date dateToConvert) {
+        return dateToConvert.toInstant()
+            .atZone(getOtpZoneId())
+            .toLocalDateTime();
     }
 
     /**
-     * Converts a {@link Date} object into a {@link LocalDate} object using the Otp zone id.
+     * Get the start of an hour from a {@link Date} object which is returned as a {@link LocalDateTime} object.
      */
-    private static LocalDate convertToLocalDate(Date dateToConvert) {
-        return dateToConvert.toInstant().atZone(getOtpZoneId()).toLocalDate();
+    public static LocalDateTime getStartOfHour(Date dateToConvert) {
+        return convertToLocalDateTime(dateToConvert).truncatedTo(ChronoUnit.HOURS);
     }
 
     /**
-     * Get the start of a day from a {@link LocalDate} object which is returned as a {@link Date} object.
+     * Get the start of an hour from a {@link LocalDateTime} object which is returned as a {@link Date} object.
      */
-    public static Date getStartOfDay(LocalDate dateToConvert) {
-        return convertToDate(dateToConvert.atStartOfDay());
+    public static Date getStartOfHour(LocalDateTime date) {
+        return convertToDate(date.truncatedTo(ChronoUnit.HOURS));
     }
 
     /**
-     * Get the start of a day from a {@link Date} object which is returned as a {@link Date} object.
+     * Get the end of an hour from a {@link LocalDateTime} object which is returned as a {@link Date} object.
      */
-    public static LocalDate getStartOfDay(Date dateToConvert) {
-        return convertToLocalDate(dateToConvert).atStartOfDay().toLocalDate();
+    public static Date getEndOfHour(LocalDateTime date) {
+        return convertToDate(date.truncatedTo(ChronoUnit.HOURS).plusHours(1).minusSeconds(1));
     }
 
     /**
-     * Get the dates between two {@link Date} objects. The list of {@link LocalDate} objects returned does not include
-     * the originally provided dates.
+     * Get the start of the current hour.
      */
-    public static Set<LocalDate> getDatesBetween(LocalDate startDate, LocalDate endDate) {
-        return startDate.datesUntil(endDate).collect(Collectors.toSet());
+    public static LocalDateTime getStartOfCurrentHour() {
+        return LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+    }
+
+    /**
+     * Get the hours between two {@link LocalDateTime} objects. The list of {@link LocalDateTime} objects returned does
+     * not include the originally provided hours.
+     */
+    public static List<LocalDateTime> getHoursBetween(LocalDateTime start, LocalDateTime end) {
+        if (start.isAfter(end) || start.isEqual(end)) {
+            LOG.warn("Start date/time: {} is after/equal to end date/time: {}.", start, end);
+            return Lists.newArrayList();
+        }
+        // Bump the start by one hour, so it is not included in the returned list.
+        start = start.plusHours(1).truncatedTo(ChronoUnit.HOURS);
+        return Stream
+            .iterate(start, date -> date.plusHours(1))
+            .limit(ChronoUnit.HOURS.between(start, end))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Return the previous whole hour from now. E.g. If the time is 07:30, return 06:00.
+     */
+    public static LocalDateTime getPreviousWholeHourFromNow() {
+        return LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(1);
     }
 }

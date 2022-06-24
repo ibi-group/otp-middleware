@@ -11,6 +11,16 @@ import java.util.List;
 public class AnonymizedItinerary {
 
     /**
+     * Reference to identify which trip summary an itinerary is associated with.
+     */
+    public Integer tripSummaryId;
+
+    /**
+     * Unique itinerary id.
+     */
+    public Integer itineraryId;
+
+    /**
      * Duration of the trip on this itinerary, in seconds.
      */
     public Long duration = 0L;

@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.connecteddataplatform;
 import com.google.common.collect.Sets;
 import com.mongodb.client.DistinctIterable;
 import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import org.apache.commons.lang3.StringUtils;
@@ -28,11 +27,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,18 +39,21 @@ import java.util.concurrent.TimeUnit;
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getStartOfDay;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getStartOfCurrentHour;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getStartOfHour;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDate;
 
 /**
- * Responsible for collating, anonymizing and uploading to AWS s3 trip requests and related trip summaries.
+ * Responsible for collating, anonymizing and uploading to AWS s3 trip requests and related itineraries.
  */
 public class ConnectedDataManager {
 
     public static final String FILE_NAME_SUFFIX = "anon-trip-data";
     public static final String ZIP_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".zip";
     public static final String DATA_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".json";
+
+    private static final String CONNECTED_DATA_PLATFORM_ENABLED =
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_ENABLED", "false");
 
     private static final int CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES =
         getConfigPropertyAsInt("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES", 5);
@@ -65,7 +66,13 @@ public class ConnectedDataManager {
     public static final String CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME");
 
+    private ConnectedDataManager() {}
+
     public static void scheduleTripHistoryUploadJob() {
+        if (!enableConnectedDataPlatform()) {
+            LOG.warn("Connected Data Platform is not enabled (CONNECTED_DATA_PLATFORM_ENABLED is set to false).");
+            return;
+        }
         if (shouldProcessTripHistory(CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME)) {
             LOG.info("Scheduling trip history upload for every {} minute(s)",
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES);
@@ -80,33 +87,32 @@ public class ConnectedDataManager {
     }
 
     /**
-     * Remove a user's trip requests and trip summaries from the database. Record the user's trip dates so that all
-     * data previously uploaded to s3 can be recompiled and uploaded again.
+     * Remove a user's trip requests and trip summaries from the database. Record the user's trip hourly windows so that
+     * all data previously uploaded to s3 can be recompiled and re-uploaded to replace what was previously held.
      */
     public static void removeUsersTripHistory(String userId) {
-        Set<LocalDate> userTripDates = new HashSet<>();
+        Set<LocalDateTime> userTripHourlyWindows = new HashSet<>();
         for (TripRequest request : TripRequest.requestsForUser(userId)) {
-            userTripDates.add(getStartOfDay(request.dateCreated));
+            userTripHourlyWindows.add(getStartOfHour(request.dateCreated));
             // This will delete the trip summaries as well.
             request.delete();
         }
-        // Get all dates that have already been earmarked for uploading.
-        Set<LocalDate> incompleteUploads = new HashSet<>();
-        getIncompleteUploads().forEach(tripHistoryUpload -> incompleteUploads.add(tripHistoryUpload.uploadDate));
-        // Save all new dates for uploading.
-        Set<LocalDate> newDates = Sets.difference(userTripDates, incompleteUploads);
+        // Get all hourly windows that have already been earmarked for uploading.
+        Set<LocalDateTime> incompleteUploadHours = new HashSet<>();
+        getIncompleteUploads().forEach(tripHistoryUpload -> incompleteUploadHours.add(tripHistoryUpload.uploadHour));
+        // Save all new hourly windows for uploading.
+        Set<LocalDateTime> newHourlyWindows = Sets.difference(userTripHourlyWindows, incompleteUploadHours);
         TripHistoryUpload first = TripHistoryUpload.getFirst();
-        LocalDate startOfToday = LocalDate.now().atStartOfDay().toLocalDate();
-        newDates.forEach(newDate -> {
+        LocalDateTime startOfCurrentHour = getStartOfCurrentHour();
+        newHourlyWindows.forEach(newHourlyWindow -> {
             if (first == null ||
-                newDate.isEqual(first.uploadDate) ||
-                (newDate.isAfter(first.uploadDate) &&
-                    newDate.isBefore(startOfToday))
+                newHourlyWindow.isEqual(first.uploadHour) ||
+                (newHourlyWindow.isAfter(first.uploadHour) && newHourlyWindow.isBefore(startOfCurrentHour))
             ) {
-                // If the new date is the same or after the first ever upload date, add it to the upload list. This acts
-                // as a back stop to prevent historic uploads being created indefinitely. Also, make sure the new date
-                // is before today because the trip data for it isn't uploaded until after midnight.
-                Persistence.tripHistoryUploads.create(new TripHistoryUpload(newDate));
+                // If the new hourly window is the same or after the first ever upload hour, add it to the upload list.
+                // This acts as a backstop to prevent historic uploads being created indefinitely. Also, make sure the
+                // new hourly window is before the current hour because the trip data for it hasn't been uploaded yet!
+                Persistence.tripHistoryUploads.create(new TripHistoryUpload(newHourlyWindow));
             }
         });
     }
@@ -117,100 +123,108 @@ public class ConnectedDataManager {
      *
      * Process:
      *
-     * 1) Extract unique batch ids between two dates.
+     * 1) Extract unique batch ids for a given hour.
      * 2) For each batch id get matching trip requests.
      * 3) Workout which trip request uses the most modes.
      * 4) Define lat/lon for 'from' and 'to' places, scrambling location coordinates for non-public locations.
      * 5) Anonymize trip request with the most modes.
      * 6) Get related trip summaries and anonymize.
-     * 7) Write anonymized trip request and related summaries to file.
+     * 7) Write anonymous trip requests to file.
      */
-    private static void streamAnonymousTripsToFile(
+    private static int streamAnonymousTripsToFile(
         String pathAndFileName,
-        LocalDateTime start,
-        LocalDateTime end,
+        LocalDateTime hourToBeAnonymized,
         boolean isTest
     ) throws IOException {
+        Date startOfHour = DateTimeUtils.getStartOfHour(hourToBeAnonymized);
+        Date endOfHour = DateTimeUtils.getEndOfHour(hourToBeAnonymized);
+        final String dateCreatedFieldName = "dateCreated";
+        final String batchIdFieldName = "batchId";
+        int numTripRequestsWrittenToFile = 0;
+
         // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
-            "batchId",
+            batchIdFieldName,
             Filters.and(
-                Filters.gte("dateCreated", DateTimeUtils.convertToDate(start)),
-                Filters.lte("dateCreated", DateTimeUtils.convertToDate(end)),
-                Filters.ne("batchId", OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
+                Filters.gte(dateCreatedFieldName, startOfHour),
+                Filters.lte(dateCreatedFieldName, endOfHour),
+                Filters.ne(batchIdFieldName, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
             ),
             String.class
         );
 
+        // Needed to correctly format the JSON content.
         int numberOfUniqueBatchIds = 0;
-        MongoCursor<String> iterator = uniqueBatchIds.iterator();
-        while (iterator.hasNext()) {
-            iterator.next();
+        for (String batchId : uniqueBatchIds) {
             numberOfUniqueBatchIds++;
+        }
+
+        if (numberOfUniqueBatchIds == 0) {
+            // No unique batch ids (and therefore no trip requests) to process.
+            return numTripRequestsWrittenToFile;
         }
 
         int pos = 0;
         FileUtils.writeToFile(pathAndFileName, false, "[");
         for (String uniqueBatchId : uniqueBatchIds) {
             pos++;
-
-            // Get trip request batch.
-            FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getFiltered(
-                Filters.and(
-                    Filters.gte("dateCreated", DateTimeUtils.convertToDate(start)),
-                    Filters.lte("dateCreated", DateTimeUtils.convertToDate(end)),
-                    Filters.eq("batchId", uniqueBatchId)
-                ),
-                Sorts.descending("dateCreated", "batchId")
-            );
-
-            TripRequest tripRequest = getAllModesUsedInBatch(tripRequests);
-
-            // Get all trip summaries matching the batch id.
-            FindIterable<TripSummary> tripSummaries = Persistence.tripSummaries.getFiltered(
-                eq("batchId", uniqueBatchId),
-                Sorts.descending("dateCreated")
-            );
-
-            // Get place coordinates.
-            Coordinates fromCoordinates = getPlaceCoordinates(
-                tripSummaries,
-                true,
-                tripRequest.fromPlace,
-                isTest
-            );
-            Coordinates toCoordinates = getPlaceCoordinates(
-                tripSummaries,
-                false,
-                tripRequest.toPlace,
-                isTest
-            );
-
             // Anonymize trip request.
-            AnonymizedTripRequest anonymizedTripRequest = new AnonymizedTripRequest(
-                tripRequest,
-                fromCoordinates,
-                toCoordinates
-            );
-
-            // Extract trip summaries and convert to anonymized trip summaries list.
-            List<AnonymizedTripSummary> anonymizedTripSummaries = tripSummaries
-                .map(tripSummary -> new AnonymizedTripSummary(tripSummary, fromCoordinates, toCoordinates))
-                .into(new ArrayList<>());
-
-            // Append content to file
-            FileUtils.writeToFile(
-                pathAndFileName,
-                true,
-                JsonUtils.toJson(new AnonymizedTrip(anonymizedTripRequest, anonymizedTripSummaries))
-            );
-            if (pos < numberOfUniqueBatchIds) {
-                // A comma is not required if processing the last item in the list. This is to prevent JSON formatting
-                // errors.
-                FileUtils.writeToFile(pathAndFileName, true, ",");
+            AnonymizedTripRequest anonymizedTripRequest = getAnonymizedTripRequest(uniqueBatchId, startOfHour, endOfHour, isTest);
+            if (anonymizedTripRequest != null) {
+                // Append content to file.
+                FileUtils.writeToFile(pathAndFileName, true, JsonUtils.toJson(anonymizedTripRequest));
+                if (pos < numberOfUniqueBatchIds) {
+                    // Add a comma to separate each trip request. This is not required for the last trip request to
+                    // prevent JSON formatting errors.
+                    FileUtils.writeToFile(pathAndFileName, true, ",");
+                }
+                numTripRequestsWrittenToFile++;
             }
         }
         FileUtils.writeToFile(pathAndFileName, true, "]");
+        return numTripRequestsWrittenToFile;
+    }
+
+    /**
+     * Extract trip request and trip summary data and create an {@link AnonymizedTripRequest}.
+     */
+    private static AnonymizedTripRequest getAnonymizedTripRequest(
+        String uniqueBatchId,
+        Date startOfHour,
+        Date endOfHour,
+        boolean isTest
+    ) {
+        final String dateCreatedFieldName = "dateCreated";
+        final String batchIdFieldName = "batchId";
+        // Get trip request batch.
+        FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getFiltered(
+            Filters.and(
+                Filters.gte(dateCreatedFieldName, startOfHour),
+                Filters.lte(dateCreatedFieldName, endOfHour),
+                Filters.eq(batchIdFieldName, uniqueBatchId)
+            ),
+            Sorts.descending(dateCreatedFieldName, batchIdFieldName)
+        );
+        TripRequest tripRequest = getAllModesUsedInBatch(tripRequests);
+        if (tripRequest == null) {
+            // This is possible if no trip requests are within the start and end hour.
+            return null;
+        }
+        // Get all trip summaries matching the batch id.
+        FindIterable<TripSummary> tripSummaries = Persistence.tripSummaries.getFiltered(
+            eq(batchIdFieldName, uniqueBatchId),
+            Sorts.descending(dateCreatedFieldName)
+        );
+        // Get place coordinates.
+        Coordinates fromCoordinates = getPlaceCoordinates(tripSummaries, true, tripRequest.fromPlace, isTest);
+        Coordinates toCoordinates = getPlaceCoordinates(tripSummaries, false, tripRequest.toPlace, isTest);
+        // Anonymize trip request.
+        return new AnonymizedTripRequest(
+            tripRequest,
+            tripSummaries,
+            fromCoordinates,
+            toCoordinates
+        );
     }
 
     /**
@@ -260,16 +274,18 @@ public class ConnectedDataManager {
                 Arrays.asList(tripRequest.requestParameters.get("mode").split(","))
             );
         }
-        // Replace the mode parameter in the first request with all unique modes from across the batch.
-        request.requestParameters.put("mode", StringUtils.join(allUniqueModes, ","));
+        if (request != null) {
+            // Replace the mode parameter in the first request with all unique modes from across the batch.
+            request.requestParameters.put("mode", StringUtils.join(allUniqueModes, ","));
+        }
         return request;
     }
 
     /**
-     * Using the legs from the first itinerary, define whether or not the first or last leg is a transit leg. It is
-     * assumed that the first and last legs are the same for all itineraries. If the leg is transit, return true else
-     * false. E.g. If the first leg is non transit, the related 'fromPlace' lat/lon is randomized because it is not
-     * a public location.
+     * Using the legs from the first itinerary, define whether the first or last leg is a transit leg. It is assumed
+     * that the first and last legs are the same for all itineraries. If the leg is transit, return true else false.
+     * E.g. If the first leg is non transit, the related 'fromPlace' lat/lon is randomized because it is not a public
+     * location.
      */
     private static boolean isLegTransit(List<Itinerary> itineraries, boolean isFirstLeg) {
         if (itineraries != null &&
@@ -285,34 +301,35 @@ public class ConnectedDataManager {
     }
 
     /**
-     * Obtain anonymized trip data for the given date, write to zip file, upload the zip file to S3 and finally delete
+     * Obtain anonymize trip data for the given hour, write to zip file, upload the zip file to S3 and finally delete
      * the data and zip files from local disk.
      */
-    public static boolean compileAndUploadTripHistory(LocalDate date, boolean isTest) {
-        LocalDateTime startOfDay = date.atStartOfDay();
-        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
-        String zipFileName = getFileName(startOfDay.toLocalDate(), ZIP_FILE_NAME_SUFFIX);
+    public static int compileAndUploadTripHistory(LocalDateTime hourToBeAnonymized, boolean isTest) {
+        String zipFileName = getFileName(hourToBeAnonymized, ZIP_FILE_NAME_SUFFIX);
         String tempZipFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
         String tempDataFile = String.join(
             "/",
             FileUtils.getTempDirectory().getAbsolutePath(),
-            getFileName(startOfDay.toLocalDate(), DATA_FILE_NAME_SUFFIX)
+            getFileName(hourToBeAnonymized, DATA_FILE_NAME_SUFFIX)
         );
         try {
-            streamAnonymousTripsToFile(tempDataFile, startOfDay, endOfDay, isTest);
-            FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
-            S3Utils.putObject(
-                CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
-                CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME + "/" + zipFileName,
-                new File(tempZipFile)
-            );
-            return true;
+            int numTripRequestsWrittenToFile = streamAnonymousTripsToFile(tempDataFile, hourToBeAnonymized, isTest);
+            if (numTripRequestsWrittenToFile > 0) {
+                // No point doing these tasks if no trip requests were written to file.
+                FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
+                S3Utils.putObject(
+                    CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
+                    CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME + "/" + zipFileName,
+                    new File(tempZipFile)
+                );
+            }
+            return numTripRequestsWrittenToFile;
         } catch (S3Exception | IOException e) {
             BugsnagReporter.reportErrorToBugsnag(
-                String.format("Failed to process trip data for (%s)", startOfDay),
+                String.format("Failed to process trip data for (%s)", hourToBeAnonymized),
                 e
             );
-            return false;
+            return Integer.MIN_VALUE;
         } finally {
             // Delete the temporary files. This is done here in case the S3 upload fails.
             try {
@@ -343,10 +360,11 @@ public class ConnectedDataManager {
     /**
      * Produce file name.
      */
-    public static String getFileName(LocalDate startOfDay, String fileNameSuffix) {
+    public static String getFileName(LocalDateTime date, String fileNameSuffix) {
+        final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd-HH";
         return String.format(
             "%s-%s",
-            getStringFromDate(startOfDay, DEFAULT_DATE_FORMAT_PATTERN),
+            getStringFromDate(date, DEFAULT_DATE_FORMAT_PATTERN),
             fileNameSuffix
         );
     }
@@ -357,6 +375,13 @@ public class ConnectedDataManager {
      */
     public static boolean shouldProcessTripHistory(String configBucketName) {
         return !Strings.isBlank(configBucketName);
+    }
+
+    /**
+     * Enable connected data platform if configured to do so.
+     */
+    private static boolean enableConnectedDataPlatform() {
+        return CONNECTED_DATA_PLATFORM_ENABLED.equalsIgnoreCase("true");
     }
 
 }

@@ -3,58 +3,67 @@ package org.opentripplanner.middleware.connecteddataplatform;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 /**
- * This job is responsible for keeping the trip history held on s3 up-to-date by defining the days which should be
+ * This job is responsible for keeping the trip history held on s3 up-to-date by defining the hours which should be
  * uploaded and triggering the upload process.
  */
 public class TripHistoryUploadJob implements Runnable {
 
-    private static final int HISTORIC_UPLOAD_DAYS_BACK_STOP = 20;
+    private static final Logger LOG = LoggerFactory.getLogger(TripHistoryUploadJob.class);
+    private static final int HISTORIC_UPLOAD_HOURS_BACK_STOP = 24;
 
     public void run() {
-        stageUploadDays();
+        stageUploadHours();
         processTripHistory(false);
     }
 
     /**
-     * Add to the trip history upload list any dates between the day before now and the last created (pending or
-     * completed) trip history upload. This will cover a new day once passed midnight and any days missed due to
-     * downtime.
+     * Add to the trip history upload list any hours between the previous whole hour and the last created (pending or
+     * completed) trip history upload. This will cover any hours missed due to downtime and add the latest upload hour
+     * if not already accounted for.
      */
-    public static void stageUploadDays() {
-        LocalDate now = LocalDate.now();
+    public static void stageUploadHours() {
+        LocalDateTime previousWholeHourFromNow = DateTimeUtils.getPreviousWholeHourFromNow();
         TripHistoryUpload lastCreated = TripHistoryUpload.getLastCreated();
         if (lastCreated == null) {
-            // No data held, add the previous day as the first day to be uploaded.
-            Persistence.tripHistoryUploads.create(
-                new TripHistoryUpload(now.minusDays(1).atStartOfDay().toLocalDate())
-            );
-        } else {
-            Set<LocalDate> betweenDays = DateTimeUtils.getDatesBetween(
-                lastCreated.uploadDate.plusDays(1),
-                now
-            );
-            LocalDate historicDateBackStop = getHistoricDateBackStop();
-            betweenDays.forEach(day -> {
-                if (day.isAfter(historicDateBackStop)) {
-                    Persistence.tripHistoryUploads.create(new TripHistoryUpload(day.atStartOfDay().toLocalDate()));
-                }
-            });
+            // Stage first ever upload hour.
+            Persistence.tripHistoryUploads.create(new TripHistoryUpload(previousWholeHourFromNow));
+            LOG.debug("Staging first ever upload hour: {}.", previousWholeHourFromNow);
+            return;
+        }
+        // Stage all hours between the last hour uploaded and an hour ago.
+        List<LocalDateTime> betweenHours = DateTimeUtils.getHoursBetween(lastCreated.uploadHour, previousWholeHourFromNow);
+        betweenHours.forEach(uploadHour -> {
+            if (uploadHour.isAfter(getHistoricDateTimeBackStop())) {
+                LOG.debug(
+                    "Staging hour: {} that is between last created: {} and the previous whole hour: {}",
+                    lastCreated,
+                    previousWholeHourFromNow,
+                    uploadHour
+                );
+                Persistence.tripHistoryUploads.create(new TripHistoryUpload(uploadHour));
+            }
+        });
+        if (!lastCreated.uploadHour.isEqual(previousWholeHourFromNow)) {
+            // Last created is not the latest upload hour, so stage an hour ago.
+            Persistence.tripHistoryUploads.create(new TripHistoryUpload(previousWholeHourFromNow));
+            LOG.debug("Last created {} is older than the latest {}, so staging.", lastCreated, previousWholeHourFromNow);
         }
     }
 
     /**
-     * This is the absolute historic date which trip history will be uploaded. This assumes that the service will not be
-     * offline longer than this period, but if it is, it will prevent potentially a lot of data being uploaded on
-     * start-up which could hinder performance.
+     * This is the absolute historic date/time which trip history will be uploaded. This assumes that the service will
+     * not be offline longer than this period, but if it is, it will prevent potentially a lot of data being uploaded on
+     * start-up which will impact performance.
      */
-    private static LocalDate getHistoricDateBackStop() {
-        return LocalDate.now().minusDays(HISTORIC_UPLOAD_DAYS_BACK_STOP);
+    private static LocalDateTime getHistoricDateTimeBackStop() {
+        return LocalDateTime.now().minusHours(HISTORIC_UPLOAD_HOURS_BACK_STOP);
     }
 
     /**
@@ -64,9 +73,12 @@ public class TripHistoryUploadJob implements Runnable {
     public static void processTripHistory(boolean isTest) {
         List<TripHistoryUpload> incompleteUploads = ConnectedDataManager.getIncompleteUploads();
         incompleteUploads.forEach(tripHistoryUpload -> {
-            if (ConnectedDataManager.compileAndUploadTripHistory(tripHistoryUpload.uploadDate, isTest)) {
-                // Update the status to 'completed' if successfully compiled and uploaded.
+            int numTripRequestsUpload = ConnectedDataManager.compileAndUploadTripHistory(tripHistoryUpload.uploadHour, isTest);
+            if (numTripRequestsUpload != Integer.MIN_VALUE) {
+                // If successfully compiled and updated, update the status to 'completed' and record the number of trip
+                // requests uploaded (if any).
                 tripHistoryUpload.status = TripHistoryUploadStatus.COMPLETED.getValue();
+                tripHistoryUpload.numTripRequestsUploaded = numTripRequestsUpload;
                 Persistence.tripHistoryUploads.replace(tripHistoryUpload.id, tripHistoryUpload);
             }
         });

@@ -326,9 +326,9 @@
 
         <!-- Snapshotting library for testing -->
         <dependency>
-            <groupId>com.github.conveyal</groupId>
+            <groupId>com.github.ibi-group</groupId>
             <artifactId>java-snapshot-matcher</artifactId>
-            <version>3495b32f7b4d3f82590e0a2284029214070b6984</version>
+            <version>master</version>
             <scope>test</scope>
         </dependency>
 
