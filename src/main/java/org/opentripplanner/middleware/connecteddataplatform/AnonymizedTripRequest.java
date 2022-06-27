@@ -149,9 +149,9 @@ public class AnonymizedTripRequest {
                 anonymizedLeg.transitLeg = leg.transitLeg;
                 boolean isFirstOrLastLegOfTrip = i == 0 || i == itinerary.legs.size() - 1;
                 anonymizedLeg.fromStop = leg.from.stopId;
-                anonymizedLeg.from = getPlaceCoordinates(leg.transitLeg, isFirstOrLastLegOfTrip, leg.from, fromCoordinates);
+                anonymizedLeg.from = getLegCoordinates(leg.transitLeg, isFirstOrLastLegOfTrip, leg.from, fromCoordinates);
                 anonymizedLeg.toStop = leg.to.stopId;
-                anonymizedLeg.to = getPlaceCoordinates(leg.transitLeg, isFirstOrLastLegOfTrip, leg.to, toCoordinates);
+                anonymizedLeg.to = getLegCoordinates(leg.transitLeg, isFirstOrLastLegOfTrip, leg.to, toCoordinates);
                 if (Boolean.TRUE.equals(leg.transitLeg)) {
                     // Parameters for a transit leg.
                     anonymizedLeg.agencyId = leg.agencyId;
@@ -175,11 +175,11 @@ public class AnonymizedTripRequest {
     }
 
     /**
-     * Create {@link Coordinates} for a place. Replace lat/lon values with the lat/lon values created for the trip
+     * Create {@link Coordinates} for a leg. Replace lat/lon values with the lat/lon values created for the trip
      * request if not a transit leg. The start and end legs will then be consistent with the trip's 'to' and 'from'
      * place.
      */
-    private Coordinates getPlaceCoordinates(
+    private Coordinates getLegCoordinates(
         boolean isTransitLeg,
         boolean isFirstOrLastLegOfTrip,
         Place place,
