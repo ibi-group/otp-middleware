@@ -19,7 +19,6 @@ import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.opentripplanner.middleware.utils.LatLongUtils;
 import org.opentripplanner.middleware.utils.S3Utils;
 
 import java.time.LocalDateTime;
@@ -153,17 +152,17 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
         List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
         assertNotNull(anonymizedTripRequests);
-        Coordinates testCoordinates = new Coordinates(LatLongUtils.TEST_LAT, LatLongUtils.TEST_LON);
-        assertEquals(testCoordinates, anonymizedTripRequests.get(0).fromPlace);
-        assertEquals(testCoordinates, anonymizedTripRequests.get(0).toPlace);
+        Coordinates emptyCoordinates = new Coordinates(null, null);
+        assertEquals(emptyCoordinates, anonymizedTripRequests.get(0).fromPlace);
+        assertEquals(emptyCoordinates, anonymizedTripRequests.get(0).toPlace);
         anonymizedTripRequests.get(0).itineraries.forEach(intin -> {
             intin.legs.forEach(leg -> {
                 if (leg.transitLeg) {
-                    assertNotEquals(testCoordinates, leg.from);
-                    assertNotEquals(testCoordinates, leg.to);
+                    assertNotEquals(emptyCoordinates, leg.from);
+                    assertNotEquals(emptyCoordinates, leg.to);
                 } else {
-                    assertEquals(testCoordinates, leg.from);
-                    assertEquals(testCoordinates, leg.to);
+                    assertEquals(emptyCoordinates, leg.from);
+                    assertEquals(emptyCoordinates, leg.to);
                 }
             });
         });
@@ -398,16 +397,6 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             getFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
         );
         MatcherAssert.assertThat(fileContents, matchesSnapshot());
-    }
-
-    /**
-     * Test to confirm that the coordinates provided for randomizing do not match those returned.
-     */
-    @Test
-    void canRandomizeLatLon() {
-        Coordinates coordinates = new Coordinates(33.64070037704429,-84.44622866991179);
-        Coordinates randomized = LatLongUtils.getRandomizedCoordinates(coordinates);
-        assertNotEquals(coordinates, randomized);
     }
 
     @Test

@@ -18,7 +18,6 @@ import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.opentripplanner.middleware.utils.LatLongUtils;
 import org.opentripplanner.middleware.utils.S3Exception;
 import org.opentripplanner.middleware.utils.S3Utils;
 import org.opentripplanner.middleware.utils.Scheduler;
@@ -133,14 +132,12 @@ public class ConnectedDataManager {
      */
     private static int streamAnonymousTripsToFile(
         String pathAndFileName,
-        LocalDateTime hourToBeAnonymized,
-        boolean isTest
+        LocalDateTime hourToBeAnonymized
     ) throws IOException {
         Date startOfHour = DateTimeUtils.getStartOfHour(hourToBeAnonymized);
         Date endOfHour = DateTimeUtils.getEndOfHour(hourToBeAnonymized);
         final String dateCreatedFieldName = "dateCreated";
         final String batchIdFieldName = "batchId";
-        int numTripRequestsWrittenToFile = 0;
 
         // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
@@ -159,6 +156,7 @@ public class ConnectedDataManager {
             numberOfUniqueBatchIds++;
         }
 
+        int numTripRequestsWrittenToFile = 0;
         if (numberOfUniqueBatchIds == 0) {
             // No unique batch ids (and therefore no trip requests) to process.
             return numTripRequestsWrittenToFile;
@@ -169,7 +167,7 @@ public class ConnectedDataManager {
         for (String uniqueBatchId : uniqueBatchIds) {
             pos++;
             // Anonymize trip request.
-            AnonymizedTripRequest anonymizedTripRequest = getAnonymizedTripRequest(uniqueBatchId, startOfHour, endOfHour, isTest);
+            AnonymizedTripRequest anonymizedTripRequest = getAnonymizedTripRequest(uniqueBatchId, startOfHour, endOfHour);
             if (anonymizedTripRequest != null) {
                 // Append content to file.
                 FileUtils.writeToFile(pathAndFileName, true, JsonUtils.toJson(anonymizedTripRequest));
@@ -191,8 +189,7 @@ public class ConnectedDataManager {
     private static AnonymizedTripRequest getAnonymizedTripRequest(
         String uniqueBatchId,
         Date startOfHour,
-        Date endOfHour,
-        boolean isTest
+        Date endOfHour
     ) {
         final String dateCreatedFieldName = "dateCreated";
         final String batchIdFieldName = "batchId";
@@ -215,45 +212,37 @@ public class ConnectedDataManager {
             eq(batchIdFieldName, uniqueBatchId),
             Sorts.descending(dateCreatedFieldName)
         );
-        // Get place coordinates.
-        Coordinates fromCoordinates = getPlaceCoordinates(tripSummaries, true, tripRequest.fromPlace, isTest);
-        Coordinates toCoordinates = getPlaceCoordinates(tripSummaries, false, tripRequest.toPlace, isTest);
         // Anonymize trip request.
         return new AnonymizedTripRequest(
             tripRequest,
             tripSummaries,
-            fromCoordinates,
-            toCoordinates
+            getPlaceCoordinates(tripSummaries, true, tripRequest.fromPlace),
+            getPlaceCoordinates(tripSummaries, false, tripRequest.toPlace)
         );
     }
 
     /**
-     * Workout if the first or last leg is public (a transit leg). If the leg is public the coordinates provided by OTP
-     * can be used. If not they are randomized. The place value is assumed to be in the format 'location :: lat,lon'.
+     * Workout if the first or last leg is a transit leg. If the leg is a transit leg the coordinates provided by OTP
+     * can be used. If not they are removed. The place value is assumed to be in the format 'location :: lat,lon'.
      */
     private static Coordinates getPlaceCoordinates(
         FindIterable<TripSummary> tripSummaries,
         boolean isFirstLeg,
-        String place,
-        boolean isTest
+        String place
     ) {
-        boolean placeIsPublic = true;
         for (TripSummary tripSummary : tripSummaries) {
-            placeIsPublic = isLegTransit(tripSummary.itineraries, isFirstLeg);
-            if (!placeIsPublic) {
-                // if a single trip summary is not public the place lat/lon must be randomized.
-                break;
+            if (!isLegTransit(tripSummary.itineraries, isFirstLeg)) {
+                // If any trip summary (first or last leg) is not public, return empty coordinate values.
+                return new Coordinates(null, null);
             }
         }
-
         // The UI might send just the coordinates (if the geocoder does not return anything, which is unlikely).
         // If that happens, the format will just be lat,lon and :: will not be present.
         String coords = (place.contains("::")) ? place.split("::")[1].trim() : place;
-        Coordinates coordinates = new Coordinates(
+        return new Coordinates(
             Double.parseDouble(coords.split(",")[0]),
             Double.parseDouble(coords.split(",")[1])
         );
-        return placeIsPublic ? coordinates : LatLongUtils.getRandomizedCoordinates(coordinates, isTest);
     }
 
     /**
@@ -284,7 +273,7 @@ public class ConnectedDataManager {
     /**
      * Using the legs from the first itinerary, define whether the first or last leg is a transit leg. It is assumed
      * that the first and last legs are the same for all itineraries. If the leg is transit, return true else false.
-     * E.g. If the first leg is non transit, the related 'fromPlace' lat/lon is randomized because it is not a public
+     * E.g. If the first leg is non transit, the related 'fromPlace' lat/lon is removed because it is not a public
      * location.
      */
     private static boolean isLegTransit(List<Itinerary> itineraries, boolean isFirstLeg) {
@@ -313,7 +302,7 @@ public class ConnectedDataManager {
             getFileName(hourToBeAnonymized, DATA_FILE_NAME_SUFFIX)
         );
         try {
-            int numTripRequestsWrittenToFile = streamAnonymousTripsToFile(tempDataFile, hourToBeAnonymized, isTest);
+            int numTripRequestsWrittenToFile = streamAnonymousTripsToFile(tempDataFile, hourToBeAnonymized);
             if (numTripRequestsWrittenToFile > 0) {
                 // No point doing these tasks if no trip requests were written to file.
                 FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
@@ -383,5 +372,4 @@ public class ConnectedDataManager {
     private static boolean enableConnectedDataPlatform() {
         return CONNECTED_DATA_PLATFORM_ENABLED.equalsIgnoreCase("true");
     }
-
 }
