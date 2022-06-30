@@ -174,20 +174,18 @@ public class AnonymizedTripRequest {
     }
 
     /**
-     * Define the coordinates for all legs. If the leg is a walking leg and is before the first transit leg or after
-     * the last transit leg the coordinates must not be provided for privacy. Any transit leg or walking legs between
-     * transits legs, the coordinates can be provided.
+     * Define the coordinates for all legs. If the leg is non-transit and is before the first transit leg or after
+     * the last transit leg the coordinates must be removed for privacy. Any transit legs or non-transit legs
+     * between the first and last transit legs, the coordinates can be provided.
      */
     private void processLegCoordinates(List<Leg> legs) {
         int firstTransitLeg = getFirstTransitLeg(legs);
-        int lastTransitLeg = getLastTransitLeg(legs);
+        // No need to find the last transit leg if the first transit leg indicates that all legs are non-transit.
+        int lastTransitLeg = (firstTransitLeg == Integer.MAX_VALUE) ? Integer.MIN_VALUE : getLastTransitLeg(legs);
         for (int i = 0; i <= legs.size() -1; i++) {
             Leg leg = legs.get(i);
-            if (
-                leg.mode.equalsIgnoreCase("walk") &&
-                (i < firstTransitLeg || i > lastTransitLeg)
-            ) {
-                // The walking leg is before the first transit leg or after the last transit leg, remove the
+            if (Boolean.TRUE.equals(!leg.transitLeg) && (i < firstTransitLeg || i > lastTransitLeg)) {
+                // The non-transit leg is before the first transit leg or after the last transit leg, remove the
                 // coordinates.
                 removeCoordinatesFromLeg(leg);
             }
@@ -195,8 +193,8 @@ public class AnonymizedTripRequest {
     }
 
     /**
-     * Define the position of the first transit leg. If all walking legs, return the number of legs plus one to
-     * represent all walk legs.
+     * Define the position of the first transit leg. If all legs are non-transit return {@link Integer#MAX_VALUE} to
+     * represent this. This will then force the calling method to remove coordinates from all legs.
      */
     private int getFirstTransitLeg(List<Leg> legs) {
         for (int i = 0; i <= legs.size(); i++) {
@@ -204,11 +202,12 @@ public class AnonymizedTripRequest {
                 return i;
             }
         }
-        return legs.size() + 1;
+        return Integer.MAX_VALUE;
     }
 
     /**
-     * Define the position of the last transit leg. If all walking legs, return zero to represent all walk legs.
+     * Define the position of the last transit leg. If all legs are non-transit return {@link Integer#MIN_VALUE} to
+     * represent this. This will then force the calling method to remove coordinates from all legs.
      */
     private int getLastTransitLeg(List<Leg> legs) {
         for (int i = legs.size() -1; i >= 0; i--) {
@@ -216,7 +215,7 @@ public class AnonymizedTripRequest {
                 return i;
             }
         }
-        return 0;
+        return Integer.MIN_VALUE;
     }
 
     /**
