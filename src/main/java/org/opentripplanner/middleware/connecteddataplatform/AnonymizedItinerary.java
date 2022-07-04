@@ -11,7 +11,7 @@ import java.util.List;
 public class AnonymizedItinerary {
 
     /**
-     * Reference to identify which trip summary an itinerary is associated with.
+     * Unique trip summary id. Identifies which trip summary an itinerary is associated with.
      */
     public Integer tripSummaryId;
 

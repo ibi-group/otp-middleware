@@ -5,6 +5,7 @@ import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.PlannerError;
 import org.opentripplanner.middleware.utils.Coordinates;
 
@@ -67,22 +68,17 @@ public class AnonymizedTripRequest {
     public AnonymizedTripRequest() {
     }
 
-    public AnonymizedTripRequest(
-        TripRequest tripRequest,
-        FindIterable<TripSummary> tripSummaries,
-        Coordinates fromCoordinates,
-        Coordinates toCoordinates
-    ) {
+    public AnonymizedTripRequest(TripRequest tripRequest,FindIterable<TripSummary> tripSummaries) {
         this.batchId = tripRequest.batchId;
-        this.fromPlace = fromCoordinates;
-        this.toPlace = toCoordinates;
+        this.fromPlace = getPlaceCoordinates(tripSummaries, true, tripRequest.fromPlace);
+        this.toPlace = getPlaceCoordinates(tripSummaries, false, tripRequest.toPlace);
         if (tripRequest.requestParameters != null) {
             this.date = tripRequest.requestParameters.get("date");
             this.time = tripRequest.requestParameters.get("time");
-            String tripRequestType = tripRequest.requestParameters.get("arriveBy");
-            if (tripRequestType != null && tripRequestType.equalsIgnoreCase("true")) {
+            String isArriveBy = tripRequest.requestParameters.get("arriveBy");
+            if (isArriveBy != null && isArriveBy.equalsIgnoreCase("true")) {
                 this.tripType = AnonymousTripType.ARRIVE_BY;
-            } else if (tripRequestType != null && tripRequestType.equalsIgnoreCase("false")) {
+            } else if (isArriveBy != null && isArriveBy.equalsIgnoreCase("false")) {
                 this.tripType = AnonymousTripType.DEPART_AT;
             }
             this.mode = getModes(tripRequest.requestParameters.get("mode"));
@@ -101,6 +97,49 @@ public class AnonymizedTripRequest {
             }
             itineraries.addAll(getItineraries(tripSummaryId++, tripSummary));
         }
+    }
+
+    /**
+     * Workout if the first or last leg is a transit leg. If the leg is a transit leg the coordinates provided by OTP
+     * can be used. If not they are removed. The place value is assumed to be in the format 'location :: lat,lon'.
+     */
+    private static Coordinates getPlaceCoordinates(
+        FindIterable<TripSummary> tripSummaries,
+        boolean isFirstLeg,
+        String place
+    ) {
+        for (TripSummary tripSummary : tripSummaries) {
+            if (!isLegTransit(tripSummary.itineraries, isFirstLeg)) {
+                // If any trip summary (first or last leg) is not public, do not provide coordinates.
+                return null;
+            }
+        }
+        // The UI might send just the coordinates (if the geocoder does not return anything, which is unlikely).
+        // If that happens, the format will just be lat,lon and :: will not be present.
+        String coords = (place.contains("::")) ? place.split("::")[1].trim() : place;
+        return new Coordinates(
+            Double.parseDouble(coords.split(",")[0]),
+            Double.parseDouble(coords.split(",")[1])
+        );
+    }
+
+    /**
+     * Using the legs from the first itinerary, define whether the first or last leg is a transit leg. It is assumed
+     * that the first and last legs are the same for all itineraries. If the leg is transit, return true else false.
+     * E.g. If the first leg is non transit, the related 'fromPlace' lat/lon is removed because it is not a public
+     * location.
+     */
+    private static boolean isLegTransit(List<Itinerary> itineraries, boolean isFirstLeg) {
+        if (itineraries != null &&
+            !itineraries.isEmpty() &&
+            itineraries.get(0).legs != null &&
+            !itineraries.get(0).legs.isEmpty()
+        ) {
+            return (isFirstLeg)
+                ? itineraries.get(0).legs.get(0).transitLeg
+                : itineraries.get(0).legs.get(itineraries.get(0).legs.size() - 1).transitLeg;
+        }
+        return false;
     }
 
     /**
@@ -147,9 +186,9 @@ public class AnonymizedTripRequest {
                     anonymizedLeg.mode = leg.mode;
                     anonymizedLeg.transitLeg = leg.transitLeg;
                     anonymizedLeg.fromStop = leg.from.stopId;
-                    anonymizedLeg.from = new Coordinates(leg.from.lat, leg.from.lon);
+                    anonymizedLeg.from = getLegCoordinates(leg.from);
                     anonymizedLeg.toStop = leg.to.stopId;
-                    anonymizedLeg.to = new Coordinates(leg.to.lat, leg.to.lon);
+                    anonymizedLeg.to = getLegCoordinates(leg.to);
                     if (Boolean.TRUE.equals(leg.transitLeg)) {
                         // Parameters for a transit leg.
                         anonymizedLeg.agencyId = leg.agencyId;
@@ -179,12 +218,12 @@ public class AnonymizedTripRequest {
      * between the first and last transit legs, the coordinates can be provided.
      */
     private void processLegCoordinates(List<Leg> legs) {
-        int firstTransitLeg = getFirstTransitLeg(legs);
+        int firstTransitLegIndex = getFirstTransitLeg(legs);
         // No need to find the last transit leg if the first transit leg indicates that all legs are non-transit.
-        int lastTransitLeg = (firstTransitLeg == Integer.MAX_VALUE) ? Integer.MIN_VALUE : getLastTransitLeg(legs);
+        int lastTransitLegIndex = (firstTransitLegIndex == Integer.MAX_VALUE) ? Integer.MIN_VALUE : getLastTransitLeg(legs);
         for (int i = 0; i <= legs.size() -1; i++) {
             Leg leg = legs.get(i);
-            if (Boolean.TRUE.equals(!leg.transitLeg) && (i < firstTransitLeg || i > lastTransitLeg)) {
+            if (Boolean.TRUE.equals(!leg.transitLeg) && (i < firstTransitLegIndex || i > lastTransitLegIndex)) {
                 // The non-transit leg is before the first transit leg or after the last transit leg, remove the
                 // coordinates.
                 removeCoordinatesFromLeg(leg);
@@ -197,7 +236,7 @@ public class AnonymizedTripRequest {
      * represent this. This will then force the calling method to remove coordinates from all legs.
      */
     private int getFirstTransitLeg(List<Leg> legs) {
-        for (int i = 0; i <= legs.size(); i++) {
+        for (int i = 0; i <= legs.size() - 1; i++) {
             if (Boolean.TRUE.equals(legs.get(i).transitLeg)) {
                 return i;
             }
@@ -210,7 +249,7 @@ public class AnonymizedTripRequest {
      * represent this. This will then force the calling method to remove coordinates from all legs.
      */
     private int getLastTransitLeg(List<Leg> legs) {
-        for (int i = legs.size() -1; i >= 0; i--) {
+        for (int i = legs.size() - 1; i >= 0; i--) {
             if (Boolean.TRUE.equals(legs.get(i).transitLeg)) {
                 return i;
             }
@@ -226,5 +265,12 @@ public class AnonymizedTripRequest {
         leg.from.lon = null;
         leg.to.lat = null;
         leg.to.lon = null;
+    }
+
+    /**
+     * Only provide the leg coordinates if both lat/lon values are available.
+     */
+    private Coordinates getLegCoordinates(Place place) {
+        return (place.lat != null && place.lon != null) ? new Coordinates(place.lat, place.lon) : null;
     }
 }

@@ -15,7 +15,6 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
-import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -30,8 +29,8 @@ import java.util.UUID;
 import static com.zenika.snapshotmatcher.SnapshotMatcher.matchesSnapshot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -152,17 +151,16 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
         List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
         assertNotNull(anonymizedTripRequests);
-        Coordinates emptyCoordinates = new Coordinates(null, null);
-        assertEquals(emptyCoordinates, anonymizedTripRequests.get(0).fromPlace);
-        assertEquals(emptyCoordinates, anonymizedTripRequests.get(0).toPlace);
+        assertNull(anonymizedTripRequests.get(0).fromPlace);
+        assertNull(anonymizedTripRequests.get(0).toPlace);
         anonymizedTripRequests.get(0).itineraries.forEach(intin -> {
             intin.legs.forEach(leg -> {
                 if (leg.transitLeg) {
-                    assertNotEquals(emptyCoordinates, leg.from);
-                    assertNotEquals(emptyCoordinates, leg.to);
+                    assertNotNull(leg.from);
+                    assertNotNull(leg.to);
                 } else {
-                    assertEquals(emptyCoordinates, leg.from);
-                    assertEquals(emptyCoordinates, leg.to);
+                    assertNull(leg.from);
+                    assertNull(leg.to);
                 }
             });
         });
