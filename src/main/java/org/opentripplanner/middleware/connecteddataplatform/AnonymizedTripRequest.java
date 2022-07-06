@@ -167,11 +167,11 @@ public class AnonymizedTripRequest {
         if (tripSummary.itineraries == null) {
             return anonymizedItineraries;
         }
-        int itineraryId = 1;
+        int itineraryIndex = 1;
         for (Itinerary itinerary : tripSummary.itineraries) {
             AnonymizedItinerary itin = new AnonymizedItinerary();
             itin.tripSummaryId = tripSummaryId;
-            itin.itineraryId = itineraryId++;
+            itin.itineraryIndex = itineraryIndex++;
             itin.duration = itinerary.duration;
             itin.startTime = itinerary.startTime;
             itin.endTime = itinerary.endTime;

@@ -16,9 +16,9 @@ public class AnonymizedItinerary {
     public Integer tripSummaryId;
 
     /**
-     * Unique itinerary id.
+     * Unique itinerary index.
      */
-    public Integer itineraryId;
+    public Integer itineraryIndex;
 
     /**
      * Duration of the trip on this itinerary, in seconds.
