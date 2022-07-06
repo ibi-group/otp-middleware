@@ -68,7 +68,7 @@ public class AnonymizedTripRequest {
     public AnonymizedTripRequest() {
     }
 
-    public AnonymizedTripRequest(TripRequest tripRequest,FindIterable<TripSummary> tripSummaries) {
+    public AnonymizedTripRequest(TripRequest tripRequest, FindIterable<TripSummary> tripSummaries) {
         this.batchId = tripRequest.batchId;
         this.fromPlace = getPlaceCoordinates(tripSummaries, true, tripRequest.fromPlace);
         this.toPlace = getPlaceCoordinates(tripSummaries, false, tripRequest.toPlace);
@@ -101,7 +101,7 @@ public class AnonymizedTripRequest {
 
     /**
      * Workout if the first or last leg is a transit leg. If the leg is a transit leg the coordinates provided by OTP
-     * can be used. If not they are removed. The place value is assumed to be in the format 'location :: lat,lon'.
+     * can be used. If not they are removed. The place value is assumed to be in the format 'location::lat,lon'.
      */
     private static Coordinates getPlaceCoordinates(
         FindIterable<TripSummary> tripSummaries,
@@ -109,8 +109,8 @@ public class AnonymizedTripRequest {
         String place
     ) {
         for (TripSummary tripSummary : tripSummaries) {
-            if (!isLegTransit(tripSummary.itineraries, isFirstLeg)) {
-                // If any trip summary (first or last leg) is not public, do not provide coordinates.
+            if (!areAllFirstOrLastLegsTransit(tripSummary.itineraries, isFirstLeg)) {
+                // If any trip summary itinerary first or last leg is not public, do not provide coordinates.
                 return null;
             }
         }
@@ -124,22 +124,29 @@ public class AnonymizedTripRequest {
     }
 
     /**
-     * Using the legs from the first itinerary, define whether the first or last leg is a transit leg. It is assumed
-     * that the first and last legs are the same for all itineraries. If the leg is transit, return true else false.
-     * E.g. If the first leg is non transit, the related 'fromPlace' lat/lon is removed because it is not a public
-     * location.
+     * If all first/last legs in all itineraries are transit, return true. If any first/last leg is non transit,
+     * return false.
      */
-    private static boolean isLegTransit(List<Itinerary> itineraries, boolean isFirstLeg) {
-        if (itineraries != null &&
-            !itineraries.isEmpty() &&
-            itineraries.get(0).legs != null &&
-            !itineraries.get(0).legs.isEmpty()
-        ) {
-            return (isFirstLeg)
-                ? itineraries.get(0).legs.get(0).transitLeg
-                : itineraries.get(0).legs.get(itineraries.get(0).legs.size() - 1).transitLeg;
+    private static boolean areAllFirstOrLastLegsTransit(List<Itinerary> itineraries, boolean isFirstLeg) {
+        if (itineraries == null) {
+            // If no itineraries are provided assume non transit leg.
+            return false;
         }
-        return false;
+
+        boolean isTransitLeg = false;
+        for (Itinerary itinerary : itineraries) {
+            List<Leg> legs = itinerary.legs;
+            if (legs != null && !legs.isEmpty()) {
+                isTransitLeg = (isFirstLeg)
+                    ? legs.get(0).transitLeg
+                    : legs.get(itineraries.get(0).legs.size() - 1).transitLeg;
+                if (!isTransitLeg) {
+                    // If the leg is non transit there is no need to check the remaining itineraries.
+                    break;
+                }
+            }
+        }
+        return isTransitLeg;
     }
 
     /**
