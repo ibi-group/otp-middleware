@@ -116,10 +116,11 @@ public class AnonymizedTripRequest {
         }
         // The UI might send just the coordinates (if the geocoder does not return anything, which is unlikely).
         // If that happens, the format will just be lat,lon and :: will not be present.
-        String coords = (place.contains("::")) ? place.split("::")[1].trim() : place;
+        String coordinate = (place.contains("::")) ? place.split("::")[1].trim() : place;
+        String[] coordinateValues = coordinate.split(",");
         return new Coordinates(
-            Double.parseDouble(coords.split(",")[0]),
-            Double.parseDouble(coords.split(",")[1])
+            Double.parseDouble(coordinateValues[0]),
+            Double.parseDouble(coordinateValues[1])
         );
     }
 
@@ -228,7 +229,7 @@ public class AnonymizedTripRequest {
         int firstTransitLegIndex = getFirstTransitLeg(legs);
         // No need to find the last transit leg if the first transit leg indicates that all legs are non-transit.
         int lastTransitLegIndex = (firstTransitLegIndex == Integer.MAX_VALUE) ? Integer.MIN_VALUE : getLastTransitLeg(legs);
-        for (int i = 0; i <= legs.size() -1; i++) {
+        for (int i = 0; i <= legs.size() - 1; i++) {
             Leg leg = legs.get(i);
             if (Boolean.TRUE.equals(!leg.transitLeg) && (i < firstTransitLegIndex || i > lastTransitLegIndex)) {
                 // The non-transit leg is before the first transit leg or after the last transit leg, remove the
