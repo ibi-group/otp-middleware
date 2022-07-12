@@ -26,7 +26,9 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.hasConfigProperty
  */
 public class S3Utils {
 
-    public static Logger LOG = LoggerFactory.getLogger(S3Utils.class);
+    public static final Logger LOG = LoggerFactory.getLogger(S3Utils.class);
+
+    private S3Utils() {}
 
     /**
      * Create connection to AWS S3.
@@ -70,6 +72,7 @@ public class S3Utils {
         // Default of 5 minutes
         return getTemporaryDownloadLinkForObject(bucketName, fileKey, 300000);
     }
+
     public static URL getTemporaryDownloadLinkForObject(String bucketName, String fileKey, int expiration) {
         AmazonS3 s3Client = getAmazonS3();
         Date formalExpiration = new java.util.Date();
@@ -85,9 +88,7 @@ public class S3Utils {
     /**
      * Upload an object to S3.
      */
-    public static void putObject(String bucketName,
-                                 String folderAndFileName,
-                                 File file) throws S3Exception {
+    public static void putObject(String bucketName, String folderAndFileName, File file) throws S3Exception {
         try {
             AmazonS3 s3Client = getAmazonS3();
             s3Client.putObject(bucketName, folderAndFileName, file);
@@ -95,16 +96,16 @@ public class S3Utils {
         } catch (Exception e) {
             // If some unexpected exception is thrown by AWS, catch it, report to Bugsnag, and throw.
             String message = "Unable to create object";
-            S3Exception S3Exception = new S3Exception(bucketName, folderAndFileName, message, e);
-            BugsnagReporter.reportErrorToBugsnag(message, folderAndFileName, S3Exception);
-            throw S3Exception;
+            S3Exception exception = new S3Exception(bucketName, folderAndFileName, message, e);
+            BugsnagReporter.reportErrorToBugsnag(message, folderAndFileName, exception);
+            throw exception;
         }
     }
 
     /**
      * Delete an object on S3.
      */
-    public static void deleteObject(String bucketName, String folderAndFileName) throws Exception {
+    public static void deleteObject(String bucketName, String folderAndFileName) throws S3Exception {
         try {
             AmazonS3 s3Client = getAmazonS3();
             if (s3Client.doesObjectExist(bucketName, folderAndFileName)) {
@@ -114,9 +115,9 @@ public class S3Utils {
         } catch (Exception e) {
             // If some unexpected exception is thrown by AWS, catch it, report to Bugsnag, and throw.
             String message = "Unable to delete object";
-            S3Exception S3Exception = new S3Exception(bucketName, folderAndFileName, message, e);
-            BugsnagReporter.reportErrorToBugsnag(message, folderAndFileName, S3Exception);
-            throw S3Exception;
+            S3Exception exception = new S3Exception(bucketName, folderAndFileName, message, e);
+            BugsnagReporter.reportErrorToBugsnag(message, folderAndFileName, exception);
+            throw exception;
         }
     }
 }

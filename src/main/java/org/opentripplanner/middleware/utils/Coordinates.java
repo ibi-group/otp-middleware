@@ -6,14 +6,14 @@ import java.util.Objects;
  * Helper class to contain lat/lon values.
  */
 public class Coordinates {
-    public double lat;
-    public double lon;
+    public Double lon;
+    public Double lat;
 
     /** Required for JSON serialization */
     public Coordinates() {
     }
 
-    public Coordinates(double lat, double lon) {
+    public Coordinates(Double lat, Double lon) {
         this.lat = lat;
         this.lon = lon;
     }
@@ -23,11 +23,11 @@ public class Coordinates {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Coordinates that = (Coordinates) o;
-        return Double.compare(that.lat, lat) == 0 && Double.compare(that.lon, lon) == 0;
+        return Objects.equals(lon, that.lon) && Objects.equals(lat, that.lat);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(lat, lon);
+        return Objects.hash(lon, lat);
     }
 }

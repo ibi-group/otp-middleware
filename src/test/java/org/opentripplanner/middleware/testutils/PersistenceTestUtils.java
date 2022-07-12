@@ -16,8 +16,11 @@ import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
-import java.time.LocalDate;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Utility class to aid with creating and storing objects in Mongo.
@@ -68,14 +71,14 @@ public class PersistenceTestUtils {
         return createTripRequest(userId, BATCH_ID, null);
     }
 
-    public static TripRequest createTripRequest(String userId, LocalDate createDate) {
+    public static TripRequest createTripRequest(String userId, LocalDateTime createDate) {
         return createTripRequest(userId, BATCH_ID, createDate);
     }
 
     /**
      * Create trip request and store in database.
      */
-    public static TripRequest createTripRequest(String userId, String batchId, LocalDate createDate) {
+    public static TripRequest createTripRequest(String userId, String batchId, LocalDateTime createDate) {
         if (createDate != null) {
             return createTripRequest(userId, batchId, DateTimeUtils.convertToDate(createDate), null);
         } else {
@@ -121,14 +124,14 @@ public class PersistenceTestUtils {
     /**
      * Create trip summary with default batch id.
      */
-    public static TripSummary createTripSummary(String tripRequestId, LocalDate createDate) throws Exception {
+    public static TripSummary createTripSummary(String tripRequestId, LocalDateTime createDate) throws Exception {
         return createTripSummary(tripRequestId, BATCH_ID, createDate);
     }
 
     /**
      * Create trip summary from static plan response file and store in database.
      */
-    public static TripSummary createTripSummary(String tripRequestId, String batchId, LocalDate createDate) throws Exception {
+    public static TripSummary createTripSummary(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
         OtpResponse planResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
         TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId, batchId);
         if (createDate != null) {
@@ -148,7 +151,7 @@ public class PersistenceTestUtils {
     /**
      * Create trip summary from static plan error response file and store in database.
      */
-    public static TripSummary createTripSummaryWithError(String tripRequestId, String batchId, LocalDate createDate) throws Exception {
+    public static TripSummary createTripSummaryWithError(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
         OtpResponse planErrorResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse();
         TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId, batchId);
         if (createDate != null) {
@@ -168,7 +171,7 @@ public class PersistenceTestUtils {
     /**
      * Create multiple trip requests and store in database.
      */
-    public static List<TripRequest> createTripRequests(int amount, String userId, LocalDate createDate) {
+    public static List<TripRequest> createTripRequests(int amount, String userId, LocalDateTime createDate) {
         List<TripRequest> tripRequests = new ArrayList<>();
         int i = 0;
         while (i < amount) {

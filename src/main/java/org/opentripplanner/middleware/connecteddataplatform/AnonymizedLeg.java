@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
+import org.opentripplanner.middleware.utils.Coordinates;
+
 import java.util.Date;
 
 /**
@@ -15,8 +17,10 @@ public class AnonymizedLeg {
     public Date endTime;
     public String mode;
     public Boolean transitLeg;
-    public AnonymizedPlace from;
-    public AnonymizedPlace to;
+    public String fromStop;
+    public Coordinates from;
+    public String toStop;
+    public Coordinates to;
 
     // Parameters for a transit leg.
     public String agencyId;
@@ -30,9 +34,6 @@ public class AnonymizedLeg {
     public String tripId;
 
     // Parameters for non transit leg.
-    public Boolean hailedCar;
-    public Boolean rentedBike;
-    public Boolean rentedCar;
     public Boolean rentedVehicle;
 
 
