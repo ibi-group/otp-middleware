@@ -123,3 +123,4 @@ jobs:
           repository: public.ecr.aws/s2a5w2n9
           add_git_labels: true
           tag_with_ref: true
+          tags: otp-middleware:${{ github.sha }}, otp-middleware:latest
