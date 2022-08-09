@@ -278,8 +278,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
         // Confirm that the user's trip request saved to file contains the expected batch ids.
         assertNotNull(anonymizedTripRequests);
-        assertTrue(anonymizedTripRequests.stream().anyMatch(anonymizedTripRequest -> anonymizedTripRequest.batchId.equals(batchIdOne)));
-        assertTrue(anonymizedTripRequests.stream().anyMatch(anonymizedTripRequest -> anonymizedTripRequest.batchId.equals(batchIdTwo)));
+        assertTrue(anonymizedTripRequests.stream().anyMatch(anonymizedTripRequest -> anonymizedTripRequest.requestId.equals(batchIdOne)));
+        assertTrue(anonymizedTripRequests.stream().anyMatch(anonymizedTripRequest -> anonymizedTripRequest.requestId.equals(batchIdTwo)));
 
         ConnectedDataManager.removeUsersTripHistory(userIdOne);
         TripHistoryUploadJob.processTripHistory(true);
@@ -290,8 +290,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
         assertNotNull(anonymizedTripRequests);
         // Confirm that once the user's trip data has been removed the file contents only the second batch id.
-        assertFalse(anonymizedTripRequests.stream().anyMatch(anonymizedTripRequest -> anonymizedTripRequest.batchId.equals(batchIdOne)));
-        assertTrue(anonymizedTripRequests.stream().anyMatch(anonymizedTripRequest -> anonymizedTripRequest.batchId.equals(batchIdTwo)));
+        assertFalse(anonymizedTripRequests.stream().anyMatch(anonymizedTripRequest -> anonymizedTripRequest.requestId.equals(batchIdOne)));
+        assertTrue(anonymizedTripRequests.stream().anyMatch(anonymizedTripRequest -> anonymizedTripRequest.requestId.equals(batchIdTwo)));
     }
 
     /**
