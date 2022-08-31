@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   otp-middleware:
-    image: milesgrantibigroup/otp-middleware-test:latest
+    image: public.ecr.aws/s2a5w2n9/otp-middleware:latest
     ports:
       - "4567:4567"
     volumes:
