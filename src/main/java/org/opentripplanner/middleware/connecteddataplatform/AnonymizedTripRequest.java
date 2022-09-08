@@ -22,7 +22,7 @@ public class AnonymizedTripRequest {
     /**
      * Batch Id. Id for trip requests planned together but representing different modes.
      */
-    public String batchId;
+    public String requestId;
 
     /**
      * From place. Trip starting point.
@@ -41,7 +41,7 @@ public class AnonymizedTripRequest {
     public String time;
 
     /** Either 'arrive by' or 'depart at'. */
-    public AnonymousTripType tripType;
+    public AnonymousTripType timeSelection;
 
     /** Transit modes selected by user. */
     public List<String> mode;
@@ -69,7 +69,7 @@ public class AnonymizedTripRequest {
     }
 
     public AnonymizedTripRequest(TripRequest tripRequest, FindIterable<TripSummary> tripSummaries) {
-        this.batchId = tripRequest.batchId;
+        this.requestId = tripRequest.batchId;
         this.fromPlace = getPlaceCoordinates(tripSummaries, true, tripRequest.fromPlace);
         this.toPlace = getPlaceCoordinates(tripSummaries, false, tripRequest.toPlace);
         if (tripRequest.requestParameters != null) {
@@ -77,9 +77,9 @@ public class AnonymizedTripRequest {
             this.time = tripRequest.requestParameters.get("time");
             String isArriveBy = tripRequest.requestParameters.get("arriveBy");
             if (isArriveBy != null && isArriveBy.equalsIgnoreCase("true")) {
-                this.tripType = AnonymousTripType.ARRIVE_BY;
+                this.timeSelection = AnonymousTripType.ARRIVE_BY;
             } else if (isArriveBy != null && isArriveBy.equalsIgnoreCase("false")) {
-                this.tripType = AnonymousTripType.DEPART_AT;
+                this.timeSelection = AnonymousTripType.DEPART_AT;
             }
             this.mode = getModes(tripRequest.requestParameters.get("mode"));
             this.maxWalkDistance = tripRequest.requestParameters.get("maxWalkDistance");
