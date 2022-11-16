@@ -227,8 +227,10 @@ public class OtpRequestProcessor implements Endpoint {
      * @return Returns false if there was an error.
      */
     private static boolean handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse, OtpUser otpUser) {
+        return handlePlanTripResponse(request.queryParams("batchId"), request.queryParams("fromPlace"), request.queryParams("toPlace"), otpDispatcherResponse, otpUser);
+    }
+    private static boolean handlePlanTripResponse(String batchId, String fromPlace, String toPlace, OtpDispatcherResponse otpDispatcherResponse, OtpUser otpUser) {
         boolean result = true;
-        String batchId = request.queryParams("batchId");
         if (batchId == null) {
             batchId = BATCH_ID_NOT_PROVIDED;
         }
@@ -249,8 +251,8 @@ public class OtpRequestProcessor implements Endpoint {
                 TripRequest tripRequest = new TripRequest(
                     otpUser.id,
                     batchId,
-                    request.queryParams("fromPlace"),
-                    request.queryParams("toPlace"),
+                    fromPlace,
+                    toPlace,
                     otpResponse.requestParameters
                 );
                 // only save trip summary if the trip request was saved

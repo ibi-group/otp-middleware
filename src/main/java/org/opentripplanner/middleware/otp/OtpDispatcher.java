@@ -27,6 +27,11 @@ public class OtpDispatcher {
      */
     public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
 
+    /**
+     * Location of the OTP GraphQL endpoint (e.g. /routers/default/index/graphql).
+     */
+    public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/routers/default/index/graphql");
+
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
     /**
