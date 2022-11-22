@@ -7,6 +7,7 @@ import io.github.manusant.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,6 +27,7 @@ import org.opentripplanner.middleware.utils.HttpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
+import spark.Response;
 
 import javax.ws.rs.core.MediaType;
 import java.util.List;
@@ -35,6 +37,7 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.checkUser;
 import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.controllers.api.ApiController.USER_ID_PARAM;
+import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromJSON;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -151,8 +154,8 @@ public class OtpRequestProcessor implements Endpoint {
      * Since we will use the REST API (GET) for routing requests for the foreseeable future the
      * POST requests are not logged.
      */
-    private String proxyPost(Request request, spark.Response response) {
-        checkUserPermissions(request);
+    private String proxyPost(Request request, Response response) {
+        OtpUser otpUser = checkUserPermissions(request);
 
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replaceFirst(basePath, "");
@@ -164,13 +167,51 @@ public class OtpRequestProcessor implements Endpoint {
             }
         });
 
+        String requestBody = request.body();
+
         OtpDispatcherResponse otpDispatcherResponse = OtpDispatcher.sendOtpPostRequest(
                 otpVersion,
                 request.queryString(),
                 otpRequestPath,
                 headers,
-                request.body()
+                requestBody
         );
+
+        // If the request path ends with the graphQL endpoint (e.g., '/graphql'), process response.
+        if (otpRequestPath.endsWith(OtpDispatcher.OTP_GRAPHQL_ENDPOINT) && otpUser != null) {
+            try {
+                /*
+                * Inserting the from and to place directly into the graphQL request is *not* supported.
+                * Since these requests are only consumed by the CDP if a user has consented, we know
+                * that all CDP-applicable requests will originate from OTP-RR or other projects
+                * which are aware of the middleware's existence. We can therefore assume that
+                * the requests will use graphQL variables, the way that OTP-RR does.
+                *
+                * Other requests will still be proxied, just not stored.
+                */
+                Map graphQlVariables = (Map) getPOJOFromJSON(requestBody, Map.class).get("variables");
+
+                String fromPlace = (String) graphQlVariables.get("fromPlace");
+                String toPlace = (String) graphQlVariables.get("toPlace");
+
+                // Follows the method used in otp-ui core-utils storage.js
+                String randomBatchId = Integer.toString((int) (Math.random() * 1_000_000_000), 36);
+
+                if(!handlePlanTripResponse(randomBatchId, fromPlace, toPlace, otpDispatcherResponse, otpUser)) {
+                    logMessageAndHalt(
+                            request,
+                            HttpStatus.INTERNAL_SERVER_ERROR_500,
+                            "Failed to save trip history."
+                    );
+                    return null;
+                }
+            } catch(JsonProcessingException e) {
+                LOG.warn("Invalid GraphQL Request received. Still passing to OTP2: " + e.getMessage());
+            } catch(NullPointerException e) {
+                LOG.warn("Failed to read variables from GraphQL Plan request. Still passing to OTP2: " + e.getMessage());
+            }
+
+        }
 
         // provide response to requester as received from OTP server
         Arrays.stream(otpDispatcherResponse.headers).forEach(header -> response.header(header.getName(), header.getValue()));
