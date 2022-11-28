@@ -189,7 +189,7 @@ public class OtpRequestProcessor implements Endpoint {
                 *
                 * Other requests will still be proxied, just not stored.
                 */
-                Map graphQlVariables = (Map) getPOJOFromJSON(requestBody, Map.class).get("variables");
+                HashMap graphQlVariables = (HashMap) getPOJOFromJSON(requestBody, Map.class).get("variables");
 
                 String fromPlace = (String) graphQlVariables.get("fromPlace");
                 String toPlace = (String) graphQlVariables.get("toPlace");
@@ -206,9 +206,9 @@ public class OtpRequestProcessor implements Endpoint {
                     return null;
                 }
             } catch(JsonProcessingException e) {
-                LOG.warn("Invalid GraphQL Request received. Still passing to OTP2: " + e.getMessage());
+                LOG.warn("Invalid GraphQL Request received. Still passing to OTP2: {}", e.getMessage());
             } catch(NullPointerException e) {
-                LOG.warn("Failed to read variables from GraphQL Plan request. Still passing to OTP2: " + e.getMessage());
+                LOG.warn("Failed to read variables from GraphQL Plan request. Still passing to OTP2: {}", e.getMessage());
             }
 
         }
@@ -267,10 +267,27 @@ public class OtpRequestProcessor implements Endpoint {
      *
      * @return Returns false if there was an error.
      */
-    private static boolean handlePlanTripResponse(Request request, OtpDispatcherResponse otpDispatcherResponse, OtpUser otpUser) {
-        return handlePlanTripResponse(request.queryParams("batchId"), request.queryParams("fromPlace"), request.queryParams("toPlace"), otpDispatcherResponse, otpUser);
+    private static boolean handlePlanTripResponse(
+            Request request,
+            OtpDispatcherResponse otpDispatcherResponse,
+            OtpUser otpUser
+    ) {
+        return handlePlanTripResponse(
+                request.queryParams("batchId"),
+                request.queryParams("fromPlace"),
+                request.queryParams("toPlace"),
+                otpDispatcherResponse,
+                otpUser
+        );
     }
-    private static boolean handlePlanTripResponse(String batchId, String fromPlace, String toPlace, OtpDispatcherResponse otpDispatcherResponse, OtpUser otpUser) {
+
+    private static boolean handlePlanTripResponse(
+            String batchId,
+            String fromPlace,
+            String toPlace,
+            OtpDispatcherResponse otpDispatcherResponse,
+            OtpUser otpUser
+    ) {
         boolean result = true;
         if (batchId == null) {
             batchId = BATCH_ID_NOT_PROVIDED;
