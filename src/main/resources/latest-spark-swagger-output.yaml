@@ -2212,6 +2212,10 @@ definitions:
         type: "string"
       routeLongName:
         type: "string"
+      routeColor:
+        type: "string"
+      routeTextColor:
+        type: "string"
       alerts:
         type: "array"
         items:
