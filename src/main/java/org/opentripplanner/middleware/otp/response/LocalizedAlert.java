@@ -9,9 +9,11 @@ public class LocalizedAlert {
     public String alertUrl;
     public Date effectiveStartDate;
 
+    public Date effectiveEndDate;
+
     @Override
     public int hashCode() {
-        return Objects.hash(alertHeaderText, alertDescriptionText, alertUrl, effectiveStartDate);
+        return Objects.hash(alertHeaderText, alertDescriptionText, alertUrl, effectiveStartDate, effectiveEndDate);
     }
 
     public boolean equals(Object o) {
