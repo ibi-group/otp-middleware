@@ -228,11 +228,13 @@ public class ConnectedDataManager {
                 // overwritten at the end of this method).
                 request = tripRequest;
             }
-            allUniqueModes.addAll(
-                Arrays.asList(tripRequest.requestParameters.get("mode").split(","))
-            );
+            if (request.requestParameters != null && request.requestParameters.containsKey("mode")) {
+                allUniqueModes.addAll(
+                        Arrays.asList(tripRequest.requestParameters.get("mode").split(","))
+                );
+            }
         }
-        if (request != null) {
+        if (request != null && request.requestParameters != null) {
             // Replace the mode parameter in the first request with all unique modes from across the batch.
             request.requestParameters.put("mode", StringUtils.join(allUniqueModes, ","));
         }
@@ -263,7 +265,7 @@ public class ConnectedDataManager {
                 );
             }
             return numTripRequestsWrittenToFile;
-        } catch (S3Exception | IOException e) {
+        } catch (Exception e) {
             BugsnagReporter.reportErrorToBugsnag(
                 String.format("Failed to process trip data for (%s)", hourToBeAnonymized),
                 e
@@ -272,6 +274,7 @@ public class ConnectedDataManager {
         } finally {
             // Delete the temporary files. This is done here in case the S3 upload fails.
             try {
+                LOG.error("Deleting CDP zip file {} as an error occurred while processing the data it was supposed to contain.", tempZipFile);
                 FileUtils.deleteFile(tempDataFile);
                 if (!isTest) {
                     FileUtils.deleteFile(tempZipFile);
