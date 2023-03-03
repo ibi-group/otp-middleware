@@ -409,6 +409,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canHandleMissingPlaceCoordinates() throws Exception {
+        assumeTrue(IS_END_TO_END);
+
         String userId = UUID.randomUUID().toString();
         String batchId = "missing-coords";
         String mode = "WALK,BUS,RAIL,TRAM";
@@ -459,6 +461,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canHandleMissingModes() throws Exception {
+        assumeTrue(IS_END_TO_END);
+
         String userId = UUID.randomUUID().toString();
         String batchId = "missing-modes";
         TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(
