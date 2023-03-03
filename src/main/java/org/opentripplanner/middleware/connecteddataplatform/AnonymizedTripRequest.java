@@ -20,7 +20,7 @@ import java.util.List;
 public class AnonymizedTripRequest {
 
     /**
-     * Batch Id. Id for trip requests planned together but representing different modes.
+     * Request Id. Id for trip requests planned together but representing different modes.
      */
     public String requestId;
 
