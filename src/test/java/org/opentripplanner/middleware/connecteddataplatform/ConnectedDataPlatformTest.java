@@ -11,6 +11,9 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
@@ -402,5 +405,91 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         assertTrue(ConnectedDataManager.shouldProcessTripHistory("some-bucket-name"));
         assertFalse(ConnectedDataManager.shouldProcessTripHistory(null));
         assertFalse(ConnectedDataManager.shouldProcessTripHistory(""));
+    }
+
+    @Test
+    void canHandleMissingPlaceCoordinates() throws Exception {
+        assumeTrue(IS_END_TO_END);
+
+        String userId = UUID.randomUUID().toString();
+        String batchId = "missing-coords";
+        String mode = "WALK,BUS,RAIL,TRAM";
+        TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(
+            userId,
+            batchId,
+            DateTimeUtils.convertToDate(PREVIOUS_WHOLE_HOUR_FROM_NOW),
+            mode
+        );
+
+        // Remove coordinates from trip request and update.
+        tripRequestOne.fromPlace = "Airport, Stansted, Essex, England :: ";
+        tripRequestOne.toPlace = "Airport, Glasgow Airport, Glasgow, Scotland :: ";
+        Persistence.tripRequests.replace(tripRequestOne.id, tripRequestOne);
+        tripRequests.clear();
+        tripRequests.add(tripRequestOne);
+
+        OtpResponse planResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        for (Itinerary itinerary : planResponse.plan.itineraries) {
+            for (Leg leg : itinerary.legs) {
+                // Set all legs to transit so that the coordinates are extracted.
+                leg.transitLeg = true;
+            }
+        }
+        tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestOne.id, batchId);
+        Persistence.tripSummaries.create(tripSummary);
+
+        TripHistoryUploadJob.stageUploadHours();
+        TripHistoryUploadJob.processTripHistory(true);
+        zipFileName = getFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
+        tempFile = String.join(
+            "/",
+            FileUtils.getTempDirectory().getAbsolutePath(),
+            zipFileName
+        );
+        String fileContents = getContentsOfFileInZip(
+            tempFile,
+            getFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+        );
+        List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
+        assertNotNull(anonymizedTripRequests);
+        // Confirm that all missing lat/lon's have the default value of 0.
+        assertEquals(0, anonymizedTripRequests.get(0).fromPlace.lat);
+        assertEquals(0, anonymizedTripRequests.get(0).fromPlace.lon);
+        assertEquals(0, anonymizedTripRequests.get(0).toPlace.lat);
+        assertEquals(0, anonymizedTripRequests.get(0).toPlace.lon);
+    }
+
+    @Test
+    void canHandleMissingModes() throws Exception {
+        assumeTrue(IS_END_TO_END);
+
+        String userId = UUID.randomUUID().toString();
+        String batchId = "missing-modes";
+        TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(
+            userId,
+            batchId,
+            DateTimeUtils.convertToDate(PREVIOUS_WHOLE_HOUR_FROM_NOW),
+            null,
+            false
+        );
+        tripRequests.clear();
+        tripRequests.add(tripRequestOne);
+        tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
+        TripHistoryUploadJob.stageUploadHours();
+        TripHistoryUploadJob.processTripHistory(true);
+        zipFileName = getFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
+        tempFile = String.join(
+            "/",
+            FileUtils.getTempDirectory().getAbsolutePath(),
+            zipFileName
+        );
+        String fileContents = getContentsOfFileInZip(
+            tempFile,
+            getFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+        );
+        List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
+        assertNotNull(anonymizedTripRequests);
+        // Confirm that no modes are included in the anonymized trip request.
+        assertEquals("", anonymizedTripRequests.get(0).mode.get(0));
     }
 }

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Utility class to aid with creating and storing objects in Mongo.
@@ -90,16 +91,21 @@ public class PersistenceTestUtils {
      * Create trip request and store in database.
      */
     public static TripRequest createTripRequest(String userId, String batchId, Date createDate, String mode) {
+        return createTripRequest(userId, batchId, createDate, mode, true);
+    }
+
+    /**
+     * Create trip request and store in database.
+     */
+    public static TripRequest createTripRequest(String userId, String batchId, Date createDate, String mode, boolean provideMode) {
         String fromPlace = "Airport, College Park, GA, USA :: 33.64070037704429,-84.44622866991179";
         String toPlace = "177 Gibson Street SE, Atlanta, GA, USA :: 33.748893261983575,-84.35611735540574";
         HashMap<String, String> requestParameters = new HashMap<>();
         requestParameters.put("date", " 2021-09-22");
         requestParameters.put("time", "15:54");
         requestParameters.put("arriveBy", "false");
-        if (mode != null) {
-            requestParameters.put("mode", mode);
-        } else {
-            requestParameters.put("mode", "WALK,BUS,RAIL");
+        if (provideMode) {
+            requestParameters.put("mode", Objects.requireNonNullElse(mode, "WALK,BUS,RAIL"));
         }
         requestParameters.put("showIntermediateStops", "true");
         requestParameters.put("maxWalkDistance", "1027");

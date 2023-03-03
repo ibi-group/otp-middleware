@@ -20,7 +20,7 @@ import java.util.List;
 public class AnonymizedTripRequest {
 
     /**
-     * Batch Id. Id for trip requests planned together but representing different modes.
+     * Request Id. Id for trip requests planned together but representing different modes.
      */
     public String requestId;
 
@@ -118,6 +118,10 @@ public class AnonymizedTripRequest {
         // If that happens, the format will just be lat,lon and :: will not be present.
         String coordinate = (place.contains("::")) ? place.split("::")[1].trim() : place;
         String[] coordinateValues = coordinate.split(",");
+        if (coordinateValues.length != 2) {
+            return new Coordinates(0.0,0.0);
+        }
+
         return new Coordinates(
             Double.parseDouble(coordinateValues[0]),
             Double.parseDouble(coordinateValues[1])
