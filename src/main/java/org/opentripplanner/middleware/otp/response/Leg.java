@@ -51,6 +51,8 @@ public class Leg implements Cloneable {
     public List<EncodedPolyline> interStopGeometry = null;
     public String routeShortName;
     public String routeLongName;
+    public String routeColor;
+    public String routeTextColor;
     public List<LocalizedAlert> alerts = null;
     public String headsign;
 
