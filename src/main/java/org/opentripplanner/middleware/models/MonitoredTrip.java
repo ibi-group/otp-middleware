@@ -12,7 +12,6 @@ import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
-import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
@@ -193,11 +192,11 @@ public class MonitoredTrip extends Model {
      *                     or just the days the trip is set to be monitored.
      * @return a summary of the itinerary existence results for each day of the week
      */
-    public boolean checkItineraryExistence(boolean checkAllDays, boolean replaceItinerary, OtpVersion otpVersion) throws URISyntaxException {
+    public boolean checkItineraryExistence(boolean checkAllDays, boolean replaceItinerary) throws URISyntaxException {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries(checkAllDays);
         this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary, this.arriveBy);
-        this.itineraryExistence.checkExistence(otpVersion);
+        this.itineraryExistence.checkExistence();
         boolean itineraryExists = this.itineraryExistence.allCheckedDaysAreValid();
         // If itinerary should be replaced, do so if all checked days are valid.
         return replaceItinerary && itineraryExists

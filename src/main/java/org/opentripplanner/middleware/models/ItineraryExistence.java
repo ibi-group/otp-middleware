@@ -172,7 +172,7 @@ public class ItineraryExistence extends Model {
     /**
      * Checks whether the itinerary of a trip matches any of the OTP itineraries from the trip query params.
      */
-    public void checkExistence(OtpVersion otpVersion) {
+    public void checkExistence() {
         // TODO: Consider multi-threading?
         // Check existence of itinerary in the response for each OTP request.
         for (OtpRequest otpRequest : otpRequests) {
@@ -186,7 +186,7 @@ public class ItineraryExistence extends Model {
                 setResultForDayOfWeek(result, dayOfWeek);
             }
             // Send off each plan query to OTP.
-            OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(otpVersion, otpRequest);
+            OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP1, otpRequest);
             TripPlan plan = null;
             try {
                 plan = response.getResponse().plan;
