@@ -171,8 +171,7 @@ public class ConfigUtils {
         return hasConfigProperty(envConfig, name);
     }
 
-    /**
-     * Returns true if the given config has the requested property.
+    /** * Returns true if the given config has the requested property.
      *
      * @param config The root config object
      * @param name   The desired property in dot notation (ex: "data.use_s3_storage")

@@ -3,10 +3,12 @@ package org.opentripplanner.middleware.controllers.api;
 import io.github.manusant.ss.ApiEndpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
+import io.github.manusant.ss.descriptor.ParameterDescriptor;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
@@ -46,6 +48,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             .post(path("/checkitinerary")
                     .withDescription("Returns the itinerary existence check results for a monitored trip.")
                     .withRequestType(MonitoredTrip.class)
+                    .withQueryParam().withName("otpVersion").withDefaultValue("1").and()
                     .withProduces(JSON_ONLY)
                     .withResponses(SwaggerUtils.createStandardResponses(ItineraryExistence.class)),
                 MonitoredTripController::checkItinerary, JsonUtils::toJson);
@@ -63,10 +66,12 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
         preCreateOrUpdateChecks(monitoredTrip, req);
 
+        OtpVersion otpVersion = OtpVersion.getOtpVersionFromRequest(req);
+
         try {
             // Check itinerary existence and replace the provided trip's itinerary with a verified, non-realtime
             // version of it.
-            boolean success = monitoredTrip.checkItineraryExistence(false, true);
+            boolean success = monitoredTrip.checkItineraryExistence(false, true, otpVersion);
             if (!success) {
                 logMessageAndHalt(
                     req,
@@ -123,7 +128,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     /**
      * Processes the {@link MonitoredTrip} query parameters, so the trip's fields match the query parameters.
-     * If an error occurs regarding the query params, returns a HTTP 400 status.
+     * If an error occurs regarding the query params, returns an HTTP 400 status.
      */
     private void processTripQueryParams(MonitoredTrip monitoredTrip, Request req) {
         try {
@@ -140,7 +145,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     MonitoredTrip preUpdateHook(MonitoredTrip monitoredTrip, MonitoredTrip preExisting, Request req) {
-        // lock the trip so that the a CheckMonitoredTrip job won't concurrently analyze/update the trip.
+        // lock the trip so that the CheckMonitoredTrip job won't concurrently analyze/update the trip.
         MonitoredTripLocks.lockTripForUpdating(monitoredTrip, req);
 
         try {
@@ -178,9 +183,11 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     /**
      * Check itinerary existence by making OTP requests on all days of the week.
+     *
      * @return The results of the itinerary existence check.
      */
     private static ItineraryExistence checkItinerary(Request request, Response response) {
+        OtpVersion otpVersion = OtpVersion.getOtpVersionFromRequest(request);
         MonitoredTrip trip;
         try {
             trip = getPOJOFromRequestBody(request, MonitoredTrip.class);
@@ -190,7 +197,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         }
         try {
             trip.initializeFromItineraryAndQueryParams();
-            trip.checkItineraryExistence(true, false);
+            trip.checkItineraryExistence(true, false, otpVersion);
         } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
             logMessageAndHalt(
                 request,
