@@ -938,6 +938,11 @@ paths:
       produces:
       - "application/json"
       parameters:
+      - name: "otpVersion"
+        in: "query"
+        required: false
+        type: "string"
+        default: "1"
       - in: "body"
         name: "body"
         description: "Body object description"
