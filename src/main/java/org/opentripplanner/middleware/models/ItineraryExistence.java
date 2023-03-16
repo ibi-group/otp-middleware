@@ -171,6 +171,7 @@ public class ItineraryExistence extends Model {
 
     /**
      * Checks whether the itinerary of a trip matches any of the OTP itineraries from the trip query params.
+     * @param otpVersion OtpVersion of the server
      */
     public void checkExistence(OtpVersion otpVersion) {
         // TODO: Consider multi-threading?

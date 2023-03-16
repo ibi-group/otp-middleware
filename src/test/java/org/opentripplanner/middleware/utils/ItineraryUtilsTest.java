@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpRequest;
+import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
@@ -126,7 +127,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         Itinerary expectedItinerary = mockOtpResponses.get(0).plan.itineraries.get(0);
         trip.itinerary = expectedItinerary;
 
-        trip.checkItineraryExistence(false, false);
+        trip.checkItineraryExistence(false, false, OtpVersion.OTP1);
         ItineraryExistence existence = trip.itineraryExistence;
 
         boolean allDaysValid = !insertInvalidDay;

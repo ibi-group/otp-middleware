@@ -191,6 +191,8 @@ public class MonitoredTrip extends Model {
      * Checks that, for each query provided, an itinerary exists.
      * @param checkAllDays Determines whether all days of the week are checked,
      *                     or just the days the trip is set to be monitored.
+     * @param replaceItinerary
+     * @param otpVersion OtpVersion of the server
      * @return a summary of the itinerary existence results for each day of the week
      */
     public boolean checkItineraryExistence(boolean checkAllDays, boolean replaceItinerary, OtpVersion otpVersion) throws URISyntaxException {
