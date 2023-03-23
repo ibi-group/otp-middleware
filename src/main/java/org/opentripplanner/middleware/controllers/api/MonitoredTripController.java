@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.controllers.api;
 import io.github.manusant.ss.ApiEndpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
-import io.github.manusant.ss.descriptor.ParameterDescriptor;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.ItineraryExistence;

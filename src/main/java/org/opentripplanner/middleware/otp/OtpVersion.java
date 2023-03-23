@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.otp;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpStatus;
 import spark.Request;
 
@@ -31,21 +30,26 @@ public enum OtpVersion {
     }
     public String toString() { return name; }
 
-    public static OtpVersion intToVersion(int versionAsInt) {
-        switch(versionAsInt) {
+    private static OtpVersion getOtpVersion(int version) {
+        switch(version) {
+            case 2:
+                return OTP2;
             case 1:
             default:
                 return OTP1;
-            case 2:
-                return OTP2;
         }
     }
 
+    /**
+     * Gets an OTP version from the Spark request header
+     * @param request Spark request object
+     * @return OtpVersion specified in request
+     */
     public static OtpVersion getOtpVersionFromRequest(Request request) {
         try {
-            return intToVersion(Integer.parseInt(request.queryParamOrDefault("otpVersion", "1")));
+            return getOtpVersion(Integer.parseInt(request.queryParamOrDefault("otpVersion", "1")));
         } catch (NumberFormatException e) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing otpVersion parameter", e);
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing otpVersion parameter.", e);
             return null;
         }
     }
