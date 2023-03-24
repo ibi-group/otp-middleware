@@ -30,6 +30,11 @@ public enum OtpVersion {
     }
     public String toString() { return name; }
 
+    /**
+     * Converts integer to OTP Version object.
+     * @param version Version number as an integer
+     * @return OtpVersion object
+     */
     private static OtpVersion getOtpVersion(int version) {
         switch(version) {
             case 2:
