@@ -35,7 +35,8 @@ public enum OtpVersion {
      * @param version Version number as an integer
      * @return OtpVersion object
      */
-    private static OtpVersion getOtpVersion(int version) {
+    public static OtpVersion getOtpVersion(int version) {
+
         switch(version) {
             case 2:
                 return OTP2;

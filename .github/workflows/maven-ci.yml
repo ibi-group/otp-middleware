@@ -52,6 +52,7 @@ jobs:
           OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
           OTP_TIMEZONE: ${{ secrets.OTP_TIMEZONE }}
           OTP_UI_URL: ${{ secrets.OTP_UI_URL }}
+          OTP_VERSION: ${{ secrets.OTP_VERSION }}
           SPARKPOST_KEY: ${{ secrets.SPARKPOST_KEY }}
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
@@ -82,6 +83,7 @@ jobs:
           OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
           OTP_TIMEZONE: ${{ secrets.OTP_TIMEZONE }}
           OTP_UI_URL: ${{ secrets.OTP_UI_URL }}
+          OTP_VERSION: ${{ secrets.OTP_VERSION }}
           SPARKPOST_KEY: ${{ secrets.SPARKPOST_KEY }}
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}

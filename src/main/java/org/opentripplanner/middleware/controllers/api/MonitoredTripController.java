@@ -47,7 +47,6 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             .post(path("/checkitinerary")
                     .withDescription("Returns the itinerary existence check results for a monitored trip.")
                     .withRequestType(MonitoredTrip.class)
-                    .withQueryParam().withName("otpVersion").withDefaultValue("1").and()
                     .withProduces(JSON_ONLY)
                     .withResponses(SwaggerUtils.createStandardResponses(ItineraryExistence.class)),
                 MonitoredTripController::checkItinerary, JsonUtils::toJson);
@@ -186,7 +185,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      * @return The results of the itinerary existence check.
      */
     private static ItineraryExistence checkItinerary(Request request, Response response) {
-        OtpVersion otpVersion = OtpVersion.getOtpVersionFromRequest(request);
+        OtpVersion otpVersion = OtpVersion.getOtpVersion(getConfigPropertyAsInt("OTP_VERSION", 1));
         MonitoredTrip trip;
         try {
             trip = getPOJOFromRequestBody(request, MonitoredTrip.class);
