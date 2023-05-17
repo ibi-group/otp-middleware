@@ -112,7 +112,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         if (verification.getStatus().equals("pending")) {
             otpUser.phoneNumber = phoneNumber;
             otpUser.isPhoneNumberVerified = false;
-            otpUser.notificationChannel = "sms";
+            otpUser.notificationChannel.add(OtpUser.Notification.SMS);
             Persistence.otpUsers.replace(otpUser.id, otpUser);
         }
 

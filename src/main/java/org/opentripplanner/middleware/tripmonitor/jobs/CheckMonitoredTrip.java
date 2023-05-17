@@ -403,23 +403,18 @@ public class CheckMonitoredTrip implements Runnable {
         );
         // FIXME: Change log level
         LOG.info("Sending notification to user {}", trip.userId);
-        boolean success = false;
-        // FIXME: This needs to be an enum.
-        switch (otpUser.notificationChannel.toLowerCase()) {
-            case "sms":
-                success = sendSMS(otpUser, templateData);
-                break;
-            case "email":
-                success = sendEmail(otpUser, templateData);
-                break;
-            case "all":
-                // TODO better handle below when one of the following fails
-                success = sendSMS(otpUser, templateData) && sendEmail(otpUser, templateData);
-                break;
-            default:
-                break;
+        boolean successEmail = false;
+        boolean successSms = false;
+
+        if (otpUser.notificationChannel.contains(OtpUser.Notification.EMAIL)) {
+            successEmail = sendEmail(otpUser, templateData);
         }
-        if (success) {
+        if (otpUser.notificationChannel.contains(OtpUser.Notification.SMS)) {
+            successSms = sendSMS(otpUser, templateData);
+        }
+
+        // TODO: better handle below when one of the following fails
+        if (successEmail || successSms) {
             notificationTimestampMillis = DateTimeUtils.currentTimeMillis();
         }
     }

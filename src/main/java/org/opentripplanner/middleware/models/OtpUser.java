@@ -1,14 +1,17 @@
 package org.opentripplanner.middleware.models;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This represents a user of an OpenTripPlanner instance (typically of the standard OTP UI/otp-react-redux).
@@ -16,6 +19,10 @@ import java.util.List;
  * can also opt-in to storing their trip planning requests/responses.
  */
 public class OtpUser extends AbstractUser {
+    public enum Notification {
+        EMAIL, PUSH, SMS
+    }
+
     public static final String AUTH0_SCOPE = "otp-user";
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(OtpUser.class);
@@ -30,11 +37,10 @@ public class OtpUser extends AbstractUser {
     public boolean isPhoneNumberVerified;
 
     /**
-     * Notification preference for this user
-     * ("email", "sms", or "none").
-     * TODO: Convert to enum. See http://mongodb.github.io/mongo-java-driver/3.7/bson/pojos/ for guidance.
+     * Notification preferences for this user
+     * (EMAIL and/or SMS and/or PUSH).
      */
-    public String notificationChannel;
+    public EnumSet<OtpUser.Notification> notificationChannel = EnumSet.noneOf(OtpUser.Notification.class);
 
     /**
      * Verified phone number for SMS notifications, in +15551234 format (E.164 format, includes country code, no spaces).
@@ -105,4 +111,31 @@ public class OtpUser extends AbstractUser {
         return super.canBeManagedBy(requestingUser);
     }
 
+    /**
+     * Get notification channels as comma-separated list in one string
+     */
+    @JsonGetter(value = "notificationChannel")
+    public String getNotificationChannel() {
+        return notificationChannel.stream()
+            .map(channel -> channel.name().toLowerCase())
+            .collect(Collectors.joining(","));
+    }
+
+    /**
+     * Set notification channels based on comma-separated list in one string
+     */
+    @JsonSetter(value = "notificationChannel")
+    public void setNotificationChannel(String channels) {
+        Stream.of(channels.split(","))
+            .filter(Objects::nonNull)
+            .map(str -> str.trim().toUpperCase())
+            .filter(str -> !str.isEmpty())
+            .forEach(channel -> {
+                try {
+                    notificationChannel.add(Enum.valueOf(OtpUser.Notification.class, channel));
+                } catch (Exception e) {
+                    LOG.error("Notification channel \"{}\" is not valid", channel);
+                }
+            });
+    }
 }
