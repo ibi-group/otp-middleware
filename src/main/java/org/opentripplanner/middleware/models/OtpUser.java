@@ -126,16 +126,20 @@ public class OtpUser extends AbstractUser {
      */
     @JsonSetter(value = "notificationChannel")
     public void setNotificationChannel(String channels) {
-        Stream.of(channels.split(","))
-            .filter(Objects::nonNull)
-            .map(str -> str.trim().toUpperCase())
-            .filter(str -> !str.isEmpty())
-            .forEach(channel -> {
-                try {
-                    notificationChannel.add(Enum.valueOf(OtpUser.Notification.class, channel));
-                } catch (Exception e) {
-                    LOG.error("Notification channel \"{}\" is not valid", channel);
-                }
-            });
+        if (channels.isEmpty() || "none".equals(channels)) {
+            notificationChannel.clear();
+        } else {
+            Stream.of(channels.split(","))
+                .filter(Objects::nonNull)
+                .map(str -> str.trim().toUpperCase())
+                .filter(str -> !str.isEmpty())
+                .forEach(channel -> {
+                    try {
+                        notificationChannel.add(Enum.valueOf(OtpUser.Notification.class, channel));
+                    } catch (Exception e) {
+                        LOG.error("Notification channel \"{}\" is not valid", channel);
+                    }
+                });
+        }
     }
 }
