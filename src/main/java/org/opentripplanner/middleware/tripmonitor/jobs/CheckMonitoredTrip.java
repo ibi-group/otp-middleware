@@ -404,17 +404,21 @@ public class CheckMonitoredTrip implements Runnable {
         // FIXME: Change log level
         LOG.info("Sending notification to user {}", trip.userId);
         boolean successEmail = false;
+        boolean successPush = false;
         boolean successSms = false;
 
         if (otpUser.notificationChannel.contains(OtpUser.Notification.EMAIL)) {
             successEmail = sendEmail(otpUser, templateData);
+        }
+        if (otpUser.notificationChannel.contains(OtpUser.Notification.PUSH)) {
+            successPush = sendPush(otpUser, templateData);
         }
         if (otpUser.notificationChannel.contains(OtpUser.Notification.SMS)) {
             successSms = sendSMS(otpUser, templateData);
         }
 
         // TODO: better handle below when one of the following fails
-        if (successEmail || successSms) {
+        if (successEmail || successPush || successSms) {
             notificationTimestampMillis = DateTimeUtils.currentTimeMillis();
         }
     }
@@ -424,6 +428,13 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private boolean sendSMS(OtpUser otpUser, Map<String, Object> data) {
         return NotificationUtils.sendSMS(otpUser, "MonitoredTripSms.ftl", data) != null;
+    }
+
+    /**
+     * Send push notification.
+     */
+    private boolean sendPush(OtpUser otpUser, Map<String, Object> data) {
+        return NotificationUtils.sendPush(otpUser, "MonitoredTripText.ftl", data) != null;
     }
 
     /**
