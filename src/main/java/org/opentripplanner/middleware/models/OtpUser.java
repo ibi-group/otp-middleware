@@ -53,6 +53,11 @@ public class OtpUser extends AbstractUser {
      */
     public String preferredLocale;
 
+    /**
+     * Number of push devices associated with user email
+     */
+    public int pushDevices;
+
     /** Locations that the user has saved. */
     public List<UserLocation> savedLocations = new ArrayList<>();
 
