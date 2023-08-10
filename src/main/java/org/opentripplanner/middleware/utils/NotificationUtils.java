@@ -43,7 +43,7 @@ public class NotificationUtils {
     private static final String FROM_EMAIL = getConfigPropertyAsText("NOTIFICATION_FROM_EMAIL");
     public static final String OTP_ADMIN_DASHBOARD_FROM_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_FROM_EMAIL");
     private static final String PUSH_API_KEY = getConfigPropertyAsText("PUSH_API_KEY");
-    private static final String PUSH_API_URL = "https://demo.ibigroupmobile.com/ext_api";
+    private static final String PUSH_API_URL = getConfigPropertyAsText("PUSH_API_URL");
 
     /**
      * @param otpUser  target user
