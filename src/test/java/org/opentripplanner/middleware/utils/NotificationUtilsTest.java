@@ -20,9 +20,9 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.isRunningCi;
 import static org.opentripplanner.middleware.utils.NotificationUtils.OTP_ADMIN_DASHBOARD_FROM_EMAIL;
 
 /**
- * Contains tests for the various notification utilities to send SMS and email messages. Note: these tests require the
- * environment variables RUN_E2E=true and valid values for TEST_TO_EMAIL and TEST_TO_PHONE. Furthermore, TEST_TO_PHONE
- * must be a verified phone number in a valid Twilio account.
+ * Contains tests for the various notification utilities to send SMS, email messages, and push notifications.
+ * Note: these tests require the environment variables RUN_E2E=true and valid values for TEST_TO_EMAIL, TEST_TO_PHONE,
+ * and TEST_TO_PUSH. Furthermore, TEST_TO_PHONE must be a verified phone number in a valid Twilio account.
  */
 public class NotificationUtilsTest extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationUtilsTest.class);
@@ -35,10 +35,13 @@ public class NotificationUtilsTest extends OtpMiddlewareTestEnvironment {
     private static final String email = System.getenv("TEST_TO_EMAIL");
     /** Phone must be in the form "+15551234" and must be verified first in order to send notifications */
     private static final String phone = System.getenv("TEST_TO_PHONE");
+    /** Push notification is conventionally a user.email value and must be known to the mobile team's push API */
+    private static final String push = System.getenv("TEST_TO_PUSH");
     /**
      * Currently, since these tests require target email/SMS values, these tests should not run on CI.
      */
-    private static final boolean shouldTestsRun = !isRunningCi && IS_END_TO_END && email != null && phone != null;
+    private static final boolean shouldTestsRun =
+            !isRunningCi && IS_END_TO_END && email != null && phone != null && push != null;
 
     @BeforeAll
     public static void setup() throws IOException {
@@ -49,6 +52,17 @@ public class NotificationUtilsTest extends OtpMiddlewareTestEnvironment {
     @AfterAll
     public static void tearDown() {
         if (user != null) Persistence.otpUsers.removeById(user.id);
+    }
+
+    @Test
+    public void canSendPushNotification() {
+        String ret = NotificationUtils.sendPush(
+            // Conventionally user.email
+            push,
+            "Tough little ship!"
+        );
+        LOG.info("Push notification (ret={}) sent to {}", ret, push);
+        Assertions.assertNotNull(ret);
     }
 
     @Test
