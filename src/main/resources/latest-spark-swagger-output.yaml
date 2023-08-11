@@ -2548,11 +2548,20 @@ definitions:
       isPhoneNumberVerified:
         type: "boolean"
       notificationChannel:
-        type: "string"
+        type: "array"
+        items:
+          type: "string"
+          enum:
+          - "EMAIL"
+          - "PUSH"
+          - "SMS"
       phoneNumber:
         type: "string"
       preferredLocale:
         type: "string"
+      pushDevices:
+        type: "integer"
+        format: "int32"
       savedLocations:
         type: "array"
         items:
