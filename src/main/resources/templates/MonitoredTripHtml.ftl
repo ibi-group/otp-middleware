@@ -7,13 +7,13 @@
 
 <#macro EmailMain>
     <div>
-        <p>Your trip has the following notifications:</p>
+        <h1>Your trip has the following notifications:</h1>
         <ul>
         <#list notifications as notification>
           <li>${notification}</li>
         </#list>
         </ul>
-        <p>View trip <a href="${OTP_UI_URL}${TRIPS_PATH}/${tripId}">here</a>.
+        <p>View all of your saved trips in <a href="${OTP_UI_URL}${TRIPS_PATH}/${tripId}">${OTP_UI_NAME}</a>.</p>
     </div>
 </#macro>
 
