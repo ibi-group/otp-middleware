@@ -48,7 +48,7 @@ public class NotificationUtils {
     /**
      * @param otpUser  target user
      * @param textTemplate  template to use for email in text format
-     * @param templateData          template data
+     * @param templateData  template data
      */
     public static String sendPush(OtpUser otpUser, String textTemplate, Object templateData) {
         try {
