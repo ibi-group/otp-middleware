@@ -13,7 +13,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -53,7 +52,11 @@ public class NotificationUtils {
     public static String sendPush(OtpUser otpUser, String textTemplate, Object templateData) {
         try {
             String body = TemplateUtils.renderTemplate(textTemplate, templateData);
-            return sendPush(otpUser.email, body);
+            String toUser = otpUser.email;
+            // Calls the `get` endpoint, the only reliable way to get number of push notification devices,
+            // as the `publish` endpoint returns success for zero devices and/or if devices turn them off.
+            otpUser.pushDevices = getPushInfo(toUser);
+            return otpUser.pushDevices > 0 ? sendPush(toUser, body) : "OK";
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
             // handles Bugsnag reporting/error logging, so that is not needed here.
@@ -72,7 +75,7 @@ public class NotificationUtils {
             var jsonBody = "{\"user\":\"" + toUser + "\",\"message\":\"" + body + "\"}";
             Map<String, String> headers = Map.of("Accept", "application/json");
             var httpResponse = HttpUtils.httpRequestRawResponse(
-                URI.create(PUSH_API_URL + "/devices/get?api_key=" + PUSH_API_KEY + "&user=" + toUser),
+                URI.create(PUSH_API_URL + "/notification/publish?api_key=" + PUSH_API_KEY),
                 1000,
                 HttpMethod.POST,
                 headers,
@@ -274,5 +277,31 @@ public class NotificationUtils {
             return false;
         }
     }
-}
 
+    /**
+     * @param toUser  email address of user that devices are indexed by
+     */
+    public static int getPushInfo(String toUser) {
+        try {
+            Map<String, String> headers = Map.of("Accept", "application/json");
+            var httpResponse = HttpUtils.httpRequestRawResponse(
+                URI.create(PUSH_API_URL + "/devices/get?api_key=" + PUSH_API_KEY + "&user=" + toUser),
+                1000,
+                HttpMethod.GET,
+                headers,
+                null
+            );
+            if (httpResponse.status == 200) {
+                // We don't use any of this information, we only care how many devices are registered.
+                var devices = JsonUtils.getPOJOFromHttpBodyAsList(httpResponse, Object.class);
+                return devices.size();
+            } else {
+                LOG.error("Error {} while getting info on push notification devices", httpResponse.status);
+            }
+        } catch (Exception e) {
+            LOG.error("No info on push notification devices", e);
+        }
+        return 0;
+    }
+
+}
