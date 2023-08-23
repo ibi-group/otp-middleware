@@ -56,6 +56,7 @@ public class NotificationUtils {
             // Calls the `get` endpoint, the only reliable way to get number of push notification devices,
             // as the `publish` endpoint returns success for zero devices and/or if devices turn them off.
             otpUser.pushDevices = getPushInfo(toUser);
+            Persistence.otpUsers.replace(otpUser.id, otpUser);
             return otpUser.pushDevices > 0 ? sendPush(toUser, body) : "OK";
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
