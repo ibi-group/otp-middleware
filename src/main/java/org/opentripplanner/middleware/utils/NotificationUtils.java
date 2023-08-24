@@ -13,7 +13,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -54,10 +53,6 @@ public class NotificationUtils {
         try {
             String body = TemplateUtils.renderTemplate(textTemplate, templateData);
             String toUser = otpUser.email;
-            // Calls the `get` endpoint, the only reliable way to get number of push notification devices,
-            // as the `publish` endpoint returns success for zero devices and/or if devices turn them off.
-            otpUser.pushDevices = getPushInfo(toUser);
-            Persistence.otpUsers.replace(otpUser.id, otpUser);
             return otpUser.pushDevices > 0 ? sendPush(toUser, body) : "OK";
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
@@ -281,6 +276,9 @@ public class NotificationUtils {
     }
 
     /**
+     * Get number of push notification devices. Calls Push API's <code>get</code> endpoint, the only reliable way
+     * to obtain this value, as the <code>publish</code> endpoint returns success even for zero devices.
+     *
      * @param toUser  email address of user that devices are indexed by
      */
     public static int getPushInfo(String toUser) {

@@ -407,6 +407,13 @@ public class CheckMonitoredTrip implements Runnable {
         boolean successPush = false;
         boolean successSms = false;
 
+        // Update push notification devices count, which may change asynchronously
+        int numPushDevices = NotificationUtils.getPushInfo(otpUser.email);
+        if (numPushDevices != otpUser.pushDevices) {
+            otpUser.pushDevices = numPushDevices;
+            Persistence.otpUsers.replace(otpUser.id, otpUser);
+      	}
+
         if (otpUser.notificationChannel.contains(OtpUser.Notification.EMAIL)) {
             successEmail = sendEmail(otpUser, templateData);
         }
