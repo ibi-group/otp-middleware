@@ -378,11 +378,6 @@ public class CheckMonitoredTrip implements Runnable {
      * preferences.
      */
     private void sendNotifications() {
-        if (notifications.size() == 0) {
-            // FIXME: Change log level
-            LOG.info("No notifications queued for trip. Skipping notify.");
-            return;
-        }
         OtpUser otpUser = Persistence.otpUsers.getById(trip.userId);
         if (otpUser == null) {
             LOG.error("Cannot find user for id {}", trip.userId);
@@ -395,6 +390,11 @@ public class CheckMonitoredTrip implements Runnable {
             otpUser.pushDevices = numPushDevices;
             Persistence.otpUsers.replace(otpUser.id, otpUser);
       	}
+        if (notifications.size() == 0) {
+            // FIXME: Change log level
+            LOG.info("No notifications queued for trip. Skipping notify.");
+            return;
+        }
         // If the same notifications were just sent, there is no need to send the same notification.
         // TODO: Should there be some time threshold check here based on lastNotificationTime?
         if (previousJourneyState.lastNotifications.containsAll(notifications)) {
