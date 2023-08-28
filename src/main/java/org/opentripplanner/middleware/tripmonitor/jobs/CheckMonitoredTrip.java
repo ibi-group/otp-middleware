@@ -389,6 +389,12 @@ public class CheckMonitoredTrip implements Runnable {
             // TODO: Bugsnag / delete monitored trip?
             return;
         }
+        // Update push notification devices count, which may change asynchronously
+        int numPushDevices = NotificationUtils.getPushInfo(otpUser.email);
+        if (numPushDevices != otpUser.pushDevices) {
+            otpUser.pushDevices = numPushDevices;
+            Persistence.otpUsers.replace(otpUser.id, otpUser);
+      	}
         // If the same notifications were just sent, there is no need to send the same notification.
         // TODO: Should there be some time threshold check here based on lastNotificationTime?
         if (previousJourneyState.lastNotifications.containsAll(notifications)) {
@@ -406,13 +412,6 @@ public class CheckMonitoredTrip implements Runnable {
         boolean successEmail = false;
         boolean successPush = false;
         boolean successSms = false;
-
-        // Update push notification devices count, which may change asynchronously
-        int numPushDevices = NotificationUtils.getPushInfo(otpUser.email);
-        if (numPushDevices != otpUser.pushDevices) {
-            otpUser.pushDevices = numPushDevices;
-            Persistence.otpUsers.replace(otpUser.id, otpUser);
-      	}
 
         if (otpUser.notificationChannel.contains(OtpUser.Notification.EMAIL)) {
             successEmail = sendEmail(otpUser, templateData);
