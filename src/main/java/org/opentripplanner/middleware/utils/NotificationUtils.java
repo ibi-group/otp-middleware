@@ -51,7 +51,7 @@ public class NotificationUtils {
      */
     public static String sendPush(OtpUser otpUser, String textTemplate, Object templateData) {
         // If Push API config properties aren't set, do nothing.
-        if (PUSH_API_KEY.equals(null) || PUSH_API_URL.equals(null)) return null;
+        if (PUSH_API_KEY == null || PUSH_API_URL == null) return null;
         try {
             String body = TemplateUtils.renderTemplate(textTemplate, templateData);
             String toUser = otpUser.email;
@@ -286,7 +286,7 @@ public class NotificationUtils {
      */
     public static int getPushInfo(String toUser) {
         // If Push API config properties aren't set, no info can be obtained.
-        if (PUSH_API_KEY.equals(null) || PUSH_API_URL.equals(null)) return 0;
+        if (PUSH_API_KEY == null || PUSH_API_URL == null) return 0;
         try {
             Map<String, String> headers = Map.of("Accept", "application/json");
             var httpResponse = HttpUtils.httpRequestRawResponse(
