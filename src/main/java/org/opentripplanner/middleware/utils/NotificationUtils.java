@@ -50,6 +50,8 @@ public class NotificationUtils {
      * @param templateData  template data
      */
     public static String sendPush(OtpUser otpUser, String textTemplate, Object templateData) {
+        // If Push API config properties aren't set, do nothing.
+        if (PUSH_API_KEY.equals(null) || PUSH_API_URL.equals(null)) return null;
         try {
             String body = TemplateUtils.renderTemplate(textTemplate, templateData);
             String toUser = otpUser.email;
@@ -67,7 +69,7 @@ public class NotificationUtils {
      * @param body      message body
      * @return          "OK" if message was successful (null otherwise)
      */
-    public static String sendPush(String toUser, String body) {
+    static String sendPush(String toUser, String body) {
         try {
             var jsonBody = "{\"user\":\"" + toUser + "\",\"message\":\"" + body + "\"}";
             Map<String, String> headers = Map.of("Accept", "application/json");
@@ -280,8 +282,11 @@ public class NotificationUtils {
      * to obtain this value, as the <code>publish</code> endpoint returns success even for zero devices.
      *
      * @param toUser  email address of user that devices are indexed by
+     * @return number of devices registered, <code>0</code> can mean zero devices or an error obtaining the number
      */
     public static int getPushInfo(String toUser) {
+        // If Push API config properties aren't set, no info can be obtained.
+        if (PUSH_API_KEY.equals(null) || PUSH_API_URL.equals(null)) return 0;
         try {
             Map<String, String> headers = Map.of("Accept", "application/json");
             var httpResponse = HttpUtils.httpRequestRawResponse(
