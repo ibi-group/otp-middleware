@@ -3,9 +3,25 @@
     emails that use this must implement a macro called `EmailBody` and the whole html email will
     eventually get rendered by the statement <@HtmlEmail/>.
 -->
+<style>
+    body { 
+        padding: 1em;
+    }
+
+    h1 {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    small {
+        color: #515151
+    }
+</style>
 
 <#macro HtmlEmail>
-<div>
-    <@EmailBody/>
-</div>
+<body>
+    <div>
+        <@EmailBody/>
+    </div>
+</body>
 </#macro>

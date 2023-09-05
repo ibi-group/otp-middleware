@@ -7,19 +7,16 @@
 -->
 
 <#macro EmailBody>
-<#-- header -->
-<div>
-    <h2>An email from the ${OTP_UI_NAME}</h2>
-</div>
 <#-- main -->
 <div>
     <@EmailMain/>
 </div>
 <#-- footer -->
+<hr/>
 <div>
     <p>
         <small>
-            Manage Subscriptions <a href="${OTP_UI_URL}/#/account">here</a>.
+            You're receiving this email because you're subscribed to notifications through ${OTP_UI_NAME}. You can manage that subscription <a href="${OTP_UI_URL}/#/account">here</a>.
         </small>
     </p>
 </div>
