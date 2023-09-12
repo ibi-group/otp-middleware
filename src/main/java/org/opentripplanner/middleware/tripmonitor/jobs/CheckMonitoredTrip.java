@@ -378,15 +378,21 @@ public class CheckMonitoredTrip implements Runnable {
      * preferences.
      */
     private void sendNotifications() {
-        if (notifications.size() == 0) {
-            // FIXME: Change log level
-            LOG.info("No notifications queued for trip. Skipping notify.");
-            return;
-        }
         OtpUser otpUser = Persistence.otpUsers.getById(trip.userId);
         if (otpUser == null) {
             LOG.error("Cannot find user for id {}", trip.userId);
             // TODO: Bugsnag / delete monitored trip?
+            return;
+        }
+        // Update push notification devices count, which may change asynchronously
+        int numPushDevices = NotificationUtils.getPushInfo(otpUser.email);
+        if (numPushDevices != otpUser.pushDevices) {
+            otpUser.pushDevices = numPushDevices;
+            Persistence.otpUsers.replace(otpUser.id, otpUser);
+      	}
+        if (notifications.size() == 0) {
+            // FIXME: Change log level
+            LOG.info("No notifications queued for trip. Skipping notify.");
             return;
         }
         // If the same notifications were just sent, there is no need to send the same notification.
@@ -403,23 +409,22 @@ public class CheckMonitoredTrip implements Runnable {
         );
         // FIXME: Change log level
         LOG.info("Sending notification to user {}", trip.userId);
-        boolean success = false;
-        // FIXME: This needs to be an enum.
-        switch (otpUser.notificationChannel.toLowerCase()) {
-            case "sms":
-                success = sendSMS(otpUser, templateData);
-                break;
-            case "email":
-                success = sendEmail(otpUser, templateData);
-                break;
-            case "all":
-                // TODO better handle below when one of the following fails
-                success = sendSMS(otpUser, templateData) && sendEmail(otpUser, templateData);
-                break;
-            default:
-                break;
+        boolean successEmail = false;
+        boolean successPush = false;
+        boolean successSms = false;
+
+        if (otpUser.notificationChannel.contains(OtpUser.Notification.EMAIL)) {
+            successEmail = sendEmail(otpUser, templateData);
         }
-        if (success) {
+        if (otpUser.notificationChannel.contains(OtpUser.Notification.PUSH)) {
+            successPush = sendPush(otpUser, templateData);
+        }
+        if (otpUser.notificationChannel.contains(OtpUser.Notification.SMS)) {
+            successSms = sendSMS(otpUser, templateData);
+        }
+
+        // TODO: better handle below when one of the following fails
+        if (successEmail || successPush || successSms) {
             notificationTimestampMillis = DateTimeUtils.currentTimeMillis();
         }
     }
@@ -429,6 +434,13 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private boolean sendSMS(OtpUser otpUser, Map<String, Object> data) {
         return NotificationUtils.sendSMS(otpUser, "MonitoredTripSms.ftl", data) != null;
+    }
+
+    /**
+     * Send push notification.
+     */
+    private boolean sendPush(OtpUser otpUser, Map<String, Object> data) {
+        return NotificationUtils.sendPush(otpUser, "MonitoredTripText.ftl", data) != null;
     }
 
     /**

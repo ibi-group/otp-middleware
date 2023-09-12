@@ -9,18 +9,23 @@ import com.twilio.rest.verify.v2.service.VerificationCheck;
 import com.twilio.rest.verify.v2.service.VerificationCreator;
 import com.twilio.type.PhoneNumber;
 import freemarker.template.TemplateException;
+import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
- * This class contains utils for sending SMS and email notifications.
+ * This class contains utils for sending SMS, email, and push notifications.
  *
  * TODO: It may be better to initialize all of these notification clients in a static block? This may not really be
  *  necessary though -- needs some more research.
@@ -36,6 +41,55 @@ public class NotificationUtils {
     private static final String SPARKPOST_KEY = getConfigPropertyAsText("SPARKPOST_KEY");
     private static final String FROM_EMAIL = getConfigPropertyAsText("NOTIFICATION_FROM_EMAIL");
     public static final String OTP_ADMIN_DASHBOARD_FROM_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_FROM_EMAIL");
+    private static final String PUSH_API_KEY = getConfigPropertyAsText("PUSH_API_KEY");
+    private static final String PUSH_API_URL = getConfigPropertyAsText("PUSH_API_URL");
+
+    /**
+     * @param otpUser  target user
+     * @param textTemplate  template to use for email in text format
+     * @param templateData  template data
+     */
+    public static String sendPush(OtpUser otpUser, String textTemplate, Object templateData) {
+        // If Push API config properties aren't set, do nothing.
+        if (PUSH_API_KEY == null || PUSH_API_URL == null) return null;
+        try {
+            String body = TemplateUtils.renderTemplate(textTemplate, templateData);
+            String toUser = otpUser.email;
+            return otpUser.pushDevices > 0 ? sendPush(toUser, body) : "OK";
+        } catch (TemplateException | IOException e) {
+            // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
+            // handles Bugsnag reporting/error logging, so that is not needed here.
+            return null;
+        }
+    }
+
+    /**
+     * Send a push notification message to the provided user
+     * @param toUser    user account ID (email address)
+     * @param body      message body
+     * @return          "OK" if message was successful (null otherwise)
+     */
+    static String sendPush(String toUser, String body) {
+        try {
+            var jsonBody = "{\"user\":\"" + toUser + "\",\"message\":\"" + body + "\"}";
+            Map<String, String> headers = Map.of("Accept", "application/json");
+            var httpResponse = HttpUtils.httpRequestRawResponse(
+                URI.create(PUSH_API_URL + "/notification/publish?api_key=" + PUSH_API_KEY),
+                1000,
+                HttpMethod.POST,
+                headers,
+                jsonBody
+            );
+            if (httpResponse.status == 200) {
+                return "OK";
+            } else {
+                LOG.error("Error {} while trying to initiate push notification", httpResponse.status);
+            }
+        } catch (Exception e) {
+            LOG.error("Could not initiate push notification", e);
+        }
+        return null;
+    }
 
     /**
      * Send templated SMS to {@link OtpUser}'s verified phone number.
@@ -222,5 +276,37 @@ public class NotificationUtils {
             return false;
         }
     }
-}
 
+    /**
+     * Get number of push notification devices. Calls Push API's <code>get</code> endpoint, the only reliable way
+     * to obtain this value, as the <code>publish</code> endpoint returns success even for zero devices.
+     *
+     * @param toUser  email address of user that devices are indexed by
+     * @return number of devices registered, <code>0</code> can mean zero devices or an error obtaining the number
+     */
+    public static int getPushInfo(String toUser) {
+        // If Push API config properties aren't set, no info can be obtained.
+        if (PUSH_API_KEY == null || PUSH_API_URL == null) return 0;
+        try {
+            Map<String, String> headers = Map.of("Accept", "application/json");
+            var httpResponse = HttpUtils.httpRequestRawResponse(
+                URI.create(PUSH_API_URL + "/devices/get?api_key=" + PUSH_API_KEY + "&user=" + toUser),
+                1000,
+                HttpMethod.GET,
+                headers,
+                null
+            );
+            if (httpResponse.status == 200) {
+                // We don't use any of this information, we only care how many devices are registered.
+                var devices = JsonUtils.getPOJOFromHttpBodyAsList(httpResponse, Object.class);
+                return devices.size();
+            } else {
+                LOG.error("Error {} while getting info on push notification devices", httpResponse.status);
+            }
+        } catch (Exception e) {
+            LOG.error("No info on push notification devices", e);
+        }
+        return 0;
+    }
+
+}

@@ -41,9 +41,10 @@ public class PersistenceTestUtils {
         OtpUser user = new OtpUser();
         user.email = email;
         user.phoneNumber = phoneNumber;
-        user.notificationChannel = "email";
+        user.notificationChannel.add(OtpUser.Notification.EMAIL);
         user.hasConsentedToTerms = true;
         user.storeTripHistory = true;
+        user.pushDevices = 0;
         Persistence.otpUsers.create(user);
         return user;
     }
