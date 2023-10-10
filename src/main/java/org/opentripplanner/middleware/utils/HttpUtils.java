@@ -19,7 +19,6 @@ import spark.Request;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.http.HttpTimeoutException;
 import java.time.LocalDate;
@@ -102,26 +101,16 @@ public class HttpUtils {
                 httpUriRequest = deleteRequest;
                 break;
             case PUT:
-                try {
-                    HttpPut putRequest = new HttpPut(uri);
-                    putRequest.setEntity(new StringEntity(bodyContent));
-                    putRequest.setConfig(timeoutConfig);
-                    httpUriRequest = putRequest;
-                } catch (UnsupportedEncodingException e) {
-                    LOG.error("Unsupported encoding type", e);
-                    return null;
-                }
+                HttpPut putRequest = new HttpPut(uri);
+                putRequest.setEntity(new StringEntity(bodyContent, "UTF-8"));
+                putRequest.setConfig(timeoutConfig);
+                httpUriRequest = putRequest;
                 break;
             case POST:
-                try {
-                    HttpPost postRequest = new HttpPost(uri);
-                    postRequest.setEntity(new StringEntity(bodyContent));
-                    postRequest.setConfig(timeoutConfig);
-                    httpUriRequest = postRequest;
-                } catch (UnsupportedEncodingException e) {
-                    LOG.error("Unsupported encoding type", e);
-                    return null;
-                }
+                HttpPost postRequest = new HttpPost(uri);
+                postRequest.setEntity(new StringEntity(bodyContent, "UTF-8"));
+                postRequest.setConfig(timeoutConfig);
+                httpUriRequest = postRequest;
                 break;
             case HEAD:
             case OPTIONS:
