@@ -21,6 +21,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -102,13 +103,13 @@ public class HttpUtils {
                 break;
             case PUT:
                 HttpPut putRequest = new HttpPut(uri);
-                putRequest.setEntity(new StringEntity(bodyContent, "UTF-8"));
+                putRequest.setEntity(new StringEntity(bodyContent, StandardCharsets.UTF_8));
                 putRequest.setConfig(timeoutConfig);
                 httpUriRequest = putRequest;
                 break;
             case POST:
                 HttpPost postRequest = new HttpPost(uri);
-                postRequest.setEntity(new StringEntity(bodyContent, "UTF-8"));
+                postRequest.setEntity(new StringEntity(bodyContent, StandardCharsets.UTF_8));
                 postRequest.setConfig(timeoutConfig);
                 httpUriRequest = postRequest;
                 break;
