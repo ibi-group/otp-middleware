@@ -216,7 +216,6 @@ public class OtpRequestProcessor implements Endpoint {
         // spark.Response#header() will duplicate rather than update, so filter out duplicates.
         Arrays.stream(otpDispatcherResponse.headers)
             .filter(h -> !response.raw().containsHeader(h.getName()))
-            //.peek(h -> LOG.info("NEW {}={}", h.getName(), h.getValue()))
             .forEach(h -> response.header(h.getName(), h.getValue()));
 
         response.status(otpDispatcherResponse.statusCode);
