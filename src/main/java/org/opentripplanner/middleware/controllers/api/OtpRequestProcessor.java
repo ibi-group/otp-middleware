@@ -210,11 +210,14 @@ public class OtpRequestProcessor implements Endpoint {
             } catch(NullPointerException e) {
                 LOG.warn("Failed to read variables from GraphQL Plan request. Still passing to OTP2: {}", e.getMessage());
             }
-
         }
 
-        // provide response to requester as received from OTP server
-        Arrays.stream(otpDispatcherResponse.headers).forEach(header -> response.header(header.getName(), header.getValue()));
+        // Add response headers to requester as it was received from OTP server, but beware that
+        // spark.Response#header() will duplicate rather than update, so filter out duplicates.
+        Arrays.stream(otpDispatcherResponse.headers)
+            .filter(h -> !response.raw().containsHeader(h.getName()))
+            .forEach(h -> response.header(h.getName(), h.getValue()));
+
         response.status(otpDispatcherResponse.statusCode);
         return otpDispatcherResponse.responseBody;
     }
