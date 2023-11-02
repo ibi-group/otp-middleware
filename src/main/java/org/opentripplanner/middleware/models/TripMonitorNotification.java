@@ -93,6 +93,17 @@ public class TripMonitorNotification extends Model {
         return notification;
     }
 
+    /**
+     * Creates an initial reminder of the itinerary monitoring.
+     */
+    public static TripMonitorNotification createInitialReminderNotification() {
+        TripMonitorNotification notification = new TripMonitorNotification();
+        notification.type = NotificationType.INITIAL_REMINDER;
+        // TODO: i18n and add itinerary details.
+        notification.body = "This is a reminder of your upcoming itinerary";
+        return notification;
+    }
+
     private static String bodyFromAlerts(
         Set<LocalizedAlert> previousAlerts,
         Set<LocalizedAlert> resolvedAlerts,
