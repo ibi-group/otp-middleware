@@ -13,8 +13,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.utils.HttpUtils;
-import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +42,9 @@ public class NotificationUtils {
     private static final String PUSH_API_KEY = getConfigPropertyAsText("PUSH_API_KEY");
     private static final String PUSH_API_URL = getConfigPropertyAsText("PUSH_API_URL");
 
+    /** Lowest permitted push message length between Android and iOS. */
+    private static final int PUSH_MESSAGE_MAX_LENGTH = 178;
+
     /**
      * @param otpUser  target user
      * @param textTemplate  template to use for email in text format
@@ -71,8 +72,13 @@ public class NotificationUtils {
      */
     static String sendPush(String toUser, String body) {
         try {
-            var jsonBody = "{\"user\":\"" + toUser + "\",\"message\":\"" + body + "\"}";
-            Map<String, String> headers = Map.of("Accept", "application/json");
+            // Trim message length (iOS limitation) and escape carriage returns.
+            var jsonBody = "{\"user\":\"" + toUser + "\",\"message\":\"" + body.substring(0, PUSH_MESSAGE_MAX_LENGTH - 1) + "\"}";
+            jsonBody = jsonBody.replace("\n", "\\n");
+            Map<String, String> headers = Map.of(
+                "Accept", "application/json",
+                "Content-Type", "application/json"
+            );
             var httpResponse = HttpUtils.httpRequestRawResponse(
                 URI.create(PUSH_API_URL + "/notification/publish?api_key=" + PUSH_API_KEY),
                 1000,

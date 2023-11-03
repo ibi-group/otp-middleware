@@ -173,7 +173,7 @@ public class MonitoredTrip extends Model {
     /**
      * Whether to notify the user when the monitoring of this trip starts.
      */
-    public boolean notifyAtLeadingInterval;
+    public boolean notifyAtLeadingInterval = true;
 
     public MonitoredTrip() {
     }

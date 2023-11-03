@@ -141,7 +141,7 @@ public class CheckMonitoredTrip implements Runnable {
 
         if (!trip.isInactive() && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder) {
             enqueueNotification(
-                TripMonitorNotification.createInitialReminderNotification()
+                TripMonitorNotification.createInitialReminderNotification(trip)
             );
         }
     }
@@ -428,6 +428,7 @@ public class CheckMonitoredTrip implements Runnable {
         }
         Map<String, Object> templateData = Map.of(
             "tripId", trip.id,
+            "tripName", trip.tripName,
             "notifications", notifications.stream()
                 .map(notification -> notification.body)
                 .collect(Collectors.toList())
@@ -465,7 +466,7 @@ public class CheckMonitoredTrip implements Runnable {
      * Send push notification.
      */
     private boolean sendPush(OtpUser otpUser, Map<String, Object> data) {
-        return NotificationUtils.sendPush(otpUser, "MonitoredTripText.ftl", data) != null;
+        return NotificationUtils.sendPush(otpUser, "MonitoredTripPush.ftl", data) != null;
     }
 
     /**
