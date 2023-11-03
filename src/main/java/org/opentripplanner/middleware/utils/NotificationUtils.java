@@ -80,9 +80,14 @@ public class NotificationUtils {
      */
     static String sendPush(String toUser, String body) {
         try {
-            // Trim message length (iOS limitation) and escape carriage returns.
-            var jsonBody = "{\"user\":\"" + toUser + "\",\"message\":\"" + body.substring(0, PUSH_MESSAGE_MAX_LENGTH - 1) + "\"}";
-            jsonBody = jsonBody.replace("\n", "\\n");
+            var jsonBody = String.format(
+                "{\"user\":\"%s\",\"message\":\"%s\"}",
+                toUser,
+                body
+                    // Escape carriage returns and trim message length (iOS limitation).
+                    .replace("\n", "\\n")
+                    .substring(0, PUSH_MESSAGE_MAX_LENGTH - 1)
+            );
             Map<String, String> headers = Map.of(
                 "Accept", "application/json",
                 "Content-Type", "application/json"
