@@ -42,7 +42,15 @@ public class NotificationUtils {
     private static final String PUSH_API_KEY = getConfigPropertyAsText("PUSH_API_KEY");
     private static final String PUSH_API_URL = getConfigPropertyAsText("PUSH_API_URL");
 
-    /** Lowest permitted push message length between Android and iOS. */
+    /**
+     * Although SMS are 160 characters long and Twilio supports sending up to 1600 characters,
+     * they don't recommend sending more than 320 characters in a single "request"
+     * to not inundate users with long messages and to reduce cost
+     * (messages above 160 characters are split into multiple SMS that are billed individually).
+     * See https://support.twilio.com/hc/en-us/articles/360033806753-Maximum-Message-Length-with-Twilio-Programmable-Messaging
+     */
+    private static final int SMS_MAX_LENGTH = 320;
+    /** Lowest permitted push message length between Android (240) and iOS (178). */
     private static final int PUSH_MESSAGE_MAX_LENGTH = 178;
 
     /**
@@ -137,7 +145,8 @@ public class NotificationUtils {
             Message message = Message.creator(
                 toPhoneNumber,
                 fromPhoneNumber,
-                body
+                // Trim body to max message length
+                body.substring(0, SMS_MAX_LENGTH - 1)
             ).create();
             LOG.debug("SMS ({}) sent successfully", message.getSid());
             return message.getSid();
