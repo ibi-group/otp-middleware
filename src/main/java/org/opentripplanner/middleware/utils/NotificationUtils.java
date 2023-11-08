@@ -144,10 +144,27 @@ public class NotificationUtils {
     }
 
     /**
+     * Get a supported Twilio locale for a given locale in IETF's BPC 47 format.
+     * See https://www.twilio.com/docs/verify/supported-languages#verify-default-template
+     */
+    public static String getTwilioLocale(String locale) {
+        // The Twilio's supported locales are just the first two letters of the user's locale,
+        // unless it is zh-HK, pt-BR, or en-GB.
+        switch (locale) {
+            case "en-GB":
+            case "pt-BR":
+            case "zh-HK":
+                return locale;
+            default:
+                return locale == null || locale.length() < 2 ? "en" : locale.substring(0, 2);
+        }
+    }
+
+    /**
      * Send verification text to phone number (i.e., a code that the recipient will use to verify ownership of the
      * number via the OTP web app).
      */
-    public static Verification sendVerificationText(String phoneNumber) {
+    public static Verification sendVerificationText(String phoneNumber, String locale) {
         if (TWILIO_ACCOUNT_SID == null || TWILIO_AUTH_TOKEN == null) {
             LOG.error("SMS notifications not configured correctly.");
             return null;
@@ -155,6 +172,7 @@ public class NotificationUtils {
         try {
             Twilio.init(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
             VerificationCreator smsVerifier = Verification.creator(TWILIO_VERIFICATION_SERVICE_SID, phoneNumber, "sms");
+            smsVerifier.setLocale(getTwilioLocale(locale));
             Verification verification = smsVerifier.create();
             LOG.info("SMS verification ({}) sent successfully", verification.getSid());
             return verification;

@@ -24,8 +24,8 @@ import static org.opentripplanner.middleware.utils.NotificationUtils.OTP_ADMIN_D
  * Note: these tests require the environment variables RUN_E2E=true and valid values for TEST_TO_EMAIL, TEST_TO_PHONE,
  * and TEST_TO_PUSH. Furthermore, TEST_TO_PHONE must be a verified phone number in a valid Twilio account.
  */
-public class NotificationUtilsTest extends OtpMiddlewareTestEnvironment {
-    private static final Logger LOG = LoggerFactory.getLogger(NotificationUtilsTest.class);
+public class NotificationUtilsTestCI extends OtpMiddlewareTestEnvironment {
+    private static final Logger LOG = LoggerFactory.getLogger(NotificationUtilsTestCI.class);
     private static OtpUser user;
 
     /**
@@ -96,7 +96,8 @@ public class NotificationUtilsTest extends OtpMiddlewareTestEnvironment {
     public void canSendTwilioVerificationText() {
         Verification verification = NotificationUtils.sendVerificationText(
             // Note: phone number is configured in setup method above.
-            user.phoneNumber
+            user.phoneNumber,
+            "en"
         );
         LOG.info("Verification status: {}", verification.getStatus());
         Assertions.assertNotNull(verification.getSid());
