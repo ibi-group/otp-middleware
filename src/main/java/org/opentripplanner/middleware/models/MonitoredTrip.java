@@ -170,6 +170,11 @@ public class MonitoredTrip extends Model {
 
     public JourneyState journeyState = new JourneyState();
 
+    /**
+     * Whether to notify the user when the monitoring of this trip starts.
+     */
+    public boolean notifyAtLeadingInterval = true;
+
     public MonitoredTrip() {
     }
 

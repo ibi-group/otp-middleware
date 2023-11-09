@@ -13,8 +13,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.utils.HttpUtils;
-import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +43,17 @@ public class NotificationUtils {
     private static final String PUSH_API_URL = getConfigPropertyAsText("PUSH_API_URL");
 
     /**
+     * Although SMS are 160 characters long and Twilio supports sending up to 1600 characters,
+     * they don't recommend sending more than 320 characters in a single "request"
+     * to not inundate users with long messages and to reduce cost
+     * (messages above 160 characters are split into multiple SMS that are billed individually).
+     * See https://support.twilio.com/hc/en-us/articles/360033806753-Maximum-Message-Length-with-Twilio-Programmable-Messaging
+     */
+    private static final int SMS_MAX_LENGTH = 320;
+    /** Lowest permitted push message length between Android (240) and iOS (178). */
+    private static final int PUSH_MESSAGE_MAX_LENGTH = 178;
+
+    /**
      * @param otpUser  target user
      * @param textTemplate  template to use for email in text format
      * @param templateData  template data
@@ -71,8 +80,18 @@ public class NotificationUtils {
      */
     static String sendPush(String toUser, String body) {
         try {
-            var jsonBody = "{\"user\":\"" + toUser + "\",\"message\":\"" + body + "\"}";
-            Map<String, String> headers = Map.of("Accept", "application/json");
+            var jsonBody = String.format(
+                "{\"user\":\"%s\",\"message\":\"%s\"}",
+                toUser,
+                body
+                    // Escape carriage returns and trim message length (iOS limitation).
+                    .replace("\n", "\\n")
+                    .substring(0, PUSH_MESSAGE_MAX_LENGTH - 1)
+            );
+            Map<String, String> headers = Map.of(
+                "Accept", "application/json",
+                "Content-Type", "application/json"
+            );
             var httpResponse = HttpUtils.httpRequestRawResponse(
                 URI.create(PUSH_API_URL + "/notification/publish?api_key=" + PUSH_API_KEY),
                 1000,
@@ -131,7 +150,8 @@ public class NotificationUtils {
             Message message = Message.creator(
                 toPhoneNumber,
                 fromPhoneNumber,
-                body
+                // Trim body to max message length
+                body.substring(0, SMS_MAX_LENGTH - 1)
             ).create();
             LOG.debug("SMS ({}) sent successfully", message.getSid());
             return message.getSid();

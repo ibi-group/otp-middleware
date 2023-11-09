@@ -7,7 +7,6 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.OtpVersion;
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
@@ -23,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -121,6 +119,8 @@ public class CheckMonitoredTrip implements Runnable {
             return;
         }
 
+        // Initial reminder notification, if needed
+        addInitialReminderIfNeeded();
         // Check monitored trip.
         runCheckLogic();
         // Send notifications to user. This should happen before updating the journey state so that we can check the
@@ -128,6 +128,31 @@ public class CheckMonitoredTrip implements Runnable {
         sendNotifications();
         // Update trip and journey state.
         updateMonitoredTrip();
+    }
+
+    /**
+     * Determine whether to send an initial "reminder" notification through the user's enabled notification channels.
+     * The initial reminder is sent the first time a check for a trip that is active today
+     * occurs within the monitoring lead time.
+     */
+    private void addInitialReminderIfNeeded() {
+        boolean isFirstTimeCheckWithinLeadMonitoringTime = isFirstTimeCheckWithinLeadMonitoringTime();
+        boolean userWantsInitialReminder = !trip.snoozed && trip.notifyAtLeadingInterval;
+
+        if (!trip.isInactive() && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder) {
+            enqueueNotification(
+                TripMonitorNotification.createInitialReminderNotification(trip)
+            );
+        }
+    }
+
+    /**
+     * @return true if the previous check was outside the monitoring lead time and this check is inside.
+     */
+    private boolean isFirstTimeCheckWithinLeadMonitoringTime() {
+        long minutesSinceLastCheck = getMinutesSinceLastCheck();
+        long minutesUntilTrip = getMinutesUntilTrip();
+        return minutesUntilTrip <= trip.leadTimeInMinutes && minutesUntilTrip + minutesSinceLastCheck > trip.leadTimeInMinutes;
     }
 
     private void runCheckLogic() {
@@ -403,6 +428,7 @@ public class CheckMonitoredTrip implements Runnable {
         }
         Map<String, Object> templateData = Map.of(
             "tripId", trip.id,
+            "tripName", trip.tripName,
             "notifications", notifications.stream()
                 .map(notification -> notification.body)
                 .collect(Collectors.toList())
@@ -440,7 +466,7 @@ public class CheckMonitoredTrip implements Runnable {
      * Send push notification.
      */
     private boolean sendPush(OtpUser otpUser, Map<String, Object> data) {
-        return NotificationUtils.sendPush(otpUser, "MonitoredTripText.ftl", data) != null;
+        return NotificationUtils.sendPush(otpUser, "MonitoredTripPush.ftl", data) != null;
     }
 
     /**
@@ -462,6 +488,22 @@ public class CheckMonitoredTrip implements Runnable {
         for (TripMonitorNotification notification : tripMonitorNotifications) {
             if (notification != null) notifications.add(notification);
         }
+    }
+
+    private long getMinutesSinceLastCheck() {
+        long millisSinceLastCheck = DateTimeUtils.currentTimeMillis() - previousJourneyState.lastCheckedEpochMillis;
+        return TimeUnit.MILLISECONDS.toMinutes(millisSinceLastCheck);
+    }
+
+    private long getMinutesUntilTrip() {
+        // get the configured timezone that OTP is using to parse dates and times
+        ZoneId targetZoneId = DateTimeUtils.getOtpZoneId();
+        Instant tripStartInstant = matchingItinerary.startTime.toInstant();
+
+        // Get current time and trip time (with the time offset to today) for comparison.
+        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(targetZoneId);
+
+        return (tripStartInstant.getEpochSecond() - now.toEpochSecond()) / 60;
     }
 
     /**
@@ -589,10 +631,9 @@ public class CheckMonitoredTrip implements Runnable {
         LOG.info("Trip starts at {} (now={})", tripStartInstant.toString(), now.toString());
 
         // If last check was more than an hour ago and trip doesn't occur until an hour from now, check trip.
-        long millisSinceLastCheck = DateTimeUtils.currentTimeMillis() - previousJourneyState.lastCheckedEpochMillis;
-        long minutesSinceLastCheck = TimeUnit.MILLISECONDS.toMinutes(millisSinceLastCheck);
+        long minutesSinceLastCheck = getMinutesSinceLastCheck();
         LOG.info("{} minutes since last checking trip", minutesSinceLastCheck);
-        long minutesUntilTrip = (tripStartInstant.getEpochSecond() - now.toEpochSecond()) / 60;
+        long minutesUntilTrip = getMinutesUntilTrip();
         LOG.info("Trip starts in {} minutes", minutesUntilTrip);
         // skip check if the time until the next trip starts is longer than the requested lead time
         if (minutesUntilTrip > trip.leadTimeInMinutes) {
