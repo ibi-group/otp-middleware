@@ -148,6 +148,9 @@ public class NotificationUtils {
      * See https://www.twilio.com/docs/verify/supported-languages#verify-default-template
      */
     public static String getTwilioLocale(String locale) {
+        if (locale == null) {
+            return "en";
+        }
         // The Twilio's supported locales are just the first two letters of the user's locale,
         // unless it is zh-HK, pt-BR, or en-GB.
         switch (locale) {
@@ -156,7 +159,7 @@ public class NotificationUtils {
             case "zh-HK":
                 return locale;
             default:
-                return locale == null || locale.length() < 2 ? "en" : locale.substring(0, 2);
+                return locale.length() < 2 ? "en" : locale.substring(0, 2);
         }
     }
 
