@@ -2437,6 +2437,8 @@ definitions:
       effectiveEndDate:
         type: "string"
         format: "date"
+      id:
+        type: "string"
   MonitoredTrip:
     type: "object"
     properties:
