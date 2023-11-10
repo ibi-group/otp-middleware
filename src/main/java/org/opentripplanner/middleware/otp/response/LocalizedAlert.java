@@ -11,6 +11,8 @@ public class LocalizedAlert {
 
     public Date effectiveEndDate;
 
+    public String id;
+
     @Override
     public int hashCode() {
         return Objects.hash(alertHeaderText, alertDescriptionText, alertUrl, effectiveStartDate, effectiveEndDate);
