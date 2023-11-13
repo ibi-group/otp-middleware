@@ -410,11 +410,8 @@ public class CheckMonitoredTrip implements Runnable {
             return;
         }
         // Update push notification devices count, which may change asynchronously
-        int numPushDevices = NotificationUtils.getPushInfo(otpUser.email);
-        if (numPushDevices != otpUser.pushDevices) {
-            otpUser.pushDevices = numPushDevices;
-            Persistence.otpUsers.replace(otpUser.id, otpUser);
-      	}
+        NotificationUtils.updatePushDevices(otpUser);
+
         if (notifications.size() == 0) {
             // FIXME: Change log level
             LOG.info("No notifications queued for trip. Skipping notify.");

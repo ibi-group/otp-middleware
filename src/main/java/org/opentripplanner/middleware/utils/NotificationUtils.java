@@ -14,6 +14,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -322,6 +323,14 @@ public class NotificationUtils {
             LOG.error("No info on push notification devices", e);
         }
         return 0;
+    }
+
+    public static void updatePushDevices(OtpUser otpUser) {
+        int numPushDevices = getPushInfo(otpUser.email);
+        if (numPushDevices != otpUser.pushDevices) {
+            otpUser.pushDevices = numPushDevices;
+            Persistence.otpUsers.replace(otpUser.id, otpUser);
+      	}
     }
 
     static class NotificationInfo {

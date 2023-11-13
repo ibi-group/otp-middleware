@@ -80,7 +80,11 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
 
     @Override
     protected OtpUser getUserProfile(RequestingUser profile) {
-        return profile.otpUser;
+        OtpUser otpUser = profile.otpUser;
+        if (otpUser != null) {
+            NotificationUtils.updatePushDevices(otpUser);
+        }
+        return otpUser;
     }
 
     /**
