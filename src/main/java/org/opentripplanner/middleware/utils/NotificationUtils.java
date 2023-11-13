@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
+import com.google.gson.Gson;
 import com.sparkpost.Client;
 import com.sparkpost.model.responses.Response;
 import com.twilio.Twilio;
@@ -80,14 +81,8 @@ public class NotificationUtils {
      */
     static String sendPush(String toUser, String body) {
         try {
-            var jsonBody = String.format(
-                "{\"user\":\"%s\",\"message\":\"%s\"}",
-                toUser,
-                body
-                    // Escape carriage returns and trim message length (iOS limitation).
-                    .replace("\n", "\\n")
-                    .substring(0, PUSH_MESSAGE_MAX_LENGTH - 1)
-            );
+            NotificationInfo notifInfo = new NotificationInfo(toUser, body.substring(0, Math.min(PUSH_MESSAGE_MAX_LENGTH, body.length())));
+            var jsonBody = new Gson().toJson(notifInfo);
             Map<String, String> headers = Map.of(
                 "Accept", "application/json",
                 "Content-Type", "application/json"
@@ -151,9 +146,9 @@ public class NotificationUtils {
                 toPhoneNumber,
                 fromPhoneNumber,
                 // Trim body to max message length
-                body.substring(0, SMS_MAX_LENGTH - 1)
+                body.substring(0, Math.min(SMS_MAX_LENGTH, body.length()))
             ).create();
-            LOG.debug("SMS ({}) sent successfully", message.getSid());
+            LOG.info("SMS ({}) sent successfully", message.getSid());
             return message.getSid();
             // TODO: Is there a more specific exception we're ok with here?
         } catch (Exception e) {
@@ -329,4 +324,13 @@ public class NotificationUtils {
         return 0;
     }
 
+    static class NotificationInfo {
+        public String user;
+        public String message;
+
+        public NotificationInfo(String user, String message) {
+            this.user = user;
+            this.message = message;
+        }
+    }
 }
