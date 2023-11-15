@@ -106,7 +106,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             );
         }
 
-        Verification verification = NotificationUtils.sendVerificationText(phoneNumber);
+        Verification verification = NotificationUtils.sendVerificationText(phoneNumber, otpUser.preferredLocale);
         if (verification == null) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, "Unknown error sending verification text");
         }
