@@ -1,8 +1,11 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -14,10 +17,13 @@ import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -36,6 +42,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         otpUser.hasConsentedToTerms = true;
         otpUser.phoneNumber = INITIAL_PHONE_NUMBER;
         otpUser.isPhoneNumberVerified = true;
+        otpUser.smsConsentDate = new Date();
         Persistence.otpUsers.create(otpUser);
     }
 
@@ -104,5 +111,29 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
             Arguments.of("(555) 555,0123", false),
             Arguments.of("555555", false)
         );
+    }
+
+    /**
+     * smsConsentDate is not passed to/from the UI, so make sure that that field still gets persisted.
+     */
+    @Test
+    void canPreserveSmsConsentDate() throws Exception {
+        OtpUser u = new OtpUser();
+        u.id = otpUser.id;
+        u.email = otpUser.email;
+        u.hasConsentedToTerms = true;
+        u.phoneNumber = INITIAL_PHONE_NUMBER;
+        u.isPhoneNumberVerified = true;
+        u.smsConsentDate = null;
+
+        makeRequest(
+            String.format("api/secure/user/%s", otpUser.id),
+            JsonUtils.toJson(u),
+            getMockHeaders(otpUser),
+            HttpMethod.PUT
+        );
+
+        OtpUser updatedUser = Persistence.otpUsers.getById(otpUser.id);
+        Assertions.assertEquals(u.smsConsentDate, updatedUser.smsConsentDate);
     }
 }

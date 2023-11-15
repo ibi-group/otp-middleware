@@ -53,6 +53,7 @@ public class OtpUser extends AbstractUser {
      * If the user starts the phone verification process, this field is populated
      * just before the verification code is sent.
      */
+    @JsonIgnore
     public Date smsConsentDate;
 
     /**
