@@ -134,6 +134,6 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         );
 
         OtpUser updatedUser = Persistence.otpUsers.getById(otpUser.id);
-        Assertions.assertEquals(u.smsConsentDate, updatedUser.smsConsentDate);
+        Assertions.assertEquals(otpUser.smsConsentDate, updatedUser.smsConsentDate);
     }
 }
