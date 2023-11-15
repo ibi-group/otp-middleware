@@ -325,6 +325,11 @@ public class NotificationUtils {
         return 0;
     }
 
+    /**
+     * Poll the push middleware for the number of devices registered to receive push notifications
+     * for the specified user, and update the corresponding field in memory and Mongo.
+     * @param otpUser The {@link OtpUser} for which to check and update push devices.
+     */
     public static void updatePushDevices(OtpUser otpUser) {
         int numPushDevices = getPushInfo(otpUser.email);
         if (numPushDevices != otpUser.pushDevices) {
