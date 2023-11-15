@@ -2562,6 +2562,9 @@ definitions:
           - "SMS"
       phoneNumber:
         type: "string"
+      smsConsentDate:
+        type: "string"
+        format: "date"
       preferredLocale:
         type: "string"
       pushDevices:
