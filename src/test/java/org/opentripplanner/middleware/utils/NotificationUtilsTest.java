@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createUser;
@@ -94,12 +95,17 @@ public class NotificationUtilsTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     public void canSendTwilioVerificationText() {
+        Assertions.assertNull(user.smsConsentDate);
+        Date beforeVerificationDate = new Date();
         Verification verification = NotificationUtils.sendVerificationText(
             // Note: phone number is configured in setup method above.
             user.phoneNumber
         );
         LOG.info("Verification status: {}", verification.getStatus());
         Assertions.assertNotNull(verification.getSid());
+        Date afterVerificationDate = new Date();
+        Assertions.assertTrue(user.smsConsentDate.getTime() >= beforeVerificationDate.getTime());
+        Assertions.assertTrue(user.smsConsentDate.getTime() <= afterVerificationDate.getTime());
     }
 
     /**
