@@ -129,7 +129,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         if (user instanceof OtpUser) {
             OtpUser otpUser = (OtpUser) user;
             OtpUser existingOtpUser = (OtpUser) preExistingUser;
-            if(!otpUser.storeTripHistory && existingOtpUser.storeTripHistory) {
+            if (!otpUser.storeTripHistory && existingOtpUser.storeTripHistory) {
                 // If an OTP user no longer wants their trip history stored, remove all history from MongoDB.
                 ConnectedDataManager.removeUsersTripHistory(otpUser.id);
                 // Kick-off a trip history upload job to recompile and upload trip data to S3 minus the user's trip
@@ -137,6 +137,10 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
                 TripHistoryUploadJob tripHistoryUploadJob = new TripHistoryUploadJob();
                 tripHistoryUploadJob.run();
             }
+
+            // Include select attributes from existingOtpUser marked @JsonIgnore and
+            // that are not set in otpUser.
+            otpUser.smsConsentDate = existingOtpUser.smsConsentDate;
         }
         return user;
     }

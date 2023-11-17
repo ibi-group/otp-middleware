@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -116,6 +117,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         if (verification.getStatus().equals("pending")) {
             otpUser.phoneNumber = phoneNumber;
             otpUser.isPhoneNumberVerified = false;
+            otpUser.smsConsentDate = new Date();
             otpUser.notificationChannel.add(OtpUser.Notification.SMS);
             Persistence.otpUsers.replace(otpUser.id, otpUser);
         }

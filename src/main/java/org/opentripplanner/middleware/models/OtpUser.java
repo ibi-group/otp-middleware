@@ -48,6 +48,15 @@ public class OtpUser extends AbstractUser {
     public String phoneNumber;
 
     /**
+     * The date when consent was given by user to receive SMS messages, as required by Twilio,
+     * see https://www.twilio.com/docs/verify/sms#consent-and-opt-in-policy.
+     * If the user starts the phone verification process, this field is populated
+     * just before the verification code is sent.
+     */
+    @JsonIgnore
+    public Date smsConsentDate;
+
+    /**
      * The user's preferred locale, in language tag format
      * e.g. 'en-US', 'fr-FR', 'es-ES', 'zh-CN', etc.
      */
