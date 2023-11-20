@@ -138,6 +138,9 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         );
         // Just the trip for Otp user 2 will be returned.
         assertEquals(1, tripsFiltered.data.size());
+
+        Persistence.monitoredTrips.removeById(soloTrips.data.get(0).id);
+        Persistence.monitoredTrips.removeById(multiTrips.data.get(0).id);
     }
 
     @Test
@@ -177,6 +180,8 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         assertEquals(updatedTrip.userId, originalTrip.userId);
         assertEquals(updatedTrip.from.name, originalTrip.from.name);
         assertEquals(updatedTrip.to.name, originalTrip.to.name);
+
+        Persistence.monitoredTrips.removeById(originalTrip.id);
     }
 
     /**
