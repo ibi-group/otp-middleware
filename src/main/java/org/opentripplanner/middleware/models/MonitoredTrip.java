@@ -60,7 +60,6 @@ public class MonitoredTrip extends Model {
      * separately) to the date and time within the query parameters. The reasoning is so that it doesn't have to be
      * extracted every time the trip requires checking.
      */
-    @JsonIgnore
     public String tripTime;
 
     /**

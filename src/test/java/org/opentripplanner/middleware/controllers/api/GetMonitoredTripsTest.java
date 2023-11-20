@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
+import com.mongodb.BasicDBObject;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
@@ -107,6 +108,12 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
     @AfterEach
     public void tearDownAfterTest() {
         OtpTestUtils.resetOtpMocks();
+        BasicDBObject soloFilter = new BasicDBObject();
+        soloFilter.put("userId", soloOtpUser.id);
+        Persistence.monitoredTrips.removeFiltered(soloFilter);
+        BasicDBObject multiFilter = new BasicDBObject();
+        multiFilter.put("userId", multiOtpUser.id);
+        Persistence.monitoredTrips.removeFiltered(multiFilter);
     }
 
     /**
@@ -138,9 +145,6 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         );
         // Just the trip for Otp user 2 will be returned.
         assertEquals(1, tripsFiltered.data.size());
-
-        Persistence.monitoredTrips.removeById(soloTrips.data.get(0).id);
-        Persistence.monitoredTrips.removeById(multiTrips.data.get(0).id);
     }
 
     @Test
@@ -150,8 +154,10 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
 
         // Get trips for solo Otp user.
         ResponseList<MonitoredTrip> soloTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, soloOtpUser);
+        // Expect only 1 trip for solo Otp user.
+        assertEquals(1, soloTrips.data.size());
 
-        MonitoredTrip originalTrip =  soloTrips.data.get(0);
+        MonitoredTrip originalTrip = soloTrips.data.get(0);
         assertNotNull(originalTrip.itinerary);
         assertNotNull(originalTrip.itineraryExistence);
         // Can't really assert journeyState because itinerary checks will not be run for these tests.
@@ -180,8 +186,6 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         assertEquals(updatedTrip.userId, originalTrip.userId);
         assertEquals(updatedTrip.from.name, originalTrip.from.name);
         assertEquals(updatedTrip.to.name, originalTrip.to.name);
-
-        Persistence.monitoredTrips.removeById(originalTrip.id);
     }
 
     /**
