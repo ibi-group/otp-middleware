@@ -139,8 +139,14 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
             }
 
             // Include select attributes from existingOtpUser marked @JsonIgnore and
-            // that are not set in otpUser.
+            // that are not set in otpUser, and other attributes that should not be modifiable
+            // using web requests.
             otpUser.smsConsentDate = existingOtpUser.smsConsentDate;
+            otpUser.email = existingOtpUser.email;
+            otpUser.auth0UserId = existingOtpUser.auth0UserId;
+            otpUser.isDataToolsUser = existingOtpUser.isDataToolsUser;
+            otpUser.pushDevices = existingOtpUser.pushDevices;
+
         }
         return user;
     }
