@@ -71,7 +71,6 @@ public class MonitoredTrip extends Model {
     /**
      * whether the trip is an arriveBy trip
      */
-    @JsonIgnore
     public boolean arriveBy;
 
     /**
