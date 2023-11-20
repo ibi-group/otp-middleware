@@ -144,18 +144,22 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         MonitoredTripLocks.lockTripForUpdating(monitoredTrip, req);
 
         try {
-            preCreateOrUpdateChecks(monitoredTrip, req);
-
             // Forbid the editing of certain values that are analyzed and set during the CheckMonitoredTrip job.
-            // For now, accomplish this by setting whatever the previous itinerary and journey state were in the preExisting
-            // trip.
+            // These include the itinerary, journeyState, and fields initially computed via processTripQueryParams
+            // that we don't need to recalculate.
+            // Note: There is no need to re-check for monitorability because the itinerary field cannot be changed.
             monitoredTrip.itinerary = preExisting.itinerary;
             monitoredTrip.journeyState = preExisting.journeyState;
+            monitoredTrip.itineraryExistence = preExisting.itineraryExistence;
+            monitoredTrip.tripTime = preExisting.tripTime;
+            monitoredTrip.queryParams = preExisting.queryParams;
+            monitoredTrip.userId = preExisting.userId;
+            monitoredTrip.from = preExisting.from;
+            monitoredTrip.to = preExisting.to;
+            monitoredTrip.arriveBy = preExisting.arriveBy;
 
-            checkTripCanBeMonitored(monitoredTrip, req);
-            processTripQueryParams(monitoredTrip, req);
-
-            // TODO: Update itinerary existence record when updating a trip.
+            // TODO: Update itinerary existence record when updating a trip?
+            //   (Currently, we let web requests change the monitored days regardless of existence.)
 
             // perform the database update here before releasing the lock to be sure that the record is updated in the
             // database before a CheckMonitoredTripJob analyzes the data
