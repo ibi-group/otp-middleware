@@ -21,9 +21,9 @@ import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
-import java.io.IOException;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -55,12 +55,14 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser multiOtpUser;
     private static final String MONITORED_TRIP_PATH = "api/secure/monitoredtrip";
 
+    private static final String DUMMY_STRING = "ABCDxyz";
+
     /**
      * Create Otp and Admin user accounts. Create Auth0 account for just the Otp users. If
      * an Auth0 account is created for the admin user it will fail because the email address already exists.
      */
     @BeforeAll
-    public static void setUp() throws IOException {
+    public static void setUp() {
         assumeTrue(IS_END_TO_END);
         setAuthDisabled(false);
 
@@ -112,7 +114,7 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
      * credentials.
      */
     @Test
-    public void canGetOwnMonitoredTrips() throws Exception {
+    void canGetOwnMonitoredTrips() throws Exception {
         // Create a trip for the solo and the multi OTP user.
         createMonitoredTripAsUser(soloOtpUser);
         createMonitoredTripAsUser(multiOtpUser);
@@ -136,6 +138,45 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         );
         // Just the trip for Otp user 2 will be returned.
         assertEquals(1, tripsFiltered.data.size());
+    }
+
+    @Test
+    void canPreserveTripFields() throws Exception {
+        // Create a trip for the solo OTP user.
+        createMonitoredTripAsUser(soloOtpUser);
+
+        // Get trips for solo Otp user.
+        ResponseList<MonitoredTrip> soloTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, soloOtpUser);
+
+        MonitoredTrip originalTrip =  soloTrips.data.get(0);
+        assertNotNull(originalTrip.itinerary);
+        assertNotNull(originalTrip.itineraryExistence);
+        // Can't really assert journeyState because itinerary checks will not be run for these tests.
+        assertNotEquals(DUMMY_STRING, originalTrip.tripTime);
+        assertNotEquals(DUMMY_STRING, originalTrip.queryParams);
+        assertNotEquals(DUMMY_STRING, originalTrip.userId);
+        assertNotNull(originalTrip.from);
+        assertNotNull(originalTrip.to);
+
+        MonitoredTrip modifiedTrip = new MonitoredTrip();
+        modifiedTrip.id = originalTrip.id;
+        modifiedTrip.tripTime = DUMMY_STRING;
+        modifiedTrip.queryParams = DUMMY_STRING;
+        modifiedTrip.userId = DUMMY_STRING;
+
+        mockAuthenticatedRequest(MONITORED_TRIP_PATH,
+            JsonUtils.toJson(modifiedTrip),
+            soloOtpUser,
+            HttpMethod.PUT
+        );
+
+        MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(originalTrip.id);
+        assertEquals(updatedTrip.itinerary.startTime, originalTrip.itinerary.startTime);
+        assertEquals(updatedTrip.tripTime, originalTrip.tripTime);
+        assertEquals(updatedTrip.queryParams, originalTrip.queryParams);
+        assertEquals(updatedTrip.userId, originalTrip.userId);
+        assertEquals(updatedTrip.from.name, originalTrip.from.name);
+        assertEquals(updatedTrip.to.name, originalTrip.to.name);
     }
 
     /**
