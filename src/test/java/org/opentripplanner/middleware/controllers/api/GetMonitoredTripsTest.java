@@ -25,6 +25,7 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -130,6 +131,10 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         ResponseList<MonitoredTrip> soloTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, soloOtpUser);
         // Expect only 1 trip for solo Otp user.
         assertEquals(1, soloTrips.data.size());
+
+        // Certain fields such as tripTime should be null when obtained from parsing JSON responses
+        // because of the @JsonIgnore annotation.
+        assertNull(soloTrips.data.get(0).tripTime);
 
         // Get trips for multi Otp user/admin user.
         ResponseList<MonitoredTrip> multiTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, multiOtpUser);
