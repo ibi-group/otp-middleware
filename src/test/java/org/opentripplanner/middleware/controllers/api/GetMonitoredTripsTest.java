@@ -152,12 +152,13 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         // Create a trip for the solo OTP user.
         createMonitoredTripAsUser(soloOtpUser);
 
-        // Get trips for solo Otp user.
-        ResponseList<MonitoredTrip> soloTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, soloOtpUser);
-        // Expect only 1 trip for solo Otp user.
-        assertEquals(1, soloTrips.data.size());
+        BasicDBObject filter = new BasicDBObject();
+        filter.put("userId", soloOtpUser.id);
 
-        MonitoredTrip originalTrip = soloTrips.data.get(0);
+        // Expect only 1 trip for solo Otp user.
+        assertEquals(1, Persistence.monitoredTrips.getCountFiltered(filter));
+
+        MonitoredTrip originalTrip = Persistence.monitoredTrips.getOneFiltered(filter);
         assertNotNull(originalTrip.itinerary);
         assertNotNull(originalTrip.itineraryExistence);
         // Can't really assert journeyState because itinerary checks will not be run for these tests.
