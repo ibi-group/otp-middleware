@@ -119,10 +119,10 @@ public class CheckMonitoredTrip implements Runnable {
             return;
         }
 
-        // Initial reminder notification, if needed
-        addInitialReminderIfNeeded();
         // Check monitored trip.
         runCheckLogic();
+        // Initial reminder notification, if needed, with text based on other notifications for this trip.
+        addInitialReminderIfNeeded();
         // Send notifications to user. This should happen before updating the journey state so that we can check the
         // last notification sent.
         sendNotifications();
