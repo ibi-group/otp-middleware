@@ -109,12 +109,12 @@ public class TripMonitorNotification extends Model {
         MonitoredTrip trip,
         boolean noOtherNotifications
     ) {
-        // TODO: i18n and add itinerary details.
+        // TODO: i18n.
         StringBuilder body = new StringBuilder();
-        body.append(String.format("Reminder for your upcoming trip at %s.", trip.tripTime));
+        body.append(String.format("Reminder for %s at %s.", trip.tripName, trip.tripTime));
         if (noOtherNotifications) {
-            body.append(" ");
-            body.append("We will let you know if anything changes.");
+            body.append("\n");
+            body.append("We will notify you know if anything changes.");
         }
         return new TripMonitorNotification(
             NotificationType.INITIAL_REMINDER,
@@ -137,15 +137,13 @@ public class TripMonitorNotification extends Model {
         }
         // If there are any unseen alerts, include list of these.
         if (!unseenAlerts.isEmpty()) {
-            // TODO: Improve message.
-            body.append("New alerts found! They are:");
+            body.append("\uD83D\uDD14 New alerts found:\n");
             body.append(listFromAlerts(unseenAlerts, false));
         }
         // If there are any resolved alerts, include list of these.
         if (!resolvedAlerts.isEmpty()) {
             if (body.length() > 0) body.append("\n");
-            // TODO: Improve message.
-            body.append("Resolved alerts are:");
+            body.append("Resolved alerts:");
             body.append(listFromAlerts(resolvedAlerts, true));
         }
         return body.toString();
