@@ -141,7 +141,7 @@ public class CheckMonitoredTrip implements Runnable {
 
         if (!trip.isInactive() && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder) {
             enqueueNotification(
-                TripMonitorNotification.createInitialReminderNotification(trip)
+                TripMonitorNotification.createInitialReminderNotification(trip, notifications.isEmpty())
             );
         }
     }
