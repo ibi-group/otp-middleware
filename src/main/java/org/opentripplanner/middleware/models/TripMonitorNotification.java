@@ -125,7 +125,7 @@ public class TripMonitorNotification extends Model {
         // If there are any resolved alerts, include list of these.
         if (resolvedAlerts.size() > 0) {
             if (body.length() > 0) body.append("\n");
-            body.append("Resolved alerts:");
+            body.append("Resolved alerts:\n");
             body.append(listFromAlerts(resolvedAlerts, true));
         }
         return body.toString();
