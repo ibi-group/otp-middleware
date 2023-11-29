@@ -106,19 +106,12 @@ public class TripMonitorNotification extends Model {
      * Creates an initial reminder of the itinerary monitoring.
      */
     public static TripMonitorNotification createInitialReminderNotification(
-        MonitoredTrip trip,
-        boolean noOtherNotifications
+        MonitoredTrip trip
     ) {
         // TODO: i18n.
-        StringBuilder body = new StringBuilder();
-        body.append(String.format("Reminder for %s at %s.", trip.tripName, trip.tripTime));
-        if (noOtherNotifications) {
-            body.append("\n");
-            body.append("We will notify you know if anything changes.");
-        }
         return new TripMonitorNotification(
             NotificationType.INITIAL_REMINDER,
-            body.toString()
+            String.format("Reminder for %s at %s.", trip.tripName, trip.tripTime)
         );
     }
 
