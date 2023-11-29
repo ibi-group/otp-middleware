@@ -5,7 +5,14 @@
     - iOS: 178 characters over up to 4 lines,
     - Android: 240 characters (We are not using notification title at this time).
     The max length is thus 178 characters.
--->${tripName}
-<#list notifications as notification>
-• ${notification}
-</#list>
+    - List alerts with bullets if there are more than one of them.
+-->
+<#if notifications?size > 1>
+  <#list notifications as notification>
+    • ${notification}
+  </#list>
+<#else>
+  <#list notifications as notification>
+    ${notification}
+  </#list>
+</#if>
