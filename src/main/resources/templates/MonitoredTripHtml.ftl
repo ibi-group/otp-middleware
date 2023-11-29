@@ -9,9 +9,11 @@
     <div>
         <h1>Your trip has the following notifications:</h1>
 
-        <#if notification.type == "INITIAL_REMINDER">
-            <p>${notification.body}</p>
-        </#if>
+         <#list notifications as notification>
+            <#if notification.type == "INITIAL_REMINDER">
+                <p>${notification.body}</p>
+            </#if>
+        </#list>
 
         <ul>
             <#list notifications as notification>
