@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
+import org.opentripplanner.middleware.models.MobilityProfile;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -55,13 +56,19 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             Auth0Connection.ensureApiUserHasApiKey(req);
             user.applicationId = requestingUser.apiUser.id;
         }
-        user.mobilityMode = calculateMobilityMode(user);
+        if (user.mobilityProfile == null) {
+            user.mobilityProfile = new MobilityProfile();
+	}
+        user.mobilityProfile.mobilityMode = calculateMobilityMode(user);
         return super.preCreateHook(user, req);
     }
 
     @Override
     OtpUser preUpdateHook(OtpUser user, OtpUser preExistingUser, Request req) {
-        user.mobilityMode = calculateMobilityMode(user);
+        if (user.mobilityProfile == null) {
+            user.mobilityProfile = new MobilityProfile();
+	}
+        user.mobilityProfile.mobilityMode = calculateMobilityMode(user);
         return super.preUpdateHook(user, preExistingUser, req);
     }
 
@@ -184,8 +191,8 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
 
     /**
      * Calculate and return the "mobility mode", a keyword or compound keyword specified by Georgia Tech,
-     * based on a number {@code OtpUser} fields related to mobility.
-     * @param user with fields that are consulted to calculate mobility mode
+     * based on a number of {@code OtpUser} moblity profile fields.
+     * @param user whose mobility profile is consulted to calculate mobility mode
      * @return mobility mode as a single string
      */
     private static String calculateMobilityMode(OtpUser user) {
@@ -195,42 +202,44 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         String mModeTemp = "None";
         String visionTemp = "None";
 
-        if (user.mobilityDevices == null) {
-            user.mobilityDevices = Collections.EMPTY_LIST;
-	}
-        if (user.mobilityDevices.isEmpty() || user.mobilityDevices.contains("none")) {
-            user.mobilityDevices.clear();
-	} else {
-            if (user.mobilityDevices.contains("white cane")) {
+        if (user.mobilityProfile.mobilityDevices == null) {
+            user.mobilityProfile.mobilityDevices = Collections.EMPTY_LIST;
+        }
+        if (user.mobilityProfile.mobilityDevices.isEmpty() || user.mobilityProfile.mobilityDevices.contains("none")) {
+            user.mobilityProfile.mobilityDevices.clear();
+        } else {
+            if (user.mobilityProfile.mobilityDevices.contains("white cane")) {
                 visionTemp = "Blind";
             }
-            if (user.mobilityDevices.contains("manual walker")
-                    || user.mobilityDevices.contains("wheeled walker")
-                    || user.mobilityDevices.contains("cane")
-                    || user.mobilityDevices.contains("crutches")
-                    || user.mobilityDevices.contains("stroller")
-                    || user.mobilityDevices.contains("service animal")) {
+            if (user.mobilityProfile.mobilityDevices.contains("manual walker")
+                    || user.mobilityProfile.mobilityDevices.contains("wheeled walker")
+                    || user.mobilityProfile.mobilityDevices.contains("cane")
+                    || user.mobilityProfile.mobilityDevices.contains("crutches")
+                    || user.mobilityProfile.mobilityDevices.contains("stroller")
+                    || user.mobilityProfile.mobilityDevices.contains("service animal")) {
                 mModeTemp = "Device";
             }
-            if (user.mobilityDevices.contains("mobility scooter")) {
+            if (user.mobilityProfile.mobilityDevices.contains("mobility scooter")) {
                 mModeTemp = "MScooter";
             }
-            if (user.mobilityDevices.contains("electric wheelchair")) {
+            if (user.mobilityProfile.mobilityDevices.contains("electric wheelchair")) {
                 mModeTemp = "WChairE";
             }
-            if (user.mobilityDevices.contains("manual wheelchair")) {
+            if (user.mobilityProfile.mobilityDevices.contains("manual wheelchair")) {
                 mModeTemp = "WChairM";
             }
 
-            if ("None".equals(mModeTemp) && user.isMobilityLimited) {
+            if ("None".equals(mModeTemp) && user.mobilityProfile.isMobilityLimited) {
                 mModeTemp = "Some";
             }
         }
 
-        if (visionTemp.isEmpty() && "low-vision".equals(user.visionLimitation)) {
-            visionTemp = "LowVision";
-        } else if (visionTemp.isEmpty() && "legally blind".equals(user.visionLimitation)) {
-            visionTemp = "Blind";
+        if (visionTemp.isEmpty()) {
+            if (MobilityProfile.VisionLimitation.LOW_VISION == user.mobilityProfile.visionLimitation) {
+                visionTemp = "LowVision";
+            } else if (MobilityProfile.VisionLimitation.LEGALLY_BLIND == user.mobilityProfile.visionLimitation) {
+                visionTemp = "Blind";
+            }
         }
 
         // Create combinations for mobility mode and vision
@@ -239,7 +248,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
                 return visionTemp;
             } else if (MOBILITY_DEVICES.contains(mModeTemp)) {
                 return mModeTemp + "-" + visionTemp;
-	    }
+            }
         } else if (MOBILITY_DEVICES.contains(mModeTemp)) {
             return mModeTemp;
         }

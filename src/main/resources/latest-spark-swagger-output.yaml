@@ -2550,18 +2550,10 @@ definitions:
         type: "boolean"
       hasConsentedToTerms:
         type: "boolean"
-      isMobilityLimited:
-        type: "boolean"
       isPhoneNumberVerified:
         type: "boolean"
-      mobilityDevices:
-        type: "array"
-        items:
-          type: "string"
-      mobilityMode:
-        type: "string"
-      visionLimitation:
-        type: "string"
+      mobilityProfile:
+        $ref: "#/definitions/MobilityProfile"
       notificationChannel:
         type: "array"
         items:
@@ -2588,6 +2580,23 @@ definitions:
         type: "boolean"
       applicationId:
         type: "string"
+  MobilityProfile:
+    type: "object"
+    properties:
+      isMobilityLimited:
+        type: "boolean"
+      mobilityDevices:
+        type: "array"
+        items:
+          type: "string"
+      mobilityMode:
+        type: "string"
+      visionLimitation:
+        type: "string"
+        enum:
+        - "LEGALLY_BLIND"
+        - "LOW_VISION"
+        - "NONE"
   GetUsageResult:
     type: "object"
     properties:
