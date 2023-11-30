@@ -61,7 +61,7 @@ public class MonitorAllTripsJob implements Runnable {
                 queueIterations++;
                 // Report queue status every minute (unless this job finishes before).
                 int runMillis = queueIterations * BLOCKING_QUEUE_DEPLETE_WAIT_TIME_MILLIS;
-                if ((runMillis & 60000) == 0) {
+                if ((runMillis % 60000) == 0) {
                     LOG.info("There are {} queued. after {} sec.", tripAnalysisQueue.size(), runMillis / 1000);
                 }
             }
@@ -71,9 +71,10 @@ public class MonitorAllTripsJob implements Runnable {
             int idleIterations = 0;
             while (!allAnalyzersAreIdle(analyzerStatuses)) {
                 Thread.sleep(BLOCKING_QUEUE_DEPLETE_WAIT_TIME_MILLIS);
+                idleIterations++;
                 // Report analyzers statuses every minute (unless this job finishes before).
                 int runMillis = idleIterations * BLOCKING_QUEUE_DEPLETE_WAIT_TIME_MILLIS;
-                if ((runMillis & 60000) == 0) {
+                if ((runMillis % 60000) == 0) {
                     long notIdleCount = analyzerStatuses.stream().filter(s -> !s.get()).count();
                     LOG.info("There are {} analyzers not idle after {} sec.", notIdleCount, runMillis / 1000);
                 }
