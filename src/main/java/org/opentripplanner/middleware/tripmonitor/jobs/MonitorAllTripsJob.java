@@ -47,13 +47,21 @@ public class MonitorAllTripsJob implements Runnable {
         }
 
         try {
-            // Request all monitored trip IDs from the Mongo collection.
+            // Request all monitored trip IDs from the Mongo collection, all at once, and loop through a list of strings.
+            // If we looped using a Mongo-provided iterator instead, and the Mongo connection is dropped for any reason
+            // while the iterator is open, this thread would become blocked and
+            // prevent subsequent trip monitoring jobs to start.
             // Performance note: Don't retrieve the full data for each trip at this time.
             // This saves bandwidth and memory, as we don't use the trip data immediately besides the ID.
             // The full data for each trip will be fetched at the time the actual analysis takes place.
             // TODO: Filter out trips that would be skipped by the CheckMonitoredTrip.
             BasicDBObject tripFilter = new BasicDBObject();
-            for (String tripId : Persistence.monitoredTrips.getDistinctFieldValues("_id", tripFilter, String.class)) {
+            List<String> allTripIds = Persistence.monitoredTrips.getDistinctFieldValues(
+                "_id",
+                tripFilter,
+                String.class
+            ).into(new ArrayList<>());
+            for (String tripId : allTripIds) {
                 // attempt to add trip ID to tripAnalysisQueue until a spot opens up in the queue. If the timeout is
                 // exceeded, an InterruptedException is throw.
                 tripAnalysisQueue.offer(tripId, BLOCKING_QUEUE_INSERT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
