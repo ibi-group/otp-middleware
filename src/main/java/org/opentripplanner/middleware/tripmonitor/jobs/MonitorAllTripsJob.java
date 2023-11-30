@@ -47,7 +47,10 @@ public class MonitorAllTripsJob implements Runnable {
         }
 
         try {
-            // request all monitored trips from the Mongo collection
+            // Request all monitored trip IDs from the Mongo collection.
+            // Performance note: Don't retrieve the full data for each trip at this time.
+            // This saves bandwidth and memory, as we don't use the trip data immediately besides the ID.
+            // The full data for each trip will be fetched at the time the actual analysis takes place.
             // TODO: Filter out trips that would be skipped by the CheckMonitoredTrip.
             BasicDBObject tripFilter = new BasicDBObject();
             for (String tripId : Persistence.monitoredTrips.getDistinctFieldValues("_id", tripFilter, String.class)) {
