@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
-import org.opentripplanner.middleware.models.MonitoredTrip;
+import com.mongodb.BasicDBObject;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +30,8 @@ public class MonitorAllTripsJob implements Runnable {
         LOG.info("MonitorAllTripsJob started");
         // analyze all trips
 
-        // create a blocking queue of monitored trips to process
-        BlockingQueue<MonitoredTrip> tripAnalysisQueue = new ArrayBlockingQueue<>(BLOCKING_QUEUE_SIZE);
+        // create a blocking queue of monitored trip IDs to process
+        BlockingQueue<String> tripAnalysisQueue = new ArrayBlockingQueue<>(BLOCKING_QUEUE_SIZE);
 
         // create an Atomic Boolean for TripAnalyzer threads to check whether the queue is actually depleted
         AtomicBoolean queueDepleted = new AtomicBoolean();
@@ -47,11 +47,13 @@ public class MonitorAllTripsJob implements Runnable {
         }
 
         try {
-            // request all monitored trips from the mongo collection
-            for (MonitoredTrip monitoredTrip : Persistence.monitoredTrips.getAll()) {
-                // attempt to add trip to tripAnalysisQueue until a spot opens up in the queue. If the timeout is
+            // request all monitored trips from the Mongo collection
+            // TODO: Filter out trips that would be skipped by the CheckMonitoredTrip.
+            BasicDBObject tripFilter = new BasicDBObject();
+            for (String tripId : Persistence.monitoredTrips.getDistinctFieldValues("_id", tripFilter, String.class)) {
+                // attempt to add trip ID to tripAnalysisQueue until a spot opens up in the queue. If the timeout is
                 // exceeded, an InterruptedException is throw.
-                tripAnalysisQueue.offer(monitoredTrip, BLOCKING_QUEUE_INSERT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                tripAnalysisQueue.offer(tripId, BLOCKING_QUEUE_INSERT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             }
 
             // wait for queue to deplete

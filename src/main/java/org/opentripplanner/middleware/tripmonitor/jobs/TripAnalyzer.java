@@ -15,11 +15,11 @@ public class TripAnalyzer implements Runnable {
     private final int BLOCKING_QUEUE_POLL_TIMEOUT_MILLIS = 250;
 
     private final AtomicBoolean analyzerIsIdle;
-    private final BlockingQueue<MonitoredTrip> tripAnalysisQueue;
+    private final BlockingQueue<String> tripAnalysisQueue;
     private final AtomicBoolean queueDepleted;
 
     public TripAnalyzer(
-        BlockingQueue<MonitoredTrip> tripAnalysisQueue,
+        BlockingQueue<String> tripAnalysisQueue,
         AtomicBoolean queueDepleted,
         AtomicBoolean analyzerIsIdle
     ) {
@@ -34,10 +34,10 @@ public class TripAnalyzer implements Runnable {
             while (!queueDepleted.get()) {
                 analyzerIsIdle.set(false);
 
-                // get the next monitored trip from the queue
-                MonitoredTrip trip;
+                // get the next monitored trip ID from the queue
+                String tripId;
                 try {
-                    trip = tripAnalysisQueue.poll(BLOCKING_QUEUE_POLL_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+                    tripId = tripAnalysisQueue.poll(BLOCKING_QUEUE_POLL_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     LOG.warn("TripAnalyzer thread interrupted");
                     e.printStackTrace();
@@ -48,23 +48,22 @@ public class TripAnalyzer implements Runnable {
 
                 // The implementation of the ArrayBlockingQueue can result in null items being returned if the wait is
                 // exceeded on an empty queue. Therefore, check if the trip is null and if so, wait and then continue.
-                if (trip == null) {
+                if (tripId == null) {
                     Thread.sleep(BLOCKING_QUEUE_POLL_TIMEOUT_MILLIS);
                     analyzerIsIdle.set(true);
                     continue;
                 }
 
                 // verify that a lock hasn't been placed on trip by another trip analyzer task
-                if (MonitoredTripLocks.isLocked(trip)) {
-                    LOG.warn("Skipping trip analysis due to existing lock on trip: {}", trip);
+                if (MonitoredTripLocks.isLocked(tripId)) {
+                    LOG.warn("Skipping trip analysis due to existing lock on trip: {}", tripId);
                     analyzerIsIdle.set(true);
                     continue;
                 }
 
                 // Refetch the trip from the database. This is to ensure the trip has any updates made to the trip
                 // between when the trip was placed in the analysis queue and the current time.
-                String tripId = trip.id;
-                trip = Persistence.monitoredTrips.getById(tripId);
+                MonitoredTrip trip = Persistence.monitoredTrips.getById(tripId);
                 if (trip == null) {
                     // trip was deleted between the time when it was placed in the queue and the current time. Don't
                     // analyze the trip.
@@ -76,7 +75,7 @@ public class TripAnalyzer implements Runnable {
                 LOG.info("Analyzing trip {}", tripId);
 
                 // place lock on trip
-                MonitoredTripLocks.lock(trip);
+                MonitoredTripLocks.lock(tripId);
 
                 /////// BEGIN TRIP ANALYSIS
                 try {
@@ -88,7 +87,7 @@ public class TripAnalyzer implements Runnable {
                 LOG.info("Finished analyzing trip {}", tripId);
 
                 // remove lock on trip
-                MonitoredTripLocks.unlock(trip);
+                MonitoredTripLocks.unlock(tripId);
 
                 analyzerIsIdle.set(true);
             }
