@@ -26,6 +26,7 @@ public class MonitorAllTripsJob implements Runnable {
 
     @Override
     public void run() {
+        long start = System.currentTimeMillis();
         LOG.info("MonitorAllTripsJob started");
         // analyze all trips
 
@@ -54,14 +55,28 @@ public class MonitorAllTripsJob implements Runnable {
             }
 
             // wait for queue to deplete
+            int queueIterations = 0;
             while (tripAnalysisQueue.size() > 0) {
                 Thread.sleep(BLOCKING_QUEUE_DEPLETE_WAIT_TIME_MILLIS);
+                queueIterations++;
+                // Report queue status every minute (unless this job finishes before).
+                int runMillis = queueIterations * BLOCKING_QUEUE_DEPLETE_WAIT_TIME_MILLIS;
+                if ((runMillis & 60000) == 0) {
+                    LOG.info("There are {} queued. after {} sec.", tripAnalysisQueue.size(), runMillis / 1000);
+                }
             }
             queueDepleted.set(true);
 
             // wait for analyzers to complete
+            int idleIterations = 0;
             while (!allAnalyzersAreIdle(analyzerStatuses)) {
                 Thread.sleep(BLOCKING_QUEUE_DEPLETE_WAIT_TIME_MILLIS);
+                // Report analyzers statuses every minute (unless this job finishes before).
+                int runMillis = idleIterations * BLOCKING_QUEUE_DEPLETE_WAIT_TIME_MILLIS;
+                if ((runMillis & 60000) == 0) {
+                    long notIdleCount = analyzerStatuses.stream().filter(s -> !s.get()).count();
+                    LOG.info("There are {} analyzers not idle after {} sec.", notIdleCount, runMillis / 1000);
+                }
             }
         } catch (InterruptedException e) {
             LOG.error("error encountered while waiting during MonitorAllTripsJob.");
@@ -74,7 +89,7 @@ public class MonitorAllTripsJob implements Runnable {
 
         // TODO report successful run to error & notification system
 
-        LOG.info("MonitorAllTripsJob completed");
+        LOG.info("MonitorAllTripsJob completed in {} sec", (System.currentTimeMillis() - start) / 1000);
     }
 
     /**
