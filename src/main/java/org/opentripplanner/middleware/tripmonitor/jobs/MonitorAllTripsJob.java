@@ -109,8 +109,9 @@ public class MonitorAllTripsJob implements Runnable {
      */
     private static BasicDBObject makeTripFilter() {
         BasicDBObject tripFilter = new BasicDBObject();
+
         //.Trips must be active.
-        tripFilter.put("isInactive", false);
+        tripFilter.put("isActive", true);
 
         // Other conditions (e.g. in CheckMonitoredTrip) that would result in a trip to be not checked
         // should eventually be moved here.
