@@ -17,7 +17,7 @@ public class MonitoredTripLocks {
     /** the amount of time in milliseconds to wait to check if a lock has been released */
     private static final int LOCK_CHECK_WAIT_MILLIS = 500;
 
-    private static final ConcurrentHashMap<String, Boolean> locks = new ConcurrentHashMap();
+    private static final ConcurrentHashMap<String, Boolean> locks = new ConcurrentHashMap<>();
 
     /**
      * Locks the given MonitoredTrip

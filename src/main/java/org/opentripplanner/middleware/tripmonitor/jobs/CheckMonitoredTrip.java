@@ -520,12 +520,6 @@ public class CheckMonitoredTrip implements Runnable {
      * calculated and updated in the monitored trip's journey state.
      */
     public boolean shouldSkipMonitoredTripCheck() throws Exception {
-        // before anything else, return true if the trip is inactive
-        if (trip.isInactive()) {
-            LOG.info("Skipping: Trip is inactive.");
-            return true;
-        }
-
         // get the configured timezone that OTP is using to parse dates and times
         ZoneId targetZoneId = DateTimeUtils.getOtpZoneId();
 
