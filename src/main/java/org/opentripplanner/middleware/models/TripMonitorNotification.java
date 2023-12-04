@@ -16,8 +16,21 @@ import java.util.Set;
  */
 public class TripMonitorNotification extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(TripMonitorNotification.class);
-    public NotificationType type;
-    public String body;
+    public final NotificationType type;
+    public final String body;
+
+    public TripMonitorNotification(NotificationType type, String body) {
+        this.type = type;
+        this.body = body;
+    }
+
+    /**
+     * Basic comparator that sets an arbitrary lower rank for initial reminders,
+     * so that they appear before other notifications after list sorting.
+     */
+    public int sortOrder() {
+        return type == NotificationType.INITIAL_REMINDER ? -100 : 0;
+    }
 
     public static TripMonitorNotification createAlertNotification(
         Set<LocalizedAlert> previousAlerts,
@@ -30,15 +43,15 @@ public class TripMonitorNotification extends Model {
         HashSet<LocalizedAlert> resolvedAlerts = new HashSet<>(previousAlerts);
         resolvedAlerts.removeAll(newAlerts);
         // If there is no change in alerts from previous check, no notification should be created.
-        if (unseenAlerts.size() == 0 && resolvedAlerts.size() == 0) {
+        if (unseenAlerts.isEmpty() && resolvedAlerts.isEmpty()) {
             return null;
         }
         // Otherwise, construct a notification from the alert sets.
-        TripMonitorNotification notification = new TripMonitorNotification();
-        // FIXME: notification type should be determined from alert sets (ALERT_ALL_CLEAR, etc.)?
-        notification.type = NotificationType.ALERT_FOUND;
-        notification.body = bodyFromAlerts(previousAlerts, resolvedAlerts, unseenAlerts);
-        return notification;
+        return new TripMonitorNotification(
+            // FIXME: notification type should be determined from alert sets (ALERT_ALL_CLEAR, etc.)?
+            NotificationType.ALERT_FOUND,
+            bodyFromAlerts(previousAlerts, resolvedAlerts, unseenAlerts)
+        );
     }
 
     /**
@@ -53,8 +66,6 @@ public class TripMonitorNotification extends Model {
         Date targetDatetime,
         NotificationType delayType
     ) {
-        TripMonitorNotification notification = new TripMonitorNotification();
-        notification.type = delayType;
         if (delayType != NotificationType.ARRIVAL_DELAY && delayType != NotificationType.DEPARTURE_DELAY) {
             LOG.error("Delay notification not permitted for type {}", delayType);
             return null;
@@ -68,15 +79,17 @@ public class TripMonitorNotification extends Model {
             delayHumanTime = String.format("%d minute%s early", delayInMinutes, delayInMinutes < -1 ? "s" : "");
         }
 
-        notification.body = String.format(
-            "Your trip is now predicted to %s %s (at %s).",
-            delayType == NotificationType.ARRIVAL_DELAY ? "arrive" : "depart",
-            delayHumanTime,
-            ZonedDateTime
-                .ofInstant(targetDatetime.toInstant(), DateTimeUtils.getOtpZoneId())
-                .format(DateTimeUtils.NOTIFICATION_TIME_FORMATTER)
+        return new TripMonitorNotification(
+            delayType,
+            String.format(
+                "Your trip is now predicted to %s %s (at %s).",
+                delayType == NotificationType.ARRIVAL_DELAY ? "arrive" : "depart",
+                delayHumanTime,
+                ZonedDateTime
+                    .ofInstant(targetDatetime.toInstant(), DateTimeUtils.getOtpZoneId())
+                    .format(DateTimeUtils.NOTIFICATION_TIME_FORMATTER)
+            )
         );
-        return notification;
     }
 
     /**
@@ -85,23 +98,25 @@ public class TripMonitorNotification extends Model {
     public static TripMonitorNotification createItineraryNotFoundNotification(
         boolean stillPossibleOnOtherMonitoredDaysOfTheWeek
     ) {
-        TripMonitorNotification notification = new TripMonitorNotification();
-        notification.type = NotificationType.ITINERARY_NOT_FOUND;
-        notification.body = stillPossibleOnOtherMonitoredDaysOfTheWeek
-            ? "Your itinerary was not found in trip planner results for today! Please check realtime conditions and plan a new trip."
-            : "Your itinerary is no longer possible any monitored day of the week! Please plan and save a new trip.";
-        return notification;
+        return new TripMonitorNotification(
+            NotificationType.ITINERARY_NOT_FOUND,
+            stillPossibleOnOtherMonitoredDaysOfTheWeek
+                ? "Your itinerary was not found in today's trip planner results. Please check real-time conditions and plan a new trip."
+                : "Your itinerary is no longer possible on any monitored day of the week. Please plan and save a new trip."
+        );
     }
 
     /**
      * Creates an initial reminder of the itinerary monitoring.
      */
-    public static TripMonitorNotification createInitialReminderNotification(MonitoredTrip trip) {
-        TripMonitorNotification notification = new TripMonitorNotification();
-        notification.type = NotificationType.INITIAL_REMINDER;
-        // TODO: i18n and add itinerary details.
-        notification.body = String.format("Reminder for your upcoming trip at %s. We will let you know if anything changes.", trip.tripTime);
-        return notification;
+    public static TripMonitorNotification createInitialReminderNotification(
+        MonitoredTrip trip
+    ) {
+        // TODO: i18n.
+        return new TripMonitorNotification(
+            NotificationType.INITIAL_REMINDER,
+            String.format("Reminder for %s at %s.", trip.tripName, trip.tripTime)
+        );
     }
 
     private static String bodyFromAlerts(
@@ -111,23 +126,21 @@ public class TripMonitorNotification extends Model {
     {
         StringBuilder body = new StringBuilder();
         // If all previous alerts were resolved and there are no unseen alerts, send ALL CLEAR.
-        if (previousAlerts.size() == resolvedAlerts.size() && unseenAlerts.size() == 0) {
+        if (previousAlerts.size() == resolvedAlerts.size() && unseenAlerts.isEmpty()) {
             body.append("All clear! The following alerts on your itinerary were all resolved:");
             body.append(listFromAlerts(resolvedAlerts, true));
             // Preempt the final return statement to avoid duplicating
             return body.toString();
         }
         // If there are any unseen alerts, include list of these.
-        if (unseenAlerts.size() > 0) {
-            // TODO: Improve message.
-            body.append("New alerts found! They are:");
+        if (!unseenAlerts.isEmpty()) {
+            body.append("\uD83D\uDD14 New alerts found:\n");
             body.append(listFromAlerts(unseenAlerts, false));
         }
         // If there are any resolved alerts, include list of these.
-        if (resolvedAlerts.size() > 0) {
+        if (!resolvedAlerts.isEmpty()) {
             if (body.length() > 0) body.append("\n");
-            // TODO: Improve message.
-            body.append("Resolved alerts are:");
+            body.append("Resolved alerts:");
             body.append(listFromAlerts(resolvedAlerts, true));
         }
         return body.toString();
