@@ -18,6 +18,7 @@ import spark.Request;
 import spark.Response;
 
 import java.util.Date;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,13 +53,17 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             Auth0Connection.ensureApiUserHasApiKey(req);
             user.applicationId = requestingUser.apiUser.id;
         }
-        user.mobilityProfile.updateMobilityMode();
+        if (Objects.nonNull(user.mobilityProfile)) {
+            user.mobilityProfile.updateMobilityMode();
+        }
         return super.preCreateHook(user, req);
     }
 
     @Override
     OtpUser preUpdateHook(OtpUser user, OtpUser preExistingUser, Request req) {
-        user.mobilityProfile.updateMobilityMode();
+        if (Objects.nonNull(user.mobilityProfile)) {
+            user.mobilityProfile.updateMobilityMode();
+        }
         return super.preUpdateHook(user, preExistingUser, req);
     }
 
