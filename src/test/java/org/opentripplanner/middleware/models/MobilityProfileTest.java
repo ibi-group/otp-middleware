@@ -14,7 +14,7 @@ public class MobilityProfileTest {
     // The mobility modes tested are tightly coupled with algorithms in the
     // Georgia Tech Mobility Profile Configuration / Logical Flow document, as
     // implemented in the MobilityPorfile#updateMobilityMode() method.  Changes
-    // to that document msut be reflected in that method and in these tests.
+    // to that document must be reflected in that method and in these tests.
 
     @Test
     public void testModesKnown() {
