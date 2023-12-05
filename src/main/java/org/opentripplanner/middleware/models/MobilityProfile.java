@@ -66,7 +66,7 @@ public class MobilityProfile implements Serializable {
 
         // If "none" has been specified at all, we just wipe the mobility devices clear,
         // else we look at the mobility devices and settle on the one that is the most involved.
-        if (mobilityProfile.mobilityDevices.isEmpty() || mobilityProfile.mobilityDevices.contains("none")) {
+        if (mobilityProfile.mobilityDevices.contains("none")) {
             mobilityProfile.mobilityDevices.clear();
         } else {
             if (mobilityProfile.mobilityDevices.contains("white cane")) {
