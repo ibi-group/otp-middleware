@@ -17,9 +17,7 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
-import java.util.Collections;
 import java.util.Date;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,8 +38,6 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
     private static final String VERIFY_ROUTE_TEMPLATE = "/:%s/%s/:%s";
     /** Regex to check E.164 phone number format per https://www.twilio.com/docs/glossary/what-e164 */
     private static final Pattern PHONE_E164_PATTERN = Pattern.compile("^\\+[1-9]\\d{1,14}$");
-    /** Mobility devices used to calculate mobility mode. Keywords are taken from Georgia Tech document. */
-    private static final Set<String> MOBILITY_DEVICES = Set.of("Device", "MScooter", "WChairE", "WChairM", "Some");
 
     public OtpUserController(String apiPrefix) {
         super(apiPrefix, Persistence.otpUsers, OTP_USER_PATH);
@@ -56,19 +52,13 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             Auth0Connection.ensureApiUserHasApiKey(req);
             user.applicationId = requestingUser.apiUser.id;
         }
-        if (user.mobilityProfile == null) {
-            user.mobilityProfile = new MobilityProfile();
-	}
-        user.mobilityProfile.mobilityMode = calculateMobilityMode(user);
+        MobilityProfile.updateMobilityMode(user.mobilityProfile);
         return super.preCreateHook(user, req);
     }
 
     @Override
     OtpUser preUpdateHook(OtpUser user, OtpUser preExistingUser, Request req) {
-        if (user.mobilityProfile == null) {
-            user.mobilityProfile = new MobilityProfile();
-	}
-        user.mobilityProfile.mobilityMode = calculateMobilityMode(user);
+        MobilityProfile.updateMobilityMode(user.mobilityProfile);
         return super.preUpdateHook(user, preExistingUser, req);
     }
 
@@ -187,71 +177,5 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
 
         Matcher m = PHONE_E164_PATTERN.matcher(phoneNumber);
         return m.matches();
-    }
-
-    /**
-     * Calculate and return the "mobility mode", a keyword or compound keyword specified by Georgia Tech,
-     * based on a number of {@code OtpUser} moblity profile fields.
-     * @param user whose mobility profile is consulted to calculate mobility mode
-     * @return mobility mode as a single string
-     */
-    private static String calculateMobilityMode(OtpUser user) {
-        // Variable names and the strings we parse are from Georgia Tech document, to facilitate syncing changes.
-        // The testing for devices and vision in this order are from the same document; note that this means the
-        // devices tested for later will override the earlier "Temp"orary settings.
-        String mModeTemp = "None";
-        String visionTemp = "None";
-
-        if (user.mobilityProfile.mobilityDevices == null) {
-            user.mobilityProfile.mobilityDevices = Collections.EMPTY_LIST;
-        }
-        if (user.mobilityProfile.mobilityDevices.isEmpty() || user.mobilityProfile.mobilityDevices.contains("none")) {
-            user.mobilityProfile.mobilityDevices.clear();
-        } else {
-            if (user.mobilityProfile.mobilityDevices.contains("white cane")) {
-                visionTemp = "Blind";
-            }
-            if (user.mobilityProfile.mobilityDevices.contains("manual walker")
-                    || user.mobilityProfile.mobilityDevices.contains("wheeled walker")
-                    || user.mobilityProfile.mobilityDevices.contains("cane")
-                    || user.mobilityProfile.mobilityDevices.contains("crutches")
-                    || user.mobilityProfile.mobilityDevices.contains("stroller")
-                    || user.mobilityProfile.mobilityDevices.contains("service animal")) {
-                mModeTemp = "Device";
-            }
-            if (user.mobilityProfile.mobilityDevices.contains("mobility scooter")) {
-                mModeTemp = "MScooter";
-            }
-            if (user.mobilityProfile.mobilityDevices.contains("electric wheelchair")) {
-                mModeTemp = "WChairE";
-            }
-            if (user.mobilityProfile.mobilityDevices.contains("manual wheelchair")) {
-                mModeTemp = "WChairM";
-            }
-
-            if ("None".equals(mModeTemp) && user.mobilityProfile.isMobilityLimited) {
-                mModeTemp = "Some";
-            }
-        }
-
-        if (visionTemp.isEmpty()) {
-            if (MobilityProfile.VisionLimitation.LOW_VISION == user.mobilityProfile.visionLimitation) {
-                visionTemp = "LowVision";
-            } else if (MobilityProfile.VisionLimitation.LEGALLY_BLIND == user.mobilityProfile.visionLimitation) {
-                visionTemp = "Blind";
-            }
-        }
-
-        // Create combinations for mobility mode and vision
-        if (Set.of("LowVision", "Blind").contains(visionTemp)) {
-            if ("None".equals(mModeTemp)) {
-                return visionTemp;
-            } else if (MOBILITY_DEVICES.contains(mModeTemp)) {
-                return mModeTemp + "-" + visionTemp;
-            }
-        } else if (MOBILITY_DEVICES.contains(mModeTemp)) {
-            return mModeTemp;
-        }
-        return "None";
     }
 }
