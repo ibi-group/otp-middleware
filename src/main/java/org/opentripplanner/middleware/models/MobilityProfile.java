@@ -48,7 +48,6 @@ public class MobilityProfile implements Serializable {
     /** User may indicate levels of vision limitation. */
     public VisionLimitation visionLimitation = VisionLimitation.NONE;
 
-
     /**
      * Construct the mobility mode keyword or compound keyword from fields in
      * a mobility profile, and update the mobility profile with it.  Follows
@@ -57,7 +56,7 @@ public class MobilityProfile implements Serializable {
      * order.  The device strings are expected to change on occasion.
      * @param mobilityProfile consulted to construct and update mobility mode
      */
-    public static void updateMobilityMode(MobilityProfile mobilityProfile) {
+    public void updateMobilityMode() {
         // Variable names and the strings we parse are from Georgia Tech document, to facilitate syncing
         // changes.  The testing for devices and vision in this order are from the same document; note
         // that this means the devices tested for later will override the earlier "Temp"orary settings.
@@ -66,51 +65,52 @@ public class MobilityProfile implements Serializable {
 
         // If "none" has been specified at all, we just wipe the mobility devices clear,
         // else we look at the mobility devices and settle on the one that is the most involved.
-        if (mobilityProfile.mobilityDevices.contains("none")) {
-            mobilityProfile.mobilityDevices.clear();
+        if (mobilityDevices.contains("none")) {
+            mobilityDevices = Collections.EMPTY_LIST;
         } else {
-            if (mobilityProfile.mobilityDevices.contains("white cane")) {
+            if (mobilityDevices.contains("white cane")) {
                 visionTemp = "Blind";
             }
-            if (mobilityProfile.mobilityDevices.contains("manual walker")
-                    || mobilityProfile.mobilityDevices.contains("wheeled walker")
-                    || mobilityProfile.mobilityDevices.contains("cane")
-                    || mobilityProfile.mobilityDevices.contains("crutches")
-                    || mobilityProfile.mobilityDevices.contains("stroller")
-                    || mobilityProfile.mobilityDevices.contains("service animal")) {
+            if (mobilityDevices.contains("manual walker")
+                    || mobilityDevices.contains("wheeled walker")
+                    || mobilityDevices.contains("cane")
+                    || mobilityDevices.contains("crutches")
+                    || mobilityDevices.contains("stroller")
+                    || mobilityDevices.contains("service animal")) {
                 mModeTemp = "Device";
             }
-            if (mobilityProfile.mobilityDevices.contains("mobility scooter")) {
+            if (mobilityDevices.contains("mobility scooter")) {
                 mModeTemp = "MScooter";
             }
-            if (mobilityProfile.mobilityDevices.contains("electric wheelchair")) {
+            if (mobilityDevices.contains("electric wheelchair")) {
                 mModeTemp = "WChairE";
             }
-            if (mobilityProfile.mobilityDevices.contains("manual wheelchair")) {
+            if (mobilityDevices.contains("manual wheelchair")) {
                 mModeTemp = "WChairM";
             }
 
-            if ("None".equals(mModeTemp) && mobilityProfile.isMobilityLimited) {
+            if ("None".equals(mModeTemp) && isMobilityLimited) {
                 mModeTemp = "Some";
             }
         }
 
-        if (MobilityProfile.VisionLimitation.LOW_VISION == mobilityProfile.visionLimitation) {
+        if (MobilityProfile.VisionLimitation.LOW_VISION == visionLimitation) {
             visionTemp = "LowVision";
-        } else if (MobilityProfile.VisionLimitation.LEGALLY_BLIND == mobilityProfile.visionLimitation) {
+        } else if (MobilityProfile.VisionLimitation.LEGALLY_BLIND == visionLimitation) {
             visionTemp = "Blind";
         }
 
         // Create combinations for mobility mode and vision
         if (Set.of("LowVision", "Blind").contains(visionTemp)) {
             if ("None".equals(mModeTemp)) {
-                mobilityProfile.mobilityMode = visionTemp;
+                mobilityMode = visionTemp;
             } else if (MOBILITY_DEVICES.contains(mModeTemp)) {
-                mobilityProfile.mobilityMode = mModeTemp + "-" + visionTemp;
+                mobilityMode = mModeTemp + "-" + visionTemp;
             }
         } else if (MOBILITY_DEVICES.contains(mModeTemp)) {
-            mobilityProfile.mobilityMode = mModeTemp;
-        }
-        mobilityProfile.mobilityMode = "None";
+            mobilityMode = mModeTemp;
+        } else {
+            mobilityMode = "None";
+	}
     }
 }

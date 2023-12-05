@@ -52,13 +52,13 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             Auth0Connection.ensureApiUserHasApiKey(req);
             user.applicationId = requestingUser.apiUser.id;
         }
-        MobilityProfile.updateMobilityMode(user.mobilityProfile);
+        user.mobilityProfile.updateMobilityMode();
         return super.preCreateHook(user, req);
     }
 
     @Override
     OtpUser preUpdateHook(OtpUser user, OtpUser preExistingUser, Request req) {
-        MobilityProfile.updateMobilityMode(user.mobilityProfile);
+        user.mobilityProfile.updateMobilityMode();
         return super.preUpdateHook(user, preExistingUser, req);
     }
 
