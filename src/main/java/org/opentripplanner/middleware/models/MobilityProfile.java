@@ -42,7 +42,6 @@ public class MobilityProfile implements Serializable {
     public Collection<String> mobilityDevices = Collections.EMPTY_LIST;
 
     /** Compound keyword that controller calculates from mobility and vision values. */
-    @JsonIgnore
     public String mobilityMode;
 
     /** User may indicate levels of vision limitation. */
