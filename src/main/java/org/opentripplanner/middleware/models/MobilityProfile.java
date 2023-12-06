@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- * Mobility profile data, to keeps track of values from UI or mobile app and
+ * Mobility profile data, to keep track of values from UI or mobile app and
  * uses them to maintain a "mobility mode," which are keywords specified in
  * the Georgia Tech Mobility Profile Configuration / Logical Flow document.
  * <p>
