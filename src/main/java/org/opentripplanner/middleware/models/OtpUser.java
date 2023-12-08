@@ -33,21 +33,11 @@ public class OtpUser extends AbstractUser {
     /** Whether the user has consented to terms of use. */
     public boolean hasConsentedToTerms;
 
-    /** Whether the user has indicated that their mobility is limited (slower). */
-    public boolean isMobilityLimited;
-
     /** Whether the phone number has been verified. */
     public boolean isPhoneNumberVerified;
 
-    /** User may have indicated zero or more mobility devices. */
-    public Collection<String> mobilityDevices;
-
-    /** Compound keyword that controller calculates from mobility and vision values. */
-    @JsonIgnore
-    public String mobilityMode;
-
-    /** One of "low-vision" "legally blind" "none" */
-    public String visionLimitation;
+    /** Mobility profile. */
+    public MobilityProfile mobilityProfile;
 
     /**
      * Notification preferences for this user
