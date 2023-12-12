@@ -17,27 +17,27 @@ public class MonitoredTripLocks {
     /** the amount of time in milliseconds to wait to check if a lock has been released */
     private static final int LOCK_CHECK_WAIT_MILLIS = 500;
 
-    private static final ConcurrentHashMap<MonitoredTrip, Boolean> locks = new ConcurrentHashMap();
+    private static final ConcurrentHashMap<String, Boolean> locks = new ConcurrentHashMap<>();
 
     /**
      * Locks the given MonitoredTrip
      */
-    public static void lock(MonitoredTrip trip) {
-        locks.put(trip, true);
+    public static void lock(String tripId) {
+        locks.put(tripId, true);
     }
 
     /**
      * Removes a lock for a given MonitoredTrip
      */
-    public static void unlock(MonitoredTrip trip) {
-        locks.remove(trip);
+    public static void unlock(String tripId) {
+        locks.remove(tripId);
     }
 
     /**
      * Returns true if a lock exists for the given MonitoredTrip
      */
-    public static boolean isLocked(MonitoredTrip trip) {
-        return locks.containsKey(trip);
+    public static boolean isLocked(String tripId) {
+        return locks.containsKey(tripId);
     }
 
     /**
@@ -48,7 +48,7 @@ public class MonitoredTripLocks {
     public static void lockTripForUpdating(MonitoredTrip monitoredTrip, Request req) {
         // Wait for any existing CheckMonitoredTrip jobs to complete before proceeding
         String busyMessage = "A trip monitor check prevented the trip from being updated. Please try again in a moment.";
-        if (isLocked(monitoredTrip)) {
+        if (isLocked(monitoredTrip.id)) {
             int timeWaitedMillis = 0;
             do {
                 try {
@@ -59,17 +59,17 @@ public class MonitoredTripLocks {
                 timeWaitedMillis += LOCK_CHECK_WAIT_MILLIS;
 
                 // if the lock has been released, exit this wait loop
-                if (!isLocked(monitoredTrip)) break;
+                if (!isLocked(monitoredTrip.id)) break;
             } while (timeWaitedMillis <= MAX_UNLOCKING_WAIT_TIME_MILLIS);
         }
 
         // If a lock still exists, prevent the update
-        if (isLocked(monitoredTrip)) {
+        if (isLocked(monitoredTrip.id)) {
             logMessageAndHalt(req, HttpStatus.INTERNAL_SERVER_ERROR_500, busyMessage);
             return;
         }
 
         // lock the trip so that the a CheckMonitoredTrip job won't concurrently analyze/update the trip.
-        lock(monitoredTrip);
+        lock(monitoredTrip.id);
     }
 }

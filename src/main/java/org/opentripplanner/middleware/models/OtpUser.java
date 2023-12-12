@@ -36,6 +36,9 @@ public class OtpUser extends AbstractUser {
     /** Whether the phone number has been verified. */
     public boolean isPhoneNumberVerified;
 
+    /** Mobility profile. */
+    public MobilityProfile mobilityProfile;
+
     /**
      * Notification preferences for this user
      * (EMAIL and/or SMS and/or PUSH).

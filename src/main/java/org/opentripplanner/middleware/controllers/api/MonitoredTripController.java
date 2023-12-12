@@ -92,14 +92,14 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     @Override
     MonitoredTrip postCreateHook(MonitoredTrip monitoredTrip, Request req) {
         try {
-            MonitoredTripLocks.lock(monitoredTrip);
+            MonitoredTripLocks.lock(monitoredTrip.id);
             return runCheckMonitoredTrip(monitoredTrip);
         } catch (Exception e) {
             // FIXME: an error happened while checking the trip, but the trip was saved to the DB, so return the raw
             //  trip as it was saved in the db?
             return monitoredTrip;
         } finally {
-            MonitoredTripLocks.unlock(monitoredTrip);
+            MonitoredTripLocks.unlock(monitoredTrip.id);
         }
     }
 
@@ -170,7 +170,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             //  the raw trip as it was saved in the db before the check monitored trip job ran?
             return monitoredTrip;
         } finally {
-            MonitoredTripLocks.unlock(monitoredTrip);
+            MonitoredTripLocks.unlock(monitoredTrip.id);
         }
     }
 

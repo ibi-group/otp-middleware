@@ -28,6 +28,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
@@ -119,10 +120,10 @@ public class CheckMonitoredTrip implements Runnable {
             return;
         }
 
-        // Initial reminder notification, if needed
-        addInitialReminderIfNeeded();
         // Check monitored trip.
         runCheckLogic();
+        // Initial reminder notification, if needed, with text based on other notifications for this trip.
+        addInitialReminderIfNeeded();
         // Send notifications to user. This should happen before updating the journey state so that we can check the
         // last notification sent.
         sendNotifications();
@@ -423,10 +424,13 @@ public class CheckMonitoredTrip implements Runnable {
             LOG.info("Last notifications match current ones. Skipping notify.");
             return;
         }
+
         Map<String, Object> templateData = Map.of(
             "tripId", trip.id,
             "tripName", trip.tripName,
             "notifications", notifications.stream()
+                // Make certain notifications, such as the initial reminder one, appear on top.
+                .sorted(Comparator.comparingInt(TripMonitorNotification::sortOrder))
                 .map(notification -> notification.body)
                 .collect(Collectors.toList())
         );

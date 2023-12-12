@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
+import org.opentripplanner.middleware.models.MobilityProfile;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -17,6 +18,7 @@ import spark.Request;
 import spark.Response;
 
 import java.util.Date;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,7 +53,18 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             Auth0Connection.ensureApiUserHasApiKey(req);
             user.applicationId = requestingUser.apiUser.id;
         }
+        if (Objects.nonNull(user.mobilityProfile)) {
+            user.mobilityProfile.updateMobilityMode();
+        }
         return super.preCreateHook(user, req);
+    }
+
+    @Override
+    OtpUser preUpdateHook(OtpUser user, OtpUser preExistingUser, Request req) {
+        if (Objects.nonNull(user.mobilityProfile)) {
+            user.mobilityProfile.updateMobilityMode();
+        }
+        return super.preUpdateHook(user, preExistingUser, req);
     }
 
     @Override
