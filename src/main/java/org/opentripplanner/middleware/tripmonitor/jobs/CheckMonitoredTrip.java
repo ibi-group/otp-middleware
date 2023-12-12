@@ -431,7 +431,10 @@ public class CheckMonitoredTrip implements Runnable {
             "notifications", notifications.stream()
                 // Make certain notifications, such as the initial reminder one, appear on top.
                 .sorted(Comparator.comparingInt(TripMonitorNotification::sortOrder))
-                .map(notification -> notification.body)
+                .map(notification -> Map.of(
+                        "type", notification.type.toString(),
+                        "body", notification.body
+                ))
                 .collect(Collectors.toList())
         );
         // FIXME: Change log level

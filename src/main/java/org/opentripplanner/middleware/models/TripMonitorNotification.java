@@ -16,6 +16,7 @@ import java.util.Set;
  */
 public class TripMonitorNotification extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(TripMonitorNotification.class);
+
     public final NotificationType type;
     public final String body;
 
@@ -31,7 +32,6 @@ public class TripMonitorNotification extends Model {
     public int sortOrder() {
         return type == NotificationType.INITIAL_REMINDER ? -100 : 0;
     }
-
     public static TripMonitorNotification createAlertNotification(
         Set<LocalizedAlert> previousAlerts,
         Set<LocalizedAlert> newAlerts)

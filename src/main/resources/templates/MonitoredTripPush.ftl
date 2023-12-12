@@ -7,12 +7,12 @@
     The max length is thus 178 characters.
     - List alerts with bullets if there are more than one of them.
 -->
-<#if notifications?size > 1>
-  <#list notifications as notification>
-    • ${notification}
-  </#list>
+<#if notifications?size gt 1>
+<#list notifications as notification>
+• ${notification}
+</#list>
 <#else>
-  <#list notifications as notification>
-    ${notification}
-  </#list>
+<#list notifications as notification>
+${notification}
+</#list>
 </#if>

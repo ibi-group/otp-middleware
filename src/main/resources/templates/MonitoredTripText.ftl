@@ -4,7 +4,7 @@
 -->
 
 Your trip has the following notifications:
-<#if notifications?size > 1>
+<#if notifications?size gt 1>
   <#list notifications as notification>
     • ${notification}
   </#list>
