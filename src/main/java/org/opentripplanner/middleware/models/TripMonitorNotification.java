@@ -20,6 +20,15 @@ public class TripMonitorNotification extends Model {
     public final NotificationType type;
     public final String body;
 
+    /** Getter functions are used by HTML template renderer */
+    public String getBody() {
+        return body;
+    }
+
+    public NotificationType getType() {
+        return type;
+    }
+
     public TripMonitorNotification(NotificationType type, String body) {
         this.type = type;
         this.body = body;
