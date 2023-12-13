@@ -7,11 +7,11 @@ Your trip has the following notifications:
 
 <#if notifications?size gt 1>
 <#list notifications as notification>
-• ${notification}
+• ${notification.body}
 </#list>
 <#else>
 <#list notifications as notification>
-${notification}
+${notification.body}
 </#list>
 </#if>
 
