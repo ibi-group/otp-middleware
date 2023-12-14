@@ -52,8 +52,10 @@ public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
         // Trip Monitor Notifications tests (for CheckMonitoredTrip#sendNotifications).
         Map<String, Object> notificationsData = Map.of(
             "tripId", "18f642d5-f7a8-475a-9469-800129e6c0b3",
-            "notifications", List.of(new TripMonitorNotification(NotificationType.INITIAL_REMINDER, "This is the initial reminder text"), new TripMonitorNotification(NotificationType.DEPARTURE_DELAY, "This is the departure delay text"))
-        );
+            "notifications", List.of(
+                new TripMonitorNotification(NotificationType.INITIAL_REMINDER, "This is the initial reminder text"),
+                new TripMonitorNotification(NotificationType.DEPARTURE_DELAY, "This is the departure delay text")
+        ));
         testCases.add(new TemplateRenderingTestCase(
             notificationsData, "MonitoredTripSms.ftl", "Monitored Trip SMS"
         ));

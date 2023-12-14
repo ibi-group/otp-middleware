@@ -428,7 +428,7 @@ public class CheckMonitoredTrip implements Runnable {
         Map<String, Object> templateData = Map.of(
             "tripId", trip.id,
             "tripName", trip.tripName,
-            "notifications", notifications.stream()
+            "notifications", new ArrayList<>(notifications).stream()
                 // Make certain notifications, such as the initial reminder one, appear on top.
                 .sorted(Comparator.comparingInt(TripMonitorNotification::sortOrder))
                 .map(notification -> Map.of(

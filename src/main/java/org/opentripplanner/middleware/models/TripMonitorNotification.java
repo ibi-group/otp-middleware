@@ -41,6 +41,7 @@ public class TripMonitorNotification extends Model {
     public int sortOrder() {
         return type == NotificationType.INITIAL_REMINDER ? -100 : 0;
     }
+
     public static TripMonitorNotification createAlertNotification(
         Set<LocalizedAlert> previousAlerts,
         Set<LocalizedAlert> newAlerts)
