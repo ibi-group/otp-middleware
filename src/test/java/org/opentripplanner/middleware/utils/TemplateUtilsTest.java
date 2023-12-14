@@ -16,6 +16,14 @@ import java.util.Set;
 import static com.zenika.snapshotmatcher.SnapshotMatcher.matchesSnapshot;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+/**
+ * Unit tests for {@code resources/templates/*.ftl} Freemarker Template Language files.
+ * <p>
+ * When the tests are first run, the {@code com.zenika.snapshotmatcher.SnapshotMatcher} class will create JSON snapshot
+ * files in {@code resources/snapshots/org/opentripplanner/middleware} which are used thereafter to compare with the
+ * results of the template files.  If you change any {@code *.ftl} files you will need to delete their corresponding
+ * snapshot files, run the tests to create new snapshots, and then commit those files along with new template files.
+ */
 public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
     /**
      * A parameterized test that checks whether various templates render in a way that matches a snapshot. The name of
