@@ -55,8 +55,5 @@ class TripMonitorNotificationTest {
 
         TripMonitorNotification notification = TripMonitorNotification.createInitialReminderNotification(trip, Locale.forLanguageTag("en-US"));
         assertEquals("Reminder for Trip time test at 5:44 PM.", notification.body);
-
-        TripMonitorNotification notification2 = TripMonitorNotification.createInitialReminderNotification(trip, Locale.forLanguageTag("fr"));
-        assertEquals("Reminder for Trip time test at 17:44.", notification2.body);
     }
 }

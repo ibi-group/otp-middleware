@@ -143,8 +143,9 @@ public class CheckMonitoredTrip implements Runnable {
 
         if (!trip.isInactive() && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder) {
             OtpUser otpUser = Persistence.otpUsers.getById(trip.userId);
+            Locale locale = Locale.forLanguageTag(otpUser.preferredLocale == null ? "en-US" : otpUser.preferredLocale);
             enqueueNotification(
-                TripMonitorNotification.createInitialReminderNotification(trip, Locale.forLanguageTag(otpUser.preferredLocale))
+                TripMonitorNotification.createInitialReminderNotification(trip, locale)
             );
         }
     }
