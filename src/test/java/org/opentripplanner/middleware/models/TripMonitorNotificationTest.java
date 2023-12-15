@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -17,6 +18,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 class TripMonitorNotificationTest {
+    public static final Locale EN_US_LOCALE = Locale.forLanguageTag("en-US");
+
     @Test
     void testSortOrderPutsInitialReminderFirst() {
         TripMonitorNotification reminder = new TripMonitorNotification(NotificationType.INITIAL_REMINDER, "reminder");
@@ -39,6 +42,25 @@ class TripMonitorNotificationTest {
 
     @Test
     void canCreateInitialReminder() {
+        MonitoredTrip trip = makeSampleTrip();
+        TripMonitorNotification notification = TripMonitorNotification.createInitialReminderNotification(trip, EN_US_LOCALE);
+        assertEquals("Reminder for Sample Trip at 5:44 PM.", notification.body);
+    }
+
+    @Test
+    void canCreateDelayedTripNotification() {
+        MonitoredTrip trip = makeSampleTrip();
+        TripMonitorNotification notification = TripMonitorNotification.createDelayNotification(
+            10,
+            trip.itinerary.startTime,
+            NotificationType.ARRIVAL_DELAY,
+            EN_US_LOCALE
+        );
+        assertNotNull(notification);
+        assertEquals("Your trip is now predicted to arrive 10 minutes late (at 5:44 PM).", notification.body);
+    }
+
+    private static MonitoredTrip makeSampleTrip() {
         MonitoredTrip trip = new MonitoredTrip();
         trip.tripName = "Sample Trip";
 
@@ -52,30 +74,6 @@ class TripMonitorNotificationTest {
         itinerary.startTime = Date.from(startTime.toInstant());
 
         trip.itinerary = itinerary;
-
-        TripMonitorNotification notification = TripMonitorNotification.createInitialReminderNotification(trip, Locale.forLanguageTag("en-US"));
-        assertEquals("Reminder for Sample Trip at 5:44 PM.", notification.body);
-    }
-
-    @Test
-    void canCreateDelayedTripNotification() {
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.tripName = "Sample Trip";
-
-        // Set a start time for the itinerary, in the ambient/default OTP zone.
-        ZonedDateTime startTime = ZonedDateTime.of(2023, 2, 12, 17, 44, 0, 0, DateTimeUtils.getOtpZoneId());
-
-        Itinerary itinerary = new Itinerary();
-        itinerary.startTime = Date.from(startTime.toInstant());
-
-        trip.itinerary = itinerary;
-
-        TripMonitorNotification notification = TripMonitorNotification.createDelayNotification(
-            10,
-            itinerary.startTime,
-            NotificationType.ARRIVAL_DELAY,
-            Locale.forLanguageTag("en-US")
-        );
-        assertEquals("Your trip is now predicted to arrive 10 minutes late (at 5:44 PM).", notification.body);
+        return trip;
     }
 }
