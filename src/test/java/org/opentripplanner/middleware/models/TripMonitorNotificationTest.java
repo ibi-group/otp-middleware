@@ -64,7 +64,7 @@ class TripMonitorNotificationTest {
         MonitoredTrip trip = new MonitoredTrip();
         trip.tripName = "Sample Trip";
 
-        // tripTime is for the OTP query, is included for reference only, and should not be used.
+        // tripTime is for the OTP query, is included for reference only, and should not be used for notifications.
         trip.tripTime = "13:31";
 
         // Set a start time for the itinerary, in the ambient/default OTP zone.

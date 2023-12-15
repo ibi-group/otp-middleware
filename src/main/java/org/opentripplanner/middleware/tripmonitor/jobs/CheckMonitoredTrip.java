@@ -87,6 +87,12 @@ public class CheckMonitoredTrip implements Runnable {
      */
     ZonedDateTime targetZonedDateTime;
 
+    /** Caches the user associated with a trip */
+    private OtpUser cachedUser;
+
+    /** Whether an attempt has been made to retrieve the user. */
+    private boolean userChecked;
+
     public CheckMonitoredTrip(MonitoredTrip trip) throws CloneNotSupportedException {
         this.trip = trip;
         previousJourneyState = trip.journeyState;
@@ -142,10 +148,8 @@ public class CheckMonitoredTrip implements Runnable {
         boolean userWantsInitialReminder = !trip.snoozed && trip.notifyAtLeadingInterval;
 
         if (!trip.isInactive() && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder) {
-            OtpUser otpUser = Persistence.otpUsers.getById(trip.userId);
-            Locale locale = Locale.forLanguageTag(otpUser.preferredLocale == null ? "en-US" : otpUser.preferredLocale);
             enqueueNotification(
-                TripMonitorNotification.createInitialReminderNotification(trip, locale)
+                TripMonitorNotification.createInitialReminderNotification(trip, getOtpUserLocale())
             );
         }
     }
@@ -381,8 +385,6 @@ public class CheckMonitoredTrip implements Runnable {
 
         // check if threshold met
         if (deviationAbsoluteMinutes >= deviationThreshold) {
-            OtpUser otpUser = Persistence.otpUsers.getById(trip.userId);
-            Locale locale = Locale.forLanguageTag(otpUser.preferredLocale == null ? "en-US" : otpUser.preferredLocale);
             // threshold met, set new baseline time
             if (delayType == NotificationType.DEPARTURE_DELAY) {
                 journeyState.baselineDepartureTimeEpochMillis = matchingItineraryTargetTime.getTime();
@@ -399,7 +401,7 @@ public class CheckMonitoredTrip implements Runnable {
                 delayMinutes,
                 matchingItineraryTargetTime,
                 delayType,
-                locale
+                getOtpUserLocale()
             );
         }
         return null;
@@ -410,7 +412,7 @@ public class CheckMonitoredTrip implements Runnable {
      * preferences.
      */
     private void sendNotifications() {
-        OtpUser otpUser = Persistence.otpUsers.getById(trip.userId);
+        OtpUser otpUser = getOtpUser();
         if (otpUser == null) {
             LOG.error("Cannot find user for id {}", trip.userId);
             // TODO: Bugsnag / delete monitored trip?
@@ -774,5 +776,24 @@ public class CheckMonitoredTrip implements Runnable {
         trip.journeyState = journeyState;
         Persistence.monitoredTrips.replace(trip.id, trip);
         return true;
+    }
+
+    /**
+     * Retrieves and caches the user on first call (assuming the user for a trip does not change during a trip check).
+     */
+    private OtpUser getOtpUser() {
+        if (!userChecked) {
+            cachedUser = Persistence.otpUsers.getById(trip.userId);
+            userChecked = true;
+        }
+        return cachedUser;
+    }
+
+    /**
+     * Retrieves and caches the user on first call (assuming the user for a trip does not change).
+     */
+    private Locale getOtpUserLocale() {
+        OtpUser user = getOtpUser();
+        return Locale.forLanguageTag(user == null || user.preferredLocale == null ? "en-US" : user.preferredLocale);
     }
 }
