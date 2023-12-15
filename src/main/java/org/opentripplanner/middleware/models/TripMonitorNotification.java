@@ -7,8 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -110,12 +113,18 @@ public class TripMonitorNotification extends Model {
      * Creates an initial reminder of the itinerary monitoring.
      */
     public static TripMonitorNotification createInitialReminderNotification(
-        MonitoredTrip trip
+        MonitoredTrip trip, Locale locale
     ) {
-        // TODO: i18n.
         return new TripMonitorNotification(
             NotificationType.INITIAL_REMINDER,
-            String.format("Reminder for %s at %s.", trip.tripName, trip.tripTime)
+            String.format("Reminder for %s at %s.",
+                trip.tripName,
+                DateTimeFormatter
+                    .ofLocalizedTime(FormatStyle.SHORT)
+                    .withLocale(locale)
+                    .withZone(DateTimeUtils.getOtpZoneId())
+                    .format(trip.itinerary.startTime.toInstant())
+            )
         );
     }
 
