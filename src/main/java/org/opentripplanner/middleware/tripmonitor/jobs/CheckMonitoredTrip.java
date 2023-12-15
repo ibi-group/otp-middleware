@@ -381,6 +381,8 @@ public class CheckMonitoredTrip implements Runnable {
 
         // check if threshold met
         if (deviationAbsoluteMinutes >= deviationThreshold) {
+            OtpUser otpUser = Persistence.otpUsers.getById(trip.userId);
+            Locale locale = Locale.forLanguageTag(otpUser.preferredLocale == null ? "en-US" : otpUser.preferredLocale);
             // threshold met, set new baseline time
             if (delayType == NotificationType.DEPARTURE_DELAY) {
                 journeyState.baselineDepartureTimeEpochMillis = matchingItineraryTargetTime.getTime();
@@ -396,7 +398,8 @@ public class CheckMonitoredTrip implements Runnable {
             return TripMonitorNotification.createDelayNotification(
                 delayMinutes,
                 matchingItineraryTargetTime,
-                delayType
+                delayType,
+                locale
             );
         }
         return null;

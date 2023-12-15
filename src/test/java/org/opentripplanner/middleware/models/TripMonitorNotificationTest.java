@@ -38,11 +38,11 @@ class TripMonitorNotificationTest {
     }
 
     @Test
-    void canUseItineraryStartTimeInInitialReminder() {
+    void canCreateInitialReminder() {
         MonitoredTrip trip = new MonitoredTrip();
-        trip.tripName = "Trip time test";
+        trip.tripName = "Sample Trip";
 
-        // tripTime is for the OTP query and is included for reference only.
+        // tripTime is for the OTP query, is included for reference only, and should not be used.
         trip.tripTime = "13:31";
 
         // Set a start time for the itinerary, in the ambient/default OTP zone.
@@ -54,6 +54,28 @@ class TripMonitorNotificationTest {
         trip.itinerary = itinerary;
 
         TripMonitorNotification notification = TripMonitorNotification.createInitialReminderNotification(trip, Locale.forLanguageTag("en-US"));
-        assertEquals("Reminder for Trip time test at 5:44 PM.", notification.body);
+        assertEquals("Reminder for Sample Trip at 5:44 PM.", notification.body);
+    }
+
+    @Test
+    void canCreateDelayedTripNotification() {
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.tripName = "Sample Trip";
+
+        // Set a start time for the itinerary, in the ambient/default OTP zone.
+        ZonedDateTime startTime = ZonedDateTime.of(2023, 2, 12, 17, 44, 0, 0, DateTimeUtils.getOtpZoneId());
+
+        Itinerary itinerary = new Itinerary();
+        itinerary.startTime = Date.from(startTime.toInstant());
+
+        trip.itinerary = itinerary;
+
+        TripMonitorNotification notification = TripMonitorNotification.createDelayNotification(
+            10,
+            itinerary.startTime,
+            NotificationType.ARRIVAL_DELAY,
+            Locale.forLanguageTag("en-US")
+        );
+        assertEquals("Your trip is now predicted to arrive 10 minutes late (at 5:44 PM).", notification.body);
     }
 }

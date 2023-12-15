@@ -6,7 +6,6 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
@@ -65,7 +64,8 @@ public class TripMonitorNotification extends Model {
     public static TripMonitorNotification createDelayNotification(
         long delayInMinutes,
         Date targetDatetime,
-        NotificationType delayType
+        NotificationType delayType,
+        Locale locale
     ) {
         if (delayType != NotificationType.ARRIVAL_DELAY && delayType != NotificationType.DEPARTURE_DELAY) {
             LOG.error("Delay notification not permitted for type {}", delayType);
@@ -86,9 +86,7 @@ public class TripMonitorNotification extends Model {
                 "Your trip is now predicted to %s %s (at %s).",
                 delayType == NotificationType.ARRIVAL_DELAY ? "arrive" : "depart",
                 delayHumanTime,
-                ZonedDateTime
-                    .ofInstant(targetDatetime.toInstant(), DateTimeUtils.getOtpZoneId())
-                    .format(DateTimeUtils.NOTIFICATION_TIME_FORMATTER)
+                DateTimeUtils.formatShortDate(targetDatetime, locale)
             )
         );
     }
