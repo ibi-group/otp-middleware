@@ -29,7 +29,7 @@ class DateTimeUtilsTest {
             Arguments.of("es", "17:44"),
             Arguments.of("ko", "오후 5:44"),
             Arguments.of("vi", "17:44"),
-            Arguments.of("zh", "下午5:44"), // Note: formatjs shows 24-hour format for Chinese.
+            Arguments.of("zh", "下午5:44"), // Note: The Format.JS library shows 24-hour format for Chinese.
             Arguments.of("ru", "17:44"),
             Arguments.of("tl", "5:44 PM")
         );
