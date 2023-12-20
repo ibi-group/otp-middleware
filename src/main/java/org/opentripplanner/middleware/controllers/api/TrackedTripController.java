@@ -67,7 +67,7 @@ public class TrackedTripController implements Endpoint {
      * Provide the correct response to the caller based on the trip stage.
      */
     private static Object trackTrip(Request request, TripStage tripStage) {
-        TrackingPayload payload = getTrackingPayloadFromRequest(request);
+        var payload = getTrackingPayloadFromRequest(request);
         if (payload != null) {
             switch (tripStage) {
                 case START:
@@ -110,9 +110,9 @@ public class TrackedTripController implements Endpoint {
      * Confirm that the monitored trip (that the user is on) belongs to them.
      */
     private static boolean isTripAssociatedWithUser(Request request, String tripId) {
-        RequestingUser user = Auth0Connection.getUserFromRequest(request);
+        var user = Auth0Connection.getUserFromRequest(request);
 
-        MonitoredTrip monitoredTrip = Persistence.monitoredTrips.getById(tripId);
+        var monitoredTrip = Persistence.monitoredTrips.getById(tripId);
         if (
             monitoredTrip == null ||
             (user.adminUser != null && !monitoredTrip.userId.equals(user.adminUser.id)) ||
@@ -130,7 +130,7 @@ public class TrackedTripController implements Endpoint {
      * completed.
      */
     private static TrackedJourney getActiveJourney(Request request, TrackingPayload payload) {
-        TrackedJourney trackedJourney = Persistence.trackedJourneys.getOneFiltered(eq("journeyId", payload.journeyId));
+        var trackedJourney = Persistence.trackedJourneys.getOneFiltered(eq("journeyId", payload.journeyId));
         if (trackedJourney != null && trackedJourney.endTime == null) {
             return trackedJourney;
         } else {

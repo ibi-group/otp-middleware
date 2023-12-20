@@ -22,10 +22,10 @@ public class ManageTripTracking {
 
         // Create unique journey id for this trip. If the same trip is repeated it will not clash with previous
         // journeys of the same trip.
-        String journeyId = UUID.randomUUID().toString();
+        var journeyId = UUID.randomUUID().toString();
 
         // Start tracking journey.
-        TrackedJourney trackedJourney = new TrackedJourney(journeyId, payload);
+        var trackedJourney = new TrackedJourney(journeyId, payload);
         Persistence.trackedJourneys.create(trackedJourney);
 
         // Provide response.
