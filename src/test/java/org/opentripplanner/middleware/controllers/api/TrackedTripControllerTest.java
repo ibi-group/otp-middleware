@@ -83,6 +83,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     public void tearDownAfterTest() {
         if (trackedJourney != null) {
             trackedJourney.delete();
+            trackedJourney = null;
         }
     }
 
