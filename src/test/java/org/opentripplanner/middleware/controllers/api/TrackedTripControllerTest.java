@@ -45,9 +45,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static MonitoredTrip monitoredTrip;
     private static TrackedJourney trackedJourney;
 
-    private static final String START_TRACKING_TRIP_PATH = "api/secure/monitoredtrip/starttracking";
-    private static final String UPDATE_TRACKING_TRIP_PATH = "api/secure/monitoredtrip/updatetracking";
-    private static final String END_TRACKING_TRIP_PATH = "api/secure/monitoredtrip/endtracking";
+    private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
+    private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
+    private static final String UPDATE_TRACKING_TRIP_PATH = ROUTE_PATH + "updatetracking";
+    private static final String END_TRACKING_TRIP_PATH = ROUTE_PATH + "endtracking";
 
     @BeforeAll
     public static void setUp() {
