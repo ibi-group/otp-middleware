@@ -248,7 +248,6 @@ The special E2E client settings should be defined in `env.yml`:
 | MONITORED_COMPONENTS | array | Optional | n/a | An array of monitored components. |
 | NOTIFICATION_FROM_EMAIL | string | Optional | noreply@email.com | The from email address used in notification emails |
 | NOTIFICATION_FROM_PHONE | string | Optional | +15551234 | The from phone number used in notification SMSs. The phone number must be surrounded with quotes to be correctly parsed as a String. |
-| NOTIFICATION_TIME_FORMAT | string | Optional | HH:mm | The time format used in notification emails and SMSs. |
 | OTP_ADMIN_DASHBOARD_FROM_EMAIL | string | Optional | OTP Admin Dashboard <no-reply@email.com> | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_ADMIN_DASHBOARD_NAME | string | Optional | OTP Admin Dashboard | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_ADMIN_DASHBOARD_URL | string | Optional | https://admin.example.com | Config setting for linking to the OTP Admin Dashboard. |
