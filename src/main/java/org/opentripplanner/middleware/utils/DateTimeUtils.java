@@ -15,10 +15,12 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.format.FormatStyle;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,9 +42,6 @@ public class DateTimeUtils {
     public static final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
     public static final DateTimeFormatter DEFAULT_DATE_FORMATTER = DateTimeFormatter.ofPattern(
         DEFAULT_DATE_FORMAT_PATTERN
-    );
-    public static final DateTimeFormatter NOTIFICATION_TIME_FORMATTER = DateTimeFormatter.ofPattern(
-        ConfigUtils.getConfigPropertyAsText("NOTIFICATION_TIME_FORMAT", "HH:mm")
     );
 
     /**
@@ -95,6 +94,17 @@ public class DateTimeUtils {
             .toFormatter()
             .withZone(zoneId);
         return localDate.format(expectedDateFormat);
+    }
+
+    /**
+     * Helper to format a date in short format (e.g. "5:40 PM" - no seconds) in the specified locale.
+     */
+    public static String formatShortDate(Date date, Locale locale) {
+        return DateTimeFormatter
+            .ofLocalizedTime(FormatStyle.SHORT)
+            .withLocale(locale)
+            .withZone(DateTimeUtils.getOtpZoneId())
+            .format(date.toInstant());
     }
 
     public static Date nowAsDate() {

@@ -6,9 +6,9 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -64,7 +64,8 @@ public class TripMonitorNotification extends Model {
     public static TripMonitorNotification createDelayNotification(
         long delayInMinutes,
         Date targetDatetime,
-        NotificationType delayType
+        NotificationType delayType,
+        Locale locale
     ) {
         if (delayType != NotificationType.ARRIVAL_DELAY && delayType != NotificationType.DEPARTURE_DELAY) {
             LOG.error("Delay notification not permitted for type {}", delayType);
@@ -85,9 +86,7 @@ public class TripMonitorNotification extends Model {
                 "Your trip is now predicted to %s %s (at %s).",
                 delayType == NotificationType.ARRIVAL_DELAY ? "arrive" : "depart",
                 delayHumanTime,
-                ZonedDateTime
-                    .ofInstant(targetDatetime.toInstant(), DateTimeUtils.getOtpZoneId())
-                    .format(DateTimeUtils.NOTIFICATION_TIME_FORMATTER)
+                DateTimeUtils.formatShortDate(targetDatetime, locale)
             )
         );
     }
@@ -110,12 +109,14 @@ public class TripMonitorNotification extends Model {
      * Creates an initial reminder of the itinerary monitoring.
      */
     public static TripMonitorNotification createInitialReminderNotification(
-        MonitoredTrip trip
+        MonitoredTrip trip, Locale locale
     ) {
-        // TODO: i18n.
         return new TripMonitorNotification(
             NotificationType.INITIAL_REMINDER,
-            String.format("Reminder for %s at %s.", trip.tripName, trip.tripTime)
+            String.format("Reminder for %s at %s.",
+                trip.tripName,
+                DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale)
+            )
         );
     }
 

@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -85,6 +86,12 @@ public class CheckMonitoredTrip implements Runnable {
      * the trip is supposed to arrive by. For depart at trips, this will be the time that the trip should start after.
      */
     ZonedDateTime targetZonedDateTime;
+
+    /** Caches the user associated with a trip */
+    private OtpUser cachedUser;
+
+    /** Whether an attempt has been made to retrieve the user. */
+    private boolean userChecked;
 
     public CheckMonitoredTrip(MonitoredTrip trip) throws CloneNotSupportedException {
         this.trip = trip;
@@ -142,7 +149,7 @@ public class CheckMonitoredTrip implements Runnable {
 
         if (!trip.isInactive() && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder) {
             enqueueNotification(
-                TripMonitorNotification.createInitialReminderNotification(trip)
+                TripMonitorNotification.createInitialReminderNotification(trip, getOtpUserLocale())
             );
         }
     }
@@ -393,7 +400,8 @@ public class CheckMonitoredTrip implements Runnable {
             return TripMonitorNotification.createDelayNotification(
                 delayMinutes,
                 matchingItineraryTargetTime,
-                delayType
+                delayType,
+                getOtpUserLocale()
             );
         }
         return null;
@@ -404,7 +412,7 @@ public class CheckMonitoredTrip implements Runnable {
      * preferences.
      */
     private void sendNotifications() {
-        OtpUser otpUser = Persistence.otpUsers.getById(trip.userId);
+        OtpUser otpUser = getOtpUser();
         if (otpUser == null) {
             LOG.error("Cannot find user for id {}", trip.userId);
             // TODO: Bugsnag / delete monitored trip?
@@ -768,5 +776,24 @@ public class CheckMonitoredTrip implements Runnable {
         trip.journeyState = journeyState;
         Persistence.monitoredTrips.replace(trip.id, trip);
         return true;
+    }
+
+    /**
+     * Retrieves and caches the user on first call (assuming the user for a trip does not change during a trip check).
+     */
+    private OtpUser getOtpUser() {
+        if (!userChecked) {
+            cachedUser = Persistence.otpUsers.getById(trip.userId);
+            userChecked = true;
+        }
+        return cachedUser;
+    }
+
+    /**
+     * Retrieves and caches the user on first call (assuming the user for a trip does not change).
+     */
+    private Locale getOtpUserLocale() {
+        OtpUser user = getOtpUser();
+        return Locale.forLanguageTag(user == null || user.preferredLocale == null ? "en-US" : user.preferredLocale);
     }
 }
