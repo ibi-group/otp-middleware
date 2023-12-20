@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
-import com.auth0.json.mgmt.users.User;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
@@ -140,7 +139,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
         assertEquals("Monitored trip is not associated with this user!", startTrackingResponse.message);
-        assertEquals(HttpStatus.BAD_REQUEST_400, response.status);
+        assertEquals(HttpStatus.FORBIDDEN_403, response.status);
     }
 
     @Test

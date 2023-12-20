@@ -5,8 +5,6 @@ import io.github.manusant.ss.SparkSwagger;
 import io.github.manusant.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.RequestingUser;
-import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
@@ -115,11 +113,9 @@ public class TrackedTripController implements Endpoint {
         var monitoredTrip = Persistence.monitoredTrips.getById(tripId);
         if (
             monitoredTrip == null ||
-            (user.adminUser != null && !monitoredTrip.userId.equals(user.adminUser.id)) ||
-            (user.otpUser != null && !monitoredTrip.userId.equals(user.otpUser.id)) ||
-            (user.apiUser != null && !monitoredTrip.userId.equals(user.apiUser.id))
+            (user.otpUser != null && !monitoredTrip.userId.equals(user.otpUser.id))
         ) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Monitored trip is not associated with this user!");
+            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Monitored trip is not associated with this user!");
             return false;
         }
         return true;
