@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.models.CDPUser;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
@@ -48,8 +49,10 @@ public class Persistence {
     public static TypedPersistence<ApiUser> apiUsers;
     public static TypedPersistence<CDPUser> cdpUsers;
     public static TypedPersistence<TripHistoryUpload> tripHistoryUploads;
+    public static TypedPersistence<TrackedJourney> trackedJourneys;
     public static TypedPersistence<TripRequest> tripRequests;
     public static TypedPersistence<TripSummary> tripSummaries;
+
     public static TypedPersistence<MonitoredTrip> monitoredTrips;
 
     // admin and system reliability collections
@@ -96,6 +99,7 @@ public class Persistence {
         apiUsers = new TypedPersistence(mongoDatabase, ApiUser.class);
         cdpUsers = new TypedPersistence(mongoDatabase, CDPUser.class);
         tripHistoryUploads = new TypedPersistence(mongoDatabase, TripHistoryUpload.class);
+        trackedJourneys = new TypedPersistence(mongoDatabase, TrackedJourney.class);
         tripRequests = new TypedPersistence(mongoDatabase, TripRequest.class);
         tripSummaries = new TypedPersistence(mongoDatabase, TripSummary.class);
         monitoredTrips = new TypedPersistence(mongoDatabase, MonitoredTrip.class);
