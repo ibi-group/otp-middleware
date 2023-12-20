@@ -199,7 +199,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private TrackingPayload createInitialTrackingPayload() {
         return createInitialTrackingPayload(monitoredTrip.id);
     }
-    
+
     private TrackingPayload createInitialTrackingPayload(String monitorTripId) {
         TrackingPayload trackingPayLoad = new TrackingPayload();
         trackingPayLoad.tripId = monitorTripId;
