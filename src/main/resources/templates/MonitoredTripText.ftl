@@ -4,8 +4,14 @@
 -->
 
 Your trip has the following notifications:
-<#list notifications as notification>
-  -${notification}
-</#list>
+<#if notifications?size gt 1>
+  <#list notifications as notification>
+    • ${notification.body}
+  </#list>
+<#else>
+  <#list notifications as notification>
+    ${notification.body}
+  </#list>
+</#if>
 
 View trip: ${OTP_UI_URL}${TRIPS_PATH}/${tripId}

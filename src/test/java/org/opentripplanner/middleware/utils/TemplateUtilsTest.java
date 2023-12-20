@@ -3,7 +3,9 @@ package org.opentripplanner.middleware.utils;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -14,6 +16,14 @@ import java.util.Set;
 import static com.zenika.snapshotmatcher.SnapshotMatcher.matchesSnapshot;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+/**
+ * Unit tests for {@code resources/templates/*.ftl} Freemarker Template Language files.
+ * <p>
+ * When the tests are first run, the {@code com.zenika.snapshotmatcher.SnapshotMatcher} class will create JSON snapshot
+ * files in {@code resources/snapshots/org/opentripplanner/middleware} which are used thereafter to compare with the
+ * results of the template files.  If you change any {@code *.ftl} files you will need to delete their corresponding
+ * snapshot files, run the tests to create new snapshots, and then commit those files along with new template files.
+ */
 public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
     /**
      * A parameterized test that checks whether various templates render in a way that matches a snapshot. The name of
@@ -50,8 +60,10 @@ public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
         // Trip Monitor Notifications tests (for CheckMonitoredTrip#sendNotifications).
         Map<String, Object> notificationsData = Map.of(
             "tripId", "18f642d5-f7a8-475a-9469-800129e6c0b3",
-            "notifications", List.of("Test notification.", "Another notification.")
-        );
+            "notifications", List.of(
+                new TripMonitorNotification(NotificationType.INITIAL_REMINDER, "This is the initial reminder text"),
+                new TripMonitorNotification(NotificationType.DEPARTURE_DELAY, "This is the departure delay text")
+        ));
         testCases.add(new TemplateRenderingTestCase(
             notificationsData, "MonitoredTripSms.ftl", "Monitored Trip SMS"
         ));

@@ -16,8 +16,18 @@ import java.util.Set;
  */
 public class TripMonitorNotification extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(TripMonitorNotification.class);
+
     public final NotificationType type;
     public final String body;
+
+    /** Getter functions are used by HTML template renderer */
+    public String getBody() {
+        return body;
+    }
+
+    public NotificationType getType() {
+        return type;
+    }
 
     public TripMonitorNotification(NotificationType type, String body) {
         this.type = type;
