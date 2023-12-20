@@ -329,7 +329,11 @@ public class NotificationUtils {
         try {
             Map<String, String> headers = Map.of("Accept", "application/json");
             var httpResponse = HttpUtils.httpRequestRawResponse(
-                URI.create(getPushDevicesUrl(PUSH_API_URL + "/devices/get?api_key=" + PUSH_API_KEY + "&user=", toUser)),
+                URI.create(getPushDevicesUrl(String.format(
+                    "%s/devices/get?api_key=%s&user=",
+                    PUSH_API_URL,
+                    PUSH_API_KEY
+                ), toUser)),
                 1000,
                 HttpMethod.GET,
                 headers,
