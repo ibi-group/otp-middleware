@@ -15,6 +15,7 @@ public class TrackedJourney extends Model {
     public String journeyId;
 
     public String tripId;
+
     public String endCondition;
 
     public Date startTime;
@@ -22,7 +23,6 @@ public class TrackedJourney extends Model {
     public Date endTime;
 
     public List<TrackingLocation> locations = new ArrayList<>();
-
 
     public TrackedJourney() {
     }

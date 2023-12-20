@@ -52,7 +52,6 @@ public class Persistence {
     public static TypedPersistence<TrackedJourney> trackedJourneys;
     public static TypedPersistence<TripRequest> tripRequests;
     public static TypedPersistence<TripSummary> tripSummaries;
-
     public static TypedPersistence<MonitoredTrip> monitoredTrips;
 
     // admin and system reliability collections
