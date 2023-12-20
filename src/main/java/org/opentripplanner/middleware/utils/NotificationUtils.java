@@ -20,8 +20,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.util.Map;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
@@ -327,7 +329,11 @@ public class NotificationUtils {
         try {
             Map<String, String> headers = Map.of("Accept", "application/json");
             var httpResponse = HttpUtils.httpRequestRawResponse(
-                URI.create(PUSH_API_URL + "/devices/get?api_key=" + PUSH_API_KEY + "&user=" + toUser),
+                URI.create(getPushDevicesUrl(String.format(
+                    "%s/devices/get?api_key=%s&user=",
+                    PUSH_API_URL,
+                    PUSH_API_KEY
+                ), toUser)),
                 1000,
                 HttpMethod.GET,
                 headers,
@@ -344,6 +350,10 @@ public class NotificationUtils {
             LOG.error("No info on push notification devices", e);
         }
         return 0;
+    }
+
+    static String getPushDevicesUrl(String baseUrl, String toUser) {
+        return baseUrl + URLEncoder.encode(toUser, UTF_8);
     }
 
     /**

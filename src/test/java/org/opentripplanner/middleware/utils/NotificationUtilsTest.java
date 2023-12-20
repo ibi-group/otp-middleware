@@ -6,6 +6,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.opentripplanner.middleware.utils.NotificationUtils.getPushDevicesUrl;
 import static org.opentripplanner.middleware.utils.NotificationUtils.getTwilioLocale;
 
 /**
@@ -29,5 +30,15 @@ class NotificationUtilsTest {
     @NullSource
     void twilioLocaleDefaultsToEnglish(String locale) {
         Assertions.assertEquals("en", getTwilioLocale(locale));
+    }
+
+    @Test
+    void testGetPushDevicesUrl() {
+        String email = "first.last+suffix@example.com";
+        String base = "https://get.example.com/devices/?user=";
+        Assertions.assertEquals(
+            "https://get.example.com/devices/?user=first.last%2Bsuffix%40example.com",
+            getPushDevicesUrl(base, email)
+        );
     }
 }
