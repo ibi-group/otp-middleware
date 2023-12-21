@@ -27,15 +27,15 @@ public class TrackedJourney extends Model {
     public TrackedJourney() {
     }
 
-    public TrackedJourney(String journeyId, TrackingPayload trackingPayLoad) {
+    public TrackedJourney(String journeyId, TrackingPayload trackingPayload) {
         this.journeyId = journeyId;
         startTime = new Date();
-        locations.add(trackingPayLoad.location);
-        tripId = trackingPayLoad.tripId;
+        locations.add(trackingPayload.location);
+        tripId = trackingPayload.tripId;
     }
 
-    public void update(TrackingPayload trackingPayLoad) {
-        this.locations.addAll(trackingPayLoad.locations);
+    public void update(TrackingPayload trackingPayload) {
+        this.locations.addAll(trackingPayload.locations);
     }
 
     public void end(String endCondition) {
