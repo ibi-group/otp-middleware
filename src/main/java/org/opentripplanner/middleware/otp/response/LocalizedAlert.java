@@ -13,6 +13,16 @@ public class LocalizedAlert {
 
     public String id;
 
+    // Getters for the notification template processor.
+
+    public String getAlertHeaderText() {
+        return alertHeaderText;
+    }
+
+    public String getAlertDescriptionText() {
+        return alertDescriptionText;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(alertHeaderText, alertDescriptionText, alertUrl, effectiveStartDate, effectiveEndDate);

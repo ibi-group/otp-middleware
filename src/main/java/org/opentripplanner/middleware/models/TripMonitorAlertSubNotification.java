@@ -11,9 +11,21 @@ import java.util.Collection;
 public class TripMonitorAlertSubNotification extends TripMonitorNotification {
     private final Collection<LocalizedAlert> alerts;
 
-    /** Getter function used by the HTML template renderer */
+    // Getter functions used by the HTML template renderer
+
     public Collection<LocalizedAlert> getAlerts() {
         return alerts;
+    }
+
+    // Emojis/symbols are not converted correctly in email template files,
+    // so pass them at runtime instead.
+
+    public String getIcon() {
+        return "⚠";
+    }
+
+    public String getResolvedIcon() {
+        return "☑";
     }
 
     public TripMonitorAlertSubNotification(String header, Collection<LocalizedAlert> alerts) {
