@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.otp.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.Date;
 import java.util.Objects;
 
@@ -27,6 +29,7 @@ public class LocalizedAlert {
      * Line returns are not preserved if using the HTML email renderer,
      * so we insert line returns as line-break (br) tags to match the itinerary-body UI.
      */
+    @JsonIgnore
     public String getAlertDescriptionForHtml() {
         return alertDescriptionText != null
             ? alertDescriptionText.replace("\n", "<br/>\n")
