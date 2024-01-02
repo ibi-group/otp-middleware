@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 
 import java.util.Date;
 import java.util.Objects;
@@ -30,6 +31,7 @@ public class LocalizedAlert {
      * so we insert line returns as line-break (br) tags to match the itinerary-body UI.
      */
     @JsonIgnore
+    @BsonIgnore
     public String getAlertDescriptionForHtml() {
         return alertDescriptionText != null
             ? alertDescriptionText.replace("\n", "<br/>\n")
