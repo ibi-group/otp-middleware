@@ -9,23 +9,23 @@
 <#macro EmailMain>
     <div>
         <style>
-ul.alerts {
-    padding: 0;
-}
-ul.alerts li {
-    background-color: #ddd;
-    list-style-type: none;
-    margin-bottom: 10px;
-    padding: 5px 5px 5px 2em;
-    text-indent: -1.5em;
-}
-ul.alerts.resolved li {
-    background-color: #99ddff;
-}
+            ul.alerts {
+                padding: 0;
+            }
+            ul.alerts li {
+                background-color: #ddd;
+                list-style-type: none;
+                margin-bottom: 10px;
+                padding: 5px 5px 5px 2em;
+                text-indent: -1.5em;
+            }
+            ul.alerts.resolved li {
+                background-color: #99ddff;
+            }
         </style>
         <h1>Your trip has the following notifications:</h1>
 
-         <#list notifications as notification>
+        <#list notifications as notification>
             <#if notification.type == "INITIAL_REMINDER">
                 <p>${notification.body}</p>
             </#if>
@@ -40,7 +40,7 @@ ul.alerts.resolved li {
                                 <#list notification.newAlertsNotification.alerts as alert>
                                     <li>
                                         <strong>${notification.newAlertsNotification.icon} ${alert.alertHeaderText}</strong><br/>
-                                        ${alert.alertDescriptionText}
+                                        ${alert.alertDescriptionForHtml}
                                     </li>
                                 </#list>
                             </ul>
@@ -52,7 +52,7 @@ ul.alerts.resolved li {
                                 <#list notification.resolvedAlertsNotification.alerts as alert>
                                     <li>
                                         <strong>${notification.resolvedAlertsNotification.resolvedIcon} ${alert.alertHeaderText}</strong><br/>
-                                        ${alert.alertDescriptionText}
+                                        ${alert.alertDescriptionForHtml}
                                     </li>
                                 </#list>
                             </ul>

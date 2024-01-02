@@ -23,6 +23,16 @@ public class LocalizedAlert {
         return alertDescriptionText;
     }
 
+    /**
+     * Line returns are not preserved if using the HTML email renderer,
+     * so we insert line returns as line-break (br) tags to match the itinerary-body UI.
+     */
+    public String getAlertDescriptionForHtml() {
+        return alertDescriptionText != null
+            ? alertDescriptionText.replace("\n", "<br/>\n")
+            : "";
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(alertHeaderText, alertDescriptionText, alertUrl, effectiveStartDate, effectiveEndDate);
