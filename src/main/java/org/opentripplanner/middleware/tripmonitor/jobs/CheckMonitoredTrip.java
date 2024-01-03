@@ -28,14 +28,13 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -93,6 +92,9 @@ public class CheckMonitoredTrip implements Runnable {
     /** Whether an attempt has been made to retrieve the user. */
     private boolean userChecked;
 
+    /** Contains the initial reminder notification, if any is needed for this check. */
+    TripMonitorNotification initialReminderNotification;
+
     public CheckMonitoredTrip(MonitoredTrip trip) throws CloneNotSupportedException {
         this.trip = trip;
         previousJourneyState = trip.journeyState;
@@ -148,8 +150,9 @@ public class CheckMonitoredTrip implements Runnable {
         boolean userWantsInitialReminder = !trip.snoozed && trip.notifyAtLeadingInterval;
 
         if (!trip.isInactive() && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder) {
-            enqueueNotification(
-                TripMonitorNotification.createInitialReminderNotification(trip, getOtpUserLocale())
+            initialReminderNotification = TripMonitorNotification.createInitialReminderNotification(
+                trip,
+                getOtpUserLocale()
             );
         }
     }
@@ -421,23 +424,29 @@ public class CheckMonitoredTrip implements Runnable {
         // Update push notification devices count, which may change asynchronously
         NotificationUtils.updatePushDevices(otpUser);
 
-        if (notifications.size() == 0) {
+        if (notifications.size() == 0 && initialReminderNotification == null) {
             // FIXME: Change log level
             LOG.info("No notifications queued for trip. Skipping notify.");
             return;
         }
         // If the same notifications were just sent, there is no need to send the same notification.
         // TODO: Should there be some time threshold check here based on lastNotificationTime?
-        if (previousJourneyState.lastNotifications.containsAll(notifications)) {
+        if (previousJourneyState.lastNotifications.containsAll(notifications) && initialReminderNotification == null) {
             LOG.info("Last notifications match current ones. Skipping notify.");
             return;
         }
 
-        Map<String, Object> templateData = Map.of(
+        String tripNameOrReminder = initialReminderNotification != null ? initialReminderNotification.body : trip.tripName;
+
+        Map<String, Object> templateData = new HashMap<>(Map.of(
             "tripId", trip.id,
             "tripName", trip.tripName,
+            "tripNameOrReminder", tripNameOrReminder,
             "notifications", new ArrayList<>(notifications)
-        );
+        ));
+        if (initialReminderNotification != null) {
+            templateData.put("initialReminder", initialReminderNotification);
+        }
         // FIXME: Change log level
         LOG.info("Sending notification to user {}", trip.userId);
         boolean successEmail = false;

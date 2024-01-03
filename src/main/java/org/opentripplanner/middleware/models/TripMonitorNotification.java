@@ -19,19 +19,27 @@ public class TripMonitorNotification extends Model {
 
     public final NotificationType type;
     public final String body;
+    public final String bodyShort;
 
     /** Getter functions are used by HTML template renderer */
     public String getBody() {
         return body;
     }
 
+    public String getBodyShort() { return bodyShort; }
+
     public NotificationType getType() {
         return type;
     }
 
-    public TripMonitorNotification(NotificationType type, String body) {
+    public TripMonitorNotification(NotificationType type, String body, String bodyShort) {
         this.type = type;
         this.body = body;
+        this.bodyShort = bodyShort;
+    }
+
+    public TripMonitorNotification(NotificationType type, String body) {
+        this(type, body, body);
     }
 
     /**
@@ -60,7 +68,8 @@ public class TripMonitorNotification extends Model {
         return new TripMonitorNotification(
             // FIXME: notification type should be determined from alert sets (ALERT_ALL_CLEAR, etc.)?
             NotificationType.ALERT_FOUND,
-            bodyFromAlerts(previousAlerts, resolvedAlerts, unseenAlerts)
+            bodyFromAlerts(previousAlerts, resolvedAlerts, unseenAlerts),
+            bodyShortFromAlerts(previousAlerts, resolvedAlerts, unseenAlerts)
         );
     }
 
@@ -93,7 +102,7 @@ public class TripMonitorNotification extends Model {
         return new TripMonitorNotification(
             delayType,
             String.format(
-                "Your trip is now predicted to %s %s (at %s).",
+                "⏱ Your trip is now predicted to %s %s (at %s).",
                 delayType == NotificationType.ARRIVAL_DELAY ? "arrive" : "depart",
                 delayHumanTime,
                 DateTimeUtils.formatShortDate(targetDatetime, locale)
@@ -153,6 +162,35 @@ public class TripMonitorNotification extends Model {
             if (body.length() > 0) body.append("\n");
             body.append("Resolved alerts:");
             body.append(listFromAlerts(resolvedAlerts, true));
+        }
+        return body.toString();
+    }
+
+    private static String bodyShortFromAlerts(
+        Set<LocalizedAlert> previousAlerts,
+        Set<LocalizedAlert> resolvedAlerts,
+        Set<LocalizedAlert> unseenAlerts)
+    {
+        StringBuilder body = new StringBuilder();
+        // If all previous alerts were resolved and there are no unseen alerts, send ALL CLEAR.
+        if (previousAlerts.size() == resolvedAlerts.size() && unseenAlerts.isEmpty()) {
+            body.append(String.format("☑ All clear! %d alerts on your itinerary were all resolved.", resolvedAlerts.size()));
+            // Preempt the final return statement to avoid duplicating
+            return body.toString();
+        }
+        // If there are any unseen or resolved alerts, notify accordingly.
+        if (!unseenAlerts.isEmpty() || !resolvedAlerts.isEmpty()) {
+            body.append("⚠ Your trip has ");
+            if (!unseenAlerts.isEmpty()) {
+                body.append(String.format("%d new", unseenAlerts.size()));
+            }
+            if (!resolvedAlerts.isEmpty()) {
+                if (!unseenAlerts.isEmpty()) {
+                    body.append(", ");
+                }
+                body.append(String.format("%d resolved", resolvedAlerts.size()));
+            }
+            body.append(" alerts.");
         }
         return body.toString();
     }
