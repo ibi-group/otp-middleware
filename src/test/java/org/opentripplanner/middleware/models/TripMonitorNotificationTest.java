@@ -32,7 +32,7 @@ class TripMonitorNotificationTest {
             EN_US_LOCALE
         );
         assertNotNull(notification);
-        assertEquals("Your trip is now predicted to arrive 10 minutes late (at 5:44 PM).", notification.body);
+        assertEquals("⏱ Your trip is now predicted to arrive 10 minutes late (at 5:44 PM).", notification.body);
     }
 
     private static MonitoredTrip makeSampleTrip() {

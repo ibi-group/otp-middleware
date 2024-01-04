@@ -440,7 +440,6 @@ public class CheckMonitoredTrip implements Runnable {
 
         Map<String, Object> templateData = new HashMap<>(Map.of(
             "tripId", trip.id,
-            "tripName", trip.tripName,
             "tripNameOrReminder", tripNameOrReminder,
             "notifications", new ArrayList<>(notifications)
         ));
