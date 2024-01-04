@@ -42,14 +42,6 @@ public class TripMonitorNotification extends Model {
         this(type, body, body);
     }
 
-    /**
-     * Basic comparator that sets an arbitrary lower rank for initial reminders,
-     * so that they appear before other notifications after list sorting.
-     */
-    public int sortOrder() {
-        return type == NotificationType.INITIAL_REMINDER ? -100 : 0;
-    }
-
     public static TripMonitorNotification createAlertNotification(
         Set<LocalizedAlert> previousAlerts,
         Set<LocalizedAlert> newAlerts)
