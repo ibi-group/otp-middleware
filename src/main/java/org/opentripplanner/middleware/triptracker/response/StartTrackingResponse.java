@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.triptracker;
+package org.opentripplanner.middleware.triptracker.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

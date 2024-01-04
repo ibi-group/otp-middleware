@@ -1186,31 +1186,20 @@ paths:
       description: "Initiates the tracking of a monitored trip."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/StartTrackingPayload"
       responses:
         "200":
           description: "Successful operation"
-          examples: {}
-        "400":
-          description: "The request was not formed properly (e.g., some required parameters\
-            \ may be missing). See the details of the returned response to determine\
-            \ the exact issue."
-          examples: {}
-        "401":
-          description: "The server was not able to authenticate the request. This\
-            \ can happen if authentication headers are missing or malformed, or the\
-            \ authentication server cannot be reached."
-          examples: {}
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
-        "500":
-          description: "An error occurred while performing the request. Contact an\
-            \ API administrator for more information."
-          examples: {}
+          schema:
+            $ref: "#/definitions/StartTrackingResponse"
+          responseSchema:
+            $ref: "#/definitions/StartTrackingResponse"
   /api/secure/monitoredtrip/updatetracking:
     post:
       tags:
@@ -1218,11 +1207,21 @@ paths:
       description: "Provides tracking updates on a monitored trip."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/UpdatedTrackingPayload"
       responses:
         "200":
           description: "Successful operation"
           examples: {}
+          schema:
+            $ref: "#/definitions/UpdateTrackingResponse"
+          responseSchema:
+            $ref: "#/definitions/UpdateTrackingResponse"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\
@@ -1250,7 +1249,51 @@ paths:
       description: "Terminates the tracking of a monitored trip by the user."
       produces:
       - "application/json"
-      parameters: []
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/EndTrackingPayload"
+      responses:
+        "200":
+          description: "Successful operation"
+          examples: {}
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+  /api/secure/monitoredtrip/forciblyendtracking:
+    post:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Forcibly terminates tracking of a monitored trip by trip ID."
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/ForceEndTrackingPayload"
       responses:
         "200":
           description: "Successful operation"
@@ -2593,6 +2636,50 @@ definitions:
         $ref: "#/definitions/JourneyState"
       notifyAtLeadingInterval:
         type: "boolean"
+  StartTrackingPayload:
+    type: "object"
+    properties:
+      location:
+        $ref: "#/definitions/TrackingLocation"
+      tripId:
+        type: "string"
+  TrackingLocation:
+    type: "object"
+    properties:
+      bearing:
+        type: "integer"
+        format: "int32"
+      lat:
+        type: "number"
+        format: "double"
+      lon:
+        type: "number"
+        format: "double"
+      speed:
+        type: "integer"
+        format: "int32"
+      timestamp:
+        type: "string"
+        format: "date"
+  UpdatedTrackingPayload:
+    type: "object"
+    properties:
+      journeyId:
+        type: "string"
+      locations:
+        type: "array"
+        items:
+          $ref: "#/definitions/TrackingLocation"
+  EndTrackingPayload:
+    type: "object"
+    properties:
+      journeyId:
+        type: "string"
+  ForceEndTrackingPayload:
+    type: "object"
+    properties:
+      tripId:
+        type: "string"
   TripRequest:
     type: "object"
     properties:

@@ -1,7 +1,10 @@
-package org.opentripplanner.middleware.triptracker;
+package org.opentripplanner.middleware.triptracker.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * The response provided to the caller when updating tracking of a monitored trip.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class UpdateTrackingResponse {
 

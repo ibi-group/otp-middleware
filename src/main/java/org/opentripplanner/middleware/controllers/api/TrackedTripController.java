@@ -1,27 +1,29 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.manusant.ss.SparkSwagger;
+import io.github.manusant.ss.model.RefModel;
+import io.github.manusant.ss.model.Response;
 import io.github.manusant.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.models.TrackedJourney;
-import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
-import org.opentripplanner.middleware.triptracker.TrackingPayload;
 import org.opentripplanner.middleware.triptracker.TripStage;
+import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
+import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
+import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.SwaggerUtils;
 import spark.Request;
 
-import java.util.Objects;
+import java.util.Map;
+import java.util.TreeMap;
 
-import static com.mongodb.client.model.Filters.eq;
 import static io.github.manusant.ss.descriptor.EndpointDescriptor.endpointPath;
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
-import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -40,6 +42,15 @@ public class TrackedTripController implements Endpoint {
 
     @Override
     public void bind(final SparkSwagger restApi) {
+
+        Map<String, Response> responses  = new TreeMap<>();
+
+        // Show the output data structure for the 200-ok response.
+        RefModel refModel = new RefModel();
+        refModel.set$ref(StartTrackingResponse.class.getSimpleName());
+        responses.put("200", new Response().description("Successful operation"));
+        responses.get("200").setResponseSchema(refModel);
+
         restApi.endpoint(
                 endpointPath(path).withDescription("Interface for tracking monitored trips."),
                 HttpUtils.NO_FILTER
@@ -47,91 +58,48 @@ public class TrackedTripController implements Endpoint {
             .post(path("/starttracking")
                     .withDescription("Initiates the tracking of a monitored trip.")
                     .withProduces(JSON_ONLY)
-                    .withResponses(SwaggerUtils.createStandardResponses()),
+                    .withRequestType(StartTrackingPayload.class)
+                    .withResponses(responses),
                 (request, response) -> trackTrip(request, TripStage.START), JsonUtils::toJson)
             .post(path("/updatetracking")
                     .withDescription("Provides tracking updates on a monitored trip.")
                     .withProduces(JSON_ONLY)
-                    .withResponses(SwaggerUtils.createStandardResponses()),
+                    .withRequestType(UpdatedTrackingPayload.class)
+                    .withResponses(SwaggerUtils.createStandardResponses(UpdateTrackingResponse.class)),
                 (request, response) -> trackTrip(request, TripStage.UPDATE), JsonUtils::toJson)
             .post(path("/endtracking")
                     .withDescription("Terminates the tracking of a monitored trip by the user.")
                     .withProduces(JSON_ONLY)
+                    .withRequestType(EndTrackingPayload.class)
                     .withResponses(SwaggerUtils.createStandardResponses()),
-                (request, response) -> trackTrip(request, TripStage.END), JsonUtils::toJson);
+                (request, response) -> trackTrip(request, TripStage.END), JsonUtils::toJson)
+            .post(path("/forciblyendtracking")
+                    .withDescription("Forcibly terminates tracking of a monitored trip by trip ID.")
+                    .withProduces(JSON_ONLY)
+                    .withRequestType(ForceEndTrackingPayload.class)
+                    .withResponses(SwaggerUtils.createStandardResponses()),
+                (request, response) -> trackTrip(request, TripStage.FORCE_END), JsonUtils::toJson);
     }
 
     /**
      * Provide the correct response to the caller based on the trip stage.
      */
     private static Object trackTrip(Request request, TripStage tripStage) {
-        var payload = getTrackingPayloadFromRequest(request);
-        if (payload != null) {
-            switch (tripStage) {
-                case START:
-                    if (isTripAssociatedWithUser(request, payload.tripId)) {
-                        return ManageTripTracking.startTrackingTrip(payload);
-                    }
-                    break;
-                case UPDATE:
-                    return ManageTripTracking.updateTracking(
-                        payload,
-                        Objects.requireNonNull(getActiveJourney(request, payload)
-                    ));
-                case END:
-                    ManageTripTracking.endTracking(Objects.requireNonNull(getActiveJourney(request, payload)));
-                    break;
-                default:
-                    logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Unknown trip stage: " + tripStage);
-                    return null;
-            }
+        switch (tripStage) {
+            case START:
+                return ManageTripTracking.startTracking(request);
+            case UPDATE:
+                return ManageTripTracking.updateTracking(request);
+            case END:
+                ManageTripTracking.endTracking(request);
+                break;
+            case FORCE_END:
+                ManageTripTracking.forciblyEndTracking(request);
+                break;
+            default:
+                logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Unknown trip stage: " + tripStage);
+                return null;
         }
         return null;
-    }
-
-    /**
-     * Get the expected tracking payload for the request. The populated contents of the payload will be determined by
-     * the trip stage.
-     */
-    private static TrackingPayload getTrackingPayloadFromRequest(Request request) {
-        TrackingPayload payload;
-        try {
-            payload = getPOJOFromRequestBody(request, TrackingPayload.class);
-        } catch (JsonProcessingException e) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing JSON tracking payload.", e);
-            return null;
-        }
-        return payload;
-    }
-
-    /**
-     * Confirm that the monitored trip (that the user is on) belongs to them.
-     */
-    private static boolean isTripAssociatedWithUser(Request request, String tripId) {
-        var user = Auth0Connection.getUserFromRequest(request);
-
-        var monitoredTrip = Persistence.monitoredTrips.getById(tripId);
-        if (
-            monitoredTrip == null ||
-            (user.otpUser != null && !monitoredTrip.userId.equals(user.otpUser.id))
-        ) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Monitored trip is not associated with this user!");
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Get active, tracked journey, based on the journey id. If the end time is populated the journey has already been
-     * completed.
-     */
-    private static TrackedJourney getActiveJourney(Request request, TrackingPayload payload) {
-        var trackedJourney = Persistence.trackedJourneys.getOneFiltered(eq("journeyId", payload.journeyId));
-        if (trackedJourney != null && trackedJourney.endTime == null) {
-            return trackedJourney;
-        } else {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Provided journey does not exist or has already been completed!");
-            return null;
-        }
     }
 }

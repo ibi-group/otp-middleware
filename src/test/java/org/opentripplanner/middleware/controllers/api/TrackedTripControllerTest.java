@@ -17,19 +17,21 @@ import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
-import org.opentripplanner.middleware.triptracker.StartTrackingResponse;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
-import org.opentripplanner.middleware.triptracker.TrackingPayload;
 import org.opentripplanner.middleware.triptracker.TripInstruction;
 import org.opentripplanner.middleware.triptracker.TripStatus;
-import org.opentripplanner.middleware.triptracker.UpdateTrackingResponse;
+import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
+import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
+import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.util.Date;
 import java.util.List;
 
-import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
@@ -48,6 +50,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
     private static final String UPDATE_TRACKING_TRIP_PATH = ROUTE_PATH + "updatetracking";
     private static final String END_TRACKING_TRIP_PATH = ROUTE_PATH + "endtracking";
+    private static final String FORCIBLY_END_TRACKING_TRIP_PATH = ROUTE_PATH + "forciblyendtracking";
 
     @BeforeAll
     public static void setUp() {
@@ -93,13 +96,13 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         var response = makeRequest(
             START_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createInitialTrackingPayload()),
+            JsonUtils.toJson(createStartTrackingPayload()),
             getMockHeaders(soloOtpUser),
             HttpMethod.POST
         );
 
         var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
-        trackedJourney = Persistence.trackedJourneys.getOneFiltered(eq("journeyId", startTrackingResponse.journeyId));
+        trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS, startTrackingResponse.frequencySeconds);
         assertEquals(TripInstruction.GET_ON_BUS.name(), startTrackingResponse.instruction);
         assertEquals(TripStatus.ON_TRACK.name(), startTrackingResponse.tripStatus);
@@ -127,12 +130,63 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
+    void canNotRestartAnOngoingJourney() throws Exception {
+        assumeTrue(IS_END_TO_END);
+
+        var response = makeRequest(
+            START_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createStartTrackingPayload()),
+            getMockHeaders(soloOtpUser),
+            HttpMethod.POST
+        );
+
+        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
+        trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+        assertEquals(HttpStatus.OK_200, response.status);
+
+        response = makeRequest(
+            START_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createStartTrackingPayload()),
+            getMockHeaders(soloOtpUser),
+            HttpMethod.POST
+        );
+
+        startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
+        assertEquals("A journey of this trip has already been started. End the current journey before starting another.", startTrackingResponse.message);
+        assertEquals(HttpStatus.FORBIDDEN_403, response.status);
+    }
+
+    @Test
+    void canForciblyEndJourney() throws Exception {
+        assumeTrue(IS_END_TO_END);
+
+        var response = makeRequest(
+            START_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createStartTrackingPayload()),
+            getMockHeaders(soloOtpUser),
+            HttpMethod.POST
+        );
+
+        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
+        trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+        assertEquals(HttpStatus.OK_200, response.status);
+
+        response = makeRequest(
+            FORCIBLY_END_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createForceEndTrackingPayload(monitoredTrip.id)),
+            getMockHeaders(soloOtpUser),
+            HttpMethod.POST
+        );
+        assertEquals(HttpStatus.OK_200, response.status);
+    }
+
+    @Test
     void canNotUseUnassociatedTrip() throws Exception {
         assumeTrue(IS_END_TO_END);
 
         HttpResponseValues response = makeRequest(
             START_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createInitialTrackingPayload("unassociated-trip-id")),
+            JsonUtils.toJson(createStartTrackingPayload("unassociated-trip-id")),
             getMockHeaders(soloOtpUser),
             HttpMethod.POST
         );
@@ -164,13 +218,13 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         var response = makeRequest(
             START_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createInitialTrackingPayload()),
+            JsonUtils.toJson(createStartTrackingPayload()),
             getMockHeaders(soloOtpUser),
             HttpMethod.POST
         );
 
         var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
-        trackedJourney = Persistence.trackedJourneys.getOneFiltered(eq("journeyId", startTrackingResponse.journeyId));
+        trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS, startTrackingResponse.frequencySeconds);
         assertEquals(TripInstruction.GET_ON_BUS.name(), startTrackingResponse.instruction);
         assertEquals(TripStatus.ON_TRACK.name(), startTrackingResponse.tripStatus);
@@ -196,30 +250,36 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(HttpStatus.BAD_REQUEST_400, response.status);
     }
 
-    private TrackingPayload createInitialTrackingPayload() {
-        return createInitialTrackingPayload(monitoredTrip.id);
+    private StartTrackingPayload createStartTrackingPayload() {
+        return createStartTrackingPayload(monitoredTrip.id);
     }
 
-    private TrackingPayload createInitialTrackingPayload(String monitorTripId) {
-        var trackingPayLoad = new TrackingPayload();
-        trackingPayLoad.tripId = monitorTripId;
-        trackingPayLoad.location = new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, (new Date()).getTime());
-        return trackingPayLoad;
+    private StartTrackingPayload createStartTrackingPayload(String monitorTripId) {
+        var payload = new StartTrackingPayload();
+        payload.tripId = monitorTripId;
+        payload.location = new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, new Date());
+        return payload;
     }
 
-    private TrackingPayload createUpdateTrackingPayload(String journeyId) {
-        var trackingPayLoad = new TrackingPayload();
-        trackingPayLoad.journeyId = journeyId;
-        trackingPayLoad.locations = List.of(
-            new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, (new Date()).getTime()),
-            new TrackingLocation(90, 29.5398938204469, -80.3772773742676, 31, (new Date()).getTime())
+    private UpdatedTrackingPayload createUpdateTrackingPayload(String journeyId) {
+        var payload = new UpdatedTrackingPayload();
+        payload.journeyId = journeyId;
+        payload.locations = List.of(
+            new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, new Date()),
+            new TrackingLocation(90, 29.5398938204469, -80.3772773742676, 31, new Date())
         );
-        return trackingPayLoad;
+        return payload;
     }
 
-    private TrackingPayload createEndTrackingPayload(String journeyId) {
-        var trackingPayLoad = new TrackingPayload();
-        trackingPayLoad.journeyId = journeyId;
-        return trackingPayLoad;
+    private EndTrackingPayload createEndTrackingPayload(String journeyId) {
+        var payload = new EndTrackingPayload();
+        payload.journeyId = journeyId;
+        return payload;
+    }
+
+    private ForceEndTrackingPayload createForceEndTrackingPayload(String monitorTripId) {
+        var payload = new ForceEndTrackingPayload();
+        payload.tripId = monitorTripId;
+        return payload;
     }
 }
