@@ -1,8 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import io.github.manusant.ss.SparkSwagger;
-import io.github.manusant.ss.model.RefModel;
-import io.github.manusant.ss.model.Response;
 import io.github.manusant.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
@@ -17,9 +15,6 @@ import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.SwaggerUtils;
 import spark.Request;
-
-import java.util.Map;
-import java.util.TreeMap;
 
 import static io.github.manusant.ss.descriptor.EndpointDescriptor.endpointPath;
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
@@ -43,14 +38,6 @@ public class TrackedTripController implements Endpoint {
     @Override
     public void bind(final SparkSwagger restApi) {
 
-        Map<String, Response> responses  = new TreeMap<>();
-
-        // Show the output data structure for the 200-ok response.
-        RefModel refModel = new RefModel();
-        refModel.set$ref(StartTrackingResponse.class.getSimpleName());
-        responses.put("200", new Response().description("Successful operation"));
-        responses.get("200").setResponseSchema(refModel);
-
         restApi.endpoint(
                 endpointPath(path).withDescription("Interface for tracking monitored trips."),
                 HttpUtils.NO_FILTER
@@ -59,7 +46,7 @@ public class TrackedTripController implements Endpoint {
                     .withDescription("Initiates the tracking of a monitored trip.")
                     .withProduces(JSON_ONLY)
                     .withRequestType(StartTrackingPayload.class)
-                    .withResponses(responses),
+                    .withResponses(SwaggerUtils.createStandardResponses(StartTrackingResponse.class)),
                 (request, response) -> trackTrip(request, TripStage.START), JsonUtils::toJson)
             .post(path("/updatetracking")
                     .withDescription("Provides tracking updates on a monitored trip.")
