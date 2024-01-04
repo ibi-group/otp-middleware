@@ -1196,10 +1196,31 @@ paths:
       responses:
         "200":
           description: "Successful operation"
+          examples: {}
           schema:
             $ref: "#/definitions/StartTrackingResponse"
           responseSchema:
             $ref: "#/definitions/StartTrackingResponse"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
   /api/secure/monitoredtrip/updatetracking:
     post:
       tags:
