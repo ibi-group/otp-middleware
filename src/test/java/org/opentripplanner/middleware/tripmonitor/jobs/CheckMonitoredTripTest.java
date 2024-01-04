@@ -163,7 +163,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTimeTrip,
             NotificationType.DEPARTURE_DELAY,
-            "Your trip is now predicted to depart 20 minutes late (at 9:00 AM).",
+            "⏱ Your trip is now predicted to depart 20 minutes late (at 9:00 AM).",
             "should create a departure notification for 20 minute late trip"
         ));
         testCases.add(new DelayNotificationTestCase(
