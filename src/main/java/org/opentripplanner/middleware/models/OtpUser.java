@@ -86,6 +86,16 @@ public class OtpUser extends AbstractUser {
     }
 
     public boolean delete(boolean deleteAuth0User) {
+        // Attempt to delete Auth0 user if requested and if they exist within Auth0 tenant.
+        // Don't cascade delete if deletion of the Auth0 id failed when requested.
+        if (deleteAuth0User && Auth0Users.getUserByEmail(email, false) != null) {
+            boolean auth0UserDeleted = super.delete();
+            if (!auth0UserDeleted) {
+                LOG.warn("Aborting user deletion for {}", this.email);
+                return false;
+            }
+        }
+
         // Delete trip request history (related trip summaries are deleted in TripRequest#delete)
         for (TripRequest request : TripRequest.requestsForUser(this.id)) {
             boolean success = request.delete();
@@ -99,15 +109,6 @@ public class OtpUser extends AbstractUser {
             boolean success = trip.delete();
             if (!success) {
                 LOG.error("Error deleting user's ({}) monitored trip {}", this.id, trip.id);
-                return false;
-            }
-        }
-
-        // Only attempt to delete Auth0 user if they exist within Auth0 tenant.
-        if (deleteAuth0User && Auth0Users.getUserByEmail(email, false) != null) {
-            boolean auth0UserDeleted = super.delete();
-            if (!auth0UserDeleted) {
-                LOG.warn("Aborting user deletion for {}", this.email);
                 return false;
             }
         }
