@@ -424,26 +424,28 @@ public class CheckMonitoredTrip implements Runnable {
         // Update push notification devices count, which may change asynchronously
         NotificationUtils.updatePushDevices(otpUser);
 
-        if (notifications.size() == 0 && initialReminderNotification == null) {
+        boolean hasInitialReminder = initialReminderNotification != null;
+
+        if (notifications.size() == 0 && !hasInitialReminder) {
             // FIXME: Change log level
             LOG.info("No notifications queued for trip. Skipping notify.");
             return;
         }
         // If the same notifications were just sent, there is no need to send the same notification.
         // TODO: Should there be some time threshold check here based on lastNotificationTime?
-        if (previousJourneyState.lastNotifications.containsAll(notifications) && initialReminderNotification == null) {
+        if (previousJourneyState.lastNotifications.containsAll(notifications) && !hasInitialReminder) {
             LOG.info("Last notifications match current ones. Skipping notify.");
             return;
         }
 
-        String tripNameOrReminder = initialReminderNotification != null ? initialReminderNotification.body : trip.tripName;
+        String tripNameOrReminder = hasInitialReminder ? initialReminderNotification.body : trip.tripName;
 
         Map<String, Object> templateData = new HashMap<>(Map.of(
             "tripId", trip.id,
             "tripNameOrReminder", tripNameOrReminder,
             "notifications", new ArrayList<>(notifications)
         ));
-        if (initialReminderNotification != null) {
+        if (hasInitialReminder) {
             templateData.put("initialReminder", initialReminderNotification);
         }
         // FIXME: Change log level
