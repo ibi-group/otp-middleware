@@ -50,10 +50,7 @@ public class TrackedJourney extends Model {
      * Remove duplicates before adding to tracked locations.
      */
     public void update(UpdatedTrackingPayload trackingPayload) {
-        LinkedHashSet<TrackingLocation> trackedLocations = new LinkedHashSet<>(locations);
-        trackedLocations.addAll(trackingPayload.locations);
-        locations.clear();
-        locations.addAll(trackedLocations);
+        locations.addAll(trackingPayload.locations);
     }
 
     public void end(boolean isForciblyEnded) {
