@@ -120,6 +120,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(TripStatus.ON_TRACK.name(), updateTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
 
+        trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+        // After duplicates have been removed only three locations should remain.
+        assertEquals(3, trackedJourney.locations.size());
+
         response = makeRequest(
             END_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createEndTrackingPayload(startTrackingResponse.journeyId)),
@@ -257,7 +261,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private StartTrackingPayload createStartTrackingPayload(String monitorTripId) {
         var payload = new StartTrackingPayload();
         payload.tripId = monitorTripId;
-        payload.location = new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, new Date());
+        payload.location = new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, new Date());
         return payload;
     }
 
@@ -265,6 +269,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var payload = new UpdatedTrackingPayload();
         payload.journeyId = journeyId;
         payload.locations = List.of(
+            new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, new Date()),
+            new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, new Date()),
             new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, new Date()),
             new TrackingLocation(90, 29.5398938204469, -80.3772773742676, 31, new Date())
         );

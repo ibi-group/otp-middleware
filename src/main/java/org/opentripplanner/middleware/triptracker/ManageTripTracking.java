@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.triptracker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
@@ -15,6 +16,7 @@ import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
@@ -29,7 +31,7 @@ public class ManageTripTracking {
      * Start tracking by providing a unique journey id and tracking update frequency to the caller.
      */
     public static StartTrackingResponse startTracking(Request request) {
-        StartTrackingPayload payload = StartTrackingPayload.getPayloadFromRequest(request);
+        StartTrackingPayload payload = getPayloadFromRequest(request, StartTrackingPayload.class);
         if (payload == null || !isTripAssociatedWithUser(request, payload.tripId) || isJourneyOngoing(request, payload.tripId)) {
             return null;
         }
@@ -51,7 +53,7 @@ public class ManageTripTracking {
      * Update the tracking location information provided by the caller.
      */
     public static UpdateTrackingResponse updateTracking(Request request) {
-        UpdatedTrackingPayload payload = UpdatedTrackingPayload.getPayloadFromRequest(request);
+        UpdatedTrackingPayload payload = getPayloadFromRequest(request, UpdatedTrackingPayload.class);
         if (payload == null) {
             return null;
         }
@@ -74,16 +76,17 @@ public class ManageTripTracking {
     /**
      * End tracking by saving the end condition and date.
      */
-    public static void endTracking(Request request) {
-        EndTrackingPayload payload = EndTrackingPayload.getPayloadFromRequest(request);
+    public static boolean endTracking(Request request) {
+        EndTrackingPayload payload = getPayloadFromRequest(request, EndTrackingPayload.class);
         if (payload == null) {
-            return;
+            return false;
         }
         TrackedJourney trackedJourney = getActiveJourney(request, payload.journeyId);
         if (trackedJourney == null || !isTripAssociatedWithUser(request, trackedJourney.tripId)) {
-            return;
+            return false;
         }
         completeJourney(trackedJourney, false);
+        return true;
     }
 
     /**
@@ -91,16 +94,17 @@ public class ManageTripTracking {
      * tracking request can not be made. This prevents the scenario of a journey being 'lost' and the user not been able
      * to restart it.
      */
-    public static void forciblyEndTracking(Request request) {
-        ForceEndTrackingPayload payload = ForceEndTrackingPayload.getPayloadFromRequest(request);
+    public static boolean forciblyEndTracking(Request request) {
+        ForceEndTrackingPayload payload = getPayloadFromRequest(request, ForceEndTrackingPayload.class);
         if (payload == null) {
-            return;
+            return false;
         }
         TrackedJourney trackedJourney = getActiveJourneyForTripId(request, payload.tripId);
         if (trackedJourney == null || !isTripAssociatedWithUser(request, trackedJourney.tripId)) {
-            return;
+            return false;
         }
         completeJourney(trackedJourney, true);
+        return true;
     }
 
     /**
@@ -142,7 +146,7 @@ public class ManageTripTracking {
     }
 
     /**
-     * Confirm that the monitored trip (that the user is on) belongs to them.
+     * Confirm that the monitored trip that the user is on belongs to them.
      */
     private static boolean isTripAssociatedWithUser(Request request, String tripId) {
         var user = Auth0Connection.getUserFromRequest(request);
@@ -210,4 +214,17 @@ public class ManageTripTracking {
             )
         );
     }
+
+    /**
+     * Get the expected tracking payload for the request.
+     */
+    private static <T> T getPayloadFromRequest(Request request, Class<T> payloadClass) {
+        try {
+            return getPOJOFromRequestBody(request, payloadClass);
+        } catch (JsonProcessingException e) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing JSON tracking payload.", e);
+            return null;
+        }
+    }
+
 }

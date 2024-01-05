@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -45,8 +46,14 @@ public class TrackedJourney extends Model {
         tripId = trackingPayload.tripId;
     }
 
+    /**
+     * Remove duplicates before adding to tracked locations.
+     */
     public void update(UpdatedTrackingPayload trackingPayload) {
-        this.locations.addAll(trackingPayload.locations);
+        LinkedHashSet<TrackingLocation> trackedLocations = new LinkedHashSet<>(locations);
+        trackedLocations.addAll(trackingPayload.locations);
+        locations.clear();
+        locations.addAll(trackedLocations);
     }
 
     public void end(boolean isForciblyEnded) {
