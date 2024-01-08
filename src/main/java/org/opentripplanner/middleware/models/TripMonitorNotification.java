@@ -1,15 +1,12 @@
 package org.opentripplanner.middleware.models;
 
-import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Locale;
-import java.util.Set;
 
 /**
  * Contains information about the type and details of messages to be sent to users about their {@link MonitoredTrip}s.
@@ -40,28 +37,6 @@ public class TripMonitorNotification extends Model {
      */
     public int sortOrder() {
         return type == NotificationType.INITIAL_REMINDER ? -100 : 0;
-    }
-
-    public static TripMonitorNotification createAlertNotification(
-        Set<LocalizedAlert> previousAlerts,
-        Set<LocalizedAlert> newAlerts)
-    {
-        // Unseen alerts consists of all new alerts that we did not previously track.
-        HashSet<LocalizedAlert> unseenAlerts = new HashSet<>(newAlerts);
-        unseenAlerts.removeAll(previousAlerts);
-        // Resolved alerts consists of all previous alerts that no longer exist.
-        HashSet<LocalizedAlert> resolvedAlerts = new HashSet<>(previousAlerts);
-        resolvedAlerts.removeAll(newAlerts);
-        // If there is no change in alerts from previous check, no notification should be created.
-        if (unseenAlerts.isEmpty() && resolvedAlerts.isEmpty()) {
-            return null;
-        }
-        // Otherwise, construct a notification from the alert sets.
-        return new TripMonitorNotification(
-            // FIXME: notification type should be determined from alert sets (ALERT_ALL_CLEAR, etc.)?
-            NotificationType.ALERT_FOUND,
-            bodyFromAlerts(previousAlerts, resolvedAlerts, unseenAlerts)
-        );
     }
 
     /**
@@ -128,42 +103,5 @@ public class TripMonitorNotification extends Model {
                 DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale)
             )
         );
-    }
-
-    private static String bodyFromAlerts(
-        Set<LocalizedAlert> previousAlerts,
-        Set<LocalizedAlert> resolvedAlerts,
-        Set<LocalizedAlert> unseenAlerts)
-    {
-        StringBuilder body = new StringBuilder();
-        // If all previous alerts were resolved and there are no unseen alerts, send ALL CLEAR.
-        if (previousAlerts.size() == resolvedAlerts.size() && unseenAlerts.isEmpty()) {
-            body.append("All clear! The following alerts on your itinerary were all resolved:");
-            body.append(listFromAlerts(resolvedAlerts, true));
-            // Preempt the final return statement to avoid duplicating
-            return body.toString();
-        }
-        // If there are any unseen alerts, include list of these.
-        if (!unseenAlerts.isEmpty()) {
-            body.append("\uD83D\uDD14 New alerts found:\n");
-            body.append(listFromAlerts(unseenAlerts, false));
-        }
-        // If there are any resolved alerts, include list of these.
-        if (!resolvedAlerts.isEmpty()) {
-            if (body.length() > 0) body.append("\n");
-            body.append("Resolved alerts:");
-            body.append(listFromAlerts(resolvedAlerts, true));
-        }
-        return body.toString();
-    }
-
-    private static String listFromAlerts(Set<LocalizedAlert> alerts, boolean resolved) {
-        StringBuilder list = new StringBuilder();
-        for (LocalizedAlert alert : alerts) {
-            list.append("\n- ");
-            if (resolved) list.append("(RESOLVED) ");
-            list.append(alert.alertDescriptionText);
-        }
-        return list.toString();
     }
 }
