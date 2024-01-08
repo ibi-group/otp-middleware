@@ -32,7 +32,7 @@ ${alert.alertDescriptionText}
 • ${notification.resolvedAlertsNotification.body}
 
             <#list notification.resolvedAlertsNotification.alerts as alert>
-    ${notification.resolvedAlertsNotification.resolvedIcon} ${alert.alertHeaderText}
+    ${notification.resolvedAlertsNotification.resolvedIcon} (RESOLVED) ${alert.alertHeaderText}
 
 ${alert.alertDescriptionText}
 
