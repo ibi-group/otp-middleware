@@ -11,7 +11,7 @@ import java.util.Collection;
 public class TripMonitorAlertSubNotification extends TripMonitorNotification {
     private final Collection<LocalizedAlert> alerts;
 
-    // Getter functions used by the HTML template renderer
+    // Getter functions used by the HTML template renderer.
 
     public Collection<LocalizedAlert> getAlerts() {
         return alerts;
@@ -40,9 +40,10 @@ public class TripMonitorAlertSubNotification extends TripMonitorNotification {
     public String toString(boolean resolved) {
         StringBuilder result = new StringBuilder();
         result.append(this.body);
-        result.append("\n");
+        result.append(System.lineSeparator());
         for (LocalizedAlert alert : alerts) {
-            result.append("\n- ");
+            result.append(System.lineSeparator());
+            result.append("- ");
             if (resolved) result.append("(RESOLVED) ");
             result.append(alert.alertDescriptionText);
         }

@@ -80,8 +80,8 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
     ) {
         StringBuilder body = new StringBuilder();
         if (newAlertsNotification != null) {
-            body.append(newAlertsNotification.toString());
-            body.append("\n");
+            body.append(newAlertsNotification);
+            body.append(System.lineSeparator());
         }
         if (resolvedAlertsNotification != null) {
             body.append(resolvedAlertsNotification.toString(true));

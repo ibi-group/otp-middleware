@@ -5,6 +5,7 @@ import org.bson.codecs.pojo.annotations.BsonIgnore;
 
 import java.util.Date;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 public class LocalizedAlert {
     public String alertHeaderText;
@@ -15,6 +16,9 @@ public class LocalizedAlert {
     public Date effectiveEndDate;
 
     public String id;
+
+    /** Regex to find both Windows and Unix line endings. */
+    private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\R");
 
     // Getters for the notification template processor.
 
@@ -34,7 +38,7 @@ public class LocalizedAlert {
     @BsonIgnore
     public String getAlertDescriptionForHtml() {
         return alertDescriptionText != null
-            ? alertDescriptionText.replace("\n", "<br/>\n")
+            ? NEWLINE_PATTERN.matcher(alertDescriptionText).replaceAll("<br/>" + System.lineSeparator())
             : "";
     }
 
