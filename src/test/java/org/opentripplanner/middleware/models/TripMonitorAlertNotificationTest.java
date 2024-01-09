@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -69,10 +71,24 @@ class TripMonitorAlertNotificationTest {
     void shouldNotNotifyOnSameAlerts() {
         Set<LocalizedAlert> previousAlerts = new HashSet<>();
         Set<LocalizedAlert> newAlerts = new HashSet<>();
+        Date now = new Date();
 
-        previousAlerts.add(createAlert());
-        newAlerts.add(createAlert());
+        // Create two alerts with the same header and description, and effectiveStartDate.
+        LocalizedAlert previousAlert = createAlert();
+        LocalizedAlert newAlert = createAlert();
+        previousAlert.effectiveStartDate = now;
+        newAlert.effectiveStartDate = now;
 
+        // Assign different end dates to each alert.
+        // This is to reflect the cases where a given alert is "extended",
+        // e.g. incidents take longer to resolve than initially planned.
+        previousAlert.effectiveEndDate = Date.from(now.toInstant().plus(1, ChronoUnit.HOURS));
+        newAlert.effectiveEndDate = Date.from(now.toInstant().plus(2, ChronoUnit.HOURS));
+
+        previousAlerts.add(previousAlert);
+        newAlerts.add(newAlert);
+
+        // These two alerts should be considered the same, and no new alert notifications should be triggered.
         TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, newAlerts);
         assertNull(notification);
     }
