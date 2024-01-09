@@ -1,7 +1,11 @@
 package org.opentripplanner.middleware.otp.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
+
 import java.util.Date;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 public class LocalizedAlert {
     public String alertHeaderText;
@@ -12,6 +16,31 @@ public class LocalizedAlert {
     public Date effectiveEndDate;
 
     public String id;
+
+    /** Regex to find both Windows and Unix line endings. */
+    private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\R");
+
+    // Getters for the notification template processor.
+
+    public String getAlertHeaderText() {
+        return alertHeaderText;
+    }
+
+    public String getAlertDescriptionText() {
+        return alertDescriptionText;
+    }
+
+    /**
+     * Line returns are not preserved if using the HTML email renderer,
+     * so we insert line returns as line-break (br) tags to match the itinerary-body UI.
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public String getAlertDescriptionForHtml() {
+        return alertDescriptionText != null
+            ? NEWLINE_PATTERN.matcher(alertDescriptionText).replaceAll("<br/>" + System.lineSeparator())
+            : "";
+    }
 
     @Override
     public int hashCode() {
