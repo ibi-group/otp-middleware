@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.controllers.api.MonitoredComponentControll
 import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
 import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
 import org.opentripplanner.middleware.controllers.api.OtpUserController;
+import org.opentripplanner.middleware.controllers.api.TrackedTripController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
 import org.opentripplanner.middleware.models.MonitoredComponent;
@@ -98,6 +99,7 @@ public class OtpMiddlewareMain {
                     new ApiUserController(API_PREFIX),
                     new CDPUserController(API_PREFIX),
                     new MonitoredTripController(API_PREFIX),
+                    new TrackedTripController(API_PREFIX),
                     new TripHistoryController(API_PREFIX),
                     new MonitoredComponentController(API_PREFIX),
                     new OtpUserController(API_PREFIX),
