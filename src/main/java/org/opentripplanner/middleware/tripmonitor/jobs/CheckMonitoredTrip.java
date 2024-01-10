@@ -5,6 +5,7 @@ import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
@@ -319,7 +320,7 @@ public class CheckMonitoredTrip implements Runnable {
             : new HashSet<>(previousMatchingItinerary.getAlerts());
         // Construct set from new alerts.
         Set<LocalizedAlert> newAlerts = new HashSet<>(matchingItinerary.getAlerts());
-        TripMonitorNotification notification = TripMonitorNotification.createAlertNotification(previousAlerts, newAlerts);
+        TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, newAlerts);
         if (notification == null) {
             // TODO: Change log level
             LOG.info("No unseen/resolved alerts found for trip.");
