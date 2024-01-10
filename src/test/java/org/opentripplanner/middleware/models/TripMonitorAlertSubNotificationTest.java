@@ -18,8 +18,7 @@ class TripMonitorAlertSubNotificationTest {
         newAlerts.add(createAlert());
 
         TripMonitorAlertSubNotification newAlertSubNotification = new TripMonitorAlertSubNotification(
-            "New alerts found:",
-            newAlerts
+            newAlerts, "New alerts found:", "1 new"
         );
         assertEquals(NEW_ALERT_NOTIFICATION_TEXT, newAlertSubNotification.toString());
     }
@@ -30,8 +29,7 @@ class TripMonitorAlertSubNotificationTest {
         newAlerts.add(createAlert());
 
         TripMonitorAlertSubNotification resolvedAlertSubNotification = new TripMonitorAlertSubNotification(
-            "Resolved alerts:",
-            newAlerts
+            newAlerts, "Resolved alerts:", "1 resolved"
         );
         assertEquals(
             String.format("Resolved alerts:%n%n- (RESOLVED) Alert description"),

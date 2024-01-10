@@ -27,7 +27,7 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
         TripMonitorAlertSubNotification newAlertsNotification,
         TripMonitorAlertSubNotification resolvedAlertsNotification
     ) {
-        super(NotificationType.ALERT_FOUND, getBody(newAlertsNotification, resolvedAlertsNotification));
+        super(NotificationType.ALERT_FOUND, getBody(newAlertsNotification, resolvedAlertsNotification), getBodyShort(newAlertsNotification, resolvedAlertsNotification));
         this.newAlertsNotification = newAlertsNotification;
         this.resolvedAlertsNotification = resolvedAlertsNotification;
     }
@@ -53,18 +53,23 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
         // If there are any unseen alerts, include list of these.
         if (!unseenAlerts.isEmpty()) {
             newAlertsNotification = new TripMonitorAlertSubNotification(
+                unseenAlerts,
                 "New alerts found:",
-                unseenAlerts
+                String.format("%d new", unseenAlerts.size())
             );
         }
         // If there are any resolved alerts, include list of these.
         if (!resolvedAlerts.isEmpty()) {
+            boolean isAllClear = previousAlerts.size() == resolvedAlerts.size() && unseenAlerts.isEmpty();
             resolvedAlertsNotification = new TripMonitorAlertSubNotification(
                 // If all previous alerts were resolved and there are no unseen alerts, send ALL CLEAR.
-                previousAlerts.size() == resolvedAlerts.size() && unseenAlerts.isEmpty()
+                resolvedAlerts,
+                isAllClear
                     ? "All clear! The following alerts on your itinerary were all resolved:"
                     : "Resolved alerts:",
-                resolvedAlerts
+                isAllClear
+                    ? String.format("☑ All clear! %d alerts on your itinerary were all resolved.", resolvedAlerts.size())
+                    : String.format("%d resolved", resolvedAlerts.size())
             );
         }
 
@@ -89,43 +94,27 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
         return body.toString();
     }
 
-    private static String bodyShortFromAlerts(
-        Set<LocalizedAlert> previousAlerts,
-        Set<LocalizedAlert> resolvedAlerts,
-        Set<LocalizedAlert> unseenAlerts)
-    {
+    public static String getBodyShort(
+        TripMonitorAlertSubNotification newAlertsNotification,
+        TripMonitorAlertSubNotification resolvedAlertsNotification
+    ) {
         StringBuilder body = new StringBuilder();
-        // If all previous alerts were resolved and there are no unseen alerts, send ALL CLEAR.
-        if (previousAlerts.size() == resolvedAlerts.size() && unseenAlerts.isEmpty()) {
-            body.append(String.format("☑ All clear! %d alerts on your itinerary were all resolved.", resolvedAlerts.size()));
-            // Preempt the final return statement to avoid duplicating
-            return body.toString();
-        }
         // If there are any unseen or resolved alerts, notify accordingly.
-        if (!unseenAlerts.isEmpty() || !resolvedAlerts.isEmpty()) {
+        boolean hasNewAlerts = newAlertsNotification != null && !newAlertsNotification.getAlerts().isEmpty();
+        boolean hasResolvedAlerts = resolvedAlertsNotification != null && !resolvedAlertsNotification.getAlerts().isEmpty();
+        if (hasNewAlerts || hasResolvedAlerts) {
             body.append("⚠ Your trip has ");
-            if (!unseenAlerts.isEmpty()) {
-                body.append(String.format("%d new", unseenAlerts.size()));
+            if (hasNewAlerts) {
+                body.append(newAlertsNotification.bodyShort);
             }
-            if (!resolvedAlerts.isEmpty()) {
-                if (!unseenAlerts.isEmpty()) {
+            if (hasResolvedAlerts) {
+                if (hasNewAlerts) {
                     body.append(", ");
                 }
-                body.append(String.format("%d resolved", resolvedAlerts.size()));
+                body.append(resolvedAlertsNotification.bodyShort);
             }
-            body.append(" alerts.");
+            body.append(" alert(s).");
         }
         return body.toString();
     }
-
-    private static String listFromAlerts(Set<LocalizedAlert> alerts, boolean resolved) {
-        StringBuilder list = new StringBuilder();
-        for (LocalizedAlert alert : alerts) {
-            list.append("\n- ");
-            if (resolved) list.append("(RESOLVED) ");
-            list.append(alert.alertDescriptionText);
-        }
-        return list.toString();
-    }
-
 }

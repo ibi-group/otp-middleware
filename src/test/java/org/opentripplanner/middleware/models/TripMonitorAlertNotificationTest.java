@@ -25,6 +25,7 @@ class TripMonitorAlertNotificationTest {
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
         assertEquals(NEW_ALERT_NOTIFICATION_AND_NEWLINE, notification.body);
+        assertEquals("⚠ Your trip has 1 new alert(s).", notification.bodyShort);
     }
 
     @Test

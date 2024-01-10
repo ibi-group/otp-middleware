@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.models;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -28,9 +29,9 @@ public class TripMonitorAlertSubNotification extends TripMonitorNotification {
         return "☑";
     }
 
-    public TripMonitorAlertSubNotification(String header, Collection<LocalizedAlert> alerts) {
-        super(NotificationType.ALERT_FOUND, header);
-        this.alerts = alerts;
+    public TripMonitorAlertSubNotification(Collection<LocalizedAlert> alerts, String emailHeader, String pushStats) {
+        super(NotificationType.ALERT_FOUND, emailHeader, pushStats);
+        this.alerts = alerts == null ? new ArrayList<>() : alerts;
     }
 
     public String toString() {
