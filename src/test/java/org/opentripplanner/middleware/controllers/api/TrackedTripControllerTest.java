@@ -24,6 +24,7 @@ import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
+import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
@@ -126,6 +127,9 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             getMockHeaders(soloOtpUser),
             HttpMethod.POST
         );
+        var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
+        assertEquals(TripInstruction.NO_INSTRUCTION.name(), endTrackingResponse.instruction);
+        assertEquals(TripStatus.ENDED.name(), endTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
     }
 
@@ -177,6 +181,9 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             getMockHeaders(soloOtpUser),
             HttpMethod.POST
         );
+        var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
+        assertEquals(TripInstruction.NO_INSTRUCTION.name(), endTrackingResponse.instruction);
+        assertEquals(TripStatus.ENDED.name(), endTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
     }
 

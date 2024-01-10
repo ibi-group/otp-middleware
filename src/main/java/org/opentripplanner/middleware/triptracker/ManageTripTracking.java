@@ -10,6 +10,7 @@ import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
+import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
 import spark.Request;
@@ -76,17 +77,16 @@ public class ManageTripTracking {
     /**
      * End tracking by saving the end condition and date.
      */
-    public static boolean endTracking(Request request) {
+    public static EndTrackingResponse endTracking(Request request) {
         EndTrackingPayload payload = getPayloadFromRequest(request, EndTrackingPayload.class);
         if (payload == null) {
-            return false;
+            return null;
         }
         TrackedJourney trackedJourney = getActiveJourney(request, payload.journeyId);
         if (trackedJourney == null || !isTripAssociatedWithUser(request, trackedJourney.tripId)) {
-            return false;
+            return null;
         }
-        completeJourney(trackedJourney, false);
-        return true;
+        return completeJourney(trackedJourney, false);
     }
 
     /**
@@ -94,26 +94,33 @@ public class ManageTripTracking {
      * tracking request can not be made. This prevents the scenario of a journey being 'lost' and the user not been able
      * to restart it.
      */
-    public static boolean forciblyEndTracking(Request request) {
+    public static EndTrackingResponse forciblyEndTracking(Request request) {
         ForceEndTrackingPayload payload = getPayloadFromRequest(request, ForceEndTrackingPayload.class);
         if (payload == null) {
-            return false;
+            return null;
         }
         TrackedJourney trackedJourney = getActiveJourneyForTripId(request, payload.tripId);
         if (trackedJourney == null || !isTripAssociatedWithUser(request, trackedJourney.tripId)) {
-            return false;
+            return null;
         }
-        completeJourney(trackedJourney, true);
-        return true;
+
+        return completeJourney(trackedJourney, true);
     }
 
     /**
      * Complete a journey by defining the ending type, time and condition.
      */
-    private static void completeJourney(TrackedJourney trackedJourney, boolean isForciblyEnded) {
+    private static EndTrackingResponse completeJourney(TrackedJourney trackedJourney, boolean isForciblyEnded) {
         trackedJourney.end(isForciblyEnded);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_TIME_FIELD_NAME, trackedJourney.endTime);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_CONDITION_FIELD_NAME, trackedJourney.endCondition);
+
+        // Provide response.
+        return new EndTrackingResponse(
+            getInstructions(isForciblyEnded ? TripStage.FORCE_END : TripStage.END),
+            getTripStatus(isForciblyEnded ? TripStage.FORCE_END : TripStage.END)
+        );
+
     }
 
     /**
@@ -140,6 +147,9 @@ public class ManageTripTracking {
             case START:
             case UPDATE:
                 return TripStatus.ON_TRACK.name();
+            case END:
+            case FORCE_END:
+                return TripStatus.ENDED.name();
             default:
                 return TripStatus.NO_STATUS.name();
         }
