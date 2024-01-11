@@ -30,8 +30,7 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
     ) {
         super(
             NotificationType.ALERT_FOUND,
-            getBody(newAlertsNotification, resolvedAlertsNotification),
-            getBodyShort(newAlertsNotification, resolvedAlertsNotification, isAllClear)
+            getBody(newAlertsNotification, resolvedAlertsNotification, isAllClear)
         );
         this.newAlertsNotification = newAlertsNotification;
         this.resolvedAlertsNotification = resolvedAlertsNotification;
@@ -82,25 +81,7 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
         return new TripMonitorAlertNotification(newAlertsNotification, resolvedAlertsNotification, isAllClear);
     }
 
-    /**
-     * Basic text formatting of the alert notification.
-     */
     public static String getBody(
-        TripMonitorAlertSubNotification newAlertsNotification,
-        TripMonitorAlertSubNotification resolvedAlertsNotification
-    ) {
-        StringBuilder body = new StringBuilder();
-        if (newAlertsNotification != null) {
-            body.append(newAlertsNotification);
-            body.append(System.lineSeparator());
-        }
-        if (resolvedAlertsNotification != null) {
-            body.append(resolvedAlertsNotification.toString(true));
-        }
-        return body.toString();
-    }
-
-    public static String getBodyShort(
         TripMonitorAlertSubNotification newAlertsNotification,
         TripMonitorAlertSubNotification resolvedAlertsNotification,
         boolean isAllClear

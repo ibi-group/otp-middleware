@@ -9,11 +9,8 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.opentripplanner.middleware.models.TripMonitorAlertSubNotificationTest.NEW_ALERT_NOTIFICATION_TEXT;
 
 class TripMonitorAlertNotificationTest {
-    public static final String NEW_ALERT_NOTIFICATION_AND_NEWLINE = NEW_ALERT_NOTIFICATION_TEXT + System.lineSeparator();
-
     @Test
     void shouldNotifyOnNewAlerts() {
         Set<LocalizedAlert> previousAlerts = Set.of();
@@ -22,7 +19,7 @@ class TripMonitorAlertNotificationTest {
         TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts);
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
-        assertEquals(NEW_ALERT_NOTIFICATION_AND_NEWLINE, notification.body);
+        assertEquals("⚠ Your trip has 1 new alert(s).", notification.body);
         assertEquals("⚠ Your trip has 1 new alert(s).", notification.bodyShort);
     }
 
@@ -35,12 +32,7 @@ class TripMonitorAlertNotificationTest {
         TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts);
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
-        assertEquals(
-            String.format(
-                "Resolved alerts:%n%n- (RESOLVED) Alert description"
-            ),
-            notification.body
-        );
+        assertEquals("⚠ Your trip has 1 resolved alert(s).", notification.body);
         assertEquals("⚠ Your trip has 1 resolved alert(s).", notification.bodyShort);
     }
 
@@ -52,12 +44,7 @@ class TripMonitorAlertNotificationTest {
         TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts);
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
-        assertEquals(
-            String.format(
-                "All clear! The following alerts on your itinerary were all resolved:%n%n- (RESOLVED) Alert description"
-            ),
-            notification.body
-        );
+        assertEquals("☑ All clear! 1 alert(s) on your itinerary were all resolved.", notification.body);
         assertEquals("☑ All clear! 1 alert(s) on your itinerary were all resolved.", notification.bodyShort);
     }
 
@@ -69,11 +56,7 @@ class TripMonitorAlertNotificationTest {
         TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts);
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
-        assertEquals(
-            NEW_ALERT_NOTIFICATION_AND_NEWLINE +
-            String.format("Resolved alerts:%n%n- (RESOLVED) Other Alert description"),
-            notification.body
-        );
+        assertEquals("⚠ Your trip has 1 new, 1 resolved alert(s).", notification.body);
         assertEquals("⚠ Your trip has 1 new, 1 resolved alert(s).", notification.bodyShort);
     }
 

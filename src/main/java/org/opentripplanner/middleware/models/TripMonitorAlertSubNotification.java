@@ -33,21 +33,4 @@ public class TripMonitorAlertSubNotification extends TripMonitorNotification {
         super(NotificationType.ALERT_FOUND, emailHeader, pushStats);
         this.alerts = alerts == null ? new ArrayList<>() : alerts;
     }
-
-    public String toString() {
-        return toString(false);
-    }
-
-    public String toString(boolean resolved) {
-        StringBuilder result = new StringBuilder();
-        result.append(this.body);
-        result.append(System.lineSeparator());
-        for (LocalizedAlert alert : alerts) {
-            result.append(System.lineSeparator());
-            result.append("- ");
-            if (resolved) result.append("(RESOLVED) ");
-            result.append(alert.alertDescriptionText);
-        }
-        return result.toString();
-    }
 }
