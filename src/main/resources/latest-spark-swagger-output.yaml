@@ -56,9 +56,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
           schema:
+            $ref: "#/definitions/AdminUser"
+          responseSchema:
             $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -89,9 +89,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/Job"
           schema:
+            $ref: "#/definitions/Job"
+          responseSchema:
             $ref: "#/definitions/Job"
   /api/admin/user:
     get:
@@ -121,9 +121,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -144,9 +144,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
           schema:
+            $ref: "#/definitions/AdminUser"
+          responseSchema:
             $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -186,9 +186,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
           schema:
+            $ref: "#/definitions/AdminUser"
+          responseSchema:
             $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -235,9 +235,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
           schema:
+            $ref: "#/definitions/AdminUser"
+          responseSchema:
             $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -275,9 +275,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
           schema:
+            $ref: "#/definitions/AdminUser"
+          responseSchema:
             $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -322,9 +322,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -368,9 +368,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -413,9 +413,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/TokenHolder"
           schema:
+            $ref: "#/definitions/TokenHolder"
+          responseSchema:
             $ref: "#/definitions/TokenHolder"
   /api/secure/application/fromtoken:
     get:
@@ -430,9 +430,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -463,9 +463,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/Job"
           schema:
+            $ref: "#/definitions/Job"
+          responseSchema:
             $ref: "#/definitions/Job"
   /api/secure/application:
     get:
@@ -495,9 +495,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -518,9 +518,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -560,9 +560,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -609,9 +609,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -649,9 +649,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -686,9 +686,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/CDPUser"
           schema:
+            $ref: "#/definitions/CDPUser"
+          responseSchema:
             $ref: "#/definitions/CDPUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -719,9 +719,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/Job"
           schema:
+            $ref: "#/definitions/Job"
+          responseSchema:
             $ref: "#/definitions/Job"
   /api/secure/cdp:
     get:
@@ -751,9 +751,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -774,9 +774,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/CDPUser"
           schema:
+            $ref: "#/definitions/CDPUser"
+          responseSchema:
             $ref: "#/definitions/CDPUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -816,9 +816,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/CDPUser"
           schema:
+            $ref: "#/definitions/CDPUser"
+          responseSchema:
             $ref: "#/definitions/CDPUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -865,9 +865,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/CDPUser"
           schema:
+            $ref: "#/definitions/CDPUser"
+          responseSchema:
             $ref: "#/definitions/CDPUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -905,9 +905,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/CDPUser"
           schema:
+            $ref: "#/definitions/CDPUser"
+          responseSchema:
             $ref: "#/definitions/CDPUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -948,9 +948,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ItineraryExistence"
           schema:
+            $ref: "#/definitions/ItineraryExistence"
+          responseSchema:
             $ref: "#/definitions/ItineraryExistence"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1000,9 +1000,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -1023,9 +1023,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
           schema:
+            $ref: "#/definitions/MonitoredTrip"
+          responseSchema:
             $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1065,9 +1065,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
           schema:
+            $ref: "#/definitions/MonitoredTrip"
+          responseSchema:
             $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1114,9 +1114,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
           schema:
+            $ref: "#/definitions/MonitoredTrip"
+          responseSchema:
             $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1155,9 +1155,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
           schema:
+            $ref: "#/definitions/MonitoredTrip"
+          responseSchema:
             $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1341,9 +1341,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/TripRequest"
           schema:
+            $ref: "#/definitions/TripRequest"
+          responseSchema:
             $ref: "#/definitions/TripRequest"
   /api/secure/monitoredcomponent:
     get:
@@ -1373,9 +1373,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -1396,9 +1396,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
           schema:
+            $ref: "#/definitions/MonitoredComponent"
+          responseSchema:
             $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1438,9 +1438,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
           schema:
+            $ref: "#/definitions/MonitoredComponent"
+          responseSchema:
             $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1487,9 +1487,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
           schema:
+            $ref: "#/definitions/MonitoredComponent"
+          responseSchema:
             $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1528,9 +1528,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
           schema:
+            $ref: "#/definitions/MonitoredComponent"
+          responseSchema:
             $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1571,9 +1571,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/VerificationResult"
           schema:
+            $ref: "#/definitions/VerificationResult"
+          responseSchema:
             $ref: "#/definitions/VerificationResult"
   /api/secure/user/{id}/verify_sms/{code}:
     post:
@@ -1594,9 +1594,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/VerificationResult"
           schema:
+            $ref: "#/definitions/VerificationResult"
+          responseSchema:
             $ref: "#/definitions/VerificationResult"
   /api/secure/user/fromtoken:
     get:
@@ -1611,9 +1611,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
           schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1644,9 +1644,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/Job"
           schema:
+            $ref: "#/definitions/Job"
+          responseSchema:
             $ref: "#/definitions/Job"
   /api/secure/user:
     get:
@@ -1676,9 +1676,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -1699,9 +1699,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
           schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1741,9 +1741,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
           schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1790,9 +1790,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
           schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1830,9 +1830,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
           schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1887,11 +1887,11 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
+          schema:
             type: "array"
             items:
               $ref: "#/definitions/ApiUsageResult"
-          schema:
+          responseSchema:
             type: "array"
             items:
               $ref: "#/definitions/ApiUsageResult"
@@ -1918,11 +1918,11 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
+          schema:
             type: "array"
             items:
               $ref: "#/definitions/BugsnagEvent"
-          schema:
+          responseSchema:
             type: "array"
             items:
               $ref: "#/definitions/BugsnagEvent"
@@ -1949,11 +1949,11 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
+          schema:
             type: "array"
             items:
               $ref: "#/definitions/CDPFile"
-          schema:
+          responseSchema:
             type: "array"
             items:
               $ref: "#/definitions/CDPFile"
@@ -1974,11 +1974,11 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
+          schema:
             type: "array"
             items:
               $ref: "#/definitions/URL"
-          schema:
+          responseSchema:
             type: "array"
             items:
               $ref: "#/definitions/URL"
@@ -2159,8 +2159,6 @@ definitions:
         - "ITINERARY_NOT_FOUND"
         - "INITIAL_REMINDER"
       body:
-        type: "string"
-      bodyShort:
         type: "string"
   EncodedPolyline:
     type: "object"
