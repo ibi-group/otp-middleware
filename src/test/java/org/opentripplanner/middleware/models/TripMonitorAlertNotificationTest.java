@@ -18,10 +18,10 @@ class TripMonitorAlertNotificationTest {
     @Test
     void shouldNotifyOnNewAlerts() {
         Set<LocalizedAlert> previousAlerts = new HashSet<>();
-        Set<LocalizedAlert> newAlerts = new HashSet<>();
-        newAlerts.add(createAlert());
+        Set<LocalizedAlert> alerts = new HashSet<>();
+        alerts.add(createAlert());
 
-        TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, newAlerts);
+        TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts);
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
         assertEquals(NEW_ALERT_NOTIFICATION_AND_NEWLINE, notification.body);
@@ -31,10 +31,35 @@ class TripMonitorAlertNotificationTest {
     @Test
     void shouldNotifyOnResolvedAlerts() {
         Set<LocalizedAlert> previousAlerts = new HashSet<>();
-        Set<LocalizedAlert> newAlerts = new HashSet<>();
+        Set<LocalizedAlert> alerts = new HashSet<>();
+
+        LocalizedAlert remainingAlert = createAlert();
+        remainingAlert.alertHeaderText = "Remaining Alert";
+        remainingAlert.alertDescriptionText = "Remaining Alert Description";
+        previousAlerts.add(remainingAlert);
+        alerts.add(remainingAlert);
+
         previousAlerts.add(createAlert());
 
-        TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, newAlerts);
+        TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts);
+        assertNotNull(notification);
+        assertEquals(NotificationType.ALERT_FOUND, notification.type);
+        assertEquals(
+            String.format(
+                "Resolved alerts:%n%n- (RESOLVED) Alert description"
+            ),
+            notification.body
+        );
+        assertEquals("⚠ Your trip has 1 resolved alert(s).", notification.bodyShort);
+    }
+
+    @Test
+    void shouldNotifyOnAllResolvedAlerts() {
+        Set<LocalizedAlert> previousAlerts = new HashSet<>();
+        Set<LocalizedAlert> alerts = new HashSet<>();
+        previousAlerts.add(createAlert());
+
+        TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts);
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
         assertEquals(
@@ -43,20 +68,21 @@ class TripMonitorAlertNotificationTest {
             ),
             notification.body
         );
+        assertEquals("☑ All clear! 1 alert(s) on your itinerary were all resolved.", notification.bodyShort);
     }
 
     @Test
     void shouldNotifyOnDisjointAlerts() {
         Set<LocalizedAlert> previousAlerts = new HashSet<>();
-        Set<LocalizedAlert> newAlerts = new HashSet<>();
-        newAlerts.add(createAlert());
+        Set<LocalizedAlert> alerts = new HashSet<>();
+        alerts.add(createAlert());
 
         LocalizedAlert otherAlert = new LocalizedAlert();
         otherAlert.alertDescriptionText = "Other Alert description";
         otherAlert.alertHeaderText = "Trip Other Alert";
         previousAlerts.add(otherAlert);
 
-        TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, newAlerts);
+        TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts);
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
         assertEquals(
@@ -64,17 +90,18 @@ class TripMonitorAlertNotificationTest {
             String.format("Resolved alerts:%n%n- (RESOLVED) Other Alert description"),
             notification.body
         );
+        assertEquals("⚠ Your trip has 1 new, 1 resolved alert(s).", notification.bodyShort);
     }
 
     @Test
     void shouldNotNotifyOnSameAlerts() {
         Set<LocalizedAlert> previousAlerts = new HashSet<>();
-        Set<LocalizedAlert> newAlerts = new HashSet<>();
+        Set<LocalizedAlert> alerts = new HashSet<>();
 
         previousAlerts.add(createAlert());
-        newAlerts.add(createAlert());
+        alerts.add(createAlert());
 
-        TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, newAlerts);
+        TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts);
         assertNull(notification);
     }
 

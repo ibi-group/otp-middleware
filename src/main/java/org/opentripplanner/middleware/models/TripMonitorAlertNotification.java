@@ -25,23 +25,28 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
 
     public TripMonitorAlertNotification(
         TripMonitorAlertSubNotification newAlertsNotification,
-        TripMonitorAlertSubNotification resolvedAlertsNotification
+        TripMonitorAlertSubNotification resolvedAlertsNotification,
+        boolean isAllClear
     ) {
-        super(NotificationType.ALERT_FOUND, getBody(newAlertsNotification, resolvedAlertsNotification), getBodyShort(newAlertsNotification, resolvedAlertsNotification));
+        super(
+            NotificationType.ALERT_FOUND,
+            getBody(newAlertsNotification, resolvedAlertsNotification),
+            getBodyShort(newAlertsNotification, resolvedAlertsNotification, isAllClear)
+        );
         this.newAlertsNotification = newAlertsNotification;
         this.resolvedAlertsNotification = resolvedAlertsNotification;
     }
 
     public static TripMonitorAlertNotification createAlertNotification(
         Set<LocalizedAlert> previousAlerts,
-        Set<LocalizedAlert> newAlerts)
+        Set<LocalizedAlert> currentAlerts)
     {
         // Unseen alerts consists of all new alerts that we did not previously track.
-        HashSet<LocalizedAlert> unseenAlerts = new HashSet<>(newAlerts);
+        HashSet<LocalizedAlert> unseenAlerts = new HashSet<>(currentAlerts);
         unseenAlerts.removeAll(previousAlerts);
         // Resolved alerts consists of all previous alerts that no longer exist.
         HashSet<LocalizedAlert> resolvedAlerts = new HashSet<>(previousAlerts);
-        resolvedAlerts.removeAll(newAlerts);
+        resolvedAlerts.removeAll(currentAlerts);
         // If there is no change in alerts from previous check, no notification should be created.
         if (unseenAlerts.isEmpty() && resolvedAlerts.isEmpty()) {
             return null;
@@ -59,8 +64,9 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
             );
         }
         // If there are any resolved alerts, include list of these.
+        boolean isAllClear = false;
         if (!resolvedAlerts.isEmpty()) {
-            boolean isAllClear = previousAlerts.size() == resolvedAlerts.size() && unseenAlerts.isEmpty();
+            isAllClear = previousAlerts.size() == resolvedAlerts.size() && unseenAlerts.isEmpty();
             resolvedAlertsNotification = new TripMonitorAlertSubNotification(
                 // If all previous alerts were resolved and there are no unseen alerts, send ALL CLEAR.
                 resolvedAlerts,
@@ -68,12 +74,12 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
                     ? "All clear! The following alerts on your itinerary were all resolved:"
                     : "Resolved alerts:",
                 isAllClear
-                    ? String.format("☑ All clear! %d alerts on your itinerary were all resolved.", resolvedAlerts.size())
+                    ? String.format("☑ All clear! %d alert(s) on your itinerary were all resolved.", resolvedAlerts.size())
                     : String.format("%d resolved", resolvedAlerts.size())
             );
         }
 
-        return new TripMonitorAlertNotification(newAlertsNotification, resolvedAlertsNotification);
+        return new TripMonitorAlertNotification(newAlertsNotification, resolvedAlertsNotification, isAllClear);
     }
 
     /**
@@ -96,13 +102,16 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
 
     public static String getBodyShort(
         TripMonitorAlertSubNotification newAlertsNotification,
-        TripMonitorAlertSubNotification resolvedAlertsNotification
+        TripMonitorAlertSubNotification resolvedAlertsNotification,
+        boolean isAllClear
     ) {
         StringBuilder body = new StringBuilder();
         // If there are any unseen or resolved alerts, notify accordingly.
         boolean hasNewAlerts = newAlertsNotification != null && !newAlertsNotification.getAlerts().isEmpty();
         boolean hasResolvedAlerts = resolvedAlertsNotification != null && !resolvedAlertsNotification.getAlerts().isEmpty();
-        if (hasNewAlerts || hasResolvedAlerts) {
+        if (hasResolvedAlerts && isAllClear) {
+            body.append(resolvedAlertsNotification.bodyShort);
+        } else if (hasNewAlerts || hasResolvedAlerts) {
             body.append("⚠ Your trip has ");
             if (hasNewAlerts) {
                 body.append(newAlertsNotification.bodyShort);
