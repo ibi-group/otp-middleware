@@ -31,7 +31,7 @@ class TripMonitorAlertNotificationTest {
         TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts);
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
-        assertEquals("⚠ Your trip has 1 resolved alert(s).", notification.body);
+        assertEquals("☑ Your trip has 1 resolved alert(s).", notification.body);
     }
 
     @Test

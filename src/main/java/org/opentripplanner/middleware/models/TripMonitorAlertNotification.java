@@ -92,7 +92,8 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
                 resolvedAlertsNotification.getAlerts().size()
             ));
         } else if (hasNewAlerts || hasResolvedAlerts) {
-            body.append("⚠ Your trip has ");
+            body.append(hasNewAlerts ? newAlertsNotification.getIcon() : resolvedAlertsNotification.getResolvedIcon());
+            body.append(" Your trip has ");
             if (hasNewAlerts) {
                 body.append(String.format("%d new", newAlertsNotification.getAlerts().size()));
             }
