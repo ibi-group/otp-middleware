@@ -49,7 +49,7 @@
                             <ul class="alerts resolved">
                                 <#list notification.resolvedAlertsNotification.alerts as alert>
                                     <li>
-                                        <strong>${notification.resolvedAlertsNotification.resolvedIcon} (RESOLVED) ${alert.alertHeaderText}</strong><br/>
+                                        <strong>${notification.resolvedAlertsNotification.icon} (RESOLVED) ${alert.alertHeaderText}</strong><br/>
                                         ${alert.alertDescriptionForHtml}
                                     </li>
                                 </#list>

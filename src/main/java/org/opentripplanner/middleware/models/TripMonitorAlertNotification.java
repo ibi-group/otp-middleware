@@ -58,7 +58,8 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
         if (!unseenAlerts.isEmpty()) {
             newAlertsNotification = new TripMonitorAlertSubNotification(
                 unseenAlerts,
-                "New alerts found:"
+                "New alerts found:",
+                "⚠"
             );
         }
         // If there are any resolved alerts, include list of these.
@@ -70,7 +71,8 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
                 resolvedAlerts,
                 isAllClear
                     ? "All clear! The following alerts on your itinerary were all resolved:"
-                    : "Resolved alerts:"
+                    : "Resolved alerts:",
+                "☑"
             );
         }
 
@@ -92,7 +94,7 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
                 resolvedAlertsNotification.getAlerts().size()
             ));
         } else if (hasNewAlerts || hasResolvedAlerts) {
-            body.append(hasNewAlerts ? newAlertsNotification.getIcon() : resolvedAlertsNotification.getResolvedIcon());
+            body.append(hasNewAlerts ? newAlertsNotification.getIcon() : resolvedAlertsNotification.getIcon());
             body.append(" Your trip has ");
             if (hasNewAlerts) {
                 body.append(String.format("%d new", newAlertsNotification.getAlerts().size()));
