@@ -427,7 +427,7 @@ public class CheckMonitoredTrip implements Runnable {
 
         boolean hasInitialReminder = initialReminderNotification != null;
 
-        if (notifications.size() == 0 && !hasInitialReminder) {
+        if (notifications.isEmpty() && !hasInitialReminder) {
             // FIXME: Change log level
             LOG.info("No notifications queued for trip. Skipping notify.");
             return;
