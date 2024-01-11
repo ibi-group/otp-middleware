@@ -10,10 +10,10 @@
 ${tripNameOrReminder}
 <#if notifications?size gt 1>
 <#list notifications as notification>
-• ${notification.bodyShort}
+• ${notification.body}
 </#list>
 <#else>
 <#list notifications as notification>
-${notification.bodyShort}
+${notification.body}
 </#list>
 </#if>

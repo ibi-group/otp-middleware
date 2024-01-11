@@ -29,8 +29,8 @@ public class TripMonitorAlertSubNotification extends TripMonitorNotification {
         return "☑";
     }
 
-    public TripMonitorAlertSubNotification(Collection<LocalizedAlert> alerts, String emailHeader, String pushStats) {
-        super(NotificationType.ALERT_FOUND, emailHeader, pushStats);
+    public TripMonitorAlertSubNotification(Collection<LocalizedAlert> alerts, String emailHeader) {
+        super(NotificationType.ALERT_FOUND, emailHeader);
         this.alerts = alerts == null ? new ArrayList<>() : alerts;
     }
 }

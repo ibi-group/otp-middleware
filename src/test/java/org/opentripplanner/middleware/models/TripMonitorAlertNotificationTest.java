@@ -20,7 +20,6 @@ class TripMonitorAlertNotificationTest {
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
         assertEquals("⚠ Your trip has 1 new alert(s).", notification.body);
-        assertEquals("⚠ Your trip has 1 new alert(s).", notification.bodyShort);
     }
 
     @Test
@@ -33,7 +32,6 @@ class TripMonitorAlertNotificationTest {
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
         assertEquals("⚠ Your trip has 1 resolved alert(s).", notification.body);
-        assertEquals("⚠ Your trip has 1 resolved alert(s).", notification.bodyShort);
     }
 
     @Test
@@ -45,7 +43,6 @@ class TripMonitorAlertNotificationTest {
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
         assertEquals("☑ All clear! 1 alert(s) on your itinerary were all resolved.", notification.body);
-        assertEquals("☑ All clear! 1 alert(s) on your itinerary were all resolved.", notification.bodyShort);
     }
 
     @Test
@@ -57,7 +54,6 @@ class TripMonitorAlertNotificationTest {
         assertNotNull(notification);
         assertEquals(NotificationType.ALERT_FOUND, notification.type);
         assertEquals("⚠ Your trip has 1 new, 1 resolved alert(s).", notification.body);
-        assertEquals("⚠ Your trip has 1 new, 1 resolved alert(s).", notification.bodyShort);
     }
 
     @Test
@@ -65,8 +61,7 @@ class TripMonitorAlertNotificationTest {
         Set<LocalizedAlert> previousAlerts = Set.of(createAlert());
         Set<LocalizedAlert> alerts = Set.of(createAlert());
 
-        TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts);
-        assertNull(notification);
+        assertNull(TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts));
     }
 
     private static LocalizedAlert createAlert() {

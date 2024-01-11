@@ -58,8 +58,7 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
         if (!unseenAlerts.isEmpty()) {
             newAlertsNotification = new TripMonitorAlertSubNotification(
                 unseenAlerts,
-                "New alerts found:",
-                String.format("%d new", unseenAlerts.size())
+                "New alerts found:"
             );
         }
         // If there are any resolved alerts, include list of these.
@@ -71,10 +70,7 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
                 resolvedAlerts,
                 isAllClear
                     ? "All clear! The following alerts on your itinerary were all resolved:"
-                    : "Resolved alerts:",
-                isAllClear
-                    ? String.format("☑ All clear! %d alert(s) on your itinerary were all resolved.", resolvedAlerts.size())
-                    : String.format("%d resolved", resolvedAlerts.size())
+                    : "Resolved alerts:"
             );
         }
 
@@ -91,17 +87,20 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
         boolean hasNewAlerts = newAlertsNotification != null && !newAlertsNotification.getAlerts().isEmpty();
         boolean hasResolvedAlerts = resolvedAlertsNotification != null && !resolvedAlertsNotification.getAlerts().isEmpty();
         if (hasResolvedAlerts && isAllClear) {
-            body.append(resolvedAlertsNotification.bodyShort);
+            body.append(String.format(
+                "☑ All clear! %d alert(s) on your itinerary were all resolved.",
+                resolvedAlertsNotification.getAlerts().size()
+            ));
         } else if (hasNewAlerts || hasResolvedAlerts) {
             body.append("⚠ Your trip has ");
             if (hasNewAlerts) {
-                body.append(newAlertsNotification.bodyShort);
+                body.append(String.format("%d new", newAlertsNotification.getAlerts().size()));
             }
             if (hasResolvedAlerts) {
                 if (hasNewAlerts) {
                     body.append(", ");
                 }
-                body.append(resolvedAlertsNotification.bodyShort);
+                body.append(String.format("%d resolved", resolvedAlertsNotification.getAlerts().size()));
             }
             body.append(" alert(s).");
         }
