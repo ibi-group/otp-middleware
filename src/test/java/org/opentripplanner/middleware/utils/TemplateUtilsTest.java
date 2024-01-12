@@ -33,7 +33,7 @@ public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
      */
     @ParameterizedTest
     @MethodSource("createTemplateRenderingTestCases")
-    public void canRenderTemplates(TemplateRenderingTestCase testCase) throws Exception {
+    void canRenderTemplates(TemplateRenderingTestCase testCase) throws Exception {
         assertMatchesSnapshot(
             TemplateUtils.renderTemplate(testCase.templatePath, testCase.templateData),
             testCase.testCaseName.replace(" ", "_")
@@ -45,7 +45,7 @@ public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
      * always be tested here to make sure their snapshot and mock data are able to render what is expected. Intermediate
      * files that templates inherit from don't need to be tested individually.
      */
-    public static List<TemplateRenderingTestCase> createTemplateRenderingTestCases() {
+    static List<TemplateRenderingTestCase> createTemplateRenderingTestCases() {
         List<TemplateRenderingTestCase> testCases = new ArrayList<>();
 
         // Event Errors (this is a template for an email that is sent in BugsnagEventHandlingJob#sendEmailForEvents)
@@ -60,12 +60,16 @@ public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
         // Trip Monitor Notifications tests (for CheckMonitoredTrip#sendNotifications).
         Map<String, Object> notificationsData = Map.of(
             "tripId", "18f642d5-f7a8-475a-9469-800129e6c0b3",
+            "tripNameOrReminder", "Test Trip",
             "notifications", List.of(
-                new TripMonitorNotification(NotificationType.INITIAL_REMINDER, "This is the initial reminder text"),
+                new TripMonitorNotification(NotificationType.ALERT_FOUND, "There are 2 new and 1 resolved alerts"),
                 new TripMonitorNotification(NotificationType.DEPARTURE_DELAY, "This is the departure delay text")
         ));
         testCases.add(new TemplateRenderingTestCase(
             notificationsData, "MonitoredTripSms.ftl", "Monitored Trip SMS"
+        ));
+        testCases.add(new TemplateRenderingTestCase(
+            notificationsData, "MonitoredTripPush.ftl", "Monitored Trip Push"
         ));
         testCases.add(new TemplateRenderingTestCase(
             notificationsData, "MonitoredTripText.ftl", "Monitored Trip Text Email"
@@ -110,7 +114,7 @@ public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
      *
      * TODO: Fix this in https://github.com/conveyal/java-snapshot-matcher
      */
-    private static <T>void assertMatchesSnapshot(String actual, String snapshotName) {
+    private static void assertMatchesSnapshot(String actual, String snapshotName) {
         String actualWithStandardLineSeparators = actual.replaceAll("\r\n", "\n");
         assertThat(actualWithStandardLineSeparators, matchesSnapshot(snapshotName));
     }

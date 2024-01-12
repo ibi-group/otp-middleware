@@ -7,6 +7,7 @@
     The max length is thus 178 characters.
     - List alerts with bullets if there are more than one of them.
 -->
+${tripNameOrReminder}
 <#if notifications?size gt 1>
 <#list notifications as notification>
 • ${notification.body}

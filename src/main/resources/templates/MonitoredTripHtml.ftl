@@ -25,11 +25,9 @@
         </style>
         <h1>Your trip has the following notifications:</h1>
 
-        <#list notifications as notification>
-            <#if notification.type == "INITIAL_REMINDER">
-                <p>${notification.body}</p>
-            </#if>
-        </#list>
+        <#if initialReminder??>
+            <p>${initialReminder.body}</p>
+        </#if>
 
         <ul>
             <#list notifications as notification>
@@ -51,7 +49,7 @@
                             <ul class="alerts resolved">
                                 <#list notification.resolvedAlertsNotification.alerts as alert>
                                     <li>
-                                        <strong>${notification.resolvedAlertsNotification.resolvedIcon} (RESOLVED) ${alert.alertHeaderText}</strong><br/>
+                                        <strong>${notification.resolvedAlertsNotification.icon} (RESOLVED) ${alert.alertHeaderText}</strong><br/>
                                         ${alert.alertDescriptionForHtml}
                                     </li>
                                 </#list>

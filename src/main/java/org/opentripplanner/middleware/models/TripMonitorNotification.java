@@ -32,14 +32,6 @@ public class TripMonitorNotification extends Model {
     }
 
     /**
-     * Basic comparator that sets an arbitrary lower rank for initial reminders,
-     * so that they appear before other notifications after list sorting.
-     */
-    public int sortOrder() {
-        return type == NotificationType.INITIAL_REMINDER ? -100 : 0;
-    }
-
-    /**
      * Create a new notification about a change in the trip's arrival or departure time exceeding a threshold.
      *
      * @param delayInMinutes The delay in minutes (negative values indicate early times).
@@ -68,7 +60,7 @@ public class TripMonitorNotification extends Model {
         return new TripMonitorNotification(
             delayType,
             String.format(
-                "Your trip is now predicted to %s %s (at %s).",
+                "⏱ Your trip is now predicted to %s %s (at %s).",
                 delayType == NotificationType.ARRIVAL_DELAY ? "arrive" : "depart",
                 delayHumanTime,
                 DateTimeUtils.formatShortDate(targetDatetime, locale)
