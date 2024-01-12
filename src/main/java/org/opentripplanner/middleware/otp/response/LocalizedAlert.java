@@ -44,7 +44,9 @@ public class LocalizedAlert {
 
     @Override
     public int hashCode() {
-        return Objects.hash(alertHeaderText, alertDescriptionText, alertUrl, effectiveStartDate, effectiveEndDate);
+        // Exclude effectiveEndDate from the hash code for cases where a given alert is "extended",
+        // e.g. incidents that take longer to resolve than initially planned.
+        return Objects.hash(alertHeaderText, alertDescriptionText, alertUrl, effectiveStartDate);
     }
 
     public boolean equals(Object o) {
