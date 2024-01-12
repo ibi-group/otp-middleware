@@ -88,7 +88,8 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
         boolean hasNewAlerts = !newAlerts.isEmpty();
         boolean hasResolvedAlerts = !resolvedAlerts.isEmpty();
         if (isAllClear) {
-            body.append("☑ All clear! All alerts on your itinerary were all resolved.");
+            body.append(RESOLVED_ALERT_ICON);
+            body.append(" All clear! All alerts on your itinerary were all resolved.");
         } else if (hasNewAlerts || hasResolvedAlerts) {
             body.append(hasNewAlerts ? NEW_ALERT_ICON : RESOLVED_ALERT_ICON);
             body.append(" Your trip has ");
