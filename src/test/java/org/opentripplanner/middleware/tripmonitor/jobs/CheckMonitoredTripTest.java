@@ -163,13 +163,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTimeTrip,
             NotificationType.DEPARTURE_DELAY,
-            "Your trip is now predicted to depart 20 minutes late (at 9:00 AM).",
+            "⏱ Your trip is now predicted to depart 20 minutes late (at 9:00 AM).",
             "should create a departure notification for 20 minute late trip"
         ));
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTimeTrip,
             NotificationType.ARRIVAL_DELAY,
-            "Your trip is now predicted to arrive 20 minutes late (at 9:18 AM).",
+            "⏱ Your trip is now predicted to arrive 20 minutes late (at 9:18 AM).",
             "should create a arrival notification for 20 minute late trip"
         ));
 
@@ -211,13 +211,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         testCases.add(new DelayNotificationTestCase(
             onTimeTripWithUpdatedThreshold,
             NotificationType.DEPARTURE_DELAY,
-            "Your trip is now predicted to depart about on time (at 8:40 AM).",
+            "⏱ Your trip is now predicted to depart about on time (at 8:40 AM).",
             "should create a departure notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline"
         ));
         testCases.add(new DelayNotificationTestCase(
             onTimeTripWithUpdatedThreshold,
             NotificationType.ARRIVAL_DELAY,
-            "Your trip is now predicted to arrive about on time (at 8:58 AM).",
+            "⏱ Your trip is now predicted to arrive about on time (at 8:58 AM).",
             "should create a arrival notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline"
         ));
 
