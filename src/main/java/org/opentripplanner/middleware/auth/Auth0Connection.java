@@ -24,6 +24,7 @@ import spark.Response;
 
 import java.security.interfaces.RSAPublicKey;
 
+import static org.opentripplanner.middleware.controllers.api.AbstractUserController.TOKEN_PATH;
 import static org.opentripplanner.middleware.controllers.api.AbstractUserController.VERIFICATION_EMAIL_PATH;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.OtpUserController.OTP_USER_PATH;
@@ -100,7 +101,7 @@ public class Auth0Connection {
      * @return true if the request can operate without a user profile, false otherwise.
      */
     private static boolean expectsMissingProfile(Request req, RequestingUser profile) {
-        return isCreatingSelf(req, profile) || isRequestingVerificationEmail(req);
+        return isCreatingSelf(req, profile) || isRequestingVerificationEmail(req) || isDeletingSelf(req);
     }
 
     public static boolean isAuthHeaderPresent(Request req) {
@@ -313,6 +314,20 @@ public class Auth0Connection {
             String uri = req.uri();
             return uri.endsWith(API_USER_PATH + VERIFICATION_EMAIL_PATH) ||
                 uri.endsWith(OTP_USER_PATH + VERIFICATION_EMAIL_PATH);
+        }
+        return false;
+    }
+
+    /**
+     * @return true if the given request is for a user requesting to delete themselves.
+     */
+    static boolean isDeletingSelf(Request req) {
+        if (req.requestMethod().equalsIgnoreCase("DELETE")) {
+            // Should be a DELETE request against the fromtoken route for /user or /application.
+            // (does not apply to admins.)
+            String uri = req.uri();
+            return uri.endsWith(API_USER_PATH + TOKEN_PATH) ||
+                uri.endsWith(OTP_USER_PATH + TOKEN_PATH);
         }
         return false;
     }
