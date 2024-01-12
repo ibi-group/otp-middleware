@@ -31,7 +31,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public abstract class AbstractUserController<U extends AbstractUser> extends ApiController<U> {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractUserController.class);
     static final String NO_USER_WITH_AUTH0_ID_MESSAGE = "No user with auth0UserID=%s found.";
-    private static final String TOKEN_PATH = "/fromtoken";
+    public static final String TOKEN_PATH = "/fromtoken";
     public static final String VERIFICATION_EMAIL_PATH = "/verification-email";
 
     /**
@@ -57,7 +57,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
                     .withResponses(stdResponses),
                 this::getUserFromRequest, JsonUtils::toJson
             )
-            .delete(path(fullTokenPath)
+            .delete(path(TOKEN_PATH)
                     .withDescription("Deletes an " + persistence.clazz.getSimpleName() + " entity using an Auth0 access token passed in an Authorization header.")
                     .withResponses(stdResponses),
                 this::deleteUserFromRequest, JsonUtils::toJson
