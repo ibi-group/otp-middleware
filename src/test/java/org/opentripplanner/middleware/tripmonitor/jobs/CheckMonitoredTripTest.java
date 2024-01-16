@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.text.MatchesPattern.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -131,11 +133,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @MethodSource("createDelayNotificationTestCases")
     void testDelayNotifications(DelayNotificationTestCase testCase) {
         TripMonitorNotification notification = testCase.checkMonitoredTrip.checkTripForDelay(testCase.delayType);
-        if (testCase.expectedNotificationMessage == null) {
+        if (testCase.expectedNotificationPattern == null) {
             assertNull(notification, testCase.message);
         } else {
             assertNotNull(notification, String.format("Expected notification for test case: %s", testCase.message));
-            assertEquals(testCase.expectedNotificationMessage, notification.body, testCase.message);
+            assertThat(testCase.message, notification.body, matchesPattern(testCase.expectedNotificationPattern));
         }
     }
 
@@ -163,13 +165,14 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTimeTrip,
             NotificationType.DEPARTURE_DELAY,
-            "⏱ Your trip is now predicted to depart 20 minutes late (at 9:00 AM).",
+            // JDK 20 uses narrow no-break space U+202F before "PM" for time format; earlier JDKs just use a space.
+            "⏱ Your trip is now predicted to depart 20 minutes late \\(at 9:00[\\u202f ]AM\\)\\.",
             "should create a departure notification for 20 minute late trip"
         ));
         testCases.add(new DelayNotificationTestCase(
             twentyMinutesLateTimeTrip,
             NotificationType.ARRIVAL_DELAY,
-            "⏱ Your trip is now predicted to arrive 20 minutes late (at 9:18 AM).",
+            "⏱ Your trip is now predicted to arrive 20 minutes late \\(at 9:18[\\u202f ]AM\\)\\.",
             "should create a arrival notification for 20 minute late trip"
         ));
 
@@ -211,13 +214,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         testCases.add(new DelayNotificationTestCase(
             onTimeTripWithUpdatedThreshold,
             NotificationType.DEPARTURE_DELAY,
-            "⏱ Your trip is now predicted to depart about on time (at 8:40 AM).",
+            "⏱ Your trip is now predicted to depart about on time \\(at 8:40[\\u202f ]AM\\)\\.",
             "should create a departure notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline"
         ));
         testCases.add(new DelayNotificationTestCase(
             onTimeTripWithUpdatedThreshold,
             NotificationType.ARRIVAL_DELAY,
-            "⏱ Your trip is now predicted to arrive about on time (at 8:58 AM).",
+            "⏱ Your trip is now predicted to arrive about on time \\(at 8:58[\\u202f ]AM\\)\\.",
             "should create a arrival notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline"
         ));
 

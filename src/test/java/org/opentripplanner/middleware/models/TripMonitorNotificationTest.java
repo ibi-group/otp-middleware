@@ -9,7 +9,8 @@ import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.Locale;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.text.MatchesPattern.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class TripMonitorNotificationTest {
@@ -19,7 +20,9 @@ class TripMonitorNotificationTest {
     void canCreateInitialReminder() {
         MonitoredTrip trip = makeSampleTrip();
         TripMonitorNotification notification = TripMonitorNotification.createInitialReminderNotification(trip, EN_US_LOCALE);
-        assertEquals("Reminder for Sample Trip at 5:44 PM.", notification.body);
+        assertNotNull(notification);
+        // JDK 20 uses narrow no-break space U+202F for time format; earlier JDKs just use a space.
+        assertThat(notification.body, matchesPattern("Reminder for Sample Trip at 5:44[\\u202f ]PM\\."));
     }
 
     @Test
@@ -32,7 +35,11 @@ class TripMonitorNotificationTest {
             EN_US_LOCALE
         );
         assertNotNull(notification);
-        assertEquals("⏱ Your trip is now predicted to arrive 10 minutes late (at 5:44 PM).", notification.body);
+        // JDK 20 uses narrow no-break space U+202F for time format; earlier JDKs just use a space.
+        assertThat(
+            notification.body,
+            matchesPattern("⏱ Your trip is now predicted to arrive 10 minutes late \\(at 5:44[\\u202f ]PM\\)\\.")
+        );
     }
 
     private static MonitoredTrip makeSampleTrip() {
