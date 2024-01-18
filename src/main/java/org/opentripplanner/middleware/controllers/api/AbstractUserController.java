@@ -86,10 +86,12 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     private U getUserFromRequest(Request req, Response res) {
         RequestingUser profile = Auth0Connection.getUserFromRequest(req);
         if (profile == null) {
-            logMessageAndHalt(req,
-                    HttpStatus.NOT_FOUND_404,
-                    String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, null),
-                    null);
+            logMessageAndHalt(
+                req,
+                HttpStatus.NOT_FOUND_404,
+                String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, null),
+                null
+            );
         }
         U user = getUserProfile(profile);
 
@@ -98,10 +100,12 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         // but have not completed the account setup form yet.
         // For those users, the user profile would be 404 not found (as opposed to 403 forbidden).
         if (user == null) {
-            logMessageAndHalt(req,
+            logMessageAndHalt(
+                req,
                 HttpStatus.NOT_FOUND_404,
                 String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.auth0UserId),
-                null);
+                null
+            );
         }
         return user;
     }
@@ -113,10 +117,12 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     private boolean deleteUserFromRequest(Request req, Response res) {
         RequestingUser profile = Auth0Connection.getUserFromRequest(req);
         if (profile == null) {
-            logMessageAndHalt(req,
+            logMessageAndHalt(
+                req,
                 HttpStatus.NOT_FOUND_404,
                 String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, null),
-                null);
+                null
+            );
             return false;
         }
         U user = getUserProfile(profile);
@@ -125,10 +131,12 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
             // If a user record was found in Mongo, cascade delete, including its Auth0 ID.
             boolean result = user.delete();
             if (!result) {
-                logMessageAndHalt(req,
+                logMessageAndHalt(
+                    req,
                     HttpStatus.INTERNAL_SERVER_ERROR_500,
                     String.format("An error occurred deleting user with id '%s'.", user.id),
-                    null);
+                    null
+                );
             }
             return result;
         } else {
@@ -137,10 +145,12 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
                 deleteAuth0User(profile.auth0UserId);
                 return true;
             } catch (Auth0Exception e) {
-                logMessageAndHalt(req,
+                logMessageAndHalt(
+                    req,
                     HttpStatus.INTERNAL_SERVER_ERROR_500,
                     String.format("Could not delete Auth0 user %s.", profile.auth0UserId),
-                    e);
+                    e
+                );
                 return false;
             }
         }
