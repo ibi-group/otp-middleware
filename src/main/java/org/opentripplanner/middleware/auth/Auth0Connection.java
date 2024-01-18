@@ -72,10 +72,10 @@ public class Auth0Connection {
             RequestingUser profile = new RequestingUser(jwt);
             if (!isValidUser(profile)) {
                 if (expectsMissingProfile(req, profile)) {
-                    // If creating or emailing self, no user account is required (it does not exist yet!). Note: creating an
-                    // admin user requires that the requester is an admin (checkUserIsAdmin must be passed), so this
-                    // is not a concern for that method/controller.
-                    LOG.info("New user is creating self. OK to proceed without existing user object for auth0UserId");
+                    // If creating, emailing, or deleting self, no user account is required (it does not exist yet!).
+                    // Note: creating an admin user requires that the requester is an admin
+                    // (checkUserIsAdmin must be passed), so this is not a concern for that method/controller.
+                    LOG.info("New user is creating/emailing/deleting self. OK to proceed without existing user object for auth0UserId");
                 } else {
                     // Otherwise, if no valid user is found, halt the request.
                     logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "No user found in database associated with the provided auth token.");
@@ -97,7 +97,8 @@ public class Auth0Connection {
 
     /**
      * Checks whether the given {@link Request} should expect missing {@link ApiUser} or {@link OtpUser} profiles,
-     * to handle situations such as during new user sign up where the ApiUser or OtpUser does not exist yet.
+     * to handle situations such as during new user sign up where the ApiUser or OtpUser does not exist yet,
+     * and when requesting the Auth0 account deletion before a user record is created in Mongo.
      * @return true if the request can operate without a user profile, false otherwise.
      */
     private static boolean expectsMissingProfile(Request req, RequestingUser profile) {
