@@ -86,12 +86,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     private U getUserFromRequest(Request req, Response res) {
         RequestingUser profile = Auth0Connection.getUserFromRequest(req);
         if (profile == null) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.NOT_FOUND_404,
-                String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, null),
-                null
-            );
+            logUserNotFoundAndHalt(req, null);
         }
         U user = getUserProfile(profile);
 
@@ -100,12 +95,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         // but have not completed the account setup form yet.
         // For those users, the user profile would be 404 not found (as opposed to 403 forbidden).
         if (user == null) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.NOT_FOUND_404,
-                String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.auth0UserId),
-                null
-            );
+            logUserNotFoundAndHalt(req, profile.auth0UserId);
         }
         return user;
     }
@@ -117,12 +107,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     private boolean deleteUserFromRequest(Request req, Response res) {
         RequestingUser profile = Auth0Connection.getUserFromRequest(req);
         if (profile == null) {
-            logMessageAndHalt(
-                req,
-                HttpStatus.NOT_FOUND_404,
-                String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, null),
-                null
-            );
+            logUserNotFoundAndHalt(req, null);
             return false;
         }
         U user = getUserProfile(profile);
@@ -154,6 +139,15 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
                 return false;
             }
         }
+    }
+
+    private void logUserNotFoundAndHalt(Request req, String id) {
+        logMessageAndHalt(
+            req,
+            HttpStatus.NOT_FOUND_404,
+            String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, id),
+            null
+        );
     }
 
     private Job resendVerificationEmail(Request req, Response res) {
