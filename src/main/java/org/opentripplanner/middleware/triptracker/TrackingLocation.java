@@ -28,4 +28,10 @@ public class TrackingLocation {
         this.speed = speed;
         this.timestamp = timestamp;
     }
+
+    public TrackingLocation(Double lat, Double lon, Date timestamp) {
+        this.lat = lat;
+        this.lon = lon;
+        this.timestamp = timestamp;
+    }
 }

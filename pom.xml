@@ -347,5 +347,19 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- google-polyline-codec. https://gitlab.com/leonard.ehrenfried/google-polyline-codec -->
+        <dependency>
+            <groupId>io.leonard</groupId>
+            <artifactId>google-polyline-codec</artifactId>
+            <version>0.0.2</version>
+        </dependency>
+
+        <!-- Library to get the distance between to lat/lon points. https://github.com/grumlimited/geocalc -->
+        <dependency>
+            <groupId>com.github.grumlimited</groupId>
+            <artifactId>geocalc</artifactId>
+            <version>0.6</version>
+        </dependency>
+
     </dependencies>
 </project>
