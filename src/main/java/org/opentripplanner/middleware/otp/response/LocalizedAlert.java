@@ -25,7 +25,7 @@ public class LocalizedAlert {
         // Does nothing
     }
 
-    /** Constructor, mainly for tests */
+    /** Constructor, mainly for tests and object comparisons. */
     public LocalizedAlert(String header, String description) {
         alertHeaderText = header;
         alertDescriptionText = description;
@@ -57,7 +57,7 @@ public class LocalizedAlert {
     public int hashCode() {
         // Exclude effectiveEndDate from the hash code for cases where a given alert is "extended",
         // e.g. incidents that take longer to resolve than initially planned.
-        return Objects.hash(alertHeaderText, alertDescriptionText, alertUrl, effectiveStartDate);
+        return Objects.hash(getAlertHeaderText(), getAlertDescriptionText(), alertUrl, effectiveStartDate);
     }
 
     public boolean equals(Object o) {
@@ -65,23 +65,11 @@ public class LocalizedAlert {
             return false;
         }
         LocalizedAlert ao = (LocalizedAlert) o;
-        if (alertDescriptionText == null) {
-            if (ao.alertDescriptionText != null) {
-                return false;
-            }
-        } else {
-            if (!alertDescriptionText.equals(ao.alertDescriptionText)) {
-                return false;
-            }
+        if (!getAlertDescriptionText().equals(ao.getAlertDescriptionText())) {
+            return false;
         }
-        if (alertHeaderText == null) {
-            if (ao.alertHeaderText != null) {
-                return false;
-            }
-        } else {
-            if (!alertHeaderText.equals(ao.alertHeaderText)) {
-                return false;
-            }
+        if (!getAlertHeaderText().equals(ao.getAlertHeaderText())) {
+            return false;
         }
         if (alertUrl == null) {
             return ao.alertUrl == null;
