@@ -20,14 +20,25 @@ public class LocalizedAlert {
     /** Regex to find both Windows and Unix line endings. */
     private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\R");
 
-    // Getters for the notification template processor.
-
-    public String getAlertHeaderText() {
-        return alertHeaderText;
+    /** Main, passive constructor for persistence */
+    public LocalizedAlert() {
+        // Does nothing
     }
 
+    /** Constructor, mainly for tests */
+    public LocalizedAlert(String header, String description) {
+        alertHeaderText = header;
+        alertDescriptionText = description;
+    }
+
+    /** Header getter for the notification template processor. */
+    public String getAlertHeaderText() {
+        return alertHeaderText != null ? alertHeaderText : "";
+    }
+
+    /** Description getter for the notification template processor. */
     public String getAlertDescriptionText() {
-        return alertDescriptionText;
+        return alertDescriptionText != null ? alertDescriptionText : "";
     }
 
     /**
