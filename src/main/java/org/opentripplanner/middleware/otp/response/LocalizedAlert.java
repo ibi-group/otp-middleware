@@ -57,6 +57,7 @@ public class LocalizedAlert {
     public int hashCode() {
         // Exclude effectiveEndDate from the hash code for cases where a given alert is "extended",
         // e.g. incidents that take longer to resolve than initially planned.
+        // Use getters instead of fields to treat null same as "" for comparison purposes.
         return Objects.hash(getAlertHeaderText(), getAlertDescriptionText(), alertUrl, effectiveStartDate);
     }
 
@@ -65,10 +66,10 @@ public class LocalizedAlert {
             return false;
         }
         LocalizedAlert ao = (LocalizedAlert) o;
-        if (!getAlertDescriptionText().equals(ao.getAlertDescriptionText())) {
-            return false;
-        }
-        if (!getAlertHeaderText().equals(ao.getAlertHeaderText())) {
+        if (
+            !getAlertDescriptionText().equals(ao.getAlertDescriptionText()) ||
+            !getAlertHeaderText().equals(ao.getAlertHeaderText())
+        ) {
             return false;
         }
         if (alertUrl == null) {
