@@ -16,9 +16,11 @@ import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.utils.Coordinates;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -29,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getTimeInMilliseconds;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 
 public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
@@ -67,8 +69,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         }
     }
 
-    // This is WIP. These real points and time are nowhere near the expected. This is probably due to the speed of the
-    // subway.
+    // WIP. Time adjusted so that the provided traveller time starts around the same time at the trip.
     @Test
     void canTrackSubwayTrip() throws IOException {
         String traceTimes = CommonTestUtils.getTestResourceAsString("controllers/api/monitored-trip-trace-times.csv");
@@ -79,7 +80,8 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             String[] traceValues = trace.split(",");
             TrackingLocation trackingLocation = new TrackingLocation();
             ZonedDateTime zdt = ZonedDateTime.parse(traceValues[0]);
-            trackingLocation.timestamp = new Date(zdt.toInstant().toEpochMilli());
+            ZonedDateTime timeAdjusted = zdt.plusMinutes(3).plusSeconds(8);
+            trackingLocation.timestamp = new Date(timeAdjusted.toInstant().toEpochMilli());
             trackingLocation.lat = Double.parseDouble(traceValues[1]);
             trackingLocation.lon = Double.parseDouble(traceValues[2]);
             trackedJourney.locations = List.of(trackingLocation);
@@ -93,7 +95,10 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             List<ManageLegTraversal.Segment> segments = createSegmentsForLeg(legId);
             TrackedJourney trackedJourney = new TrackedJourney();
             trackedJourney.tripId = monitoredTrip.id;
-            ZonedDateTime startOfTrip = monitoredTrip.itinerary.legs.get(legId).getScheduledStartTime();
+            ZonedDateTime startOfTrip = ZonedDateTime.ofInstant(
+                monitoredTrip.itinerary.legs.get(legId).startTime.toInstant(),
+                DateTimeUtils.getOtpZoneId()
+            );
 
             ZonedDateTime currentTime = startOfTrip;
             double cumulativeTravelTime = 0;
@@ -110,7 +115,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     TripStatus.ON_TRACK.name()
                 );
                 cumulativeTravelTime += segment.timeInSegment;
-                currentTime = startOfTrip.plus(getTimeInMilliseconds(cumulativeTravelTime), ChronoUnit.MILLIS);
+                currentTime = startOfTrip.plus(getSecondsToMilliseconds(cumulativeTravelTime), ChronoUnit.MILLIS);
             }
         }
     }
@@ -137,7 +142,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("createTravelerPositions")
-    void canReturnTheCorrectSegmentCoordinates(TravelerPosition segmentPosition) {
+    void canReturnTheCorrectSegmentCoordinates(TravellerPosition segmentPosition) {
         Coordinates actualCoordinates = ManageLegTraversal.getSegmentPosition(
             segmentPosition.start,
             segmentPosition.currentTime,
@@ -146,55 +151,55 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         assertEquals(segmentPosition.coordinates, actualCoordinates);
     }
 
-    private static Stream<TravelerPosition> createTravelerPositions() {
-        ZonedDateTime segmentStartTime = ZonedDateTime.now();
+    private static Stream<TravellerPosition> createTravelerPositions() {
+        Instant segmentStartTime = ZonedDateTime.now().toInstant();
         List<ManageLegTraversal.Segment> segments = createSegmentsForLeg(FINAL_LEG_ID);
         for (ManageLegTraversal.Segment segment : segments) {
             segment.timeInSegment = 10;
         }
 
         return Stream.of(
-            new TravelerPosition(
+            new TravellerPosition(
                 segments.get(0).coordinates,
                 segmentStartTime,
-                ZonedDateTime.now().plusSeconds(5),
+                segmentStartTime.plusSeconds(5),
                 segments
             ),
-            new TravelerPosition(
+            new TravellerPosition(
                 segments.get(1).coordinates,
                 segmentStartTime,
-                ZonedDateTime.now().plusSeconds(15),
+                segmentStartTime.plusSeconds(15),
                 segments
             ),
-            new TravelerPosition(
+            new TravellerPosition(
                 segments.get(2).coordinates,
                 segmentStartTime,
-                ZonedDateTime.now().plusSeconds(25),
+                segmentStartTime.plusSeconds(25),
                 segments
             ),
-            new TravelerPosition(
+            new TravellerPosition(
                 segments.get(3).coordinates,
                 segmentStartTime,
-                ZonedDateTime.now().plusSeconds(35),
+                segmentStartTime.plusSeconds(35),
                 segments
             )
         );
     }
 
-    private static class TravelerPosition {
+    private static class TravellerPosition {
 
         public Coordinates coordinates;
 
-        public ZonedDateTime start;
+        public Instant start;
 
-        public ZonedDateTime currentTime;
+        public Instant currentTime;
 
         List<ManageLegTraversal.Segment> segments;
 
-        public TravelerPosition(
+        public TravellerPosition(
             Coordinates coordinates,
-            ZonedDateTime start,
-            ZonedDateTime currentTime,
+            Instant start,
+            Instant currentTime,
             List<ManageLegTraversal.Segment> segments
         ) {
             this.coordinates = coordinates;

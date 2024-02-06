@@ -6,7 +6,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TrackedJourney;
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
@@ -16,18 +15,12 @@ import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
 import spark.Request;
-
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getDistance;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentPosition;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.isTimeInRange;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedPosition;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getModeBoundary;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -257,85 +250,15 @@ public class ManageTripTracking {
      */
     public static TripStatus getTripStatus(TrackedJourney trackedJourney, MonitoredTrip monitoredTrip) {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
-        Coordinates currentPosition = new Coordinates(lastLocation.lat, lastLocation.lon);
-        ZonedDateTime currentTime = ZonedDateTime.ofInstant(lastLocation.timestamp.toInstant(), DateTimeUtils.getOtpZoneId());
-        var expectedLeg = getExpectedLeg(currentTime, monitoredTrip);
-        if (canUseLeg(expectedLeg)) {
-            List<ManageLegTraversal.Segment> segments = interpolatePoints(expectedLeg);
-            Coordinates expectedPosition = getSegmentPosition(expectedLeg.getScheduledStartTime(), currentTime, segments);
-            if (expectedPosition != null) {
-                double distanceFromExpected = getDistance(currentPosition, expectedPosition);
-                double boundary = getModeBoundary(expectedLeg.mode);
-                if (distanceFromExpected <= boundary) {
-                    return TripStatus.ON_TRACK;
-                } else {
-                    return TripStatus.DEVIATED;
-                }
-            }
+        Coordinates expectedPosition = getExpectedPosition(lastLocation.timestamp.toInstant(), monitoredTrip.itinerary);
+        double boundary = getModeBoundary(lastLocation.timestamp.toInstant(), monitoredTrip.itinerary);
+        if (expectedPosition != null && boundary != -1) {
+            double distanceFromExpected = getDistance(
+                new Coordinates(lastLocation.lat, lastLocation.lon),
+                expectedPosition
+            );
+            return (distanceFromExpected <= boundary) ? TripStatus.ON_TRACK : TripStatus.DEVIATED;
         }
         return TripStatus.NO_STATUS;
-    }
-
-    /**
-     * Make sure that all the required leg parameters are present.
-     */
-    private static boolean canUseLeg(Leg leg) {
-        return
-            leg != null &&
-            leg.duration > 0 &&
-            leg.legGeometry != null &&
-            leg.legGeometry.points != null &&
-            !leg.legGeometry.points.isEmpty();
-    }
-
-    /**
-     * Get the expected leg by comparing the current time against the start and end time of each leg. If the current time
-     * is between the start and end time of a leg, this is the leg we expect the traveler to be on.
-     */
-    private static Leg getExpectedLeg(ZonedDateTime timeNow, MonitoredTrip monitoredTrip) {
-        if (canUseTripLegs(monitoredTrip)) {
-            for (Leg leg : monitoredTrip.itinerary.legs) {
-                if (isTimeInRange(
-                    leg.getScheduledStartTime(),
-                    leg.getScheduledEndTime().minus(1, ChronoUnit.MILLIS),
-                    timeNow
-                )) {
-                    return leg;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * A trip must have an itinerary that contains at least one leg to qualify for tracking.
-     */
-    private static boolean canUseTripLegs(MonitoredTrip monitoredTrip) {
-        return
-            monitoredTrip.itinerary != null &&
-                monitoredTrip.itinerary.legs != null &&
-                !monitoredTrip.itinerary.legs.isEmpty();
-    }
-
-
-    /**
-     * Get the acceptable 'on track' boundary in meters for mode.
-     */
-    private static double getModeBoundary(String mode) {
-        switch (mode.toUpperCase()) {
-            case "WALK":
-                return 5;
-            case "BICYCLE":
-                return 10;
-            case "BUS":
-                return 20;
-            case "SUBWAY":
-            case "TRAM":
-                return 100;
-            case "RAIL":
-                return 200;
-            default:
-                throw new UnsupportedOperationException("Unknown mode: " + mode);
-        }
     }
 }
