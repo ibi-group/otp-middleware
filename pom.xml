@@ -241,7 +241,7 @@
         <dependency>
             <groupId>com.github.manusant</groupId>
             <artifactId>spark-swagger</artifactId>
-            <!-- Version corresponds to IBI PRs 33 and 34 https://github.com/manusant/spark-swagger/pull/34 -->
+            <!-- Version corresponds to merging https://github.com/manusant/spark-swagger/pull/34 -->
             <version>6095ab19fcdbfa5889f316e1e45133a80a459438</version>
         </dependency>
 
