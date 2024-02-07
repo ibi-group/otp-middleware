@@ -23,11 +23,37 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Get the expected traveller position using the current time and trip itinerary.
+     * Define the shortest distance to any position within a trip by checking the traveler's position against all
+     * positions within all legs.
      *
-     * @param currentTime Traveller's current time.
+     * @param currentCoordinates Traveler's current position.
+     * @param itinerary Trip itinerary containing all trip legs.
+     * @return The shortest distance to any trip position.
+     */
+    public static double getDistanceFromNearestTripPosition(Coordinates currentCoordinates, Itinerary itinerary) {
+        double shortestDistance = Double.MAX_VALUE;
+        if (canUseTripLegs(itinerary)) {
+            for (Leg leg : itinerary.legs) {
+                if (canUseLeg(leg)) {
+                    List<ManageLegTraversal.Segment> segments = interpolatePoints(leg);
+                    for (ManageLegTraversal.Segment segment : segments) {
+                        double distance = getDistance(currentCoordinates, segment.coordinates);
+                        if (distance < shortestDistance) {
+                            shortestDistance = distance;
+                        }
+                    }
+                }
+            }
+        }
+        return shortestDistance;
+    }
+
+    /**
+     * Get the expected traveler position using the current time and trip itinerary.
+     *
+     * @param currentTime Traveler's current time.
      * @param itinerary Trip itinerary.
-     * @return The expected traveller coordinates.
+     * @return The expected traveler coordinates.
      */
     public static Coordinates getExpectedPosition(Instant currentTime, Itinerary itinerary) {
         var expectedLeg = getExpectedLeg(currentTime, itinerary);
@@ -35,19 +61,15 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Get the expected traveller position using the current time and trip leg.
+     * Get the expected traveler position using the current time and trip leg.
      *
-     * @param currentTime Traveller's current time.
+     * @param currentTime Traveler's current time.
      * @param leg Trip leg.
-     * @return The expected traveller coordinates.
+     * @return The expected traveler coordinates.
      */
     private static Coordinates getExpectedPosition(Instant currentTime, Leg leg) {
         List<ManageLegTraversal.Segment> segments = interpolatePoints(leg);
-        return getSegmentPosition(
-            leg.startTime.toInstant(),
-            currentTime,
-            segments
-        );
+        return getSegmentPosition(leg.startTime.toInstant(), currentTime,segments);
     }
 
     /**
@@ -116,17 +138,14 @@ public class ManageLegTraversal {
                     throw new UnsupportedOperationException("Unknown mode: " + expectedLeg.mode);
             }
         }
-        return -1;
+        return Double.MIN_VALUE;
     }
 
     /**
      * Using the duration of a leg and it's points, produce a list of segments each containing a representative
      * coordinate and time spent in the segment.
-     *
-     * TODO: This is very repetitive, consider saving with tracked journey? Would the DB I/O take longer?!
      */
     public static List<Segment> interpolatePoints(Leg expectedLeg) {
-        long start = System.currentTimeMillis();
         SortedSet<Position> orderedPoints = orderPoints(PolylineUtils.decode(expectedLeg.legGeometry.points, 5));
         double totalDistance = getDistanceTraversedForLeg(orderedPoints);
         List<Segment> segments = new ArrayList<>();

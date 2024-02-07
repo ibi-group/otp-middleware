@@ -18,7 +18,7 @@ import org.opentripplanner.middleware.utils.Coordinates;
 import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getDistance;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getDistanceFromNearestTripPosition;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedPosition;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getModeBoundary;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
@@ -245,20 +245,17 @@ public class ManageTripTracking {
     }
 
     /**
-     * Get the trip status by comparing the traveler's current position to an acceptable boundary around the expect
-     * position.
+     * Get the trip status by comparing the traveler's proximity to an expected position and trip route.
      */
     public static TripStatus getTripStatus(TrackedJourney trackedJourney, MonitoredTrip monitoredTrip) {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
         Coordinates expectedPosition = getExpectedPosition(lastLocation.timestamp.toInstant(), monitoredTrip.itinerary);
-        double boundary = getModeBoundary(lastLocation.timestamp.toInstant(), monitoredTrip.itinerary);
-        if (expectedPosition != null && boundary != -1) {
-            double distanceFromExpected = getDistance(
-                new Coordinates(lastLocation.lat, lastLocation.lon),
-                expectedPosition
-            );
-            return (distanceFromExpected <= boundary) ? TripStatus.ON_TRACK : TripStatus.DEVIATED;
-        }
-        return TripStatus.NO_STATUS;
+        Coordinates currentPosition = new Coordinates(lastLocation.lat, lastLocation.lon);
+        return TripStatus.getConfidence(
+            currentPosition,
+            expectedPosition,
+            getModeBoundary(lastLocation.timestamp.toInstant(), monitoredTrip.itinerary),
+            getDistanceFromNearestTripPosition(currentPosition, monitoredTrip.itinerary)
+        );
     }
 }

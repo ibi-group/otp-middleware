@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -69,13 +70,14 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         }
     }
 
-    // WIP. Time adjusted so that the provided traveller time starts around the same time at the trip.
+    // WIP. Time adjusted so that the provided traveler times start around the same time at the trip.
     @Test
     void canTrackSubwayTrip() throws IOException {
         String traceTimes = CommonTestUtils.getTestResourceAsString("controllers/api/monitored-trip-trace-times.csv");
         String[] traces = traceTimes.split("\n");
         TrackedJourney trackedJourney = new TrackedJourney();
         trackedJourney.tripId = monitoredTrip.id;
+        HashMap<String, Integer> outcome = new HashMap<>();
         for (String trace : traces) {
             String[] traceValues = trace.split(",");
             TrackingLocation trackingLocation = new TrackingLocation();
@@ -86,7 +88,18 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             trackingLocation.lon = Double.parseDouble(traceValues[2]);
             trackedJourney.locations = List.of(trackingLocation);
             TripStatus tripStatus = ManageTripTracking.getTripStatus(trackedJourney, monitoredTrip);
+            if (outcome.containsKey(tripStatus.name())) {
+                Integer hits = outcome.get(tripStatus.name());
+                hits++;
+                outcome.put(tripStatus.name(), hits);
+            } else {
+                outcome.put(tripStatus.name(), 1);
+            }
         }
+        for (TripStatus tripStatus : TripStatus.values()) {
+            System.out.println(tripStatus.name() + ": " + outcome.get(tripStatus.name()));
+        }
+        System.out.println("Total: " + traces.length);
     }
 
     @Test
