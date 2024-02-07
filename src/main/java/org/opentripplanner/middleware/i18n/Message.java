@@ -13,6 +13,16 @@ import org.slf4j.LoggerFactory;
  * Message.properties
  */
 public enum Message {
+    TRIP_DELAY_NOTIFICATION,
+    TRIP_DELAY_ARRIVE,
+    TRIP_DELAY_DEPART,
+    TRIP_DELAY_ON_TIME,
+    TRIP_DELAY_EARLY,
+    TRIP_DELAY_LATE,
+    TRIP_DELAY_MINUTE,
+    TRIP_DELAY_MINUTES,
+    TRIP_NOT_FOUND_NOTIFICATION,
+    TRIP_NO_LONGER_POSSIBLE_NOTIFICATION,
     TRIP_REMINDER_NOTIFICATION;
 
     private static final Logger LOG = LoggerFactory.getLogger(Message.class);

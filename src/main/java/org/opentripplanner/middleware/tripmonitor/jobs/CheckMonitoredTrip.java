@@ -295,7 +295,10 @@ public class CheckMonitoredTrip implements Runnable {
         // send an appropriate notification if the trip is still possible on another day of the week, or if it is now
         // not possible on any day of the week that the trip should be monitored
         enqueueNotification(
-            TripMonitorNotification.createItineraryNotFoundNotification(!noMatchingItineraryFoundOnPreviousChecks)
+            TripMonitorNotification.createItineraryNotFoundNotification(
+                !noMatchingItineraryFoundOnPreviousChecks,
+                getOtpUserLocale()
+            )
         );
         return false;
     }

@@ -51,18 +51,26 @@ public class TripMonitorNotification extends Model {
         }
         String delayHumanTime;
         if (Math.abs(delayInMinutes) <= 1) {
-            delayHumanTime = "about on time";
-        } else if (delayInMinutes > 0) {
-            delayHumanTime = String.format("%d minute%s late", delayInMinutes, delayInMinutes > 1 ? "s" : "");
+            delayHumanTime = Message.TRIP_DELAY_ON_TIME.get(locale);
         } else {
-            delayHumanTime = String.format("%d minute%s early", delayInMinutes, delayInMinutes < -1 ? "s" : "");
+            String minutesString = Math.abs(delayInMinutes) > 1
+                ? Message.TRIP_DELAY_MINUTES.get(locale)
+                : Message.TRIP_DELAY_MINUTE.get(locale);
+            if (delayInMinutes > 0) {
+                delayHumanTime = String.format(Message.TRIP_DELAY_LATE.get(locale), minutesString);
+            } else {
+                delayHumanTime = String.format(Message.TRIP_DELAY_EARLY.get(locale), minutesString);
+            }
         }
 
         return new TripMonitorNotification(
             delayType,
             String.format(
-                "⏱ Your trip is now predicted to %s %s (at %s).",
-                delayType == NotificationType.ARRIVAL_DELAY ? "arrive" : "depart",
+                Message.TRIP_DELAY_NOTIFICATION.get(locale),
+                "⏱",
+                delayType == NotificationType.ARRIVAL_DELAY
+                    ? Message.TRIP_DELAY_ARRIVE.get(locale)
+                    : Message.TRIP_DELAY_DEPART.get(locale),
                 delayHumanTime,
                 DateTimeUtils.formatShortDate(targetDatetime, locale)
             )
@@ -73,13 +81,14 @@ public class TripMonitorNotification extends Model {
      * Creates a notification that the itinerary was not found on either the current day or any day of the week.
      */
     public static TripMonitorNotification createItineraryNotFoundNotification(
-        boolean stillPossibleOnOtherMonitoredDaysOfTheWeek
+        boolean stillPossibleOnOtherMonitoredDaysOfTheWeek,
+        Locale locale
     ) {
         return new TripMonitorNotification(
             NotificationType.ITINERARY_NOT_FOUND,
             stillPossibleOnOtherMonitoredDaysOfTheWeek
-                ? "Your itinerary was not found in today's trip planner results. Please check real-time conditions and plan a new trip."
-                : "Your itinerary is no longer possible on any monitored day of the week. Please plan and save a new trip."
+                ? Message.TRIP_NOT_FOUND_NOTIFICATION.get(locale)
+                : Message.TRIP_NO_LONGER_POSSIBLE_NOTIFICATION.get(locale)
         );
     }
 
