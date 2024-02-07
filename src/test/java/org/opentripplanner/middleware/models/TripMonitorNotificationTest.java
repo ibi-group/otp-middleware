@@ -1,6 +1,9 @@
 package org.opentripplanner.middleware.models;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -8,6 +11,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.Locale;
+import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.text.MatchesPattern.matchesPattern;
@@ -15,14 +19,23 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class TripMonitorNotificationTest {
     public static final Locale EN_US_LOCALE = Locale.forLanguageTag("en-US");
+    public static final Locale FR_LOCALE = Locale.forLanguageTag("fr");
 
-    @Test
-    void canCreateInitialReminder() {
+    @ParameterizedTest
+    @MethodSource("createInitialReminderCases")
+    void canCreateInitialReminder(Locale locale, String text) {
         MonitoredTrip trip = makeSampleTrip();
-        TripMonitorNotification notification = TripMonitorNotification.createInitialReminderNotification(trip, EN_US_LOCALE);
+        TripMonitorNotification notification = TripMonitorNotification.createInitialReminderNotification(trip, locale);
         assertNotNull(notification);
         // JDK 20 uses narrow no-break space U+202F for time format; earlier JDKs just use a space.
-        assertThat(notification.body, matchesPattern("Reminder for Sample Trip at 5:44[\\u202f ]PM\\."));
+        assertThat(notification.body, matchesPattern(text));
+    }
+
+    private static Stream<Arguments> createInitialReminderCases() {
+        return Stream.of(
+            Arguments.of(EN_US_LOCALE, "Reminder for Sample Trip at 5:44[\\u202f ]PM\\."),
+            Arguments.of(FR_LOCALE, "Rappel pour Sample Trip à 17:44.")
+        );
     }
 
     @Test
