@@ -50,12 +50,15 @@ public class TripMonitorNotification extends Model {
             return null;
         }
         String delayHumanTime;
-        if (Math.abs(delayInMinutes) <= 1) {
+        long absoluteMinutes = Math.abs(delayInMinutes);
+        if (absoluteMinutes <= 1) {
             delayHumanTime = Message.TRIP_DELAY_ON_TIME.get(locale);
         } else {
-            String minutesString = Math.abs(delayInMinutes) > 1
-                ? Message.TRIP_DELAY_MINUTES.get(locale)
-                : Message.TRIP_DELAY_MINUTE.get(locale);
+            // Delays start at two minutes (plural form).
+            String minutesString = String.format(
+                Message.TRIP_DELAY_MINUTES.get(locale),
+                delayInMinutes
+            );
             if (delayInMinutes > 0) {
                 delayHumanTime = String.format(Message.TRIP_DELAY_LATE.get(locale), minutesString);
             } else {
