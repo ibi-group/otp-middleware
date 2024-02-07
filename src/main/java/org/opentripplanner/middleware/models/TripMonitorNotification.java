@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.models;
 
+import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
@@ -90,7 +91,7 @@ public class TripMonitorNotification extends Model {
     ) {
         return new TripMonitorNotification(
             NotificationType.INITIAL_REMINDER,
-            String.format("Reminder for %s at %s.",
+            String.format(Message.TRIP_REMINDER_NOTIFICATION.get(locale),
                 trip.tripName,
                 DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale)
             )
