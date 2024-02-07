@@ -18,9 +18,6 @@ import static org.hamcrest.text.MatchesPattern.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class TripMonitorNotificationTest {
-    public static final Locale EN_US_LOCALE = Locale.forLanguageTag("en-US");
-    public static final Locale FR_LOCALE = Locale.forLanguageTag("fr");
-
     @ParameterizedTest
     @MethodSource("createInitialReminderCases")
     void canCreateInitialReminder(Locale locale, String text) {
@@ -33,8 +30,8 @@ class TripMonitorNotificationTest {
 
     private static Stream<Arguments> createInitialReminderCases() {
         return Stream.of(
-            Arguments.of(EN_US_LOCALE, "Reminder for Sample Trip at 5:44[\\u202f ]PM\\."),
-            Arguments.of(FR_LOCALE, "Rappel pour Sample Trip à 17:44.")
+            Arguments.of( Locale.ENGLISH, "Reminder for Sample Trip at 5:44[\\u202f ]PM\\."),
+            Arguments.of(Locale.FRENCH, "Rappel pour Sample Trip à 17:44.")
         );
     }
 
@@ -45,7 +42,7 @@ class TripMonitorNotificationTest {
             10,
             trip.itinerary.startTime,
             NotificationType.ARRIVAL_DELAY,
-            EN_US_LOCALE
+            Locale.ENGLISH
         );
         assertNotNull(notification);
         // JDK 20 uses narrow no-break space U+202F for time format; earlier JDKs just use a space.
