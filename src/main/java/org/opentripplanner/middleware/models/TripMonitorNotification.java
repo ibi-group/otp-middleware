@@ -14,6 +14,7 @@ import java.util.Locale;
  */
 public class TripMonitorNotification extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(TripMonitorNotification.class);
+    public static final String STOPWATCH_ICON = "⏱";
 
     public final NotificationType type;
     public final String body;
@@ -70,7 +71,7 @@ public class TripMonitorNotification extends Model {
             delayType,
             String.format(
                 Message.TRIP_DELAY_NOTIFICATION.get(locale),
-                "⏱",
+                STOPWATCH_ICON,
                 delayType == NotificationType.ARRIVAL_DELAY
                     ? Message.TRIP_DELAY_ARRIVE.get(locale)
                     : Message.TRIP_DELAY_DEPART.get(locale),
