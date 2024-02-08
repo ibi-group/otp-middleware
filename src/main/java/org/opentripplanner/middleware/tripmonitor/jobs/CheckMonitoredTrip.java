@@ -323,7 +323,11 @@ public class CheckMonitoredTrip implements Runnable {
             : new HashSet<>(previousMatchingItinerary.getAlerts());
         // Construct set from new alerts.
         Set<LocalizedAlert> newAlerts = new HashSet<>(matchingItinerary.getAlerts());
-        TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, newAlerts);
+        TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(
+            previousAlerts,
+            newAlerts,
+            getOtpUserLocale()
+        );
         if (notification == null) {
             // TODO: Change log level
             LOG.info("No unseen/resolved alerts found for trip.");
