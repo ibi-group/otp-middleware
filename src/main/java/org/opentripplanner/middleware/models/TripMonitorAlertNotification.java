@@ -8,6 +8,8 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
+import static org.opentripplanner.middleware.utils.I18nUtils.isPlural;
+
 /**
  * Contains alerts information about a {@link MonitoredTrip}.
  */
@@ -62,7 +64,7 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
                 unseenAlerts,
                 String.format(Message.COLON.get(locale),
                     String.format(
-                        unseenAlerts.size() > 1
+                        isPlural(unseenAlerts)
                             ? Message.TRIP_ALERT_FOUND_PLURAL.get(locale)
                             : Message.TRIP_ALERT_FOUND_SINGULAR.get(locale),
                         formatAlertCount(unseenAlerts, Set.of(), locale)
@@ -115,13 +117,13 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
         boolean hasResolvedAlerts = !resolvedAlerts.isEmpty();
 
         String newAlertsText = String.format(
-            newAlerts.size() > 1
+            isPlural(newAlerts)
                 ? Message.TRIP_ALERT_NEW_PLURAL.get(locale)
                 : Message.TRIP_ALERT_NEW_SINGULAR.get(locale),
             newAlerts.size()
         );
         String resolvedAlertsText = String.format(
-            resolvedAlerts.size() > 1
+            isPlural(resolvedAlerts)
                 ? Message.TRIP_ALERT_RESOLVED_PLURAL.get(locale)
                 : Message.TRIP_ALERT_RESOLVED_SINGULAR.get(locale),
             resolvedAlerts.size()
