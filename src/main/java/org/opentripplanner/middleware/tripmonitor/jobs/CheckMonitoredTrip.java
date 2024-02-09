@@ -465,7 +465,7 @@ public class CheckMonitoredTrip implements Runnable {
         Locale locale = getOtpUserLocale();
         String tripLinkLabel = Message.TRIP_LINK_TEXT.get(locale);
         String tripUrl = getTripUrl();
-        Map<String, Object> templateData = new HashMap<>(Map.of(
+        Map<String, Object> templateData = Map.of(
             "emailGreeting", Message.TRIP_EMAIL_GREETING.get(locale),
             "tripNameOrReminder", tripNameOrReminder,
             "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
@@ -475,7 +475,7 @@ public class CheckMonitoredTrip implements Runnable {
             "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
             "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
             "notifications", new ArrayList<>(notifications)
-        ));
+        );
         if (hasInitialReminder) {
             templateData.put("initialReminder", initialReminderNotification);
         }

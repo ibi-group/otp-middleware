@@ -63,7 +63,7 @@
             </#list>
         </ul>
 
-        <p><a href="${tripUrl}">${tripLinkAnchorLabel}</a><br />(${tripUrl})</p>
+        <p><a href="${tripUrl}">${tripLinkAnchorLabel}</a></p>
     </div>
 </#macro>
 
