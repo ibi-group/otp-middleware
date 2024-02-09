@@ -52,7 +52,13 @@ public class CheckMonitoredTrip implements Runnable {
 
     private final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
 
-    private final String TRIPS_PATH = "/#/account/trips";
+    private final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
+
+    private final String ACCOUNT_PATH = "/#/account";
+
+    private final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
+
+    private final String SETTINGS_PATH = ACCOUNT_PATH + "/settings";
 
     public final MonitoredTrip trip;
 
@@ -466,6 +472,9 @@ public class CheckMonitoredTrip implements Runnable {
             "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
             "tripLinkAnchorLabel", tripLinkLabel,
             "tripUrl", tripUrl,
+            "emailFooter", String.format(Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
+            "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
+            "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
             "notifications", new ArrayList<>(notifications)
         ));
         if (hasInitialReminder) {
