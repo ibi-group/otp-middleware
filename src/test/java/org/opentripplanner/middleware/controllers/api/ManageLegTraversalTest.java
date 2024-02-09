@@ -20,6 +20,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -32,12 +33,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getDistance;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 
 public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
 
     private static MonitoredTrip monitoredTrip;
+    private static MonitoredTrip busStopJusticeCenterTrip;
 
     private static TrackedJourney trackedJourney;
 
@@ -49,9 +52,16 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
     public static void setUp() throws IOException {
         assumeTrue(IS_END_TO_END);
         setAuthDisabled(false);
-        String payload = CommonTestUtils.getTestResourceAsString("controllers/api/monitored-trip-for-tracking.json");
-        monitoredTrip = JsonUtils.getPOJOFromJSON(payload, MonitoredTrip.class);
+        monitoredTrip = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/monitored-trip-for-tracking.json"),
+            MonitoredTrip.class
+        );
         Persistence.monitoredTrips.create(monitoredTrip);
+        busStopJusticeCenterTrip = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/bus-stop-justice-center-trip.json"),
+            MonitoredTrip.class
+        );
+        Persistence.monitoredTrips.create(busStopJusticeCenterTrip);
     }
 
     @AfterAll
@@ -60,6 +70,8 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         restoreDefaultAuthDisabled();
         monitoredTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
         if (monitoredTrip != null) monitoredTrip.delete();
+        busStopJusticeCenterTrip = Persistence.monitoredTrips.getById(busStopJusticeCenterTrip.id);
+        if (busStopJusticeCenterTrip != null) busStopJusticeCenterTrip.delete();
     }
 
     @AfterEach
@@ -101,6 +113,61 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         }
         System.out.println("Total: " + traces.length);
     }
+
+
+    // WIP.
+    @Test
+    void canTrackBusStopToJusticeCenterTrip() throws IOException {
+        String traceTimes = CommonTestUtils.getTestResourceAsString("controllers/api/bus-stop-justice-center-trace-times.csv");
+        String[] traces = traceTimes.split("\n");
+        TrackedJourney trackedJourney = new TrackedJourney();
+        trackedJourney.tripId = busStopJusticeCenterTrip.id;
+        HashMap<String, Integer> outcome = new HashMap<>();
+        for (String trace : traces) {
+            String[] traceValues = trace.split(",");
+            TrackingLocation trackingLocation = new TrackingLocation();
+            ZonedDateTime zdt = ZonedDateTime.parse(traceValues[0]);
+            trackingLocation.timestamp = new Date(zdt.toInstant().toEpochMilli());
+            trackingLocation.lat = Double.parseDouble(traceValues[1]);
+            trackingLocation.lon = Double.parseDouble(traceValues[2]);
+            trackedJourney.locations = List.of(trackingLocation);
+            TripStatus tripStatus = ManageTripTracking.getTripStatus(trackedJourney, busStopJusticeCenterTrip);
+            if (outcome.containsKey(tripStatus.name())) {
+                Integer hits = outcome.get(tripStatus.name());
+                hits++;
+                outcome.put(tripStatus.name(), hits);
+            } else {
+                outcome.put(tripStatus.name(), 1);
+            }
+        }
+        for (TripStatus tripStatus : TripStatus.values()) {
+            System.out.println(tripStatus.name() + ": " + outcome.get(tripStatus.name()));
+        }
+        System.out.println("Total: " + traces.length);
+    }
+
+    // WIP.
+    @Test
+    void speedCheck() throws IOException {
+        String traceTimes = CommonTestUtils.getTestResourceAsString("controllers/api/bus-stop-justice-center-trace-times.csv");
+        String[] traces = traceTimes.split("\n");
+        for (int i=0; i<traces.length-1; i++) {
+            String[] traceValuesPoint1 = traces[i].split(",");
+            String[] traceValuesPoint2 = traces[i+1].split(",");
+            ZonedDateTime timePoint1 = ZonedDateTime.parse(traceValuesPoint1[0]);
+            Coordinates coordinates1 = new Coordinates(Double.parseDouble(traceValuesPoint1[1]),Double.parseDouble(traceValuesPoint1[2]));
+            ZonedDateTime timePoint2 = ZonedDateTime.parse(traceValuesPoint2[0]);
+            Coordinates coordinates2 = new Coordinates(Double.parseDouble(traceValuesPoint2[1]),Double.parseDouble(traceValuesPoint2[2]));
+            double dist = getDistance(coordinates1, coordinates2);
+            long seconds = Duration.between(timePoint1,timePoint2).getSeconds();
+            if (seconds == 0) {
+                continue;
+            }
+            double speed = dist / seconds;
+            System.out.println(speed + " : " + dist + " : " + seconds);
+        }
+    }
+
 
     @Test
     void canTrackTripWithoutDeviating() {

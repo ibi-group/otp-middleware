@@ -69,7 +69,7 @@ public class ManageLegTraversal {
      */
     private static Coordinates getExpectedPosition(Instant currentTime, Leg leg) {
         List<ManageLegTraversal.Segment> segments = interpolatePoints(leg);
-        return getSegmentPosition(leg.startTime.toInstant(), currentTime,segments);
+        return getSegmentPosition(leg.startTime.toInstant(), currentTime, segments);
     }
 
     /**
@@ -148,11 +148,9 @@ public class ManageLegTraversal {
     public static List<Segment> interpolatePoints(Leg expectedLeg) {
         SortedSet<Position> orderedPoints = orderPoints(PolylineUtils.decode(expectedLeg.legGeometry.points, 5));
         double totalDistance = getDistanceTraversedForLeg(orderedPoints);
-        List<Segment> segments = new ArrayList<>();
-        if (totalDistance > 0) {
-            segments = getTimeInSegments(orderedPoints, expectedLeg.duration / totalDistance);
-        }
-        return segments;
+        return (totalDistance > 0)
+            ? getTimeInSegments(orderedPoints, expectedLeg.duration / totalDistance)
+            : new ArrayList<>();
     }
 
     /**
@@ -209,10 +207,10 @@ public class ManageLegTraversal {
      * traversed at a constant speed for simplicity.
      *
      * @param orderedPositions Points along a leg.
-     * @param metersPerSecond  The average leg traversal speed.
+     * @param timePerMeter  The average time to cover a meter within a leg.
      * @return A list of segments, around five seconds in size with an associated lat/lon.
      */
-    public static List<Segment> getTimeInSegments(SortedSet<Position> orderedPositions, double metersPerSecond) {
+    public static List<Segment> getTimeInSegments(SortedSet<Position> orderedPositions, double timePerMeter) {
         int minimumSegmentTime = 5;
         List<Segment> segments = new ArrayList<>();
         List<Position> positions = new ArrayList<>(orderedPositions);
@@ -221,7 +219,8 @@ public class ManageLegTraversal {
         for (int i = 0; i < positions.size() - 1; i++) {
             Coordinates c1 = new Coordinates(positions.get(i).getLatitude(), positions.get(i).getLongitude());
             Coordinates c2 = new Coordinates(positions.get(i + 1).getLatitude(), positions.get(i + 1).getLongitude());
-            double timeInSegment = getDistance(c1, c2) * metersPerSecond;
+            double distance = getDistance(c1, c2);
+            double timeInSegment = distance * timePerMeter;
             if (timeInSegment < minimumSegmentTime) {
                 // Time in segment too small.
                 if (groupCoordinates == null) {
