@@ -467,7 +467,6 @@ public class CheckMonitoredTrip implements Runnable {
         String tripUrl = getTripUrl();
         Map<String, Object> templateData = new HashMap<>(Map.of(
             "emailGreeting", Message.TRIP_EMAIL_GREETING.get(locale),
-            "tripId", trip.id,
             "tripNameOrReminder", tripNameOrReminder,
             "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
             "tripLinkAnchorLabel", tripLinkLabel,
