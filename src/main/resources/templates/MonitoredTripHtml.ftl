@@ -23,7 +23,7 @@
                 background-color: #99ddff;
             }
         </style>
-        <h1>Your trip has the following notifications:</h1>
+        <h1>${emailGreeting}</h1>
 
         <#if initialReminder??>
             <p>${initialReminder.body}</p>

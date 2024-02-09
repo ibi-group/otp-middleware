@@ -7,8 +7,7 @@
     with the indentation of the macros.
 
 -->
-
-Your trip has the following notifications:
+${emailGreeting}
 
 <#list notifications as notification>
   <#if notification.type == "INITIAL_REMINDER">

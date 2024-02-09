@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -449,6 +450,7 @@ public class CheckMonitoredTrip implements Runnable {
         String tripNameOrReminder = hasInitialReminder ? initialReminderNotification.body : trip.tripName;
 
         Map<String, Object> templateData = new HashMap<>(Map.of(
+            "emailGreeting", Message.TRIP_EMAIL_GREETING.get(getOtpUserLocale()),
             "tripId", trip.id,
             "tripNameOrReminder", tripNameOrReminder,
             "notifications", new ArrayList<>(notifications)
@@ -496,8 +498,10 @@ public class CheckMonitoredTrip implements Runnable {
      * Send notification email in MonitoredTrip template.
      */
     private boolean sendEmail(OtpUser otpUser, Map<String, Object> data) {
-        String name = trip.tripName != null ? trip.tripName : "Trip for " + otpUser.email;
-        String subject = name + " Notification";
+        Locale locale = getOtpUserLocale();
+        String subject = trip.tripName != null
+            ? String.format(Message.TRIP_EMAIL_SUBJECT.get(locale), trip.tripName)
+            : String.format(Message.TRIP_EMAIL_SUBJECT_FOR_USER.get(locale), otpUser.email);
         return NotificationUtils.sendEmail(
             otpUser,
             subject,

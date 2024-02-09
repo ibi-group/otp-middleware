@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory;
  */
 public enum Message {
     COLON,
+    TRIP_EMAIL_SUBJECT,
+    TRIP_EMAIL_SUBJECT_FOR_USER,
+    TRIP_EMAIL_GREETING,
     TRIP_ALERT_FOUND_SINGULAR,
     TRIP_ALERT_FOUND_PLURAL,
     TRIP_ALERT_NEW_SINGULAR,
