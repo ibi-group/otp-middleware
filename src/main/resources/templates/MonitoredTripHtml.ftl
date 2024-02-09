@@ -63,7 +63,7 @@
             </#list>
         </ul>
 
-        <p>View all of your saved trips in <a href="${OTP_UI_URL}${TRIPS_PATH}/${tripId}">${OTP_UI_NAME}</a>.</p>
+        <p><a href="${tripUrl}">${tripLinkAnchorLabel}</a><br />(${tripUrl})</p>
     </div>
 </#macro>
 
