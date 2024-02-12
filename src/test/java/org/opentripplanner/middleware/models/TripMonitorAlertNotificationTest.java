@@ -40,7 +40,7 @@ class TripMonitorAlertNotificationTest {
     private static Stream<Arguments> createNewAlertCases() {
         return Stream.of(
             Arguments.of(Locale.ENGLISH, "%s Your trip has 2 new alerts.", "2 new alerts found:"),
-            Arguments.of(Locale.FRENCH, "%s Votre trajet comporte 2 nouvelles alertes.", "2 nouvelles alertes trouvées :")
+            Arguments.of(Locale.FRENCH, "%s Votre trajet comporte 2 nouvelles alertes.", "2 nouvelles alertes trouvées\u00A0:")
         );
     }
 
@@ -65,7 +65,7 @@ class TripMonitorAlertNotificationTest {
     private static Stream<Arguments> createResolvedAlertCases() {
         return Stream.of(
             Arguments.of(Locale.ENGLISH, "%s Your trip has 1 resolved alert.", "1 resolved alert:"),
-            Arguments.of(Locale.FRENCH, "%s Votre trajet comporte 1 alerte levée.", "1 alerte levée :")
+            Arguments.of(Locale.FRENCH, "%s Votre trajet comporte 1 alerte levée.", "1 alerte levée\u00A0:")
         );
     }
 
