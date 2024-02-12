@@ -78,7 +78,9 @@ class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
             "notifications", List.of(
                 createAlertNotification(),
                 new TripMonitorNotification(NotificationType.DEPARTURE_DELAY, "This is the departure delay text")
-        ));
+            ),
+            "smsFooter", Message.SMS_STOP_NOTIFICATIONS.get(locale)
+        );
         testCases.add(new TemplateRenderingTestCase(
             notificationsData, "MonitoredTripSms.ftl", "Monitored Trip SMS"
         ));
