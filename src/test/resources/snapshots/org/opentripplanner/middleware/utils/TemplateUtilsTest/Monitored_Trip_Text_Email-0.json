@@ -1,1 +1,1 @@
-"Your trip has the following notifications:\n\n\n• This is the departure delay text\n\n\nView trip info: http://otp-ui.example.com/#/account/trips/test-trip-id"
+"Your trip has the following notifications:\n\n\n• 2 new alerts found:\n\n    ⚠ \n\nNew Alert 2 description\n\n    ⚠ New Alert 1\n\n\n\n• 1 resolved alert:\n\n    ☑ (RESOLVED) Resolved Alert\n\n\n\n• This is the departure delay text\n\n\nView trip info: http://otp-ui.example.com/#/account/trips/test-trip-id"
