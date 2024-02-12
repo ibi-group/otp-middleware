@@ -1,8 +1,13 @@
 package org.opentripplanner.middleware.triptracker;
 
+import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.utils.Coordinates;
 
+import java.time.Instant;
+
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getDistance;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
 
 /**
  * Instructions to be provided to the user depending on where they are on their journey.
@@ -15,7 +20,7 @@ public enum TripStatus {
     /** Within an acceptable distance from any point on the trip. **/
     NEAR_BY,
 
-    /** Outside the acceptable boundary, but is the expected position. **/
+    /** Outside the acceptable mode boundary, but is the expected position on the trip. **/
     ON_ROUTE,
 
     /** The traveler has completed their trip. **/
@@ -35,13 +40,9 @@ public enum TripStatus {
     public static TripStatus getConfidence(
         Coordinates currentPosition,
         Coordinates expectedPosition,
-        double modeBoundary,
+        Instant instant, Itinerary itinerary,
         double distanceFromNearestTripPosition
     ) {
-        if (expectedPosition == null || modeBoundary == Double.MIN_VALUE && distanceFromNearestTripPosition == Double.MAX_VALUE) {
-            return NO_STATUS;
-        }
-
         int confidence = 0;
 
         // TODO: Replace this arbitrary value with something more concrete.
@@ -49,14 +50,16 @@ public enum TripStatus {
             confidence = 1;
         }
 
-        double distanceFromExpected = getDistance(currentPosition, expectedPosition);
-        if (distanceFromExpected == distanceFromNearestTripPosition) {
-            // Both are referring to the same point on the trip. This can only be trumped by the distance from expected
-            // being within the acceptable mode boundary.
-            confidence = 2;
-        }
-        if (distanceFromExpected <= modeBoundary) {
-            confidence = 3;
+        if (expectedPosition != null) {
+            double distanceFromExpected = getDistance(currentPosition, expectedPosition);
+            if (distanceFromExpected == distanceFromNearestTripPosition) {
+                // Both are referring to the same point on the trip. This can only be trumped by the distance from expected
+                // being within the acceptable mode boundary.
+                confidence = 2;
+            }
+            if (distanceFromExpected <= getModeBoundary(instant, itinerary)) {
+                confidence = 3;
+            }
         }
 
         switch (confidence) {
@@ -71,5 +74,31 @@ public enum TripStatus {
             default:
                 return NO_STATUS;
         }
+    }
+
+    /**
+     * Get the acceptable 'on track' boundary in meters for mode.
+     */
+    public static double getModeBoundary(Instant instant, Itinerary itinerary) {
+        Leg expectedLeg = getExpectedLeg(instant, itinerary);
+        if (expectedLeg != null) {
+            // TODO: Replace these arbitrary values with something more concrete.
+            switch (expectedLeg.mode.toUpperCase()) {
+                case "WALK":
+                    return 5;
+                case "BICYCLE":
+                    return 10;
+                case "BUS":
+                    return 20;
+                case "SUBWAY":
+                case "TRAM":
+                    return 100;
+                case "RAIL":
+                    return 200;
+                default:
+                    throw new UnsupportedOperationException("Unknown mode: " + expectedLeg.mode);
+            }
+        }
+        return Double.MIN_VALUE;
     }
 }

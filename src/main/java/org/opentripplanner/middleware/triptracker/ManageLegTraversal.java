@@ -88,7 +88,7 @@ public class ManageLegTraversal {
      * Get the expected leg by comparing the current time against the start and end time of each leg. If the current time
      * is between the start and end time of a leg, this is the leg we expect the traveler to be on.
      */
-    private static Leg getExpectedLeg(Instant timeNow, Itinerary itinerary) {
+    public static Leg getExpectedLeg(Instant timeNow, Itinerary itinerary) {
         if (canUseTripLegs(itinerary)) {
             for (Leg leg : itinerary.legs) {
                 if (leg.startTime != null && leg.endTime != null) {
@@ -114,31 +114,6 @@ public class ManageLegTraversal {
             itinerary != null &&
                 itinerary.legs != null &&
                 !itinerary.legs.isEmpty();
-    }
-
-    /**
-     * Get the acceptable 'on track' boundary in meters for mode.
-     */
-    public static double getModeBoundary(Instant instant, Itinerary itinerary) {
-        Leg expectedLeg = getExpectedLeg(instant, itinerary);
-        if (expectedLeg != null) {
-            switch (expectedLeg.mode.toUpperCase()) {
-                case "WALK":
-                    return 5;
-                case "BICYCLE":
-                    return 10;
-                case "BUS":
-                    return 20;
-                case "SUBWAY":
-                case "TRAM":
-                    return 100;
-                case "RAIL":
-                    return 200;
-                default:
-                    throw new UnsupportedOperationException("Unknown mode: " + expectedLeg.mode);
-            }
-        }
-        return Double.MIN_VALUE;
     }
 
     /**

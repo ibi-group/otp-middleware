@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import io.leonard.PolylineUtils;
+import io.leonard.Position;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -291,6 +293,14 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
 
     private static List<ManageLegTraversal.Segment> createSegmentsForLeg(int legId) {
         return interpolatePoints(monitoredTrip.itinerary.legs.get(legId));
+    }
+
+    @Test
+    void generatePointsForBusStopToJusticeCenterTrip() {
+        List<Position> positions = PolylineUtils.decode(busStopJusticeCenterTrip.itinerary.legs.get(0).legGeometry.points, 5);
+        for (Position position : positions) {
+            System.out.println(position.getLatitude() + "," + position.getLongitude() + ",");
+        }
     }
 
 }

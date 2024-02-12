@@ -20,7 +20,6 @@ import spark.Request;
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getDistanceFromNearestTripPosition;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedPosition;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getModeBoundary;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -254,7 +253,8 @@ public class ManageTripTracking {
         return TripStatus.getConfidence(
             currentPosition,
             expectedPosition,
-            getModeBoundary(lastLocation.timestamp.toInstant(), monitoredTrip.itinerary),
+            lastLocation.timestamp.toInstant(),
+            monitoredTrip.itinerary,
             getDistanceFromNearestTripPosition(currentPosition, monitoredTrip.itinerary)
         );
     }
