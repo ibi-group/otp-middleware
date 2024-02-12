@@ -15,4 +15,4 @@ ${notification.body}
 
 ${tripLinkLabelAndUrl}
 
-To stop receiving notifications, reply STOP.
+${smsFooter}

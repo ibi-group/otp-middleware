@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
  */
 public enum Message {
     LABEL_AND_CONTENT,
+    SMS_STOP_NOTIFICATIONS,
     TRIP_EMAIL_SUBJECT,
     TRIP_EMAIL_SUBJECT_FOR_USER,
     TRIP_EMAIL_GREETING,

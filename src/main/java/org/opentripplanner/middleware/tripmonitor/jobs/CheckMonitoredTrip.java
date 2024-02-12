@@ -475,7 +475,8 @@ public class CheckMonitoredTrip implements Runnable {
             "emailFooter", String.format(Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
             "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
             "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
-            "notifications", new ArrayList<>(notifications)
+            "notifications", new ArrayList<>(notifications),
+            "smsFooter", Message.SMS_STOP_NOTIFICATIONS.get(locale)
         ));
         if (hasInitialReminder) {
             templateData.put("initialReminder", initialReminderNotification);
