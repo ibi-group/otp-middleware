@@ -43,7 +43,7 @@ public enum TripStatus {
         Instant instant, Itinerary itinerary,
         double distanceFromNearestTripPosition
     ) {
-        int confidence = 0;
+        int confidence = -1;
 
         // TODO: Replace this arbitrary value with something more concrete.
         if (distanceFromNearestTripPosition <= 20) {
@@ -52,12 +52,18 @@ public enum TripStatus {
 
         if (expectedPosition != null) {
             double distanceFromExpected = getDistance(currentPosition, expectedPosition);
+            double modeBoundary = getModeBoundary(instant, itinerary);
+            if (confidence < 1 && distanceFromExpected > modeBoundary) {
+                // Outside the acceptable boundary.
+                confidence = 0;
+            }
             if (distanceFromExpected == distanceFromNearestTripPosition) {
                 // Both are referring to the same point on the trip. This can only be trumped by the distance from expected
                 // being within the acceptable mode boundary.
                 confidence = 2;
             }
-            if (distanceFromExpected <= getModeBoundary(instant, itinerary)) {
+            if (distanceFromExpected <= modeBoundary) {
+                // Within the acceptable boundary.
                 confidence = 3;
             }
         }
