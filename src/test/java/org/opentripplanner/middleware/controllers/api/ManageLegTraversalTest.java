@@ -2,17 +2,14 @@ package org.opentripplanner.middleware.controllers.api;
 
 import io.leonard.PolylineUtils;
 import io.leonard.Position;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TrackedJourney;
-import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
-import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.triptracker.ManageLegTraversal;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
@@ -32,19 +29,14 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
-import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getDistance;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 
-public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
+public class ManageLegTraversalTest {
 
     private static MonitoredTrip monitoredTrip;
     private static MonitoredTrip busStopJusticeCenterTrip;
-
-    private static TrackedJourney trackedJourney;
 
     private static final int SUBWAY_LEG_ID = 1;
 
@@ -52,36 +44,14 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
 
     @BeforeAll
     public static void setUp() throws IOException {
-        assumeTrue(IS_END_TO_END);
-        setAuthDisabled(false);
         monitoredTrip = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/monitored-trip-for-tracking.json"),
             MonitoredTrip.class
         );
-        Persistence.monitoredTrips.create(monitoredTrip);
         busStopJusticeCenterTrip = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/bus-stop-justice-center-trip.json"),
             MonitoredTrip.class
         );
-        Persistence.monitoredTrips.create(busStopJusticeCenterTrip);
-    }
-
-    @AfterAll
-    public static void tearDown() throws Exception {
-        assumeTrue(IS_END_TO_END);
-        restoreDefaultAuthDisabled();
-        monitoredTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
-        if (monitoredTrip != null) monitoredTrip.delete();
-        busStopJusticeCenterTrip = Persistence.monitoredTrips.getById(busStopJusticeCenterTrip.id);
-        if (busStopJusticeCenterTrip != null) busStopJusticeCenterTrip.delete();
-    }
-
-    @AfterEach
-    public void tearDownAfterTest() {
-        if (trackedJourney != null) {
-            trackedJourney.delete();
-            trackedJourney = null;
-        }
     }
 
     // WIP. Time adjusted so that the provided traveler times start around the same time at the trip.
@@ -94,13 +64,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         HashMap<String, Integer> outcome = new HashMap<>();
         for (String trace : traces) {
             String[] traceValues = trace.split(",");
-            TrackingLocation trackingLocation = new TrackingLocation();
-            ZonedDateTime zdt = ZonedDateTime.parse(traceValues[0]);
-            ZonedDateTime timeAdjusted = zdt.plusMinutes(3).plusSeconds(8);
-            trackingLocation.timestamp = new Date(timeAdjusted.toInstant().toEpochMilli());
-            trackingLocation.lat = Double.parseDouble(traceValues[1]);
-            trackingLocation.lon = Double.parseDouble(traceValues[2]);
-            trackedJourney.locations = List.of(trackingLocation);
+            trackedJourney.locations = List.of(new TrackingLocation(traceValues[0], 3, 8, traceValues[1], traceValues[2]));
             TripStatus tripStatus = ManageTripTracking.getTripStatus(trackedJourney, monitoredTrip);
             if (outcome.containsKey(tripStatus.name())) {
                 Integer hits = outcome.get(tripStatus.name());
@@ -127,11 +91,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         HashMap<String, Integer> outcome = new HashMap<>();
         for (String trace : traces) {
             String[] traceValues = trace.split(",");
-            TrackingLocation trackingLocation = new TrackingLocation();
-            ZonedDateTime zdt = ZonedDateTime.parse(traceValues[0]);
-            trackingLocation.timestamp = new Date(zdt.toInstant().toEpochMilli());
-            trackingLocation.lat = Double.parseDouble(traceValues[1]);
-            trackingLocation.lon = Double.parseDouble(traceValues[2]);
+            TrackingLocation trackingLocation = new TrackingLocation(traceValues[0], traceValues[1], traceValues[2]);
             trackedJourney.locations = List.of(trackingLocation);
             TripStatus tripStatus = ManageTripTracking.getTripStatus(trackedJourney, busStopJusticeCenterTrip);
             if (outcome.containsKey(tripStatus.name())) {
@@ -172,7 +132,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
 
 
     @Test
-    void canTrackTripWithoutDeviating() {
+    void canTrackLegWithoutDeviating() {
         for (int legId = 0; legId < monitoredTrip.itinerary.legs.size(); legId++) {
             List<ManageLegTraversal.Segment> segments = createSegmentsForLeg(legId);
             TrackedJourney trackedJourney = new TrackedJourney();
@@ -189,7 +149,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     new TrackingLocation(
                         segment.coordinates.lat,
                         segment.coordinates.lon,
-                        new Date((currentTime.toInstant().toEpochMilli()))
+                        new Date(currentTime.toInstant().toEpochMilli())
                     )
                 );
                 assertEquals(
@@ -302,5 +262,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             System.out.println(position.getLatitude() + "," + position.getLongitude() + ",");
         }
     }
+
+
 
 }
