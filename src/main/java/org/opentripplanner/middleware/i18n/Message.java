@@ -8,9 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The purpose of Messages is to read supply Message.properties to underlying calling code... The
- * ENUM's enumerated values should be named to reflect the property names inside of
- * Message.properties
+ * Supplies content from Message.properties to underlying calling code...
+ * The ENUM's enumerated values should be named to reflect the property names inside of
+ * Message.properties.
  */
 public enum Message {
     LABEL_AND_CONTENT,
