@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.models;
 
+import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import java.util.Locale;
  */
 public class TripMonitorNotification extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(TripMonitorNotification.class);
+    public static final String STOPWATCH_ICON = "⏱";
 
     public final NotificationType type;
     public final String body;
@@ -49,19 +51,30 @@ public class TripMonitorNotification extends Model {
             return null;
         }
         String delayHumanTime;
-        if (Math.abs(delayInMinutes) <= 1) {
-            delayHumanTime = "about on time";
-        } else if (delayInMinutes > 0) {
-            delayHumanTime = String.format("%d minute%s late", delayInMinutes, delayInMinutes > 1 ? "s" : "");
+        long absoluteMinutes = Math.abs(delayInMinutes);
+        if (absoluteMinutes <= 1) {
+            delayHumanTime = Message.TRIP_DELAY_ON_TIME.get(locale);
         } else {
-            delayHumanTime = String.format("%d minute%s early", delayInMinutes, delayInMinutes < -1 ? "s" : "");
+            // Delays start at two minutes (plural form).
+            String minutesString = String.format(
+                Message.TRIP_DELAY_MINUTES.get(locale),
+                delayInMinutes
+            );
+            if (delayInMinutes > 0) {
+                delayHumanTime = String.format(Message.TRIP_DELAY_LATE.get(locale), minutesString);
+            } else {
+                delayHumanTime = String.format(Message.TRIP_DELAY_EARLY.get(locale), minutesString);
+            }
         }
 
         return new TripMonitorNotification(
             delayType,
             String.format(
-                "⏱ Your trip is now predicted to %s %s (at %s).",
-                delayType == NotificationType.ARRIVAL_DELAY ? "arrive" : "depart",
+                Message.TRIP_DELAY_NOTIFICATION.get(locale),
+                STOPWATCH_ICON,
+                delayType == NotificationType.ARRIVAL_DELAY
+                    ? Message.TRIP_DELAY_ARRIVE.get(locale)
+                    : Message.TRIP_DELAY_DEPART.get(locale),
                 delayHumanTime,
                 DateTimeUtils.formatShortDate(targetDatetime, locale)
             )
@@ -72,13 +85,14 @@ public class TripMonitorNotification extends Model {
      * Creates a notification that the itinerary was not found on either the current day or any day of the week.
      */
     public static TripMonitorNotification createItineraryNotFoundNotification(
-        boolean stillPossibleOnOtherMonitoredDaysOfTheWeek
+        boolean stillPossibleOnOtherMonitoredDaysOfTheWeek,
+        Locale locale
     ) {
         return new TripMonitorNotification(
             NotificationType.ITINERARY_NOT_FOUND,
             stillPossibleOnOtherMonitoredDaysOfTheWeek
-                ? "Your itinerary was not found in today's trip planner results. Please check real-time conditions and plan a new trip."
-                : "Your itinerary is no longer possible on any monitored day of the week. Please plan and save a new trip."
+                ? Message.TRIP_NOT_FOUND_NOTIFICATION.get(locale)
+                : Message.TRIP_NO_LONGER_POSSIBLE_NOTIFICATION.get(locale)
         );
     }
 
@@ -90,7 +104,7 @@ public class TripMonitorNotification extends Model {
     ) {
         return new TripMonitorNotification(
             NotificationType.INITIAL_REMINDER,
-            String.format("Reminder for %s at %s.",
+            String.format(Message.TRIP_REMINDER_NOTIFICATION.get(locale),
                 trip.tripName,
                 DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale)
             )

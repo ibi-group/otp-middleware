@@ -1,1 +1,1 @@
-"Test Trip\n• ⚠ Your trip has 2 new, 1 resolved alerts.\n• This is the departure delay text\n\nView trip: https://plan.example.com/#/account/trips/18f642d5-f7a8-475a-9469-800129e6c0b3\n\nTo stop receiving notifications, reply STOP."
+"Test Trip\n• ⚠ Your trip has 2 new alerts, 1 resolved alert.\n• This is the departure delay text\n\nView trip info: http://otp-ui.example.com/#/account/trips/test-trip-id\n\nTo stop receiving notifications, reply STOP."

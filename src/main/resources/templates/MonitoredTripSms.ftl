@@ -13,6 +13,6 @@ ${notification.body}
 </#list>
 </#if>
 
-View trip: ${OTP_UI_URL}${TRIPS_PATH}/${tripId}
+${tripLinkLabelAndUrl}
 
-To stop receiving notifications, reply STOP.
+${smsFooter}
