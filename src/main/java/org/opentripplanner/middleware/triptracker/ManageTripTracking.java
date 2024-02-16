@@ -18,8 +18,9 @@ import org.opentripplanner.middleware.utils.Coordinates;
 import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getDistanceFromNearestTripPosition;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedPosition;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getLegSegmentNearestToCurrentPosition;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -244,18 +245,19 @@ public class ManageTripTracking {
     }
 
     /**
-     * Get the trip status by comparing the traveler's proximity to an expected position and trip route.
+     * Get the trip status by comparing the traveler's position to expected and nearest positions to the trip route.
      */
     public static TripStatus getTripStatus(TrackedJourney trackedJourney, MonitoredTrip monitoredTrip) {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
-        Coordinates expectedPosition = getExpectedPosition(lastLocation.timestamp.toInstant(), monitoredTrip.itinerary);
         Coordinates currentPosition = new Coordinates(lastLocation.lat, lastLocation.lon);
-        return TripStatus.getConfidence(
+        var expectedLeg = getExpectedLeg(lastLocation.timestamp.toInstant(), monitoredTrip.itinerary);
+        var nearestSegment = getLegSegmentNearestToCurrentPosition(expectedLeg, currentPosition);
+        return TripStatus.getTripStatus(
             currentPosition,
-            expectedPosition,
             lastLocation.timestamp.toInstant(),
-            monitoredTrip.itinerary,
-            getDistanceFromNearestTripPosition(currentPosition, monitoredTrip.itinerary)
+            expectedLeg,
+            getExpectedPosition(lastLocation.timestamp.toInstant(), monitoredTrip.itinerary),
+            nearestSegment
         );
     }
 }
