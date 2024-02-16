@@ -23,7 +23,7 @@
                 background-color: #99ddff;
             }
         </style>
-        <h1>Your trip has the following notifications:</h1>
+        <h1>${emailGreeting}</h1>
 
         <#if initialReminder??>
             <p>${initialReminder.body}</p>
@@ -63,7 +63,7 @@
             </#list>
         </ul>
 
-        <p>View all of your saved trips in <a href="${OTP_UI_URL}${TRIPS_PATH}/${tripId}">${OTP_UI_NAME}</a>.</p>
+        <p><a href="${tripUrl}">${tripLinkAnchorLabel}</a></p>
     </div>
 </#macro>
 

@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -16,6 +17,7 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
@@ -37,6 +39,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static org.opentripplanner.middleware.utils.I18nUtils.label;
+
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
  * - determining if a check should be run (based on mostly date/time),
@@ -45,6 +49,16 @@ import java.util.concurrent.TimeUnit;
  */
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
+
+    private final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
+
+    private final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
+
+    private final String ACCOUNT_PATH = "/#/account";
+
+    private final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
+
+    private final String SETTINGS_PATH = ACCOUNT_PATH + "/settings";
 
     public final MonitoredTrip trip;
 
@@ -295,7 +309,10 @@ public class CheckMonitoredTrip implements Runnable {
         // send an appropriate notification if the trip is still possible on another day of the week, or if it is now
         // not possible on any day of the week that the trip should be monitored
         enqueueNotification(
-            TripMonitorNotification.createItineraryNotFoundNotification(!noMatchingItineraryFoundOnPreviousChecks)
+            TripMonitorNotification.createItineraryNotFoundNotification(
+                !noMatchingItineraryFoundOnPreviousChecks,
+                getOtpUserLocale()
+            )
         );
         return false;
     }
@@ -320,7 +337,11 @@ public class CheckMonitoredTrip implements Runnable {
             : new HashSet<>(previousMatchingItinerary.getAlerts());
         // Construct set from new alerts.
         Set<LocalizedAlert> newAlerts = new HashSet<>(matchingItinerary.getAlerts());
-        TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(previousAlerts, newAlerts);
+        TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(
+            previousAlerts,
+            newAlerts,
+            getOtpUserLocale()
+        );
         if (notification == null) {
             // TODO: Change log level
             LOG.info("No unseen/resolved alerts found for trip.");
@@ -441,10 +462,21 @@ public class CheckMonitoredTrip implements Runnable {
 
         String tripNameOrReminder = hasInitialReminder ? initialReminderNotification.body : trip.tripName;
 
+        Locale locale = getOtpUserLocale();
+        String tripLinkLabel = Message.TRIP_LINK_TEXT.get(locale);
+        String tripUrl = getTripUrl();
+        // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
         Map<String, Object> templateData = new HashMap<>(Map.of(
-            "tripId", trip.id,
+            "emailGreeting", Message.TRIP_EMAIL_GREETING.get(locale),
             "tripNameOrReminder", tripNameOrReminder,
-            "notifications", new ArrayList<>(notifications)
+            "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
+            "tripLinkAnchorLabel", tripLinkLabel,
+            "tripUrl", tripUrl,
+            "emailFooter", String.format(Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
+            "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
+            "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
+            "notifications", new ArrayList<>(notifications),
+            "smsFooter", Message.SMS_STOP_NOTIFICATIONS.get(locale)
         ));
         if (hasInitialReminder) {
             templateData.put("initialReminder", initialReminderNotification);
@@ -489,8 +521,10 @@ public class CheckMonitoredTrip implements Runnable {
      * Send notification email in MonitoredTrip template.
      */
     private boolean sendEmail(OtpUser otpUser, Map<String, Object> data) {
-        String name = trip.tripName != null ? trip.tripName : "Trip for " + otpUser.email;
-        String subject = name + " Notification";
+        Locale locale = getOtpUserLocale();
+        String subject = trip.tripName != null
+            ? String.format(Message.TRIP_EMAIL_SUBJECT.get(locale), trip.tripName)
+            : String.format(Message.TRIP_EMAIL_SUBJECT_FOR_USER.get(locale), otpUser.email);
         return NotificationUtils.sendEmail(
             otpUser,
             subject,
@@ -802,5 +836,9 @@ public class CheckMonitoredTrip implements Runnable {
     private Locale getOtpUserLocale() {
         OtpUser user = getOtpUser();
         return Locale.forLanguageTag(user == null || user.preferredLocale == null ? "en-US" : user.preferredLocale);
+    }
+
+    private String getTripUrl() {
+        return String.format("%s%s/%s", OTP_UI_URL, TRIPS_PATH, trip.id);
     }
 }

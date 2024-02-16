@@ -7,8 +7,7 @@
     with the indentation of the macros.
 
 -->
-
-Your trip has the following notifications:
+${emailGreeting}
 
 <#list notifications as notification>
   <#if notification.type == "INITIAL_REMINDER">
@@ -45,4 +44,4 @@ ${alert.alertDescriptionText}
     </#if>
 </#list>
 
-View trip: ${OTP_UI_URL}${TRIPS_PATH}/${tripId}
+${tripLinkLabelAndUrl}

@@ -3,18 +3,23 @@ package org.opentripplanner.middleware.utils;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.i18n.Message;
+import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
+import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import static com.zenika.snapshotmatcher.SnapshotMatcher.matchesSnapshot;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.opentripplanner.middleware.utils.I18nUtils.label;
 
 /**
  * Unit tests for {@code resources/templates/*.ftl} Freemarker Template Language files.
@@ -24,7 +29,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  * results of the template files.  If you change any {@code *.ftl} files you will need to delete their corresponding
  * snapshot files, run the tests to create new snapshots, and then commit those files along with new template files.
  */
-public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
+class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
     /**
      * A parameterized test that checks whether various templates render in a way that matches a snapshot. The name of
      * the test case is guaranteed to be unique due to a check in the {@link TemplateRenderingTestCase} constructor. The
@@ -58,13 +63,24 @@ public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
         ));
 
         // Trip Monitor Notifications tests (for CheckMonitoredTrip#sendNotifications).
+        Locale locale = Locale.ENGLISH;
+        String tripLinkLabel = Message.TRIP_LINK_TEXT.get(locale);
+        String tripUrl = "http://otp-ui.example.com/#/account/trips/test-trip-id";
         Map<String, Object> notificationsData = Map.of(
-            "tripId", "18f642d5-f7a8-475a-9469-800129e6c0b3",
             "tripNameOrReminder", "Test Trip",
+            "emailGreeting", Message.TRIP_EMAIL_GREETING.get(locale),
+            "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
+            "tripLinkAnchorLabel", tripLinkLabel,
+            "tripUrl", tripUrl,
+            "emailFooter", String.format(Message.TRIP_EMAIL_FOOTER.get(locale), "Test Trip Planner"),
+            "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
+            "manageLinkUrl", "http://otp-ui.example.com/#/account/settings",
             "notifications", List.of(
-                new TripMonitorNotification(NotificationType.ALERT_FOUND, "There are 2 new and 1 resolved alerts"),
+                createAlertNotification(),
                 new TripMonitorNotification(NotificationType.DEPARTURE_DELAY, "This is the departure delay text")
-        ));
+            ),
+            "smsFooter", Message.SMS_STOP_NOTIFICATIONS.get(locale)
+        );
         testCases.add(new TemplateRenderingTestCase(
             notificationsData, "MonitoredTripSms.ftl", "Monitored Trip SMS"
         ));
@@ -78,6 +94,20 @@ public class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
             notificationsData, "MonitoredTripHtml.ftl", "Monitored Trip HTML Email"
         ));
         return testCases;
+    }
+
+    private static TripMonitorAlertNotification createAlertNotification() {
+        // Create a notification with new and existing alerts,
+        // mixing cases of alerts without header and alerts without description.
+        Set<LocalizedAlert> newAlerts = Set.of(
+            new LocalizedAlert("New Alert 1", null),
+            new LocalizedAlert(null, "New Alert 2 description")
+        );
+        Set<LocalizedAlert> previousAlerts = Set.of(
+            new LocalizedAlert("Resolved Alert", null)
+        );
+
+        return TripMonitorAlertNotification.createAlertNotification(previousAlerts, newAlerts, Locale.ENGLISH);
     }
 
     private static class TemplateRenderingTestCase {

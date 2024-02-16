@@ -24,6 +24,7 @@ import spark.Response;
 
 import java.security.interfaces.RSAPublicKey;
 
+import static org.opentripplanner.middleware.controllers.api.AbstractUserController.TOKEN_PATH;
 import static org.opentripplanner.middleware.controllers.api.AbstractUserController.VERIFICATION_EMAIL_PATH;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.OtpUserController.OTP_USER_PATH;
@@ -71,10 +72,10 @@ public class Auth0Connection {
             RequestingUser profile = new RequestingUser(jwt);
             if (!isValidUser(profile)) {
                 if (expectsMissingProfile(req, profile)) {
-                    // If creating or emailing self, no user account is required (it does not exist yet!). Note: creating an
-                    // admin user requires that the requester is an admin (checkUserIsAdmin must be passed), so this
-                    // is not a concern for that method/controller.
-                    LOG.info("New user is creating self. OK to proceed without existing user object for auth0UserId");
+                    // If creating, emailing, or deleting self, no user account is required (it does not exist yet!).
+                    // Note: creating an admin user requires that the requester is an admin
+                    // (checkUserIsAdmin must be passed), so this is not a concern for that method/controller.
+                    LOG.info("New user is creating/emailing/deleting self. OK to proceed without existing user object for auth0UserId");
                 } else {
                     // Otherwise, if no valid user is found, halt the request.
                     logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "No user found in database associated with the provided auth token.");
@@ -96,11 +97,12 @@ public class Auth0Connection {
 
     /**
      * Checks whether the given {@link Request} should expect missing {@link ApiUser} or {@link OtpUser} profiles,
-     * to handle situations such as during new user sign up where the ApiUser or OtpUser does not exist yet.
+     * to handle situations such as during new user sign up where the ApiUser or OtpUser does not exist yet,
+     * and when requesting the Auth0 account deletion before a user record is created in Mongo.
      * @return true if the request can operate without a user profile, false otherwise.
      */
     private static boolean expectsMissingProfile(Request req, RequestingUser profile) {
-        return isCreatingSelf(req, profile) || isRequestingVerificationEmail(req);
+        return isCreatingSelf(req, profile) || isRequestingVerificationEmail(req) || isDeletingSelf(req);
     }
 
     public static boolean isAuthHeaderPresent(Request req) {
@@ -313,6 +315,20 @@ public class Auth0Connection {
             String uri = req.uri();
             return uri.endsWith(API_USER_PATH + VERIFICATION_EMAIL_PATH) ||
                 uri.endsWith(OTP_USER_PATH + VERIFICATION_EMAIL_PATH);
+        }
+        return false;
+    }
+
+    /**
+     * @return true if the given request is for a user requesting to delete themselves.
+     */
+    static boolean isDeletingSelf(Request req) {
+        if (req.requestMethod().equalsIgnoreCase("DELETE")) {
+            // Should be a DELETE request against the fromtoken route for /user or /application.
+            // (does not apply to admins.)
+            String uri = req.uri();
+            return uri.endsWith(API_USER_PATH + TOKEN_PATH) ||
+                uri.endsWith(OTP_USER_PATH + TOKEN_PATH);
         }
         return false;
     }

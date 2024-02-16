@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
 import io.github.manusant.ss.ApiEndpoint;
@@ -20,6 +21,7 @@ import spark.Request;
 import spark.Response;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -29,7 +31,7 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public abstract class AbstractUserController<U extends AbstractUser> extends ApiController<U> {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractUserController.class);
     static final String NO_USER_WITH_AUTH0_ID_MESSAGE = "No user with auth0UserID=%s found.";
-    private static final String TOKEN_PATH = "/fromtoken";
+    public static final String TOKEN_PATH = "/fromtoken";
     public static final String VERIFICATION_EMAIL_PATH = "/verification-email";
 
     /**
@@ -41,18 +43,24 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
 
     @Override
     protected void buildEndpoint(ApiEndpoint baseEndpoint) {
-        LOG.info("Registering path {}.", ROOT_ROUTE + TOKEN_PATH);
+        final String fullTokenPath = ROOT_ROUTE + TOKEN_PATH;
+        LOG.info("Registering path {}.", fullTokenPath);
 
         // Add the user token route BEFORE the regular CRUD methods
         // (otherwise, /fromtoken requests would be considered
         // by spark as 'GET user with id "fromtoken"', which we don't want).
         ApiEndpoint modifiedEndpoint = baseEndpoint
             // Get user from token.
-            .get(path(ROOT_ROUTE + TOKEN_PATH)
+            .get(path(fullTokenPath)
                     .withDescription("Retrieves an " + persistence.clazz.getSimpleName() + " entity using an Auth0 access token passed in an Authorization header.")
                     .withProduces(HttpUtils.JSON_ONLY)
                     .withResponses(stdResponses),
                 this::getUserFromRequest, JsonUtils::toJson
+            )
+            .delete(path(TOKEN_PATH)
+                    .withDescription("Deletes an " + persistence.clazz.getSimpleName() + " entity using an Auth0 access token passed in an Authorization header.")
+                    .withResponses(stdResponses),
+                this::deleteUserFromRequest, JsonUtils::toJson
             )
             // Resend verification email
             .get(path(ROOT_ROUTE + VERIFICATION_EMAIL_PATH)
@@ -78,10 +86,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     private U getUserFromRequest(Request req, Response res) {
         RequestingUser profile = Auth0Connection.getUserFromRequest(req);
         if (profile == null) {
-            logMessageAndHalt(req,
-                    HttpStatus.NOT_FOUND_404,
-                    String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, null),
-                    null);
+            logUserNotFoundAndHalt(req, null);
         }
         U user = getUserProfile(profile);
 
@@ -90,14 +95,60 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         // but have not completed the account setup form yet.
         // For those users, the user profile would be 404 not found (as opposed to 403 forbidden).
         if (user == null) {
-            logMessageAndHalt(req,
-                HttpStatus.NOT_FOUND_404,
-                String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, profile.auth0UserId),
-                null);
+            logUserNotFoundAndHalt(req, profile.auth0UserId);
         }
         return user;
     }
 
+    /**
+     * HTTP endpoint to delete the {@link U} entity, if it exists, from an {@link RequestingUser} token
+     * available from a {@link Request} (this is the case for '/api/secure/' endpoints).
+     */
+    private boolean deleteUserFromRequest(Request req, Response res) {
+        RequestingUser profile = Auth0Connection.getUserFromRequest(req);
+        if (profile == null) {
+            logUserNotFoundAndHalt(req, null);
+            return false;
+        }
+        U user = getUserProfile(profile);
+
+        if (user != null) {
+            // If a user record was found in Mongo, cascade delete, including its Auth0 ID.
+            boolean result = user.delete();
+            if (!result) {
+                logMessageAndHalt(
+                    req,
+                    HttpStatus.INTERNAL_SERVER_ERROR_500,
+                    String.format("An error occurred deleting user with id '%s'.", user.id),
+                    null
+                );
+            }
+            return result;
+        } else {
+            // If no user record was found in Mongo, directly delete its Auth0 ID.
+            try {
+                deleteAuth0User(profile.auth0UserId);
+                return true;
+            } catch (Auth0Exception e) {
+                logMessageAndHalt(
+                    req,
+                    HttpStatus.INTERNAL_SERVER_ERROR_500,
+                    String.format("Could not delete Auth0 user %s.", profile.auth0UserId),
+                    e
+                );
+                return false;
+            }
+        }
+    }
+
+    private void logUserNotFoundAndHalt(Request req, String id) {
+        logMessageAndHalt(
+            req,
+            HttpStatus.NOT_FOUND_404,
+            String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, id),
+            null
+        );
+    }
 
     private Job resendVerificationEmail(Request req, Response res) {
         RequestingUser profile = Auth0Connection.getUserFromRequest(req);
