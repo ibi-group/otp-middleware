@@ -18,6 +18,10 @@ public class TrackingLocation {
 
     public Date timestamp;
 
+    public TrackingLocation() {
+        // Needed for deserializing objects.
+    }
+
     public TrackingLocation(int bearing, Double lat, Double lon, int speed, Date timestamp) {
         this.bearing = bearing;
         this.lat = lat;
