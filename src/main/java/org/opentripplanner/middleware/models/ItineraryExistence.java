@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
@@ -67,6 +68,7 @@ public class ItineraryExistence extends Model {
      * When the itinerary existence check was run/completed.
      * FIXME: If a monitored trip has not been fully enabled for monitoring, we may want to check the timestamp to
      *  verify that the existence check has not gone stale.
+     * FIXME: Something other than deprecated Date() class here!
      */
     public Date timestamp = new Date();
 
@@ -93,6 +95,41 @@ public class ItineraryExistence extends Model {
             case SUNDAY: return sunday;
         }
         throw new IllegalArgumentException("Invalid day of week provided!");
+    }
+
+    /**
+     * Helper function to adapt OTP request parameters to GraphQL's JSON {@code variables} object, limited to
+     * variables specified in the GraphQL plan.  Parameter values are all simply Strings, so we can't use
+     * {@code ObjectMapper} to get the types right, must hardcode them specifically for ItineraryExistence so
+     * that the values that are actually strings have {@code \"} around them.
+     */
+    private static String paramsToVariables(Map<String, String> params) {
+        StringBuilder builder = new StringBuilder("{");
+        params.forEach((k, v) -> {
+            switch (k) {
+                case "arriveBy":
+                case "numItineraries":
+                    builder.append("\"" + k + "\":" + v + ",");
+                    break;
+
+                case "date":
+                case "time":
+                case "fromPlace":
+                case "toPlace":
+                    builder.append("\"" + k + "\":\"" + v + "\",");
+                    break;
+
+                case "mode":
+                    builder.append("\"modes\":[");
+                    String[] modes = v.split(",");
+                    builder.append("],");
+                    break;
+
+                default:
+                    break;
+            }
+        });
+        return builder.toString();
     }
 
     /**
@@ -186,7 +223,8 @@ public class ItineraryExistence extends Model {
                 setResultForDayOfWeek(result, dayOfWeek);
             }
             // Send off each plan query to OTP.
-            OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP1, otpRequest);
+            String variables = ItineraryExistence.paramsToVariables(otpRequest.requestParameters);
+            OtpDispatcherResponse response = OtpDispatcher.sendGraphQLPostRequest(OtpVersion.OTP2, variables);
             TripPlan plan = null;
             try {
                 plan = response.getResponse().plan;
