@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.otp;
 
 import java.util.Map;
 import org.eclipse.jetty.http.HttpMethod;
+import org.opentripplanner.middleware.utils.GraphQLUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -23,15 +24,14 @@ public class OtpDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcher.class);
 
     /**
-     * Location of the OTP plan endpoint (e.g. /routers/default/plan).
-     */
-    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
-
-    /**
      * Location of the OTP GraphQL endpoint (e.g. /routers/default/index/graphql).
      */
     public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/routers/default/index/graphql");
 
+    /**
+     * Location of the OTP plan endpoint (e.g. /routers/default/plan).
+     */
+    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
     /**
@@ -55,6 +55,22 @@ public class OtpDispatcher {
     ) {
         LOG.debug("Original query string: {}", query);
         return sendOtpRequest(buildOtpUri(version, query, path), HttpMethod.POST, headers, bodyContent);
+    }
+
+    /**
+     * Send GraphQL POST request. Would ideally take a JSON Object, but the {@code "query"} object is
+     * followed by a string of JSON-ish GraphQL and the {@code "variables"} object is a proper JSON
+     * object of key/value string pairs so we put these together by hand.
+     * @version OTP version passed along to post request
+     * @variables a string of a JSON object of key/value string pairs
+     */
+    public static OtpDispatcherResponse sendGraphQLPostRequest(OtpVersion version, String variables) {
+        var body = new StringBuilder("{\"query\":\"");
+        body.append(GraphQLUtils.getSchema());
+        body.append("\",\\n\"variables\":");
+        body.append(variables);
+        body.append("}");
+        return sendOtpPostRequest(version, "", OTP_GRAPHQL_ENDPOINT, HttpUtils.HEADERS_JSON, body.toString());
     }
 
     /**
