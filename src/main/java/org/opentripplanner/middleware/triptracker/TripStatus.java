@@ -57,7 +57,7 @@ public enum TripStatus {
     }
 
     private static boolean isWithinModeBoundary(Coordinates currentPosition, ManageLegTraversal.Segment segment) {
-        double distanceFromExpected = getDistance(currentPosition, segment.coordinates);
+        double distanceFromExpected = getDistanceFromSegment(currentPosition, segment);
         double modeBoundary = getModeBoundary(segment.mode);
         return distanceFromExpected <= modeBoundary;
     }
@@ -82,5 +82,14 @@ public enum TripStatus {
             default:
                 throw new UnsupportedOperationException("Unknown mode: " + mode);
         }
+    }
+
+    /**
+     * Get the distance to the nearest segment point.
+     */
+    private static double getDistanceFromSegment(Coordinates currentPosition, ManageLegTraversal.Segment segment) {
+        double distanceFromStart = getDistance(currentPosition, segment.start);
+        double distanceFromEnd = getDistance(currentPosition, segment.end);
+        return Math.min(distanceFromStart, distanceFromEnd);
     }
 }

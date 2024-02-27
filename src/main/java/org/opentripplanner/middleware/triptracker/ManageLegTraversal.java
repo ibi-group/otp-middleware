@@ -19,6 +19,9 @@ import java.util.TreeSet;
 
 public class ManageLegTraversal {
 
+    /** The smallest permitted time in seconds for a segment. */
+    private static final int MINIMUM_SEGMENT_TIME = 5;
+
     private ManageLegTraversal() {
     }
 
@@ -33,7 +36,7 @@ public class ManageLegTraversal {
         ManageLegTraversal.Segment nearestLegSegment = null;
         List<ManageLegTraversal.Segment> segments = interpolatePoints(leg);
         for (ManageLegTraversal.Segment segment : segments) {
-            double distance = getDistance(currentCoordinates, segment.coordinates);
+            double distance = getDistance(currentCoordinates, segment.start);
             if (distance < shortestDistance) {
                 nearestLegSegment = segment;
                 shortestDistance = distance;
@@ -72,26 +75,35 @@ public class ManageLegTraversal {
     private static boolean canUseLeg(Leg leg) {
         return
             leg != null &&
-                leg.duration > 0 &&
-                leg.legGeometry != null &&
-                leg.legGeometry.points != null &&
-                !leg.legGeometry.points.isEmpty();
+            leg.duration > 0 &&
+            leg.legGeometry != null &&
+            leg.legGeometry.points != null &&
+            !leg.legGeometry.points.isEmpty();
     }
 
     /**
-     * Get the expected leg by comparing the current time against the start and end time of each leg. If the current time
-     * is between the start and end time of a leg, this is the leg we expect the traveler to be on.
+     * Get the expected leg by comparing the current time against the start and end time of each leg.
      */
     public static Leg getExpectedLeg(Instant timeNow, Itinerary itinerary) {
         if (canUseTripLegs(itinerary)) {
-            for (Leg leg : itinerary.legs) {
-                if (leg.startTime != null && leg.endTime != null && (isTimeInRange(
+            for (int i = 0; i < itinerary.legs.size(); i++) {
+                Leg leg = itinerary.legs.get(i);
+                if (i == 0 &&
+                    leg.mode.equalsIgnoreCase("walk") &&
+                    leg.startTime != null &&
+                    timeNow.isBefore(leg.startTime.toInstant())) {
+                    // If the first leg is a walk leg and the traveler has decided to start the trip early.
+                    return leg;
+                }
+                if (leg.startTime != null &&
+                    leg.endTime != null &&
+                    isTimeInRange(
                         leg.startTime.toInstant(),
                         // Offset the end time by a faction to avoid exact times being attributed to the wrong leg.
                         leg.endTime.toInstant().minus(1, ChronoUnit.MILLIS),
-                        timeNow)
+                        timeNow
                     )) {
-                        return leg;
+                    return leg;
                 }
             }
         }
@@ -170,7 +182,7 @@ public class ManageLegTraversal {
 
     /**
      * Calculate the distance between each position and from this the number of seconds spent in each segment. If the
-     * time spent in a segment is less than five seconds, group these segments. This assumes that the leg is being
+     * time spent in a segment is less than permitted, group these segments. This assumes that the leg is being
      * traversed at a constant speed for simplicity.
      *
      * @param orderedPositions Points along a leg.
@@ -178,44 +190,44 @@ public class ManageLegTraversal {
      * @return A list of segments, around five seconds in size with an associated lat/lon.
      */
     public static List<Segment> getTimeInSegments(SortedSet<Position> orderedPositions, double timePerMeter, String mode) {
-        int minimumSegmentTime = 5;
         List<Segment> segments = new ArrayList<>();
         List<Position> positions = new ArrayList<>(orderedPositions);
         Coordinates groupCoordinates = null;
         double groupSegmentTime = 0;
         double cumulativeTime = 0;
+        Coordinates c1;
+        Coordinates c2 = null;
         for (int i = 0; i < positions.size() - 1; i++) {
-            Coordinates c1 = new Coordinates(positions.get(i).getLatitude(), positions.get(i).getLongitude());
-            Coordinates c2 = new Coordinates(positions.get(i + 1).getLatitude(), positions.get(i + 1).getLongitude());
-            double distance = getDistance(c1, c2);
-            double timeInSegment = distance * timePerMeter;
+            c1 = new Coordinates(positions.get(i));
+            c2 = new Coordinates(positions.get(i + 1));
+            double timeInSegment = getDistance(c1, c2) * timePerMeter;
             cumulativeTime += timeInSegment;
-            if (timeInSegment < minimumSegmentTime) {
+            if (timeInSegment < MINIMUM_SEGMENT_TIME) {
                 // Time in segment too small.
                 if (groupCoordinates == null) {
                     groupCoordinates = c1;
                     groupSegmentTime = 0;
                 }
                 groupSegmentTime += timeInSegment;
-                if (groupSegmentTime > minimumSegmentTime) {
+                if (groupSegmentTime > MINIMUM_SEGMENT_TIME) {
                     // Group segment is now big enough.
-                    segments.add(new Segment(groupCoordinates, groupSegmentTime, mode, cumulativeTime));
+                    segments.add(new Segment(groupCoordinates, c2, groupSegmentTime, mode, cumulativeTime));
                     groupCoordinates = null;
                 }
             } else {
                 if (groupCoordinates != null) {
                     // Group segment is now big enough.
                     groupSegmentTime += timeInSegment;
-                    segments.add(new Segment(groupCoordinates, groupSegmentTime, mode, cumulativeTime));
+                    segments.add(new Segment(groupCoordinates, c2, groupSegmentTime, mode, cumulativeTime));
                     groupCoordinates = null;
                 } else {
-                    segments.add(new Segment(c1, timeInSegment, mode, cumulativeTime));
+                    segments.add(new Segment(c1, c2, timeInSegment, mode, cumulativeTime));
                 }
             }
         }
         if (groupCoordinates != null) {
             // Close incomplete group segment.
-            segments.add(new Segment(groupCoordinates, groupSegmentTime, mode, cumulativeTime));
+            segments.add(new Segment(groupCoordinates, c2, groupSegmentTime, mode, cumulativeTime));
         }
         return segments;
     }
@@ -229,8 +241,8 @@ public class ManageLegTraversal {
         double total = 0;
         for (int i = 0; i < positions.size() - 1; i++) {
             total += getDistance(
-                new Coordinates(positions.get(i).getLatitude(), positions.get(i).getLongitude()),
-                new Coordinates(positions.get(i + 1).getLatitude(), positions.get(i + 1).getLongitude())
+                new Coordinates(positions.get(i)),
+                new Coordinates(positions.get(i + 1))
             );
         }
         return total;
@@ -249,8 +261,11 @@ public class ManageLegTraversal {
 
     public static class Segment {
 
-        /** The coordinates associated with this segment. */
-        public Coordinates coordinates;
+        /** The coordinates associated with the start of a segment. */
+        public Coordinates start;
+
+        /** The coordinates associated with the end of a segment. */
+        public Coordinates end;
 
         /** The time spent in this segment in seconds. */
         public double timeInSegment;
@@ -261,8 +276,9 @@ public class ManageLegTraversal {
         /** The cumulative time since the start of the leg. */
         public double cumulativeTime;
 
-        public Segment(Coordinates coordinates, double timeInSegment, String mode, double cumulativeTime) {
-            this.coordinates = coordinates;
+        public Segment(Coordinates start, Coordinates end, double timeInSegment, String mode, double cumulativeTime) {
+            this.start = start;
+            this.end = end;
             this.timeInSegment = timeInSegment;
             this.mode = mode;
             this.cumulativeTime = cumulativeTime;

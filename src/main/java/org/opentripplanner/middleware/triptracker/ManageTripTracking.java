@@ -6,6 +6,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
@@ -46,7 +47,7 @@ public class ManageTripTracking {
                 Persistence.trackedJourneys.create(trackedJourney);
 
                 try {
-                    TripStatus status = getTripStatus(trackedJourney, monitoredTrip);
+                    TripStatus status = getTripStatus(trackedJourney, monitoredTrip.itinerary);
                     // Provide response.
                     return new StartTrackingResponse(
                         TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
@@ -81,7 +82,7 @@ public class ManageTripTracking {
                     );
 
                     try {
-                        TripStatus status = getTripStatus(trackedJourney, monitoredTrip);
+                        TripStatus status = getTripStatus(trackedJourney, monitoredTrip.itinerary);
                         // Provide response.
                         return new UpdateTrackingResponse(
                             getInstructions(TripStage.UPDATE),
@@ -247,16 +248,16 @@ public class ManageTripTracking {
     /**
      * Get the trip status by comparing the traveler's position to expected and nearest positions to the trip route.
      */
-    public static TripStatus getTripStatus(TrackedJourney trackedJourney, MonitoredTrip monitoredTrip) {
+    public static TripStatus getTripStatus(TrackedJourney trackedJourney, Itinerary itinerary) {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
-        Coordinates currentPosition = new Coordinates(lastLocation.lat, lastLocation.lon);
-        var expectedLeg = getExpectedLeg(lastLocation.timestamp.toInstant(), monitoredTrip.itinerary);
+        Coordinates currentPosition = new Coordinates(lastLocation);
+        var expectedLeg = getExpectedLeg(lastLocation.timestamp.toInstant(), itinerary);
         var nearestSegment = getLegSegmentNearestToCurrentPosition(expectedLeg, currentPosition);
         return TripStatus.getTripStatus(
             currentPosition,
             lastLocation.timestamp.toInstant(),
             expectedLeg,
-            getExpectedPosition(lastLocation.timestamp.toInstant(), monitoredTrip.itinerary),
+            getExpectedPosition(lastLocation.timestamp.toInstant(), itinerary),
             nearestSegment
         );
     }

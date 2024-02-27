@@ -1,5 +1,8 @@
 package org.opentripplanner.middleware.utils;
 
+import io.leonard.Position;
+import org.opentripplanner.middleware.triptracker.TrackingLocation;
+
 import java.util.Objects;
 
 /**
@@ -16,6 +19,16 @@ public class Coordinates {
     public Coordinates(Double lat, Double lon) {
         this.lat = lat;
         this.lon = lon;
+    }
+
+    public Coordinates(TrackingLocation trackingLocation) {
+        this.lat = trackingLocation.lat;
+        this.lon = trackingLocation.lon;
+    }
+
+    public Coordinates(Position position) {
+        this.lat = position.getLatitude();
+        this.lon = position.getLongitude();
     }
 
     @Override

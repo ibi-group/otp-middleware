@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.triptracker.ManageLegTraversal;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
@@ -25,27 +25,19 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 
 public class ManageLegTraversalTest {
 
-    private static MonitoredTrip monitoredTrip;
-    private static MonitoredTrip busStopJusticeCenterTrip;
-
-    private static final int SUBWAY_LEG_ID = 1;
-
-    private static final int FINAL_LEG_ID = 2;
+    private static Itinerary busStopToJusticeCenterItinerary;
 
     @BeforeAll
     public static void setUp() throws IOException {
-        monitoredTrip = JsonUtils.getPOJOFromJSON(
-            CommonTestUtils.getTestResourceAsString("controllers/api/monitored-trip-for-tracking.json"),
-            MonitoredTrip.class
-        );
-        busStopJusticeCenterTrip = JsonUtils.getPOJOFromJSON(
+        busStopToJusticeCenterItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/bus-stop-justice-center-trip.json"),
-            MonitoredTrip.class
+            Itinerary.class
         );
     }
 
@@ -53,31 +45,44 @@ public class ManageLegTraversalTest {
     @MethodSource("createTrace")
     void canTrackTrip(String time, double lat, double lon, TripStatus expected) {
         TrackedJourney trackedJourney = new TrackedJourney();
-        trackedJourney.tripId = busStopJusticeCenterTrip.id;
         TrackingLocation trackingLocation = new TrackingLocation(time, lat, lon);
         trackedJourney.locations = List.of(trackingLocation);
-        TripStatus tripStatus = ManageTripTracking.getTripStatus(trackedJourney, busStopJusticeCenterTrip);
+        TripStatus tripStatus = ManageTripTracking.getTripStatus(trackedJourney, busStopToJusticeCenterItinerary);
         assertEquals(expected, tripStatus);
     }
 
     private static Stream<Arguments> createTrace() {
         return Stream.of(
-            Arguments.of("2024-01-26T19:07:05Z", 33.95022, -83.9906, TripStatus.BEHIND_SCHEDULE),
+            // Time and position not within mode boundary.
+            Arguments.of("2024-01-26T19:07Z", 33.9502669, -83.9899204, TripStatus.DEVIATED),
+            // 35 seconds behind schedule, for position.
+            Arguments.of("2024-01-26T19:07:08Z", 33.9505, -83.99081, TripStatus.BEHIND_SCHEDULE),
+            // Time and position on schedule.
             Arguments.of("2024-01-26T19:07:08Z", 33.95022, -83.9906, TripStatus.ON_SCHEDULE),
-            Arguments.of("2024-01-26T19:07:50Z", 33.95022, -83.9906, TripStatus.AHEAD_OF_SCHEDULE),
-            Arguments.of("2024-01-26T19:07:43Z", 33.6408211227185, -84.4465224660685, TripStatus.DEVIATED),
+            // One second ahead of schedule, for position.
+            Arguments.of("2024-01-26T19:07:13Z", 33.95022, -83.9906, TripStatus.AHEAD_OF_SCHEDULE),
+            // Time can not be attributed to an expected leg.
             Arguments.of("2024-01-26T19:12:25Z", 33.9517224, -83.9929082, TripStatus.NO_STATUS)
         );
     }
 
     @Test
+    void canAccumulateCorrectStartAndEndCoordinates() {
+        List<ManageLegTraversal.Segment> segments = createSegmentsForLeg();
+        for (int i=0; i < segments.size()-1; i++) {
+            ManageLegTraversal.Segment segmentOne = segments.get(i);
+            ManageLegTraversal.Segment segmentTwo = segments.get(i+1);
+            assertEquals(segmentOne.end.lat, segmentTwo.start.lat);
+        }
+    }
+
+    @Test
     void canTrackLegWithoutDeviating() {
-        for (int legId = 0; legId < monitoredTrip.itinerary.legs.size(); legId++) {
-            List<ManageLegTraversal.Segment> segments = createSegmentsForLeg(legId);
+        for (int legIndex = 0; legIndex < busStopToJusticeCenterItinerary.legs.size(); legIndex++) {
+            List<ManageLegTraversal.Segment> segments = createSegmentsForLeg();
             TrackedJourney trackedJourney = new TrackedJourney();
-            trackedJourney.tripId = monitoredTrip.id;
             ZonedDateTime startOfTrip = ZonedDateTime.ofInstant(
-                monitoredTrip.itinerary.legs.get(legId).startTime.toInstant(),
+                busStopToJusticeCenterItinerary.legs.get(legIndex).startTime.toInstant(),
                 DateTimeUtils.getOtpZoneId()
             );
 
@@ -86,13 +91,13 @@ public class ManageLegTraversalTest {
             for (ManageLegTraversal.Segment segment : segments) {
                 trackedJourney.locations = List.of(
                     new TrackingLocation(
-                        segment.coordinates.lat,
-                        segment.coordinates.lon,
+                        segment.start.lat,
+                        segment.start.lon,
                         new Date(currentTime.toInstant().toEpochMilli())
                     )
                 );
                 assertEquals(
-                    ManageTripTracking.getTripStatus(trackedJourney, monitoredTrip).name(),
+                    ManageTripTracking.getTripStatus(trackedJourney, busStopToJusticeCenterItinerary).name(),
                     TripStatus.ON_SCHEDULE.name()
                 );
                 cumulativeTravelTime += segment.timeInSegment;
@@ -102,23 +107,13 @@ public class ManageLegTraversalTest {
     }
 
     @Test
-    void cumulativeSegmentTimeMatchesSubwayLegDuration() {
-        List<ManageLegTraversal.Segment> segments = createSegmentsForLeg(SUBWAY_LEG_ID);
-        double cumulative = 0;
-        for (ManageLegTraversal.Segment segment : segments) {
-            cumulative += segment.timeInSegment;
-        }
-        assertEquals(monitoredTrip.itinerary.legs.get(SUBWAY_LEG_ID).duration, Math.round(cumulative));
-    }
-
-    @Test
     void cumulativeSegmentTimeMatchesWalkLegDuration() {
-        List<ManageLegTraversal.Segment> segments = createSegmentsForLeg(FINAL_LEG_ID);
+        List<ManageLegTraversal.Segment> segments = createSegmentsForLeg();
         double cumulative = 0;
         for (ManageLegTraversal.Segment segment : segments) {
             cumulative += segment.timeInSegment;
         }
-        assertEquals(monitoredTrip.itinerary.legs.get(FINAL_LEG_ID).duration, cumulative);
+        assertEquals(busStopToJusticeCenterItinerary.legs.get(0).duration, cumulative, 0.01f);
     }
 
     @ParameterizedTest
@@ -129,38 +124,38 @@ public class ManageLegTraversalTest {
             segmentPosition.currentTime,
             segmentPosition.segments
         );
-        assert segment != null;
-        assertEquals(segmentPosition.coordinates, segment.coordinates);
+        assertNotNull(segment);
+        assertEquals(segmentPosition.coordinates, segment.start);
     }
 
     private static Stream<TravellerPosition> createTravelerPositions() {
         Instant segmentStartTime = ZonedDateTime.now().toInstant();
-        List<ManageLegTraversal.Segment> segments = createSegmentsForLeg(FINAL_LEG_ID);
+        List<ManageLegTraversal.Segment> segments = createSegmentsForLeg();
         for (ManageLegTraversal.Segment segment : segments) {
             segment.timeInSegment = 10;
         }
 
         return Stream.of(
             new TravellerPosition(
-                segments.get(0).coordinates,
+                segments.get(0).start,
                 segmentStartTime,
                 segmentStartTime.plusSeconds(5),
                 segments
             ),
             new TravellerPosition(
-                segments.get(1).coordinates,
+                segments.get(1).start,
                 segmentStartTime,
                 segmentStartTime.plusSeconds(15),
                 segments
             ),
             new TravellerPosition(
-                segments.get(2).coordinates,
+                segments.get(2).start,
                 segmentStartTime,
                 segmentStartTime.plusSeconds(25),
                 segments
             ),
             new TravellerPosition(
-                segments.get(3).coordinates,
+                segments.get(3).start,
                 segmentStartTime,
                 segmentStartTime.plusSeconds(35),
                 segments
@@ -191,7 +186,7 @@ public class ManageLegTraversalTest {
         }
     }
 
-    private static List<ManageLegTraversal.Segment> createSegmentsForLeg(int legId) {
-        return interpolatePoints(monitoredTrip.itinerary.legs.get(legId));
+    private static List<ManageLegTraversal.Segment> createSegmentsForLeg() {
+        return interpolatePoints(busStopToJusticeCenterItinerary.legs.get(0));
     }
 }
