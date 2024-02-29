@@ -5,7 +5,8 @@ import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.time.Instant;
 
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getDistance;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
 
 
 /**
@@ -13,25 +14,53 @@ import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getD
  */
 public enum TripStatus {
 
-    /** Within the expect position boundary. */
+    /**
+     * Within the expect position boundary.
+     */
     ON_SCHEDULE,
 
-    /** Traveler's position is behind expected. */
+    /**
+     * Traveler's position is behind expected.
+     */
     BEHIND_SCHEDULE,
 
-    /** Traveler's position is ahead of expected. */
+    /**
+     * Traveler's position is ahead of expected.
+     */
     AHEAD_OF_SCHEDULE,
 
-    /** The traveler has completed their trip. **/
+    /**
+     * The traveler has completed their trip.
+     **/
     ENDED,
 
-    /** The traveler has deviated from the trip route. **/
+    /**
+     * The traveler has deviated from the trip route.
+     **/
     DEVIATED,
 
-    /** Unable to ascertain the traveler's position. **/
+    /**
+     * Unable to ascertain the traveler's position.
+     **/
     NO_STATUS;
 
-    // More status types will be added.
+    public static final int TRIP_TRACKING_WALK_BOUNDARY
+        = getConfigPropertyAsInt("TRIP_TRACKING_WALK_BOUNDARY", 5);
+
+    public static final int TRIP_TRACKING_BICYCLE_BOUNDARY
+        = getConfigPropertyAsInt("TRIP_TRACKING_BICYCLE_BOUNDARY", 10);
+
+    public static final int TRIP_TRACKING_BUS_BOUNDARY
+        = getConfigPropertyAsInt("TRIP_TRACKING_BUS_BOUNDARY", 20);
+
+    public static final int TRIP_TRACKING_SUBWAY_BOUNDARY
+        = getConfigPropertyAsInt("TRIP_TRACKING_SUBWAY_BOUNDARY", 100);
+
+    public static final int TRIP_TRACKING_TRAM_BOUNDARY
+        = getConfigPropertyAsInt("TRIP_TRACKING_TRAM_BOUNDARY", 100);
+
+    public static final int TRIP_TRACKING_RAIL_BOUNDARY
+        = getConfigPropertyAsInt("TRIP_TRACKING_RAIL_BOUNDARY", 200);
 
     /**
      * Define the trip status based on the traveler's current position compared to expected and nearest points on the trip.
@@ -56,8 +85,11 @@ public enum TripStatus {
         return TripStatus.NO_STATUS;
     }
 
+    /**
+     * Checks if the traveler's position is with an acceptable distance of the mode type.
+     */
     private static boolean isWithinModeBoundary(Coordinates currentPosition, ManageLegTraversal.Segment segment) {
-        double distanceFromExpected = getDistanceFromSegment(currentPosition, segment);
+        double distanceFromExpected = getDistanceFromLine(segment.start, segment.end, currentPosition);
         double modeBoundary = getModeBoundary(segment.mode);
         return distanceFromExpected <= modeBoundary;
     }
@@ -69,27 +101,19 @@ public enum TripStatus {
         // TODO: Replace these arbitrary values with something more concrete.
         switch (mode.toUpperCase()) {
             case "WALK":
-                return 5;
+                return TRIP_TRACKING_WALK_BOUNDARY;
             case "BICYCLE":
-                return 10;
+                return TRIP_TRACKING_BICYCLE_BOUNDARY;
             case "BUS":
-                return 20;
+                return TRIP_TRACKING_BUS_BOUNDARY;
             case "SUBWAY":
+                return TRIP_TRACKING_SUBWAY_BOUNDARY;
             case "TRAM":
-                return 100;
+                return TRIP_TRACKING_TRAM_BOUNDARY;
             case "RAIL":
-                return 200;
+                return TRIP_TRACKING_RAIL_BOUNDARY;
             default:
                 throw new UnsupportedOperationException("Unknown mode: " + mode);
         }
-    }
-
-    /**
-     * Get the distance to the nearest segment point.
-     */
-    private static double getDistanceFromSegment(Coordinates currentPosition, ManageLegTraversal.Segment segment) {
-        double distanceFromStart = getDistance(currentPosition, segment.start);
-        double distanceFromEnd = getDistance(currentPosition, segment.end);
-        return Math.min(distanceFromStart, distanceFromEnd);
     }
 }

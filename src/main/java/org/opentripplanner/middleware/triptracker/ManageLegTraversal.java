@@ -1,8 +1,5 @@
 package org.opentripplanner.middleware.triptracker;
 
-import com.grum.geocalc.Coordinate;
-import com.grum.geocalc.EarthCalc;
-import com.grum.geocalc.Point;
 import io.leonard.PolylineUtils;
 import io.leonard.Position;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -12,15 +9,16 @@ import org.opentripplanner.middleware.utils.Coordinates;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 
 public class ManageLegTraversal {
 
     /** The smallest permitted time in seconds for a segment. */
-    private static final int MINIMUM_SEGMENT_TIME = 5;
+    public static final int TRIP_TRACKING_MINIMUM_SEGMENT_TIME
+        = getConfigPropertyAsInt("TRIP_TRACKING_MINIMUM_SEGMENT_TIME", 5);
 
     private ManageLegTraversal() {
     }
@@ -116,8 +114,8 @@ public class ManageLegTraversal {
     private static boolean canUseTripLegs(Itinerary itinerary) {
         return
             itinerary != null &&
-                itinerary.legs != null &&
-                !itinerary.legs.isEmpty();
+            itinerary.legs != null &&
+            !itinerary.legs.isEmpty();
     }
 
     /**
@@ -125,10 +123,10 @@ public class ManageLegTraversal {
      * coordinate and time spent in the segment.
      */
     public static List<Segment> interpolatePoints(Leg expectedLeg) {
-        SortedSet<Position> orderedPoints = orderPoints(PolylineUtils.decode(expectedLeg.legGeometry.points, 5));
-        double totalDistance = getDistanceTraversedForLeg(orderedPoints);
+        List<Position> positions = PolylineUtils.decode(expectedLeg.legGeometry.points, 5);
+        double totalDistance = getDistanceTraversedForLeg(positions);
         return (totalDistance > 0)
-            ? getTimeInSegments(orderedPoints, expectedLeg.duration / totalDistance, expectedLeg.mode)
+            ? getTimeInSegments(positions, expectedLeg.duration / totalDistance, expectedLeg.mode)
             : new ArrayList<>();
     }
 
@@ -171,27 +169,16 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Get the distance between two lat/lon points in meters.
-     */
-    public static double getDistance(Coordinates start, Coordinates end) {
-        return EarthCalc.haversine.distance(
-            Point.at(Coordinate.fromDegrees(start.lat), Coordinate.fromDegrees(start.lon)),
-            Point.at(Coordinate.fromDegrees(end.lat), Coordinate.fromDegrees(end.lon))
-        );
-    }
-
-    /**
      * Calculate the distance between each position and from this the number of seconds spent in each segment. If the
      * time spent in a segment is less than permitted, group these segments. This assumes that the leg is being
      * traversed at a constant speed for simplicity.
      *
-     * @param orderedPositions Points along a leg.
+     * @param positions Points along a leg.
      * @param timePerMeter  The average time to cover a meter within a leg.
-     * @return A list of segments, around five seconds in size with an associated lat/lon.
+     * @return A list of segments.
      */
-    public static List<Segment> getTimeInSegments(SortedSet<Position> orderedPositions, double timePerMeter, String mode) {
+    public static List<Segment> getTimeInSegments(List<Position> positions, double timePerMeter, String mode) {
         List<Segment> segments = new ArrayList<>();
-        List<Position> positions = new ArrayList<>(orderedPositions);
         Coordinates groupCoordinates = null;
         double groupSegmentTime = 0;
         double cumulativeTime = 0;
@@ -202,14 +189,14 @@ public class ManageLegTraversal {
             c2 = new Coordinates(positions.get(i + 1));
             double timeInSegment = getDistance(c1, c2) * timePerMeter;
             cumulativeTime += timeInSegment;
-            if (timeInSegment < MINIMUM_SEGMENT_TIME) {
+            if (timeInSegment < TRIP_TRACKING_MINIMUM_SEGMENT_TIME) {
                 // Time in segment too small.
                 if (groupCoordinates == null) {
                     groupCoordinates = c1;
                     groupSegmentTime = 0;
                 }
                 groupSegmentTime += timeInSegment;
-                if (groupSegmentTime > MINIMUM_SEGMENT_TIME) {
+                if (groupSegmentTime > TRIP_TRACKING_MINIMUM_SEGMENT_TIME) {
                     // Group segment is now big enough.
                     segments.add(new Segment(groupCoordinates, c2, groupSegmentTime, mode, cumulativeTime));
                     groupCoordinates = null;
@@ -226,7 +213,7 @@ public class ManageLegTraversal {
             }
         }
         if (groupCoordinates != null) {
-            // Close incomplete group segment.
+            // Close incomplete group segment. This is unlikely to meet the minimum segment time.
             segments.add(new Segment(groupCoordinates, c2, groupSegmentTime, mode, cumulativeTime));
         }
         return segments;
@@ -236,7 +223,7 @@ public class ManageLegTraversal {
      * Get the total distance traversed through each position on a leg. This distance is different to that provided
      * with the leg (distance).
      */
-    public static double getDistanceTraversedForLeg(SortedSet<Position> orderedPositions) {
+    public static double getDistanceTraversedForLeg(List<Position> orderedPositions) {
         List<Position> positions = new ArrayList<>(orderedPositions);
         double total = 0;
         for (int i = 0; i < positions.size() - 1; i++) {
@@ -246,17 +233,6 @@ public class ManageLegTraversal {
             );
         }
         return total;
-    }
-
-    /**
-     * Order points and remove duplicates to match leg traversal.
-     */
-    public static SortedSet<Position> orderPoints(List<Position> positions) {
-        SortedSet<Position> sortedPoints = new TreeSet<>(
-            Comparator.comparing(Position::getLatitude).thenComparing(Position::getLongitude)
-        );
-        sortedPoints.addAll(positions);
-        return sortedPoints;
     }
 
     public static class Segment {

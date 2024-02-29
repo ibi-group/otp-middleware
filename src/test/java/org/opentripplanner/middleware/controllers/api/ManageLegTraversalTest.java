@@ -18,7 +18,9 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
@@ -52,17 +54,44 @@ public class ManageLegTraversalTest {
     }
 
     private static Stream<Arguments> createTrace() {
+        Date startTime = busStopToJusticeCenterItinerary.startTime;
+        List<ManageLegTraversal.Segment> segments = createSegmentsForLeg();
+        ManageLegTraversal.Segment before = segments.get(8);
+        ManageLegTraversal.Segment current = segments.get(10);
+        ManageLegTraversal.Segment after = segments.get(12);
         return Stream.of(
-            // Time and position not within mode boundary.
-            Arguments.of("2024-01-26T19:07Z", 33.9502669, -83.9899204, TripStatus.DEVIATED),
-            // 35 seconds behind schedule, for position.
-            Arguments.of("2024-01-26T19:07:08Z", 33.9505, -83.99081, TripStatus.BEHIND_SCHEDULE),
-            // Time and position on schedule.
-            Arguments.of("2024-01-26T19:07:08Z", 33.95022, -83.9906, TripStatus.ON_SCHEDULE),
-            // One second ahead of schedule, for position.
-            Arguments.of("2024-01-26T19:07:13Z", 33.95022, -83.9906, TripStatus.AHEAD_OF_SCHEDULE),
-            // Time can not be attributed to an expected leg.
-            Arguments.of("2024-01-26T19:12:25Z", 33.9517224, -83.9929082, TripStatus.NO_STATUS)
+            Arguments.of(
+                getDateTimeAsString(startTime, before.cumulativeTime),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.BEHIND_SCHEDULE
+            ),
+            Arguments.of(
+                getDateTimeAsString(startTime, current.cumulativeTime),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.ON_SCHEDULE
+            ),
+            Arguments.of(
+                getDateTimeAsString(startTime, after.cumulativeTime),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.AHEAD_OF_SCHEDULE
+            ),
+            // Time which can not be attributed to a trip leg.
+            Arguments.of(
+                getDateTimeAsString(busStopToJusticeCenterItinerary.endTime, 1),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.NO_STATUS
+            ),
+            // Arbitrary lat/lon values which aren't on the trip.
+            Arguments.of(
+                getDateTimeAsString(startTime, 0),
+                33.95029,
+                -83.99,
+                TripStatus.DEVIATED
+            )
         );
     }
 
@@ -188,5 +217,11 @@ public class ManageLegTraversalTest {
 
     private static List<ManageLegTraversal.Segment> createSegmentsForLeg() {
         return interpolatePoints(busStopToJusticeCenterItinerary.legs.get(0));
+    }
+
+    private static String getDateTimeAsString(Date date, double offset) {
+        Instant dateTime = date.toInstant().plusSeconds((long) offset);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneId.systemDefault());;
+        return formatter.format(dateTime);
     }
 }

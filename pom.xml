@@ -354,12 +354,16 @@
             <version>0.0.2</version>
         </dependency>
 
-        <!-- Library to get the distance between to lat/lon points. https://github.com/grumlimited/geocalc -->
+        <!--
+            Used to calculate distances.
+            https://stackoverflow.com/a/38290399
+            https://github.com/locationtech/jts?tab=readme-ov-file
+            https://mvnrepository.com/artifact/org.locationtech.jts/jts-core
+        -->
         <dependency>
-            <groupId>com.github.grumlimited</groupId>
-            <artifactId>geocalc</artifactId>
-            <version>0.6</version>
+            <groupId>org.locationtech.jts</groupId>
+            <artifactId>jts-core</artifactId>
+            <version>1.19.0</version>
         </dependency>
-
     </dependencies>
 </project>
