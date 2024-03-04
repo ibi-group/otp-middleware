@@ -21,6 +21,7 @@ import spark.Request;
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromTime;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -255,7 +256,7 @@ public class ManageTripTracking {
             currentPosition,
             lastLocation.timestamp.toInstant(),
             expectedLeg,
-            ManageLegTraversal.getSegmentFromTime(lastLocation.timestamp.toInstant(), itinerary),
+            getSegmentFromTime(lastLocation.timestamp.toInstant(), itinerary),
             getSegmentFromPosition(expectedLeg, currentPosition)
         );
     }
