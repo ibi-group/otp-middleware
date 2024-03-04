@@ -10,6 +10,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.triptracker.ManageLegTraversal;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
+import org.opentripplanner.middleware.triptracker.Segment;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.utils.Coordinates;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
+import static org.opentripplanner.middleware.triptracker.TripStatus.getSegmentTimeInterval;
 
 public class ManageLegTraversalTest {
 
@@ -55,13 +57,13 @@ public class ManageLegTraversalTest {
 
     private static Stream<Arguments> createTrace() {
         Date startTime = busStopToJusticeCenterItinerary.startTime;
-        List<ManageLegTraversal.Segment> segments = createSegmentsForLeg();
-        ManageLegTraversal.Segment before = segments.get(8);
-        ManageLegTraversal.Segment current = segments.get(10);
-        ManageLegTraversal.Segment after = segments.get(12);
+        List<Segment> segments = createSegmentsForLeg();
+        Segment before = segments.get(8);
+        Segment current = segments.get(10);
+        Segment after = segments.get(12);
         return Stream.of(
             Arguments.of(
-                getDateTimeAsString(startTime, before.cumulativeTime),
+                getDateTimeAsString(startTime, getSegmentTimeInterval(before)),
                 current.start.lat,
                 current.start.lon,
                 TripStatus.BEHIND_SCHEDULE
@@ -77,6 +79,27 @@ public class ManageLegTraversalTest {
                 current.start.lat,
                 current.start.lon,
                 TripStatus.AHEAD_OF_SCHEDULE
+            ),
+            // Slight deviation on time.
+            Arguments.of(
+                getDateTimeAsString(startTime, current.cumulativeTime - 4),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.ON_SCHEDULE
+            ),
+            // Slight deviation on time.
+            Arguments.of(
+                getDateTimeAsString(startTime, (current.cumulativeTime - current.timeInSegment) + 4),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.ON_SCHEDULE
+            ),
+            // Slight deviation on lat/lon.
+            Arguments.of(
+                getDateTimeAsString(startTime, current.cumulativeTime),
+                current.start.lat + 0.00001,
+                current.start.lon + 0.00001,
+                TripStatus.ON_SCHEDULE
             ),
             // Time which can not be attributed to a trip leg.
             Arguments.of(
@@ -97,10 +120,10 @@ public class ManageLegTraversalTest {
 
     @Test
     void canAccumulateCorrectStartAndEndCoordinates() {
-        List<ManageLegTraversal.Segment> segments = createSegmentsForLeg();
+        List<Segment> segments = createSegmentsForLeg();
         for (int i=0; i < segments.size()-1; i++) {
-            ManageLegTraversal.Segment segmentOne = segments.get(i);
-            ManageLegTraversal.Segment segmentTwo = segments.get(i+1);
+            Segment segmentOne = segments.get(i);
+            Segment segmentTwo = segments.get(i+1);
             assertEquals(segmentOne.end.lat, segmentTwo.start.lat);
         }
     }
@@ -108,7 +131,7 @@ public class ManageLegTraversalTest {
     @Test
     void canTrackLegWithoutDeviating() {
         for (int legIndex = 0; legIndex < busStopToJusticeCenterItinerary.legs.size(); legIndex++) {
-            List<ManageLegTraversal.Segment> segments = createSegmentsForLeg();
+            List<Segment> segments = createSegmentsForLeg();
             TrackedJourney trackedJourney = new TrackedJourney();
             ZonedDateTime startOfTrip = ZonedDateTime.ofInstant(
                 busStopToJusticeCenterItinerary.legs.get(legIndex).startTime.toInstant(),
@@ -117,7 +140,7 @@ public class ManageLegTraversalTest {
 
             ZonedDateTime currentTime = startOfTrip;
             double cumulativeTravelTime = 0;
-            for (ManageLegTraversal.Segment segment : segments) {
+            for (Segment segment : segments) {
                 trackedJourney.locations = List.of(
                     new TrackingLocation(
                         segment.start.lat,
@@ -137,9 +160,9 @@ public class ManageLegTraversalTest {
 
     @Test
     void cumulativeSegmentTimeMatchesWalkLegDuration() {
-        List<ManageLegTraversal.Segment> segments = createSegmentsForLeg();
+        List<Segment> segments = createSegmentsForLeg();
         double cumulative = 0;
-        for (ManageLegTraversal.Segment segment : segments) {
+        for (Segment segment : segments) {
             cumulative += segment.timeInSegment;
         }
         assertEquals(busStopToJusticeCenterItinerary.legs.get(0).duration, cumulative, 0.01f);
@@ -148,7 +171,7 @@ public class ManageLegTraversalTest {
     @ParameterizedTest
     @MethodSource("createTravelerPositions")
     void canReturnTheCorrectSegmentCoordinates(TravellerPosition segmentPosition) {
-        ManageLegTraversal.Segment segment = ManageLegTraversal.getSegmentPosition(
+        Segment segment = ManageLegTraversal.getSegmentFromTime(
             segmentPosition.start,
             segmentPosition.currentTime,
             segmentPosition.segments
@@ -159,8 +182,8 @@ public class ManageLegTraversalTest {
 
     private static Stream<TravellerPosition> createTravelerPositions() {
         Instant segmentStartTime = ZonedDateTime.now().toInstant();
-        List<ManageLegTraversal.Segment> segments = createSegmentsForLeg();
-        for (ManageLegTraversal.Segment segment : segments) {
+        List<Segment> segments = createSegmentsForLeg();
+        for (Segment segment : segments) {
             segment.timeInSegment = 10;
         }
 
@@ -200,13 +223,13 @@ public class ManageLegTraversalTest {
 
         public Instant currentTime;
 
-        List<ManageLegTraversal.Segment> segments;
+        List<Segment> segments;
 
         public TravellerPosition(
             Coordinates coordinates,
             Instant start,
             Instant currentTime,
-            List<ManageLegTraversal.Segment> segments
+            List<Segment> segments
         ) {
             this.coordinates = coordinates;
             this.start = start;
@@ -215,7 +238,7 @@ public class ManageLegTraversalTest {
         }
     }
 
-    private static List<ManageLegTraversal.Segment> createSegmentsForLeg() {
+    private static List<Segment> createSegmentsForLeg() {
         return interpolatePoints(busStopToJusticeCenterItinerary.legs.get(0));
     }
 

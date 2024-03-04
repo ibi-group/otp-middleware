@@ -20,8 +20,7 @@ import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedPosition;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getLegSegmentNearestToCurrentPosition;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -252,13 +251,12 @@ public class ManageTripTracking {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
         Coordinates currentPosition = new Coordinates(lastLocation);
         var expectedLeg = getExpectedLeg(lastLocation.timestamp.toInstant(), itinerary);
-        var nearestSegment = getLegSegmentNearestToCurrentPosition(expectedLeg, currentPosition);
         return TripStatus.getTripStatus(
             currentPosition,
             lastLocation.timestamp.toInstant(),
             expectedLeg,
-            getExpectedPosition(lastLocation.timestamp.toInstant(), itinerary),
-            nearestSegment
+            ManageLegTraversal.getSegmentFromTime(lastLocation.timestamp.toInstant(), itinerary),
+            getSegmentFromPosition(expectedLeg, currentPosition)
         );
     }
 }

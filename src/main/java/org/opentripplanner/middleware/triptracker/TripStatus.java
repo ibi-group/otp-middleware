@@ -69,16 +69,19 @@ public enum TripStatus {
         Coordinates currentPosition,
         Instant currentTime,
         Leg expectedLeg,
-        ManageLegTraversal.Segment expectedSegment,
-        ManageLegTraversal.Segment nearestSegment
+        Segment segmentFromTime,
+        Segment segmentFromPosition
     ) {
         if (expectedLeg != null) {
-            if (expectedSegment != null && isWithinModeBoundary(currentPosition, expectedSegment)) {
+            if (segmentFromTime != null && isWithinModeBoundary(currentPosition, segmentFromTime)) {
                 return TripStatus.ON_SCHEDULE;
             }
-            if (nearestSegment != null && isWithinModeBoundary(currentPosition, nearestSegment)) {
-                Instant nearestSegmentTime = expectedLeg.startTime.toInstant().plusSeconds((long) nearestSegment.cumulativeTime);
-                return currentTime.isBefore(nearestSegmentTime) ? TripStatus.BEHIND_SCHEDULE : TripStatus.AHEAD_OF_SCHEDULE;
+            if (segmentFromPosition != null && isWithinModeBoundary(currentPosition, segmentFromPosition)) {
+                Instant segmentCenterTime = expectedLeg
+                    .startTime
+                    .toInstant()
+                    .plusSeconds((long) getSegmentTimeInterval(segmentFromPosition));
+                return currentTime.isBefore(segmentCenterTime) ? TripStatus.BEHIND_SCHEDULE : TripStatus.AHEAD_OF_SCHEDULE;
             }
             return TripStatus.DEVIATED;
         }
@@ -86,9 +89,16 @@ public enum TripStatus {
     }
 
     /**
+     * Get the cumulative time at the center of a segment.
+     */
+    public static double getSegmentTimeInterval(Segment segmentFromPosition) {
+        return ((segmentFromPosition.cumulativeTime - segmentFromPosition.timeInSegment) / 2) + segmentFromPosition.timeInSegment;
+    }
+
+    /**
      * Checks if the traveler's position is with an acceptable distance of the mode type.
      */
-    private static boolean isWithinModeBoundary(Coordinates currentPosition, ManageLegTraversal.Segment segment) {
+    private static boolean isWithinModeBoundary(Coordinates currentPosition, Segment segment) {
         double distanceFromExpected = getDistanceFromLine(segment.start, segment.end, currentPosition);
         double modeBoundary = getModeBoundary(segment.mode);
         return distanceFromExpected <= modeBoundary;

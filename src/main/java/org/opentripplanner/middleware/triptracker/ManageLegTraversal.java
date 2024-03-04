@@ -13,6 +13,7 @@ import java.util.List;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
+import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
 
 public class ManageLegTraversal {
 
@@ -24,17 +25,17 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Define the segment within a leg that is the closest to the traveler's current position.
+     * Define the segment that is the closest to the traveler's current position.
      */
-    public static ManageLegTraversal.Segment getLegSegmentNearestToCurrentPosition(Leg leg, Coordinates currentCoordinates) {
+    public static Segment getSegmentFromPosition(Leg leg, Coordinates currentCoordinates) {
         if (!canUseLeg(leg)) {
             return null;
         }
         double shortestDistance = Double.MAX_VALUE;
-        ManageLegTraversal.Segment nearestLegSegment = null;
-        List<ManageLegTraversal.Segment> segments = interpolatePoints(leg);
-        for (ManageLegTraversal.Segment segment : segments) {
-            double distance = getDistance(currentCoordinates, segment.start);
+        Segment nearestLegSegment = null;
+        List<Segment> segments = interpolatePoints(leg);
+        for (Segment segment : segments) {
+            double distance = getDistanceFromLine(segment.start, segment.end, currentCoordinates);
             if (distance < shortestDistance) {
                 nearestLegSegment = segment;
                 shortestDistance = distance;
@@ -45,26 +46,18 @@ public class ManageLegTraversal {
 
     /**
      * Get the expected traveler position using the current time and trip itinerary.
-     *
-     * @param currentTime Traveler's current time.
-     * @param itinerary Trip itinerary.
-     * @return The expected traveler coordinates.
      */
-    public static ManageLegTraversal.Segment getExpectedPosition(Instant currentTime, Itinerary itinerary) {
+    public static Segment getSegmentFromTime(Instant currentTime, Itinerary itinerary) {
         var expectedLeg = getExpectedLeg(currentTime, itinerary);
-        return (canUseLeg(expectedLeg)) ? getExpectedPosition(currentTime, expectedLeg) : null;
+        return (canUseLeg(expectedLeg)) ? getSegmentFromTime(currentTime, expectedLeg) : null;
     }
 
     /**
      * Get the expected traveler position using the current time and trip leg.
-     *
-     * @param currentTime Traveler's current time.
-     * @param leg Trip leg.
-     * @return The expected traveler coordinates.
      */
-    private static ManageLegTraversal.Segment getExpectedPosition(Instant currentTime, Leg leg) {
-        List<ManageLegTraversal.Segment> segments = interpolatePoints(leg);
-        return getSegmentPosition(leg.startTime.toInstant(), currentTime, segments);
+    private static Segment getSegmentFromTime(Instant currentTime, Leg leg) {
+        List<Segment> segments = interpolatePoints(leg);
+        return getSegmentFromTime(leg.startTime.toInstant(), currentTime, segments);
     }
 
     /**
@@ -131,10 +124,9 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Working through each segment from the beginning of the leg to the end, return the coordinates of the segment
-     * which contain the current time.
+     * Get the segment which contains the current time.
      */
-    public static Segment getSegmentPosition(
+    public static Segment getSegmentFromTime(
         Instant segmentStartTime,
         Instant currentTime,
         List<Segment> segments
@@ -233,31 +225,5 @@ public class ManageLegTraversal {
             );
         }
         return total;
-    }
-
-    public static class Segment {
-
-        /** The coordinates associated with the start of a segment. */
-        public Coordinates start;
-
-        /** The coordinates associated with the end of a segment. */
-        public Coordinates end;
-
-        /** The time spent in this segment in seconds. */
-        public double timeInSegment;
-
-        /** The leg mode associated with this segment. */
-        public String mode;
-
-        /** The cumulative time since the start of the leg. */
-        public double cumulativeTime;
-
-        public Segment(Coordinates start, Coordinates end, double timeInSegment, String mode, double cumulativeTime) {
-            this.start = start;
-            this.end = end;
-            this.timeInSegment = timeInSegment;
-            this.mode = mode;
-            this.cumulativeTime = cumulativeTime;
-        }
     }
 }
