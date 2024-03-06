@@ -25,7 +25,8 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Define the segment that is the closest to the traveler's current position.
+     * Define the segment that is the closest to the traveler's current position. The assumption being that each segment
+     * is a straight line.
      */
     public static Segment getSegmentFromPosition(Leg leg, Coordinates currentCoordinates) {
         if (!canUseLeg(leg)) {

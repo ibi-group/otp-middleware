@@ -22,6 +22,7 @@ import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromTime;
+import static org.opentripplanner.middleware.triptracker.TripInstruction.getInstructions;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -85,7 +86,8 @@ public class ManageTripTracking {
                         TripStatus status = getTripStatus(trackedJourney, monitoredTrip.itinerary);
                         // Provide response.
                         return new UpdateTrackingResponse(
-                            getInstructions(TripStage.UPDATE),
+                            // This is to be expanded on in later PRs. For now, it is used for unit testing.
+                            TripInstruction.NO_INSTRUCTION.name(),
                             status.name()
                         );
                     } catch (UnsupportedOperationException e) {
@@ -147,21 +149,6 @@ public class ManageTripTracking {
             TripStatus.ENDED.name()
         );
 
-    }
-
-    /**
-     * Provides the instructions for the user based on the trip stage and location.
-     */
-    private static String getInstructions(TripStage tripStage) {
-        // This is to be expanded on in later PRs. For now, it is used for unit testing.
-        switch (tripStage) {
-            case START:
-                return TripInstruction.GET_ON_BUS.name();
-            case UPDATE:
-                return TripInstruction.STAY_ON_BUS.name();
-            default:
-                return TripInstruction.NO_INSTRUCTION.name();
-        }
     }
 
     /**

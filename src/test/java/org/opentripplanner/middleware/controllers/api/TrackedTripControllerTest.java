@@ -120,7 +120,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
 
         var updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, UpdateTrackingResponse.class);
-        assertEquals(TripInstruction.STAY_ON_BUS.name(), updateTrackingResponse.instruction);
+        assertEquals(TripInstruction.NO_INSTRUCTION.name(), updateTrackingResponse.instruction);
         assertEquals(TripStatus.NO_STATUS.name(), updateTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
 
