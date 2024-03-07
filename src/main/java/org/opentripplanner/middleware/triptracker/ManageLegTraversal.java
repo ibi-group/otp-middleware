@@ -113,7 +113,7 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Using the duration of a leg and it's points, produce a list of segments each containing a representative
+     * Using the duration of a leg and its points, produce a list of segments each containing a representative
      * coordinate and time spent in the segment.
      */
     public static List<Segment> interpolatePoints(Leg expectedLeg) {
