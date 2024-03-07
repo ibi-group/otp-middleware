@@ -133,7 +133,7 @@ public class ManageLegTraversal {
         List<Segment> segments
     ) {
         for (Segment segment : segments) {
-            // Offset the end time by a faction to avoid exact times being attributed to the wrong previous segment.
+            // Offset the end time by a fraction to avoid exact times being attributed to the wrong previous segment.
             Instant segmentEndTime = segmentStartTime.plus(
                 (getSecondsToMilliseconds(segment.timeInSegment) - 1),
                 ChronoUnit.MILLIS
