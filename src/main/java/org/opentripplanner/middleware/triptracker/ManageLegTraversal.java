@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.utils.Coordinates;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -48,6 +49,7 @@ public class ManageLegTraversal {
     /**
      * Get the expected traveler position using the current time and trip itinerary.
      */
+    @Nullable
     public static Segment getSegmentFromTime(Instant currentTime, Itinerary itinerary) {
         var expectedLeg = getExpectedLeg(currentTime, itinerary);
         return (canUseLeg(expectedLeg)) ? getSegmentFromTime(currentTime, expectedLeg) : null;
@@ -76,6 +78,7 @@ public class ManageLegTraversal {
     /**
      * Get the expected leg by comparing the current time against the start and end time of each leg.
      */
+    @Nullable
     public static Leg getExpectedLeg(Instant timeNow, Itinerary itinerary) {
         if (canUseTripLegs(itinerary)) {
             for (int i = 0; i < itinerary.legs.size(); i++) {
@@ -127,6 +130,7 @@ public class ManageLegTraversal {
     /**
      * Get the segment which contains the current time.
      */
+    @Nullable
     public static Segment getSegmentFromTime(
         Instant segmentStartTime,
         Instant currentTime,

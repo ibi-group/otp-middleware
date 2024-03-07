@@ -183,9 +183,6 @@ public class ManageLegTraversalTest {
     private static Stream<TravellerPosition> createTravelerPositions() {
         Instant segmentStartTime = ZonedDateTime.now().toInstant();
         List<Segment> segments = createSegmentsForLeg();
-        for (Segment segment : segments) {
-            segment.timeInSegment = 10;
-        }
 
         return Stream.of(
             new TravellerPosition(
