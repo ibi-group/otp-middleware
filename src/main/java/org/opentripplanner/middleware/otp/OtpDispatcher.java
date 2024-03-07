@@ -24,9 +24,9 @@ public class OtpDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcher.class);
 
     /**
-     * Location of the OTP GraphQL endpoint (e.g. /routers/default/index/graphql).
+     * Location of the OTP GraphQL endpoint (e.g. /gtfs/v1).
      */
-    public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/routers/default/index/graphql");
+    public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/gtfs/v1");
 
     /**
      * Location of the OTP plan endpoint (e.g. /routers/default/plan).
