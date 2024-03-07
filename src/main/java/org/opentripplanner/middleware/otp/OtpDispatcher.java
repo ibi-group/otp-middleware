@@ -67,7 +67,7 @@ public class OtpDispatcher {
     public static OtpDispatcherResponse sendGraphQLPostRequest(OtpVersion version, String variables) {
         var body = new StringBuilder("{\"query\":\"");
         body.append(GraphQLUtils.getSchema());
-        body.append("\",\\n\"variables\":");
+        body.append("\",\n\"variables\":");
         body.append(variables);
         body.append("}");
         return sendOtpPostRequest(version, "", OTP_GRAPHQL_ENDPOINT, HttpUtils.HEADERS_JSON, body.toString());
