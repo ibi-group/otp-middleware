@@ -141,6 +141,20 @@ public class ItineraryExistence extends Model {
     }
 
     /**
+     * Checks whether all monitored days of the week for a trip are valid.
+     * @return true if all monitored days are valid.
+     */
+    public boolean allMonitoredDaysAreValid(MonitoredTrip trip) {
+        return (!trip.monday || monday.isValid()) &&
+            (!trip.tuesday || tuesday.isValid()) &&
+            (!trip.wednesday || wednesday.isValid()) &&
+            (!trip.thursday || thursday.isValid()) &&
+            (!trip.friday || friday.isValid()) &&
+            (!trip.saturday || saturday.isValid()) &&
+            (!trip.sunday || sunday.isValid());
+    }
+
+    /**
      * @return The first {@link Itinerary} found for the given {@link DayOfWeek}.
      */
     public Itinerary getItineraryForDayOfWeek(DayOfWeek dow) {
@@ -213,6 +227,7 @@ public class ItineraryExistence extends Model {
                 result.handleInvalidDate(otpRequest.dateTime);
             }
         }
+        // TODO: I think this should change too.
         if (!this.allCheckedDaysAreValid()) {
             this.message = String.format(
                 "The trip is not possible on the following days of the week you have selected: %s",

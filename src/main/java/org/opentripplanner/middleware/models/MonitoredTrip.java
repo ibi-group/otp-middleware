@@ -199,12 +199,13 @@ public class MonitoredTrip extends Model {
      *                     or just the days the trip is set to be monitored.
      * @return a summary of the itinerary existence results for each day of the week
      */
+    // TODO: remove arg checkAllDays
     public boolean checkItineraryExistence(boolean checkAllDays, boolean replaceItinerary) throws URISyntaxException {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries(checkAllDays);
         this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary, this.arriveBy);
         this.itineraryExistence.checkExistence();
-        boolean itineraryExists = this.itineraryExistence.allCheckedDaysAreValid();
+        boolean itineraryExists = this.itineraryExistence.allMonitoredDaysAreValid(this);
         // If itinerary should be replaced, do so if all checked days are valid.
         return replaceItinerary && itineraryExists
             ? this.updateTripWithVerifiedItinerary()

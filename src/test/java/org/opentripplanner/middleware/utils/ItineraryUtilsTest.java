@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
@@ -50,8 +52,13 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     public static final String QUERY_TIME = "11:23";
 
     public static final List<String> MONITORED_TRIP_DATES = List.of(
-        QUERY_DATE, "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18"
+        QUERY_DATE, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19"
     );
+
+    // Indexes for the days above: Thursday is 0, ..., Wednesday is 6.
+    private static final int FRIDAY_INDEX = 1;
+    private static final int MONDAY_INDEX = 4;
+    private static final int WEDNESDAY_INDEX = 6;
 
     /** Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE. */
 
@@ -110,15 +117,17 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      */
     @ParameterizedTest
     @MethodSource("createCheckAllItinerariesExistTestCases")
-    public void canCheckAllItinerariesExist(boolean insertInvalidDay, String message) throws Exception {
+    void canCheckAllItinerariesExist(boolean insertInvalidDay, String message) throws Exception {
         MonitoredTrip trip = makeTestTrip();
         List<OtpResponse> mockOtpResponses = getMockDatedOtpResponses(MONITORED_TRIP_DATES);
 
         // If needed, insert a mock invalid response for one of the monitored days.
-        final int INVALID_DAY_INDEX = 3;
         if (insertInvalidDay) {
-            mockOtpResponses.set(INVALID_DAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
+            mockOtpResponses.set(MONDAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
         }
+        // Return an erroneous response for some days that are not monitored (Wednesday, Friday).
+        mockOtpResponses.set(FRIDAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
+        mockOtpResponses.set(WEDNESDAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
 
         OtpTestUtils.setupOtpMocks(mockOtpResponses);
 
@@ -126,11 +135,11 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         Itinerary expectedItinerary = mockOtpResponses.get(0).plan.itineraries.get(0);
         trip.itinerary = expectedItinerary;
 
-        trip.checkItineraryExistence(false, false);
+        trip.checkItineraryExistence(true, false);
         ItineraryExistence existence = trip.itineraryExistence;
 
         boolean allDaysValid = !insertInvalidDay;
-        Assertions.assertEquals(allDaysValid, existence.allCheckedDaysAreValid(), message);
+        Assertions.assertEquals(allDaysValid, existence.allMonitoredDaysAreValid(trip), message);
 
         // Valid days, in the order of the OTP requests sent (so we can track the invalid entry if we inserted one).
         ArrayList<ItineraryExistence.ItineraryExistenceResult> validDays = Lists.newArrayList(
@@ -140,22 +149,22 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             existence.monday,
             existence.tuesday
         );
-        // Check (and remove) the extra invalid day if we inserted one above.
+        // Check (and remove) the extra invalid day (monday) if we inserted one above.
         if (insertInvalidDay) {
-            Assertions.assertFalse(validDays.get(INVALID_DAY_INDEX).isValid());
-            validDays.remove(INVALID_DAY_INDEX);
+            assertFalse(existence.monday.isValid());
+            validDays.remove(existence.monday);
         }
 
         // FIXME: For now, just check that the first itinerary in the list is valid. If we expand our check window from
         //  7 days to 14 (or more) days, this may need to be adjusted.
         for (ItineraryExistence.ItineraryExistenceResult validDay : validDays) {
-            Assertions.assertTrue(validDay.isValid());
-            Assertions.assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, validDay.itineraries.get(0)));
+            assertTrue(validDay.isValid());
+            assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, validDay.itineraries.get(0)));
         }
 
-        // When the check is not requested for a day, the existence entry will be null.
-        Assertions.assertNull(existence.wednesday);
-        Assertions.assertNull(existence.friday);
+        // Days not monitored had an error response, so the check should return invalid for those days.
+        assertFalse(existence.wednesday.isValid());
+        assertFalse(existence.friday.isValid());
     }
 
     private static Stream<Arguments> createCheckAllItinerariesExistTestCases() {
@@ -205,7 +214,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      * Check that the query date parameter is properly modified to simulate the given OTP query for different dates.
      */
     @Test
-    public void canGetQueriesFromDates() throws URISyntaxException {
+    void canGetQueriesFromDates() throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip();
         // Create test dates.
         List<String> testDateStrings = List.of("2020-12-30", "2020-12-31", "2021-01-01");
@@ -231,7 +240,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      */
     @ParameterizedTest
     @MethodSource("createGetDatesTestCases")
-    public void canGetDatesToCheckItineraryExistence(List<ZonedDateTime> testDates, boolean checkAllDays) throws URISyntaxException {
+    void canGetDatesToCheckItineraryExistence(List<ZonedDateTime> testDates, boolean checkAllDays) throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip();
         List<ZonedDateTime> datesToCheck = ItineraryUtils.getDatesToCheckItineraryExistence(trip, checkAllDays);
         Assertions.assertEquals(testDates, datesToCheck);
@@ -258,7 +267,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      * regardless of whether it was originally missing or false.
      */
     @Test
-    public void canAddIgnoreRealtimeParam() throws URISyntaxException {
+    void canAddIgnoreRealtimeParam() throws URISyntaxException {
         String queryWithRealtimeParam = BASE_QUERY + "&" + IGNORE_REALTIME_UPDATES_PARAM + "=false";
         List<String> queries = List.of(BASE_QUERY, queryWithRealtimeParam);
 
@@ -275,7 +284,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      */
     @ParameterizedTest
     @MethodSource("createItineraryComparisonTestCases")
-    public void testItineraryMatches(ItineraryMatchTestCase testCase) {
+    void testItineraryMatches(ItineraryMatchTestCase testCase) {
         Assertions.assertEquals(
             testCase.shouldMatch,
             ItineraryUtils.itinerariesMatch(testCase.previousItinerary, testCase.newItinerary),

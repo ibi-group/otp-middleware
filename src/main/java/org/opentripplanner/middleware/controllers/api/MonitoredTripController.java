@@ -64,9 +64,9 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         preCreateOrUpdateChecks(monitoredTrip, req);
 
         try {
-            // Check itinerary existence and replace the provided trip's itinerary with a verified, non-realtime
-            // version of it.
-            boolean success = monitoredTrip.checkItineraryExistence(false, true);
+            // Check itinerary existence for all days and replace the provided trip's itinerary with a verified,
+            // non-realtime version of it.
+            boolean success = monitoredTrip.checkItineraryExistence(true, true);
             if (!success) {
                 logMessageAndHalt(
                     req,
