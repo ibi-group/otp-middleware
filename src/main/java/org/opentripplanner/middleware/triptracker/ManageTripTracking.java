@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
@@ -13,9 +15,14 @@ import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
+import org.opentripplanner.middleware.utils.Coordinates;
 import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromTime;
+import static org.opentripplanner.middleware.triptracker.TripInstruction.getInstructions;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -33,21 +40,28 @@ public class ManageTripTracking {
      */
     public static StartTrackingResponse startTracking(Request request) {
         StartTrackingPayload payload = getPayloadFromRequest(request, StartTrackingPayload.class);
-        if (payload == null || !isTripAssociatedWithUser(request, payload.tripId) || isJourneyOngoing(request, payload.tripId)) {
-            return null;
+        if (payload != null) {
+            var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
+            if (isTripAssociatedWithUser(request, monitoredTrip) && !isJourneyOngoing(request, payload.tripId)) {
+                // Start tracking journey.
+                var trackedJourney = new TrackedJourney(payload);
+                Persistence.trackedJourneys.create(trackedJourney);
+
+                try {
+                    TripStatus status = getTripStatus(trackedJourney, monitoredTrip.itinerary);
+                    // Provide response.
+                    return new StartTrackingResponse(
+                        TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
+                        getInstructions(TripStage.START),
+                        trackedJourney.id,
+                        status.name()
+                    );
+                } catch (UnsupportedOperationException e) {
+                    logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
+                }
+            }
         }
-
-        // Start tracking journey.
-        var trackedJourney = new TrackedJourney(payload);
-        Persistence.trackedJourneys.create(trackedJourney);
-
-        // Provide response.
-        return new StartTrackingResponse(
-            TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
-            getInstructions(TripStage.START),
-            trackedJourney.id,
-            getTripStatus(TripStage.START)
-        );
+        return null;
     }
 
     /**
@@ -55,23 +69,34 @@ public class ManageTripTracking {
      */
     public static UpdateTrackingResponse updateTracking(Request request) {
         UpdatedTrackingPayload payload = getPayloadFromRequest(request, UpdatedTrackingPayload.class);
-        if (payload == null) {
-            return null;
-        }
-        TrackedJourney trackedJourney = getActiveJourney(request, payload.journeyId);
-        if (trackedJourney == null || !isTripAssociatedWithUser(request, trackedJourney.tripId)) {
-            return null;
-        }
+        if (payload != null) {
+            var trackedJourney = getActiveJourney(request, payload.journeyId);
+            if (trackedJourney != null) {
+                var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
+                if (isTripAssociatedWithUser(request, monitoredTrip)) {
+                    // Update tracked journey.
+                    trackedJourney.update(payload);
+                    Persistence.trackedJourneys.updateField(
+                        trackedJourney.id,
+                        TrackedJourney.LOCATIONS_FIELD_NAME,
+                        trackedJourney.locations
+                    );
 
-        // Update tracked journey.
-        trackedJourney.update(payload);
-        Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.LOCATIONS_FIELD_NAME, trackedJourney.locations);
-
-        // Provide response.
-        return new UpdateTrackingResponse(
-            getInstructions(TripStage.UPDATE),
-            getTripStatus(TripStage.UPDATE)
-        );
+                    try {
+                        TripStatus status = getTripStatus(trackedJourney, monitoredTrip.itinerary);
+                        // Provide response.
+                        return new UpdateTrackingResponse(
+                            // This is to be expanded on in later PRs. For now, it is used for unit testing.
+                            TripInstruction.NO_INSTRUCTION.name(),
+                            status.name()
+                        );
+                    } catch (UnsupportedOperationException e) {
+                        logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -79,14 +104,16 @@ public class ManageTripTracking {
      */
     public static EndTrackingResponse endTracking(Request request) {
         EndTrackingPayload payload = getPayloadFromRequest(request, EndTrackingPayload.class);
-        if (payload == null) {
-            return null;
+        if (payload != null) {
+            TrackedJourney trackedJourney = getActiveJourney(request, payload.journeyId);
+            if (trackedJourney != null) {
+                var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
+                if (isTripAssociatedWithUser(request, monitoredTrip)) {
+                    return completeJourney(trackedJourney, false);
+                }
+            }
         }
-        TrackedJourney trackedJourney = getActiveJourney(request, payload.journeyId);
-        if (trackedJourney == null || !isTripAssociatedWithUser(request, trackedJourney.tripId)) {
-            return null;
-        }
-        return completeJourney(trackedJourney, false);
+        return null;
     }
 
     /**
@@ -96,15 +123,16 @@ public class ManageTripTracking {
      */
     public static EndTrackingResponse forciblyEndTracking(Request request) {
         ForceEndTrackingPayload payload = getPayloadFromRequest(request, ForceEndTrackingPayload.class);
-        if (payload == null) {
-            return null;
+        if (payload != null) {
+            TrackedJourney trackedJourney = getActiveJourneyForTripId(request, payload.tripId);
+            if (trackedJourney != null) {
+                var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
+                if (isTripAssociatedWithUser(request, monitoredTrip)) {
+                    return completeJourney(trackedJourney, true);
+                }
+            }
         }
-        TrackedJourney trackedJourney = getActiveJourneyForTripId(request, payload.tripId);
-        if (trackedJourney == null || !isTripAssociatedWithUser(request, trackedJourney.tripId)) {
-            return null;
-        }
-
-        return completeJourney(trackedJourney, true);
+        return null;
     }
 
     /**
@@ -118,50 +146,17 @@ public class ManageTripTracking {
         // Provide response.
         return new EndTrackingResponse(
             getInstructions(isForciblyEnded ? TripStage.FORCE_END : TripStage.END),
-            getTripStatus(isForciblyEnded ? TripStage.FORCE_END : TripStage.END)
+            TripStatus.ENDED.name()
         );
 
     }
 
     /**
-     * Provides the instructions for the user based on the trip stage and location.
-     */
-    private static String getInstructions(TripStage tripStage) {
-        // This is to be expanded on in later PRs. For now, it is used for unit testing.
-        switch (tripStage) {
-            case START:
-                return TripInstruction.GET_ON_BUS.name();
-            case UPDATE:
-                return TripInstruction.STAY_ON_BUS.name();
-            default:
-                return TripInstruction.NO_INSTRUCTION.name();
-        }
-    }
-
-    /**
-     * Provides the trip status based on the trip stage and location.
-     */
-    private static String getTripStatus(TripStage tripStage) {
-        // This is to be expanded on in later PRs. For now, it is used for unit testing.
-        switch (tripStage) {
-            case START:
-            case UPDATE:
-                return TripStatus.ON_TRACK.name();
-            case END:
-            case FORCE_END:
-                return TripStatus.ENDED.name();
-            default:
-                return TripStatus.NO_STATUS.name();
-        }
-    }
-
-    /**
      * Confirm that the monitored trip that the user is on belongs to them.
      */
-    private static boolean isTripAssociatedWithUser(Request request, String tripId) {
+    private static boolean isTripAssociatedWithUser(Request request, MonitoredTrip monitoredTrip) {
         var user = Auth0Connection.getUserFromRequest(request);
 
-        var monitoredTrip = Persistence.monitoredTrips.getById(tripId);
         if (monitoredTrip == null || (user.otpUser != null && !monitoredTrip.userId.equals(user.otpUser.id))) {
             logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Monitored trip is not associated with this user!");
             return false;
@@ -237,4 +232,19 @@ public class ManageTripTracking {
         }
     }
 
+    /**
+     * Get the trip status by comparing the traveler's position to expected and nearest positions to the trip route.
+     */
+    public static TripStatus getTripStatus(TrackedJourney trackedJourney, Itinerary itinerary) {
+        TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
+        Coordinates currentPosition = new Coordinates(lastLocation);
+        var expectedLeg = getExpectedLeg(lastLocation.timestamp.toInstant(), itinerary);
+        return TripStatus.getTripStatus(
+            currentPosition,
+            lastLocation.timestamp.toInstant(),
+            expectedLeg,
+            getSegmentFromTime(lastLocation.timestamp.toInstant(), itinerary),
+            getSegmentFromPosition(expectedLeg, currentPosition)
+        );
+    }
 }

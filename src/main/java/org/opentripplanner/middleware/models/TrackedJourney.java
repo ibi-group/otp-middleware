@@ -8,7 +8,6 @@ import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 

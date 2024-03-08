@@ -262,6 +262,13 @@ The special E2E client settings should be defined in `env.yml`:
 | SERVICE_DAY_START_HOUR | integer | Optional | 3 | Optional parameter for the hour (local time, 24-hr format) at which a service day starts. To make the service day change at 2am, enter 2. The default is 3am. |
 | SPARKPOST_KEY | string | Optional | your-api-key | Get Sparkpost key at: https://app.sparkpost.com/account/api-keys |
 | TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS | integer | Optional | 5 | The expected frequency to receive live journey location data. |
+| TRIP_TRACKING_MINIMUM_SEGMENT_TIME | integer | Optional | 5 | The minimum segment size in seconds for interpolated points. |
+| TRIP_TRACKING_WALK_BOUNDARY | integer | Optional | 5 | The threshold in meters below which walking is considered on track. |
+| TRIP_TRACKING_BICYCLE_BOUNDARY | integer | Optional | 10 | The threshold in meters below which cycling is considered on track. |
+| TRIP_TRACKING_BUS_BOUNDARY | integer | Optional | 20 | The threshold in meters below which travelling by bus is considered on track. |
+| TRIP_TRACKING_SUBWAY_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by subway is considered on track. |
+| TRIP_TRACKING_TRAM_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by tram is considered on track. |
+| TRIP_TRACKING_RAIL_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by rail is considered on track. |
 | TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |
 | TWILIO_AUTH_TOKEN | string | Optional | your-auth-token | Twilio settings available at: https://twilio.com/user/account |
 | VALIDATE_ENVIRONMENT_CONFIG | boolean | Optional | true | If set to false, the validation of the env.yml file against this schema will be skipped. |

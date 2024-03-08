@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.triptracker;
 
+import java.time.ZonedDateTime;
 import java.util.Date;
-import java.util.Objects;
 
 /**
  * A user's location details.
@@ -19,6 +19,7 @@ public class TrackingLocation {
     public Date timestamp;
 
     public TrackingLocation() {
+        // Needed for deserializing objects.
     }
 
     public TrackingLocation(int bearing, Double lat, Double lon, int speed, Date timestamp) {
@@ -27,5 +28,18 @@ public class TrackingLocation {
         this.lon = lon;
         this.speed = speed;
         this.timestamp = timestamp;
+    }
+
+    public TrackingLocation(Double lat, Double lon, Date timestamp) {
+        this.lat = lat;
+        this.lon = lon;
+        this.timestamp = timestamp;
+    }
+
+    /** Used in testing **/
+    public TrackingLocation(String dateTime, double lat, double lon) {
+        this.timestamp = new Date(ZonedDateTime.parse(dateTime).toInstant().toEpochMilli());
+        this.lat = lat;
+        this.lon = lon;
     }
 }
