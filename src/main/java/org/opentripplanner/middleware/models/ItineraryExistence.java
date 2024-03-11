@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
@@ -98,20 +99,22 @@ public class ItineraryExistence extends Model {
     }
 
     /**
-     * Helper function to adapt OTP request parameters to GraphQL's JSON {@code variables} object, limited to
-     * variables specified in the GraphQL plan.  Parameter values are all simply Strings, so we can't use
-     * {@code ObjectMapper} to get the types right, must hardcode them specifically for ItineraryExistence so
-     * that the values that are actually strings have {@code \"} around them.
+     * Helper method to adapt OTP request parameters to GraphQL's JSON {@code variables} object, limited to
+     * variables specified in the GraphQL query plan.  Parameter values are all simply {@code String}s, so we
+     * can't use JSON packages to get the types right, must hardcode them specifically for ItineraryExistence
+     * so that only the values that are actually {@code String}s have {@code \"} around them.
      */
     private static String paramsToVariables(Map<String, String> params) {
         StringBuilder builder = new StringBuilder("{");
         params.forEach((k, v) -> {
             switch (k) {
+                // Don't put quotes around these values.
                 case "arriveBy":
                 case "numItineraries":
                     builder.append("\"" + k + "\":" + v + ",");
                     break;
 
+                // Put quotes around those values, they are String types.
                 case "date":
                 case "time":
                 case "fromPlace":
@@ -119,9 +122,11 @@ public class ItineraryExistence extends Model {
                     builder.append("\"" + k + "\":\"" + v + "\",");
                     break;
 
+                // From "mode" to GraphQL "$modes".
                 case "mode":
                     builder.append("\"modes\":[");
-                    String[] modes = v.split(",");
+                    Stream.of(v.split(",")).forEach(m -> builder.append("{\"mode\":\"" + m + "\"},"));
+                    builder.deleteCharAt(builder.length() - 1); // Remove trailing comma.
                     builder.append("],");
                     break;
 
@@ -129,6 +134,7 @@ public class ItineraryExistence extends Model {
                     break;
             }
         });
+        builder.setCharAt(builder.length() - 1, '}'); // Replace trailing comma with closing brace.
         return builder.toString();
     }
 
