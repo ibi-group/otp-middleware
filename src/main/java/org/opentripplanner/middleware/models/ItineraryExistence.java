@@ -127,8 +127,7 @@ public class ItineraryExistence extends Model {
     }
 
     /**
-     * Checks whether all monitored days of the week for a trip are valid.
-     * @return true if all monitored days are valid.
+     * @return true if all monitored days of the week for a trip are valid.
      */
     public boolean allMonitoredDaysAreValid(MonitoredTrip trip) {
         return (!trip.monday || itineraryExistsOn(monday)) &&
