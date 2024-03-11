@@ -24,14 +24,15 @@ public class OtpDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcher.class);
 
     /**
+     * Location of the OTP plan endpoint (e.g. /routers/default/plan).
+     */
+    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
+
+    /**
      * Location of the OTP GraphQL endpoint (e.g. /gtfs/v1).
      */
     public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/gtfs/v1");
 
-    /**
-     * Location of the OTP plan endpoint (e.g. /routers/default/plan).
-     */
-    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
     /**
@@ -58,19 +59,15 @@ public class OtpDispatcher {
     }
 
     /**
-     * Send GraphQL POST request. Would ideally take a JSON Object, but the {@code "query"} object is
-     * followed by a string of JSON-ish GraphQL and the {@code "variables"} object is a proper JSON
-     * object of key/value string pairs so we put these together by hand.
-     * @version OTP version passed along to post request
-     * @variables a string of a JSON object of key/value string pairs
+     * Send GraphQL POST request. Builds a JSON object with two fields. The first field is {@code "query"}
+     * and its value is a long String of the entire JSON-ish plan query template. The second field is
+     * {@code "variables"} and its value is a proper JSON object of key/value string pairs.
+     * @param version OTP version passed along to post request
+     * @param variables a string of a proper JSON object of key/value string pairs
      */
     public static OtpDispatcherResponse sendGraphQLPostRequest(OtpVersion version, String variables) {
-        var body = new StringBuilder("{\"query\":\"");
-        body.append(GraphQLUtils.getSchema());
-        body.append("\",\n\"variables\":");
-        body.append(variables);
-        body.append("}");
-        return sendOtpPostRequest(version, "", OTP_GRAPHQL_ENDPOINT, HttpUtils.HEADERS_JSON, body.toString());
+        String body = "{\"query\":\"" + GraphQLUtils.getPlanQueryTemplate() + "\",\n\"variables\":" + variables + "}";
+        return sendOtpPostRequest(version, "", OTP_GRAPHQL_ENDPOINT, HttpUtils.HEADERS_JSON, body);
     }
 
     /**
