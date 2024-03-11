@@ -86,15 +86,11 @@ public class NotificationUtils {
         try {
             NotificationInfo notifInfo = new NotificationInfo(toUser, body.substring(0, Math.min(PUSH_MESSAGE_MAX_LENGTH, body.length())));
             var jsonBody = new Gson().toJson(notifInfo);
-            Map<String, String> headers = Map.of(
-                "Accept", "application/json",
-                "Content-Type", "application/json"
-            );
             var httpResponse = HttpUtils.httpRequestRawResponse(
                 URI.create(PUSH_API_URL + "/notification/publish?api_key=" + PUSH_API_KEY),
                 1000,
                 HttpMethod.POST,
-                headers,
+                HttpUtils.HEADERS_JSON,
                 jsonBody
             );
             if (httpResponse.status == 200) {
