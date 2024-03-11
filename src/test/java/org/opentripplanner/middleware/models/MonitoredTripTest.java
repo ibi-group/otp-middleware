@@ -14,12 +14,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.MODE_PARAM;
 
 /**
  * Holds tests for some methods in MonitoredTrip.
  */
-public class MonitoredTripTest {
+class MonitoredTripTest {
     /**
      * Abbreviated query params with mode params you would get from UI.
      */
@@ -32,7 +34,7 @@ public class MonitoredTripTest {
      */
     @ParameterizedTest
     @MethodSource("createUpdateModeInQueryParamTestCases")
-    public void canUpdateModeInQueryParams(Leg accessLeg, Set<String> expectedModeParams) throws URISyntaxException {
+    void canUpdateModeInQueryParams(Leg accessLeg, Set<String> expectedModeParams) throws URISyntaxException {
         // Setup a trip with an initial queryParams argument.
         MonitoredTrip trip = new MonitoredTrip();
         trip.queryParams = UI_QUERY_PARAMS;
@@ -100,14 +102,24 @@ public class MonitoredTripTest {
      * that focuses on ignoring the leading question mark in the query params, if any.
      */
     @Test
-    public void canIgnoreLeadingQuestionMarkInQueryParams() throws URISyntaxException {
+    void canIgnoreLeadingQuestionMarkInQueryParams() throws URISyntaxException {
         // Setup a trip with an initial queryParams argument.
         MonitoredTrip trip = new MonitoredTrip();
         trip.queryParams = UI_QUERY_PARAMS;
 
         Map<String, String> paramsMap = trip.parseQueryParams();
         for (String key : paramsMap.keySet()) {
-            Assertions.assertFalse(key.startsWith("?"));
+            assertFalse(key.startsWith("?"));
         }
+    }
+
+    @Test
+    void canDetermineOneTimeTrips() {
+        MonitoredTrip recurrentTrip = new MonitoredTrip();
+        recurrentTrip.tuesday = true;
+        assertFalse(recurrentTrip.isOneTime());
+
+        MonitoredTrip oneTimeTrip = new MonitoredTrip();
+        assertTrue(oneTimeTrip.isOneTime());
     }
 }

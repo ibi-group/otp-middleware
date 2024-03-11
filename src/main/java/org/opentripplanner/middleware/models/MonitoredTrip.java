@@ -433,5 +433,13 @@ public class MonitoredTrip extends Model {
     public int tripTimeMinute() {
         return Integer.valueOf(tripTime.split(":")[1]);
     }
-}
 
+    /**
+     * @return true if this trip is one-time, false otherwise.
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public boolean isOneTime() {
+        return !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday;
+    }
+}
