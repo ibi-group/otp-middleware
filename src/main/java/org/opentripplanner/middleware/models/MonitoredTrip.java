@@ -201,7 +201,7 @@ public class MonitoredTrip extends Model {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
         this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary, this.arriveBy);
-        this.itineraryExistence.checkExistence();
+        this.itineraryExistence.checkExistence(this);
         boolean itineraryExists = this.itineraryExistence.allMonitoredDaysAreValid(this);
         // If itinerary should be replaced, do so if all checked days are valid.
         return replaceItinerary && itineraryExists

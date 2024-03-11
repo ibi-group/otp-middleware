@@ -127,20 +127,6 @@ public class ItineraryExistence extends Model {
     }
 
     /**
-     * Checks whether all checked days of the week are valid.
-     * @return true if all days are either valid (i.e., the day was checked) or null (i.e., the day was not checked).
-     */
-    public boolean allCheckedDaysAreValid() {
-        return (monday == null || itineraryExistsOn(monday)) &&
-            (tuesday == null || itineraryExistsOn(tuesday)) &&
-            (wednesday == null || itineraryExistsOn(wednesday)) &&
-            (thursday == null || itineraryExistsOn(thursday)) &&
-            (friday == null || itineraryExistsOn(friday)) &&
-            (saturday == null || itineraryExistsOn(saturday)) &&
-            (sunday == null || itineraryExistsOn(sunday));
-    }
-
-    /**
      * Checks whether all monitored days of the week for a trip are valid.
      * @return true if all monitored days are valid.
      */
@@ -186,7 +172,7 @@ public class ItineraryExistence extends Model {
     /**
      * Checks whether the itinerary of a trip matches any of the OTP itineraries from the trip query params.
      */
-    public void checkExistence() {
+    public void checkExistence(MonitoredTrip trip) {
         // TODO: Consider multi-threading?
         // Check existence of itinerary in the response for each OTP request.
         for (OtpRequest otpRequest : otpRequests) {
@@ -227,8 +213,7 @@ public class ItineraryExistence extends Model {
                 result.handleInvalidDate(otpRequest.dateTime);
             }
         }
-        // TODO: I think this should change too.
-        if (!this.allCheckedDaysAreValid()) {
+        if (!allMonitoredDaysAreValid(trip)) {
             this.message = String.format(
                 "The trip is not possible on the following days of the week you have selected: %s",
                 getInvalidDaysOfWeekMessage()
