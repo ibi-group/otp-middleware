@@ -131,13 +131,13 @@ public class ItineraryExistence extends Model {
      * @return true if all days are either valid (i.e., the day was checked) or null (i.e., the day was not checked).
      */
     public boolean allCheckedDaysAreValid() {
-        return (monday == null || monday.isValid()) &&
-            (tuesday == null || tuesday.isValid()) &&
-            (wednesday == null || wednesday.isValid()) &&
-            (thursday == null || thursday.isValid()) &&
-            (friday == null || friday.isValid()) &&
-            (saturday == null || saturday.isValid()) &&
-            (sunday == null || sunday.isValid());
+        return (monday == null || itineraryExistsOn(monday)) &&
+            (tuesday == null || itineraryExistsOn(tuesday)) &&
+            (wednesday == null || itineraryExistsOn(wednesday)) &&
+            (thursday == null || itineraryExistsOn(thursday)) &&
+            (friday == null || itineraryExistsOn(friday)) &&
+            (saturday == null || itineraryExistsOn(saturday)) &&
+            (sunday == null || itineraryExistsOn(sunday));
     }
 
     /**
@@ -145,13 +145,13 @@ public class ItineraryExistence extends Model {
      * @return true if all monitored days are valid.
      */
     public boolean allMonitoredDaysAreValid(MonitoredTrip trip) {
-        return (!trip.monday || monday.isValid()) &&
-            (!trip.tuesday || tuesday.isValid()) &&
-            (!trip.wednesday || wednesday.isValid()) &&
-            (!trip.thursday || thursday.isValid()) &&
-            (!trip.friday || friday.isValid()) &&
-            (!trip.saturday || saturday.isValid()) &&
-            (!trip.sunday || sunday.isValid());
+        return (!trip.monday || itineraryExistsOn(monday)) &&
+            (!trip.tuesday || itineraryExistsOn(tuesday)) &&
+            (!trip.wednesday || itineraryExistsOn(wednesday)) &&
+            (!trip.thursday || itineraryExistsOn(thursday)) &&
+            (!trip.friday || itineraryExistsOn(friday)) &&
+            (!trip.saturday || itineraryExistsOn(saturday)) &&
+            (!trip.sunday || itineraryExistsOn(sunday));
     }
 
     /**
@@ -159,7 +159,7 @@ public class ItineraryExistence extends Model {
      */
     public Itinerary getItineraryForDayOfWeek(DayOfWeek dow) {
         ItineraryExistenceResult resultForDay = getResultForDayOfWeek(dow);
-        return resultForDay != null && resultForDay.isValid() && resultForDay.itineraries.size() > 0
+        return itineraryExistsOn(resultForDay) && !resultForDay.itineraries.isEmpty()
             ? resultForDay.itineraries.get(0)
             : null;
     }
@@ -242,13 +242,17 @@ public class ItineraryExistence extends Model {
      * returned.
      */
     public boolean isPossibleOnAtLeastOneMonitoredDayOfTheWeek(MonitoredTrip trip) {
-        return (trip.monday && monday != null && monday.isValid()) ||
-            (trip.tuesday && tuesday != null && tuesday.isValid()) ||
-            (trip.wednesday && wednesday != null && wednesday.isValid()) ||
-            (trip.thursday && thursday != null && thursday.isValid()) ||
-            (trip.friday && friday != null && friday.isValid()) ||
-            (trip.saturday && saturday != null && saturday.isValid()) ||
-            (trip.sunday && sunday != null && sunday.isValid());
+        return (trip.monday && itineraryExistsOn(monday)) ||
+            (trip.tuesday && itineraryExistsOn(tuesday)) ||
+            (trip.wednesday && itineraryExistsOn(wednesday)) ||
+            (trip.thursday && itineraryExistsOn(thursday)) ||
+            (trip.friday && itineraryExistsOn(friday)) ||
+            (trip.saturday && itineraryExistsOn(saturday)) ||
+            (trip.sunday && itineraryExistsOn(sunday));
+    }
+
+    public static boolean itineraryExistsOn(ItineraryExistenceResult dayResult) {
+        return dayResult != null && dayResult.isValid();
     }
 
     /**
@@ -260,7 +264,7 @@ public class ItineraryExistence extends Model {
          */
         @JsonProperty
         public boolean isValid() {
-            return invalidDates.size() == 0;
+            return invalidDates.isEmpty();
         }
 
         /**
