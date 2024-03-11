@@ -135,7 +135,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         Itinerary expectedItinerary = mockOtpResponses.get(0).plan.itineraries.get(0);
         trip.itinerary = expectedItinerary;
 
-        trip.checkItineraryExistence(true, false);
+        trip.checkItineraryExistence(false);
         ItineraryExistence existence = trip.itineraryExistence;
 
         boolean allDaysValid = !insertInvalidDay;
@@ -238,28 +238,12 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      * Check the computation of the dates corresponding to the monitored days,
      * for which we want to check itinerary existence.
      */
-    @ParameterizedTest
-    @MethodSource("createGetDatesTestCases")
-    void canGetDatesToCheckItineraryExistence(List<ZonedDateTime> testDates, boolean checkAllDays) throws URISyntaxException {
+    @Test
+    void canGetDatesToCheckItineraryExistence() throws URISyntaxException {
         MonitoredTrip trip = makeTestTrip();
-        List<ZonedDateTime> datesToCheck = ItineraryUtils.getDatesToCheckItineraryExistence(trip, checkAllDays);
+        List<ZonedDateTime> testDates = datesToZonedDateTimes(MONITORED_TRIP_DATES);
+        List<ZonedDateTime> datesToCheck = ItineraryUtils.getDatesToCheckItineraryExistence(trip);
         Assertions.assertEquals(testDates, datesToCheck);
-    }
-
-    private static Stream<Arguments> createGetDatesTestCases() {
-        // Each list includes dates to be monitored in a 7-day window starting from the query date.
-        return Stream.of(
-            // Dates solely based on monitored days (see the trip variable in the corresponding test).
-            Arguments.of(datesToZonedDateTimes(
-                MONITORED_TRIP_DATES
-                ), false),
-
-            // If we forceAllDays to ItineraryUtils.getDatesToCheckItineraryExistence,
-            // it should return all dates in the 7-day window regardless of the ones set in the monitored trip.
-            Arguments.of(datesToZonedDateTimes(List.of(
-                QUERY_DATE /* Thursday */, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19")
-            ), true)
-        );
     }
 
     /**

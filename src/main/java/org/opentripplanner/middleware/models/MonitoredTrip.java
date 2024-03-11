@@ -195,14 +195,11 @@ public class MonitoredTrip extends Model {
 
     /**
      * Checks that, for each query provided, an itinerary exists.
-     * @param checkAllDays Determines whether all days of the week are checked,
-     *                     or just the days the trip is set to be monitored.
      * @return a summary of the itinerary existence results for each day of the week
      */
-    // TODO: remove arg checkAllDays
-    public boolean checkItineraryExistence(boolean checkAllDays, boolean replaceItinerary) throws URISyntaxException {
+    public boolean checkItineraryExistence(boolean replaceItinerary) throws URISyntaxException {
         // Get queries to execute by date.
-        List<OtpRequest> queriesByDate = getItineraryExistenceQueries(checkAllDays);
+        List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
         this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary, this.arriveBy);
         this.itineraryExistence.checkExistence();
         boolean itineraryExists = this.itineraryExistence.allMonitoredDaysAreValid(this);
@@ -245,11 +242,11 @@ public class MonitoredTrip extends Model {
      */
     @JsonIgnore
     @BsonIgnore
-    public List<OtpRequest> getItineraryExistenceQueries(boolean checkAllDays)
+    public List<OtpRequest> getItineraryExistenceQueries()
         throws URISyntaxException {
         return ItineraryUtils.getOtpRequestsForDates(
             ItineraryUtils.excludeRealtime(parseQueryParams()),
-            ItineraryUtils.getDatesToCheckItineraryExistence(this, checkAllDays)
+            ItineraryUtils.getDatesToCheckItineraryExistence(this)
         );
     }
 

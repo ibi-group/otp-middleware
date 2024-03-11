@@ -66,7 +66,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         try {
             // Check itinerary existence for all days and replace the provided trip's itinerary with a verified,
             // non-realtime version of it.
-            boolean success = monitoredTrip.checkItineraryExistence(true, true);
+            boolean success = monitoredTrip.checkItineraryExistence(true);
             if (!success) {
                 logMessageAndHalt(
                     req,
@@ -194,7 +194,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         }
         try {
             trip.initializeFromItineraryAndQueryParams();
-            trip.checkItineraryExistence(true, false);
+            trip.checkItineraryExistence(false);
         } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
             logMessageAndHalt(
                 request,
