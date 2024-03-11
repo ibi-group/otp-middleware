@@ -38,9 +38,10 @@ public class GraphQLUtils {
             int value;
             // All this low-level stuff is just to put a \ in front of " in the string.
             while ((value = reader.read()) != -1) {
-                if ((char)value == '\n') builder.append("\\n");
-                else if ((char)value == '"') builder.append("\\\"");
-                else builder.append((char) value);
+                char c = (char)value;
+                if (c == '\n') builder.append("\\n");
+                else if (c == '"') builder.append("\\\"");
+                else builder.append(c);
             }
         } catch (Exception e) {
             LOG.error("Can't find \"{}\" resource.", resource, e);
