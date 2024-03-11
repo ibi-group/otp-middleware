@@ -8,29 +8,29 @@ import java.io.*;
 public class GraphQLUtils {
     private static final Logger LOG = LoggerFactory.getLogger(GraphQLUtils.class);
 
-    // Lazily-initialized in getSchema()
-    private static String schema = null;
+    // Lazily-initialized in getPlanQueryTemplate()
+    private static String planQueryTemplate = null;
 
     /**
-     * Location of the GraphQL plan file, as Java resource.
+     * Location of the GraphQL plan query template file, as Java resource.
      */
-    public static final String GRAPHQL_RESOURCE = "queries/planQuery.graphql";
+    public static final String PLAN_QUERY_RESOURCE = "queries/planQuery.graphql";
 
     /**
-     * Return the full GraphQL plan file schema in Java string format, with {@code "} as {@code \"}
+     * Return the full GraphQL plan file planQueryTemplate in Java string format, with {@code "} as {@code \"}
      */
-    public static String getSchema() {
-        if (GraphQLUtils.schema == null) {
-            GraphQLUtils.schema = schemaAsString(GRAPHQL_RESOURCE);
+    public static String getPlanQueryTemplate() {
+        if (GraphQLUtils.planQueryTemplate == null) {
+            GraphQLUtils.planQueryTemplate = planQueryTemplateAsString(PLAN_QUERY_RESOURCE);
 	}
-        return GraphQLUtils.schema;
+        return GraphQLUtils.planQueryTemplate;
     }
 
     /**
-     * Return a GraphQL schema in Java string format, with {@code "} as {@code \"}
+     * Return a GraphQL planQueryTemplate in Java string format, with {@code "} as {@code \"}
      * @param resource the plan file or any GraphQL file
      */
-    static String schemaAsString(String resource) {
+    static String planQueryTemplateAsString(String resource) {
         StringBuilder builder = new StringBuilder();
         try (var reader = new BufferedReader(new InputStreamReader(
             GraphQLUtils.class.getClassLoader().getResourceAsStream(resource)
