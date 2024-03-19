@@ -96,7 +96,6 @@ public class Itinerary implements Cloneable {
     public Set<InvalidItineraryReason> checkItineraryCanBeMonitored() {
         // Check the itinerary for various conditions needed for monitoring.
         Set<InvalidItineraryReason> reasons = new HashSet<>();
-        if (!hasTransit()) reasons.add(InvalidItineraryReason.MISSING_TRANSIT);
         if (hasRentalOrRideHail()) reasons.add(InvalidItineraryReason.HAS_RENTAL_OR_RIDE_HAIL);
         // TODO: Add additional checks here.
         return reasons;
