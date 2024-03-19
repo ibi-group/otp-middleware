@@ -286,10 +286,8 @@ public class CheckMonitoredTrip implements Runnable {
         // possible for just that day, but could again be possible the next week. Therefore, this checks if the trip
         // was not possible on all monitored days of the previous week and if so, it updates the journeyState to say
         // that the trip is no longer possible.
-        boolean noMatchingItineraryFoundOnPreviousChecks = !trip.itineraryExistence.
-            isPossibleOnAtLeastOneMonitoredDayOfTheWeek(
-                trip
-            );
+        boolean noMatchingItineraryFoundOnPreviousChecks =
+            !trip.itineraryExistence.isPossibleOnAtLeastOneMonitoredDayOfTheWeek(trip);
         journeyState.tripStatus = noMatchingItineraryFoundOnPreviousChecks
             ? TripStatus.NO_LONGER_POSSIBLE
             : TripStatus.NEXT_TRIP_NOT_POSSIBLE;
