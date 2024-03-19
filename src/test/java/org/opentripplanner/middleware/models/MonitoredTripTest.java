@@ -122,4 +122,20 @@ class MonitoredTripTest {
         MonitoredTrip oneTimeTrip = new MonitoredTrip();
         assertTrue(oneTimeTrip.isOneTime());
     }
+
+    @Test
+    void canDetermineInactiveTrips() {
+        MonitoredTrip recurrentTrip = new MonitoredTrip();
+        // trip isActive field is true by default
+        recurrentTrip.tuesday = true;
+        assertFalse(recurrentTrip.isInactive());
+
+        MonitoredTrip oneTimeTrip = new MonitoredTrip();
+        // trip isActive field is true by default
+        assertFalse(oneTimeTrip.isInactive());
+
+        MonitoredTrip inactiveTrip = new MonitoredTrip();
+        inactiveTrip.isActive = false;
+        assertTrue(inactiveTrip.isInactive());
+    }
 }

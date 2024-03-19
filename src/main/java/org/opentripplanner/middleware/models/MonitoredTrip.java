@@ -294,12 +294,10 @@ public class MonitoredTrip extends Model {
     }
 
     /**
-     * Returns true if the trip is not active overall or if all days of the week are set to false
+     * Returns true if the trip is not active.
      */
     public boolean isInactive() {
-        return !isActive || (
-          !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday
-        );
+        return !isActive;
     }
 
     public boolean isActiveOnDate(ZonedDateTime zonedDateTime) {
