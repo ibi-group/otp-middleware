@@ -75,7 +75,7 @@ public class ItineraryUtils {
      * @param trip The trip from which to extract the monitored dates to check.
      * @return A list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor, sorted from earliest.
      */
-    public static List<ZonedDateTime> getDatesToCheckItineraryExistence(MonitoredTrip trip, boolean checkAllDays)
+    public static List<ZonedDateTime> getDatesToCheckItineraryExistence(MonitoredTrip trip)
         throws URISyntaxException {
         List<ZonedDateTime> datesToCheck = new ArrayList<>();
         Map<String, String> params = trip.parseQueryParams();
@@ -87,10 +87,7 @@ public class ItineraryUtils {
         ZonedDateTime startingDateTime = trip.tripZonedDateTime(startingDate);
         // Get the dates to check starting from the query date and continuing through the full date range window.
         for (int i = 0; i < ITINERARY_CHECK_WINDOW; i++) {
-            ZonedDateTime dateToCheck = startingDateTime.plusDays(i);
-            if (checkAllDays || trip.isActiveOnDate(dateToCheck)) {
-                datesToCheck.add(dateToCheck);
-            }
+            datesToCheck.add(startingDateTime.plusDays(i));
         }
 
         return datesToCheck;

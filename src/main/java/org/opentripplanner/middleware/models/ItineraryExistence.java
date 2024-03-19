@@ -127,17 +127,16 @@ public class ItineraryExistence extends Model {
     }
 
     /**
-     * Checks whether all checked days of the week are valid.
-     * @return true if all days are either valid (i.e., the day was checked) or null (i.e., the day was not checked).
+     * @return true if all monitored days of the week for a trip are valid.
      */
-    public boolean allCheckedDaysAreValid() {
-        return (monday == null || monday.isValid()) &&
-            (tuesday == null || tuesday.isValid()) &&
-            (wednesday == null || wednesday.isValid()) &&
-            (thursday == null || thursday.isValid()) &&
-            (friday == null || friday.isValid()) &&
-            (saturday == null || saturday.isValid()) &&
-            (sunday == null || sunday.isValid());
+    public boolean allMonitoredDaysAreValid(MonitoredTrip trip) {
+        return (!trip.monday || itineraryExistsOn(monday)) &&
+            (!trip.tuesday || itineraryExistsOn(tuesday)) &&
+            (!trip.wednesday || itineraryExistsOn(wednesday)) &&
+            (!trip.thursday || itineraryExistsOn(thursday)) &&
+            (!trip.friday || itineraryExistsOn(friday)) &&
+            (!trip.saturday || itineraryExistsOn(saturday)) &&
+            (!trip.sunday || itineraryExistsOn(sunday));
     }
 
     /**
@@ -145,7 +144,7 @@ public class ItineraryExistence extends Model {
      */
     public Itinerary getItineraryForDayOfWeek(DayOfWeek dow) {
         ItineraryExistenceResult resultForDay = getResultForDayOfWeek(dow);
-        return resultForDay != null && resultForDay.isValid() && resultForDay.itineraries.size() > 0
+        return itineraryExistsOn(resultForDay) && !resultForDay.itineraries.isEmpty()
             ? resultForDay.itineraries.get(0)
             : null;
     }
@@ -172,7 +171,7 @@ public class ItineraryExistence extends Model {
     /**
      * Checks whether the itinerary of a trip matches any of the OTP itineraries from the trip query params.
      */
-    public void checkExistence() {
+    public void checkExistence(MonitoredTrip trip) {
         // TODO: Consider multi-threading?
         // Check existence of itinerary in the response for each OTP request.
         for (OtpRequest otpRequest : otpRequests) {
@@ -213,7 +212,7 @@ public class ItineraryExistence extends Model {
                 result.handleInvalidDate(otpRequest.dateTime);
             }
         }
-        if (!this.allCheckedDaysAreValid()) {
+        if (!allMonitoredDaysAreValid(trip)) {
             this.message = String.format(
                 "The trip is not possible on the following days of the week you have selected: %s",
                 getInvalidDaysOfWeekMessage()
@@ -227,13 +226,17 @@ public class ItineraryExistence extends Model {
      * returned.
      */
     public boolean isPossibleOnAtLeastOneMonitoredDayOfTheWeek(MonitoredTrip trip) {
-        return (trip.monday && monday != null && monday.isValid()) ||
-            (trip.tuesday && tuesday != null && tuesday.isValid()) ||
-            (trip.wednesday && wednesday != null && wednesday.isValid()) ||
-            (trip.thursday && thursday != null && thursday.isValid()) ||
-            (trip.friday && friday != null && friday.isValid()) ||
-            (trip.saturday && saturday != null && saturday.isValid()) ||
-            (trip.sunday && sunday != null && sunday.isValid());
+        return (trip.monday && itineraryExistsOn(monday)) ||
+            (trip.tuesday && itineraryExistsOn(tuesday)) ||
+            (trip.wednesday && itineraryExistsOn(wednesday)) ||
+            (trip.thursday && itineraryExistsOn(thursday)) ||
+            (trip.friday && itineraryExistsOn(friday)) ||
+            (trip.saturday && itineraryExistsOn(saturday)) ||
+            (trip.sunday && itineraryExistsOn(sunday));
+    }
+
+    public static boolean itineraryExistsOn(ItineraryExistenceResult dayResult) {
+        return dayResult != null && dayResult.isValid();
     }
 
     /**
@@ -245,7 +248,7 @@ public class ItineraryExistence extends Model {
          */
         @JsonProperty
         public boolean isValid() {
-            return invalidDates.size() == 0;
+            return invalidDates.isEmpty();
         }
 
         /**
