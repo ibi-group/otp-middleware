@@ -5,7 +5,6 @@ package org.opentripplanner.middleware.utils;
  * trip monitoring.
  */
 public enum InvalidItineraryReason {
-    MISSING_TRANSIT("the trip is missing a transit leg"),
     HAS_RENTAL_OR_RIDE_HAIL("the trip contains a rental or ride hail leg");
 
     private final String message;
