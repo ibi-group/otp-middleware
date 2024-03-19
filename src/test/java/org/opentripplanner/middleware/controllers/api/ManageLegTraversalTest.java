@@ -9,9 +9,10 @@ import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.triptracker.ManageLegTraversal;
-import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.Segment;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
+import org.opentripplanner.middleware.triptracker.TravelerPosition;
+import org.opentripplanner.middleware.triptracker.TripInstruction;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -51,11 +52,99 @@ public class ManageLegTraversalTest {
         TrackedJourney trackedJourney = new TrackedJourney();
         TrackingLocation trackingLocation = new TrackingLocation(time, lat, lon);
         trackedJourney.locations = List.of(trackingLocation);
-        TripStatus tripStatus = ManageTripTracking.getTripStatus(trackedJourney, busStopToJusticeCenterItinerary);
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
+        TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
+        String instruction = TripInstruction.getTripInstruction(tripStatus, travelerPosition);
+        System.out.println(instruction);
         assertEquals(expected, tripStatus);
     }
 
     private static Stream<Arguments> createTrace() {
+        Date startTime = busStopToJusticeCenterItinerary.startTime;
+        List<Segment> segments = createSegmentsForLeg();
+        Segment before = segments.get(8);
+        Segment current = segments.get(10);
+        Segment after = segments.get(12);
+        return Stream.of(
+            Arguments.of(
+                getDateTimeAsString(startTime, getSegmentTimeInterval(before)),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.BEHIND_SCHEDULE
+            ),
+            Arguments.of(
+                getDateTimeAsString(startTime, current.cumulativeTime),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.ON_SCHEDULE
+            ),
+            Arguments.of(
+                getDateTimeAsString(startTime, after.cumulativeTime),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.AHEAD_OF_SCHEDULE
+            ),
+            // Slight deviation on time.
+            Arguments.of(
+                getDateTimeAsString(startTime, current.cumulativeTime - 4),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.ON_SCHEDULE
+            ),
+            // Slight deviation on time.
+            Arguments.of(
+                getDateTimeAsString(startTime, (current.cumulativeTime - current.timeInSegment) + 4),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.ON_SCHEDULE
+            ),
+            // Slight deviation on lat/lon.
+            Arguments.of(
+                getDateTimeAsString(startTime, current.cumulativeTime),
+                current.start.lat + 0.00001,
+                current.start.lon + 0.00001,
+                TripStatus.ON_SCHEDULE
+            ),
+            // Time which can not be attributed to a trip leg.
+            Arguments.of(
+                getDateTimeAsString(busStopToJusticeCenterItinerary.endTime, 1),
+                current.start.lat,
+                current.start.lon,
+                TripStatus.NO_STATUS
+            ),
+            // Arbitrary lat/lon values which aren't on the trip.
+            Arguments.of(
+                getDateTimeAsString(startTime, 0),
+                33.95029,
+                -83.99,
+                TripStatus.DEVIATED
+            )
+        );
+    }
+
+    @Test
+    void canTrackTurnByTurn() {
+        Date startTime = busStopToJusticeCenterItinerary.startTime;
+        List<Segment> segments = createSegmentsForLeg();
+        for (Segment segment : segments) {
+//            System.out.println(                segment.start.lat + "," +
+//                segment.start.lon + ","
+//            );
+            TrackedJourney trackedJourney = new TrackedJourney();
+            TrackingLocation trackingLocation = new TrackingLocation(
+                getDateTimeAsString(startTime, getSegmentTimeInterval(segment)),
+                segment.start.lat,
+                segment.start.lon
+            );
+            trackedJourney.locations = List.of(trackingLocation);
+            TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
+            TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
+            String instruction = TripInstruction.getTripInstruction(tripStatus, travelerPosition);
+            System.out.println(instruction);
+        }
+    }
+
+    private static Stream<Arguments> createTurnByTurnTrace() {
         Date startTime = busStopToJusticeCenterItinerary.startTime;
         List<Segment> segments = createSegmentsForLeg();
         Segment before = segments.get(8);
@@ -148,8 +237,9 @@ public class ManageLegTraversalTest {
                         new Date(currentTime.toInstant().toEpochMilli())
                     )
                 );
+                TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
                 assertEquals(
-                    ManageTripTracking.getTripStatus(trackedJourney, busStopToJusticeCenterItinerary).name(),
+                    TripStatus.getTripStatus(travelerPosition).name(),
                     TripStatus.ON_SCHEDULE.name()
                 );
                 cumulativeTravelTime += segment.timeInSegment;

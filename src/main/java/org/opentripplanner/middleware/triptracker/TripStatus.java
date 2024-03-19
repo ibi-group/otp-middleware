@@ -65,23 +65,22 @@ public enum TripStatus {
     /**
      * Define the trip status based on the traveler's current position compared to expected and nearest points on the trip.
      */
-    public static TripStatus getTripStatus(
-        Coordinates currentPosition,
-        Instant currentTime,
-        Leg expectedLeg,
-        Segment segmentFromTime,
-        Segment segmentFromPosition
-    ) {
-        if (expectedLeg != null) {
-            if (segmentFromTime != null && isWithinModeBoundary(currentPosition, segmentFromTime)) {
+    public static TripStatus getTripStatus(TravelerPosition travelerPosition) {
+        if (travelerPosition.expectedLeg != null) {
+            if (travelerPosition.segmentFromTime != null &&
+                isWithinModeBoundary(travelerPosition.currentPosition, travelerPosition.segmentFromTime)) {
                 return TripStatus.ON_SCHEDULE;
             }
-            if (segmentFromPosition != null && isWithinModeBoundary(currentPosition, segmentFromPosition)) {
-                Instant segmentCenterTime = expectedLeg
+            if (travelerPosition.segmentFromPosition != null &&
+                isWithinModeBoundary(travelerPosition.currentPosition, travelerPosition.segmentFromPosition)) {
+                Instant segmentCenterTime = travelerPosition
+                    .expectedLeg
                     .startTime
                     .toInstant()
-                    .plusSeconds((long) getSegmentTimeInterval(segmentFromPosition));
-                return currentTime.isBefore(segmentCenterTime) ? TripStatus.BEHIND_SCHEDULE : TripStatus.AHEAD_OF_SCHEDULE;
+                    .plusSeconds((long) getSegmentTimeInterval(travelerPosition.segmentFromPosition));
+                return travelerPosition.currentTime.isBefore(segmentCenterTime)
+                    ? TripStatus.BEHIND_SCHEDULE
+                    : TripStatus.AHEAD_OF_SCHEDULE;
             }
             return TripStatus.DEVIATED;
         }

@@ -6,7 +6,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TrackedJourney;
-import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
@@ -15,14 +14,9 @@ import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
-import org.opentripplanner.middleware.utils.Coordinates;
 import spark.Request;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromTime;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.getInstructions;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -48,13 +42,14 @@ public class ManageTripTracking {
                 Persistence.trackedJourneys.create(trackedJourney);
 
                 try {
-                    TripStatus status = getTripStatus(trackedJourney, monitoredTrip.itinerary);
+                    TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, monitoredTrip.itinerary);
+                    TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
                     // Provide response.
                     return new StartTrackingResponse(
                         TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
-                        getInstructions(TripStage.START),
+                        TripInstruction.getTripInstruction(tripStatus, travelerPosition),
                         trackedJourney.id,
-                        status.name()
+                        tripStatus.name()
                     );
                 } catch (UnsupportedOperationException e) {
                     logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
@@ -83,12 +78,12 @@ public class ManageTripTracking {
                     );
 
                     try {
-                        TripStatus status = getTripStatus(trackedJourney, monitoredTrip.itinerary);
+                        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, monitoredTrip.itinerary);
+                        TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
                         // Provide response.
                         return new UpdateTrackingResponse(
-                            // This is to be expanded on in later PRs. For now, it is used for unit testing.
-                            TripInstruction.NO_INSTRUCTION.name(),
-                            status.name()
+                            TripInstruction.getTripInstruction(tripStatus, travelerPosition),
+                            tripStatus.name()
                         );
                     } catch (UnsupportedOperationException e) {
                         logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
@@ -145,7 +140,7 @@ public class ManageTripTracking {
 
         // Provide response.
         return new EndTrackingResponse(
-            getInstructions(isForciblyEnded ? TripStage.FORCE_END : TripStage.END),
+            TripInstruction.NO_INSTRUCTION.name(),
             TripStatus.ENDED.name()
         );
 
@@ -231,20 +226,19 @@ public class ManageTripTracking {
             return null;
         }
     }
-
-    /**
-     * Get the trip status by comparing the traveler's position to expected and nearest positions to the trip route.
-     */
-    public static TripStatus getTripStatus(TrackedJourney trackedJourney, Itinerary itinerary) {
-        TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
-        Coordinates currentPosition = new Coordinates(lastLocation);
-        var expectedLeg = getExpectedLeg(lastLocation.timestamp.toInstant(), itinerary);
-        return TripStatus.getTripStatus(
-            currentPosition,
-            lastLocation.timestamp.toInstant(),
-            expectedLeg,
-            getSegmentFromTime(lastLocation.timestamp.toInstant(), itinerary),
-            getSegmentFromPosition(expectedLeg, currentPosition)
-        );
-    }
+//
+//
+//    /**
+//     * Get the trip status by comparing the traveler's position to expected and nearest positions to the trip route.
+//     */
+//    public static TripStatus getTripStatus(TravelerPosition travelerPosition) {
+//        return TripStatus.getTripStatus(travelerPosition);
+//    }
+//
+//    /**
+//     * Get the trip status by comparing the traveler's position to expected and nearest positions to the trip route.
+//     */
+//    public static String getInstruction(TripStatus tripStatus, TravelerPosition travelerPosition) {
+//        return TripInstruction.getTripInstruction(tripStatus, travelerPosition);
+//    }
 }

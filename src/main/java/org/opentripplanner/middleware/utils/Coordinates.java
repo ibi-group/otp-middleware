@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
 import io.leonard.Position;
+import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 
 import java.util.Objects;
@@ -31,6 +32,11 @@ public class Coordinates {
         this.lon = position.getLongitude();
     }
 
+    public Coordinates(Step step) {
+        this.lat = step.lat;
+        this.lon = step.lon;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -42,5 +48,10 @@ public class Coordinates {
     @Override
     public int hashCode() {
         return Objects.hash(lon, lat);
+    }
+
+    @Override
+    public String toString() {
+        return lat + "," + lon + ",";
     }
 }
