@@ -26,16 +26,18 @@ class CheckMonitoredTripBasicTest {
     @ParameterizedTest
     @MethodSource("createSkipMonitoringCases")
     void testSkipMonitoredTripCheck(SkipMonitoringTestArgs args) throws Exception {
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.itinerary = new Itinerary();
-        trip.itinerary.legs = new ArrayList<>();
         Instant now = Instant.now();
         Date start = Date.from(now.plusSeconds(args.tripStartOffsetSecs));
-        trip.itinerary.startTime = start;
-        trip.itinerary.endTime = Date.from(now.plusSeconds(args.tripEndOffsetSecs));
+
+        Itinerary itinerary = new Itinerary();
+        itinerary.legs = new ArrayList<>();
+        itinerary.startTime = start;
+        itinerary.endTime = Date.from(now.plusSeconds(args.tripEndOffsetSecs));
+
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.itinerary = itinerary;
         trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(start).format(DateTimeFormatter.ISO_LOCAL_TIME);
         trip.leadTimeInMinutes = 30;
-
         if (args.isRecurring) {
             setMonitoredDaysForTest(trip);
         }
@@ -54,7 +56,10 @@ class CheckMonitoredTripBasicTest {
             new SkipMonitoringTestArgs(3600, 3900, false, true, "Should skip monitoring one-time trip in the future"),
             new SkipMonitoringTestArgs(-300, -5, true, true, "Should skip monitoring recurring trip that just concluded for today"),
             new SkipMonitoringTestArgs(300, 500, false, false, "Should not skip monitoring upcoming recurring trip"),
-            new SkipMonitoringTestArgs(360 - ONE_DAY_IN_SECONDS, 500 - ONE_DAY_IN_SECONDS, true, false, "Should not skip recurring trip monitored on the following day")
+            new SkipMonitoringTestArgs(360 - ONE_DAY_IN_SECONDS, 500 - ONE_DAY_IN_SECONDS, true, false,
+                "Should not skip recurring trip monitored on the following day"),
+            new SkipMonitoringTestArgs(360 + ONE_DAY_IN_SECONDS, 500 + ONE_DAY_IN_SECONDS, true, true,
+                "Should skip recurring trip not monitored today but that should be monitored if tomorrow.")
         );
     }
 
