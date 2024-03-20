@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class CheckMonitoredTripBasicTest {
     @ParameterizedTest
     @MethodSource("createSkipMonitoringCases")
-    void shouldSkipMonitoringOneTimeTripInPast(
+    void testSkipMonitoredTripCheck(
         int tripStartOffsetSecs,
         int tripEndOffsetSecs,
         boolean result,
@@ -31,7 +31,6 @@ class CheckMonitoredTripBasicTest {
         trip.itinerary = new Itinerary();
         trip.itinerary.legs = new ArrayList<>();
         Instant now = Instant.now();
-        // Trip start time is within the default 30-minute monitoring window.
         trip.itinerary.startTime = Date.from(now.plusSeconds(tripStartOffsetSecs));
         trip.itinerary.endTime = Date.from(now.plusSeconds(tripEndOffsetSecs));
         trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(trip.itinerary.startTime).format(DateTimeFormatter.ISO_LOCAL_TIME);
