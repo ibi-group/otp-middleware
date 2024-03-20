@@ -26,7 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -36,8 +38,10 @@ import static com.mongodb.client.model.Filters.eq;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.text.MatchesPattern.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
@@ -73,6 +77,40 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     public void tearDownAfterTest() {
         OtpTestUtils.resetOtpMocks();
         DateTimeUtils.useSystemDefaultClockAndTimezone();
+    }
+
+    @Test
+    void shouldSkipMonitoringOneTimeTripInPast() throws Exception {
+        // This test doesn't need database access.
+        MonitoredTrip trip = new MonitoredTrip();
+        // TODO: refactor itinerary ctor.
+        trip.itinerary = new Itinerary();
+        trip.itinerary.legs = new ArrayList<>();
+        Instant now = Instant.now();
+        // Trip start time is within the default 30-minute monitoring window.
+        trip.itinerary.startTime = Date.from(now.minusSeconds(300));
+        trip.itinerary.endTime = Date.from(now.minusSeconds(5));
+        trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(trip.itinerary.startTime).format(DateTimeFormatter.ISO_LOCAL_TIME);
+        trip.leadTimeInMinutes = 30;
+
+        assertTrue(new CheckMonitoredTrip(trip).shouldSkipMonitoredTripCheck());
+    }
+
+    @Test
+    void shouldNotSkipMonitoringOneTimeTripInFuture() throws Exception {
+        // This test doesn't need database access.
+        MonitoredTrip trip = new MonitoredTrip();
+        // TODO: refactor itinerary ctor.
+        trip.itinerary = new Itinerary();
+        trip.itinerary.legs = new ArrayList<>();
+        Instant now = Instant.now();
+        // Trip start time is within the default 30-minute monitoring window.
+        trip.itinerary.startTime = Date.from(now.plusSeconds(300));
+        trip.itinerary.endTime = Date.from(now.plusSeconds(500));
+        trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(trip.itinerary.startTime).format(DateTimeFormatter.ISO_LOCAL_TIME);
+        trip.leadTimeInMinutes = 30;
+
+        assertFalse(new CheckMonitoredTrip(trip).shouldSkipMonitoredTripCheck(false));
     }
 
     /**
