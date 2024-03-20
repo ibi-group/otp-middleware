@@ -56,6 +56,7 @@ class CheckMonitoredTripBasicTest {
             new SkipMonitoringTestArgs(3600, 3900, false, true, "Should skip monitoring one-time trip in the future"),
             new SkipMonitoringTestArgs(-300, -5, true, true, "Should skip monitoring recurring trip that just concluded for today"),
             new SkipMonitoringTestArgs(300, 500, false, false, "Should not skip monitoring upcoming recurring trip"),
+            new SkipMonitoringTestArgs(3600, 3900, true, true, "Should skip monitoring recurring trip in the future"),
             new SkipMonitoringTestArgs(360 - ONE_DAY_IN_SECONDS, 500 - ONE_DAY_IN_SECONDS, true, false,
                 "Should not skip recurring trip monitored on the following day"),
             new SkipMonitoringTestArgs(360 + ONE_DAY_IN_SECONDS, 500 + ONE_DAY_IN_SECONDS, true, true,
