@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.otp;
 
 import java.util.Map;
 import org.eclipse.jetty.http.HttpMethod;
+import org.opentripplanner.middleware.utils.GraphQLUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -28,9 +29,9 @@ public class OtpDispatcher {
     public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
 
     /**
-     * Location of the OTP GraphQL endpoint (e.g. /routers/default/index/graphql).
+     * Location of the OTP GraphQL endpoint (e.g. /gtfs/v1).
      */
-    public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/routers/default/index/graphql");
+    public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/gtfs/v1");
 
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
@@ -55,6 +56,18 @@ public class OtpDispatcher {
     ) {
         LOG.debug("Original query string: {}", query);
         return sendOtpRequest(buildOtpUri(version, query, path), HttpMethod.POST, headers, bodyContent);
+    }
+
+    /**
+     * Send GraphQL POST request. Builds a JSON object with two fields. The first field is {@code "query"}
+     * and its value is a long String of the entire JSON-ish plan query template. The second field is
+     * {@code "variables"} and its value is a proper JSON object of key/value string pairs.
+     * @param version OTP version passed along to post request
+     * @param variables a string of a proper JSON object of key/value string pairs
+     */
+    public static OtpDispatcherResponse sendGraphQLPostRequest(OtpVersion version, String variables) {
+        String body = "{\"query\":\"" + GraphQLUtils.getPlanQueryTemplate() + "\",\n\"variables\":" + variables + "}";
+        return sendOtpPostRequest(version, "", OTP_GRAPHQL_ENDPOINT, HttpUtils.HEADERS_JSON, body);
     }
 
     /**

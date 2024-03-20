@@ -22,6 +22,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
@@ -67,6 +70,7 @@ public class ItineraryExistence extends Model {
      * When the itinerary existence check was run/completed.
      * FIXME: If a monitored trip has not been fully enabled for monitoring, we may want to check the timestamp to
      *  verify that the existence check has not gone stale.
+     * FIXME: Something other than deprecated Date() class here!
      */
     public Date timestamp = new Date();
 
@@ -93,6 +97,50 @@ public class ItineraryExistence extends Model {
             case SUNDAY: return sunday;
         }
         throw new IllegalArgumentException("Invalid day of week provided!");
+    }
+
+    /**
+     * Helper method to adapt OTP request parameters to GraphQL's JSON {@code variables} object, limited to
+     * variables specified in the GraphQL query plan.  Parameter values are all simply {@code String}s, so we
+     * can't use JSON packages to get the types right, must hardcode them specifically for ItineraryExistence
+     * so that only the values that are actually {@code String}s have {@code \"} around them.
+     */
+    private static String paramsToVariables(Map<String, String> params) {
+        StringBuilder builder = new StringBuilder("{");
+        params.forEach((k, v) -> {
+            switch (k) {
+                // Don't put quotes around these values.
+                case "arriveBy":
+                case "numItineraries":
+                    builder.append("\"" + k + "\":" + v + ",");
+                    break;
+
+                // Put quotes around those values, they are String types.
+                case "date":
+                case "time":
+                case "fromPlace":
+                case "toPlace":
+                    builder.append("\"" + k + "\":\"" + v + "\",");
+                    break;
+
+                // From "mode" to GraphQL "$modes".
+                case "mode":
+                    //FIXME: Mapping "LINK_LIGHT_RAIL" overrideMode to a valid mode is temporary workaround!
+                    var modes = Stream.of(v.split(","))
+                       .map(m -> "LINK_LIGHT_RAIL".equals(m) ? "TRAM" : m)
+                       .collect(Collectors.toSet());
+                    builder.append("\"modes\":[");
+                    modes.forEach(m -> builder.append("{\"mode\":\"" + m + "\"},"));
+                    builder.deleteCharAt(builder.length() - 1); // Remove trailing comma.
+                    builder.append("],");
+                    break;
+
+                default:
+                    break;
+            }
+        });
+        builder.setCharAt(builder.length() - 1, '}'); // Replace trailing comma with closing brace.
+        return builder.toString();
     }
 
     /**
@@ -185,7 +233,8 @@ public class ItineraryExistence extends Model {
                 setResultForDayOfWeek(result, dayOfWeek);
             }
             // Send off each plan query to OTP.
-            OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP1, otpRequest);
+            String variables = ItineraryExistence.paramsToVariables(otpRequest.requestParameters);
+            OtpDispatcherResponse response = OtpDispatcher.sendGraphQLPostRequest(OtpVersion.OTP2, variables);
             TripPlan plan = null;
             try {
                 plan = response.getResponse().plan;
