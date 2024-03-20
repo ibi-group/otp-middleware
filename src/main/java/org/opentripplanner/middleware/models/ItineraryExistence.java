@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
@@ -124,8 +125,12 @@ public class ItineraryExistence extends Model {
 
                 // From "mode" to GraphQL "$modes".
                 case "mode":
+                    //FIXME: Mapping "LINK_LIGHT_RAIL" overrideMode to a valid mode is temporary workaround!
+                    var modes = Stream.of(v.split(","))
+                       .map(m -> "LINK_LIGHT_RAIL".equals(m) ? "TRAM" : m)
+                       .collect(Collectors.toSet());
                     builder.append("\"modes\":[");
-                    Stream.of(v.split(",")).forEach(m -> builder.append("{\"mode\":\"" + m + "\"},"));
+                    modes.forEach(m -> builder.append("{\"mode\":\"" + m + "\"},"));
                     builder.deleteCharAt(builder.length() - 1); // Remove trailing comma.
                     builder.append("],");
                     break;
