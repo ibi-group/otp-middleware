@@ -706,6 +706,9 @@ public class CheckMonitoredTrip implements Runnable {
                 LOG.info("Trip not checked in at least an {} minutes. Checking.", overHourCheckThresholdMinutes);
                 return false;
             }
+        } else if (trip.isOneTime() && trip.itinerary.hasEnded()) {
+            // Don't monitor one-time trips that occur in the past.
+            return true;
         } else {
             // It's less than an hour until the trip time, start more frequent trip checks (about every 15 minutes).
             if (minutesSinceLastCheck >= 15) {
