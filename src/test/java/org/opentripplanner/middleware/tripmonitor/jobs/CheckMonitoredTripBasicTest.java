@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -21,29 +20,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class CheckMonitoredTripBasicTest {
     @ParameterizedTest
     @MethodSource("createSkipMonitoringCases")
-    void testSkipMonitoredTripCheck(
-        int tripStartOffsetSecs,
-        int tripEndOffsetSecs,
-        boolean result,
-        String message
-    ) throws Exception {
+    void testSkipMonitoredTripCheck(SkipMonitoringTestArgs args) throws Exception {
         MonitoredTrip trip = new MonitoredTrip();
         trip.itinerary = new Itinerary();
         trip.itinerary.legs = new ArrayList<>();
         Instant now = Instant.now();
-        trip.itinerary.startTime = Date.from(now.plusSeconds(tripStartOffsetSecs));
-        trip.itinerary.endTime = Date.from(now.plusSeconds(tripEndOffsetSecs));
-        trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(trip.itinerary.startTime).format(DateTimeFormatter.ISO_LOCAL_TIME);
+        Date start = Date.from(now.plusSeconds(args.tripStartOffsetSecs));
+        trip.itinerary.startTime = start;
+        trip.itinerary.endTime = Date.from(now.plusSeconds(args.tripEndOffsetSecs));
+        trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(start).format(DateTimeFormatter.ISO_LOCAL_TIME);
         trip.leadTimeInMinutes = 30;
 
-        assertEquals(result, new CheckMonitoredTrip(trip).shouldSkipMonitoredTripCheck(false), message);
+        assertEquals(
+            args.result,
+            new CheckMonitoredTrip(trip).shouldSkipMonitoredTripCheck(false),
+            args.message
+        );
     }
 
-    static Stream<Arguments> createSkipMonitoringCases() {
+    private static Stream<SkipMonitoringTestArgs> createSkipMonitoringCases() {
         return Stream.of(
-            Arguments.of(-300, -5, true, "Should skip monitoring one-time trip in the past"),
-            Arguments.of(300, 500, false, "Should not skip monitoring upcoming one-time trip"),
-            Arguments.of(3600, 3900, true, "Should skip monitoring one-time trip in the future")
+            new SkipMonitoringTestArgs(-300, -5, false, true, "Should skip monitoring one-time trip in the past"),
+            new SkipMonitoringTestArgs(300, 500, false, false, "Should not skip monitoring upcoming one-time trip"),
+            new SkipMonitoringTestArgs(3600, 3900, false, true, "Should skip monitoring one-time trip in the future")
         );
     }
 }
