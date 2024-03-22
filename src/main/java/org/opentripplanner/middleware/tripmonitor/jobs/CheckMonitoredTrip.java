@@ -184,7 +184,7 @@ public class CheckMonitoredTrip implements Runnable {
     private void runCheckLogic() {
         // Make a request to OTP and find the matching itinerary. If there was an error or the matching itinerary was
         // not found or the trip is no longer active, don't run the other checks.
-        if (!makeOTPRequestAndUpdateMatchingItinerary()) {
+        if (!checkOtpAndUpdateTripStatus()) {
             return;
         }
         // Matching itinerary found in OTP response. Run real-time checks.
@@ -198,6 +198,13 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
+     * Find and sett the matching itinerary from the OTP response, and update trip status accordingly.
+     */
+    public boolean checkOtpAndUpdateTripStatus() {
+        return makeOTPRequestAndUpdateMatchingItineraryInternal();
+    }
+
+    /**
      * Find and set the matching itinerary from the OTP response that matches the monitored trip's stored itinerary if a
      * match exists.
      *
@@ -205,7 +212,7 @@ public class CheckMonitoredTrip implements Runnable {
      *          match. Some additional checks should be performed to make sure the itinerary really isn't possible by
      *          verifying that the same transit schedule/routes exist and that the street network is the same
      */
-    public boolean makeOTPRequestAndUpdateMatchingItinerary() {
+    public boolean makeOTPRequestAndUpdateMatchingItineraryInternal() {
         OtpDispatcherResponse otpDispatcherResponse;
         try {
             // Generate the appropriate OTP query params for the trip for the current check by replacing the date query
