@@ -29,28 +29,28 @@ public class ManageLegTraversal {
      * Define the segment that is the closest to the traveler's current position. The assumption being that each segment
      * is a straight line.
      */
-    public static Segment getSegmentFromPosition(Leg leg, Coordinates currentCoordinates) {
+    public static TripSegment getSegmentFromPosition(Leg leg, Coordinates currentCoordinates) {
         if (!canUseLeg(leg)) {
             return null;
         }
         double shortestDistance = Double.MAX_VALUE;
-        Segment nearestLegSegment = null;
-        List<Segment> segments = interpolatePoints(leg);
-        for (Segment segment : segments) {
-            double distance = getDistanceFromLine(segment.start, segment.end, currentCoordinates);
+        TripSegment nearestLegTripSegment = null;
+        List<TripSegment> tripSegments = interpolatePoints(leg);
+        for (TripSegment tripSegment : tripSegments) {
+            double distance = getDistanceFromLine(tripSegment.start, tripSegment.end, currentCoordinates);
             if (distance < shortestDistance) {
-                nearestLegSegment = segment;
+                nearestLegTripSegment = tripSegment;
                 shortestDistance = distance;
             }
         }
-        return nearestLegSegment;
+        return nearestLegTripSegment;
     }
 
     /**
      * Get the expected traveler position using the current time and trip itinerary.
      */
     @Nullable
-    public static Segment getSegmentFromTime(Instant currentTime, Itinerary itinerary) {
+    public static TripSegment getSegmentFromTime(Instant currentTime, Itinerary itinerary) {
         var expectedLeg = getExpectedLeg(currentTime, itinerary);
         return (canUseLeg(expectedLeg)) ? getSegmentFromTime(currentTime, expectedLeg) : null;
     }
@@ -58,9 +58,9 @@ public class ManageLegTraversal {
     /**
      * Get the expected traveler position using the current time and trip leg.
      */
-    private static Segment getSegmentFromTime(Instant currentTime, Leg leg) {
-        List<Segment> segments = interpolatePoints(leg);
-        return getSegmentFromTime(leg.startTime.toInstant(), currentTime, segments);
+    private static TripSegment getSegmentFromTime(Instant currentTime, Leg leg) {
+        List<TripSegment> tripSegments = interpolatePoints(leg);
+        return getSegmentFromTime(leg.startTime.toInstant(), currentTime, tripSegments);
     }
 
     /**
@@ -119,7 +119,7 @@ public class ManageLegTraversal {
      * Using the duration of a leg and its points, produce a list of segments each containing a representative
      * coordinate and time spent in the segment.
      */
-    public static List<Segment> interpolatePoints(Leg expectedLeg) {
+    public static List<TripSegment> interpolatePoints(Leg expectedLeg) {
         List<Position> positions = PolylineUtils.decode(expectedLeg.legGeometry.points, 5);
         double totalDistance = getDistanceTraversedForLeg(positions);
         return (totalDistance > 0)
@@ -131,19 +131,19 @@ public class ManageLegTraversal {
      * Get the segment which contains the current time.
      */
     @Nullable
-    public static Segment getSegmentFromTime(
+    public static TripSegment getSegmentFromTime(
         Instant segmentStartTime,
         Instant currentTime,
-        List<Segment> segments
+        List<TripSegment> tripSegments
     ) {
-        for (Segment segment : segments) {
+        for (TripSegment tripSegment : tripSegments) {
             // Offset the end time by a fraction to avoid exact times being attributed to the wrong previous segment.
             Instant segmentEndTime = segmentStartTime.plus(
-                (getSecondsToMilliseconds(segment.timeInSegment) - 1),
+                (getSecondsToMilliseconds(tripSegment.timeInSegment) - 1),
                 ChronoUnit.MILLIS
             );
             if (isTimeInRange(segmentStartTime, segmentEndTime, currentTime)) {
-                return segment;
+                return tripSegment;
             }
             segmentStartTime = segmentEndTime;
         }
@@ -174,8 +174,8 @@ public class ManageLegTraversal {
      * @param timePerMeter  The average time to cover a meter within a leg.
      * @return A list of segments.
      */
-    public static List<Segment> getTimeInSegments(List<Position> positions, double timePerMeter, String mode) {
-        List<Segment> segments = new ArrayList<>();
+    public static List<TripSegment> getTimeInSegments(List<Position> positions, double timePerMeter, String mode) {
+        List<TripSegment> tripSegments = new ArrayList<>();
         Coordinates groupCoordinates = null;
         double groupSegmentTime = 0;
         double cumulativeTime = 0;
@@ -195,25 +195,25 @@ public class ManageLegTraversal {
                 groupSegmentTime += timeInSegment;
                 if (groupSegmentTime > TRIP_TRACKING_MINIMUM_SEGMENT_TIME) {
                     // Group segment is now big enough.
-                    segments.add(new Segment(groupCoordinates, c2, groupSegmentTime, mode, cumulativeTime));
+                    tripSegments.add(new TripSegment(groupCoordinates, c2, groupSegmentTime, mode, cumulativeTime));
                     groupCoordinates = null;
                 }
             } else {
                 if (groupCoordinates != null) {
                     // Group segment is now big enough.
                     groupSegmentTime += timeInSegment;
-                    segments.add(new Segment(groupCoordinates, c2, groupSegmentTime, mode, cumulativeTime));
+                    tripSegments.add(new TripSegment(groupCoordinates, c2, groupSegmentTime, mode, cumulativeTime));
                     groupCoordinates = null;
                 } else {
-                    segments.add(new Segment(c1, c2, timeInSegment, mode, cumulativeTime));
+                    tripSegments.add(new TripSegment(c1, c2, timeInSegment, mode, cumulativeTime));
                 }
             }
         }
         if (groupCoordinates != null) {
             // Close incomplete group segment. This is unlikely to meet the minimum segment time.
-            segments.add(new Segment(groupCoordinates, c2, groupSegmentTime, mode, cumulativeTime));
+            tripSegments.add(new TripSegment(groupCoordinates, c2, groupSegmentTime, mode, cumulativeTime));
         }
-        return segments;
+        return tripSegments;
     }
 
     /**

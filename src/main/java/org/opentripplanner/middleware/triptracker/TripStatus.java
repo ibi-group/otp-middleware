@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.triptracker;
 
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.time.Instant;
@@ -65,23 +64,22 @@ public enum TripStatus {
     /**
      * Define the trip status based on the traveler's current position compared to expected and nearest points on the trip.
      */
-    public static TripStatus getTripStatus(
-        Coordinates currentPosition,
-        Instant currentTime,
-        Leg expectedLeg,
-        Segment segmentFromTime,
-        Segment segmentFromPosition
-    ) {
-        if (expectedLeg != null) {
-            if (segmentFromTime != null && isWithinModeBoundary(currentPosition, segmentFromTime)) {
+    public static TripStatus getTripStatus(TravelerPosition travelerPosition) {
+        if (travelerPosition.expectedLeg != null) {
+            if (travelerPosition.tripSegmentFromTime != null &&
+                isWithinModeBoundary(travelerPosition.currentPosition, travelerPosition.tripSegmentFromTime)) {
                 return TripStatus.ON_SCHEDULE;
             }
-            if (segmentFromPosition != null && isWithinModeBoundary(currentPosition, segmentFromPosition)) {
-                Instant segmentCenterTime = expectedLeg
+            if (travelerPosition.tripSegmentFromPosition != null &&
+                isWithinModeBoundary(travelerPosition.currentPosition, travelerPosition.tripSegmentFromPosition)) {
+                Instant segmentCenterTime = travelerPosition
+                    .expectedLeg
                     .startTime
                     .toInstant()
-                    .plusSeconds((long) getSegmentTimeInterval(segmentFromPosition));
-                return currentTime.isBefore(segmentCenterTime) ? TripStatus.BEHIND_SCHEDULE : TripStatus.AHEAD_OF_SCHEDULE;
+                    .plusSeconds((long) getSegmentTimeInterval(travelerPosition.tripSegmentFromPosition));
+                return travelerPosition.currentTime.isBefore(segmentCenterTime)
+                    ? TripStatus.BEHIND_SCHEDULE
+                    : TripStatus.AHEAD_OF_SCHEDULE;
             }
             return TripStatus.DEVIATED;
         }
@@ -91,16 +89,16 @@ public enum TripStatus {
     /**
      * Get the cumulative time at the center of a segment.
      */
-    public static double getSegmentTimeInterval(Segment segmentFromPosition) {
-        return ((segmentFromPosition.cumulativeTime - segmentFromPosition.timeInSegment) / 2) + segmentFromPosition.timeInSegment;
+    public static double getSegmentTimeInterval(TripSegment tripSegmentFromPosition) {
+        return ((tripSegmentFromPosition.cumulativeTime - tripSegmentFromPosition.timeInSegment) / 2) + tripSegmentFromPosition.timeInSegment;
     }
 
     /**
      * Checks if the traveler's position is with an acceptable distance of the mode type.
      */
-    private static boolean isWithinModeBoundary(Coordinates currentPosition, Segment segment) {
-        double distanceFromExpected = getDistanceFromLine(segment.start, segment.end, currentPosition);
-        double modeBoundary = getModeBoundary(segment.mode);
+    private static boolean isWithinModeBoundary(Coordinates currentPosition, TripSegment tripSegment) {
+        double distanceFromExpected = getDistanceFromLine(tripSegment.start, tripSegment.end, currentPosition);
+        double modeBoundary = getModeBoundary(tripSegment.mode);
         return distanceFromExpected <= modeBoundary;
     }
 
