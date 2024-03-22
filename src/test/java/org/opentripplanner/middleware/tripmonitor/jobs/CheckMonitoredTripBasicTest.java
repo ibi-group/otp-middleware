@@ -1,9 +1,11 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.DayOfWeek;
@@ -26,22 +28,10 @@ class CheckMonitoredTripBasicTest {
     @ParameterizedTest
     @MethodSource("createSkipMonitoringCases")
     void testSkipMonitoredTripCheck(SkipMonitoringTestArgs args) throws Exception {
-        Instant now = Instant.now();
-        Date start = Date.from(now.plusSeconds(args.tripStartOffsetSecs));
-
-        Itinerary itinerary = new Itinerary();
-        itinerary.legs = new ArrayList<>();
-        itinerary.startTime = start;
-        itinerary.endTime = Date.from(now.plusSeconds(args.tripEndOffsetSecs));
-
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.itinerary = itinerary;
-        trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(start).format(DateTimeFormatter.ISO_LOCAL_TIME);
-        trip.leadTimeInMinutes = 30;
+        MonitoredTrip trip = makeMonitoredTripFromNow(args.tripStartOffsetSecs, args.tripEndOffsetSecs);
         if (args.isRecurring) {
             setMonitoredDaysForTest(trip);
         }
-
         assertEquals(
             args.result,
             new CheckMonitoredTrip(trip).shouldSkipMonitoredTripCheck(false),
@@ -102,5 +92,29 @@ class CheckMonitoredTripBasicTest {
             default:
                 break;
         }
+    }
+
+    @Test
+    void shouldReportOneTimeTripInPastAsCompleted() throws CloneNotSupportedException {
+        MonitoredTrip trip = makeMonitoredTripFromNow(-900, -300);
+        CheckMonitoredTrip checker = new CheckMonitoredTrip(trip);
+        checker.checkOtpAndUpdateTripStatus();
+        assertEquals(TripStatus.PAST_TRIP, trip.journeyState.tripStatus);
+    }
+
+    private static MonitoredTrip makeMonitoredTripFromNow(int startOffsetSecs, int endOffsetSecs) {
+        Instant now = Instant.now();
+        Date start = Date.from(now.plusSeconds(startOffsetSecs));
+
+        Itinerary itinerary = new Itinerary();
+        itinerary.legs = new ArrayList<>();
+        itinerary.startTime = start;
+        itinerary.endTime = Date.from(now.plusSeconds(endOffsetSecs));
+
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.itinerary = itinerary;
+        trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(start).format(DateTimeFormatter.ISO_LOCAL_TIME);
+        trip.leadTimeInMinutes = 30;
+        return trip;
     }
 }

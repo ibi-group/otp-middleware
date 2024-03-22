@@ -198,9 +198,14 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Find and sett the matching itinerary from the OTP response, and update trip status accordingly.
+     * Find and set the matching itinerary from the OTP response, and update trip status accordingly.
      */
     public boolean checkOtpAndUpdateTripStatus() {
+        // For one-time trips in the past, update status accordingly and don't check OTP.
+        if (trip.isOneTime() && trip.itinerary.hasEnded()) {
+            trip.journeyState.tripStatus = TripStatus.PAST_TRIP;
+        }
+        // Perform normal OTP checks otherwise.
         return makeOTPRequestAndUpdateMatchingItineraryInternal();
     }
 
