@@ -226,19 +226,4 @@ public class ManageTripTracking {
             return null;
         }
     }
-//
-//
-//    /**
-//     * Get the trip status by comparing the traveler's position to expected and nearest positions to the trip route.
-//     */
-//    public static TripStatus getTripStatus(TravelerPosition travelerPosition) {
-//        return TripStatus.getTripStatus(travelerPosition);
-//    }
-//
-//    /**
-//     * Get the trip status by comparing the traveler's position to expected and nearest positions to the trip route.
-//     */
-//    public static String getInstruction(TripStatus tripStatus, TravelerPosition travelerPosition) {
-//        return TripInstruction.getTripInstruction(tripStatus, travelerPosition);
-//    }
 }
