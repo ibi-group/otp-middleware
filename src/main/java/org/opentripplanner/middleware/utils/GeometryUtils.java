@@ -75,4 +75,31 @@ public class GeometryUtils {
         // is approximately equal to the distance from start to end.
         return Math.abs(totalDistanceViaLocation - startToEndDistance) < 1;
     }
+
+    /**
+     * Creates a lat/lon point at a number of meters on a given bearing from the start point.
+     */
+    public static Coordinates createDestinationPoint(Coordinates start, double distance, double bearing) {
+        // Convert latitude and longitude from degrees to radians
+        double startLat = Math.toRadians(start.lat);
+        double startLon = Math.toRadians(start.lon);
+        bearing = Math.toRadians(bearing);
+
+        // Calculate the angular distance
+        double angularDistance = distance / RADIUS_OF_EARTH_IN_KM;
+
+        // Calculate the destination latitude
+        double destLat = Math.asin(Math.sin(startLat) * Math.cos(angularDistance) +
+            Math.cos(startLat) * Math.sin(angularDistance) * Math.cos(bearing));
+
+        // Calculate the destination longitude
+        double destLon = startLon + Math.atan2(Math.sin(bearing) * Math.sin(angularDistance) * Math.cos(startLat),
+            Math.cos(angularDistance) - Math.sin(startLat) * Math.sin(destLat));
+
+        // Convert back from radians to degrees
+        destLat = Math.toDegrees(destLat);
+        destLon = Math.toDegrees(destLon);
+
+        return new Coordinates(destLat, destLon);
+    }
 }

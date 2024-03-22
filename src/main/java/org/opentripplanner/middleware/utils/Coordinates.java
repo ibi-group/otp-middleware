@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
 import io.leonard.Position;
+import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 
@@ -35,6 +36,11 @@ public class Coordinates {
     public Coordinates(Step step) {
         this.lat = step.lat;
         this.lon = step.lon;
+    }
+
+    public Coordinates(Place place) {
+        this.lat = place.lat;
+        this.lon = place.lon;
     }
 
     @Override

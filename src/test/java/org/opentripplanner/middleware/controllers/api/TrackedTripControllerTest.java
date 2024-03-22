@@ -108,7 +108,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS, startTrackingResponse.frequencySeconds);
-        assertEquals(TripInstruction.NO_INSTRUCTION.name(), startTrackingResponse.instruction);
+        assertEquals(TripInstruction.NO_INSTRUCTION, startTrackingResponse.instruction);
         assertEquals(TripStatus.NO_STATUS.name(), startTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
 
@@ -120,7 +120,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
 
         var updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, UpdateTrackingResponse.class);
-        assertEquals(TripInstruction.NO_INSTRUCTION.name(), updateTrackingResponse.instruction);
+        assertEquals(TripInstruction.NO_INSTRUCTION, updateTrackingResponse.instruction);
         assertEquals(TripStatus.NO_STATUS.name(), updateTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
 
@@ -131,7 +131,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
         var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
-        assertEquals(TripInstruction.NO_INSTRUCTION.name(), endTrackingResponse.instruction);
+        assertEquals(TripInstruction.NO_INSTRUCTION, endTrackingResponse.instruction);
         assertEquals(TripStatus.ENDED.name(), endTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
 
@@ -187,7 +187,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
         var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
-        assertEquals(TripInstruction.NO_INSTRUCTION.name(), endTrackingResponse.instruction);
+        assertEquals(TripInstruction.NO_INSTRUCTION, endTrackingResponse.instruction);
         assertEquals(TripStatus.ENDED.name(), endTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
     }
@@ -238,7 +238,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS, startTrackingResponse.frequencySeconds);
-        assertEquals(TripInstruction.NO_INSTRUCTION.name(), startTrackingResponse.instruction);
+        assertEquals(TripInstruction.NO_INSTRUCTION, startTrackingResponse.instruction);
         assertEquals(TripStatus.NO_STATUS.name(), startTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
 

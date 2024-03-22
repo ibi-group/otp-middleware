@@ -17,10 +17,10 @@ public class TravelerPosition {
     public Leg expectedLeg;
 
     /** The expected traveler position, based on time. */
-    public Segment segmentFromTime;
+    public TripSegment tripSegmentFromTime;
 
     /** The expected traveler position, based on coordinates. */
-    public Segment segmentFromPosition;
+    public TripSegment tripSegmentFromPosition;
 
     /** Traveler current coordinates. */
     public Coordinates currentPosition;
@@ -37,7 +37,7 @@ public class TravelerPosition {
         currentTime = lastLocation.timestamp.toInstant();
         currentPosition = new Coordinates(lastLocation);
         expectedLeg = getExpectedLeg(lastLocation.timestamp.toInstant(), itinerary);
-        segmentFromTime = getSegmentFromTime(lastLocation.timestamp.toInstant(), itinerary);
-        segmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
+        tripSegmentFromTime = getSegmentFromTime(lastLocation.timestamp.toInstant(), itinerary);
+        tripSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
     }
 }
