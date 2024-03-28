@@ -22,11 +22,9 @@ public class TripInstruction {
     }
 
     private static final int ACCEPTABLE_BEARING_TOLERANCE = 10;
-    private static final int IMMEDIATE_INSTRUCTION_RADIUS_DISTANCE = 2;
-    private static final int UPCOMING_INSTRUCTION_RADIUS_DISTANCE = 10;
 
-    public static final String IMMEDIATE_PREFIX = "IMMEDIATE: ";
-    public static final String UPCOMING_PREFIX = "UPCOMING: ";
+    private static final int FIRST_STEP_BOUNDARY = 10;
+
     public static final String NO_INSTRUCTION = "NO_INSTRUCTION";
 
     /**
@@ -41,11 +39,11 @@ public class TripInstruction {
             travelerPosition.expectedLeg != null &&
             travelerPosition.expectedLeg.mode.equalsIgnoreCase("walk")
         ) {
-            if (travelerPosition.tripSegmentFromTime != null) {
-                return createInstruction(travelerPosition.expectedLeg, travelerPosition.tripSegmentFromTime);
+            if (travelerPosition.legSegmentFromTime != null) {
+                return createInstruction(travelerPosition.expectedLeg, travelerPosition.legSegmentFromTime, travelerPosition.currentPosition);
             }
-            if (travelerPosition.tripSegmentFromPosition != null) {
-                return createInstruction(travelerPosition.expectedLeg, travelerPosition.tripSegmentFromPosition);
+            if (travelerPosition.legSegmentFromPosition != null) {
+                return createInstruction(travelerPosition.expectedLeg, travelerPosition.legSegmentFromPosition, travelerPosition.currentPosition);
             }
             return NO_INSTRUCTION;
         }
@@ -53,7 +51,7 @@ public class TripInstruction {
     }
 
     /**
-     * The trip instruction can only be provided if the trip is on or close to schedule.
+     * The trip instruction can only be provided if the traveler is close to the indicated route.
      */
     private static boolean hasRequiredTripStatus(TripStatus tripStatus) {
         return
@@ -62,42 +60,48 @@ public class TripInstruction {
             !tripStatus.equals(TripStatus.ENDED);
     }
 
-    public static String createInstruction(Leg expectedLeg, TripSegment activeTripSegment) {
-        StepSegment activeStep = getStepEncompassingSegment(expectedLeg, activeTripSegment);
-        if (activeStep != null && isOnSimilarBearing(activeStep, activeTripSegment)) {
+    public static String createInstruction(Leg expectedLeg, LegSegment activeLegSegment, Coordinates currentPosition) {
+        StepSegment activeStep = getStepEncompassingSegment(expectedLeg, activeLegSegment);
+        if (activeStep != null && isOnSimilarBearing(activeStep, activeLegSegment)) {
             // High confidence.
-            double distanceToNextStep = Math.round(getDistance(activeStep.end, activeTripSegment.end));
+            double distanceToNextStep = Math.round(getDistance(activeStep.end, activeLegSegment.end));
             return getInstruction(
                 distanceToNextStep,
-                getStepInstruction(expectedLeg.steps, activeStep.stepIndex + 1)
+                getStep(expectedLeg.steps, activeStep.stepIndex + 1)
             );
         }
 
-        StepSegment nearestStep = getNearestStep(expectedLeg, activeTripSegment);
+        StepSegment nearestStep = getNearestStep(expectedLeg, activeLegSegment);
 
         if (nearestStep != null) {
             // Lower confidence. This part could benefit from "traveler bearing processing".
             Coordinates destination = new Coordinates(expectedLeg.to);
-            if (isLastStep(nearestStep.stepIndex, expectedLeg)) {
-                if (!isTripSegmentNearerToDestination(nearestStep, activeTripSegment, destination)) {
+            if (nearestStep.stepIndex == 0) {
+                // First step.
+                double distance = getDistance(currentPosition, nearestStep.start);
+                return (distance < FIRST_STEP_BOUNDARY)
+                    ? getInstruction(distance, getStep(expectedLeg.steps, nearestStep.stepIndex))
+                    : NO_INSTRUCTION;
+            } else if (isLastStep(nearestStep.stepIndex, expectedLeg)) {
+                if (!isTripSegmentNearerToDestination(nearestStep, activeLegSegment, destination)) {
                     // Assuming traveler is approaching the last step.
-                    return approachingStep(activeTripSegment, nearestStep, expectedLeg);
+                    return approachingStep(activeLegSegment, nearestStep, expectedLeg);
                 }
             } else {
-                if (isTripSegmentNearerToDestination(nearestStep, activeTripSegment, destination)) {
+                if (isTripSegmentNearerToDestination(nearestStep, activeLegSegment, destination)) {
                     // Assuming traveler is passed the nearest step.
                     Step nextStep = expectedLeg.steps.get(nearestStep.stepIndex + 1);
                     return getInstruction(
-                        getDistance(activeTripSegment.end, new Coordinates(nextStep)),
-                        nextStep.relativeDirection
+                        getDistance(activeLegSegment.end, new Coordinates(nextStep)),
+                        nextStep
                     );
                 } else {
                     // Assuming traveler is approaching the nearest step.
-                    return approachingStep(activeTripSegment, nearestStep, expectedLeg);
+                    return approachingStep(activeLegSegment, nearestStep, expectedLeg);
                 }
             }
         }
-        return TripInstruction.NO_INSTRUCTION;
+        return NO_INSTRUCTION;
     }
 
     /**
@@ -110,10 +114,10 @@ public class TripInstruction {
     /**
      * Provide instruction for approaching a step.
      */
-    private static String approachingStep(TripSegment activeTripSegment, StepSegment nearestStep, Leg expectedLeg) {
+    private static String approachingStep(LegSegment activeLegSegment, StepSegment nearestStep, Leg expectedLeg) {
         return getInstruction(
-            getDistance(activeTripSegment.end, nearestStep.start),
-            getStepInstruction(expectedLeg.steps, nearestStep.stepIndex)
+            getDistance(activeLegSegment.start, nearestStep.start),
+            getStep(expectedLeg.steps, nearestStep.stepIndex)
         );
     }
 
@@ -121,25 +125,30 @@ public class TripInstruction {
      * Determine if the trip segment is near to the destination than the step.
      */
     private static boolean isTripSegmentNearerToDestination(
-        StepSegment stepSegment,
-        TripSegment tripSegment,
+        StepSegment nearestStep,
+        LegSegment activeLegSegment,
         Coordinates destination
     ) {
-        double distanceFromLastStepToDestination = getDistance(stepSegment.start, destination);
-        double distanceFromActiveSegmentToDestination = getDistance(tripSegment.start, destination);
+        double distanceFromLastStepToDestination = getDistance(nearestStep.start, destination);
+        double distanceFromActiveSegmentToDestination = getDistance(activeLegSegment.start, destination);
         return distanceFromActiveSegmentToDestination < distanceFromLastStepToDestination;
     }
 
     /**
-     * Get instruction based distance and related step instruction.
+     * Get instruction based on distance and step instructions. e.g.
+     * <p>
+     * "CONTINUE on Langley Drive"
+     * "RIGHT on service road"
+     * "Head WEST on sidewalk approx 6 meters"
      */
-    private static String getInstruction(double distance, String stepInstruction) {
-        if (stepInstruction != null) {
-            if (distance <= IMMEDIATE_INSTRUCTION_RADIUS_DISTANCE) {
-                return IMMEDIATE_PREFIX + stepInstruction;
-            } else if (distance <= UPCOMING_INSTRUCTION_RADIUS_DISTANCE) {
-                return UPCOMING_PREFIX + stepInstruction;
-            }
+    public static String getInstruction(double distance, Step step) {
+        if (step != null) {
+            String relativeDirection = (step.relativeDirection.equals("DEPART"))
+                ? "Head " + step.absoluteDirection
+                : step.relativeDirection;
+            return (Math.round(distance) == 0)
+                ? String.format("%s on %s", relativeDirection, step.streetName)
+                : String.format("%s on %s approx %s meters", relativeDirection, step.streetName, Math.round(distance));
         }
         return NO_INSTRUCTION;
     }
@@ -148,9 +157,9 @@ public class TripInstruction {
      * Get the relative direction from a step defined by the provided index.
      */
     @Nullable
-    private static String getStepInstruction(List<Step> steps, int stepIndex) {
+    private static Step getStep(List<Step> steps, int stepIndex) {
         if (stepIndex <= steps.size()) {
-            return steps.get(stepIndex).relativeDirection;
+            return steps.get(stepIndex);
         } else {
             return null;
         }
@@ -185,11 +194,11 @@ public class TripInstruction {
      * Get the step that contains the travelers current segment.
      */
     @Nullable
-    private static StepSegment getStepEncompassingSegment(Leg expectedLeg, TripSegment tripSegment) {
+    private static StepSegment getStepEncompassingSegment(Leg expectedLeg, LegSegment legSegment) {
         for (StepSegment stepSegment : getStepSegments(expectedLeg)) {
             if (
-                isPointBetween(stepSegment.start, stepSegment.end, tripSegment.start) &&
-                isPointBetween(stepSegment.start, stepSegment.end, tripSegment.end)
+                isPointBetween(stepSegment.start, stepSegment.end, legSegment.start) &&
+                isPointBetween(stepSegment.start, stepSegment.end, legSegment.end)
             ) {
                 // Trip segment is within the step segment.
                 return stepSegment;
@@ -202,11 +211,11 @@ public class TripInstruction {
      * Get the step that is nearest to the trip segment.
      */
     @Nullable
-    private static StepSegment getNearestStep(Leg leg, TripSegment tripSegment) {
+    private static StepSegment getNearestStep(Leg leg, LegSegment legSegment) {
         StepSegment nearest = null;
         double nearestDistance = Double.MAX_VALUE;
         for (int i = 0; i < leg.steps.size(); i++) {
-            double distance = getDistanceFromLine(tripSegment.start, tripSegment.end, new Coordinates(leg.steps.get(i)));
+            double distance = getDistanceFromLine(legSegment.start, legSegment.end, new Coordinates(leg.steps.get(i)));
             if (distance < nearestDistance) {
                 nearest = new StepSegment(leg.steps.get(i), i);
                 nearestDistance = distance;

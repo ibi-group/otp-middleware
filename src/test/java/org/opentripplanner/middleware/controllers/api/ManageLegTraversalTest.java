@@ -10,9 +10,9 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.triptracker.LegSegment;
 import org.opentripplanner.middleware.triptracker.ManageLegTraversal;
 import org.opentripplanner.middleware.triptracker.StepSegment;
-import org.opentripplanner.middleware.triptracker.TripSegment;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import org.opentripplanner.middleware.triptracker.TripInstruction;
@@ -35,9 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.IMMEDIATE_PREFIX;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.UPCOMING_PREFIX;
+import static org.opentripplanner.middleware.triptracker.TripInstruction.getInstruction;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.getStepSegments;
 import static org.opentripplanner.middleware.triptracker.TripStatus.getSegmentTimeInterval;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
@@ -63,22 +62,21 @@ public class ManageLegTraversalTest {
         trackedJourney.locations = List.of(trackingLocation);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
         TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
-        String instruction = TripInstruction.getInstruction(tripStatus, travelerPosition);
         assertEquals(expected, tripStatus);
     }
 
     private static Stream<Arguments> createTrace() {
         Date startTime = busStopToJusticeCenterItinerary.startTime;
-        List<TripSegment> tripSegments = createSegmentsForLeg();
-        TripSegment before = tripSegments.get(8);
-        TripSegment current = tripSegments.get(10);
-        TripSegment after = tripSegments.get(12);
+        List<LegSegment> legSegments = createSegmentsForLeg();
+        LegSegment before = legSegments.get(8);
+        LegSegment current = legSegments.get(10);
+        LegSegment after = legSegments.get(12);
         return Stream.of(
             Arguments.of(
                 getDateTimeAsString(startTime, getSegmentTimeInterval(before)),
                 current.start.lat,
                 current.start.lon,
-                TripStatus.BEHIND_SCHEDULE
+                TripStatus.AHEAD_OF_SCHEDULE
             ),
             Arguments.of(
                 getDateTimeAsString(startTime, current.cumulativeTime),
@@ -90,7 +88,7 @@ public class ManageLegTraversalTest {
                 getDateTimeAsString(startTime, after.cumulativeTime),
                 current.start.lat,
                 current.start.lon,
-                TripStatus.AHEAD_OF_SCHEDULE
+                TripStatus.BEHIND_SCHEDULE
             ),
             // Slight deviation on time.
             Arguments.of(
@@ -132,10 +130,11 @@ public class ManageLegTraversalTest {
 
     @ParameterizedTest
     @MethodSource("createTurnByTurnTrace")
-    void canTrackTurnByTurn(TripSegment activeTripSegment, String expectedInstruction) {
+    void canTrackTurnByTurn(LegSegment activeLegSegment, String expectedInstruction) {
         assertEquals(expectedInstruction, TripInstruction.createInstruction(
             busStopToJusticeCenterItinerary.legs.get(0),
-            activeTripSegment
+            activeLegSegment,
+            new Coordinates(busStopToJusticeCenterItinerary.legs.get(0).from)
         ));
     }
 
@@ -157,77 +156,73 @@ public class ManageLegTraversalTest {
         double fourthStepBearing = calculateBearing(fourthStep.start, fourthStep.end);
         return Stream.of(
             // On step change.
-            Arguments.of(new TripSegment(
+            Arguments.of(new LegSegment(
                 firstStepSegment.start, firstStepSegment.end),
-                getInstruction(IMMEDIATE_PREFIX, walkSteps.get(1))
-            ),
-            Arguments.of(new TripSegment(
+                getInstruction(0, walkSteps.get(1)
+            )),
+            Arguments.of(new LegSegment(
                 secondStep.start, secondStep.end),
-                getInstruction(IMMEDIATE_PREFIX, walkSteps.get(2))
-            ),
-            Arguments.of(new TripSegment(
+                getInstruction(0, walkSteps.get(2)
+            )),
+            Arguments.of(new LegSegment(
                 thirdStep.start, thirdStep.end),
-                getInstruction(IMMEDIATE_PREFIX, walkSteps.get(3))
-            ),
-            Arguments.of(new TripSegment(
+                getInstruction(0, walkSteps.get(3)
+            )),
+            Arguments.of(new LegSegment(
                 fourthStep.start, fourthStep.end),
-                getInstruction(IMMEDIATE_PREFIX, walkSteps.get(4))
-            ),
-            // Before first step.
-            Arguments.of(createTripSegment(
-                firstStepSegment.start, 0.005, firstStepBearing, true),
-                getInstruction(UPCOMING_PREFIX, walkSteps.get(0))
-            ),
-            // At first step.
-            Arguments.of(createTripSegment(
-                firstStepSegment.start, 0.001, firstStepBearing, true),
-                getInstruction(IMMEDIATE_PREFIX, walkSteps.get(0))
-            ),
+                getInstruction(0, walkSteps.get(4)
+            )),
+            // At start of trip.
+            Arguments.of(createLegSegment(
+                firstStepSegment.start, 0, firstStepBearing, true),
+                getInstruction(1, walkSteps.get(0)
+            )),
             // Pass first step.
-            Arguments.of(createTripSegment(
-                firstStepSegment.end, 0.001, firstStepBearing, false),
-                getInstruction(UPCOMING_PREFIX, walkSteps.get(2))
-            ),
+            Arguments.of(createLegSegment(
+                firstStepSegment.end, 1, firstStepBearing, false),
+                getInstruction(9, walkSteps.get(2)
+            )),
             // Pass last step.
-            Arguments.of(createTripSegment(
-                lastStepSegment.start, 0.010, 315, false),
+            Arguments.of(createLegSegment(
+                lastStepSegment.start, 10, 315, false),
                 NO_INSTRUCTION
             ),
             // Approaching last step (at 90 degrees to reduce confidence).
-            Arguments.of(createTripSegment(
-                fourthStep.end, 0.002, fourthStepBearing + 90, true),
-                getInstruction(UPCOMING_PREFIX, walkSteps.get(4)
+            Arguments.of(createLegSegment(
+                fourthStep.end, 2, fourthStepBearing + 90, true),
+                getInstruction(8, walkSteps.get(4)
             ))
         );
     }
 
-    private static String getInstruction(String prefix, Step step) {
-        return String.format("%s%s", prefix, step.relativeDirection);
-    }
-
-    private static TripSegment createTripSegment(Coordinates point, double distance, double bearing, boolean oppositeDirection) {
+    private static LegSegment createLegSegment(
+        Coordinates point,
+        double distanceInMeters,
+        double bearing,
+        boolean oppositeDirection
+    ) {
         if (oppositeDirection) {
             bearing = bearing - 180;
         }
-        Coordinates end = createDestinationPoint(point,distance, bearing);
-        Coordinates start = createDestinationPoint(point,distance + 0.005, bearing);
-        return new TripSegment(start, end);
+        Coordinates end = createDestinationPoint(point, distanceInMeters, bearing);
+        Coordinates start = createDestinationPoint(point,distanceInMeters + 5, bearing);
+        return new LegSegment(start, end);
     }
 
     @Test
     void canAccumulateCorrectStartAndEndCoordinates() {
-        List<TripSegment> tripSegments = createSegmentsForLeg();
-        for (int i = 0; i < tripSegments.size()-1; i++) {
-            TripSegment tripSegmentOne = tripSegments.get(i);
-            TripSegment tripSegmentTwo = tripSegments.get(i+1);
-            assertEquals(tripSegmentOne.end.lat, tripSegmentTwo.start.lat);
+        List<LegSegment> legSegments = createSegmentsForLeg();
+        for (int i = 0; i < legSegments.size()-1; i++) {
+            LegSegment legSegmentOne = legSegments.get(i);
+            LegSegment legSegmentTwo = legSegments.get(i+1);
+            assertEquals(legSegmentOne.end.lat, legSegmentTwo.start.lat);
         }
     }
 
     @Test
     void canTrackLegWithoutDeviating() {
         for (int legIndex = 0; legIndex < busStopToJusticeCenterItinerary.legs.size(); legIndex++) {
-            List<TripSegment> tripSegments = createSegmentsForLeg();
+            List<LegSegment> legSegments = createSegmentsForLeg();
             TrackedJourney trackedJourney = new TrackedJourney();
             ZonedDateTime startOfTrip = ZonedDateTime.ofInstant(
                 busStopToJusticeCenterItinerary.legs.get(legIndex).startTime.toInstant(),
@@ -236,11 +231,11 @@ public class ManageLegTraversalTest {
 
             ZonedDateTime currentTime = startOfTrip;
             double cumulativeTravelTime = 0;
-            for (TripSegment tripSegment : tripSegments) {
+            for (LegSegment legSegment : legSegments) {
                 trackedJourney.locations = List.of(
                     new TrackingLocation(
-                        tripSegment.start.lat,
-                        tripSegment.start.lon,
+                        legSegment.start.lat,
+                        legSegment.start.lon,
                         new Date(currentTime.toInstant().toEpochMilli())
                     )
                 );
@@ -249,7 +244,7 @@ public class ManageLegTraversalTest {
                     TripStatus.getTripStatus(travelerPosition).name(),
                     TripStatus.ON_SCHEDULE.name()
                 );
-                cumulativeTravelTime += tripSegment.timeInSegment;
+                cumulativeTravelTime += legSegment.timeInSegment;
                 currentTime = startOfTrip.plus(getSecondsToMilliseconds(cumulativeTravelTime), ChronoUnit.MILLIS);
             }
         }
@@ -257,10 +252,10 @@ public class ManageLegTraversalTest {
 
     @Test
     void cumulativeSegmentTimeMatchesWalkLegDuration() {
-        List<TripSegment> tripSegments = createSegmentsForLeg();
+        List<LegSegment> legSegments = createSegmentsForLeg();
         double cumulative = 0;
-        for (TripSegment tripSegment : tripSegments) {
-            cumulative += tripSegment.timeInSegment;
+        for (LegSegment legSegment : legSegments) {
+            cumulative += legSegment.timeInSegment;
         }
         assertEquals(busStopToJusticeCenterItinerary.legs.get(0).duration, cumulative, 0.01f);
     }
@@ -268,43 +263,43 @@ public class ManageLegTraversalTest {
     @ParameterizedTest
     @MethodSource("createTravelerPositions")
     void canReturnTheCorrectSegmentCoordinates(TravellerPosition segmentPosition) {
-        TripSegment tripSegment = ManageLegTraversal.getSegmentFromTime(
+        LegSegment legSegment = ManageLegTraversal.getSegmentFromTime(
             segmentPosition.start,
             segmentPosition.currentTime,
-            segmentPosition.tripSegments
+            segmentPosition.legSegments
         );
-        assertNotNull(tripSegment);
-        assertEquals(segmentPosition.coordinates, tripSegment.start);
+        assertNotNull(legSegment);
+        assertEquals(segmentPosition.coordinates, legSegment.start);
     }
 
     private static Stream<TravellerPosition> createTravelerPositions() {
         Instant segmentStartTime = ZonedDateTime.now().toInstant();
-        List<TripSegment> tripSegments = createSegmentsForLeg();
+        List<LegSegment> legSegments = createSegmentsForLeg();
 
         return Stream.of(
             new TravellerPosition(
-                tripSegments.get(0).start,
+                legSegments.get(0).start,
                 segmentStartTime,
                 segmentStartTime.plusSeconds(5),
-                tripSegments
+                legSegments
             ),
             new TravellerPosition(
-                tripSegments.get(1).start,
+                legSegments.get(1).start,
                 segmentStartTime,
                 segmentStartTime.plusSeconds(15),
-                tripSegments
+                legSegments
             ),
             new TravellerPosition(
-                tripSegments.get(2).start,
+                legSegments.get(2).start,
                 segmentStartTime,
                 segmentStartTime.plusSeconds(25),
-                tripSegments
+                legSegments
             ),
             new TravellerPosition(
-                tripSegments.get(3).start,
+                legSegments.get(3).start,
                 segmentStartTime,
                 segmentStartTime.plusSeconds(35),
-                tripSegments
+                legSegments
             )
         );
     }
@@ -317,22 +312,22 @@ public class ManageLegTraversalTest {
 
         public Instant currentTime;
 
-        List<TripSegment> tripSegments;
+        List<LegSegment> legSegments;
 
         public TravellerPosition(
             Coordinates coordinates,
             Instant start,
             Instant currentTime,
-            List<TripSegment> tripSegments
+            List<LegSegment> legSegments
         ) {
             this.coordinates = coordinates;
             this.start = start;
             this.currentTime = currentTime;
-            this.tripSegments = tripSegments;
+            this.legSegments = legSegments;
         }
     }
 
-    private static List<TripSegment> createSegmentsForLeg() {
+    private static List<LegSegment> createSegmentsForLeg() {
         return interpolatePoints(busStopToJusticeCenterItinerary.legs.get(0));
     }
 

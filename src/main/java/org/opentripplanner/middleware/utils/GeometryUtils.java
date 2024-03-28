@@ -79,14 +79,14 @@ public class GeometryUtils {
     /**
      * Creates a lat/lon point at a number of meters on a given bearing from the start point.
      */
-    public static Coordinates createDestinationPoint(Coordinates start, double distance, double bearing) {
+    public static Coordinates createDestinationPoint(Coordinates start, double distanceInMeters, double bearing) {
         // Convert latitude and longitude from degrees to radians
         double startLat = Math.toRadians(start.lat);
         double startLon = Math.toRadians(start.lon);
         bearing = Math.toRadians(bearing);
 
         // Calculate the angular distance
-        double angularDistance = distance / RADIUS_OF_EARTH_IN_KM;
+        double angularDistance = (distanceInMeters / 1000) / RADIUS_OF_EARTH_IN_KM;
 
         // Calculate the destination latitude
         double destLat = Math.asin(Math.sin(startLat) * Math.cos(angularDistance) +

@@ -4,7 +4,7 @@ import org.opentripplanner.middleware.utils.Coordinates;
 
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 
-public class TripSegment extends Segment {
+public class LegSegment extends Segment {
 
     /** The time spent in this segment in seconds. */
     public final double timeInSegment;
@@ -18,7 +18,7 @@ public class TripSegment extends Segment {
     /** Distance in meters between start and end coordinates */
     public final double distance;
 
-    public TripSegment(Coordinates start, Coordinates end, double timeInSegment, String mode, double cumulativeTime) {
+    public LegSegment(Coordinates start, Coordinates end, double timeInSegment, String mode, double cumulativeTime) {
         super(start, end);
         this.timeInSegment = timeInSegment;
         this.mode = mode;
@@ -26,7 +26,10 @@ public class TripSegment extends Segment {
         this.distance = getDistance(start, end);
     }
 
-    public TripSegment(Coordinates start, Coordinates end) {
+    /**
+     * Used for testing only.
+     */
+    public LegSegment(Coordinates start, Coordinates end) {
         super(start, end);
         this.timeInSegment = -1;
         this.mode = null;
@@ -36,13 +39,13 @@ public class TripSegment extends Segment {
 
     @Override
     public String toString() {
-        return "Segment{" +
-            "start=" + start +
-            ", end=" + end +
-            ", timeInSegment=" + timeInSegment +
+        return "LegSegment{" +
+            "timeInSegment=" + timeInSegment +
             ", mode='" + mode + '\'' +
             ", cumulativeTime=" + cumulativeTime +
             ", distance=" + distance +
+            ", start=" + start +
+            ", end=" + end +
             '}';
     }
 }
