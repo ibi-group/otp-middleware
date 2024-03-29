@@ -32,6 +32,9 @@ class CheckMonitoredTripBasicTest {
         if (args.isRecurring) {
             setMonitoredDaysForTest(trip);
         }
+        if (args.withJourneyState) {
+            trip.journeyState.tripStatus = TripStatus.PAST_TRIP;
+        }
         assertEquals(
             args.result,
             new CheckMonitoredTrip(trip).shouldSkipMonitoredTripCheck(false),
@@ -41,7 +44,6 @@ class CheckMonitoredTripBasicTest {
 
     private static Stream<SkipMonitoringTestArgs> createSkipMonitoringCases() {
         return Stream.of(
-            new SkipMonitoringTestArgs(-300, -5, false, true, "Should skip monitoring one-time trip in the past"),
             new SkipMonitoringTestArgs(300, 500, false, false, "Should not skip monitoring upcoming one-time trip"),
             new SkipMonitoringTestArgs(3600, 3900, false, true, "Should skip monitoring one-time trip in the future"),
             new SkipMonitoringTestArgs(-300, -5, true, true, "Should skip monitoring recurring trip that just concluded for today"),
@@ -50,7 +52,9 @@ class CheckMonitoredTripBasicTest {
             new SkipMonitoringTestArgs(360 - ONE_DAY_IN_SECONDS, 500 - ONE_DAY_IN_SECONDS, true, false,
                 "Should not skip recurring trip monitored on the following day"),
             new SkipMonitoringTestArgs(360 + ONE_DAY_IN_SECONDS, 500 + ONE_DAY_IN_SECONDS, true, true,
-                "Should skip recurring trip not monitored today but that should be monitored if tomorrow.")
+                "Should skip recurring trip not monitored today but that should be monitored if tomorrow."),
+            new SkipMonitoringTestArgs(-300, -5, false, false, "Should not skip monitoring one-time trip in the past with no journey state"),
+            new SkipMonitoringTestArgs(-300, -5, false, true, true, "Should skip monitoring one-time trip in the past with journey state")
         );
     }
 

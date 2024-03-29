@@ -16,6 +16,24 @@ class SkipMonitoringTestArgs {
      */
     public final boolean result;
 
+    public final boolean withJourneyState;
+
+    public SkipMonitoringTestArgs(
+        int tripStartOffsetSecs,
+        int tripEndOffsetSecs,
+        boolean isRecurring,
+        boolean withJourneyState,
+        boolean result,
+        String message
+    ) {
+        this.tripStartOffsetSecs = tripStartOffsetSecs;
+        this.tripEndOffsetSecs = tripEndOffsetSecs;
+        this.isRecurring = isRecurring;
+        this.withJourneyState = withJourneyState;
+        this.message = message;
+        this.result = result;
+    }
+
     public SkipMonitoringTestArgs(
         int tripStartOffsetSecs,
         int tripEndOffsetSecs,
@@ -23,10 +41,6 @@ class SkipMonitoringTestArgs {
         boolean result,
         String message
     ) {
-        this.tripStartOffsetSecs = tripStartOffsetSecs;
-        this.tripEndOffsetSecs = tripEndOffsetSecs;
-        this.isRecurring = isRecurring;
-        this.message = message;
-        this.result = result;
+        this(tripStartOffsetSecs, tripEndOffsetSecs, isRecurring, false, result, message);
     }
 }

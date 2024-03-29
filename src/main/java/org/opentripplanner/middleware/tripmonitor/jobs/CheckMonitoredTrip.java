@@ -185,6 +185,7 @@ public class CheckMonitoredTrip implements Runnable {
         // Make a request to OTP and find the matching itinerary. If there was an error or the matching itinerary was
         // not found or the trip is no longer active, don't run the other checks.
         if (!checkOtpAndUpdateTripStatus()) {
+            updateMonitoredTrip();
             return;
         }
         // Matching itinerary found in OTP response. Run real-time checks.
@@ -204,6 +205,7 @@ public class CheckMonitoredTrip implements Runnable {
         // For one-time trips in the past, update status accordingly and don't check OTP.
         if (trip.isOneTime() && trip.itinerary.hasEnded()) {
             trip.journeyState.tripStatus = TripStatus.PAST_TRIP;
+            return false;
         }
         // Perform normal OTP checks otherwise.
         return makeOTPRequestAndUpdateMatchingItineraryInternal();
@@ -605,6 +607,15 @@ public class CheckMonitoredTrip implements Runnable {
             return true;
         }
 
+        // If trip is one-time and has ended, no further checking is needed. The itinerary existence data should not be
+        // checked here to avoid incorrectly skipping trips that are monitored on a single day of the week, but which
+        // may have not had a matching itinerary on that day for one week (even though the trip could be possible the
+        // next week).
+        if (previousJourneyState.tripStatus == TripStatus.PAST_TRIP) {
+            LOG.info("Skipping: One-time trip is in the past.");
+            return true;
+        }
+
         // Check if the previous matching itinerary was null or if it has already concluded
         boolean prevMatchingItineraryConcluded = previousMatchingItinerary != null &&
             previousMatchingItinerary.endTime.after(new Date(previousJourneyState.lastCheckedEpochMillis));
@@ -647,9 +658,10 @@ public class CheckMonitoredTrip implements Runnable {
 
             // Check if the journeyState indicates that an itinerary has already been calculated in a previous run of
             // this CheckMonitoredTrip. If the targetDate is null, then the current date has not yet been checked. If
-            // the journeyState's targetDate is not null, that indicates that today has already been checked. Therefore,
-            // advance targetDate by another day before calculating when the next itinerary occurs.
-            if (previousJourneyState.targetDate != null) {
+            // the journeyState's targetDate is not null, that indicates that today has already been checked.
+            // Therefore, for recurring trips, advance targetDate by another day before calculating when the next
+            // itinerary occurs. One-time trips will have their status set to PAST_TRIP and will be skipped.
+            if (previousJourneyState.targetDate != null && !trip.isOneTime()) {
                 LocalDate lastDate = DateTimeUtils.getDateFromString(
                     previousJourneyState.targetDate,
                     DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
@@ -718,9 +730,6 @@ public class CheckMonitoredTrip implements Runnable {
                 LOG.info("Trip not checked in at least an {} minutes. Checking.", overHourCheckThresholdMinutes);
                 return false;
             }
-        } else if (trip.isOneTime() && trip.itinerary.hasEnded()) {
-            // Don't monitor one-time trips that occur in the past.
-            return true;
         } else {
             // It's less than an hour until the trip time, start more frequent trip checks (about every 15 minutes).
             if (minutesSinceLastCheck >= 15) {
