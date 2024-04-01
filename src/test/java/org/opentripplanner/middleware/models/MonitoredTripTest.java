@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.models;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -14,8 +13,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.MODE_PARAM;
 
 /**
@@ -59,7 +58,7 @@ class MonitoredTripTest {
         String[] modeParams = paramsMap.get(MODE_PARAM).split(",");
         Set<String> actualModeParams = Set.of(modeParams);
 
-        Assertions.assertEquals(expectedModeParams, actualModeParams,
+        assertEquals(expectedModeParams, actualModeParams,
             String.format("This set of mode params %s is incorrect for access mode %s.", actualModeParams, accessLeg.mode)
         );
     }
@@ -113,29 +112,42 @@ class MonitoredTripTest {
         }
     }
 
-    @Test
-    void canDetermineOneTimeTrips() {
-        MonitoredTrip recurrentTrip = new MonitoredTrip();
-        recurrentTrip.tuesday = true;
-        assertFalse(recurrentTrip.isOneTime());
-
-        MonitoredTrip oneTimeTrip = new MonitoredTrip();
-        assertTrue(oneTimeTrip.isOneTime());
+    @ParameterizedTest
+    @MethodSource("createOneTimeTripCases")
+    void canDetermineOneTimeTrips(MonitoredTrip trip, boolean isOneTime) {
+        assertEquals(isOneTime, trip.isOneTime());
     }
 
-    @Test
-    void canDetermineInactiveTrips() {
+    private static Stream<Arguments> createOneTimeTripCases() {
+        return Stream.of(
+            Arguments.of(createRecurrentTrip(), false),
+            Arguments.of(new MonitoredTrip(), true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createInactiveTripCases")
+    void canDetermineInactiveTrips(MonitoredTrip trip, boolean isInactive) {
+        assertEquals(isInactive, trip.isInactive());
+    }
+
+    private static Stream<Arguments> createInactiveTripCases() {
+        return Stream.of(
+            Arguments.of(createRecurrentTrip(), false),
+            Arguments.of(new MonitoredTrip(), false),
+            Arguments.of(createInactiveTrip(), true)
+        );
+    }
+
+    private static MonitoredTrip createRecurrentTrip() {
         MonitoredTrip recurrentTrip = new MonitoredTrip();
-        // trip isActive field is true by default
         recurrentTrip.tuesday = true;
-        assertFalse(recurrentTrip.isInactive());
+        return recurrentTrip;
+    }
 
-        MonitoredTrip oneTimeTrip = new MonitoredTrip();
-        // trip isActive field is true by default
-        assertFalse(oneTimeTrip.isInactive());
-
+    private static MonitoredTrip createInactiveTrip() {
         MonitoredTrip inactiveTrip = new MonitoredTrip();
         inactiveTrip.isActive = false;
-        assertTrue(inactiveTrip.isInactive());
+        return inactiveTrip;
     }
 }
