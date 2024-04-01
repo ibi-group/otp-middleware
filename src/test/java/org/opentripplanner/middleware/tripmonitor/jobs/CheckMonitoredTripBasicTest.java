@@ -32,7 +32,7 @@ class CheckMonitoredTripBasicTest {
         if (args.isRecurring) {
             setMonitoredDaysForTest(trip);
         }
-        if (args.withJourneyState) {
+        if (args.pastState) {
             trip.journeyState.tripStatus = TripStatus.PAST_TRIP;
         }
         assertEquals(
@@ -54,7 +54,9 @@ class CheckMonitoredTripBasicTest {
             new SkipMonitoringTestArgs(360 + ONE_DAY_IN_SECONDS, 500 + ONE_DAY_IN_SECONDS, true, true,
                 "Should skip recurring trip not monitored today but that should be monitored if tomorrow."),
             new SkipMonitoringTestArgs(-300, -5, false, false, "Should not skip monitoring one-time trip in the past with no journey state"),
-            new SkipMonitoringTestArgs(-300, -5, false, true, true, "Should skip monitoring one-time trip in the past with journey state")
+            new SkipMonitoringTestArgs(-300, -5, false, true, true, "Should skip monitoring one-time trip in the past with in-past status"),
+            new SkipMonitoringTestArgs(360 - ONE_DAY_IN_SECONDS, 500 - ONE_DAY_IN_SECONDS, true, true, false,
+                "Should not skip monitoring upcoming recurring trip with in-past status")
         );
     }
 

@@ -611,7 +611,7 @@ public class CheckMonitoredTrip implements Runnable {
         // checked here to avoid incorrectly skipping trips that are monitored on a single day of the week, but which
         // may have not had a matching itinerary on that day for one week (even though the trip could be possible the
         // next week).
-        if (previousJourneyState.tripStatus == TripStatus.PAST_TRIP) {
+        if (trip.isOneTime() && previousJourneyState.tripStatus == TripStatus.PAST_TRIP) {
             LOG.info("Skipping: One-time trip is in the past.");
             return true;
         }

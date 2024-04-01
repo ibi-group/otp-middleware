@@ -16,20 +16,20 @@ class SkipMonitoringTestArgs {
      */
     public final boolean result;
 
-    public final boolean withJourneyState;
+    public final boolean pastState;
 
     public SkipMonitoringTestArgs(
         int tripStartOffsetSecs,
         int tripEndOffsetSecs,
         boolean isRecurring,
-        boolean withJourneyState,
+        boolean pastState,
         boolean result,
         String message
     ) {
         this.tripStartOffsetSecs = tripStartOffsetSecs;
         this.tripEndOffsetSecs = tripEndOffsetSecs;
         this.isRecurring = isRecurring;
-        this.withJourneyState = withJourneyState;
+        this.pastState = pastState;
         this.message = message;
         this.result = result;
     }
