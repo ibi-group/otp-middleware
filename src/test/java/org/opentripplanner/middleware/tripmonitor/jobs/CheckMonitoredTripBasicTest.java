@@ -103,8 +103,9 @@ class CheckMonitoredTripBasicTest {
     @Test
     void shouldReportOneTimeTripInPastAsCompleted() throws CloneNotSupportedException {
         MonitoredTrip trip = makeMonitoredTripFromNow(-900, -300);
-        CheckMonitoredTrip checker = new CheckMonitoredTrip(trip);
-        checker.checkOtpAndUpdateTripStatus();
+        trip.journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
+
+        new CheckMonitoredTrip(trip).checkOtpAndUpdateTripStatus();
         assertEquals(TripStatus.PAST_TRIP, trip.journeyState.tripStatus);
     }
 
