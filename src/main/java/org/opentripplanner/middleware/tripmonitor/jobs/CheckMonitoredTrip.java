@@ -219,7 +219,7 @@ public class CheckMonitoredTrip implements Runnable {
      *          match. Some additional checks should be performed to make sure the itinerary really isn't possible by
      *          verifying that the same transit schedule/routes exist and that the street network is the same
      */
-    public boolean makeOTPRequestAndUpdateMatchingItineraryInternal() {
+    private boolean makeOTPRequestAndUpdateMatchingItineraryInternal() {
         OtpDispatcherResponse otpDispatcherResponse;
         try {
             // Generate the appropriate OTP query params for the trip for the current check by replacing the date query
