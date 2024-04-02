@@ -164,7 +164,7 @@ public class CheckMonitoredTrip implements Runnable {
         boolean isFirstTimeCheckWithinLeadMonitoringTime = isFirstTimeCheckWithinLeadMonitoringTime();
         boolean userWantsInitialReminder = !trip.snoozed && trip.notifyAtLeadingInterval;
 
-        if (!trip.isInactive() && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder) {
+        if (trip.isActive && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder) {
             initialReminderNotification = TripMonitorNotification.createInitialReminderNotification(
                 trip,
                 getOtpUserLocale()
@@ -590,7 +590,7 @@ public class CheckMonitoredTrip implements Runnable {
 
     public boolean shouldSkipMonitoredTripCheck(boolean persist) throws Exception {
         // before anything else, return true if the trip is inactive
-        if (trip.isInactive()) {
+        if (!trip.isActive) {
             LOG.info("Skipping: Trip is inactive.");
             return true;
         }

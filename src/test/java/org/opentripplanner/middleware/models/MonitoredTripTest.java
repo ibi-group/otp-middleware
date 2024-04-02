@@ -125,29 +125,9 @@ class MonitoredTripTest {
         );
     }
 
-    @ParameterizedTest
-    @MethodSource("createInactiveTripCases")
-    void canDetermineInactiveTrips(MonitoredTrip trip, boolean isInactive) {
-        assertEquals(isInactive, trip.isInactive());
-    }
-
-    private static Stream<Arguments> createInactiveTripCases() {
-        return Stream.of(
-            Arguments.of(createRecurrentTrip(), false),
-            Arguments.of(new MonitoredTrip(), false),
-            Arguments.of(createInactiveTrip(), true)
-        );
-    }
-
     private static MonitoredTrip createRecurrentTrip() {
         MonitoredTrip recurrentTrip = new MonitoredTrip();
         recurrentTrip.tuesday = true;
         return recurrentTrip;
-    }
-
-    private static MonitoredTrip createInactiveTrip() {
-        MonitoredTrip inactiveTrip = new MonitoredTrip();
-        inactiveTrip.isActive = false;
-        return inactiveTrip;
     }
 }

@@ -293,13 +293,6 @@ public class MonitoredTrip extends Model {
         return this;
     }
 
-    /**
-     * Returns true if the trip is not active.
-     */
-    public boolean isInactive() {
-        return !isActive;
-    }
-
     public boolean isActiveOnDate(ZonedDateTime zonedDateTime) {
         DayOfWeek dayOfWeek = zonedDateTime.getDayOfWeek();
         // TODO: Maybe we should just refactor DOW to be a list of ints (TIntList).
