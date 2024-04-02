@@ -36,7 +36,7 @@ class CheckMonitoredTripBasicTest {
             trip.journeyState.tripStatus = TripStatus.PAST_TRIP;
         }
         assertEquals(
-            args.result,
+            args.expectedResult,
             new CheckMonitoredTrip(trip).shouldSkipMonitoredTripCheck(false),
             args.message
         );

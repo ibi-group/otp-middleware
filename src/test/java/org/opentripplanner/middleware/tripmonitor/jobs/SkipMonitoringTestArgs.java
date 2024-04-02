@@ -14,8 +14,9 @@ class SkipMonitoringTestArgs {
      * If true, it is expected that the {@link CheckMonitoredTripTest#createSkipTripTestCases()} method should
      * calculate that the given trip should be skipped.
      */
-    public final boolean result;
+    public final boolean expectedResult;
 
+    /** Whether a given trip will be set in the past. */
     public final boolean pastState;
 
     public SkipMonitoringTestArgs(
@@ -23,7 +24,7 @@ class SkipMonitoringTestArgs {
         int tripEndOffsetSecs,
         boolean isRecurring,
         boolean pastState,
-        boolean result,
+        boolean expectedResult,
         String message
     ) {
         this.tripStartOffsetSecs = tripStartOffsetSecs;
@@ -31,16 +32,16 @@ class SkipMonitoringTestArgs {
         this.isRecurring = isRecurring;
         this.pastState = pastState;
         this.message = message;
-        this.result = result;
+        this.expectedResult = expectedResult;
     }
 
     public SkipMonitoringTestArgs(
         int tripStartOffsetSecs,
         int tripEndOffsetSecs,
         boolean isRecurring,
-        boolean result,
+        boolean expectedResult,
         String message
     ) {
-        this(tripStartOffsetSecs, tripEndOffsetSecs, isRecurring, false, result, message);
+        this(tripStartOffsetSecs, tripEndOffsetSecs, isRecurring, false, expectedResult, message);
     }
 }
