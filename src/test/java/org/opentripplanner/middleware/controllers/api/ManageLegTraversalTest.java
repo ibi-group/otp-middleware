@@ -10,6 +10,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.triptracker.AlignedStep;
 import org.opentripplanner.middleware.triptracker.LegSegment;
 import org.opentripplanner.middleware.triptracker.ManageLegTraversal;
 import org.opentripplanner.middleware.triptracker.StepSegment;
@@ -36,7 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.getInstruction;
+import static org.opentripplanner.middleware.triptracker.TripInstruction.alignPositionToStep;
+import static org.opentripplanner.middleware.triptracker.TripInstruction.buildInstruction;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.getStepSegments;
 import static org.opentripplanner.middleware.triptracker.TripStatus.getSegmentTimeInterval;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
@@ -131,11 +133,11 @@ public class ManageLegTraversalTest {
     @ParameterizedTest
     @MethodSource("createTurnByTurnTrace")
     void canTrackTurnByTurn(LegSegment activeLegSegment, String expectedInstruction) {
-        assertEquals(expectedInstruction, TripInstruction.createInstruction(
-            busStopToJusticeCenterItinerary.legs.get(0),
-            activeLegSegment,
-            new Coordinates(busStopToJusticeCenterItinerary.legs.get(0).from)
-        ));
+        TravelerPosition travelerPosition = new TravelerPosition();
+        travelerPosition.expectedLeg = busStopToJusticeCenterItinerary.legs.get(0);
+        travelerPosition.legSegmentFromTime = activeLegSegment;
+        travelerPosition.currentPosition = new Coordinates(busStopToJusticeCenterItinerary.legs.get(0).from);
+        assertEquals(expectedInstruction, buildInstruction(alignPositionToStep(travelerPosition)));
     }
 
     private static Stream<Arguments> createTurnByTurnTrace() {
@@ -153,34 +155,35 @@ public class ManageLegTraversalTest {
             -1
         );
         double firstStepBearing = calculateBearing(firstStepSegment.start, firstStepSegment.end);
+        double secondStepBearing = calculateBearing(secondStep.start, secondStep.end);
         double fourthStepBearing = calculateBearing(fourthStep.start, fourthStep.end);
         return Stream.of(
             // On step change.
             Arguments.of(new LegSegment(
                 firstStepSegment.start, firstStepSegment.end),
-                getInstruction(0, walkSteps.get(1)
+                TripInstruction.buildInstruction(new AlignedStep(0, walkSteps.get(1))
             )),
             Arguments.of(new LegSegment(
                 secondStep.start, secondStep.end),
-                getInstruction(0, walkSteps.get(2)
+                TripInstruction.buildInstruction(new AlignedStep(0, walkSteps.get(2))
             )),
             Arguments.of(new LegSegment(
                 thirdStep.start, thirdStep.end),
-                getInstruction(0, walkSteps.get(3)
+                TripInstruction.buildInstruction(new AlignedStep(0, walkSteps.get(3))
             )),
             Arguments.of(new LegSegment(
                 fourthStep.start, fourthStep.end),
-                getInstruction(0, walkSteps.get(4)
+                TripInstruction.buildInstruction(new AlignedStep(0, walkSteps.get(4))
             )),
             // At start of trip.
             Arguments.of(createLegSegment(
                 firstStepSegment.start, 0, firstStepBearing, true),
-                getInstruction(1, walkSteps.get(0)
+                TripInstruction.buildInstruction(new AlignedStep(1, walkSteps.get(0))
             )),
             // Pass first step.
             Arguments.of(createLegSegment(
                 firstStepSegment.end, 1, firstStepBearing, false),
-                getInstruction(9, walkSteps.get(2)
+                TripInstruction.buildInstruction(new AlignedStep(9, walkSteps.get(2))
             )),
             // Pass last step.
             Arguments.of(createLegSegment(
@@ -190,7 +193,12 @@ public class ManageLegTraversalTest {
             // Approaching last step (at 90 degrees to reduce confidence).
             Arguments.of(createLegSegment(
                 fourthStep.end, 2, fourthStepBearing + 90, true),
-                getInstruction(8, walkSteps.get(4)
+                TripInstruction.buildInstruction(new AlignedStep(8, walkSteps.get(4))
+            )),
+            // Approaching nearest step.
+            Arguments.of(createLegSegment(
+                secondStep.end, 3, secondStepBearing, true),
+                TripInstruction.buildInstruction(new AlignedStep(2, walkSteps.get(1))
             ))
         );
     }
@@ -205,7 +213,7 @@ public class ManageLegTraversalTest {
             bearing = bearing - 180;
         }
         Coordinates end = createDestinationPoint(point, distanceInMeters, bearing);
-        Coordinates start = createDestinationPoint(point,distanceInMeters + 5, bearing);
+        Coordinates start = createDestinationPoint(point, distanceInMeters + 5, bearing);
         return new LegSegment(start, end);
     }
 

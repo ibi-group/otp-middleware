@@ -58,9 +58,6 @@ public class Coordinates {
 
     @Override
     public String toString() {
-        return "Coordinates{" +
-            "lon=" + lon +
-            ", lat=" + lat +
-            '}';
+        return String.format("Coordinates{lon=%s, lat=%s}", lon, lat);
     }
 }

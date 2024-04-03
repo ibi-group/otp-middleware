@@ -27,7 +27,7 @@ public class StepSegment extends Segment {
     }
 
     /**
-     * Used to hold the nearest step to the traveler's position, and it's index. The end coordinate and distance are
+     * Used to hold the nearest step to the traveler's position, and its index. The end coordinate and distance are
      * unknown and irrelevant to downstream processes.
      *
      * @param step The step nearest to the traveler's position.

@@ -16,10 +16,10 @@ public class TravelerPosition {
     /** The leg the traveler is expected to be on. */
     public Leg expectedLeg;
 
-    /** The expected traveler position, based on time. */
+    /** The expected traveler position based on time. */
     public LegSegment legSegmentFromTime;
 
-    /** The expected traveler position, based on coordinates. */
+    /** The expected traveler position based on position. */
     public LegSegment legSegmentFromPosition;
 
     /** Traveler current coordinates. */
@@ -28,8 +28,8 @@ public class TravelerPosition {
     /** Traveler current time. */
     public Instant currentTime;
 
-    private TravelerPosition() {
-        // Disable the default no-arg constructor.
+    public TravelerPosition() {
+        // Used for testing.
     }
 
     public TravelerPosition(TrackedJourney trackedJourney, Itinerary itinerary) {
