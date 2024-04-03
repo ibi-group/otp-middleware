@@ -16,7 +16,7 @@
 <div>
     <p>
         <small>
-            You're receiving this email because you're subscribed to notifications through ${OTP_UI_NAME}. You can manage that subscription <a href="${OTP_UI_URL}/#/account">here</a>.
+            You're receiving this email because you're subscribed to notifications through ${OTP_UI_NAME}. You can manage that subscription <a href="${OTP_UI_URL}${TRIPS_PATH}/${tripId}">here</a>.
         </small>
     </p>
 </div>
