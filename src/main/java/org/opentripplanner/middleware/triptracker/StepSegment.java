@@ -3,8 +3,6 @@ package org.opentripplanner.middleware.triptracker;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.utils.Coordinates;
 
-import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
-
 public class StepSegment extends Segment {
 
     /** Distance in meters between start and end coordinates */
@@ -12,19 +10,6 @@ public class StepSegment extends Segment {
 
     /** Index of step within the trip steps. */
     public final int stepIndex;
-
-    /**
-     * Used to create a step segment.
-     *
-     * @param start The lat/lon of the current step.
-     * @param end The lat/lon of the next step.
-     * @param stepIndex The current step index.
-     */
-    public StepSegment(Coordinates start, Coordinates end, int stepIndex) {
-        super(start, end);
-        this.distance = getDistance(start, end);
-        this.stepIndex = stepIndex;
-    }
 
     /**
      * Used to hold the nearest step to the traveler's position, and its index. The end coordinate and distance are

@@ -26,17 +26,6 @@ public class LegSegment extends Segment {
         this.distance = getDistance(start, end);
     }
 
-    /**
-     * Used for testing only.
-     */
-    public LegSegment(Coordinates start, Coordinates end) {
-        super(start, end);
-        this.timeInSegment = -1;
-        this.mode = null;
-        this.cumulativeTime = -1;
-        this.distance = -1;
-    }
-
     @Override
     public String toString() {
         return "LegSegment{" +

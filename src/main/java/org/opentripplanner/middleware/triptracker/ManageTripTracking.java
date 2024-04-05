@@ -47,7 +47,7 @@ public class ManageTripTracking {
                     // Provide response.
                     return new StartTrackingResponse(
                         TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
-                        TripInstruction.getInstruction(tripStatus, travelerPosition),
+                        TravelerLocator.getInstruction(tripStatus, travelerPosition, true),
                         trackedJourney.id,
                         tripStatus.name()
                     );
@@ -82,7 +82,7 @@ public class ManageTripTracking {
                         TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
                         // Provide response.
                         return new UpdateTrackingResponse(
-                            TripInstruction.getInstruction(tripStatus, travelerPosition),
+                            TravelerLocator.getInstruction(tripStatus, travelerPosition, false),
                             tripStatus.name()
                         );
                     } catch (UnsupportedOperationException e) {

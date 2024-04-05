@@ -269,9 +269,10 @@ The special E2E client settings should be defined in `env.yml`:
 | TRIP_TRACKING_SUBWAY_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by subway is considered on track. |
 | TRIP_TRACKING_TRAM_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by tram is considered on track. |
 | TRIP_TRACKING_RAIL_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by rail is considered on track. |
-| TRIP_INSTRUCTION_IMMEDIATE_PREFIX_DISTANCE | integer | Optional | 2 | The distance under which the immediate prefix will be applied. |
+| TRIP_INSTRUCTION_ARRIVED_PREFIX | string | Optional | ARRIVED:  | The prefix to use when at destination. |
+| TRIP_INSTRUCTION_IMMEDIATE_DISTANCE | integer | Optional | 2 | The distance under which an immediate instruction is given. |
 | TRIP_INSTRUCTION_IMMEDIATE_PREFIX | string | Optional | IMMEDIATE:  | The prefix to use when on an instruction. |
-| TRIP_INSTRUCTION_UPCOMING_PREFIX_DISTANCE | integer | Optional | 10 | The distance under which the upcoming prefix will be applied. |
+| TRIP_INSTRUCTION_UPCOMING_DISTANCE | integer | Optional | 10 | The distance under which an upcoming instruction is given. |
 | TRIP_INSTRUCTION_UPCOMING_PREFIX | string | Optional | UPCOMING:  | The prefix to use when nearing an instruction. |
 | TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |
 | TWILIO_AUTH_TOKEN | string | Optional | your-auth-token | Twilio settings available at: https://twilio.com/user/account |

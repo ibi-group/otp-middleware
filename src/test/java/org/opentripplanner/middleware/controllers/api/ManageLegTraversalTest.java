@@ -7,16 +7,14 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
-import org.opentripplanner.middleware.triptracker.AlignedStep;
+import org.opentripplanner.middleware.triptracker.TripInstruction;
 import org.opentripplanner.middleware.triptracker.LegSegment;
 import org.opentripplanner.middleware.triptracker.ManageLegTraversal;
-import org.opentripplanner.middleware.triptracker.StepSegment;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
-import org.opentripplanner.middleware.triptracker.TripInstruction;
+import org.opentripplanner.middleware.triptracker.TravelerLocator;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -36,13 +34,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.alignTravelerToTrip;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.alignPositionToStep;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.buildInstruction;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.getStepSegments;
 import static org.opentripplanner.middleware.triptracker.TripStatus.getSegmentTimeInterval;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
-import static org.opentripplanner.middleware.utils.GeometryUtils.createDestinationPoint;
+import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
 public class ManageLegTraversalTest {
 
@@ -132,89 +128,107 @@ public class ManageLegTraversalTest {
 
     @ParameterizedTest
     @MethodSource("createTurnByTurnTrace")
-    void canTrackTurnByTurn(LegSegment activeLegSegment, String expectedInstruction) {
-        TravelerPosition travelerPosition = new TravelerPosition();
-        travelerPosition.expectedLeg = busStopToJusticeCenterItinerary.legs.get(0);
-        travelerPosition.legSegmentFromTime = activeLegSegment;
-        travelerPosition.currentPosition = new Coordinates(busStopToJusticeCenterItinerary.legs.get(0).from);
-        assertEquals(expectedInstruction, buildInstruction(alignPositionToStep(travelerPosition)));
+    void canTrackTurnByTurn(
+        Coordinates position,
+        String expectedInstruction,
+        boolean isStartOfTrip,
+        String message
+    ) {
+        TravelerPosition travelerPosition = new TravelerPosition(
+            busStopToJusticeCenterItinerary.legs.get(0),
+            position
+        );
+        TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
+        if (tripInstruction != null) {
+            assertEquals(expectedInstruction, tripInstruction.build(), message);
+        } else {
+            assertEquals(expectedInstruction, NO_INSTRUCTION, message);
+        }
     }
 
     private static Stream<Arguments> createTurnByTurnTrace() {
-        Leg walkLeg = busStopToJusticeCenterItinerary.legs.get(0);
-        List<Step> walkSteps = walkLeg.steps;
-        Step lastStep = walkSteps.get(walkSteps.size()-1);
-        List<StepSegment> stepSegments = getStepSegments(walkLeg);
-        StepSegment firstStepSegment = stepSegments.get(0);
-        StepSegment secondStep = stepSegments.get(1);
-        StepSegment thirdStep = stepSegments.get(2);
-        StepSegment fourthStep = stepSegments.get(3);
-        StepSegment lastStepSegment = new StepSegment(
-            new Coordinates(lastStep),
-            new Coordinates(lastStep),
-            -1
-        );
-        double firstStepBearing = calculateBearing(firstStepSegment.start, firstStepSegment.end);
-        double secondStepBearing = calculateBearing(secondStep.start, secondStep.end);
-        double fourthStepBearing = calculateBearing(fourthStep.start, fourthStep.end);
+        List<Step> walkSteps = busStopToJusticeCenterItinerary.legs.get(0).steps;
+        Coordinates originCoords = new Coordinates(busStopToJusticeCenterItinerary.legs.get(0).from);
+        Step stepOne = walkSteps.get(0);
+        Coordinates stepOneCoords = new Coordinates(stepOne);
+        Step stepTwo = walkSteps.get(1);
+        Coordinates stepTwoCoords = new Coordinates(stepTwo);
+        Step stepThree = walkSteps.get(2);
+        Coordinates stepThreeCoords = new Coordinates(stepThree);
+        Step stepFour = walkSteps.get(3);
+        Coordinates stepFourCoords = new Coordinates(stepFour);
+        Step stepFive = walkSteps.get(4);
+        Coordinates stepFiveCoords = new Coordinates(stepFive);
+        Coordinates destinationCoords = new Coordinates(busStopToJusticeCenterItinerary.legs.get(0).to);
+        String destinationName = busStopToJusticeCenterItinerary.legs.get(0).to.name;
         return Stream.of(
-            // On step change.
-            Arguments.of(new LegSegment(
-                firstStepSegment.start, firstStepSegment.end),
-                TripInstruction.buildInstruction(new AlignedStep(0, walkSteps.get(1))
-            )),
-            Arguments.of(new LegSegment(
-                secondStep.start, secondStep.end),
-                TripInstruction.buildInstruction(new AlignedStep(0, walkSteps.get(2))
-            )),
-            Arguments.of(new LegSegment(
-                thirdStep.start, thirdStep.end),
-                TripInstruction.buildInstruction(new AlignedStep(0, walkSteps.get(3))
-            )),
-            Arguments.of(new LegSegment(
-                fourthStep.start, fourthStep.end),
-                TripInstruction.buildInstruction(new AlignedStep(0, walkSteps.get(4))
-            )),
-            // At start of trip.
-            Arguments.of(createLegSegment(
-                firstStepSegment.start, 0, firstStepBearing, true),
-                TripInstruction.buildInstruction(new AlignedStep(1, walkSteps.get(0))
-            )),
-            // Pass first step.
-            Arguments.of(createLegSegment(
-                firstStepSegment.end, 1, firstStepBearing, false),
-                TripInstruction.buildInstruction(new AlignedStep(9, walkSteps.get(2))
-            )),
-            // Pass last step.
-            Arguments.of(createLegSegment(
-                lastStepSegment.start, 10, 315, false),
-                NO_INSTRUCTION
+            Arguments.of(
+                stepTwoCoords,
+                new TripInstruction(0, stepTwo).build(),
+                false,
+                "Approach the instruction for the second step."
             ),
-            // Approaching last step (at 90 degrees to reduce confidence).
-            Arguments.of(createLegSegment(
-                fourthStep.end, 2, fourthStepBearing + 90, true),
-                TripInstruction.buildInstruction(new AlignedStep(8, walkSteps.get(4))
-            )),
-            // Approaching nearest step.
-            Arguments.of(createLegSegment(
-                secondStep.end, 3, secondStepBearing, true),
-                TripInstruction.buildInstruction(new AlignedStep(2, walkSteps.get(1))
-            ))
+            Arguments.of(
+                stepThreeCoords,
+                new TripInstruction(0, stepThree).build(),
+                false,
+                "Approach the instruction for the third step."
+            ),
+            Arguments.of(
+                stepFourCoords,
+                new TripInstruction(0, stepFour).build(),
+                false,
+                "Approach the instruction for the fourth step."
+            ),
+            Arguments.of(
+                stepFiveCoords,
+                new TripInstruction(0, stepFive).build(),
+                false,
+                "Approach the instruction for the fifth step."
+            ),
+            Arguments.of(
+                originCoords,
+                new TripInstruction(1, stepOne).build(),
+                true,
+                "Just started the trip and near to the instruction for the first step."
+            ),
+            Arguments.of(
+                createPoint(originCoords, 1, calculateBearing(originCoords, stepOneCoords)),
+                new TripInstruction(1, stepOne).build(),
+                false,
+                "Already into trip and approaching the instruction for the first step."
+            ),
+            Arguments.of(
+                createPoint(stepOneCoords, 55, calculateBearing(stepOneCoords, stepTwoCoords)),
+                new TripInstruction(9, stepTwo).build(),
+                false,
+                "Passed the first step and approaching the instruction for the second step."
+            ),
+            Arguments.of(
+                createPoint(stepFiveCoords, 3, calculateBearing(stepFiveCoords, destinationCoords)),
+                NO_INSTRUCTION,
+                false,
+                "Passed the last step and therefore the last available instruction."
+            ),
+            Arguments.of(
+                createPoint(stepFourCoords, 3, calculateBearing(stepFourCoords, stepFiveCoords)),
+                new TripInstruction(8, stepFive).build(),
+                false,
+                "Approaching the instruction for the last step."
+            ),
+            Arguments.of(
+                destinationCoords,
+                new TripInstruction(2, destinationName).build(),
+                false,
+                "Arrived at destination."
+            ),
+            Arguments.of(
+                createPoint(stepFiveCoords, 190, calculateBearing(stepFiveCoords, destinationCoords)),
+                new TripInstruction(9, destinationName).build(),
+                false,
+                "Approaching the destination."
+            )
         );
-    }
-
-    private static LegSegment createLegSegment(
-        Coordinates point,
-        double distanceInMeters,
-        double bearing,
-        boolean oppositeDirection
-    ) {
-        if (oppositeDirection) {
-            bearing = bearing - 180;
-        }
-        Coordinates end = createDestinationPoint(point, distanceInMeters, bearing);
-        Coordinates start = createDestinationPoint(point, distanceInMeters + 5, bearing);
-        return new LegSegment(start, end);
     }
 
     @Test
@@ -248,14 +262,38 @@ public class ManageLegTraversalTest {
                     )
                 );
                 TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
-                assertEquals(
-                    TripStatus.getTripStatus(travelerPosition).name(),
-                    TripStatus.ON_SCHEDULE.name()
-                );
+                TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
+                assertEquals(tripStatus.name(), TripStatus.ON_SCHEDULE.name());
                 cumulativeTravelTime += legSegment.timeInSegment;
                 currentTime = startOfTrip.plus(getSecondsToMilliseconds(cumulativeTravelTime), ChronoUnit.MILLIS);
             }
         }
+    }
+
+    @Test
+    void canTrackTripTurnByTurn() {
+        ZonedDateTime startOfTrip = ZonedDateTime.ofInstant(
+            busStopToJusticeCenterItinerary.legs.get(0).startTime.toInstant(),
+            DateTimeUtils.getOtpZoneId()
+        );
+        Coordinates point = new Coordinates(
+            busStopToJusticeCenterItinerary.legs.get(0).steps.get(0).lat,
+            busStopToJusticeCenterItinerary.legs.get(0).steps.get(0).lon
+        );
+        Coordinates start = createPoint(point, 1500, 90);
+
+        TrackedJourney trackedJourney = new TrackedJourney();
+        trackedJourney.locations = List.of(
+            new TrackingLocation(
+                start.lat,
+                start.lon,
+                new Date(startOfTrip.toInstant().toEpochMilli())
+            )
+        );
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
+        TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
+        String instruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        System.out.println(instruction);
     }
 
     @Test

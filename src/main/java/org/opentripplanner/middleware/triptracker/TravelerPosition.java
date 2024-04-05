@@ -28,10 +28,6 @@ public class TravelerPosition {
     /** Traveler current time. */
     public Instant currentTime;
 
-    public TravelerPosition() {
-        // Used for testing.
-    }
-
     public TravelerPosition(TrackedJourney trackedJourney, Itinerary itinerary) {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
         currentTime = lastLocation.timestamp.toInstant();
@@ -39,5 +35,11 @@ public class TravelerPosition {
         expectedLeg = getExpectedLeg(lastLocation.timestamp.toInstant(), itinerary);
         legSegmentFromTime = getSegmentFromTime(lastLocation.timestamp.toInstant(), itinerary);
         legSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
+    }
+
+    /** Used for unit testing. */
+    public TravelerPosition(Leg expectedLeg, Coordinates currentPosition) {
+        this.expectedLeg = expectedLeg;
+        this.currentPosition = currentPosition;
     }
 }

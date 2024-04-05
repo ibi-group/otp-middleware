@@ -63,23 +63,9 @@ public class GeometryUtils {
     }
 
     /**
-     * Is the point between the start and end coordinates.
-     */
-    public static boolean isPointBetween(Coordinates start, Coordinates end, Coordinates location) {
-        double startToLocationDistance = getDistance(start, location);
-        double startToEndDistance = getDistance(start, end);
-        double endToLocationDistance = getDistance(end, location);
-        double totalDistanceViaLocation = startToLocationDistance + endToLocationDistance;
-
-        // Check if the sum of distances from start to point and end to point
-        // is approximately equal to the distance from start to end.
-        return Math.abs(totalDistanceViaLocation - startToEndDistance) < 1;
-    }
-
-    /**
      * Creates a lat/lon point at a number of meters on a given bearing from the start point.
      */
-    public static Coordinates createDestinationPoint(Coordinates start, double distanceInMeters, double bearing) {
+    public static Coordinates createPoint(Coordinates start, double distanceInMeters, double bearing) {
         // Convert latitude and longitude from degrees to radians
         double startLat = Math.toRadians(start.lat);
         double startLon = Math.toRadians(start.lon);
