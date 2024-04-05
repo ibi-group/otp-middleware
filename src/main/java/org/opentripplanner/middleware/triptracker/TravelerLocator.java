@@ -75,24 +75,27 @@ public class TravelerLocator {
             return new TripInstruction(distanceToDestination, travelerPosition.expectedLeg.to.name);
         }
 
-        StepSegment nearestStep = getNearestStep(travelerPosition.expectedLeg, travelerPosition.currentPosition);
+        int nearestStepIndex = getNearestStep(travelerPosition.expectedLeg, travelerPosition.currentPosition);
+        Step nearestStep = getStep(travelerPosition.expectedLeg.steps, nearestStepIndex);
         if (nearestStep == null) {
             return null;
         }
 
-        if (isLastStep(nearestStep.stepIndex, travelerPosition.expectedLeg)) {
+        Coordinates nearestStepCoords = new Coordinates(nearestStep);
+
+        if (isLastStep(nearestStepIndex, travelerPosition.expectedLeg)) {
             // Last step.
-            if (isStepNearerToDestination(nearestStep, travelerPosition.currentPosition, destination)) {
+            if (isStepNearerToDestination(nearestStepCoords, travelerPosition.currentPosition, destination)) {
                 // Assuming traveler is approaching the last step.
                 return new TripInstruction(
-                    getDistance(travelerPosition.currentPosition, nearestStep.start),
-                    getStep(travelerPosition.expectedLeg.steps, nearestStep.stepIndex)
+                    getDistance(travelerPosition.currentPosition, nearestStepCoords),
+                    getStep(travelerPosition.expectedLeg.steps, nearestStepIndex)
                 );
             }
         } else {
-            Step nextStep = travelerPosition.expectedLeg.steps.get(nearestStep.stepIndex + 1);
+            Step nextStep = travelerPosition.expectedLeg.steps.get(nearestStepIndex + 1);
             Coordinates nextStepCoordinates = new Coordinates(nextStep);
-            if (!isStepNearerToDestination(nearestStep, travelerPosition.currentPosition, nextStepCoordinates)) {
+            if (!isStepNearerToDestination(nearestStepCoords, travelerPosition.currentPosition, nextStepCoordinates)) {
                 // Assuming traveler is passed the nearest step.
                 return new TripInstruction(
                     getDistance(travelerPosition.currentPosition, nextStepCoordinates),
@@ -101,8 +104,8 @@ public class TravelerLocator {
             } else {
                 // Assuming traveler is approaching (or on) the nearest step.
                 return new TripInstruction(
-                    getDistance(travelerPosition.currentPosition, nearestStep.start),
-                    getStep(travelerPosition.expectedLeg.steps, nearestStep.stepIndex)
+                    getDistance(travelerPosition.currentPosition, nearestStepCoords),
+                    getStep(travelerPosition.expectedLeg.steps, nearestStepIndex)
                 );
             }
         }
@@ -120,11 +123,11 @@ public class TravelerLocator {
      * Determine if the step is near to the destination than the traveler.
      */
     private static boolean isStepNearerToDestination(
-        StepSegment nearestStep,
+        Coordinates nearestStepCoords,
         Coordinates position,
         Coordinates destination
     ) {
-        double distanceFromNearestStepToDestination = getDistance(nearestStep.start, destination);
+        double distanceFromNearestStepToDestination = getDistance(nearestStepCoords, destination);
         double distanceFromPositionToDestination = getDistance(position, destination);
         return distanceFromNearestStepToDestination <= distanceFromPositionToDestination;
     }
@@ -134,25 +137,24 @@ public class TravelerLocator {
      */
     @Nullable
     private static Step getStep(List<Step> steps, int stepIndex) {
-        return (stepIndex <= steps.size())
+        return (stepIndex != -1 && stepIndex <= steps.size())
             ? steps.get(stepIndex)
             : null;
     }
 
     /**
-     * Get the step that is nearest to position.
+     * Get the step index that is nearest to position.
      */
-    @Nullable
-    private static StepSegment getNearestStep(Leg leg, Coordinates position) {
-        StepSegment nearest = null;
+    private static int getNearestStep(Leg leg, Coordinates position) {
+        int nearestStepIndex = -1;
         double nearestDistance = Double.MAX_VALUE;
         for (int i = 0; i < leg.steps.size(); i++) {
             double distance = getDistance(position, new Coordinates(leg.steps.get(i)));
             if (distance < nearestDistance) {
-                nearest = new StepSegment(leg.steps.get(i), i);
+                nearestStepIndex = i;
                 nearestDistance = distance;
             }
         }
-        return nearest;
+        return nearestStepIndex;
     }
 }
