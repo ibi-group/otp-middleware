@@ -10,7 +10,7 @@ import java.util.List;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
-import static org.opentripplanner.middleware.utils.GeometryUtils.isFirstPositionNearestToTarget;
+import static org.opentripplanner.middleware.utils.GeometryUtils.isFirstArgumentNearestToTarget;
 
 /**
  * Locate the traveler in relation to the nearest step or destination and provide the appropriate instructions.
@@ -30,15 +30,32 @@ public class TravelerLocator {
         boolean isStartOfTrip
     ) {
         if (hasRequiredTripStatus(tripStatus) &&
-            travelerPosition.expectedLeg != null &&
-            travelerPosition.expectedLeg.mode.equalsIgnoreCase("walk")
+            hasRequiredWalkLeg(travelerPosition)
         ) {
             TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
             if (tripInstruction != null) {
                 return tripInstruction.build();
             }
         }
+
+        if (tripStatus.equals(TripStatus.DEVIATED) &&
+            hasRequiredWalkLeg(travelerPosition)
+        ) {
+            TripInstruction tripInstruction = getBackOnTrack(travelerPosition);
+            if (tripInstruction != null) {
+                return tripInstruction.build();
+            }
+        }
         return NO_INSTRUCTION;
+    }
+
+    /**
+     * Has required walk leg.
+     */
+    private static boolean hasRequiredWalkLeg(TravelerPosition travelerPosition) {
+        return
+            travelerPosition.expectedLeg != null &&
+            travelerPosition.expectedLeg.mode.equalsIgnoreCase("walk");
     }
 
     /**
@@ -49,6 +66,19 @@ public class TravelerLocator {
             !tripStatus.equals(TripStatus.NO_STATUS) &&
             !tripStatus.equals(TripStatus.DEVIATED) &&
             !tripStatus.equals(TripStatus.ENDED);
+    }
+
+    /**
+     * Suggest the closest street to head towards if deviated from trip.
+     */
+    @Nullable
+    private static TripInstruction getBackOnTrack(TravelerPosition travelerPosition) {
+        int nearestStepIndex = getNearestStep(travelerPosition.expectedLeg, travelerPosition.currentPosition);
+        Step nearestStep = getStep(travelerPosition.expectedLeg.steps, nearestStepIndex);
+        if (nearestStep == null) {
+            return null;
+        }
+        return new TripInstruction(nearestStep.streetName);
     }
 
     /**
@@ -86,7 +116,7 @@ public class TravelerLocator {
 
         if (isLastStep(nearestStepIndex, travelerPosition.expectedLeg)) {
             // Last step.
-            if (isFirstPositionNearestToTarget(nearestStepCoords, travelerPosition.currentPosition, destination)) {
+            if (isFirstArgumentNearestToTarget(nearestStepCoords, travelerPosition.currentPosition, destination)) {
                 // Assuming traveler is approaching the last step.
                 return new TripInstruction(
                     getDistance(travelerPosition.currentPosition, nearestStepCoords),
@@ -96,7 +126,7 @@ public class TravelerLocator {
         } else {
             Step nextStep = travelerPosition.expectedLeg.steps.get(nearestStepIndex + 1);
             Coordinates nextStepCoordinates = new Coordinates(nextStep);
-            if (!isFirstPositionNearestToTarget(nearestStepCoords, travelerPosition.currentPosition, nextStepCoordinates)) {
+            if (!isFirstArgumentNearestToTarget(nearestStepCoords, travelerPosition.currentPosition, nextStepCoordinates)) {
                 // Assuming traveler is passed the nearest step.
                 return new TripInstruction(
                     getDistance(travelerPosition.currentPosition, nextStepCoordinates),

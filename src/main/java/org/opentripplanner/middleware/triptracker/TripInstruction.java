@@ -26,7 +26,7 @@ public class TripInstruction {
     public static final String NO_INSTRUCTION = "NO_INSTRUCTION";
 
     /** Distance in meters to step instruction or destination. */
-    public final double distance;
+    public double distance;
 
     /** Step aligned with traveler's position. */
     public Step legStep;
@@ -34,8 +34,11 @@ public class TripInstruction {
     /** Instruction prefix. */
     public String prefix;
 
-    /** Name of final destination. */
-    public String destinationName;
+    /** Name of final destination or street. */
+    public String locationName;
+
+    /** Instruction is for a trip that is on track. */
+    private boolean tripOnTrack;
 
     public TripInstruction(double distance, Step legStep) {
         this.distance = distance;
@@ -43,10 +46,18 @@ public class TripInstruction {
         setPrefix(false);
     }
 
-    public TripInstruction(double distance, String destinationName) {
+    public TripInstruction(double distance, String locationName) {
         this.distance = distance;
-        this.destinationName = destinationName;
+        this.locationName = locationName;
         setPrefix(true);
+    }
+
+    /**
+     * Used for deviated instruction.
+     */
+    public TripInstruction(String locationName) {
+        this.locationName = locationName;
+        this.tripOnTrack = false;
     }
 
     /**
@@ -62,24 +73,37 @@ public class TripInstruction {
     }
 
     /**
-     * Build instruction based on distance and step instructions. e.g.
+     * Build on track or deviated instruction.
+     */
+    public String build() {
+        if (tripOnTrack) {
+            return buildOnTrackInstruction();
+        } else if (locationName != null) {
+            // Traveler has deviated.
+            return String.format("Head to %s", locationName);
+        }
+        return NO_INSTRUCTION;
+    }
+
+    /**
+     * Build on track instruction based on step instructions and location. e.g.
      * <p>
      * "UPCOMING: CONTINUE on Langley Drive"
      * "IMMEDIATE: RIGHT on service road"
-     * "IMMEDIATE: Head WEST on sidewalk"
      * "ARRIVED: Gwinnett Justice Center (Central)"
      * <p>
      * TODO: Internationalization and refinements to these generated instructions with input from the mobile app team.
      */
-    public String build() {
+
+    private String buildOnTrackInstruction() {
         if (prefix != null) {
             if (legStep != null) {
                 String relativeDirection = (legStep.relativeDirection.equals("DEPART"))
                     ? "Head " + legStep.absoluteDirection
                     : legStep.relativeDirection;
                 return String.format("%s%s on %s", prefix, relativeDirection, legStep.streetName);
-            } else if (destinationName != null) {
-                return String.format("%s%s", prefix, destinationName);
+            } else if (locationName != null) {
+                return String.format("%s%s", prefix, locationName);
             }
         }
         return NO_INSTRUCTION;

@@ -29,7 +29,7 @@ public class LegSegment extends Segment {
     @Override
     public String toString() {
         return String.format(
-            "LegSegment (timeInSegment=%s, mode=%s, cumulativeTime=%s, distance=%s)",
+            "LegSegment {timeInSegment=%s, mode=%s, cumulativeTime=%s, distance=%s}",
             timeInSegment,
             mode,
             cumulativeTime,

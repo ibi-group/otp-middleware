@@ -44,7 +44,6 @@ public class GeometryUtils {
         return new double[] {x, y};
     }
 
-
     /**
      * Calculate the bearing between two coordinates.
      */
@@ -90,15 +89,13 @@ public class GeometryUtils {
     }
 
     /**
-     * Determine if the first or second position is nearer to the target.
+     * Determine if position one is nearer to the target than position two.
      */
-    public static boolean isFirstPositionNearestToTarget(
-        Coordinates firstPosition,
-        Coordinates secondPosition,
+    public static boolean isFirstArgumentNearestToTarget(
+        Coordinates position1,
+        Coordinates position2,
         Coordinates target
     ) {
-        double distanceFromFirstPositionToDestination = getDistance(firstPosition, target);
-        double distanceFromSecondPositionToDestination = getDistance(secondPosition, target);
-        return distanceFromFirstPositionToDestination <= distanceFromSecondPositionToDestination;
+        return getDistance(position1, target) <= getDistance(position2, target);
     }
 }

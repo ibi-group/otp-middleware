@@ -27,7 +27,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
@@ -36,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
-import static org.opentripplanner.middleware.triptracker.TravelerLocator.alignTravelerToTrip;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.TripStatus.getSegmentTimeInterval;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
@@ -131,6 +129,7 @@ public class ManageLegTraversalTest {
     @ParameterizedTest
     @MethodSource("createTurnByTurnTrace")
     void canTrackTurnByTurn(
+        TripStatus tripStatus,
         Coordinates position,
         String expectedInstruction,
         boolean isStartOfTrip,
@@ -140,9 +139,9 @@ public class ManageLegTraversalTest {
             busStopToJusticeCenterItinerary.legs.get(0),
             position
         );
-        TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
+        String tripInstruction = TravelerLocator.getInstruction(tripStatus, travelerPosition, isStartOfTrip);
         if (tripInstruction != null) {
-            assertEquals(expectedInstruction, tripInstruction.build(), message);
+            assertEquals(expectedInstruction, tripInstruction, message);
         } else {
             assertEquals(expectedInstruction, NO_INSTRUCTION, message);
         }
@@ -166,70 +165,95 @@ public class ManageLegTraversalTest {
         Coordinates stepFiveCoords = new Coordinates(stepFive);
         return Stream.of(
             Arguments.of(
+                TripStatus.ON_SCHEDULE,
                 stepTwoCoords,
                 new TripInstruction(0, stepTwo).build(),
                 false,
                 "Approach the instruction for the second step."
             ),
             Arguments.of(
+                TripStatus.ON_SCHEDULE,
                 stepThreeCoords,
                 new TripInstruction(0, stepThree).build(),
                 false,
                 "Approach the instruction for the third step."
             ),
             Arguments.of(
+                TripStatus.ON_SCHEDULE,
                 stepFourCoords,
                 new TripInstruction(0, stepFour).build(),
                 false,
                 "Approach the instruction for the fourth step."
             ),
             Arguments.of(
+                TripStatus.ON_SCHEDULE,
                 stepFiveCoords,
                 new TripInstruction(0, stepFive).build(),
                 false,
                 "Approach the instruction for the fifth step."
             ),
             Arguments.of(
+                TripStatus.DEVIATED,
+                originCoords,
+                new TripInstruction(stepOne.streetName).build(),
+                false,
+                "Just started the trip and NOT near to the instruction for the first step."
+            ),
+            Arguments.of(
+                TripStatus.ON_SCHEDULE,
                 originCoords,
                 new TripInstruction(1, stepOne).build(),
                 true,
                 "Just started the trip and near to the instruction for the first step."
             ),
             Arguments.of(
+                TripStatus.ON_SCHEDULE,
                 createPoint(originCoords, 1, calculateBearing(originCoords, stepOneCoords)),
                 new TripInstruction(1, stepOne).build(),
                 false,
                 "Already into trip and approaching the instruction for the first step."
             ),
             Arguments.of(
+                TripStatus.ON_SCHEDULE,
                 createPoint(stepOneCoords, 55, calculateBearing(stepOneCoords, stepTwoCoords)),
                 new TripInstruction(9, stepTwo).build(),
                 false,
                 "Passed the first step and approaching the instruction for the second step."
             ),
             Arguments.of(
+                TripStatus.ON_SCHEDULE,
                 createPoint(stepFiveCoords, 3, calculateBearing(stepFiveCoords, destinationCoords)),
                 NO_INSTRUCTION,
                 false,
                 "Passed the last step and therefore the last available instruction."
             ),
             Arguments.of(
+                TripStatus.ON_SCHEDULE,
                 createPoint(stepFourCoords, 3, calculateBearing(stepFourCoords, stepFiveCoords)),
                 new TripInstruction(8, stepFive).build(),
                 false,
                 "Approaching the instruction for the last step."
             ),
             Arguments.of(
+                TripStatus.ON_SCHEDULE,
                 destinationCoords,
                 new TripInstruction(2, destinationName).build(),
                 false,
                 "Arrived at destination."
             ),
             Arguments.of(
+                TripStatus.ON_SCHEDULE,
                 createPoint(stepFiveCoords, 190, calculateBearing(stepFiveCoords, destinationCoords)),
                 new TripInstruction(9, destinationName).build(),
                 false,
                 "Approaching the destination."
+            ),
+            Arguments.of(
+                TripStatus.DEVIATED,
+                stepFiveCoords,
+                new TripInstruction(stepFive.streetName).build(),
+                false,
+                "Deviated from trip around the fifth step."
             )
         );
     }
