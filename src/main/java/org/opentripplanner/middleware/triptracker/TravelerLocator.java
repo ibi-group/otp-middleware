@@ -8,8 +8,9 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_UPCOMING_DISTANCE;
+import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
+import static org.opentripplanner.middleware.utils.GeometryUtils.isFirstPositionNearestToTarget;
 
 /**
  * Locate the traveler in relation to the nearest step or destination and provide the appropriate instructions.
@@ -63,14 +64,14 @@ public class TravelerLocator {
                 return null;
             }
             double distance = getDistance(travelerPosition.currentPosition, new Coordinates(firstStep));
-            return (distance <= TRIP_INSTRUCTION_UPCOMING_DISTANCE)
+            return (distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS)
                 ? new TripInstruction(distance, firstStep)
                 : null;
         }
 
         Coordinates destination = new Coordinates(travelerPosition.expectedLeg.to);
         double distanceToDestination = getDistance(travelerPosition.currentPosition, destination);
-        if (distanceToDestination <= TRIP_INSTRUCTION_UPCOMING_DISTANCE) {
+        if (distanceToDestination <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
             // Assuming traveler is approaching the destination.
             return new TripInstruction(distanceToDestination, travelerPosition.expectedLeg.to.name);
         }
@@ -85,7 +86,7 @@ public class TravelerLocator {
 
         if (isLastStep(nearestStepIndex, travelerPosition.expectedLeg)) {
             // Last step.
-            if (isStepNearerToDestination(nearestStepCoords, travelerPosition.currentPosition, destination)) {
+            if (isFirstPositionNearestToTarget(nearestStepCoords, travelerPosition.currentPosition, destination)) {
                 // Assuming traveler is approaching the last step.
                 return new TripInstruction(
                     getDistance(travelerPosition.currentPosition, nearestStepCoords),
@@ -95,7 +96,7 @@ public class TravelerLocator {
         } else {
             Step nextStep = travelerPosition.expectedLeg.steps.get(nearestStepIndex + 1);
             Coordinates nextStepCoordinates = new Coordinates(nextStep);
-            if (!isStepNearerToDestination(nearestStepCoords, travelerPosition.currentPosition, nextStepCoordinates)) {
+            if (!isFirstPositionNearestToTarget(nearestStepCoords, travelerPosition.currentPosition, nextStepCoordinates)) {
                 // Assuming traveler is passed the nearest step.
                 return new TripInstruction(
                     getDistance(travelerPosition.currentPosition, nextStepCoordinates),
@@ -117,19 +118,6 @@ public class TravelerLocator {
      */
     private static boolean isLastStep(int stepIndex, Leg expectedLeg) {
         return stepIndex == (expectedLeg.steps.size() - 1);
-    }
-
-    /**
-     * Determine if the step is near to the destination than the traveler.
-     */
-    private static boolean isStepNearerToDestination(
-        Coordinates nearestStepCoords,
-        Coordinates position,
-        Coordinates destination
-    ) {
-        double distanceFromNearestStepToDestination = getDistance(nearestStepCoords, destination);
-        double distanceFromPositionToDestination = getDistance(position, destination);
-        return distanceFromNearestStepToDestination <= distanceFromPositionToDestination;
     }
 
     /**

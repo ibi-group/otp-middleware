@@ -18,7 +18,6 @@ import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
-import org.opentripplanner.middleware.triptracker.TravelerLocator;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
@@ -42,8 +41,6 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisable
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
-
 
 public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 

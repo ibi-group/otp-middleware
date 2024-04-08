@@ -3,34 +3,29 @@ package org.opentripplanner.middleware.triptracker;
 import org.opentripplanner.middleware.otp.response.Step;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
-
 
 public class TripInstruction {
 
-    /** The distance under which an immediate instruction is given. */
-    public static final int TRIP_INSTRUCTION_IMMEDIATE_DISTANCE
-        = getConfigPropertyAsInt("TRIP_INSTRUCTION_IMMEDIATE_DISTANCE", 2);
+    /** The radius in meters under which an immediate instruction is given. */
+    public static final int TRIP_INSTRUCTION_IMMEDIATE_RADIUS
+        = getConfigPropertyAsInt("TRIP_INSTRUCTION_IMMEDIATE_RADIUS", 2);
+
+    /** The radius in meters under which an upcoming instruction is given. */
+    public static final int TRIP_INSTRUCTION_UPCOMING_RADIUS
+        = getConfigPropertyAsInt("TRIP_INSTRUCTION_UPCOMING_RADIUS", 10);
 
     /** The prefix to use when on an instruction. */
-    public static final String TRIP_INSTRUCTION_IMMEDIATE_PREFIX
-        = getConfigPropertyAsText("TRIP_INSTRUCTION_IMMEDIATE_PREFIX", "IMMEDIATE: ");
-
-    /** The distance under which an upcoming instruction is given. */
-    public static final int TRIP_INSTRUCTION_UPCOMING_DISTANCE
-        = getConfigPropertyAsInt("TRIP_INSTRUCTION_UPCOMING_DISTANCE", 10);
+    public static final String TRIP_INSTRUCTION_IMMEDIATE_PREFIX = "IMMEDIATE: ";
 
     /** The prefix to use when nearing an instruction. */
-    public static final String TRIP_INSTRUCTION_UPCOMING_PREFIX
-        = getConfigPropertyAsText("TRIP_INSTRUCTION_UPCOMING_PREFIX", "UPCOMING: ");
+    public static final String TRIP_INSTRUCTION_UPCOMING_PREFIX = "UPCOMING: ";
 
     /** The prefix to use when arrived at the destination. */
-    public static final String TRIP_INSTRUCTION_ARRIVED_PREFIX
-        = getConfigPropertyAsText("TRIP_INSTRUCTION_ARRIVED_PREFIX", "ARRIVED: ");
+    public static final String TRIP_INSTRUCTION_ARRIVED_PREFIX = "ARRIVED: ";
 
     public static final String NO_INSTRUCTION = "NO_INSTRUCTION";
 
-    /** Distance to step instruction or destination. */
+    /** Distance in meters to step instruction or destination. */
     public final double distance;
 
     /** Step aligned with traveler's position. */
@@ -59,9 +54,9 @@ public class TripInstruction {
      * distances from these points.
      */
     private void setPrefix(boolean isDestination) {
-        if (distance <= TRIP_INSTRUCTION_IMMEDIATE_DISTANCE) {
+        if (distance <= TRIP_INSTRUCTION_IMMEDIATE_RADIUS) {
             prefix = (isDestination) ? TRIP_INSTRUCTION_ARRIVED_PREFIX : TRIP_INSTRUCTION_IMMEDIATE_PREFIX;
-        } else if (distance <= TRIP_INSTRUCTION_UPCOMING_DISTANCE) {
+        } else if (distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
             prefix = TRIP_INSTRUCTION_UPCOMING_PREFIX;
         }
     }

@@ -88,4 +88,17 @@ public class GeometryUtils {
 
         return new Coordinates(destLat, destLon);
     }
+
+    /**
+     * Determine if the first or second position is nearer to the target.
+     */
+    public static boolean isFirstPositionNearestToTarget(
+        Coordinates firstPosition,
+        Coordinates secondPosition,
+        Coordinates target
+    ) {
+        double distanceFromFirstPositionToDestination = getDistance(firstPosition, target);
+        double distanceFromSecondPositionToDestination = getDistance(secondPosition, target);
+        return distanceFromFirstPositionToDestination <= distanceFromSecondPositionToDestination;
+    }
 }

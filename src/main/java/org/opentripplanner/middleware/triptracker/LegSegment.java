@@ -28,13 +28,12 @@ public class LegSegment extends Segment {
 
     @Override
     public String toString() {
-        return "LegSegment{" +
-            "timeInSegment=" + timeInSegment +
-            ", mode='" + mode + '\'' +
-            ", cumulativeTime=" + cumulativeTime +
-            ", distance=" + distance +
-            ", start=" + start +
-            ", end=" + end +
-            '}';
+        return String.format(
+            "LegSegment (timeInSegment=%s, mode=%s, cumulativeTime=%s, distance=%s)",
+            timeInSegment,
+            mode,
+            cumulativeTime,
+            distance
+        );
     }
 }

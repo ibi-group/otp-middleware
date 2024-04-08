@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.triptracker.TripInstruction;
@@ -26,6 +27,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
@@ -147,8 +149,11 @@ public class ManageLegTraversalTest {
     }
 
     private static Stream<Arguments> createTurnByTurnTrace() {
-        List<Step> walkSteps = busStopToJusticeCenterItinerary.legs.get(0).steps;
-        Coordinates originCoords = new Coordinates(busStopToJusticeCenterItinerary.legs.get(0).from);
+        Leg leg = busStopToJusticeCenterItinerary.legs.get(0);
+        List<Step> walkSteps = leg.steps;
+        Coordinates originCoords = new Coordinates(leg.from);
+        Coordinates destinationCoords = new Coordinates(leg.to);
+        String destinationName = leg.to.name;
         Step stepOne = walkSteps.get(0);
         Coordinates stepOneCoords = new Coordinates(stepOne);
         Step stepTwo = walkSteps.get(1);
@@ -159,8 +164,6 @@ public class ManageLegTraversalTest {
         Coordinates stepFourCoords = new Coordinates(stepFour);
         Step stepFive = walkSteps.get(4);
         Coordinates stepFiveCoords = new Coordinates(stepFive);
-        Coordinates destinationCoords = new Coordinates(busStopToJusticeCenterItinerary.legs.get(0).to);
-        String destinationName = busStopToJusticeCenterItinerary.legs.get(0).to.name;
         return Stream.of(
             Arguments.of(
                 stepTwoCoords,
@@ -234,9 +237,9 @@ public class ManageLegTraversalTest {
     @Test
     void canAccumulateCorrectStartAndEndCoordinates() {
         List<LegSegment> legSegments = createSegmentsForLeg();
-        for (int i = 0; i < legSegments.size()-1; i++) {
+        for (int i = 0; i < legSegments.size() - 1; i++) {
             LegSegment legSegmentOne = legSegments.get(i);
-            LegSegment legSegmentTwo = legSegments.get(i+1);
+            LegSegment legSegmentTwo = legSegments.get(i + 1);
             assertEquals(legSegmentOne.end.lat, legSegmentTwo.start.lat);
         }
     }
@@ -268,32 +271,6 @@ public class ManageLegTraversalTest {
                 currentTime = startOfTrip.plus(getSecondsToMilliseconds(cumulativeTravelTime), ChronoUnit.MILLIS);
             }
         }
-    }
-
-    @Test
-    void canTrackTripTurnByTurn() {
-        ZonedDateTime startOfTrip = ZonedDateTime.ofInstant(
-            busStopToJusticeCenterItinerary.legs.get(0).startTime.toInstant(),
-            DateTimeUtils.getOtpZoneId()
-        );
-        Coordinates point = new Coordinates(
-            busStopToJusticeCenterItinerary.legs.get(0).steps.get(0).lat,
-            busStopToJusticeCenterItinerary.legs.get(0).steps.get(0).lon
-        );
-        Coordinates start = createPoint(point, 1500, 90);
-
-        TrackedJourney trackedJourney = new TrackedJourney();
-        trackedJourney.locations = List.of(
-            new TrackingLocation(
-                start.lat,
-                start.lon,
-                new Date(startOfTrip.toInstant().toEpochMilli())
-            )
-        );
-        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
-        TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
-        String instruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
-        System.out.println(instruction);
     }
 
     @Test
