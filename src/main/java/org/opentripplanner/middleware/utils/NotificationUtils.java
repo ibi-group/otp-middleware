@@ -62,13 +62,13 @@ public class NotificationUtils {
      * @param textTemplate  template to use for email in text format
      * @param templateData  template data
      */
-    public static String sendPush(OtpUser otpUser, String textTemplate, Object templateData) {
+    public static String sendPush(OtpUser otpUser, String textTemplate, Object templateData, String tripId) {
         // If Push API config properties aren't set, do nothing.
         if (PUSH_API_KEY == null || PUSH_API_URL == null) return null;
         try {
             String body = TemplateUtils.renderTemplate(textTemplate, templateData);
             String toUser = otpUser.email;
-            return otpUser.pushDevices > 0 ? sendPush(toUser, body) : "OK";
+            return otpUser.pushDevices > 0 ? sendPush(toUser, body, tripId) : "OK";
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
             // handles Bugsnag reporting/error logging, so that is not needed here.
@@ -80,11 +80,16 @@ public class NotificationUtils {
      * Send a push notification message to the provided user
      * @param toUser    user account ID (email address)
      * @param body      message body
+     * @param tripId    Monitored trip ID
      * @return          "OK" if message was successful (null otherwise)
      */
-    static String sendPush(String toUser, String body) {
+    static String sendPush(String toUser, String body, String tripId) {
         try {
-            NotificationInfo notifInfo = new NotificationInfo(toUser, body.substring(0, Math.min(PUSH_MESSAGE_MAX_LENGTH, body.length())));
+            NotificationInfo notifInfo = new NotificationInfo(
+                toUser,
+                body.substring(0, Math.min(PUSH_MESSAGE_MAX_LENGTH, body.length())),
+                tripId
+            );
             var jsonBody = new Gson().toJson(notifInfo);
             var httpResponse = HttpUtils.httpRequestRawResponse(
                 URI.create(PUSH_API_URL + "/notification/publish?api_key=" + PUSH_API_KEY),
@@ -366,12 +371,14 @@ public class NotificationUtils {
     }
 
     static class NotificationInfo {
-        public String user;
-        public String message;
+        public final String user;
+        public final String message;
+        public final String tripId;
 
-        public NotificationInfo(String user, String message) {
+        public NotificationInfo(String user, String message, String tripId) {
             this.user = user;
             this.message = message;
+            this.tripId = tripId;
         }
     }
 }

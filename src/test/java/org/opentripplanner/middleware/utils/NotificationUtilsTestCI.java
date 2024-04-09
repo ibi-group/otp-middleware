@@ -60,7 +60,8 @@ public class NotificationUtilsTestCI extends OtpMiddlewareTestEnvironment {
         String ret = NotificationUtils.sendPush(
             // Conventionally user.email
             push,
-            "Tough little ship!"
+            "Tough little ship!",
+            "trip-id"
         );
         LOG.info("Push notification (ret={}) sent to {}", ret, push);
         Assertions.assertNotNull(ret);

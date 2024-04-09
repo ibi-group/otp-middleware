@@ -347,5 +347,23 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- google-polyline-codec. https://gitlab.com/leonard.ehrenfried/google-polyline-codec -->
+        <dependency>
+            <groupId>io.leonard</groupId>
+            <artifactId>google-polyline-codec</artifactId>
+            <version>0.0.2</version>
+        </dependency>
+
+        <!--
+            Used to calculate distances.
+            https://stackoverflow.com/a/38290399
+            https://github.com/locationtech/jts?tab=readme-ov-file
+            https://mvnrepository.com/artifact/org.locationtech.jts/jts-core
+        -->
+        <dependency>
+            <groupId>org.locationtech.jts</groupId>
+            <artifactId>jts-core</artifactId>
+            <version>1.19.0</version>
+        </dependency>
     </dependencies>
 </project>
