@@ -42,7 +42,10 @@ public class ManageTripTracking {
                 Persistence.trackedJourneys.create(trackedJourney);
 
                 try {
-                    TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, monitoredTrip.itinerary);
+                    TravelerPosition travelerPosition = new TravelerPosition(
+                        trackedJourney,
+                        monitoredTrip.journeyState.matchingItinerary
+                    );
                     TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
                     // Provide response.
                     return new StartTrackingResponse(
@@ -78,7 +81,10 @@ public class ManageTripTracking {
                     );
 
                     try {
-                        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, monitoredTrip.itinerary);
+                        TravelerPosition travelerPosition = new TravelerPosition(
+                            trackedJourney,
+                            monitoredTrip.journeyState.matchingItinerary
+                        );
                         TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
                         // Provide response.
                         return new UpdateTrackingResponse(

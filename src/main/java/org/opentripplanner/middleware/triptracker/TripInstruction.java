@@ -40,24 +40,31 @@ public class TripInstruction {
     /** Instruction is for a trip that is on track. */
     private boolean tripOnTrack;
 
+    /**
+     * On track instruction.
+     */
     public TripInstruction(double distance, Step legStep) {
         this.distance = distance;
         this.legStep = legStep;
+        this.tripOnTrack = true;
         setPrefix(false);
     }
 
+    /**
+     * On track instruction.
+     */
     public TripInstruction(double distance, String locationName) {
         this.distance = distance;
         this.locationName = locationName;
+        this.tripOnTrack = true;
         setPrefix(true);
     }
 
     /**
-     * Used for deviated instruction.
+     * Deviated instruction.
      */
     public TripInstruction(String locationName) {
         this.locationName = locationName;
-        this.tripOnTrack = false;
     }
 
     /**
