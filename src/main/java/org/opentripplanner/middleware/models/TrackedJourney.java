@@ -75,4 +75,8 @@ public class TrackedJourney extends Model {
     public int hashCode() {
         return Objects.hash(super.hashCode(), tripId, startTime);
     }
+
+    public TrackingLocation lastLocation() {
+        return locations.get(locations.size() - 1);
+    }
 }
