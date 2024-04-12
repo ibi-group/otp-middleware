@@ -89,13 +89,16 @@ public class GeometryUtils {
     }
 
     /**
-     * Determine if position one is nearer to the target than position two.
+     * Is the point between the start and end coordinates.
      */
-    public static boolean isFirstArgumentNearestToTarget(
-        Coordinates position1,
-        Coordinates position2,
-        Coordinates target
-    ) {
-        return getDistance(position1, target) <= getDistance(position2, target);
+    public static boolean isPointBetween(Coordinates start, Coordinates end, Coordinates location) {
+        double startToLocationDistance = getDistance(start, location);
+        double startToEndDistance = getDistance(start, end);
+        double endToLocationDistance = getDistance(end, location);
+        double totalDistanceViaLocation = startToLocationDistance + endToLocationDistance;
+
+        // Check if the sum of distances from start to point and end to point
+        // is approximately equal to the distance from start to end.
+        return Math.abs(totalDistanceViaLocation - startToEndDistance) < 1;
     }
 }

@@ -58,6 +58,6 @@ public class Coordinates {
 
     @Override
     public String toString() {
-        return String.format("Coordinates{lon=%s, lat=%s}", lon, lat);
+        return String.format("Coordinates{lat=%s, lon=%s}", lat, lon);
     }
 }

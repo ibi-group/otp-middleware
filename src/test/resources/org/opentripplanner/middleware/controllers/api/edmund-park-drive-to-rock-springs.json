@@ -1,0 +1,97 @@
+{
+  "duration": 819,
+  "startTime": 1712674700000,
+  "endTime": 1712675519000,
+  "walkTime": 213,
+  "transitTime": 606,
+  "waitingTime": 0,
+  "walkDistance": 382.23,
+  "walkLimitExceeded": false,
+  "elevationLost": 0.0,
+  "elevationGained": 0.0,
+  "transfers": 0,
+  "legs": [
+    {
+      "startTime": 1712674700000,
+      "endTime": 1712674799000,
+      "departureDelay": 0,
+      "arrivalDelay": 0,
+      "realTime": false,
+      "distance": 182.24,
+      "pathway": false,
+      "mode": "WALK",
+      "route": "",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "1325 Edmund Park Drive, Atlanta, GA, USA",
+        "lon": -84.3416916,
+        "lat": 33.7937097,
+        "departure": 1712674700000,
+        "vertexType": "NORMAL"
+      },
+      "to": {
+        "name": "E Rock Springs Rd at Rock Springs Cr",
+        "lon": -84.340516,
+        "lat": 33.79305,
+        "departure": 1712674799000,
+        "vertexType": "TRANSIT",
+        "stopId": "MARTA:70042",
+        "arrival": 1712674799000,
+        "stopCode": "901837"
+      },
+      "legGeometry": {
+        "points": "uigmEp~waO@?b@i@Zq@Jo@Cm@Mc@GWDAF?f@?ZB?HA?",
+        "length": 14
+      },
+      "rentedBike": false,
+      "transitLeg": false,
+      "duration": 99.0,
+      "steps": [
+        {
+          "distance": 131.83,
+          "relativeDirection": "DEPART",
+          "streetName": "Edmund Park Drive",
+          "absoluteDirection": "SOUTHEAST",
+          "stayOn": false,
+          "area": false,
+          "bogusName": false,
+          "lon": -84.3416895,
+          "lat": 33.7937112
+        },
+        {
+          "distance": 30.73,
+          "relativeDirection": "RIGHT",
+          "streetName": "Rock Springs Circle Northeast",
+          "absoluteDirection": "SOUTH",
+          "stayOn": false,
+          "area": false,
+          "bogusName": false,
+          "lon": -84.3404517,
+          "lat": 33.7934585
+        },
+        {
+          "distance": 15.11,
+          "relativeDirection": "CONTINUE",
+          "streetName": "Kimberly Lane Northeast",
+          "absoluteDirection": "SOUTH",
+          "stayOn": false,
+          "area": false,
+          "bogusName": false,
+          "lon": -84.3404496,
+          "lat": 33.7931823
+        },
+        {
+          "distance": 4.58,
+          "relativeDirection": "RIGHT",
+          "streetName": "East Rock Springs Road Northeast",
+          "absoluteDirection": "WEST",
+          "stayOn": false,
+          "area": false,
+          "bogusName": false,
+          "lon": -84.3404657,
+          "lat": 33.7930471
+        }
+      ]
+    }
+  ]
+}

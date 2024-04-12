@@ -1,16 +1,20 @@
 package org.opentripplanner.middleware.triptracker;
 
+import io.leonard.PolylineUtils;
+import io.leonard.Position;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
-import static org.opentripplanner.middleware.utils.GeometryUtils.isFirstArgumentNearestToTarget;
+import static org.opentripplanner.middleware.utils.GeometryUtils.isPointBetween;
 
 /**
  * Locate the traveler in relation to the nearest step or destination and provide the appropriate instructions.
@@ -29,8 +33,7 @@ public class TravelerLocator {
         TravelerPosition travelerPosition,
         boolean isStartOfTrip
     ) {
-        if (hasRequiredTripStatus(tripStatus) &&
-            hasRequiredWalkLeg(travelerPosition)
+        if (hasRequiredTripStatus(tripStatus) && hasRequiredWalkLeg(travelerPosition)
         ) {
             TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
             if (tripInstruction != null) {
@@ -38,8 +41,7 @@ public class TravelerLocator {
             }
         }
 
-        if (tripStatus.equals(TripStatus.DEVIATED) &&
-            hasRequiredWalkLeg(travelerPosition)
+        if (tripStatus.equals(TripStatus.DEVIATED) && hasRequiredWalkLeg(travelerPosition)
         ) {
             TripInstruction tripInstruction = getBackOnTrack(travelerPosition);
             if (tripInstruction != null) {
@@ -73,12 +75,10 @@ public class TravelerLocator {
      */
     @Nullable
     private static TripInstruction getBackOnTrack(TravelerPosition travelerPosition) {
-        int nearestStepIndex = getNearestStep(travelerPosition.expectedLeg, travelerPosition.currentPosition);
-        Step nearestStep = getStep(travelerPosition.expectedLeg.steps, nearestStepIndex);
-        if (nearestStep == null) {
-            return null;
-        }
-        return new TripInstruction(nearestStep.streetName);
+        Step nearestStep = snapToLeg(travelerPosition);
+        return (nearestStep != null)
+            ? new TripInstruction(nearestStep.streetName)
+            : null;
     }
 
     /**
@@ -89,7 +89,7 @@ public class TravelerLocator {
 
         if (isStartOfTrip) {
             // If the traveler has just started the trip and is within a set distance of the first step.
-            Step firstStep = getStep(travelerPosition.expectedLeg.steps, 0);
+            Step firstStep = travelerPosition.expectedLeg.steps.get(0);
             if (firstStep == null) {
                 return null;
             }
@@ -99,80 +99,113 @@ public class TravelerLocator {
                 : null;
         }
 
-        Coordinates destination = new Coordinates(travelerPosition.expectedLeg.to);
-        double distanceToDestination = getDistance(travelerPosition.currentPosition, destination);
+        Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.to);
+        double distanceToDestination = getDistance(travelerPosition.currentPosition, legDestination);
         if (distanceToDestination <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
             // Assuming traveler is approaching the destination.
             return new TripInstruction(distanceToDestination, travelerPosition.expectedLeg.to.name);
         }
 
-        int nearestStepIndex = getNearestStep(travelerPosition.expectedLeg, travelerPosition.currentPosition);
-        Step nearestStep = getStep(travelerPosition.expectedLeg.steps, nearestStepIndex);
-        if (nearestStep == null) {
-            return null;
+        Step nextStep = snapToLeg(travelerPosition);
+        if (nextStep != null) {
+            return new TripInstruction(
+                getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
+                nextStep
+            );
         }
+        return null;
+    }
 
-        Coordinates nearestStepCoords = new Coordinates(nearestStep);
+    /**
+     * Align the traveler to the leg and provide the next step from this point forward.
+     */
+    private static Step snapToLeg(TravelerPosition travelerPosition) {
+        List<Coordinates> legPositions = injectStepsIntoLegPositions(travelerPosition.expectedLeg);
+        int pointIndex = getNearestPointIndex(legPositions, travelerPosition.currentPosition);
+        return (pointIndex != -1)
+            ? getNextStep(travelerPosition.expectedLeg, legPositions, pointIndex)
+            : null;
+    }
 
-        if (isLastStep(nearestStepIndex, travelerPosition.expectedLeg)) {
-            // Last step.
-            if (isFirstArgumentNearestToTarget(nearestStepCoords, travelerPosition.currentPosition, destination)) {
-                // Assuming traveler is approaching the last step.
-                return new TripInstruction(
-                    getDistance(travelerPosition.currentPosition, nearestStepCoords),
-                    getStep(travelerPosition.expectedLeg.steps, nearestStepIndex)
-                );
-            }
-        } else {
-            Step nextStep = travelerPosition.expectedLeg.steps.get(nearestStepIndex + 1);
-            Coordinates nextStepCoordinates = new Coordinates(nextStep);
-            if (!isFirstArgumentNearestToTarget(nearestStepCoords, travelerPosition.currentPosition, nextStepCoordinates)) {
-                // Assuming traveler is passed the nearest step.
-                return new TripInstruction(
-                    getDistance(travelerPosition.currentPosition, nextStepCoordinates),
-                    nextStep
-                );
-            } else {
-                // Assuming traveler is approaching (or on) the nearest step.
-                return new TripInstruction(
-                    getDistance(travelerPosition.currentPosition, nearestStepCoords),
-                    getStep(travelerPosition.expectedLeg.steps, nearestStepIndex)
-                );
+    /**
+     * From the starting index, find the next step along the leg.
+     */
+    public static Step getNextStep(Leg leg, List<Coordinates> positions, int startIndex) {
+        for (int i = startIndex; i < positions.size(); i++) {
+            for (Step step : leg.steps) {
+                if (positions.get(i).equals(new Coordinates(step))) {
+                    return step;
+                }
             }
         }
         return null;
     }
 
     /**
-     * Does the step index reference the last step in the leg.
+     * Get the point index on the leg which is nearest to position.
      */
-    private static boolean isLastStep(int stepIndex, Leg expectedLeg) {
-        return stepIndex == (expectedLeg.steps.size() - 1);
-    }
-
-    /**
-     * Get the step matching the provided index.
-     */
-    @Nullable
-    private static Step getStep(List<Step> steps, int stepIndex) {
-        return (stepIndex != -1 && stepIndex <= steps.size())
-            ? steps.get(stepIndex)
-            : null;
-    }
-
-    /**
-     * Get the step index that is nearest to position.
-     */
-    private static int getNearestStep(Leg leg, Coordinates position) {
-        int nearestStepIndex = -1;
+    private static int getNearestPointIndex(List<Coordinates> positions, Coordinates position) {
+        int pointIndex = -1;
         double nearestDistance = Double.MAX_VALUE;
-        for (int i = 0; i < leg.steps.size(); i++) {
-            double distance = getDistance(position, new Coordinates(leg.steps.get(i)));
+        for (int i = 0; i < positions.size(); i++) {
+            double distance = getDistance(position, positions.get(i));
             if (distance < nearestDistance) {
-                nearestStepIndex = i;
+                pointIndex = i;
                 nearestDistance = distance;
             }
         }
-        return nearestStepIndex;
+        return pointIndex;
+    }
+
+    /**
+     * Inject the step positions into the leg positions. It is assumed that both sets of points are on the same route
+     * and are in between the start and end positions. If b = beginning, p = point on leg, S = step and e = end, create
+     * a list of coordinates which can be traversed to get the next step.
+     * <p>
+     * b|p|S|p|p|p|p|p|p|S|p|p|S|p|p|p|p|p|S|e
+     */
+    public static List<Coordinates> injectStepsIntoLegPositions(Leg leg) {
+        List<Position> legPositions = PolylineUtils.decode(leg.legGeometry.points, 5);
+        List<Coordinates> allPositions = new ArrayList<>();
+        allPositions.add(new Coordinates(leg.from));
+        for (Position p : legPositions) {
+            allPositions.add(new Coordinates(p));
+        }
+        allPositions.add(new Coordinates(leg.to));
+
+        List<Step> injectedSteps = new ArrayList<>();
+
+        List<Coordinates> finalPositions = new ArrayList<>();
+        for (int i = 0; i < allPositions.size() - 1; i++) {
+            Coordinates p1 = allPositions.get(i);
+            finalPositions.add(p1);
+            Coordinates p2 = allPositions.get(i + 1);
+            for (Step step : leg.steps) {
+                if (isPointBetween(p1, p2, new Coordinates(step)) && !injectedSteps.contains(step)) {
+                    finalPositions.add(new Coordinates(step));
+                    injectedSteps.add(step);
+                }
+            }
+        }
+
+        // Add the destination coords which are missed because of the -1 condition above.
+        finalPositions.add(allPositions.get(allPositions.size() - 1));
+
+        if (injectedSteps.size() != leg.steps.size()) {
+            // One or more steps have not been injected because they are not between two geometry points. Inject these
+            // based on proximity.
+            List<Step> missedSteps = leg.steps
+                .stream()
+                .filter(step -> !injectedSteps.contains(step))
+                .collect(Collectors.toList());
+            for (Step missedStep : missedSteps) {
+                int pointIndex = getNearestPointIndex(finalPositions, new Coordinates(missedStep));
+                if (pointIndex != -1) {
+                    finalPositions.add(pointIndex, new Coordinates(missedStep));
+                }
+            }
+
+        }
+        return finalPositions;
     }
 }
