@@ -112,8 +112,9 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(HttpStatus.OK_200, response.status);
 
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+        // A single location is submitted when starting tracking.
         assertEquals(1, trackedJourney.locations.size());
-        assertEquals(TripStatus.NO_STATUS, trackedJourney.locations.get(0).tripStatus);
+        assertEquals(TripStatus.NO_STATUS, trackedJourney.lastLocation().tripStatus);
 
         response = makeRequest(
             UPDATE_TRACKING_TRIP_PATH,
@@ -128,8 +129,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(HttpStatus.OK_200, response.status);
 
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
-        assertEquals(2, trackedJourney.locations.size());
-        assertEquals(TripStatus.NO_STATUS, trackedJourney.locations.get(1).tripStatus);
+        // The call to updatetracking sent 3 additional locations, so there are 4 locations stored at this point.
+        assertEquals(4, trackedJourney.locations.size());
+        assertEquals(trackedJourney.locations.get(3), trackedJourney.lastLocation());
+        assertEquals(TripStatus.NO_STATUS, trackedJourney.lastLocation().tripStatus);
 
         response = makeRequest(
             END_TRACKING_TRIP_PATH,
