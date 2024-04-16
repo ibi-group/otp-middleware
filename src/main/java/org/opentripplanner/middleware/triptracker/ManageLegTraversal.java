@@ -1,7 +1,5 @@
 package org.opentripplanner.middleware.triptracker;
 
-import io.leonard.PolylineUtils;
-import io.leonard.Position;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.utils.Coordinates;
@@ -12,6 +10,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.getLegGeoPoints;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
@@ -34,16 +33,16 @@ public class ManageLegTraversal {
             return null;
         }
         double shortestDistance = Double.MAX_VALUE;
-        LegSegment nearestLegLegSegment = null;
+        LegSegment nearestLegSegment = null;
         List<LegSegment> legSegments = interpolatePoints(leg);
         for (LegSegment legSegment : legSegments) {
             double distance = getDistanceFromLine(legSegment.start, legSegment.end, currentCoordinates);
             if (distance < shortestDistance) {
-                nearestLegLegSegment = legSegment;
+                nearestLegSegment = legSegment;
                 shortestDistance = distance;
             }
         }
-        return nearestLegLegSegment;
+        return nearestLegSegment;
     }
 
     /**
@@ -120,7 +119,7 @@ public class ManageLegTraversal {
      * coordinate and time spent in the segment.
      */
     public static List<LegSegment> interpolatePoints(Leg expectedLeg) {
-        List<Position> positions = PolylineUtils.decode(expectedLeg.legGeometry.points, 5);
+        List<Coordinates> positions = getLegGeoPoints(expectedLeg);
         double totalDistance = getDistanceTraversedForLeg(positions);
         return (totalDistance > 0)
             ? getTimeInSegments(positions, expectedLeg.duration / totalDistance, expectedLeg.mode)
@@ -174,7 +173,7 @@ public class ManageLegTraversal {
      * @param timePerMeter  The average time to cover a meter within a leg.
      * @return A list of segments.
      */
-    public static List<LegSegment> getTimeInSegments(List<Position> positions, double timePerMeter, String mode) {
+    public static List<LegSegment> getTimeInSegments(List<Coordinates> positions, double timePerMeter, String mode) {
         List<LegSegment> legSegments = new ArrayList<>();
         Coordinates groupCoordinates = null;
         double groupSegmentTime = 0;
@@ -182,8 +181,8 @@ public class ManageLegTraversal {
         Coordinates c1;
         Coordinates c2 = null;
         for (int i = 0; i < positions.size() - 1; i++) {
-            c1 = new Coordinates(positions.get(i));
-            c2 = new Coordinates(positions.get(i + 1));
+            c1 = positions.get(i);
+            c2 = positions.get(i + 1);
             double timeInSegment = getDistance(c1, c2) * timePerMeter;
             cumulativeTime += timeInSegment;
             if (timeInSegment < TRIP_TRACKING_MINIMUM_SEGMENT_TIME) {
@@ -220,14 +219,10 @@ public class ManageLegTraversal {
      * Get the total distance traversed through each position on a leg. This distance is different to that provided
      * with the leg (distance).
      */
-    public static double getDistanceTraversedForLeg(List<Position> orderedPositions) {
-        List<Position> positions = new ArrayList<>(orderedPositions);
+    public static double getDistanceTraversedForLeg(List<Coordinates> positions) {
         double total = 0;
         for (int i = 0; i < positions.size() - 1; i++) {
-            total += getDistance(
-                new Coordinates(positions.get(i)),
-                new Coordinates(positions.get(i + 1))
-            );
+            total += getDistance(positions.get(i), positions.get(i + 1));
         }
         return total;
     }

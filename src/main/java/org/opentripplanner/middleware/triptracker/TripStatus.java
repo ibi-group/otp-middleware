@@ -66,22 +66,31 @@ public enum TripStatus {
      */
     public static TripStatus getTripStatus(TravelerPosition travelerPosition) {
         if (travelerPosition.expectedLeg != null) {
+            if (travelerPosition.legSegmentFromPosition != null &&
+                isWithinModeBoundary(travelerPosition.currentPosition, travelerPosition.legSegmentFromPosition)
+            ) {
+                Instant segmentStartTime = travelerPosition
+                    .expectedLeg
+                    .startTime
+                    .toInstant()
+                    .plusSeconds((long) getSegmentStartTime(travelerPosition.legSegmentFromPosition));
+                Instant segmentEndTime = travelerPosition
+                    .expectedLeg
+                    .startTime
+                    .toInstant()
+                    .plusSeconds((long) travelerPosition.legSegmentFromPosition.cumulativeTime);
+                if (travelerPosition.currentTime.isBefore(segmentStartTime)) {
+                    return TripStatus.AHEAD_OF_SCHEDULE;
+                } else if (travelerPosition.currentTime.isAfter(segmentEndTime)) {
+                    return TripStatus.BEHIND_SCHEDULE;
+                } else {
+                    return TripStatus.ON_SCHEDULE;
+                }
+            }
             if (travelerPosition.legSegmentFromTime != null &&
                 isWithinModeBoundary(travelerPosition.currentPosition, travelerPosition.legSegmentFromTime)
             ) {
                 return TripStatus.ON_SCHEDULE;
-            }
-            if (travelerPosition.legSegmentFromPosition != null &&
-                isWithinModeBoundary(travelerPosition.currentPosition, travelerPosition.legSegmentFromPosition)
-            ) {
-                Instant segmentCenterTime = travelerPosition
-                    .expectedLeg
-                    .startTime
-                    .toInstant()
-                    .plusSeconds((long) getSegmentTimeInterval(travelerPosition.legSegmentFromPosition));
-                return travelerPosition.currentTime.isBefore(segmentCenterTime)
-                    ? TripStatus.AHEAD_OF_SCHEDULE
-                    : TripStatus.BEHIND_SCHEDULE;
             }
             return TripStatus.DEVIATED;
         }
@@ -92,7 +101,11 @@ public enum TripStatus {
      * Get the cumulative time at the center of a segment.
      */
     public static double getSegmentTimeInterval(LegSegment legSegmentFromPosition) {
-        return ((legSegmentFromPosition.cumulativeTime - legSegmentFromPosition.timeInSegment) / 2) + legSegmentFromPosition.timeInSegment;
+        return legSegmentFromPosition.cumulativeTime - (legSegmentFromPosition.timeInSegment / 2);
+    }
+
+    public static double getSegmentStartTime(LegSegment legSegmentFromPosition) {
+        return legSegmentFromPosition.cumulativeTime - legSegmentFromPosition.timeInSegment;
     }
 
     /**

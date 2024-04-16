@@ -41,7 +41,6 @@ import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.inte
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextStep;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.injectStepsIntoLegPositions;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
-import static org.opentripplanner.middleware.triptracker.TripStatus.getSegmentTimeInterval;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
@@ -64,13 +63,14 @@ public class ManageLegTraversalTest {
 
     @ParameterizedTest
     @MethodSource("createTrace")
-    void canTrackTrip(String time, double lat, double lon, TripStatus expected) {
+    void canTrackTrip(String time, double lat, double lon, TripStatus expected, String message) {
         TrackedJourney trackedJourney = new TrackedJourney();
+        System.out.println(time);
         TrackingLocation trackingLocation = new TrackingLocation(time, lat, lon);
         trackedJourney.locations = List.of(trackingLocation);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
         TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
-        assertEquals(expected, tripStatus);
+        assertEquals(expected, tripStatus, message);
     }
 
     private static Stream<Arguments> createTrace() {
@@ -81,57 +81,53 @@ public class ManageLegTraversalTest {
         LegSegment after = legSegments.get(12);
         return Stream.of(
             Arguments.of(
-                getDateTimeAsString(startTime, getSegmentTimeInterval(before)),
+                getDateTimeAsString(startTime, before.cumulativeTime - before.timeInSegment),
                 current.start.lat,
                 current.start.lon,
-                TripStatus.AHEAD_OF_SCHEDULE
+                TripStatus.AHEAD_OF_SCHEDULE,
+                "For the current location and time the traveler is ahead of schedule."
             ),
             Arguments.of(
-                getDateTimeAsString(startTime, current.cumulativeTime),
+                getDateTimeAsString(startTime, current.cumulativeTime - current.timeInSegment),
                 current.start.lat,
                 current.start.lon,
-                TripStatus.ON_SCHEDULE
+                TripStatus.ON_SCHEDULE,
+                "For the current location and time the traveler is on schedule."
             ),
             Arguments.of(
                 getDateTimeAsString(startTime, after.cumulativeTime),
                 current.start.lat,
                 current.start.lon,
-                TripStatus.BEHIND_SCHEDULE
+                TripStatus.BEHIND_SCHEDULE,
+                "For the current location and time the traveler is behind schedule."
             ),
-            // Slight deviation on time.
             Arguments.of(
-                getDateTimeAsString(startTime, current.cumulativeTime - 4),
+                getDateTimeAsString(startTime, (current.cumulativeTime - current.timeInSegment) - 10),
                 current.start.lat,
                 current.start.lon,
-                TripStatus.ON_SCHEDULE
+                TripStatus.ON_SCHEDULE,
+                "For the current location and time (with a slight deviation) the traveler is on schedule."
             ),
-            // Slight deviation on time.
-            Arguments.of(
-                getDateTimeAsString(startTime, (current.cumulativeTime - current.timeInSegment) + 4),
-                current.start.lat,
-                current.start.lon,
-                TripStatus.ON_SCHEDULE
-            ),
-            // Slight deviation on lat/lon.
             Arguments.of(
                 getDateTimeAsString(startTime, current.cumulativeTime),
                 current.start.lat + 0.00001,
                 current.start.lon + 0.00001,
-                TripStatus.ON_SCHEDULE
+                TripStatus.ON_SCHEDULE,
+                "The current location, with a slight deviation, is on schedule."
             ),
-            // Time which can not be attributed to a trip leg.
             Arguments.of(
                 getDateTimeAsString(busStopToJusticeCenterItinerary.endTime, 1),
                 current.start.lat,
                 current.start.lon,
-                TripStatus.NO_STATUS
+                TripStatus.NO_STATUS,
+                "Time which can not be attributed to a trip leg."
             ),
-            // Arbitrary lat/lon values which aren't on the trip.
             Arguments.of(
                 getDateTimeAsString(startTime, 0),
                 33.95029,
                 -83.99,
-                TripStatus.DEVIATED
+                TripStatus.DEVIATED,
+                "Arbitrary lat/lon values which aren't on the trip."
             )
         );
     }
@@ -378,9 +374,13 @@ public class ManageLegTraversalTest {
                 );
                 TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
                 TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
-                assertEquals(tripStatus.name(), TripStatus.ON_SCHEDULE.name());
+                System.out.println(tripStatus.name());
+                assertEquals(TripStatus.ON_SCHEDULE.name(), tripStatus.name());
                 cumulativeTravelTime += legSegment.timeInSegment;
-                currentTime = startOfTrip.plus(getSecondsToMilliseconds(cumulativeTravelTime), ChronoUnit.MILLIS);
+                currentTime = startOfTrip.plus(
+                    getSecondsToMilliseconds(cumulativeTravelTime) - 1000,
+                    ChronoUnit.MILLIS
+                );
             }
         }
     }

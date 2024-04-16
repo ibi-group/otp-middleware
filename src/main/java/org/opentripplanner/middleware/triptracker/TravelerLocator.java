@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.triptracker;
 
 import io.leonard.PolylineUtils;
-import io.leonard.Position;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.utils.Coordinates;
@@ -75,7 +74,7 @@ public class TravelerLocator {
      */
     @Nullable
     private static TripInstruction getBackOnTrack(TravelerPosition travelerPosition) {
-        Step nearestStep = snapToLeg(travelerPosition);
+        Step nearestStep = snapToStep(travelerPosition);
         return (nearestStep != null)
             ? new TripInstruction(nearestStep.streetName)
             : null;
@@ -106,7 +105,7 @@ public class TravelerLocator {
             return new TripInstruction(distanceToDestination, travelerPosition.expectedLeg.to.name);
         }
 
-        Step nextStep = snapToLeg(travelerPosition);
+        Step nextStep = snapToStep(travelerPosition);
         if (nextStep != null) {
             return new TripInstruction(
                 getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
@@ -119,7 +118,7 @@ public class TravelerLocator {
     /**
      * Align the traveler to the leg and provide the next step from this point forward.
      */
-    private static Step snapToLeg(TravelerPosition travelerPosition) {
+    private static Step snapToStep(TravelerPosition travelerPosition) {
         List<Coordinates> legPositions = injectStepsIntoLegPositions(travelerPosition.expectedLeg);
         int pointIndex = getNearestPointIndex(legPositions, travelerPosition.currentPosition);
         return (pointIndex != -1)
@@ -165,16 +164,8 @@ public class TravelerLocator {
      * b|p|S|p|p|p|p|p|p|S|p|p|S|p|p|p|p|p|S|e
      */
     public static List<Coordinates> injectStepsIntoLegPositions(Leg leg) {
-        List<Position> legPositions = PolylineUtils.decode(leg.legGeometry.points, 5);
-        List<Coordinates> allPositions = new ArrayList<>();
-        allPositions.add(new Coordinates(leg.from));
-        for (Position p : legPositions) {
-            allPositions.add(new Coordinates(p));
-        }
-        allPositions.add(new Coordinates(leg.to));
-
+        List<Coordinates> allPositions = getAllLegPositions(leg);
         List<Step> injectedSteps = new ArrayList<>();
-
         List<Coordinates> finalPositions = new ArrayList<>();
         for (int i = 0; i < allPositions.size() - 1; i++) {
             Coordinates p1 = allPositions.get(i);
@@ -204,8 +195,30 @@ public class TravelerLocator {
                     finalPositions.add(pointIndex, new Coordinates(missedStep));
                 }
             }
-
         }
         return finalPositions;
+    }
+
+    /**
+     * Get a list containing all positions on a leg.
+     */
+    public static List<Coordinates> getAllLegPositions(Leg leg) {
+        List<Coordinates> allPositions = new ArrayList<>();
+        allPositions.add(new Coordinates(leg.from));
+        allPositions.addAll(getLegGeoPoints(leg));
+        allPositions.add(new Coordinates(leg.to));
+        return allPositions;
+    }
+
+    /**
+     * Get leg geometry points as coordinates and remove duplicates.
+     */
+    public static List<Coordinates> getLegGeoPoints(Leg leg) {
+        return PolylineUtils
+            .decode(leg.legGeometry.points, 5)
+            .stream()
+            .distinct()
+            .map(Coordinates::new)
+            .collect(Collectors.toList());
     }
 }
