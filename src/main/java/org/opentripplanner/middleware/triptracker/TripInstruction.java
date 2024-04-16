@@ -14,7 +14,7 @@ public class TripInstruction {
     public static final int TRIP_INSTRUCTION_UPCOMING_RADIUS
         = getConfigPropertyAsInt("TRIP_INSTRUCTION_UPCOMING_RADIUS", 10);
 
-    /** The prefix to use when on an instruction. */
+    /** The prefix to use when at a street location with an instruction. */
     public static final String TRIP_INSTRUCTION_IMMEDIATE_PREFIX = "IMMEDIATE: ";
 
     /** The prefix to use when nearing a street location with an instruction. */
