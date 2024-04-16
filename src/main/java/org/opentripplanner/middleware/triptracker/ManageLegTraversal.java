@@ -46,23 +46,6 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Get the expected traveler position using the current time and trip itinerary.
-     */
-    @Nullable
-    public static LegSegment getSegmentFromTime(Instant currentTime, Itinerary itinerary) {
-        var expectedLeg = getExpectedLeg(currentTime, itinerary);
-        return (canUseLeg(expectedLeg)) ? getSegmentFromTime(currentTime, expectedLeg) : null;
-    }
-
-    /**
-     * Get the expected traveler position using the current time and trip leg.
-     */
-    private static LegSegment getSegmentFromTime(Instant currentTime, Leg leg) {
-        List<LegSegment> legSegments = interpolatePoints(leg);
-        return getSegmentFromTime(leg.startTime.toInstant(), currentTime, legSegments);
-    }
-
-    /**
      * Make sure that all the required leg parameters are present.
      */
     private static boolean canUseLeg(Leg leg) {

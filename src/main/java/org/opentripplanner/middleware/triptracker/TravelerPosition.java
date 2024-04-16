@@ -9,15 +9,11 @@ import java.time.Instant;
 
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromTime;
 
 public class TravelerPosition {
 
     /** The leg the traveler is expected to be on. */
     public Leg expectedLeg;
-
-    /** The expected traveler position based on time. */
-    public LegSegment legSegmentFromTime;
 
     /** The expected traveler position based on position. */
     public LegSegment legSegmentFromPosition;
@@ -33,7 +29,6 @@ public class TravelerPosition {
         currentTime = lastLocation.timestamp.toInstant();
         currentPosition = new Coordinates(lastLocation);
         expectedLeg = getExpectedLeg(currentTime, itinerary);
-        legSegmentFromTime = getSegmentFromTime(currentTime, itinerary);
         legSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
     }
 

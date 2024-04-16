@@ -87,21 +87,9 @@ public enum TripStatus {
                     return TripStatus.ON_SCHEDULE;
                 }
             }
-            if (travelerPosition.legSegmentFromTime != null &&
-                isWithinModeBoundary(travelerPosition.currentPosition, travelerPosition.legSegmentFromTime)
-            ) {
-                return TripStatus.ON_SCHEDULE;
-            }
             return TripStatus.DEVIATED;
         }
         return TripStatus.NO_STATUS;
-    }
-
-    /**
-     * Get the cumulative time at the center of a segment.
-     */
-    public static double getSegmentTimeInterval(LegSegment legSegmentFromPosition) {
-        return legSegmentFromPosition.cumulativeTime - (legSegmentFromPosition.timeInSegment / 2);
     }
 
     public static double getSegmentStartTime(LegSegment legSegmentFromPosition) {
