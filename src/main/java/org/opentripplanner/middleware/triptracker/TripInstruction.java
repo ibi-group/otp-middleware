@@ -17,7 +17,7 @@ public class TripInstruction {
     /** The prefix to use when on an instruction. */
     public static final String TRIP_INSTRUCTION_IMMEDIATE_PREFIX = "IMMEDIATE: ";
 
-    /** The prefix to use when nearing an instruction. */
+    /** The prefix to use when nearing a street location with an instruction. */
     public static final String TRIP_INSTRUCTION_UPCOMING_PREFIX = "UPCOMING: ";
 
     /** The prefix to use when arrived at the destination. */
