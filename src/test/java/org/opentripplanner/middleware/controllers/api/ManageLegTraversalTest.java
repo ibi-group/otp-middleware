@@ -40,6 +40,7 @@ import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getS
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextStep;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.injectStepsIntoLegPositions;
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithinExclusionZone;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
@@ -49,6 +50,8 @@ public class ManageLegTraversalTest {
     private static Itinerary busStopToJusticeCenterItinerary;
     private static Itinerary edmundParkDriveToRockSpringsItinerary;
 
+    private static Itinerary adairAvenueToMonroeDriveItinerary;
+
     @BeforeAll
     public static void setUp() throws IOException {
         busStopToJusticeCenterItinerary = JsonUtils.getPOJOFromJSON(
@@ -57,6 +60,10 @@ public class ManageLegTraversalTest {
         );
         edmundParkDriveToRockSpringsItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/edmund-park-drive-to-rock-springs.json"),
+            Itinerary.class
+        );
+        adairAvenueToMonroeDriveItinerary = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/adair-avenue-to-monroe-drive.json"),
             Itinerary.class
         );
     }
@@ -164,7 +171,32 @@ public class ManageLegTraversalTest {
         Coordinates sixthGeoPoint = new Coordinates(33.79332,-84.34099);
         Step rockSpringsStepTwo = rockSpringsSteps.get(1);
 
+        Leg adairAvenueToMonroeDriveLeg = adairAvenueToMonroeDriveItinerary.legs.get(0);
+        List<Step> adairAvenueToMonroeDriveLegSteps = adairAvenueToMonroeDriveLeg.steps;
+        Step virginiaAvenue = adairAvenueToMonroeDriveLegSteps.get(5);
+
+        Coordinates pointBeforeTurn = new Coordinates(33.78151,-84.36481);
+        Coordinates virginiaAvenuePoint = new Coordinates(virginiaAvenue);
+
         return Stream.of(
+            Arguments.of(
+                new TurnTrace(
+                    adairAvenueToMonroeDriveItinerary,
+                    createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
+                    new TripInstruction(10, virginiaAvenue).build(),
+                    false,
+                    "Approaching left turn on Virginia Avenue."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    adairAvenueToMonroeDriveItinerary,
+                    createPoint(pointBeforeTurn, 16, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
+                    new TripInstruction(2, virginiaAvenue).build(),
+                    false,
+                    "Turn left on to Virginia Avenue."
+                )
+            ),
             Arguments.of(
                 new TurnTrace(
                     edmundParkDriveToRockSpringsItinerary,
@@ -268,7 +300,7 @@ public class ManageLegTraversalTest {
             ),
             Arguments.of(
                 new TurnTrace(
-                    createPoint(stepFiveCoords, 3, calculateBearing(stepFiveCoords, destinationCoords)),
+                    createPoint(stepFiveCoords, 10, calculateBearing(stepFiveCoords, destinationCoords)),
                     NO_INSTRUCTION,
                     false,
                     "Passed the last step and therefore the last available instruction."
@@ -322,14 +354,14 @@ public class ManageLegTraversalTest {
         Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
         return Stream.of(
             Arguments.of(leg.steps.get(0), 0, "At the beginning, expecting the first step."),
-            Arguments.of(leg.steps.get(0), 1, "On first step."),
+            Arguments.of(leg.steps.get(0), 0, "On first step."),
+            Arguments.of(leg.steps.get(1), 2, "Approaching second step, expecting the second step."),
+            Arguments.of(leg.steps.get(1), 3, "Approaching second step, expecting the second step."),
             Arguments.of(leg.steps.get(1), 4, "Approaching second step, expecting the second step."),
             Arguments.of(leg.steps.get(1), 5, "Approaching second step, expecting the second step."),
-            Arguments.of(leg.steps.get(1), 6, "Approaching second step, expecting the second step."),
-            Arguments.of(leg.steps.get(1), 7, "Approaching second step, expecting the second step."),
-            Arguments.of(leg.steps.get(2), 11, "Approaching third step, expecting the third step."),
-            Arguments.of(leg.steps.get(3), 14, "After third step, expecting the fourth step."),
-            Arguments.of(null, 18, "After fourth and final step, expecting no step.")
+            Arguments.of(leg.steps.get(2), 7, "Approaching third step, expecting the third step."),
+            Arguments.of(leg.steps.get(3), 9, "After third step, expecting the fourth step."),
+            Arguments.of(null, 10, "After fourth and final step, expecting no step.")
         );
     }
 
@@ -337,7 +369,8 @@ public class ManageLegTraversalTest {
     void canInjectSteps() {
         Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
         List<Position> legPositions = PolylineUtils.decode(leg.legGeometry.points, 5);
-        int expectedNumberOfPositions = legPositions.size() + leg.steps.size() + 2; // from and to points.
+        int excluded = getNumberOfExcludedPoints(legPositions, leg);
+        int expectedNumberOfPositions = (legPositions.size() - excluded) + leg.steps.size() + 2; // from and to points.
         List<Coordinates> allPositions = injectStepsIntoLegPositions(leg);
         assertEquals(expectedNumberOfPositions, allPositions.size());
     }
@@ -502,5 +535,21 @@ public class ManageLegTraversalTest {
         Instant dateTime = date.toInstant().plusSeconds((long) offset);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneId.systemDefault());;
         return formatter.format(dateTime);
+    }
+
+    private int getNumberOfExcludedPoints(List<Position> legPositions, Leg leg) {
+        int excluded = 0;
+        for (Position position : legPositions) {
+            if (isWithinExclusionZone(new Coordinates(position), leg.steps)) {
+                excluded++;
+            }
+        }
+        if (isWithinExclusionZone(new Coordinates(leg.from), leg.steps)) {
+            excluded++;
+        }
+        if (isWithinExclusionZone(new Coordinates(leg.to), leg.steps)) {
+            excluded++;
+        }
+        return excluded;
     }
 }

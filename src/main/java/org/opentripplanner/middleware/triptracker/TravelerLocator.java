@@ -196,7 +196,7 @@ public class TravelerLocator {
                 }
             }
         }
-        return finalPositions;
+        return createExclusionZone(finalPositions, leg);
     }
 
     /**
@@ -220,5 +220,45 @@ public class TravelerLocator {
             .distinct()
             .map(Coordinates::new)
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Create an exclusion zone around a step to remove all geometry points which may skew locating a step on a leg.
+     * e.g. On a 90-degree turn, the traveler might be nearer to the point after a step than the step itself resulting
+     * in the turn being missed.
+     */
+    private static List<Coordinates> createExclusionZone(List<Coordinates> positions, Leg leg) {
+        List<Coordinates> finalPositions = new ArrayList<>();
+        for (Coordinates position : positions) {
+            if (isStepPoint(position, leg.steps) || !isWithinExclusionZone(position, leg.steps)) {
+                finalPositions.add(position);
+            }
+        }
+        return finalPositions;
+    }
+
+    /**
+     * Check if the position is attributed to a step.
+     */
+    private static boolean isStepPoint(Coordinates position, List<Step> steps) {
+        for (Step step : steps) {
+            if (new Coordinates(step).equals(position)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if the position is within the exclusion zone.
+     */
+    public static boolean isWithinExclusionZone(Coordinates position, List<Step> steps) {
+        for (Step step : steps) {
+            double distance = getDistance(new Coordinates(step), position);
+            if (distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
+                return true;
+            }
+        }
+        return false;
     }
 }
