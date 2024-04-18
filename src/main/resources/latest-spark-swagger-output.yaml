@@ -2742,6 +2742,15 @@ definitions:
       timestamp:
         type: "string"
         format: "date"
+      tripStatus:
+        type: "string"
+        enum:
+        - "ON_SCHEDULE"
+        - "BEHIND_SCHEDULE"
+        - "AHEAD_OF_SCHEDULE"
+        - "ENDED"
+        - "DEVIATED"
+        - "NO_STATUS"
   StartTrackingResponse:
     type: "object"
     properties:
