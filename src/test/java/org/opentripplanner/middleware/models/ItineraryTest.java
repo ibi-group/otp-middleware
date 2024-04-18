@@ -114,10 +114,9 @@ public class ItineraryTest {
 
     private static Stream<Arguments> createCannotBeMonitoredTestCases() {
         return Stream.of(
-            Arguments.of(itineraryWithoutTransitWithoutRentals, false,
-                Set.of(InvalidItineraryReason.MISSING_TRANSIT)),
+            Arguments.of(itineraryWithoutTransitWithoutRentals, true, Collections.EMPTY_SET),
             Arguments.of(itineraryWithRentalBikeWithoutTransit, false,
-                Set.of(InvalidItineraryReason.MISSING_TRANSIT, InvalidItineraryReason.HAS_RENTAL_OR_RIDE_HAIL)),
+                Set.of(InvalidItineraryReason.HAS_RENTAL_OR_RIDE_HAIL)),
             Arguments.of(itineraryWithTransitAndRentalBike, false,
                 Set.of(InvalidItineraryReason.HAS_RENTAL_OR_RIDE_HAIL)),
             Arguments.of(itineraryWithTransitNoRentals, true, Collections.EMPTY_SET)

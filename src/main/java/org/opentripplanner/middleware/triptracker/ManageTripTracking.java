@@ -37,16 +37,16 @@ public class ManageTripTracking {
         if (payload != null) {
             var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
             if (isTripAssociatedWithUser(request, monitoredTrip) && !isJourneyOngoing(request, payload.tripId)) {
-                // Start tracking journey.
-                var trackedJourney = new TrackedJourney(payload);
-                Persistence.trackedJourneys.create(trackedJourney);
-
                 try {
+                    // Start tracking journey.
+                    var trackedJourney = new TrackedJourney(payload);
                     TravelerPosition travelerPosition = new TravelerPosition(
                         trackedJourney,
                         monitoredTrip.journeyState.matchingItinerary
                     );
                     TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
+                    trackedJourney.lastLocation().tripStatus = tripStatus;
+                    Persistence.trackedJourneys.create(trackedJourney);
                     // Provide response.
                     return new StartTrackingResponse(
                         TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
@@ -72,20 +72,20 @@ public class ManageTripTracking {
             if (trackedJourney != null) {
                 var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
                 if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                    // Update tracked journey.
-                    trackedJourney.update(payload);
-                    Persistence.trackedJourneys.updateField(
-                        trackedJourney.id,
-                        TrackedJourney.LOCATIONS_FIELD_NAME,
-                        trackedJourney.locations
-                    );
-
                     try {
                         TravelerPosition travelerPosition = new TravelerPosition(
                             trackedJourney,
                             monitoredTrip.journeyState.matchingItinerary
                         );
+                        // Update tracked journey.
+                        trackedJourney.update(payload);
                         TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
+                        trackedJourney.lastLocation().tripStatus = tripStatus;
+                        Persistence.trackedJourneys.updateField(
+                            trackedJourney.id,
+                            TrackedJourney.LOCATIONS_FIELD_NAME,
+                            trackedJourney.locations
+                        );
                         // Provide response.
                         return new UpdateTrackingResponse(
                             TravelerLocator.getInstruction(tripStatus, travelerPosition, false),
