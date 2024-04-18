@@ -416,7 +416,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         );
 
         // execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome
-        assertEquals(true, mockCheckMonitoredTrip.makeOTPRequestAndUpdateMatchingItinerary());
+        assertEquals(true, mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
 
         // fetch updated trip from persistence
         MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(mockTrip.id);
@@ -482,7 +482,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         );
 
         // execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome
-        assertEquals(false, mockCheckMonitoredTrip.makeOTPRequestAndUpdateMatchingItinerary());
+        assertEquals(false, mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
 
         // fetch updated trip from persistence
         MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(mockTrip.id);
@@ -562,7 +562,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         );
 
         // execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome
-        assertEquals(false, mockCheckMonitoredTrip.makeOTPRequestAndUpdateMatchingItinerary());
+        assertEquals(false, mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
 
         // fetch updated trip from persistence
         MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(mockTrip.id);
