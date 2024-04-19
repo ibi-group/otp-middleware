@@ -23,5 +23,7 @@ public enum TripStatus {
      * The trip is currently active at this time. This status will be set while the current time is after the start time
      * and before the end time of the itinerary for the trip most recently fetched from the trip planner.
      */
-    TRIP_ACTIVE
+    TRIP_ACTIVE,
+    /** For one-time trips that happened in the past. */
+    PAST_TRIP
 }

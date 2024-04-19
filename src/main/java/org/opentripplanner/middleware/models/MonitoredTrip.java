@@ -293,15 +293,6 @@ public class MonitoredTrip extends Model {
         return this;
     }
 
-    /**
-     * Returns true if the trip is not active overall or if all days of the week are set to false
-     */
-    public boolean isInactive() {
-        return !isActive || (
-          !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday
-        );
-    }
-
     public boolean isActiveOnDate(ZonedDateTime zonedDateTime) {
         DayOfWeek dayOfWeek = zonedDateTime.getDayOfWeek();
         // TODO: Maybe we should just refactor DOW to be a list of ints (TIntList).
@@ -431,5 +422,13 @@ public class MonitoredTrip extends Model {
     public int tripTimeMinute() {
         return Integer.valueOf(tripTime.split(":")[1]);
     }
-}
 
+    /**
+     * @return true if this trip is one-time, false otherwise.
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public boolean isOneTime() {
+        return !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday;
+    }
+}

@@ -2538,6 +2538,7 @@ definitions:
         - "NEXT_TRIP_NOT_POSSIBLE"
         - "TRIP_UPCOMING"
         - "TRIP_ACTIVE"
+        - "PAST_TRIP"
       hasRealtimeData:
         type: "boolean"
   Itinerary:
