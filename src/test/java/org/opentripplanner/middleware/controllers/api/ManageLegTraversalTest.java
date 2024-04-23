@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.controllers.api;
 
 import io.leonard.PolylineUtils;
 import io.leonard.Position;
+import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,7 +73,6 @@ public class ManageLegTraversalTest {
     @MethodSource("createTrace")
     void canTrackTrip(String time, double lat, double lon, TripStatus expected, String message) {
         TrackedJourney trackedJourney = new TrackedJourney();
-        System.out.println(time);
         TrackingLocation trackingLocation = new TrackingLocation(time, lat, lon);
         trackedJourney.locations = List.of(trackingLocation);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
@@ -86,6 +86,22 @@ public class ManageLegTraversalTest {
         LegSegment before = legSegments.get(8);
         LegSegment current = legSegments.get(10);
         LegSegment after = legSegments.get(12);
+        Coordinates deviatedCoordinates = createPoint(
+            new Coordinates(current.start.lat, current.start.lon),
+            90,
+            calculateBearing(
+                new Coordinates(current.start.lat, current.start.lon),
+                new Coordinates(after.start.lat, after.start.lon)
+            )
+        );
+        Coordinates notOnTripCoordinates = createPoint(
+            new Coordinates(current.start.lat, current.start.lon),
+            1000,
+            calculateBearing(
+                new Coordinates(current.start.lat, current.start.lon),
+                new Coordinates(after.start.lat, after.start.lon)
+            )
+        );
         return Stream.of(
             Arguments.of(
                 getDateTimeAsString(startTime, before.cumulativeTime - before.timeInSegment),
@@ -123,18 +139,18 @@ public class ManageLegTraversalTest {
                 "The current location, with a slight deviation, is on schedule."
             ),
             Arguments.of(
-                getDateTimeAsString(busStopToJusticeCenterItinerary.endTime, 1),
-                current.start.lat,
-                current.start.lon,
+                getDateTimeAsString(startTime, 0),
+                notOnTripCoordinates.lat,
+                notOnTripCoordinates.lon,
                 TripStatus.NO_STATUS,
-                "Time which can not be attributed to a trip leg."
+                "Arbitrary lat/lon values which aren't on the trip leg."
             ),
             Arguments.of(
-                getDateTimeAsString(startTime, 0),
-                33.95029,
-                -83.99,
+                getDateTimeAsString(busStopToJusticeCenterItinerary.endTime, 1),
+                deviatedCoordinates.lat,
+                deviatedCoordinates.lon,
                 TripStatus.DEVIATED,
-                "Arbitrary lat/lon values which aren't on the trip."
+                "Time which can not be attributed to a trip leg."
             )
         );
     }
@@ -269,9 +285,9 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     TripStatus.DEVIATED,
                     originCoords,
-                    new TripInstruction(stepOne.streetName).build(),
+                    new TripInstruction(1, stepOne).build(),
                     false,
-                    "Just started the trip and NOT near to the instruction for the first step."
+                    "Deviated from trip, but is actually on track and within instruction radius of first step."
                 )
             ),
             Arguments.of(
@@ -333,7 +349,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     TripStatus.DEVIATED,
-                    stepFiveCoords,
+                    createPoint(stepFiveCoords, 10, calculateBearing(stepFiveCoords, destinationCoords)),
                     new TripInstruction(stepFive.streetName).build(),
                     false,
                     "Deviated from trip around the fifth step."
@@ -426,73 +442,6 @@ public class ManageLegTraversalTest {
             cumulative += legSegment.timeInSegment;
         }
         assertEquals(busStopToJusticeCenterItinerary.legs.get(0).duration, cumulative, 0.01f);
-    }
-
-    @ParameterizedTest
-    @MethodSource("createTravelerPositions")
-    void canReturnTheCorrectSegmentCoordinates(TravellerPosition segmentPosition) {
-        LegSegment legSegment = ManageLegTraversal.getSegmentFromTime(
-            segmentPosition.start,
-            segmentPosition.currentTime,
-            segmentPosition.legSegments
-        );
-        assertNotNull(legSegment);
-        assertEquals(segmentPosition.coordinates, legSegment.start);
-    }
-
-    private static Stream<TravellerPosition> createTravelerPositions() {
-        Instant segmentStartTime = ZonedDateTime.now().toInstant();
-        List<LegSegment> legSegments = createSegmentsForLeg();
-
-        return Stream.of(
-            new TravellerPosition(
-                legSegments.get(0).start,
-                segmentStartTime,
-                segmentStartTime.plusSeconds(5),
-                legSegments
-            ),
-            new TravellerPosition(
-                legSegments.get(1).start,
-                segmentStartTime,
-                segmentStartTime.plusSeconds(15),
-                legSegments
-            ),
-            new TravellerPosition(
-                legSegments.get(2).start,
-                segmentStartTime,
-                segmentStartTime.plusSeconds(25),
-                legSegments
-            ),
-            new TravellerPosition(
-                legSegments.get(3).start,
-                segmentStartTime,
-                segmentStartTime.plusSeconds(35),
-                legSegments
-            )
-        );
-    }
-
-    private static class TravellerPosition {
-
-        public Coordinates coordinates;
-
-        public Instant start;
-
-        public Instant currentTime;
-
-        List<LegSegment> legSegments;
-
-        public TravellerPosition(
-            Coordinates coordinates,
-            Instant start,
-            Instant currentTime,
-            List<LegSegment> legSegments
-        ) {
-            this.coordinates = coordinates;
-            this.start = start;
-            this.currentTime = currentTime;
-            this.legSegments = legSegments;
-        }
     }
 
     private static class TurnTrace {

@@ -7,6 +7,7 @@ import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.time.Instant;
 
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getNearestLegSegment;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
 
@@ -24,12 +25,16 @@ public class TravelerPosition {
     /** Traveler current time. */
     public Instant currentTime;
 
+    /** The leg segment that is nearest to the traveler. */
+    public LegSegment nearestLegSegment;
+
     public TravelerPosition(TrackedJourney trackedJourney, Itinerary itinerary) {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
         currentTime = lastLocation.timestamp.toInstant();
         currentPosition = new Coordinates(lastLocation);
-        expectedLeg = getExpectedLeg(currentTime, itinerary);
+        expectedLeg = getExpectedLeg(currentPosition, itinerary);
         legSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
+        nearestLegSegment = getNearestLegSegment(currentPosition, itinerary);
     }
 
     /** Used for unit testing. */

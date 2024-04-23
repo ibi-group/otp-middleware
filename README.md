@@ -263,12 +263,16 @@ The special E2E client settings should be defined in `env.yml`:
 | SPARKPOST_KEY | string | Optional | your-api-key | Get Sparkpost key at: https://app.sparkpost.com/account/api-keys |
 | TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS | integer | Optional | 5 | The expected frequency to receive live journey location data. |
 | TRIP_TRACKING_MINIMUM_SEGMENT_TIME | integer | Optional | 5 | The minimum segment size in seconds for interpolated points. |
-| TRIP_TRACKING_WALK_BOUNDARY | integer | Optional | 5 | The threshold in meters below which walking is considered on track. |
-| TRIP_TRACKING_BICYCLE_BOUNDARY | integer | Optional | 10 | The threshold in meters below which cycling is considered on track. |
-| TRIP_TRACKING_BUS_BOUNDARY | integer | Optional | 20 | The threshold in meters below which travelling by bus is considered on track. |
-| TRIP_TRACKING_SUBWAY_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by subway is considered on track. |
-| TRIP_TRACKING_TRAM_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by tram is considered on track. |
-| TRIP_TRACKING_RAIL_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by rail is considered on track. |
+| TRIP_TRACKING_WALK_ON_TRACK_RADIUS | integer | Optional | 5 | The threshold in meters below which walking is considered on track. |
+| TRIP_TRACKING_WALK_DEVIATED_RADIUS | integer | Optional | 10 | The threshold in meters below which walking is considered deviated. |
+| TRIP_TRACKING_BICYCLE_ON_TRACK_RADIUS | integer | Optional | 10 | The threshold in meters below which cycling is considered on track. |
+| TRIP_TRACKING_BICYCLE_DEVIATED_RADIUS | integer | Optional | 20 | The threshold in meters below which cycling is considered deviated. |
+| TRIP_TRACKING_BUS_ON_TRACK_RADIUS | integer | Optional | 20 | The threshold in meters below which travelling by bus is considered on track. |
+| TRIP_TRACKING_BUS_DEVIATED_RADIUS | integer | Optional | 40 | The threshold in meters below which travelling by bus is considered deviated. |
+| TRIP_TRACKING_SUBWAY_ON_TRACK_RADIUS | integer | Optional | 100 | The threshold in meters below which travelling by subway is considered on track. |
+| TRIP_TRACKING_SUBWAY_DEVIATED_RADIUS | integer | Optional | 200 | The threshold in meters below which travelling by tram is considered deviated. |
+| TRIP_TRACKING_RAIL_ON_TRACK_RADIUS | integer | Optional | 200 | The threshold in meters below which travelling by rail is considered on track. |
+| TRIP_TRACKING_RAIL_DEVIATED_RADIUS | integer | Optional | 400 | The threshold in meters below which travelling by rail is considered deviated. |
 | TRIP_INSTRUCTION_IMMEDIATE_RADIUS | integer | Optional | 2 | The radius in meters under which an immediate instruction is given. |
 | TRIP_INSTRUCTION_UPCOMING_RADIUS | integer | Optional | 10 | The radius in meters under which an upcoming instruction is given. |
 | TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |

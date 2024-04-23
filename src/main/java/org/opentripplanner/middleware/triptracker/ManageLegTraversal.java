@@ -5,15 +5,15 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import javax.annotation.Nullable;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.getAllLegPositions;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getLegGeoPoints;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
+import static org.opentripplanner.middleware.utils.GeometryUtils.isPointBetween;
 
 public class ManageLegTraversal {
 
@@ -58,33 +58,45 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Get the expected leg by comparing the current time against the start and end time of each leg.
+     * Get the expected leg by comparing the current position against all points on a leg. Comparing against all points
+     * on a leg gives greater accuracy than just comparing against the start and end of a leg.
      */
     @Nullable
-    public static Leg getExpectedLeg(Instant timeNow, Itinerary itinerary) {
+    public static Leg getExpectedLeg(Coordinates position, Itinerary itinerary) {
         if (canUseTripLegs(itinerary)) {
             for (int i = 0; i < itinerary.legs.size(); i++) {
                 Leg leg = itinerary.legs.get(i);
-                if (i == 0 &&
-                    leg.mode.equalsIgnoreCase("walk") &&
-                    leg.startTime != null &&
-                    timeNow.isBefore(leg.startTime.toInstant())) {
-                    // If the first leg is a walk leg and the traveler has decided to start the trip early.
-                    return leg;
-                }
-                if (leg.startTime != null &&
-                    leg.endTime != null &&
-                    isTimeInRange(
-                        leg.startTime.toInstant(),
-                        // Offset the end time by a faction to avoid exact times being attributed to the wrong leg.
-                        leg.endTime.toInstant().minus(1, ChronoUnit.MILLIS),
-                        timeNow
-                    )) {
-                    return leg;
+                List<Coordinates> allPositions = getAllLegPositions(leg);
+                for (int j = 0; j < allPositions.size() - 1; j++) {
+                    if (isPointBetween(allPositions.get(j), allPositions.get(j + 1), position)) {
+                        return leg;
+                    }
                 }
             }
         }
         return null;
+    }
+
+    /**
+     * Get the nearest leg segment.
+     */
+    public static LegSegment getNearestLegSegment(Coordinates position, Itinerary itinerary) {
+        double nearestDistance = Double.MAX_VALUE;
+        LegSegment legSegment = null;
+        if (canUseTripLegs(itinerary)) {
+            for (int i = 0; i < itinerary.legs.size(); i++) {
+                Leg leg = itinerary.legs.get(i);
+                List<Coordinates> allPositions = getAllLegPositions(leg);
+                for (int j = 0; j < allPositions.size() - 1; j++) {
+                    double distance = getDistanceFromLine(allPositions.get(j), allPositions.get(j + 1), position);
+                    if (distance < nearestDistance) {
+                        nearestDistance = distance;
+                        legSegment = new LegSegment(distance, leg.mode);
+                    }
+                }
+            }
+        }
+        return legSegment;
     }
 
     /**
@@ -110,41 +122,10 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Get the segment which contains the current time.
-     */
-    @Nullable
-    public static LegSegment getSegmentFromTime(
-        Instant segmentStartTime,
-        Instant currentTime,
-        List<LegSegment> legSegments
-    ) {
-        for (LegSegment legSegment : legSegments) {
-            // Offset the end time by a fraction to avoid exact times being attributed to the wrong previous segment.
-            Instant segmentEndTime = segmentStartTime.plus(
-                (getSecondsToMilliseconds(legSegment.timeInSegment) - 1),
-                ChronoUnit.MILLIS
-            );
-            if (isTimeInRange(segmentStartTime, segmentEndTime, currentTime)) {
-                return legSegment;
-            }
-            segmentStartTime = segmentEndTime;
-        }
-        return null;
-    }
-
-    /**
      * Convert the time in seconds to milliseconds.
      */
     public static long getSecondsToMilliseconds(double timeInSeconds) {
         return (long) (timeInSeconds * 1000);
-    }
-
-    /**
-     * Check if the current time is between the start and end times.
-     */
-    public static boolean isTimeInRange(Instant startTime, Instant endTime, Instant currentTime) {
-        return (currentTime.isAfter(startTime) || currentTime.equals(startTime)) &&
-            (currentTime.isBefore(endTime) || currentTime.equals(endTime));
     }
 
     /**
