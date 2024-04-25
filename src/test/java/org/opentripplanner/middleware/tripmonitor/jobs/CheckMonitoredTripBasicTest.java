@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -61,7 +60,7 @@ class CheckMonitoredTripBasicTest {
     }
 
     /** Add the day-of-week of the itinerary start time as the recurring day, and the next day too. */
-    private static void setMonitoredDaysForTest(MonitoredTrip trip) {
+    static void setMonitoredDaysForTest(MonitoredTrip trip) {
         DayOfWeek dayOfWeek = DayOfWeek.of(LocalDate.ofInstant(
             trip.itinerary.startTime.toInstant(),
             DateTimeUtils.getOtpZoneId()).get(ChronoField.DAY_OF_WEEK
@@ -100,16 +99,7 @@ class CheckMonitoredTripBasicTest {
         }
     }
 
-    @Test
-    void shouldReportOneTimeTripInPastAsCompleted() throws CloneNotSupportedException {
-        MonitoredTrip trip = makeMonitoredTripFromNow(-900, -300);
-        trip.journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
-
-        new CheckMonitoredTrip(trip).checkOtpAndUpdateTripStatus();
-        assertEquals(TripStatus.PAST_TRIP, trip.journeyState.tripStatus);
-    }
-
-    private static MonitoredTrip makeMonitoredTripFromNow(int startOffsetSecs, int endOffsetSecs) {
+    static MonitoredTrip makeMonitoredTripFromNow(int startOffsetSecs, int endOffsetSecs) {
         Instant now = Instant.now();
         Date start = Date.from(now.plusSeconds(startOffsetSecs));
 

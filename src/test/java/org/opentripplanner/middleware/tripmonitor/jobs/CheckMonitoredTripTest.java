@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -41,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
@@ -598,5 +598,14 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             mockCheckMonitoredTrip.notifications.iterator().next().body,
             "The notification should have the appropriate message when the trip is no longer possible"
         );
+    }
+
+    @Test
+    void shouldReportOneTimeTripInPastAsCompleted() throws CloneNotSupportedException {
+        MonitoredTrip trip = makeMonitoredTripFromNow(-900, -300);
+        trip.journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
+
+        new CheckMonitoredTrip(trip).checkOtpAndUpdateTripStatus();
+        assertEquals(TripStatus.PAST_TRIP, trip.journeyState.tripStatus);
     }
 }
