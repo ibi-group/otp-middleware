@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
@@ -96,6 +97,12 @@ class CheckMonitoredTripBasicTest {
                 break;
             default:
                 break;
+        }
+        if (trip.itineraryExistence == null) {
+            ItineraryExistence existence = new ItineraryExistence();
+            existence.setResultForDayOfWeek(new ItineraryExistence.ItineraryExistenceResult(), dayOfWeek);
+            existence.setResultForDayOfWeek(new ItineraryExistence.ItineraryExistenceResult(), dayOfWeek.plus(1));
+            trip.itineraryExistence = existence;
         }
     }
 

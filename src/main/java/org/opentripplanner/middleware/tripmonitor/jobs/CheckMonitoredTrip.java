@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
+import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -210,15 +211,26 @@ public class CheckMonitoredTrip implements Runnable {
 
     /**
      * Find and set the matching itinerary from the OTP response, and update trip status accordingly.
+     * @return false to indicate that no further checks for delays/alerts/etc should occur, true otherwise.
      */
     public boolean checkOtpAndUpdateTripStatus() {
+        // If tracking is still ongoing, don't check OTP.
+        if (isTrackingOngoing() && trip.journeyState.matchingItinerary.hasEnded()) {
+            return false;
+        }
+
         // For one-time trips in the past, update status accordingly and don't check OTP.
         if (trip.isOneTime() && trip.itinerary.hasEnded()) {
             trip.journeyState.tripStatus = TripStatus.PAST_TRIP;
             return false;
         }
+
         // Perform normal OTP checks otherwise.
         return makeOTPRequestAndUpdateMatchingItineraryInternal();
+    }
+
+    private boolean isTrackingOngoing() {
+        return trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && ManageTripTracking.getOngoingTrackedJourney(trip.id) != null;
     }
 
     /**

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
+import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
@@ -26,10 +27,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -41,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
+import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.setMonitoredDaysForTest;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
@@ -607,5 +613,57 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         new CheckMonitoredTrip(trip).checkOtpAndUpdateTripStatus();
         assertEquals(TripStatus.PAST_TRIP, trip.journeyState.tripStatus);
+    }
+
+    @Test
+    void shouldReportOneTimeTripInPastWithTrackingAsActive() throws CloneNotSupportedException {
+        MonitoredTrip trip = makeMonitoredTripFromNow(-900, -300);
+        trip.id =  UUID.randomUUID().toString();
+        trip.userId = user.id;
+        trip.journeyState.matchingItinerary = trip.itinerary;
+        trip.journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
+        Persistence.monitoredTrips.create(trip);
+
+        TrackedJourney journey = new TrackedJourney();
+        journey.id = UUID.randomUUID().toString();
+        journey.tripId = trip.id;
+        journey.startTime = trip.itinerary.startTime;
+        // No end time or condition provided in this case as tracking is still ongoing.
+        Persistence.trackedJourneys.create(journey);
+
+        new CheckMonitoredTrip(trip).checkOtpAndUpdateTripStatus();
+        assertEquals(TripStatus.TRIP_ACTIVE, trip.journeyState.tripStatus);
+    }
+
+    @Test
+    void shouldReportRecurringTripInstanceInPastAsUpcoming() throws Exception {
+        MonitoredTrip trip = makeMonitoredTripFromNow(-900, -300);
+        setMonitoredDaysForTest(trip);
+        String todayFormatted = getShiftedDay(trip.itinerary.startTime, 0);
+        trip.id =  UUID.randomUUID().toString();
+        trip.userId = user.id;
+        trip.journeyState.matchingItinerary = trip.itinerary;
+        trip.journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
+        trip.journeyState.targetDate = todayFormatted;
+        Persistence.monitoredTrips.create(trip);
+
+        // Build fake OTP response, using an existing one as template
+        OtpResponse otpResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        Itinerary adjustedItinerary = trip.itinerary.clone();
+        //adjustedItinerary.startTime = Date.from(adjustedItinerary.startTime.toInstant().plus(1, ChronoUnit.DAYS));
+        //adjustedItinerary.endTime = Date.from(adjustedItinerary.endTime.toInstant().plus(1, ChronoUnit.DAYS));
+        otpResponse.plan.itineraries = List.of(adjustedItinerary);
+
+        CheckMonitoredTrip check = new CheckMonitoredTrip(trip, () -> otpResponse);
+        check.shouldSkipMonitoredTripCheck(false);
+        check.checkOtpAndUpdateTripStatus();
+        assertEquals(TripStatus.TRIP_UPCOMING, trip.journeyState.tripStatus);
+        assertEquals(getShiftedDay(trip.itinerary.startTime, 1), trip.journeyState.targetDate);
+    }
+
+    static String getShiftedDay(Date startTime, int dayShift) {
+        Instant startInstant = startTime.toInstant();
+        Date nextDayStart = Date.from(startInstant.plus(dayShift, ChronoUnit.DAYS));
+        return DateTimeUtils.makeOtpZonedDateTime(nextDayStart).format(DateTimeFormatter.ISO_LOCAL_DATE);
     }
 }
