@@ -38,6 +38,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.utils.I18nUtils.label;
 
@@ -110,11 +111,20 @@ public class CheckMonitoredTrip implements Runnable {
     /** Contains the initial reminder notification, if any is needed for this check. */
     TripMonitorNotification initialReminderNotification;
 
+    /** The OTP Response provider */
+    private Supplier<OtpResponse> otpResponseProvider;
+
     public CheckMonitoredTrip(MonitoredTrip trip) throws CloneNotSupportedException {
         this.trip = trip;
         previousJourneyState = trip.journeyState;
         journeyState = previousJourneyState.clone();
         previousMatchingItinerary = trip.journeyState.matchingItinerary;
+        this.otpResponseProvider = this::getOtpResponse;
+    }
+
+    public CheckMonitoredTrip(MonitoredTrip trip, Supplier<OtpResponse> otpResponseProvider) throws CloneNotSupportedException {
+        this(trip);
+        this.otpResponseProvider = otpResponseProvider;
     }
 
     @Override
@@ -214,45 +224,15 @@ public class CheckMonitoredTrip implements Runnable {
     /**
      * Find and set the matching itinerary from the OTP response that matches the monitored trip's stored itinerary if a
      * match exists.
+     * @return false to indicate that no further checks for delays/alerts/etc should occur, true otherwise.
      *
      * FIXME: the itinerary might actually still be possible, but for some reason the OTP plan didn't find the same
      *          match. Some additional checks should be performed to make sure the itinerary really isn't possible by
      *          verifying that the same transit schedule/routes exist and that the street network is the same
      */
     private boolean makeOTPRequestAndUpdateMatchingItineraryInternal() {
-        OtpDispatcherResponse otpDispatcherResponse;
-        try {
-            // Generate the appropriate OTP query params for the trip for the current check by replacing the date query
-            // parameter with the appropriate date.
-            Map<String, String> params = trip.parseQueryParams();
-            params.put(ItineraryUtils.DATE_PARAM, targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER));
-            otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP1, ItineraryUtils.toQueryString(params));
-        } catch (Exception e) {
-            BugsnagReporter.reportErrorToBugsnag(
-                "Encountered an error while making a request ot the OTP server.",
-                e
-            );
-            return false;
-        }
-
-        if (otpDispatcherResponse == null) return false;
-
-        if (otpDispatcherResponse.statusCode >= 400) {
-            BugsnagReporter.reportErrorToBugsnag(
-                "Received an error from the OTP server.",
-                otpDispatcherResponse,
-                null
-            );
-            return false;
-        }
-        OtpResponse otpResponse = null;
-        try {
-            otpResponse = otpDispatcherResponse.getResponse();
-        } catch (JsonProcessingException e) {
-            // don't report to Bugsnag since the getResponse method will already have reported to Bugsnag.
-            LOG.error("Unable to parse OTP response!", e);
-            return false;
-        }
+        OtpResponse otpResponse = otpResponseProvider.get();
+        if (otpResponse == null) return false;
         for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
             Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
             if (ItineraryUtils.itinerariesMatch(trip.itinerary, candidateItinerary)) {
@@ -327,6 +307,44 @@ public class CheckMonitoredTrip implements Runnable {
             )
         );
         return false;
+    }
+
+    /** Default implementation for OtpResponse provider that actually invokes the OTP server. */
+    private OtpResponse getOtpResponse() {
+        OtpDispatcherResponse otpDispatcherResponse;
+        try {
+            // Generate the appropriate OTP query params for the trip for the current check by replacing the date query
+            // parameter with the appropriate date.
+            Map<String, String> params = trip.parseQueryParams();
+            params.put(ItineraryUtils.DATE_PARAM, targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER));
+            otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP1, ItineraryUtils.toQueryString(params));
+        } catch (Exception e) {
+            BugsnagReporter.reportErrorToBugsnag(
+                "Encountered an error while making a request ot the OTP server.",
+                e
+            );
+            return null;
+        }
+
+        // FIXME in PR Review: Is the below if statement needed? (SonarLint thinks not.)
+        if (otpDispatcherResponse == null) return null;
+
+        if (otpDispatcherResponse.statusCode >= 400) {
+            BugsnagReporter.reportErrorToBugsnag(
+                "Received an error from the OTP server.",
+                otpDispatcherResponse,
+                null
+            );
+            return null;
+        }
+
+        try {
+            return otpDispatcherResponse.getResponse();
+        } catch (JsonProcessingException e) {
+            // don't report to Bugsnag since the getResponse method will already have reported to Bugsnag.
+            LOG.error("Unable to parse OTP response!", e);
+            return null;
+        }
     }
 
     /**
