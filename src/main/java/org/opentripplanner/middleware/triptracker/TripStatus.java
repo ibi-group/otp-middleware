@@ -34,48 +34,25 @@ public enum TripStatus {
     /**
      * The traveler has deviated from the trip route.
      **/
-    DEVIATED,
-
-    /**
-     * Unable to ascertain the traveler's position.
-     **/
-    NO_STATUS;
+    DEVIATED;
 
     public static final int TRIP_TRACKING_WALK_ON_TRACK_RADIUS
         = getConfigPropertyAsInt("TRIP_TRACKING_WALK_ON_TRACK_RADIUS", 5);
 
-    public static final int TRIP_TRACKING_WALK_DEVIATED_RADIUS
-        = getConfigPropertyAsInt("TRIP_TRACKING_WALK_DEVIATED_RADIUS", 10);
-
     public static final int TRIP_TRACKING_BICYCLE_ON_TRACK_RADIUS
         = getConfigPropertyAsInt("TRIP_TRACKING_BICYCLE_ON_TRACK_RADIUS", 10);
-
-    public static final int TRIP_TRACKING_BICYCLE_DEVIATED_RADIUS
-        = getConfigPropertyAsInt("TRIP_TRACKING_BICYCLE_DEVIATED_RADIUS", 20);
 
     public static final int TRIP_TRACKING_BUS_ON_TRACK_RADIUS
         = getConfigPropertyAsInt("TRIP_TRACKING_BUS_ON_TRACK_RADIUS", 20);
 
-    public static final int TRIP_TRACKING_BUS_DEVIATED_RADIUS
-        = getConfigPropertyAsInt("TRIP_TRACKING_BUS_DEVIATED_RADIUS", 30);
-
     public static final int TRIP_TRACKING_SUBWAY_ON_TRACK_RADIUS
         = getConfigPropertyAsInt("TRIP_TRACKING_SUBWAY_ON_TRACK_RADIUS", 100);
-
-    public static final int TRIP_TRACKING_SUBWAY_DEVIATED_RADIUS
-        = getConfigPropertyAsInt("TRIP_TRACKING_SUBWAY_DEVIATED_RADIUS", 200);
 
     public static final int TRIP_TRACKING_TRAM_ON_TRACK_RADIUS
         = getConfigPropertyAsInt("TRIP_TRACKING_TRAM_ON_TRACK_RADIUS", 100);
 
-    public static final int TRIP_TRACKING_TRAM_DEVIATED_RADIUS
-        = getConfigPropertyAsInt("TRIP_TRACKING_TRAM_DEVIATED_RADIUS", 200);
-
     public static final int TRIP_TRACKING_RAIL_ON_TRACK_RADIUS
         = getConfigPropertyAsInt("TRIP_TRACKING_RAIL_ON_TRACK_RADIUS", 200);
-
-    public static final int TRIP_TRACKING_RAIL_DEVIATED_RADIUS
-        = getConfigPropertyAsInt("TRIP_TRACKING_RAIL_DEVIATED_RADIUS", 400);
 
     /**
      * Define the trip status based on the traveler's current position compared to expected and nearest points on the trip.
@@ -103,25 +80,11 @@ public enum TripStatus {
                 return TripStatus.ON_SCHEDULE;
             }
         }
-        if (isWithinModeDeviatedRadius(travelerPosition)) {
-            return TripStatus.DEVIATED;
-        }
-        return TripStatus.NO_STATUS;
+        return TripStatus.DEVIATED;
     }
 
     public static double getSegmentStartTime(LegSegment legSegmentFromPosition) {
         return legSegmentFromPosition.cumulativeTime - legSegmentFromPosition.timeInSegment;
-    }
-
-    /**
-     * Checks if the traveler's position is with an acceptable deviated distance of the mode type.
-     */
-    private static boolean isWithinModeDeviatedRadius(TravelerPosition travelerPosition) {
-        if (travelerPosition.nearestLegSegment != null) {
-            double modeBoundary = getModeRadius(travelerPosition.nearestLegSegment.mode, false);
-            return travelerPosition.nearestLegSegment.distance <= modeBoundary;
-        }
-        return false;
     }
 
     /**
@@ -133,27 +96,27 @@ public enum TripStatus {
             travelerPosition.legSegmentFromPosition.end,
             travelerPosition.currentPosition
         );
-        double modeBoundary = getModeRadius(travelerPosition.legSegmentFromPosition.mode, true);
+        double modeBoundary = getModeRadius(travelerPosition.legSegmentFromPosition.mode);
         return distanceFromExpected <= modeBoundary;
     }
 
     /**
      * Get the acceptable 'on track' or 'deviated' radius in meters for mode.
      */
-    public static double getModeRadius(String mode, boolean onTrack) {
+    public static double getModeRadius(String mode) {
         switch (mode.toUpperCase()) {
             case "WALK":
-                return (onTrack) ? TRIP_TRACKING_WALK_ON_TRACK_RADIUS : TRIP_TRACKING_WALK_DEVIATED_RADIUS;
+                return TRIP_TRACKING_WALK_ON_TRACK_RADIUS;
             case "BICYCLE":
-                return (onTrack) ? TRIP_TRACKING_BICYCLE_ON_TRACK_RADIUS : TRIP_TRACKING_BICYCLE_DEVIATED_RADIUS;
+                return TRIP_TRACKING_BICYCLE_ON_TRACK_RADIUS;
             case "BUS":
-                return (onTrack) ? TRIP_TRACKING_BUS_ON_TRACK_RADIUS : TRIP_TRACKING_BUS_DEVIATED_RADIUS;
+                return TRIP_TRACKING_BUS_ON_TRACK_RADIUS;
             case "SUBWAY":
-                return (onTrack) ? TRIP_TRACKING_SUBWAY_ON_TRACK_RADIUS : TRIP_TRACKING_SUBWAY_DEVIATED_RADIUS;
+                return TRIP_TRACKING_SUBWAY_ON_TRACK_RADIUS;
             case "TRAM":
-                return (onTrack) ? TRIP_TRACKING_TRAM_ON_TRACK_RADIUS : TRIP_TRACKING_TRAM_DEVIATED_RADIUS;
+                return TRIP_TRACKING_TRAM_ON_TRACK_RADIUS;
             case "RAIL":
-                return (onTrack) ? TRIP_TRACKING_RAIL_ON_TRACK_RADIUS : TRIP_TRACKING_RAIL_DEVIATED_RADIUS;
+                return TRIP_TRACKING_RAIL_ON_TRACK_RADIUS;
             default:
                 throw new UnsupportedOperationException("Unknown mode: " + mode);
         }

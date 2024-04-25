@@ -78,28 +78,6 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Get the nearest leg segment.
-     */
-    public static LegSegment getNearestLegSegment(Coordinates position, Itinerary itinerary) {
-        double nearestDistance = Double.MAX_VALUE;
-        LegSegment legSegment = null;
-        if (canUseTripLegs(itinerary)) {
-            for (int i = 0; i < itinerary.legs.size(); i++) {
-                Leg leg = itinerary.legs.get(i);
-                List<Coordinates> allPositions = getAllLegPositions(leg);
-                for (int j = 0; j < allPositions.size() - 1; j++) {
-                    double distance = getDistanceFromLine(allPositions.get(j), allPositions.get(j + 1), position);
-                    if (distance < nearestDistance) {
-                        nearestDistance = distance;
-                        legSegment = new LegSegment(distance, leg.mode);
-                    }
-                }
-            }
-        }
-        return legSegment;
-    }
-
-    /**
      * A trip must have an itinerary that contains at least one leg to qualify for tracking.
      */
     private static boolean canUseTripLegs(Itinerary itinerary) {

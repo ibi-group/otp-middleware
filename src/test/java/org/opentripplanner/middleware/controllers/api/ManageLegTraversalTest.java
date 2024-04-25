@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.controllers.api;
 
 import io.leonard.PolylineUtils;
 import io.leonard.Position;
-import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,7 +14,6 @@ import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.triptracker.TripInstruction;
 import org.opentripplanner.middleware.triptracker.LegSegment;
-import org.opentripplanner.middleware.triptracker.ManageLegTraversal;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import org.opentripplanner.middleware.triptracker.TravelerLocator;
@@ -36,7 +34,6 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextStep;
@@ -136,7 +133,7 @@ public class ManageLegTraversalTest {
                 getDateTimeAsString(startTime, 0),
                 notOnTripCoordinates.lat,
                 notOnTripCoordinates.lon,
-                TripStatus.NO_STATUS,
+                TripStatus.DEVIATED,
                 "Arbitrary lat/lon values which aren't on the trip leg."
             ),
             Arguments.of(

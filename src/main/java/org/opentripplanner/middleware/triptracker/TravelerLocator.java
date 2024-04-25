@@ -63,10 +63,7 @@ public class TravelerLocator {
      * The trip instruction can only be provided if the traveler is close to the indicated route.
      */
     private static boolean hasRequiredTripStatus(TripStatus tripStatus) {
-        return
-            !tripStatus.equals(TripStatus.NO_STATUS) &&
-            !tripStatus.equals(TripStatus.DEVIATED) &&
-            !tripStatus.equals(TripStatus.ENDED);
+        return !tripStatus.equals(TripStatus.DEVIATED) && !tripStatus.equals(TripStatus.ENDED);
     }
 
     /**
