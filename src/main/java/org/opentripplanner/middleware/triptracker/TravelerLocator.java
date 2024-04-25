@@ -32,17 +32,19 @@ public class TravelerLocator {
         TravelerPosition travelerPosition,
         boolean isStartOfTrip
     ) {
-        if (hasRequiredTripStatus(tripStatus) && hasRequiredWalkLeg(travelerPosition)) {
-            TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
-            if (tripInstruction != null) {
-                return tripInstruction.build();
+        if (hasRequiredWalkLeg(travelerPosition)) {
+            if (hasRequiredTripStatus(tripStatus)) {
+                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
+                if (tripInstruction != null) {
+                    return tripInstruction.build();
+                }
             }
-        }
 
-        if (tripStatus.equals(TripStatus.DEVIATED) && hasRequiredWalkLeg(travelerPosition)) {
-            TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
-            if (tripInstruction != null) {
-                return tripInstruction.build();
+            if (tripStatus.equals(TripStatus.DEVIATED)) {
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
+                if (tripInstruction != null) {
+                    return tripInstruction.build();
+                }
             }
         }
         return NO_INSTRUCTION;

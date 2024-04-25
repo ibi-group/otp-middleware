@@ -87,20 +87,14 @@ public class ManageLegTraversalTest {
         LegSegment current = legSegments.get(10);
         LegSegment after = legSegments.get(12);
         Coordinates deviatedCoordinates = createPoint(
-            new Coordinates(current.start.lat, current.start.lon),
+            current.start,
             90,
-            calculateBearing(
-                new Coordinates(current.start.lat, current.start.lon),
-                new Coordinates(after.start.lat, after.start.lon)
-            )
+            calculateBearing(current.start, after.start)
         );
         Coordinates notOnTripCoordinates = createPoint(
-            new Coordinates(current.start.lat, current.start.lon),
+            current.start,
             1000,
-            calculateBearing(
-                new Coordinates(current.start.lat, current.start.lon),
-                new Coordinates(after.start.lat, after.start.lon)
-            )
+            calculateBearing(current.start, after.start)
         );
         return Stream.of(
             Arguments.of(
