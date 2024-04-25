@@ -214,17 +214,15 @@ public class CheckMonitoredTrip implements Runnable {
      * @return false to indicate that no further checks for delays/alerts/etc should occur, true otherwise.
      */
     public boolean checkOtpAndUpdateTripStatus() {
-        // If tracking is still ongoing, don't check OTP.
-        if (isTrackingOngoing() && trip.journeyState.matchingItinerary.hasEnded()) {
+        // If matching itinerary has concluded, and live tracking is ongoing or the trip is one-time, don't check OTP.
+        boolean oneTime = trip.isOneTime();
+        boolean trackingOngoing = isTrackingOngoing();
+        if ((oneTime || trackingOngoing) && trip.journeyState.matchingItinerary.hasEnded()) {
+            if (oneTime && !trackingOngoing) {
+                trip.journeyState.tripStatus = TripStatus.PAST_TRIP;
+            }
             return false;
         }
-
-        // For one-time trips in the past, update status accordingly and don't check OTP.
-        if (trip.isOneTime() && trip.itinerary.hasEnded()) {
-            trip.journeyState.tripStatus = TripStatus.PAST_TRIP;
-            return false;
-        }
-
         // Perform normal OTP checks otherwise.
         return makeOTPRequestAndUpdateMatchingItineraryInternal();
     }
