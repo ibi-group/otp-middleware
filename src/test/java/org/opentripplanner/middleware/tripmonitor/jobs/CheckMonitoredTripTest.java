@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
-import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
@@ -29,12 +28,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -191,7 +187,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis +=
             eighteenMinutesInMilliseconds;
         CheckMonitoredTrip twentyMinutesLateTripWithUpdatedThreshold = createCheckMonitoredTrip(
-            twentyMinutesLateJourneyStateWithUpdatedThreshold
+            twentyMinutesLateJourneyStateWithUpdatedThreshold, null
         );
         twentyMinutesLateTripWithUpdatedThreshold.matchingItinerary.offsetTimes(
             TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
@@ -213,7 +209,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         onTimeJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis += eighteenMinutesInMilliseconds;
         onTimeJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis += eighteenMinutesInMilliseconds;
         CheckMonitoredTrip onTimeTripWithUpdatedThreshold = createCheckMonitoredTrip(
-            onTimeJourneyStateWithUpdatedThreshold
+            onTimeJourneyStateWithUpdatedThreshold, null
         );
         testCases.add(new DelayNotificationTestCase(
             onTimeTripWithUpdatedThreshold,
@@ -235,7 +231,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
      */
     private static CheckMonitoredTrip createCheckMonitoredTrip() throws Exception {
-        return createCheckMonitoredTrip(OtpTestUtils.createDefaultJourneyState());
+        return createCheckMonitoredTrip(OtpTestUtils.createDefaultJourneyState(), null);
     }
 
     /**
@@ -250,23 +246,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      * created using the default OTP response. Also, creates a new matching itinerary that consists of the first
      * itinerary in the default OTP response.
      */
-    private static CheckMonitoredTrip createCheckMonitoredTrip(JourneyState journeyState) throws Exception {
-        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
-            user.id,
-            OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.clone(),
-            false,
-            journeyState
-        );
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip);
-        checkMonitoredTrip.matchingItinerary = OtpTestUtils.createDefaultItinerary();
-        return checkMonitoredTrip;
-    }
-
-    /**
-     * Creates a new CheckMonitoredTrip instance with a new non-persisted MonitoredTrip instance. The monitored trip is
-     * created using the default OTP response. Also, creates a new matching itinerary that consists of the first
-     * itinerary in the default OTP response.
-     */
     private static CheckMonitoredTrip createCheckMonitoredTrip(JourneyState journeyState, Supplier<OtpResponse> otpResponseProvider) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
@@ -274,7 +253,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             false,
             journeyState
         );
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, otpResponseProvider);
+        CheckMonitoredTrip checkMonitoredTrip = otpResponseProvider != null
+            ? new CheckMonitoredTrip(monitoredTrip, otpResponseProvider)
+            : new CheckMonitoredTrip(monitoredTrip);
         checkMonitoredTrip.matchingItinerary = OtpTestUtils.createDefaultItinerary();
         return checkMonitoredTrip;
     }
