@@ -645,9 +645,9 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         // Check if the previous matching itinerary was null or if it has already concluded
-        boolean prevMatchingItineraryConcluded = previousMatchingItinerary != null &&
+        boolean prevMatchingItineraryNotConcluded = previousMatchingItinerary != null &&
             previousMatchingItinerary.endTime.after(new Date(previousJourneyState.lastCheckedEpochMillis));
-        if (prevMatchingItineraryConcluded) {
+        if (prevMatchingItineraryNotConcluded) {
             // Skip checking the trip the rest of the time that it is active if the trip was deemed not possible for the
             // next possible time during a previous query to find candidate itinerary matches.
             if (previousJourneyState.tripStatus == TripStatus.NEXT_TRIP_NOT_POSSIBLE) {
