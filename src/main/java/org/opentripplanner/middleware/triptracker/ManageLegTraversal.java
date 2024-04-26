@@ -68,9 +68,8 @@ public class ManageLegTraversal {
         if (canUseTripLegs(itinerary)) {
             for (int i = 0; i < itinerary.legs.size(); i++) {
                 Leg leg = itinerary.legs.get(i);
-                List<Coordinates> allPositions = getAllLegPositions(leg);
-                for (Coordinates allPosition : allPositions) {
-                    double distance = getDistance(allPosition, position);
+                for (Coordinates positionOnLeg : getAllLegPositions(leg)) {
+                    double distance = getDistance(positionOnLeg, position);
                     if (distance < shortestDistance) {
                         nearestLeg = leg;
                         shortestDistance = distance;
