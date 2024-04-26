@@ -101,7 +101,7 @@ public enum TripStatus {
     }
 
     /**
-     * Get the acceptable 'on track' or 'deviated' radius in meters for mode.
+     * Get the acceptable 'on track' radius in meters for mode.
      */
     public static double getModeRadius(String mode) {
         switch (mode.toUpperCase()) {

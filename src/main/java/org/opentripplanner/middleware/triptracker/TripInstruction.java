@@ -51,7 +51,7 @@ public class TripInstruction {
     }
 
     /**
-     * On track instruction.
+     * On track instruction to step.
      */
     public TripInstruction(double distance, Step legStep) {
         this(false, distance);
@@ -59,10 +59,10 @@ public class TripInstruction {
     }
 
     /**
-     * On track instruction.
+     * On track instruction to destination.
      */
     public TripInstruction(double distance, String locationName) {
-        this(false, distance);
+        this(true, distance);
         this.locationName = locationName;
     }
 
