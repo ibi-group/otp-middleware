@@ -63,18 +63,22 @@ public class ManageLegTraversal {
      */
     @Nullable
     public static Leg getExpectedLeg(Coordinates position, Itinerary itinerary) {
+        double shortestDistance = Double.MAX_VALUE;
+        Leg nearestLeg = null;
         if (canUseTripLegs(itinerary)) {
             for (int i = 0; i < itinerary.legs.size(); i++) {
                 Leg leg = itinerary.legs.get(i);
                 List<Coordinates> allPositions = getAllLegPositions(leg);
-                for (int j = 0; j < allPositions.size() - 1; j++) {
-                    if (isPointBetween(allPositions.get(j), allPositions.get(j + 1), position)) {
-                        return leg;
+                for (Coordinates allPosition : allPositions) {
+                    double distance = getDistance(allPosition, position);
+                    if (distance < shortestDistance) {
+                        nearestLeg = leg;
+                        shortestDistance = distance;
                     }
                 }
             }
         }
-        return null;
+        return nearestLeg;
     }
 
     /**
