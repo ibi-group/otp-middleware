@@ -62,13 +62,13 @@ public class NotificationUtils {
      * @param textTemplate  template to use for email in text format
      * @param templateData  template data
      */
-    public static String sendPush(OtpUser otpUser, String textTemplate, Object templateData, String tripId) {
+    public static String sendPush(OtpUser otpUser, String textTemplate, Object templateData, String tripName, String tripId) {
         // If Push API config properties aren't set, do nothing.
         if (PUSH_API_KEY == null || PUSH_API_URL == null) return null;
         try {
             String body = TemplateUtils.renderTemplate(textTemplate, templateData);
             String toUser = otpUser.email;
-            return otpUser.pushDevices > 0 ? sendPush(toUser, body, tripId) : "OK";
+            return otpUser.pushDevices > 0 ? sendPush(toUser, body, tripName, tripId) : "OK";
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
             // handles Bugsnag reporting/error logging, so that is not needed here.
@@ -83,11 +83,12 @@ public class NotificationUtils {
      * @param tripId    Monitored trip ID
      * @return          "OK" if message was successful (null otherwise)
      */
-    static String sendPush(String toUser, String body, String tripId) {
+    static String sendPush(String toUser, String body, String tripName, String tripId) {
         try {
             NotificationInfo notifInfo = new NotificationInfo(
                 toUser,
                 body.substring(0, Math.min(PUSH_MESSAGE_MAX_LENGTH, body.length())),
+                tripName,
                 tripId
             );
             var jsonBody = new Gson().toJson(notifInfo);
@@ -377,12 +378,18 @@ public class NotificationUtils {
     static class NotificationInfo {
         public final String user;
         public final String message;
+        public final String title;
         public final String tripId;
 
-        public NotificationInfo(String user, String message, String tripId) {
+        public NotificationInfo(String user, String message, String title, String tripId) {
             this.user = user;
+            this.title = title;
             this.message = message;
             this.tripId = tripId;
+        }
+
+        public NotificationInfo(String user, String message, String tripId) {
+            this(user, null, message, tripId);
         }
     }
 }

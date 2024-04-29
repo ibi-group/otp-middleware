@@ -526,7 +526,7 @@ public class CheckMonitoredTrip implements Runnable {
      * Send push notification.
      */
     private boolean sendPush(OtpUser otpUser, Map<String, Object> data) {
-        return NotificationUtils.sendPush(otpUser, "MonitoredTripPush.ftl", data, this.trip.id) != null;
+        return NotificationUtils.sendPush(otpUser, "MonitoredTripPush.ftl", data, this.trip.tripName, this.trip.id) != null;
     }
 
     /**
