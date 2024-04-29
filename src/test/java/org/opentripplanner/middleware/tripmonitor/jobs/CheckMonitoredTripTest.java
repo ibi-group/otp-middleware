@@ -665,11 +665,14 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void shouldReportRecurringTripInstanceInPastWithTrackingAsActive() throws CloneNotSupportedException {
+    void shouldReportRecurringTripInstanceInPastWithTrackingAsActive() throws Exception {
         MonitoredTrip trip = createPastActiveTripWithTrackedJourney();
         setMonitoredDaysForTest(trip);
         String todayFormatted = trip.journeyState.targetDate;
-        new CheckMonitoredTrip(trip).checkOtpAndUpdateTripStatus();
+
+        CheckMonitoredTrip check = new CheckMonitoredTrip(trip);
+        check.shouldSkipMonitoredTripCheck(false);
+        check.checkOtpAndUpdateTripStatus();
         // Trip should remain active, and the target date should still be "today".
         assertEquals(TripStatus.TRIP_ACTIVE, trip.journeyState.tripStatus);
         assertEquals(todayFormatted, trip.journeyState.targetDate);
