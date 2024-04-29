@@ -58,26 +58,51 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Get the expected leg by comparing the current position against all points on a leg. Comparing against all points
-     * on a leg gives greater accuracy than just comparing against the start and end of a leg.
+     * Get the expected leg by first checking to see if two points on a leg contain the current position. If there is a
+     * match, return this leg, if not simply return the leg that is nearest to the current position.
      */
     @Nullable
     public static Leg getExpectedLeg(Coordinates position, Itinerary itinerary) {
+        if (canUseTripLegs(itinerary)) {
+            Leg leg = getContainingLeg(position, itinerary);
+            return (leg != null) ? leg : getNearestLeg(position, itinerary);
+        }
+        return null;
+    }
+
+    /**
+     * Get the leg that is nearest to the current position.
+     */
+    private static Leg getNearestLeg(Coordinates position, Itinerary itinerary) {
         double shortestDistance = Double.MAX_VALUE;
         Leg nearestLeg = null;
-        if (canUseTripLegs(itinerary)) {
-            for (int i = 0; i < itinerary.legs.size(); i++) {
-                Leg leg = itinerary.legs.get(i);
-                for (Coordinates positionOnLeg : getAllLegPositions(leg)) {
-                    double distance = getDistance(positionOnLeg, position);
-                    if (distance < shortestDistance) {
-                        nearestLeg = leg;
-                        shortestDistance = distance;
-                    }
+        for (int i = 0; i < itinerary.legs.size(); i++) {
+            Leg leg = itinerary.legs.get(i);
+            for (Coordinates positionOnLeg : getAllLegPositions(leg)) {
+                double distance = getDistance(positionOnLeg, position);
+                if (distance < shortestDistance) {
+                    nearestLeg = leg;
+                    shortestDistance = distance;
                 }
             }
         }
         return nearestLeg;
+    }
+
+    /**
+     * Get the leg containing the current position.
+     */
+    private static Leg getContainingLeg(Coordinates position, Itinerary itinerary) {
+        for (int i = 0; i < itinerary.legs.size(); i++) {
+            Leg leg = itinerary.legs.get(i);
+            List<Coordinates> allPositions = getAllLegPositions(leg);
+            for (int j = 0; j < allPositions.size() - 1; j++) {
+                if (isPointBetween(allPositions.get(j), allPositions.get(j + 1), position)) {
+                    return leg;
+                }
+            }
+        }
+        return null;
     }
 
     /**
