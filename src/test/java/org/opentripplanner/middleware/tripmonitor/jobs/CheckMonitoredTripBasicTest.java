@@ -30,7 +30,7 @@ class CheckMonitoredTripBasicTest {
     void testSkipMonitoredTripCheck(SkipMonitoringTestArgs args) throws Exception {
         MonitoredTrip trip = makeMonitoredTripFromNow(args.tripStartOffsetSecs, args.tripEndOffsetSecs);
         if (args.isRecurring) {
-            setMonitoredDaysForTest(trip);
+            setRecurringTodayAndTomorrow(trip);
         }
         if (args.pastState) {
             trip.journeyState.tripStatus = TripStatus.PAST_TRIP;
@@ -61,7 +61,7 @@ class CheckMonitoredTripBasicTest {
     }
 
     /** Add the day-of-week of the itinerary start time as the recurring day, and the next day too. */
-    static void setMonitoredDaysForTest(MonitoredTrip trip) {
+    static void setRecurringTodayAndTomorrow(MonitoredTrip trip) {
         DayOfWeek dayOfWeek = DayOfWeek.of(LocalDate.ofInstant(
             trip.itinerary.startTime.toInstant(),
             DateTimeUtils.getOtpZoneId()).get(ChronoField.DAY_OF_WEEK

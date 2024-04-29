@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
-import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.setMonitoredDaysForTest;
+import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.setRecurringTodayAndTomorrow;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
@@ -650,7 +650,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @Test
     void shouldReportRecurringTripInstanceInPastAsUpcoming() throws Exception {
         MonitoredTrip trip = createPastActiveTrip();
-        setMonitoredDaysForTest(trip);
+        setRecurringTodayAndTomorrow(trip);
 
         // Build fake OTP response, using an existing one as template
         OtpResponse otpResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
@@ -667,7 +667,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @Test
     void shouldReportRecurringTripInstanceInPastWithTrackingAsActive() throws Exception {
         MonitoredTrip trip = createPastActiveTripWithTrackedJourney();
-        setMonitoredDaysForTest(trip);
+        setRecurringTodayAndTomorrow(trip);
         String todayFormatted = trip.journeyState.targetDate;
 
         CheckMonitoredTrip check = new CheckMonitoredTrip(trip);
