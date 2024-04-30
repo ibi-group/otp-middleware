@@ -160,43 +160,29 @@ public class ManageLegTraversalTest {
         final int SOUTH_BEARING = 180;
         final int SOUTH_WEST_BEARING = 225;
         final int NORTH_WEST_BEARING = 315;
+
         Leg adairAvenueToMonroeDriveLeg = adairAvenueToMonroeDriveItinerary.legs.get(0);
         List<Step> walkSteps = adairAvenueToMonroeDriveLeg.steps;
+        String destinationName = adairAvenueToMonroeDriveLeg.to.name;
+
+        Step adairAvenueNortheastStep = walkSteps.get(0);
+        Step virginiaCircleNortheastStep = walkSteps.get(1);
+        Step ponceDeLeonPlaceNortheastStep = walkSteps.get(2);
+        Step virginiaAvenueNortheastStep = walkSteps.get(5);
+
         Coordinates originCoords = new Coordinates(adairAvenueToMonroeDriveLeg.from);
         Coordinates destinationCoords = new Coordinates(adairAvenueToMonroeDriveLeg.to);
-        String destinationName = adairAvenueToMonroeDriveLeg.to.name;
-        Step stepOne = walkSteps.get(0);
-        Coordinates stepOneCoords = new Coordinates(stepOne);
-        Step stepTwo = walkSteps.get(1);
-        Coordinates stepTwoCoords = new Coordinates(stepTwo);
-        Step stepThree = walkSteps.get(2);
-        Coordinates stepThreeCoords = new Coordinates(stepThree);
-
-        Step virginiaAvenue = walkSteps.get(5);
+        Coordinates adairAvenueNortheastCoords = new Coordinates(adairAvenueNortheastStep);
+        Coordinates virginiaCircleNortheastCoords = new Coordinates(virginiaCircleNortheastStep);
+        Coordinates ponceDeLeonPlaceNortheastCoords = new Coordinates(ponceDeLeonPlaceNortheastStep);
+        Coordinates virginiaAvenuePoint = new Coordinates(virginiaAvenueNortheastStep);
         Coordinates pointBeforeTurn = new Coordinates(33.78151,-84.36481);
-        Coordinates virginiaAvenuePoint = new Coordinates(virginiaAvenue);
 
         return Stream.of(
             Arguments.of(
                 new TurnTrace(
-                    createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new TripInstruction(10, virginiaAvenue).build(),
-                    false,
-                    "Approaching left turn on Virginia Avenue (Test to make sure turn is not missed)."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    createPoint(pointBeforeTurn, 16, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new TripInstruction(2, virginiaAvenue).build(),
-                    false,
-                    "Turn left on to Virginia Avenue (Test to make sure turn is not missed)."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
                     originCoords,
-                    new TripInstruction(10, stepOne).build(),
+                    new TripInstruction(10, adairAvenueNortheastStep).build(),
                     true,
                     "Just started the trip and near to the instruction for the first step. "
                 )
@@ -204,15 +190,15 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     originCoords,
-                    new TripInstruction(10, stepOne).build(),
+                    new TripInstruction(10, adairAvenueNortheastStep).build(),
                     false,
                     "Coming up on first instruction."
                 )
             ),
             Arguments.of(
                 new TurnTrace(
-                    stepOneCoords,
-                    new TripInstruction(2, stepOne).build(),
+                    adairAvenueNortheastCoords,
+                    new TripInstruction(2, adairAvenueNortheastStep).build(),
                     false,
                     "On first instruction."
                 )
@@ -220,8 +206,8 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     TripStatus.DEVIATED,
-                    createPoint(stepOneCoords, 12, NORTH_WEST_BEARING),
-                    new TripInstruction(stepOne.streetName).build(),
+                    createPoint(adairAvenueNortheastCoords, 12, NORTH_WEST_BEARING),
+                    new TripInstruction(adairAvenueNortheastStep.streetName).build(),
                     false,
                     "Deviated to the north of east to west path. Suggest path to head towards."
                 )
@@ -229,15 +215,15 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     TripStatus.DEVIATED,
-                    createPoint(stepOneCoords, 12, SOUTH_WEST_BEARING),
-                    new TripInstruction(stepOne.streetName).build(),
+                    createPoint(adairAvenueNortheastCoords, 12, SOUTH_WEST_BEARING),
+                    new TripInstruction(adairAvenueNortheastStep.streetName).build(),
                     false,
                     "Deviated to the south of east to west path. Suggest path to head towards."
                 )
             ),
             Arguments.of(
                 new TurnTrace(
-                    createPoint(stepTwoCoords, 12, SOUTH_WEST_BEARING),
+                    createPoint(virginiaCircleNortheastCoords, 12, SOUTH_WEST_BEARING),
                     NO_INSTRUCTION,
                     false,
                     "On track approaching second step, but not close enough for instruction."
@@ -246,16 +232,16 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     TripStatus.DEVIATED,
-                    createPoint(stepTwoCoords, 8, NORTH_BEARING),
-                    new TripInstruction(9, stepTwo).build(),
+                    createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING),
+                    new TripInstruction(9, virginiaCircleNortheastStep).build(),
                     false,
                     "Deviated from path, but within the upcoming radius of second instruction."
                 )
             ),
             Arguments.of(
                 new TurnTrace(
-                    stepTwoCoords,
-                    new TripInstruction(0, stepTwo).build(),
+                    virginiaCircleNortheastCoords,
+                    new TripInstruction(0, virginiaCircleNortheastStep).build(),
                     false,
                     "On second instruction."
                 )
@@ -263,8 +249,8 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     TripStatus.DEVIATED,
-                    createPoint(stepThreeCoords, 8, NORTH_WEST_BEARING),
-                    new TripInstruction(10, stepThree).build(),
+                    createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_WEST_BEARING),
+                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep).build(),
                     false,
                     "Deviated to the west of south to north path. Suggest path to head towards."
                 )
@@ -272,10 +258,26 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     TripStatus.DEVIATED,
-                    createPoint(stepThreeCoords, 8, NORTH_EAST_BEARING),
-                    new TripInstruction(10, stepThree).build(),
+                    createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_EAST_BEARING),
+                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep).build(),
                     false,
                     "Deviated to the east of south to north path. Suggest path to head towards."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
+                    new TripInstruction(10, virginiaAvenueNortheastStep).build(),
+                    false,
+                    "Approaching left turn on Virginia Avenue (Test to make sure turn is not missed)."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    createPoint(pointBeforeTurn, 16, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
+                    new TripInstruction(2, virginiaAvenueNortheastStep).build(),
+                    false,
+                    "Turn left on to Virginia Avenue (Test to make sure turn is not missed)."
                 )
             ),
             Arguments.of(
