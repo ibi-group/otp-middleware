@@ -641,10 +641,7 @@ public class CheckMonitoredTrip implements Runnable {
             return true;
         }
 
-        // Check if the previous matching itinerary was null or if it has already concluded
-        boolean prevMatchingItineraryNotConcluded = previousMatchingItinerary != null &&
-            previousMatchingItinerary.endTime.after(new Date(previousJourneyState.lastCheckedEpochMillis));
-        if (prevMatchingItineraryNotConcluded) {
+        if (isPrevMatchingItineraryNotConcluded()) {
             // Skip checking the trip the rest of the time that it is active if the trip was deemed not possible for the
             // next possible time during a previous query to find candidate itinerary matches.
             if (previousJourneyState.tripStatus == TripStatus.NEXT_TRIP_NOT_POSSIBLE) {
@@ -683,39 +680,7 @@ public class CheckMonitoredTrip implements Runnable {
 
             // Attempt to advance to the next monitored day, except for one-time trips or if tracking is ongoing.
             if (!trip.isOneTime() && !isTrackingOngoing()) {
-                // Check if the journeyState indicates that an itinerary has already been calculated in a previous run of
-                // this CheckMonitoredTrip. If the targetDate is null, then the current date has not yet been checked. If
-                // the journeyState's targetDate is not null, that indicates that today has already been checked.
-                // Therefore, advance targetDate by another day before calculating when the next itinerary occurs.
-                if (previousJourneyState.targetDate != null) {
-                    LocalDate lastDate = DateTimeUtils.getDateFromString(
-                        previousJourneyState.targetDate,
-                        DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
-                    );
-                    if (
-                        lastDate.getYear() == targetZonedDateTime.getYear() &&
-                        lastDate.getMonthValue() == targetZonedDateTime.getMonthValue() &&
-                        lastDate.getDayOfMonth() == targetZonedDateTime.getDayOfMonth()
-                    ) {
-                        targetZonedDateTime = targetZonedDateTime.plusDays(1);
-                    }
-                }
-
-                // Check if the CheckMonitoredTrip is being ran for the first time for this trip and if the trip's saved
-                // itinerary has already ended. Additionally, make sure that the saved itinerary occurred on the same
-                // service day. If both of these conditions are true, then there is no need to
-                // check for the current day and the target zoned date time should be advanced to the next day.
-                if (
-                    previousMatchingItinerary == null &&
-                    trip.itinerary.endTime.before(DateTimeUtils.nowAsDate()) &&
-                    ItineraryUtils.occursOnSameServiceDay(trip.itinerary, targetZonedDateTime, trip.arriveBy)
-                ) {
-                    // Increment the target day for recurring trips.
-                    targetZonedDateTime = targetZonedDateTime.plusDays(1);
-                }
-
-                // advance the trip to the next active date
-                advanceToNextActiveTripDate();
+                advanceToNextMonitoredDay();
             }
 
             // save journey state with updated matching itinerary and target date
@@ -778,6 +743,47 @@ public class CheckMonitoredTrip implements Runnable {
         // TODO: Change log level.
         LOG.info("Trip criteria not met to check. Skipping.");
         return true;
+    }
+
+    private void advanceToNextMonitoredDay() {
+        // Check if the journeyState indicates that an itinerary has already been calculated in a previous run of
+        // this CheckMonitoredTrip. If the targetDate is null, then the current date has not yet been checked. If
+        // the journeyState's targetDate is not null, that indicates that today has already been checked.
+        // Therefore, advance targetDate by another day before calculating when the next itinerary occurs.
+        if (previousJourneyState.targetDate != null) {
+            LocalDate lastDate = DateTimeUtils.getDateFromString(
+                previousJourneyState.targetDate,
+                DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
+            );
+            if (
+                lastDate.getYear() == targetZonedDateTime.getYear() &&
+                lastDate.getMonthValue() == targetZonedDateTime.getMonthValue() &&
+                lastDate.getDayOfMonth() == targetZonedDateTime.getDayOfMonth()
+            ) {
+                targetZonedDateTime = targetZonedDateTime.plusDays(1);
+            }
+        }
+
+        // Check if the CheckMonitoredTrip is being ran for the first time for this trip and if the trip's saved
+        // itinerary has already ended. Additionally, make sure that the saved itinerary occurred on the same
+        // service day. If both of these conditions are true, then there is no need to
+        // check for the current day and the target zoned date time should be advanced to the next day.
+        if (
+            previousMatchingItinerary == null &&
+            trip.itinerary.endTime.before(DateTimeUtils.nowAsDate()) &&
+            ItineraryUtils.occursOnSameServiceDay(trip.itinerary, targetZonedDateTime, trip.arriveBy)
+        ) {
+            targetZonedDateTime = targetZonedDateTime.plusDays(1);
+        }
+
+        // advance the trip to the next active date
+        advanceToNextActiveTripDate();
+    }
+
+    /** Check if the previous matching itinerary was null or if it has already concluded */
+    private boolean isPrevMatchingItineraryNotConcluded() {
+        return previousMatchingItinerary != null &&
+            previousMatchingItinerary.endTime.after(new Date(previousJourneyState.lastCheckedEpochMillis));
     }
 
     /**
