@@ -120,7 +120,7 @@ public class CheckMonitoredTrip implements Runnable {
         previousJourneyState = trip.journeyState;
         journeyState = previousJourneyState.clone();
         previousMatchingItinerary = trip.journeyState.matchingItinerary;
-        this.otpResponseProvider = this::getOtpResponse;
+        otpResponseProvider = this::getOtpResponse;
     }
 
     public CheckMonitoredTrip(MonitoredTrip trip, Supplier<OtpResponse> otpResponseProvider) throws CloneNotSupportedException {
@@ -335,9 +335,6 @@ public class CheckMonitoredTrip implements Runnable {
             );
             return null;
         }
-
-        // FIXME in PR Review: Is the below if statement needed? (SonarLint thinks not.)
-        if (otpDispatcherResponse == null) return null;
 
         if (otpDispatcherResponse.statusCode >= 400) {
             BugsnagReporter.reportErrorToBugsnag(
@@ -697,8 +694,8 @@ public class CheckMonitoredTrip implements Runnable {
                     );
                     if (
                         lastDate.getYear() == targetZonedDateTime.getYear() &&
-                            lastDate.getMonthValue() == targetZonedDateTime.getMonthValue() &&
-                            lastDate.getDayOfMonth() == targetZonedDateTime.getDayOfMonth()
+                        lastDate.getMonthValue() == targetZonedDateTime.getMonthValue() &&
+                        lastDate.getDayOfMonth() == targetZonedDateTime.getDayOfMonth()
                     ) {
                         targetZonedDateTime = targetZonedDateTime.plusDays(1);
                     }
@@ -710,8 +707,8 @@ public class CheckMonitoredTrip implements Runnable {
                 // check for the current day and the target zoned date time should be advanced to the next day.
                 if (
                     previousMatchingItinerary == null &&
-                        trip.itinerary.endTime.before(DateTimeUtils.nowAsDate()) &&
-                        ItineraryUtils.occursOnSameServiceDay(trip.itinerary, targetZonedDateTime, trip.arriveBy)
+                    trip.itinerary.endTime.before(DateTimeUtils.nowAsDate()) &&
+                    ItineraryUtils.occursOnSameServiceDay(trip.itinerary, targetZonedDateTime, trip.arriveBy)
                 ) {
                     // Increment the target day for recurring trips.
                     targetZonedDateTime = targetZonedDateTime.plusDays(1);
