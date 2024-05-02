@@ -105,13 +105,29 @@ public class TravelerLocator {
         }
 
         Step nextStep = snapToStep(travelerPosition);
-        if (nextStep != null) {
+        if (nextStep != null && !isPositionPassedStep(travelerPosition, nextStep)) {
             return new TripInstruction(
                 getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
                 nextStep
             );
         }
         return null;
+    }
+
+    /**
+     * Check that the current position is not passed the "next step". This is to prevent an instruction being provided
+     * for a step which is behind the traveler, but is within radius.
+     */
+    private static boolean isPositionPassedStep(TravelerPosition travelerPosition, Step nextStep) {
+        double distanceFromPositionToEndOfLegSegment = getDistance(
+            travelerPosition.legSegmentFromPosition.end,
+            travelerPosition.currentPosition
+        );
+        double distanceFromStepToEndOfLegSegment = getDistance(
+            travelerPosition.legSegmentFromPosition.end,
+            new Coordinates(nextStep)
+        );
+        return distanceFromPositionToEndOfLegSegment < distanceFromStepToEndOfLegSegment;
     }
 
     /**

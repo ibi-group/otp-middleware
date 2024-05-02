@@ -177,6 +177,7 @@ public class ManageLegTraversalTest {
         Coordinates ponceDeLeonPlaceNortheastCoords = new Coordinates(ponceDeLeonPlaceNortheastStep);
         Coordinates virginiaAvenuePoint = new Coordinates(virginiaAvenueNortheastStep);
         Coordinates pointBeforeTurn = new Coordinates(33.78151,-84.36481);
+        Coordinates pointAfterTurn = new Coordinates(33.78165, -84.36484);
 
         return Stream.of(
             Arguments.of(
@@ -274,10 +275,18 @@ public class ManageLegTraversalTest {
             ),
             Arguments.of(
                 new TurnTrace(
-                    createPoint(pointBeforeTurn, 16, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
+                    createPoint(pointBeforeTurn, 17, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
                     new TripInstruction(2, virginiaAvenueNortheastStep).build(),
                     false,
                     "Turn left on to Virginia Avenue (Test to make sure turn is not missed)."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    createPoint(pointAfterTurn, 0, calculateBearing(pointAfterTurn, virginiaAvenuePoint)),
+                    NO_INSTRUCTION,
+                    false,
+                    "After turn left on to Virginia Avenue should not produce turn instruction."
                 )
             ),
             Arguments.of(

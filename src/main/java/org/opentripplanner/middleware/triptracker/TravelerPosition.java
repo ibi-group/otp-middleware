@@ -36,5 +36,6 @@ public class TravelerPosition {
     public TravelerPosition(Leg expectedLeg, Coordinates currentPosition) {
         this.expectedLeg = expectedLeg;
         this.currentPosition = currentPosition;
+        legSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
     }
 }
