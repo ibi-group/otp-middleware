@@ -11,6 +11,7 @@ import com.twilio.rest.verify.v2.service.VerificationCreator;
 import com.twilio.type.PhoneNumber;
 import freemarker.template.TemplateException;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.util.StringUtil;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -54,8 +55,10 @@ public class NotificationUtils {
      * See https://support.twilio.com/hc/en-us/articles/360033806753-Maximum-Message-Length-with-Twilio-Programmable-Messaging
      */
     private static final int SMS_MAX_LENGTH = 320;
-    /** Lowest permitted push message length between Android (240) and iOS (178). */
-    private static final int PUSH_MESSAGE_MAX_LENGTH = 178;
+    /** Lowest permitted length (title and message) btw Android (240 for message) and iOS (178 for title + message). */
+    public static final int PUSH_TOTAL_MAX_LENGTH = 178;
+    /** Lowest permitted push title length between Android (65) and iOS (none). */
+    public static final int PUSH_TITLE_MAX_LENGTH = 65;
 
     /**
      * @param otpUser  target user
@@ -87,7 +90,7 @@ public class NotificationUtils {
         try {
             NotificationInfo notifInfo = new NotificationInfo(
                 toUser,
-                body.substring(0, Math.min(PUSH_MESSAGE_MAX_LENGTH, body.length())),
+                body,
                 tripName,
                 tripId
             );
@@ -155,7 +158,7 @@ public class NotificationUtils {
                 toPhoneNumber,
                 fromPhoneNumber,
                 // Trim body to max message length
-                body.substring(0, Math.min(SMS_MAX_LENGTH, body.length()))
+                StringUtil.truncate(body, SMS_MAX_LENGTH)
             ).create();
             LOG.info("SMS ({}) sent successfully", message.getSid());
             return message.getSid();
@@ -382,14 +385,13 @@ public class NotificationUtils {
         public final String tripId;
 
         public NotificationInfo(String user, String message, String title, String tripId) {
-            this.user = user;
-            this.title = title;
-            this.message = message;
-            this.tripId = tripId;
-        }
+            String truncatedTitle = StringUtil.truncate(title, PUSH_TITLE_MAX_LENGTH);
+            int truncatedMessageLength = PUSH_TOTAL_MAX_LENGTH - truncatedTitle.length();
 
-        public NotificationInfo(String user, String message, String tripId) {
-            this(user, null, message, tripId);
+            this.user = user;
+            this.title = truncatedTitle;
+            this.message = StringUtil.truncate(message, truncatedMessageLength);
+            this.tripId = tripId;
         }
     }
 }
