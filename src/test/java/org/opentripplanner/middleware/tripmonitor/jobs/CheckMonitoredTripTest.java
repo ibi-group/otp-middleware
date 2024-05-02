@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -131,100 +133,72 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("createDelayNotificationTestCases")
-    void testDelayNotifications(DelayNotificationTestCase testCase) {
-        TripMonitorNotification notification = testCase.checkMonitoredTrip.checkTripForDelay(testCase.delayType);
-        if (testCase.expectedNotificationPattern == null) {
-            assertNull(notification, testCase.message);
-        } else {
-            assertNotNull(notification, String.format("Expected notification for test case: %s", testCase.message));
-            assertThat(testCase.message, notification.body, matchesPattern(testCase.expectedNotificationPattern));
+    void testDelayNotifications(
+        int minutesLate,
+        int previousMinutesLate,
+        String expectedDeparturePattern,
+        String expectedArrivalPattern,
+        String message
+    ) throws Exception {
+        long previousDelayMillis = TimeUnit.MILLISECONDS.convert(previousMinutesLate, TimeUnit.MINUTES);
+        JourneyState journeyState = OtpTestUtils.createDefaultJourneyState();
+        journeyState.baselineDepartureTimeEpochMillis += previousDelayMillis;
+        journeyState.baselineArrivalTimeEpochMillis += previousDelayMillis;
+
+        CheckMonitoredTrip check = createCheckMonitoredTrip(journeyState);
+        check.matchingItinerary.offsetTimes(TimeUnit.MILLISECONDS.convert(minutesLate, TimeUnit.MINUTES));
+
+        NotificationType[] notificationTypes = new NotificationType[] {
+            NotificationType.DEPARTURE_DELAY,
+            NotificationType.ARRIVAL_DELAY
+        };
+        String[] expectedPatterns = new String[] { expectedDeparturePattern, expectedArrivalPattern };
+        for (int i = 0; i < notificationTypes.length; i++) {
+            TripMonitorNotification notification = check.checkTripForDelay(notificationTypes[i]);
+            String expectedNotificationPattern = expectedPatterns[i];
+            if (expectedNotificationPattern == null) {
+                assertNull(notification, message);
+            } else {
+                assertNotNull(
+                    notification,
+                    String.format("Expected %s notification for test case: %s", notificationTypes[i], message)
+                );
+                assertThat(message, notification.body, matchesPattern(expectedNotificationPattern));
+            }
         }
     }
 
-    private static List<DelayNotificationTestCase> createDelayNotificationTestCases () throws Exception {
-        List<DelayNotificationTestCase> testCases = new ArrayList<>();
+    private static Stream<Arguments> createDelayNotificationTestCases() {
+        // These cases assume the default delay threshold of 15 minutes.
 
-        // should not create departure/arrival notification for on-time trip
-        CheckMonitoredTrip onTimeTrip = createCheckMonitoredTrip();
-        testCases.add(new DelayNotificationTestCase(
-            onTimeTrip,
-            NotificationType.DEPARTURE_DELAY,
-            "should not create departure notification for on-time trip"
-        ));
-        testCases.add(new DelayNotificationTestCase(
-            onTimeTrip,
-            NotificationType.ARRIVAL_DELAY,
-            "should not create arrival notification for on-time trip"
-        ));
-
-        // should create a departure notification for 20 minute late trip
-        CheckMonitoredTrip twentyMinutesLateTimeTrip = createCheckMonitoredTrip();
-        twentyMinutesLateTimeTrip.matchingItinerary.offsetTimes(
-            TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
+        // Note on patterns in the cases below:
+        // JDK 20 uses narrow no-break space U+202F before "PM" for time format; earlier JDKs just use a space.
+        return Stream.of(
+            Arguments.of(0, 0, null, null, "On-time trip previously on-time => no delay notification"),
+            // 20m late trip, prev. on-time => produce delay/arrival notifications
+            Arguments.of(
+                20,
+                0,
+                "⏱ Your trip is now predicted to depart 20 minutes late \\(at 9:00[\\u202f ]AM\\)\\.",
+                "⏱ Your trip is now predicted to arrive 20 minutes late \\(at 9:18[\\u202f ]AM\\)\\.",
+                "20m-late trip previously on-time => show delay notifications"
+            ),
+            Arguments.of(
+                -18,
+                0,
+                "⏱ Your trip is now predicted to depart 18 minutes early \\(at 8:22[\\u202f ]AM\\)\\.",
+                "⏱ Your trip is now predicted to arrive 18 minutes early \\(at 8:40[\\u202f ]AM\\)\\.",
+                "18m-early trip previously on-time => show delay (early) notifications"
+            ),
+            Arguments.of(20, 15, null, null, "Trip previously 15m late, now 20m late => no notification"),
+            Arguments.of(
+                0,
+                15,
+                "⏱ Your trip is now predicted to depart about on time \\(at 8:40[\\u202f ]AM\\)\\.",
+                "⏱ Your trip is now predicted to arrive about on time \\(at 8:58[\\u202f ]AM\\)\\.",
+                "6m-early trip previously on-time => show delay (early) notifications"
+            )
         );
-        testCases.add(new DelayNotificationTestCase(
-            twentyMinutesLateTimeTrip,
-            NotificationType.DEPARTURE_DELAY,
-            // JDK 20 uses narrow no-break space U+202F before "PM" for time format; earlier JDKs just use a space.
-            "⏱ Your trip is now predicted to depart 20 minutes late \\(at 9:00[\\u202f ]AM\\)\\.",
-            "should create a departure notification for 20 minute late trip"
-        ));
-        testCases.add(new DelayNotificationTestCase(
-            twentyMinutesLateTimeTrip,
-            NotificationType.ARRIVAL_DELAY,
-            "⏱ Your trip is now predicted to arrive 20 minutes late \\(at 9:18[\\u202f ]AM\\)\\.",
-            "should create a arrival notification for 20 minute late trip"
-        ));
-
-        // should not create departure notification for 20 minute late trip w/ 15 minute threshold and 18 minute late
-        // baseline
-        // should not create arrival notification for 20 minute late trip w/ 15 minute threshold and 18 minute late
-        // baseline
-        JourneyState twentyMinutesLateJourneyStateWithUpdatedThreshold = OtpTestUtils.createDefaultJourneyState();
-        long eighteenMinutesInMilliseconds = TimeUnit.MILLISECONDS.convert(15, TimeUnit.MINUTES);
-        twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis +=
-            eighteenMinutesInMilliseconds;
-        twentyMinutesLateJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis +=
-            eighteenMinutesInMilliseconds;
-        CheckMonitoredTrip twentyMinutesLateTripWithUpdatedThreshold = createCheckMonitoredTrip(
-            twentyMinutesLateJourneyStateWithUpdatedThreshold
-        );
-        twentyMinutesLateTripWithUpdatedThreshold.matchingItinerary.offsetTimes(
-            TimeUnit.MILLISECONDS.convert(20, TimeUnit.MINUTES)
-        );
-        testCases.add(new DelayNotificationTestCase(
-            twentyMinutesLateTripWithUpdatedThreshold,
-            NotificationType.DEPARTURE_DELAY,
-            "should not create departure notification for 20 minute late trip w/ 15 minute threshold and 18 minute late baseline"
-        ));
-        testCases.add(new DelayNotificationTestCase(
-            twentyMinutesLateTripWithUpdatedThreshold,
-            NotificationType.ARRIVAL_DELAY,
-            "should not create arrival notification for 20 minute late trip w/ 15 minute threshold and 18 minute late baseline"
-        ));
-
-        // should create a departure notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline
-        // should create a arrival notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline
-        JourneyState onTimeJourneyStateWithUpdatedThreshold = OtpTestUtils.createDefaultJourneyState();
-        onTimeJourneyStateWithUpdatedThreshold.baselineDepartureTimeEpochMillis += eighteenMinutesInMilliseconds;
-        onTimeJourneyStateWithUpdatedThreshold.baselineArrivalTimeEpochMillis += eighteenMinutesInMilliseconds;
-        CheckMonitoredTrip onTimeTripWithUpdatedThreshold = createCheckMonitoredTrip(
-            onTimeJourneyStateWithUpdatedThreshold
-        );
-        testCases.add(new DelayNotificationTestCase(
-            onTimeTripWithUpdatedThreshold,
-            NotificationType.DEPARTURE_DELAY,
-            "⏱ Your trip is now predicted to depart about on time \\(at 8:40[\\u202f ]AM\\)\\.",
-            "should create a departure notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline"
-        ));
-        testCases.add(new DelayNotificationTestCase(
-            onTimeTripWithUpdatedThreshold,
-            NotificationType.ARRIVAL_DELAY,
-            "⏱ Your trip is now predicted to arrive about on time \\(at 8:58[\\u202f ]AM\\)\\.",
-            "should create a arrival notification for on-time trip w/ 20 minute late threshold and 18 minute late baseline"
-        ));
-
-        return testCases;
     }
 
     /**
