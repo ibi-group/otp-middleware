@@ -58,7 +58,7 @@ public class TripMonitorNotification extends Model {
             // Delays start at two minutes (plural form).
             String minutesString = String.format(
                 Message.TRIP_DELAY_MINUTES.get(locale),
-                delayInMinutes
+                absoluteMinutes
             );
             if (delayInMinutes > 0) {
                 delayHumanTime = String.format(Message.TRIP_DELAY_LATE.get(locale), minutesString);
