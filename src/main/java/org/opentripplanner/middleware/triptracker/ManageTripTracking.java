@@ -37,9 +37,20 @@ public class ManageTripTracking {
      * Start tracking by providing a unique journey id and tracking update frequency to the caller.
      */
     public static StartTrackingResponse startTracking(Request request) {
-        TripData tripData = getTripAndJourneyFromRequest(request, StartTrackingPayload.class);
-        if (tripData != null && tripData.journey == null) {
-            return startTracking(request, tripData);
+        TripData tripData = getTripAndJourneyForUser(request, StartTrackingPayload.class);
+        if (tripData != null) {
+            if (tripData.journey != null) {
+                // Make sure the journey hasn't already been started by the user. There could potentially be a few
+                // journeys (of the same trip) that have been completed.
+                // An ongoing journey is one with no end date.
+                logMessageAndHalt(
+                    request,
+                    HttpStatus.FORBIDDEN_403,
+                    "A journey of this trip has already been started. End the current journey before starting another."
+                );
+            } else {
+                return startTracking(request, tripData);
+            }
         }
         return null;
     }
@@ -115,7 +126,7 @@ public class ManageTripTracking {
      * Update the tracking location information provided by the caller.
      */
     public static UpdateTrackingResponse startOrUpdateTracking(Request request) {
-        TripData tripData = getTripAndJourneyFromRequest(request, TrackPayload.class);
+        TripData tripData = getTripAndJourneyForUser(request, TrackPayload.class);
         if (tripData != null) {
             if (tripData.journey != null) {
                 return updateTracking(request, tripData.journey, tripData.trip, tripData.locations);
@@ -192,23 +203,6 @@ public class ManageTripTracking {
     }
 
     /**
-     * Make sure the journey hasn't already been started by the user. There could potentially be a few journeys (of the
-     * same trip) that have been completed. An ongoing journey is one with no end date.
-     */
-    private static boolean isJourneyOngoing(Request request, String tripId) {
-        var trackedJourney = getOngoingTrackedJourney(tripId);
-        if (trackedJourney != null) {
-            logMessageAndHalt(
-                request,
-                HttpStatus.FORBIDDEN_403,
-                "A journey of this trip has already been started. End the current journey before starting another."
-            );
-            return true;
-        }
-        return false;
-    }
-
-    /**
      * Get active, tracked journey, based on the tracked journey id. If the end time is populated the journey has
      * already been completed.
      */
@@ -271,7 +265,7 @@ public class ManageTripTracking {
         }
     }
 
-    private static TripData getTripAndJourneyFromRequest(Request request, Class<? extends TripDataProvider> clazz) {
+    private static TripData getTripAndJourneyForUser(Request request, Class<? extends TripDataProvider> clazz) {
         TripDataProvider payload = getPayloadFromRequest(request, clazz);
         if (payload != null) {
             var monitoredTrip = Persistence.monitoredTrips.getById(payload.getTripId());
