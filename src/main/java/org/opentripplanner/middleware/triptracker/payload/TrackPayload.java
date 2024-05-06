@@ -8,10 +8,21 @@ import java.util.List;
 /**
  * Trip tracking payload that covers the expect parameters for starting or updating trip tracking.
  */
-public class TrackPayload {
+public class TrackPayload implements TripDataProvider {
 
-    public List<TrackingLocation> locations = new ArrayList<>();
+    private List<TrackingLocation> locations = new ArrayList<>();
 
-    public String tripId;
+    private String tripId;
 
+    public String getTripId() {
+        return tripId;
+    }
+
+    public void setTripId(String tripId) {
+        this.tripId = tripId;
+    }
+
+    public List<TrackingLocation> getLocations() {
+        return locations;
+    }
 }

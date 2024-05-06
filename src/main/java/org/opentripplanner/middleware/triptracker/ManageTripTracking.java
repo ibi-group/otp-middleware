@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
+import org.opentripplanner.middleware.triptracker.payload.TripDataProvider;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
@@ -36,23 +37,20 @@ public class ManageTripTracking {
      * Start tracking by providing a unique journey id and tracking update frequency to the caller.
      */
     public static StartTrackingResponse startTracking(Request request) {
-        StartTrackingPayload payload = getPayloadFromRequest(request, StartTrackingPayload.class);
-        if (payload != null) {
-            var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
-            if (isTripAssociatedWithUser(request, monitoredTrip) && !isJourneyOngoing(request, payload.tripId)) {
-                return startTracking(request, payload, monitoredTrip);
-            }
+        TripData tripData = getTripAndJourneyFromRequest(request, StartTrackingPayload.class);
+        if (tripData != null && tripData.journey == null) {
+            return startTracking(request, tripData);
         }
         return null;
     }
 
-    private static StartTrackingResponse startTracking(Request request, StartTrackingPayload payload, MonitoredTrip monitoredTrip) {
+    private static StartTrackingResponse startTracking(Request request, TripData tripData) {
         try {
             // Start tracking journey.
-            var trackedJourney = new TrackedJourney(payload);
+            var trackedJourney = new TrackedJourney(tripData.trip.id, tripData.locations.get(0));
             TravelerPosition travelerPosition = new TravelerPosition(
                 trackedJourney,
-                monitoredTrip.journeyState.matchingItinerary
+                tripData.trip.journeyState.matchingItinerary
             );
             TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
             trackedJourney.lastLocation().tripStatus = tripStatus;
@@ -117,16 +115,12 @@ public class ManageTripTracking {
      * Update the tracking location information provided by the caller.
      */
     public static UpdateTrackingResponse startOrUpdateTracking(Request request) {
-        TrackPayload payload = getPayloadFromRequest(request, TrackPayload.class);
-        if (payload != null) {
-            var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
-            if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                var trackedJourney = getOngoingTrackedJourney(payload.tripId);
-                if (trackedJourney != null) {
-                    return updateTracking(request, trackedJourney, monitoredTrip, payload.locations);
-                } else {
-                    return startTracking(request, new StartTrackingPayload(payload), monitoredTrip);
-                }
+        TripData tripData = getTripAndJourneyFromRequest(request, TrackPayload.class);
+        if (tripData != null) {
+            if (tripData.journey != null) {
+                return updateTracking(request, tripData.journey, tripData.trip, tripData.locations);
+            } else {
+                return startTracking(request, tripData);
             }
         }
         return null;
@@ -263,5 +257,28 @@ public class ManageTripTracking {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing JSON tracking payload.", e);
             return null;
         }
+    }
+
+    private static class TripData {
+        public final MonitoredTrip trip;
+        public final TrackedJourney journey;
+        public final List<TrackingLocation> locations;
+
+        public TripData(MonitoredTrip trip, TrackedJourney journey, List<TrackingLocation> locations) {
+            this.trip = trip;
+            this.journey = journey;
+            this.locations = locations;
+        }
+    }
+
+    private static TripData getTripAndJourneyFromRequest(Request request, Class<? extends TripDataProvider> clazz) {
+        TripDataProvider payload = getPayloadFromRequest(request, clazz);
+        if (payload != null) {
+            var monitoredTrip = Persistence.monitoredTrips.getById(payload.getTripId());
+            if (isTripAssociatedWithUser(request, monitoredTrip)) {
+                return new TripData(monitoredTrip, getOngoingTrackedJourney(payload.getTripId()), payload.getLocations());
+            }
+        }
+        return null;
     }
 }
