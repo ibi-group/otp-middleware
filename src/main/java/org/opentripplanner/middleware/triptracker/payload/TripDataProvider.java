@@ -32,4 +32,13 @@ public class TripDataProvider {
         return new TripDataProvider(null, payload.journeyId, payload.locations);
     }
 
+    public static TripDataProvider from(EndTrackingPayload payload) {
+        if (payload == null) return null;
+        return new TripDataProvider(null, payload.journeyId, null);
+    }
+
+    public static TripDataProvider from(ForceEndTrackingPayload payload) {
+        if (payload == null) return null;
+        return new TripDataProvider(payload.tripId, null, null);
+    }
 }

@@ -145,15 +145,12 @@ public class ManageTripTracking {
      * End tracking by saving the end condition and date.
      */
     public static EndTrackingResponse endTracking(Request request) {
-        EndTrackingPayload payload = getPayloadFromRequest(request, EndTrackingPayload.class);
-        if (payload != null) {
-            TrackedJourney trackedJourney = getActiveJourney(request, payload.journeyId);
-            if (trackedJourney != null) {
-                var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
-                if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                    return completeJourney(trackedJourney, false);
-                }
-            }
+        TripData tripData = getJourneyAndTripForUser(
+            request,
+            TripDataProvider.from(getPayloadFromRequest(request, EndTrackingPayload.class))
+        );
+        if (tripData != null && tripData.journey != null) {
+            return completeJourney(tripData.journey, false);
         }
         return null;
     }
@@ -164,14 +161,16 @@ public class ManageTripTracking {
      * to restart it.
      */
     public static EndTrackingResponse forciblyEndTracking(Request request) {
-        ForceEndTrackingPayload payload = getPayloadFromRequest(request, ForceEndTrackingPayload.class);
-        if (payload != null) {
-            TrackedJourney trackedJourney = getActiveJourneyForTripId(request, payload.tripId);
-            if (trackedJourney != null) {
-                var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
-                if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                    return completeJourney(trackedJourney, true);
-                }
+        TripData tripData = getTripAndJourneyForUser(
+            request,
+            TripDataProvider.from(getPayloadFromRequest(request, ForceEndTrackingPayload.class))
+        );
+        if (tripData != null) {
+            if (tripData.journey != null) {
+                return completeJourney(tripData.journey, true);
+            } else {
+                logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Journey for provided trip id does not exist!");
+                return null;
             }
         }
         return null;
@@ -216,19 +215,6 @@ public class ManageTripTracking {
             return trackedJourney;
         } else {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Provided journey does not exist or has already been completed!");
-            return null;
-        }
-    }
-
-    /**
-     * Get active, tracked journey, based on the trip id.
-     */
-    private static TrackedJourney getActiveJourneyForTripId(Request request, String tripId) {
-        var trackedJourney = getOngoingTrackedJourney(tripId);
-        if (trackedJourney != null) {
-            return trackedJourney;
-        } else {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Journey for provided trip id does not exist!");
             return null;
         }
     }
