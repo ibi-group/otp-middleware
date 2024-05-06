@@ -10,11 +10,14 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
 import spark.Request;
+
+import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
@@ -37,27 +40,32 @@ public class ManageTripTracking {
         if (payload != null) {
             var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
             if (isTripAssociatedWithUser(request, monitoredTrip) && !isJourneyOngoing(request, payload.tripId)) {
-                try {
-                    // Start tracking journey.
-                    var trackedJourney = new TrackedJourney(payload);
-                    TravelerPosition travelerPosition = new TravelerPosition(
-                        trackedJourney,
-                        monitoredTrip.journeyState.matchingItinerary
-                    );
-                    TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
-                    trackedJourney.lastLocation().tripStatus = tripStatus;
-                    Persistence.trackedJourneys.create(trackedJourney);
-                    // Provide response.
-                    return new StartTrackingResponse(
-                        TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
-                        TravelerLocator.getInstruction(tripStatus, travelerPosition, true),
-                        trackedJourney.id,
-                        tripStatus.name()
-                    );
-                } catch (UnsupportedOperationException e) {
-                    logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
-                }
+                return startTracking(request, payload, monitoredTrip);
             }
+        }
+        return null;
+    }
+
+    private static StartTrackingResponse startTracking(Request request, StartTrackingPayload payload, MonitoredTrip monitoredTrip) {
+        try {
+            // Start tracking journey.
+            var trackedJourney = new TrackedJourney(payload);
+            TravelerPosition travelerPosition = new TravelerPosition(
+                trackedJourney,
+                monitoredTrip.journeyState.matchingItinerary
+            );
+            TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
+            trackedJourney.lastLocation().tripStatus = tripStatus;
+            Persistence.trackedJourneys.create(trackedJourney);
+            // Provide response.
+            return new StartTrackingResponse(
+                TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
+                TravelerLocator.getInstruction(tripStatus, travelerPosition, true),
+                trackedJourney.id,
+                tripStatus.name()
+            );
+        } catch (UnsupportedOperationException e) {
+            logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
         }
         return null;
     }
@@ -72,30 +80,35 @@ public class ManageTripTracking {
             if (trackedJourney != null) {
                 var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
                 if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                    try {
-                        TravelerPosition travelerPosition = new TravelerPosition(
-                            trackedJourney,
-                            monitoredTrip.journeyState.matchingItinerary
-                        );
-                        // Update tracked journey.
-                        trackedJourney.update(payload);
-                        TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
-                        trackedJourney.lastLocation().tripStatus = tripStatus;
-                        Persistence.trackedJourneys.updateField(
-                            trackedJourney.id,
-                            TrackedJourney.LOCATIONS_FIELD_NAME,
-                            trackedJourney.locations
-                        );
-                        // Provide response.
-                        return new UpdateTrackingResponse(
-                            TravelerLocator.getInstruction(tripStatus, travelerPosition, false),
-                            tripStatus.name()
-                        );
-                    } catch (UnsupportedOperationException e) {
-                        logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
-                    }
+                    return updateTracking(request, trackedJourney, monitoredTrip, payload.locations);
                 }
             }
+        }
+        return null;
+    }
+
+    private static UpdateTrackingResponse updateTracking(Request request, TrackedJourney trackedJourney, MonitoredTrip monitoredTrip, List<TrackingLocation> locations) {
+        try {
+            TravelerPosition travelerPosition = new TravelerPosition(
+                trackedJourney,
+                monitoredTrip.journeyState.matchingItinerary
+            );
+            // Update tracked journey.
+            trackedJourney.update(locations);
+            TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
+            trackedJourney.lastLocation().tripStatus = tripStatus;
+            Persistence.trackedJourneys.updateField(
+                trackedJourney.id,
+                TrackedJourney.LOCATIONS_FIELD_NAME,
+                trackedJourney.locations
+            );
+            // Provide response.
+            return new UpdateTrackingResponse(
+                TravelerLocator.getInstruction(tripStatus, travelerPosition, false),
+                tripStatus.name()
+            );
+        } catch (UnsupportedOperationException e) {
+            logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
         }
         return null;
     }
@@ -104,13 +117,16 @@ public class ManageTripTracking {
      * Update the tracking location information provided by the caller.
      */
     public static UpdateTrackingResponse startOrUpdateTracking(Request request) {
-        UpdatedTrackingPayload payload = getPayloadFromRequest(request, UpdatedTrackingPayload.class);
+        TrackPayload payload = getPayloadFromRequest(request, TrackPayload.class);
         if (payload != null) {
-            var trackedJourney = getActiveJourney(request, payload.journeyId);
-            if (trackedJourney != null) {
-                return updateTracking(request);
-            } else {
-                return startTracking(request);
+            var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
+            if (isTripAssociatedWithUser(request, monitoredTrip)) {
+                var trackedJourney = getOngoingTrackedJourney(payload.tripId);
+                if (trackedJourney != null) {
+                    return updateTracking(request, trackedJourney, monitoredTrip, payload.locations);
+                } else {
+                    return startTracking(request, new StartTrackingPayload(payload), monitoredTrip);
+                }
             }
         }
         return null;

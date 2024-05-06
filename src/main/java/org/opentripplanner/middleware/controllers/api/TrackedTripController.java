@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
@@ -58,7 +59,7 @@ public class TrackedTripController implements Endpoint {
             .post(path("/track")
                     .withDescription("Starts or updates tracking on a monitored trip.")
                     .withProduces(JSON_ONLY)
-                    .withRequestType(UpdatedTrackingPayload.class)
+                    .withRequestType(TrackPayload.class)
                     .withResponseType(UpdateTrackingResponse.class),
                 (request, response) -> ManageTripTracking.startOrUpdateTracking(request), JsonUtils::toJson)
             .post(path("/endtracking")

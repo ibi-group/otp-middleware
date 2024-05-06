@@ -11,4 +11,12 @@ public class StartTrackingPayload {
 
     public String tripId;
 
+    public StartTrackingPayload() {
+        // Used for serialization.
+    }
+
+    public StartTrackingPayload(TrackPayload trackPayload) {
+        this.tripId = trackPayload.tripId;
+        this.location = trackPayload.locations.get(0);
+    }
 }
