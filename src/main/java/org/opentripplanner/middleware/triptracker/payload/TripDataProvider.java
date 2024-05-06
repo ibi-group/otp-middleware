@@ -4,8 +4,32 @@ import org.opentripplanner.middleware.triptracker.TrackingLocation;
 
 import java.util.List;
 
-public interface TripDataProvider {
-    String getTripId();
+public class TripDataProvider {
+    public String tripId;
 
-    List<TrackingLocation> getLocations();
+    public String journeyId;
+
+    public List<TrackingLocation> locations;
+
+    private TripDataProvider(String tripId, String journeyId, List<TrackingLocation> locations) {
+        this.tripId = tripId;
+        this.journeyId = journeyId;
+        this.locations = locations;
+    }
+
+    public static TripDataProvider from(StartTrackingPayload payload) {
+        if (payload == null) return null;
+        return new TripDataProvider(payload.tripId, null, List.of(payload.location));
+    }
+
+    public static TripDataProvider from(TrackPayload payload) {
+        if (payload == null) return null;
+        return new TripDataProvider(payload.tripId, null, payload.locations);
+    }
+
+    public static TripDataProvider from(UpdatedTrackingPayload payload) {
+        if (payload == null) return null;
+        return new TripDataProvider(null, payload.journeyId, payload.locations);
+    }
+
 }

@@ -276,7 +276,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     private StartTrackingPayload createStartTrackingPayload(String monitorTripId, double lat, double lon, long timestamp) {
         var payload = new StartTrackingPayload();
-        payload.setTripId(monitorTripId);
+        payload.tripId = monitorTripId;
         payload.location = new TrackingLocation(90, lat, lon, 29, new Date(timestamp));
         return payload;
     }
