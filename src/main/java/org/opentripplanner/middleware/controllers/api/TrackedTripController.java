@@ -55,6 +55,12 @@ public class TrackedTripController implements Endpoint {
                     .withRequestType(UpdatedTrackingPayload.class)
                     .withResponseType(UpdateTrackingResponse.class),
                 (request, response) -> ManageTripTracking.updateTracking(request), JsonUtils::toJson)
+            .post(path("/track")
+                    .withDescription("Starts or updates tracking on a monitored trip.")
+                    .withProduces(JSON_ONLY)
+                    .withRequestType(UpdatedTrackingPayload.class)
+                    .withResponseType(UpdateTrackingResponse.class),
+                (request, response) -> ManageTripTracking.startOrUpdateTracking(request), JsonUtils::toJson)
             .post(path("/endtracking")
                     .withDescription("Terminates the tracking of a monitored trip by the user.")
                     .withProduces(JSON_ONLY)

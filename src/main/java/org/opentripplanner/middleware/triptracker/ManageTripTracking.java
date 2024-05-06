@@ -101,6 +101,22 @@ public class ManageTripTracking {
     }
 
     /**
+     * Update the tracking location information provided by the caller.
+     */
+    public static UpdateTrackingResponse startOrUpdateTracking(Request request) {
+        UpdatedTrackingPayload payload = getPayloadFromRequest(request, UpdatedTrackingPayload.class);
+        if (payload != null) {
+            var trackedJourney = getActiveJourney(request, payload.journeyId);
+            if (trackedJourney != null) {
+                return updateTracking(request);
+            } else {
+                return startTracking(request);
+            }
+        }
+        return null;
+    }
+
+    /**
      * End tracking by saving the end condition and date.
      */
     public static EndTrackingResponse endTracking(Request request) {
