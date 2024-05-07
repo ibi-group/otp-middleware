@@ -22,6 +22,7 @@ import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
@@ -34,6 +35,8 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
@@ -51,6 +54,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
     private static final String UPDATE_TRACKING_TRIP_PATH = ROUTE_PATH + "updatetracking";
+    private static final String TRACK_TRIP_PATH = ROUTE_PATH + "track";
     private static final String END_TRACKING_TRIP_PATH = ROUTE_PATH + "endtracking";
     private static final String FORCIBLY_END_TRACKING_TRIP_PATH = ROUTE_PATH + "forciblyendtracking";
 
@@ -173,6 +177,35 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
+    void canStartThenUpdateOngoingJourney() throws Exception {
+        assumeTrue(IS_END_TO_END);
+
+        var response = makeRequest(
+            TRACK_TRIP_PATH,
+            JsonUtils.toJson(createTrackPayload()),
+            getMockHeaders(soloOtpUser),
+            HttpMethod.POST
+        );
+
+        assertEquals(HttpStatus.OK_200, response.status);
+        var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertNotEquals(0, trackResponse.frequencySeconds);
+        assertNotNull(trackResponse.journeyId);
+
+        response = makeRequest(
+            TRACK_TRIP_PATH,
+            JsonUtils.toJson(createTrackPayload()),
+            getMockHeaders(soloOtpUser),
+            HttpMethod.POST
+        );
+
+        assertEquals(HttpStatus.OK_200, response.status);
+        trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertEquals(0, trackResponse.frequencySeconds);
+        assertNull(trackResponse.journeyId);
+    }
+
+    @Test
     void canForciblyEndJourney() throws Exception {
         assumeTrue(IS_END_TO_END);
 
@@ -283,14 +316,25 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         return payload;
     }
 
-    private UpdatedTrackingPayload createUpdateTrackingPayload(String journeyId) {
-        var payload = new UpdatedTrackingPayload();
-        payload.journeyId = journeyId;
-        payload.locations = List.of(
+    private static List<TrackingLocation> createTrackingLocations() {
+        return List.of(
             new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, new Date()),
             new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, new Date()),
             new TrackingLocation(90, 29.5398938204469, -80.3772773742676, 31, new Date())
         );
+    }
+
+    private UpdatedTrackingPayload createUpdateTrackingPayload(String journeyId) {
+        var payload = new UpdatedTrackingPayload();
+        payload.journeyId = journeyId;
+        payload.locations = createTrackingLocations();
+        return payload;
+    }
+
+    private TrackPayload createTrackPayload() {
+        var payload = new TrackPayload();
+        payload.tripId = monitoredTrip.id;
+        payload.locations = createTrackingLocations();
         return payload;
     }
 
