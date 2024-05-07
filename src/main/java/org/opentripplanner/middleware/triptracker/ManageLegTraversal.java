@@ -5,15 +5,15 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import javax.annotation.Nullable;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.getAllLegPositions;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getLegGeoPoints;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
+import static org.opentripplanner.middleware.utils.GeometryUtils.isPointBetween;
 
 public class ManageLegTraversal {
 
@@ -58,28 +58,49 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Get the expected leg by comparing the current time against the start and end time of each leg.
+     * Get the expected leg by first checking to see if two points on a leg contain the current position. If there is a
+     * match, return this leg, if not simply return the leg that is nearest to the current position.
      */
     @Nullable
-    public static Leg getExpectedLeg(Instant timeNow, Itinerary itinerary) {
+    public static Leg getExpectedLeg(Coordinates position, Itinerary itinerary) {
         if (canUseTripLegs(itinerary)) {
-            for (int i = 0; i < itinerary.legs.size(); i++) {
-                Leg leg = itinerary.legs.get(i);
-                if (i == 0 &&
-                    leg.mode.equalsIgnoreCase("walk") &&
-                    leg.startTime != null &&
-                    timeNow.isBefore(leg.startTime.toInstant())) {
-                    // If the first leg is a walk leg and the traveler has decided to start the trip early.
-                    return leg;
+            Leg leg = getContainingLeg(position, itinerary);
+            return (leg != null) ? leg : getNearestLeg(position, itinerary);
+        }
+        return null;
+    }
+
+    /**
+     * Get the leg that is nearest to the current position. Note, to be considered when working with transit legs: if
+     * the trip involves traversing a cul-de-sac, the entrance and exit legs would be very close together if not
+     * identical. In this scenario it would be possible for the current position to be attributed to the exit leg,
+     * therefore missing the instruction at the end of the cul-de-dac.
+     */
+    private static Leg getNearestLeg(Coordinates position, Itinerary itinerary) {
+        double shortestDistance = Double.MAX_VALUE;
+        Leg nearestLeg = null;
+        for (int i = 0; i < itinerary.legs.size(); i++) {
+            Leg leg = itinerary.legs.get(i);
+            for (Coordinates positionOnLeg : getAllLegPositions(leg)) {
+                double distance = getDistance(positionOnLeg, position);
+                if (distance < shortestDistance) {
+                    nearestLeg = leg;
+                    shortestDistance = distance;
                 }
-                if (leg.startTime != null &&
-                    leg.endTime != null &&
-                    isTimeInRange(
-                        leg.startTime.toInstant(),
-                        // Offset the end time by a faction to avoid exact times being attributed to the wrong leg.
-                        leg.endTime.toInstant().minus(1, ChronoUnit.MILLIS),
-                        timeNow
-                    )) {
+            }
+        }
+        return nearestLeg;
+    }
+
+    /**
+     * Get the leg containing the current position.
+     */
+    private static Leg getContainingLeg(Coordinates position, Itinerary itinerary) {
+        for (int i = 0; i < itinerary.legs.size(); i++) {
+            Leg leg = itinerary.legs.get(i);
+            List<Coordinates> allPositions = getAllLegPositions(leg);
+            for (int j = 0; j < allPositions.size() - 1; j++) {
+                if (isPointBetween(allPositions.get(j), allPositions.get(j + 1), position)) {
                     return leg;
                 }
             }
@@ -110,41 +131,10 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Get the segment which contains the current time.
-     */
-    @Nullable
-    public static LegSegment getSegmentFromTime(
-        Instant segmentStartTime,
-        Instant currentTime,
-        List<LegSegment> legSegments
-    ) {
-        for (LegSegment legSegment : legSegments) {
-            // Offset the end time by a fraction to avoid exact times being attributed to the wrong previous segment.
-            Instant segmentEndTime = segmentStartTime.plus(
-                (getSecondsToMilliseconds(legSegment.timeInSegment) - 1),
-                ChronoUnit.MILLIS
-            );
-            if (isTimeInRange(segmentStartTime, segmentEndTime, currentTime)) {
-                return legSegment;
-            }
-            segmentStartTime = segmentEndTime;
-        }
-        return null;
-    }
-
-    /**
      * Convert the time in seconds to milliseconds.
      */
     public static long getSecondsToMilliseconds(double timeInSeconds) {
         return (long) (timeInSeconds * 1000);
-    }
-
-    /**
-     * Check if the current time is between the start and end times.
-     */
-    public static boolean isTimeInRange(Instant startTime, Instant endTime, Instant currentTime) {
-        return (currentTime.isAfter(startTime) || currentTime.equals(startTime)) &&
-            (currentTime.isBefore(endTime) || currentTime.equals(endTime));
     }
 
     /**
