@@ -1,13 +1,16 @@
 package org.opentripplanner.middleware.triptracker.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * The response provided to the caller when starting or updating tracking of a monitored trip.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TrackingResponse {
 
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     public int frequencySeconds;
 
     public String instruction;
@@ -16,7 +19,8 @@ public class TrackingResponse {
 
     public String tripStatus;
 
-    // Contains the error message when a request fails.
+    /** Contains the error message when a request fails. */
+    @JsonInclude
     public String message;
 
     public TrackingResponse() {
