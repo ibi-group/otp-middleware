@@ -71,7 +71,10 @@ public class ManageLegTraversal {
     }
 
     /**
-     * Get the leg that is nearest to the current position.
+     * Get the leg that is nearest to the current position. Note, to be considered when working with transit legs: if
+     * the trip involves traversing a cul-de-sac, the entrance and exit legs would be very close together if not
+     * identical. In this scenario it would be possible for the current position to be attributed to the exit leg,
+     * therefore missing the instruction at the end of the cul-de-dac.
      */
     private static Leg getNearestLeg(Coordinates position, Itinerary itinerary) {
         double shortestDistance = Double.MAX_VALUE;
