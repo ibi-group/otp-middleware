@@ -7,7 +7,7 @@ import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.triptracker.payload.TripDataProvider;
+import org.opentripplanner.middleware.triptracker.payload.GeneralPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
@@ -214,9 +214,9 @@ public class ManageTripTracking {
     /**
      * Get the expected tracking payload for the request.
      */
-    private static TripDataProvider getPayloadFromRequest(Request request) {
+    private static GeneralPayload getPayloadFromRequest(Request request) {
         try {
-            return getPOJOFromRequestBody(request, TripDataProvider.class);
+            return getPOJOFromRequestBody(request, GeneralPayload.class);
         } catch (JsonProcessingException e) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing JSON tracking payload.", e);
             return null;
@@ -236,7 +236,7 @@ public class ManageTripTracking {
     }
 
     private static TripData getTripAndJourneyForUser(Request request) {
-        TripDataProvider payload = getPayloadFromRequest(request);
+        GeneralPayload payload = getPayloadFromRequest(request);
         if (payload != null) {
             var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
             if (isTripAssociatedWithUser(request, monitoredTrip)) {
@@ -247,7 +247,7 @@ public class ManageTripTracking {
     }
 
     private static TripData getJourneyAndTripForUser(Request request) {
-        TripDataProvider payload = getPayloadFromRequest(request);
+        GeneralPayload payload = getPayloadFromRequest(request);
         if (payload != null) {
             var trackedJourney = getActiveJourney(request, payload.journeyId);
             if (trackedJourney != null) {

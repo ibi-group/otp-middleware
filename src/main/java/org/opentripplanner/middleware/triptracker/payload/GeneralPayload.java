@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Holds data from different payload types into a common shape.
  */
-public class TripDataProvider {
+public class GeneralPayload {
     public String tripId;
 
     public String journeyId;
@@ -16,7 +16,7 @@ public class TripDataProvider {
 
     public TrackingLocation location;
 
-    public TripDataProvider() {
+    public GeneralPayload() {
         // Used by serialization.
     }
 
