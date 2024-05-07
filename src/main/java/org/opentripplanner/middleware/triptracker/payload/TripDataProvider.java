@@ -4,6 +4,9 @@ import org.opentripplanner.middleware.triptracker.TrackingLocation;
 
 import java.util.List;
 
+/**
+ * Holds data from different payload types into a common shape.
+ */
 public class TripDataProvider {
     public String tripId;
 

@@ -149,7 +149,7 @@ public class ManageTripTracking {
             request,
             TripDataProvider.from(getPayloadFromRequest(request, EndTrackingPayload.class))
         );
-        if (tripData != null && tripData.journey != null) {
+        if (tripData != null) {
             return completeJourney(tripData.journey, false);
         }
         return null;
