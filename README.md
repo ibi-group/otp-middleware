@@ -269,6 +269,8 @@ The special E2E client settings should be defined in `env.yml`:
 | TRIP_TRACKING_SUBWAY_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by subway is considered on track. |
 | TRIP_TRACKING_TRAM_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by tram is considered on track. |
 | TRIP_TRACKING_RAIL_BOUNDARY | integer | Optional | 100 | The threshold in meters below which travelling by rail is considered on track. |
+| TRIP_INSTRUCTION_IMMEDIATE_RADIUS | integer | Optional | 2 | The radius in meters under which an immediate instruction is given. |
+| TRIP_INSTRUCTION_UPCOMING_RADIUS | integer | Optional | 10 | The radius in meters under which an upcoming instruction is given. |
 | TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |
 | TWILIO_AUTH_TOKEN | string | Optional | your-auth-token | Twilio settings available at: https://twilio.com/user/account |
 | VALIDATE_ENVIRONMENT_CONFIG | boolean | Optional | true | If set to false, the validation of the env.yml file against this schema will be skipped. |

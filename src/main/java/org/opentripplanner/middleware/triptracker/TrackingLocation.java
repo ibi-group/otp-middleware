@@ -18,6 +18,8 @@ public class TrackingLocation {
 
     public Date timestamp;
 
+    public TripStatus tripStatus;
+
     public TrackingLocation() {
         // Needed for deserializing objects.
     }

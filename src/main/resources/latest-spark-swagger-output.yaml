@@ -2538,6 +2538,7 @@ definitions:
         - "NEXT_TRIP_NOT_POSSIBLE"
         - "TRIP_UPCOMING"
         - "TRIP_ACTIVE"
+        - "PAST_TRIP"
       hasRealtimeData:
         type: "boolean"
   Itinerary:
@@ -2742,6 +2743,15 @@ definitions:
       timestamp:
         type: "string"
         format: "date"
+      tripStatus:
+        type: "string"
+        enum:
+        - "ON_SCHEDULE"
+        - "BEHIND_SCHEDULE"
+        - "AHEAD_OF_SCHEDULE"
+        - "ENDED"
+        - "DEVIATED"
+        - "NO_STATUS"
   StartTrackingResponse:
     type: "object"
     properties:

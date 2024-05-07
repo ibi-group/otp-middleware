@@ -43,4 +43,62 @@ public class GeometryUtils {
         double y = earthRadius * Math.log(Math.tan(Math.PI / 4 + latRad / 2));
         return new double[] {x, y};
     }
+
+    /**
+     * Calculate the bearing between two coordinates.
+     */
+    public static double calculateBearing(Coordinates start, Coordinates destination) {
+        double deltaLon = destination.lon - start.lon;
+        double y = Math.sin(Math.toRadians(deltaLon)) * Math.cos(Math.toRadians(destination.lat));
+        double x = Math.cos(Math.toRadians(start.lat)) * Math.sin(Math.toRadians(destination.lat)) -
+            Math.sin(Math.toRadians(start.lat)) * Math.cos(Math.toRadians(destination.lat)) *
+                Math.cos(Math.toRadians(deltaLon));
+
+        double initialBearing = Math.atan2(y, x);
+        initialBearing = Math.toDegrees(initialBearing);
+        initialBearing = (initialBearing + 360) % 360; // Normalize to range [0, 360)
+
+        return initialBearing;
+    }
+
+    /**
+     * Creates a lat/lon point at a number of meters on a given bearing from the start point.
+     */
+    public static Coordinates createPoint(Coordinates start, double distanceInMeters, double bearing) {
+        // Convert latitude and longitude from degrees to radians
+        double startLat = Math.toRadians(start.lat);
+        double startLon = Math.toRadians(start.lon);
+        bearing = Math.toRadians(bearing);
+
+        // Calculate the angular distance
+        double angularDistance = (distanceInMeters / 1000) / RADIUS_OF_EARTH_IN_KM;
+
+        // Calculate the destination latitude
+        double destLat = Math.asin(Math.sin(startLat) * Math.cos(angularDistance) +
+            Math.cos(startLat) * Math.sin(angularDistance) * Math.cos(bearing));
+
+        // Calculate the destination longitude
+        double destLon = startLon + Math.atan2(Math.sin(bearing) * Math.sin(angularDistance) * Math.cos(startLat),
+            Math.cos(angularDistance) - Math.sin(startLat) * Math.sin(destLat));
+
+        // Convert back from radians to degrees
+        destLat = Math.toDegrees(destLat);
+        destLon = Math.toDegrees(destLon);
+
+        return new Coordinates(destLat, destLon);
+    }
+
+    /**
+     * Is the point between the start and end coordinates.
+     */
+    public static boolean isPointBetween(Coordinates start, Coordinates end, Coordinates location) {
+        double startToLocationDistance = getDistance(start, location);
+        double startToEndDistance = getDistance(start, end);
+        double endToLocationDistance = getDistance(end, location);
+        double totalDistanceViaLocation = startToLocationDistance + endToLocationDistance;
+
+        // Check if the sum of distances from start to point and end to point
+        // is approximately equal to the distance from start to end.
+        return Math.abs(totalDistanceViaLocation - startToEndDistance) < 1;
+    }
 }

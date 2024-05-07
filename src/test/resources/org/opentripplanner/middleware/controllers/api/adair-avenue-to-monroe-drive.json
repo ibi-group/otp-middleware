@@ -1,0 +1,201 @@
+{
+  "accessibilityScore":null,
+  "duration":981,
+  "endTime":1713279921000,
+  "legs":[
+    {
+      "accessibilityScore":null,
+      "agency":null,
+      "alerts":[
+
+      ],
+      "arrivalDelay":0,
+      "departureDelay":0,
+      "distance":936.47,
+      "dropOffBookingInfo":null,
+      "dropoffType":"SCHEDULED",
+      "duration":512.0,
+      "endTime":1713279452000,
+      "fareProducts":[
+
+      ],
+      "from":{
+        "lat":33.7799139,
+        "lon":-84.3610062,
+        "name":"805 Adair Avenue NE, Atlanta, GA, USA",
+        "rentalVehicle":null,
+        "stop":null,
+        "vertexType":"NORMAL"
+      },
+      "headsign":null,
+      "interlineWithPreviousLeg":false,
+      "intermediateStops":null,
+      "legGeometry":{
+        "length":47,
+        "points":"wsdmEhw{aO?j@@^JfCAPAPGPKPKJOHSBI@wAF@b@@L@V?H@X?HBx@ATX@?f@Cp@E`CmCNS@Q?[@JdD?J?HJzC@R?@Fl@Jj@SFCDAD?HVbAHZu@h@oBvA??CE"
+      },
+      "mode":"WALK",
+      "pickupBookingInfo":null,
+      "pickupType":"SCHEDULED",
+      "realTime":false,
+      "realtimeState":null,
+      "rentedBike":false,
+      "rideHailingEstimate":null,
+      "route":null,
+      "startTime":1713278940000,
+      "steps":[
+        {
+          "absoluteDirection":"WEST",
+          "alerts":[
+
+          ],
+          "area":false,
+          "distance":219.77,
+          "elevationProfile":[
+
+          ],
+          "lat":33.7799682,
+          "lon":-84.3610063,
+          "relativeDirection":"DEPART",
+          "stayOn":false,
+          "streetName":"Adair Avenue Northeast"
+        },
+        {
+          "absoluteDirection":"WEST",
+          "alerts":[
+
+          ],
+          "area":false,
+          "distance":93.08,
+          "elevationProfile":[
+
+          ],
+          "lat":33.780745,
+          "lon":-84.362603,
+          "relativeDirection":"LEFT",
+          "stayOn":false,
+          "streetName":"Virginia Circle Northeast"
+        },
+        {
+          "absoluteDirection":"SOUTH",
+          "alerts":[
+
+          ],
+          "area":false,
+          "distance":13.91,
+          "elevationProfile":[
+
+          ],
+          "lat":33.78069,
+          "lon":-84.3636068,
+          "relativeDirection":"LEFT",
+          "stayOn":false,
+          "streetName":"Ponce de Leon Place Northeast"
+        },
+        {
+          "absoluteDirection":"WEST",
+          "alerts":[
+
+          ],
+          "area":false,
+          "distance":181.1,
+          "elevationProfile":[
+
+          ],
+          "lat":33.7805651,
+          "lon":-84.363615,
+          "relativeDirection":"RIGHT",
+          "stayOn":false,
+          "streetName":"service road"
+        },
+        {
+          "absoluteDirection":"NORTH",
+          "alerts":[
+
+          ],
+          "area":false,
+          "distance":36.86,
+          "elevationProfile":[
+
+          ],
+          "lat":33.7813241,
+          "lon":-84.364793,
+          "relativeDirection":"CONTINUE",
+          "stayOn":false,
+          "streetName":"Trolley Square Crossing Northeast"
+        },
+        {
+          "absoluteDirection":"WEST",
+          "alerts":[
+
+          ],
+          "area":false,
+          "distance":212.65,
+          "elevationProfile":[
+
+          ],
+          "lat":33.781655,
+          "lon":-84.364816,
+          "relativeDirection":"LEFT",
+          "stayOn":false,
+          "streetName":"Virginia Avenue Northeast"
+        },
+        {
+          "absoluteDirection":"NORTH",
+          "alerts":[
+
+          ],
+          "area":false,
+          "distance":69.54,
+          "elevationProfile":[
+
+          ],
+          "lat":33.7814299,
+          "lon":-84.3670952,
+          "relativeDirection":"RIGHT",
+          "stayOn":false,
+          "streetName":"service road"
+        },
+        {
+          "absoluteDirection":"NORTHWEST",
+          "alerts":[
+
+          ],
+          "area":false,
+          "distance":109.59,
+          "elevationProfile":[
+
+          ],
+          "lat":33.7813898,
+          "lon":-84.3677208,
+          "relativeDirection":"RIGHT",
+          "stayOn":false,
+          "streetName":"Kanuga Street Northeast"
+        }
+      ],
+      "to":{
+        "lat":33.78223,
+        "lon":-84.36835,
+        "name":"Monroe Dr NE at Cooledge Ave NE",
+        "rentalVehicle":null,
+        "stop":{
+          "alerts":[
+
+          ],
+          "code":"904753",
+          "gtfsId":"MARTA:82104",
+          "id":"U3RvcDpNQVJUQTo4MjEwNA",
+          "lat":33.78223,
+          "lon":-84.36835
+        },
+        "vertexType":"TRANSIT"
+      },
+      "transitLeg":false,
+      "trip":null
+    }
+  ],
+  "startTime":1713278940000,
+  "transfers":0,
+  "waitingTime":0,
+  "walkTime":750
+}
