@@ -7,12 +7,7 @@ import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
-import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
-import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
-import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.payload.TripDataProvider;
-import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
@@ -37,10 +32,7 @@ public class ManageTripTracking {
      * Start tracking by providing a unique journey id and tracking update frequency to the caller.
      */
     public static StartTrackingResponse startTracking(Request request) {
-        TripData tripData = getTripAndJourneyForUser(
-            request,
-            TripDataProvider.from(getPayloadFromRequest(request, StartTrackingPayload.class))
-        );
+        TripData tripData = getTripAndJourneyForUser(request);
         if (tripData != null) {
             if (tripData.journey != null) {
                 // Make sure the journey hasn't already been started by the user. There could potentially be a few
@@ -86,10 +78,7 @@ public class ManageTripTracking {
      * Update the tracking location information provided by the caller.
      */
     public static UpdateTrackingResponse updateTracking(Request request) {
-        TripData tripData = getJourneyAndTripForUser(
-            request,
-            TripDataProvider.from(getPayloadFromRequest(request, UpdatedTrackingPayload.class))
-        );
+        TripData tripData = getJourneyAndTripForUser(request);
         if (tripData != null) {
             return updateTracking(request, tripData);
         }
@@ -127,10 +116,7 @@ public class ManageTripTracking {
      * Update the tracking location information provided by the caller.
      */
     public static UpdateTrackingResponse startOrUpdateTracking(Request request) {
-        TripData tripData = getTripAndJourneyForUser(
-            request,
-            TripDataProvider.from(getPayloadFromRequest(request, TrackPayload.class))
-        );
+        TripData tripData = getTripAndJourneyForUser(request);
         if (tripData != null) {
             if (tripData.journey != null) {
                 return updateTracking(request, tripData);
@@ -145,10 +131,7 @@ public class ManageTripTracking {
      * End tracking by saving the end condition and date.
      */
     public static EndTrackingResponse endTracking(Request request) {
-        TripData tripData = getJourneyAndTripForUser(
-            request,
-            TripDataProvider.from(getPayloadFromRequest(request, EndTrackingPayload.class))
-        );
+        TripData tripData = getJourneyAndTripForUser(request);
         if (tripData != null) {
             return completeJourney(tripData.journey, false);
         }
@@ -161,10 +144,7 @@ public class ManageTripTracking {
      * to restart it.
      */
     public static EndTrackingResponse forciblyEndTracking(Request request) {
-        TripData tripData = getTripAndJourneyForUser(
-            request,
-            TripDataProvider.from(getPayloadFromRequest(request, ForceEndTrackingPayload.class))
-        );
+        TripData tripData = getTripAndJourneyForUser(request);
         if (tripData != null) {
             if (tripData.journey != null) {
                 return completeJourney(tripData.journey, true);
@@ -234,9 +214,9 @@ public class ManageTripTracking {
     /**
      * Get the expected tracking payload for the request.
      */
-    private static <T> T getPayloadFromRequest(Request request, Class<T> payloadClass) {
+    private static TripDataProvider getPayloadFromRequest(Request request) {
         try {
-            return getPOJOFromRequestBody(request, payloadClass);
+            return getPOJOFromRequestBody(request, TripDataProvider.class);
         } catch (JsonProcessingException e) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing JSON tracking payload.", e);
             return null;
@@ -255,23 +235,25 @@ public class ManageTripTracking {
         }
     }
 
-    private static TripData getTripAndJourneyForUser(Request request, TripDataProvider payload) {
+    private static TripData getTripAndJourneyForUser(Request request) {
+        TripDataProvider payload = getPayloadFromRequest(request);
         if (payload != null) {
             var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
             if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                return new TripData(monitoredTrip, getOngoingTrackedJourney(payload.tripId), payload.locations);
+                return new TripData(monitoredTrip, getOngoingTrackedJourney(payload.tripId), payload.getLocations());
             }
         }
         return null;
     }
 
-    private static TripData getJourneyAndTripForUser(Request request, TripDataProvider payload) {
+    private static TripData getJourneyAndTripForUser(Request request) {
+        TripDataProvider payload = getPayloadFromRequest(request);
         if (payload != null) {
             var trackedJourney = getActiveJourney(request, payload.journeyId);
             if (trackedJourney != null) {
                 var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
                 if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                    return new TripData(monitoredTrip, trackedJourney, payload.locations);
+                    return new TripData(monitoredTrip, trackedJourney, payload.getLocations());
                 }
             }
         }
