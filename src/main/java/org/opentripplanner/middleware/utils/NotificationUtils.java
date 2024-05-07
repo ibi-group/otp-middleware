@@ -55,9 +55,12 @@ public class NotificationUtils {
      * See https://support.twilio.com/hc/en-us/articles/360033806753-Maximum-Message-Length-with-Twilio-Programmable-Messaging
      */
     private static final int SMS_MAX_LENGTH = 320;
-    /** Lowest permitted length (title and message) btw Android (240 for message) and iOS (178 for title + message). */
+    /**
+     * The most restrictive content length (title and message)
+     * between Android (240 for message) and iOS (178 for title and message).
+     */
     public static final int PUSH_TOTAL_MAX_LENGTH = 178;
-    /** Lowest permitted push title length between Android (65) and iOS (none). */
+    /** The most restrictive title length between Android (65) and iOS (none). */
     public static final int PUSH_TITLE_MAX_LENGTH = 65;
 
     /**
