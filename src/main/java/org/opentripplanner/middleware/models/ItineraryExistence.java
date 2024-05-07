@@ -98,7 +98,7 @@ public class ItineraryExistence extends Model {
     /**
      * Helper function to set the existence check for a particular day of the week.
      */
-    private void setResultForDayOfWeek(ItineraryExistenceResult result, DayOfWeek dayOfWeek) {
+    public void setResultForDayOfWeek(ItineraryExistenceResult result, DayOfWeek dayOfWeek) {
         switch (dayOfWeek) {
             case MONDAY:
                 monday = result;
