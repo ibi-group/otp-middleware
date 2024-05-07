@@ -9,8 +9,7 @@ import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
-import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
-import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
+import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
@@ -48,19 +47,19 @@ public class TrackedTripController implements Endpoint {
                     .withDescription("Initiates the tracking of a monitored trip.")
                     .withProduces(JSON_ONLY)
                     .withRequestType(StartTrackingPayload.class)
-                    .withResponseType(StartTrackingResponse.class),
+                    .withResponseType(TrackingResponse.class),
                 (request, response) -> ManageTripTracking.startTracking(request), JsonUtils::toJson)
             .post(path("/updatetracking")
                     .withDescription("Provides tracking updates on a monitored trip.")
                     .withProduces(JSON_ONLY)
                     .withRequestType(UpdatedTrackingPayload.class)
-                    .withResponseType(UpdateTrackingResponse.class),
+                    .withResponseType(TrackingResponse.class),
                 (request, response) -> ManageTripTracking.updateTracking(request), JsonUtils::toJson)
             .post(path("/track")
                     .withDescription("Starts or updates tracking on a monitored trip.")
                     .withProduces(JSON_ONLY)
                     .withRequestType(TrackPayload.class)
-                    .withResponseType(UpdateTrackingResponse.class),
+                    .withResponseType(TrackingResponse.class),
                 (request, response) -> ManageTripTracking.startOrUpdateTracking(request), JsonUtils::toJson)
             .post(path("/endtracking")
                     .withDescription("Terminates the tracking of a monitored trip by the user.")

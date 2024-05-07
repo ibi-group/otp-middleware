@@ -24,8 +24,7 @@ import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayloa
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
-import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
-import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
+import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -35,6 +34,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -103,7 +103,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
+        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertEquals(ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS, startTrackingResponse.frequencySeconds);
         assertEquals(TripStatus.NO_STATUS.name(), startTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
@@ -120,8 +120,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        var updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, UpdateTrackingResponse.class);
+        var updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertEquals(TripStatus.NO_STATUS.name(), updateTrackingResponse.tripStatus);
+        assertEquals(0, updateTrackingResponse.frequencySeconds);
+        assertNull(updateTrackingResponse.journeyId);
         assertEquals(HttpStatus.OK_200, response.status);
 
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
@@ -154,7 +156,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
+        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(HttpStatus.OK_200, response.status);
 
@@ -165,7 +167,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
+        startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertEquals("A journey of this trip has already been started. End the current journey before starting another.", startTrackingResponse.message);
         assertEquals(HttpStatus.FORBIDDEN_403, response.status);
     }
@@ -181,7 +183,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
+        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(HttpStatus.OK_200, response.status);
 
@@ -207,7 +209,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
+        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertEquals("Monitored trip is not associated with this user!", startTrackingResponse.message);
         assertEquals(HttpStatus.FORBIDDEN_403, response.status);
     }
@@ -223,7 +225,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        var updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, UpdateTrackingResponse.class);
+        var updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertEquals("Provided journey does not exist or has already been completed!", updateTrackingResponse.message);
         assertEquals(HttpStatus.BAD_REQUEST_400, response.status);
     }
@@ -239,7 +241,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, StartTrackingResponse.class);
+        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS, startTrackingResponse.frequencySeconds);
         assertEquals(TripStatus.NO_STATUS.name(), startTrackingResponse.tripStatus);
@@ -260,7 +262,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        var updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, UpdateTrackingResponse.class);
+        var updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertEquals("Provided journey does not exist or has already been completed!", updateTrackingResponse.message);
         assertEquals(HttpStatus.BAD_REQUEST_400, response.status);
     }

@@ -9,8 +9,7 @@ import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.payload.GeneralPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
-import org.opentripplanner.middleware.triptracker.response.StartTrackingResponse;
-import org.opentripplanner.middleware.triptracker.response.UpdateTrackingResponse;
+import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import spark.Request;
 
 import java.util.List;
@@ -31,7 +30,7 @@ public class ManageTripTracking {
     /**
      * Start tracking by providing a unique journey id and tracking update frequency to the caller.
      */
-    public static StartTrackingResponse startTracking(Request request) {
+    public static TrackingResponse startTracking(Request request) {
         TripData tripData = getTripAndJourneyForUser(request);
         if (tripData != null) {
             if (tripData.journey != null) {
@@ -50,7 +49,7 @@ public class ManageTripTracking {
         return null;
     }
 
-    private static StartTrackingResponse startTracking(Request request, TripData tripData) {
+    private static TrackingResponse startTracking(Request request, TripData tripData) {
         try {
             // Start tracking journey.
             var trackedJourney = new TrackedJourney(tripData.trip.id, tripData.locations.get(0));
@@ -62,7 +61,7 @@ public class ManageTripTracking {
             trackedJourney.lastLocation().tripStatus = tripStatus;
             Persistence.trackedJourneys.create(trackedJourney);
             // Provide response.
-            return new StartTrackingResponse(
+            return new TrackingResponse(
                 TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
                 TravelerLocator.getInstruction(tripStatus, travelerPosition, true),
                 trackedJourney.id,
@@ -77,7 +76,7 @@ public class ManageTripTracking {
     /**
      * Update the tracking location information provided by the caller.
      */
-    public static UpdateTrackingResponse updateTracking(Request request) {
+    public static TrackingResponse updateTracking(Request request) {
         TripData tripData = getJourneyAndTripForUser(request);
         if (tripData != null) {
             return updateTracking(request, tripData);
@@ -85,7 +84,7 @@ public class ManageTripTracking {
         return null;
     }
 
-    private static UpdateTrackingResponse updateTracking(Request request, TripData tripData) {
+    private static TrackingResponse updateTracking(Request request, TripData tripData) {
         try {
             TrackedJourney trackedJourney = tripData.journey;
             TravelerPosition travelerPosition = new TravelerPosition(
@@ -102,7 +101,7 @@ public class ManageTripTracking {
                 trackedJourney.locations
             );
             // Provide response.
-            return new UpdateTrackingResponse(
+            return new TrackingResponse(
                 TravelerLocator.getInstruction(tripStatus, travelerPosition, false),
                 tripStatus.name()
             );
@@ -115,7 +114,7 @@ public class ManageTripTracking {
     /**
      * Update the tracking location information provided by the caller.
      */
-    public static UpdateTrackingResponse startOrUpdateTracking(Request request) {
+    public static TrackingResponse startOrUpdateTracking(Request request) {
         TripData tripData = getTripAndJourneyForUser(request);
         if (tripData != null) {
             if (tripData.journey != null) {
