@@ -11,6 +11,7 @@ import com.twilio.rest.verify.v2.service.VerificationCreator;
 import com.twilio.type.PhoneNumber;
 import freemarker.template.TemplateException;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.util.StringUtil;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -54,21 +55,26 @@ public class NotificationUtils {
      * See https://support.twilio.com/hc/en-us/articles/360033806753-Maximum-Message-Length-with-Twilio-Programmable-Messaging
      */
     private static final int SMS_MAX_LENGTH = 320;
-    /** Lowest permitted push message length between Android (240) and iOS (178). */
-    private static final int PUSH_MESSAGE_MAX_LENGTH = 178;
+    /**
+     * The most restrictive content length (title and message)
+     * between Android (240 for message) and iOS (178 for title and message).
+     */
+    public static final int PUSH_TOTAL_MAX_LENGTH = 178;
+    /** The most restrictive title length between Android (65) and iOS (none). */
+    public static final int PUSH_TITLE_MAX_LENGTH = 65;
 
     /**
      * @param otpUser  target user
      * @param textTemplate  template to use for email in text format
      * @param templateData  template data
      */
-    public static String sendPush(OtpUser otpUser, String textTemplate, Object templateData, String tripId) {
+    public static String sendPush(OtpUser otpUser, String textTemplate, Object templateData, String tripName, String tripId) {
         // If Push API config properties aren't set, do nothing.
         if (PUSH_API_KEY == null || PUSH_API_URL == null) return null;
         try {
             String body = TemplateUtils.renderTemplate(textTemplate, templateData);
             String toUser = otpUser.email;
-            return otpUser.pushDevices > 0 ? sendPush(toUser, body, tripId) : "OK";
+            return otpUser.pushDevices > 0 ? sendPush(toUser, body, tripName, tripId) : "OK";
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
             // handles Bugsnag reporting/error logging, so that is not needed here.
@@ -83,11 +89,12 @@ public class NotificationUtils {
      * @param tripId    Monitored trip ID
      * @return          "OK" if message was successful (null otherwise)
      */
-    static String sendPush(String toUser, String body, String tripId) {
+    static String sendPush(String toUser, String body, String tripName, String tripId) {
         try {
             NotificationInfo notifInfo = new NotificationInfo(
                 toUser,
-                body.substring(0, Math.min(PUSH_MESSAGE_MAX_LENGTH, body.length())),
+                body,
+                tripName,
                 tripId
             );
             var jsonBody = new Gson().toJson(notifInfo);
@@ -154,7 +161,7 @@ public class NotificationUtils {
                 toPhoneNumber,
                 fromPhoneNumber,
                 // Trim body to max message length
-                body.substring(0, Math.min(SMS_MAX_LENGTH, body.length()))
+                StringUtil.truncate(body, SMS_MAX_LENGTH)
             ).create();
             LOG.info("SMS ({}) sent successfully", message.getSid());
             return message.getSid();
@@ -377,11 +384,16 @@ public class NotificationUtils {
     static class NotificationInfo {
         public final String user;
         public final String message;
+        public final String title;
         public final String tripId;
 
-        public NotificationInfo(String user, String message, String tripId) {
+        public NotificationInfo(String user, String message, String title, String tripId) {
+            String truncatedTitle = StringUtil.truncate(title, PUSH_TITLE_MAX_LENGTH);
+            int truncatedMessageLength = PUSH_TOTAL_MAX_LENGTH - truncatedTitle.length();
+
             this.user = user;
-            this.message = message;
+            this.title = truncatedTitle;
+            this.message = StringUtil.truncate(message, truncatedMessageLength);
             this.tripId = tripId;
         }
     }
