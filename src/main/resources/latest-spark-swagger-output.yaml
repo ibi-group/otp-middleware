@@ -1299,9 +1299,9 @@ paths:
         "200":
           description: "successful operation"
           responseSchema:
-            $ref: "#/definitions/StartTrackingResponse"
+            $ref: "#/definitions/TrackingResponse"
           schema:
-            $ref: "#/definitions/StartTrackingResponse"
+            $ref: "#/definitions/TrackingResponse"
   /api/secure/monitoredtrip/updatetracking:
     post:
       tags:
@@ -1320,9 +1320,30 @@ paths:
         "200":
           description: "successful operation"
           responseSchema:
-            $ref: "#/definitions/UpdateTrackingResponse"
+            $ref: "#/definitions/TrackingResponse"
           schema:
-            $ref: "#/definitions/UpdateTrackingResponse"
+            $ref: "#/definitions/TrackingResponse"
+  /api/secure/monitoredtrip/track:
+    post:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Starts or updates tracking on a monitored trip."
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/TrackPayload"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/TrackingResponse"
+          schema:
+            $ref: "#/definitions/TrackingResponse"
   /api/secure/monitoredtrip/endtracking:
     post:
       tags:
@@ -2752,7 +2773,7 @@ definitions:
         - "ENDED"
         - "DEVIATED"
         - "NO_STATUS"
-  StartTrackingResponse:
+  TrackingResponse:
     type: "object"
     properties:
       frequencySeconds:
@@ -2775,14 +2796,14 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/TrackingLocation"
-  UpdateTrackingResponse:
+  TrackPayload:
     type: "object"
     properties:
-      instruction:
-        type: "string"
-      tripStatus:
-        type: "string"
-      message:
+      locations:
+        type: "array"
+        items:
+          $ref: "#/definitions/TrackingLocation"
+      tripId:
         type: "string"
   EndTrackingPayload:
     type: "object"
