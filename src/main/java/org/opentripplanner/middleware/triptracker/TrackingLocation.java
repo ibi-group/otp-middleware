@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.triptracker;
 
+import java.time.Instant;
 import java.util.Date;
 
 /**
@@ -38,9 +39,7 @@ public class TrackingLocation {
     }
 
     /** Used in testing **/
-    public TrackingLocation(long millis, double lat, double lon) {
-        this.timestamp = new Date(millis);
-        this.lat = lat;
-        this.lon = lon;
+    public TrackingLocation(Instant instant, double lat, double lon) {
+        this(lat, lon, new Date(instant.toEpochMilli()));
     }
 }

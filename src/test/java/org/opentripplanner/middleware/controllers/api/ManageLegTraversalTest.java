@@ -23,6 +23,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -65,9 +66,9 @@ public class ManageLegTraversalTest {
 
     @ParameterizedTest
     @MethodSource("createTrace")
-    void canTrackTrip(long time, double lat, double lon, TripStatus expected, String message) {
+    void canTrackTrip(Instant instant, double lat, double lon, TripStatus expected, String message) {
         TrackedJourney trackedJourney = new TrackedJourney();
-        TrackingLocation trackingLocation = new TrackingLocation(time, lat, lon);
+        TrackingLocation trackingLocation = new TrackingLocation(instant, lat, lon);
         trackedJourney.locations = List.of(trackingLocation);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
         TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
@@ -90,51 +91,53 @@ public class ManageLegTraversalTest {
             1000,
             calculateBearing(current.start, after.start)
         );
+        Instant startInstant = startTime.toInstant();
+        long currentSegmentStartOffsetSecs = (long) Math.floor(current.cumulativeTime - current.timeInSegment);
         return Stream.of(
             Arguments.of(
-                startTime.getTime() + 1000 * (long) Math.floor(before.cumulativeTime - before.timeInSegment),
+                startInstant.plusSeconds((long) Math.floor(before.cumulativeTime - before.timeInSegment)),
                 current.start.lat,
                 current.start.lon,
                 TripStatus.AHEAD_OF_SCHEDULE,
                 "For the current location and time the traveler is ahead of schedule."
             ),
             Arguments.of(
-                startTime.getTime() + 1000 * (long) Math.floor(current.cumulativeTime - current.timeInSegment),
+                startInstant.plusSeconds(currentSegmentStartOffsetSecs),
                 current.start.lat,
                 current.start.lon,
                 TripStatus.ON_SCHEDULE,
                 "For the current location and time the traveler is on schedule."
             ),
             Arguments.of(
-                startTime.getTime() + 1000 * (long) Math.floor(after.cumulativeTime),
+                startInstant.plusSeconds((long) Math.floor(after.cumulativeTime)),
                 current.start.lat,
                 current.start.lon,
                 TripStatus.BEHIND_SCHEDULE,
                 "For the current location and time the traveler is behind schedule."
             ),
             Arguments.of(
-                startTime.getTime() + 1000 * (long) Math.floor(current.cumulativeTime - current.timeInSegment) - 10000,
+                startInstant.plusSeconds(currentSegmentStartOffsetSecs - 10),
                 current.start.lat,
                 current.start.lon,
                 TripStatus.ON_SCHEDULE,
                 "For the current location and time (with a slight deviation) the traveler is on schedule."
             ),
             Arguments.of(
-                startTime.getTime() + 1000 * (long) Math.floor(current.cumulativeTime),
+                startInstant.plusSeconds((long) Math.floor(current.cumulativeTime)),
                 current.start.lat + 0.00001,
                 current.start.lon + 0.00001,
                 TripStatus.ON_SCHEDULE,
                 "The current location, with a slight deviation, is on schedule."
             ),
             Arguments.of(
-                startTime.getTime(),
+                startInstant,
                 notOnTripCoordinates.lat,
                 notOnTripCoordinates.lon,
                 TripStatus.DEVIATED,
                 "Arbitrary lat/lon values which aren't on the trip leg."
             ),
             Arguments.of(
-                busStopToJusticeCenterItinerary.endTime.getTime() + 1000,
+                busStopToJusticeCenterItinerary.endTime.toInstant().plusSeconds(1),
                 deviatedCoordinates.lat,
                 deviatedCoordinates.lon,
                 TripStatus.DEVIATED,
