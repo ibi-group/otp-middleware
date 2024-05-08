@@ -14,7 +14,6 @@ import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.triptracker.TripInstruction;
 import org.opentripplanner.middleware.triptracker.LegSegment;
-import org.opentripplanner.middleware.triptracker.ManageLegTraversal;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import org.opentripplanner.middleware.triptracker.TravelerLocator;
@@ -35,7 +34,6 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextStep;
@@ -72,7 +70,6 @@ public class ManageLegTraversalTest {
     @MethodSource("createTrace")
     void canTrackTrip(String time, double lat, double lon, TripStatus expected, String message) {
         TrackedJourney trackedJourney = new TrackedJourney();
-        System.out.println(time);
         TrackingLocation trackingLocation = new TrackingLocation(time, lat, lon);
         trackedJourney.locations = List.of(trackingLocation);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
@@ -86,6 +83,16 @@ public class ManageLegTraversalTest {
         LegSegment before = legSegments.get(8);
         LegSegment current = legSegments.get(10);
         LegSegment after = legSegments.get(12);
+        Coordinates deviatedCoordinates = createPoint(
+            current.start,
+            90,
+            calculateBearing(current.start, after.start)
+        );
+        Coordinates notOnTripCoordinates = createPoint(
+            current.start,
+            1000,
+            calculateBearing(current.start, after.start)
+        );
         return Stream.of(
             Arguments.of(
                 getDateTimeAsString(startTime, before.cumulativeTime - before.timeInSegment),
@@ -123,195 +130,171 @@ public class ManageLegTraversalTest {
                 "The current location, with a slight deviation, is on schedule."
             ),
             Arguments.of(
-                getDateTimeAsString(busStopToJusticeCenterItinerary.endTime, 1),
-                current.start.lat,
-                current.start.lon,
-                TripStatus.NO_STATUS,
-                "Time which can not be attributed to a trip leg."
+                getDateTimeAsString(startTime, 0),
+                notOnTripCoordinates.lat,
+                notOnTripCoordinates.lon,
+                TripStatus.DEVIATED,
+                "Arbitrary lat/lon values which aren't on the trip leg."
             ),
             Arguments.of(
-                getDateTimeAsString(startTime, 0),
-                33.95029,
-                -83.99,
+                getDateTimeAsString(busStopToJusticeCenterItinerary.endTime, 1),
+                deviatedCoordinates.lat,
+                deviatedCoordinates.lon,
                 TripStatus.DEVIATED,
-                "Arbitrary lat/lon values which aren't on the trip."
+                "Time which can not be attributed to a trip leg."
             )
         );
     }
 
     @ParameterizedTest
     @MethodSource("createTurnByTurnTrace")
-    void canTrackBusStopToJusticeCenterTurnByTurn(TurnTrace turnTrace) {
+    void canTrackTurnByTurn(TurnTrace turnTrace) {
         TravelerPosition travelerPosition = new TravelerPosition(turnTrace.itinerary.legs.get(0), turnTrace.position);
         String tripInstruction = TravelerLocator.getInstruction(turnTrace.tripStatus, travelerPosition, turnTrace.isStartOfTrip);
         assertEquals(turnTrace.expectedInstruction, Objects.requireNonNullElse(tripInstruction, NO_INSTRUCTION), turnTrace.message);
     }
 
     private static Stream<Arguments> createTurnByTurnTrace() {
-        Leg justiceCenterLeg = busStopToJusticeCenterItinerary.legs.get(0);
-        List<Step> walkSteps = justiceCenterLeg.steps;
-        Coordinates originCoords = new Coordinates(justiceCenterLeg.from);
-        Coordinates destinationCoords = new Coordinates(justiceCenterLeg.to);
-        String destinationName = justiceCenterLeg.to.name;
-        Step stepOne = walkSteps.get(0);
-        Coordinates stepOneCoords = new Coordinates(stepOne);
-        Step stepTwo = walkSteps.get(1);
-        Coordinates stepTwoCoords = new Coordinates(stepTwo);
-        Step stepThree = walkSteps.get(2);
-        Coordinates stepThreeCoords = new Coordinates(stepThree);
-        Step stepFour = walkSteps.get(3);
-        Coordinates stepFourCoords = new Coordinates(stepFour);
-        Step stepFive = walkSteps.get(4);
-        Coordinates stepFiveCoords = new Coordinates(stepFive);
-
-        Leg rockSpringsLeg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
-        List<Step> rockSpringsSteps = rockSpringsLeg.steps;
-
-        Coordinates fourthGeoPoint = new Coordinates(33.79352,-84.34148);
-        Coordinates sixthGeoPoint = new Coordinates(33.79332,-84.34099);
-        Step rockSpringsStepTwo = rockSpringsSteps.get(1);
+        final int NORTH_BEARING = 0;
+        final int NORTH_EAST_BEARING = 45;
+        final int SOUTH_BEARING = 180;
+        final int SOUTH_WEST_BEARING = 225;
+        final int NORTH_WEST_BEARING = 315;
 
         Leg adairAvenueToMonroeDriveLeg = adairAvenueToMonroeDriveItinerary.legs.get(0);
-        List<Step> adairAvenueToMonroeDriveLegSteps = adairAvenueToMonroeDriveLeg.steps;
-        Step virginiaAvenue = adairAvenueToMonroeDriveLegSteps.get(5);
+        List<Step> walkSteps = adairAvenueToMonroeDriveLeg.steps;
+        String destinationName = adairAvenueToMonroeDriveLeg.to.name;
 
+        Step adairAvenueNortheastStep = walkSteps.get(0);
+        Step virginiaCircleNortheastStep = walkSteps.get(1);
+        Step ponceDeLeonPlaceNortheastStep = walkSteps.get(2);
+        Step virginiaAvenueNortheastStep = walkSteps.get(5);
+
+        Coordinates originCoords = new Coordinates(adairAvenueToMonroeDriveLeg.from);
+        Coordinates destinationCoords = new Coordinates(adairAvenueToMonroeDriveLeg.to);
+        Coordinates adairAvenueNortheastCoords = new Coordinates(adairAvenueNortheastStep);
+        Coordinates virginiaCircleNortheastCoords = new Coordinates(virginiaCircleNortheastStep);
+        Coordinates ponceDeLeonPlaceNortheastCoords = new Coordinates(ponceDeLeonPlaceNortheastStep);
+        Coordinates virginiaAvenuePoint = new Coordinates(virginiaAvenueNortheastStep);
         Coordinates pointBeforeTurn = new Coordinates(33.78151,-84.36481);
-        Coordinates virginiaAvenuePoint = new Coordinates(virginiaAvenue);
+        Coordinates pointAfterTurn = new Coordinates(33.78165, -84.36484);
 
         return Stream.of(
             Arguments.of(
                 new TurnTrace(
-                    adairAvenueToMonroeDriveItinerary,
-                    createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new TripInstruction(10, virginiaAvenue).build(),
-                    false,
-                    "Approaching left turn on Virginia Avenue."
+                    originCoords,
+                    new TripInstruction(10, adairAvenueNortheastStep).build(),
+                    true,
+                    "Just started the trip and near to the instruction for the first step. "
                 )
             ),
             Arguments.of(
                 new TurnTrace(
-                    adairAvenueToMonroeDriveItinerary,
-                    createPoint(pointBeforeTurn, 16, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new TripInstruction(2, virginiaAvenue).build(),
+                    originCoords,
+                    new TripInstruction(10, adairAvenueNortheastStep).build(),
                     false,
-                    "Turn left on to Virginia Avenue."
+                    "Coming up on first instruction."
                 )
             ),
             Arguments.of(
                 new TurnTrace(
-                    edmundParkDriveToRockSpringsItinerary,
-                    fourthGeoPoint,
-                    NO_INSTRUCTION,
+                    adairAvenueNortheastCoords,
+                    new TripInstruction(2, adairAvenueNortheastStep).build(),
                     false,
-                    "Approaching second step, but not close enough for instruction."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    edmundParkDriveToRockSpringsItinerary,
-                    createPoint(sixthGeoPoint, 45, calculateBearing(sixthGeoPoint, new Coordinates(rockSpringsStepTwo))),
-                    new TripInstruction(10, rockSpringsStepTwo).build(),
-                    false,
-                    "Upcoming second step."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    edmundParkDriveToRockSpringsItinerary,
-                    createPoint(sixthGeoPoint, 52, calculateBearing(sixthGeoPoint, new Coordinates(rockSpringsStepTwo))),
-                    new TripInstruction(0, rockSpringsStepTwo).build(),
-                    false,
-                    "Immediate second step."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    edmundParkDriveToRockSpringsItinerary,
-                    sixthGeoPoint,
-                    NO_INSTRUCTION,
-                    false,
-                    "Approaching second step, but not close enough for instruction."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    stepTwoCoords,
-                    new TripInstruction(0, stepTwo).build(),
-                    false,
-                    "Approach the instruction for the second step."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    stepThreeCoords,
-                    new TripInstruction(0, stepThree).build(),
-                    false,
-                    "Approach the instruction for the third step."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    stepFourCoords,
-                    new TripInstruction(0, stepFour).build(),
-                    false,
-                    "Approach the instruction for the fourth step."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    stepFiveCoords,
-                    new TripInstruction(0, stepFive).build(),
-                    false,
-                    "Approach the instruction for the fifth step."
+                    "On first instruction."
                 )
             ),
             Arguments.of(
                 new TurnTrace(
                     TripStatus.DEVIATED,
-                    originCoords,
-                    new TripInstruction(stepOne.streetName).build(),
+                    createPoint(adairAvenueNortheastCoords, 12, NORTH_WEST_BEARING),
+                    new TripInstruction(adairAvenueNortheastStep.streetName).build(),
                     false,
-                    "Just started the trip and NOT near to the instruction for the first step."
+                    "Deviated to the north of east to west path. Suggest path to head towards."
                 )
             ),
             Arguments.of(
                 new TurnTrace(
-                    originCoords,
-                    new TripInstruction(1, stepOne).build(),
-                    true,
-                    "Just started the trip and near to the instruction for the first step."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    createPoint(originCoords, 1, calculateBearing(originCoords, stepOneCoords)),
-                    new TripInstruction(1, stepOne).build(),
+                    TripStatus.DEVIATED,
+                    createPoint(adairAvenueNortheastCoords, 12, SOUTH_WEST_BEARING),
+                    new TripInstruction(adairAvenueNortheastStep.streetName).build(),
                     false,
-                    "Already into trip and approaching the instruction for the first step."
+                    "Deviated to the south of east to west path. Suggest path to head towards."
                 )
             ),
             Arguments.of(
                 new TurnTrace(
-                    createPoint(stepOneCoords, 55, calculateBearing(stepOneCoords, stepTwoCoords)),
-                    new TripInstruction(9, stepTwo).build(),
-                    false,
-                    "Passed the first step and approaching the instruction for the second step."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    createPoint(stepFiveCoords, 10, calculateBearing(stepFiveCoords, destinationCoords)),
+                    createPoint(virginiaCircleNortheastCoords, 12, SOUTH_WEST_BEARING),
                     NO_INSTRUCTION,
                     false,
-                    "Passed the last step and therefore the last available instruction."
+                    "On track approaching second step, but not close enough for instruction."
                 )
             ),
             Arguments.of(
                 new TurnTrace(
-                    createPoint(stepFourCoords, 3, calculateBearing(stepFourCoords, stepFiveCoords)),
-                    new TripInstruction(8, stepFive).build(),
+                    TripStatus.DEVIATED,
+                    createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING),
+                    new TripInstruction(9, virginiaCircleNortheastStep).build(),
                     false,
-                    "Approaching the instruction for the last step."
+                    "Deviated from path, but within the upcoming radius of second instruction."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    virginiaCircleNortheastCoords,
+                    new TripInstruction(0, virginiaCircleNortheastStep).build(),
+                    false,
+                    "On second instruction."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    TripStatus.DEVIATED,
+                    createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_WEST_BEARING),
+                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep).build(),
+                    false,
+                    "Deviated to the west of south to north path. Suggest path to head towards."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    TripStatus.DEVIATED,
+                    createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_EAST_BEARING),
+                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep).build(),
+                    false,
+                    "Deviated to the east of south to north path. Suggest path to head towards."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
+                    new TripInstruction(10, virginiaAvenueNortheastStep).build(),
+                    false,
+                    "Approaching left turn on Virginia Avenue (Test to make sure turn is not missed)."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    createPoint(pointBeforeTurn, 17, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
+                    new TripInstruction(2, virginiaAvenueNortheastStep).build(),
+                    false,
+                    "Turn left on to Virginia Avenue (Test to make sure turn is not missed)."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    createPoint(pointAfterTurn, 0, calculateBearing(pointAfterTurn, virginiaAvenuePoint)),
+                    NO_INSTRUCTION,
+                    false,
+                    "After turn left on to Virginia Avenue should not produce turn instruction."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    createPoint(destinationCoords, 8, SOUTH_BEARING),
+                    new TripInstruction(10, destinationName).build(),
+                    false,
+                    "Coming up on destination instruction."
                 )
             ),
             Arguments.of(
@@ -319,24 +302,7 @@ public class ManageLegTraversalTest {
                     destinationCoords,
                     new TripInstruction(2, destinationName).build(),
                     false,
-                    "Arrived at destination."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    createPoint(stepFiveCoords, 190, calculateBearing(stepFiveCoords, destinationCoords)),
-                    new TripInstruction(9, destinationName).build(),
-                    false,
-                    "Approaching the destination."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    TripStatus.DEVIATED,
-                    stepFiveCoords,
-                    new TripInstruction(stepFive.streetName).build(),
-                    false,
-                    "Deviated from trip around the fifth step."
+                    "On destination instruction."
                 )
             )
         );
@@ -428,75 +394,8 @@ public class ManageLegTraversalTest {
         assertEquals(busStopToJusticeCenterItinerary.legs.get(0).duration, cumulative, 0.01f);
     }
 
-    @ParameterizedTest
-    @MethodSource("createTravelerPositions")
-    void canReturnTheCorrectSegmentCoordinates(TravellerPosition segmentPosition) {
-        LegSegment legSegment = ManageLegTraversal.getSegmentFromTime(
-            segmentPosition.start,
-            segmentPosition.currentTime,
-            segmentPosition.legSegments
-        );
-        assertNotNull(legSegment);
-        assertEquals(segmentPosition.coordinates, legSegment.start);
-    }
-
-    private static Stream<TravellerPosition> createTravelerPositions() {
-        Instant segmentStartTime = ZonedDateTime.now().toInstant();
-        List<LegSegment> legSegments = createSegmentsForLeg();
-
-        return Stream.of(
-            new TravellerPosition(
-                legSegments.get(0).start,
-                segmentStartTime,
-                segmentStartTime.plusSeconds(5),
-                legSegments
-            ),
-            new TravellerPosition(
-                legSegments.get(1).start,
-                segmentStartTime,
-                segmentStartTime.plusSeconds(15),
-                legSegments
-            ),
-            new TravellerPosition(
-                legSegments.get(2).start,
-                segmentStartTime,
-                segmentStartTime.plusSeconds(25),
-                legSegments
-            ),
-            new TravellerPosition(
-                legSegments.get(3).start,
-                segmentStartTime,
-                segmentStartTime.plusSeconds(35),
-                legSegments
-            )
-        );
-    }
-
-    private static class TravellerPosition {
-
-        public Coordinates coordinates;
-
-        public Instant start;
-
-        public Instant currentTime;
-
-        List<LegSegment> legSegments;
-
-        public TravellerPosition(
-            Coordinates coordinates,
-            Instant start,
-            Instant currentTime,
-            List<LegSegment> legSegments
-        ) {
-            this.coordinates = coordinates;
-            this.start = start;
-            this.currentTime = currentTime;
-            this.legSegments = legSegments;
-        }
-    }
-
     private static class TurnTrace {
-        Itinerary itinerary = busStopToJusticeCenterItinerary;
+        Itinerary itinerary = adairAvenueToMonroeDriveItinerary;
         TripStatus tripStatus = TripStatus.ON_SCHEDULE;
         Coordinates position;
         String expectedInstruction;
@@ -512,14 +411,6 @@ public class ManageLegTraversalTest {
 
         public TurnTrace(TripStatus tripStatus, Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
             this.tripStatus = tripStatus;
-            this.position = position;
-            this.expectedInstruction = expectedInstruction;
-            this.isStartOfTrip = isStartOfTrip;
-            this.message = message;
-        }
-
-        public TurnTrace(Itinerary itinerary, Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
-            this.itinerary = itinerary;
             this.position = position;
             this.expectedInstruction = expectedInstruction;
             this.isStartOfTrip = isStartOfTrip;

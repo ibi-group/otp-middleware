@@ -201,7 +201,7 @@ public class ManageTripTracking {
     /**
      * Get the ongoing tracked journey for trip id.
      */
-    private static TrackedJourney getOngoingTrackedJourney(String tripId) {
+    public static TrackedJourney getOngoingTrackedJourney(String tripId) {
         return Persistence.trackedJourneys.getOneFiltered(
             Filters.and(
                 eq(TrackedJourney.TRIP_ID_FIELD_NAME, tripId),

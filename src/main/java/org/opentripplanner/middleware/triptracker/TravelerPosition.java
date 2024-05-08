@@ -28,7 +28,7 @@ public class TravelerPosition {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
         currentTime = lastLocation.timestamp.toInstant();
         currentPosition = new Coordinates(lastLocation);
-        expectedLeg = getExpectedLeg(currentTime, itinerary);
+        expectedLeg = getExpectedLeg(currentPosition, itinerary);
         legSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
     }
 
@@ -36,5 +36,6 @@ public class TravelerPosition {
     public TravelerPosition(Leg expectedLeg, Coordinates currentPosition) {
         this.expectedLeg = expectedLeg;
         this.currentPosition = currentPosition;
+        legSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
     }
 }

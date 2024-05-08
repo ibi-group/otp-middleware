@@ -2772,7 +2772,6 @@ definitions:
         - "AHEAD_OF_SCHEDULE"
         - "ENDED"
         - "DEVIATED"
-        - "NO_STATUS"
   TrackingResponse:
     type: "object"
     properties:
