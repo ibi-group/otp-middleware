@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.triptracker;
 
-import java.time.ZonedDateTime;
 import java.util.Date;
 
 /**
@@ -39,8 +38,8 @@ public class TrackingLocation {
     }
 
     /** Used in testing **/
-    public TrackingLocation(String dateTime, double lat, double lon) {
-        this.timestamp = new Date(ZonedDateTime.parse(dateTime).toInstant().toEpochMilli());
+    public TrackingLocation(long millis, double lat, double lon) {
+        this.timestamp = new Date(millis);
         this.lat = lat;
         this.lon = lon;
     }

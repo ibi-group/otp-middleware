@@ -23,10 +23,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
@@ -68,7 +65,7 @@ public class ManageLegTraversalTest {
 
     @ParameterizedTest
     @MethodSource("createTrace")
-    void canTrackTrip(String time, double lat, double lon, TripStatus expected, String message) {
+    void canTrackTrip(long time, double lat, double lon, TripStatus expected, String message) {
         TrackedJourney trackedJourney = new TrackedJourney();
         TrackingLocation trackingLocation = new TrackingLocation(time, lat, lon);
         trackedJourney.locations = List.of(trackingLocation);
@@ -95,49 +92,49 @@ public class ManageLegTraversalTest {
         );
         return Stream.of(
             Arguments.of(
-                getDateTimeAsString(startTime, before.cumulativeTime - before.timeInSegment),
+                startTime.getTime() + 1000 * (long) Math.floor(before.cumulativeTime - before.timeInSegment),
                 current.start.lat,
                 current.start.lon,
                 TripStatus.AHEAD_OF_SCHEDULE,
                 "For the current location and time the traveler is ahead of schedule."
             ),
             Arguments.of(
-                getDateTimeAsString(startTime, current.cumulativeTime - current.timeInSegment),
+                startTime.getTime() + 1000 * (long) Math.floor(current.cumulativeTime - current.timeInSegment),
                 current.start.lat,
                 current.start.lon,
                 TripStatus.ON_SCHEDULE,
                 "For the current location and time the traveler is on schedule."
             ),
             Arguments.of(
-                getDateTimeAsString(startTime, after.cumulativeTime),
+                startTime.getTime() + 1000 * (long) Math.floor(after.cumulativeTime),
                 current.start.lat,
                 current.start.lon,
                 TripStatus.BEHIND_SCHEDULE,
                 "For the current location and time the traveler is behind schedule."
             ),
             Arguments.of(
-                getDateTimeAsString(startTime, (current.cumulativeTime - current.timeInSegment) - 10),
+                startTime.getTime() + 1000 * (long) Math.floor(current.cumulativeTime - current.timeInSegment) - 10000,
                 current.start.lat,
                 current.start.lon,
                 TripStatus.ON_SCHEDULE,
                 "For the current location and time (with a slight deviation) the traveler is on schedule."
             ),
             Arguments.of(
-                getDateTimeAsString(startTime, current.cumulativeTime),
+                startTime.getTime() + 1000 * (long) Math.floor(current.cumulativeTime),
                 current.start.lat + 0.00001,
                 current.start.lon + 0.00001,
                 TripStatus.ON_SCHEDULE,
                 "The current location, with a slight deviation, is on schedule."
             ),
             Arguments.of(
-                getDateTimeAsString(startTime, 0),
+                startTime.getTime(),
                 notOnTripCoordinates.lat,
                 notOnTripCoordinates.lon,
                 TripStatus.DEVIATED,
                 "Arbitrary lat/lon values which aren't on the trip leg."
             ),
             Arguments.of(
-                getDateTimeAsString(busStopToJusticeCenterItinerary.endTime, 1),
+                busStopToJusticeCenterItinerary.endTime.getTime() + 1000,
                 deviatedCoordinates.lat,
                 deviatedCoordinates.lon,
                 TripStatus.DEVIATED,
@@ -420,12 +417,6 @@ public class ManageLegTraversalTest {
 
     private static List<LegSegment> createSegmentsForLeg() {
         return interpolatePoints(busStopToJusticeCenterItinerary.legs.get(0));
-    }
-
-    private static String getDateTimeAsString(Date date, double offset) {
-        Instant dateTime = date.toInstant().plusSeconds((long) offset);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneId.systemDefault());;
-        return formatter.format(dateTime);
     }
 
     private int getNumberOfExcludedPoints(List<Position> legPositions, Leg leg) {
