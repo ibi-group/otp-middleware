@@ -191,6 +191,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertNotEquals(0, trackResponse.frequencySeconds);
         assertNotNull(trackResponse.journeyId);
+        trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
 
         response = makeRequest(
             TRACK_TRIP_PATH,
