@@ -17,7 +17,7 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
-import org.opentripplanner.middleware.triptracker.ManageTripTracking;
+import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -228,7 +228,7 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     private boolean isTrackingOngoing() {
-        return trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && ManageTripTracking.getOngoingTrackedJourney(trip.id) != null;
+        return trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && TripTrackingData.getOngoingTrackedJourney(trip.id) != null;
     }
 
     /**
