@@ -12,8 +12,6 @@ import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import spark.Request;
 
-import java.util.List;
-
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
@@ -31,7 +29,7 @@ public class ManageTripTracking {
      * Start tracking by providing a unique journey id and tracking update frequency to the caller.
      */
     public static TrackingResponse startTracking(Request request) {
-        TripData tripData = getTripAndJourneyForUser(request);
+        TripTrackingData tripData = getTripAndJourneyForUser(request);
         if (tripData != null) {
             if (tripData.journey != null) {
                 // Make sure the journey hasn't already been started by the user. There could potentially be a few
@@ -49,7 +47,7 @@ public class ManageTripTracking {
         return null;
     }
 
-    private static TrackingResponse startTracking(Request request, TripData tripData) {
+    private static TrackingResponse startTracking(Request request, TripTrackingData tripData) {
         try {
             // Start tracking journey.
             var trackedJourney = new TrackedJourney(tripData.trip.id, tripData.locations.get(0));
@@ -77,14 +75,14 @@ public class ManageTripTracking {
      * Update the tracking location information provided by the caller.
      */
     public static TrackingResponse updateTracking(Request request) {
-        TripData tripData = getJourneyAndTripForUser(request);
+        TripTrackingData tripData = getJourneyAndTripForUser(request);
         if (tripData != null) {
             return updateTracking(request, tripData);
         }
         return null;
     }
 
-    private static TrackingResponse updateTracking(Request request, TripData tripData) {
+    private static TrackingResponse updateTracking(Request request, TripTrackingData tripData) {
         try {
             TrackedJourney trackedJourney = tripData.journey;
             TravelerPosition travelerPosition = new TravelerPosition(
@@ -115,7 +113,7 @@ public class ManageTripTracking {
      * Update the tracking location information provided by the caller.
      */
     public static TrackingResponse startOrUpdateTracking(Request request) {
-        TripData tripData = getTripAndJourneyForUser(request);
+        TripTrackingData tripData = getTripAndJourneyForUser(request);
         if (tripData != null) {
             if (tripData.journey != null) {
                 return updateTracking(request, tripData);
@@ -130,7 +128,7 @@ public class ManageTripTracking {
      * End tracking by saving the end condition and date.
      */
     public static EndTrackingResponse endTracking(Request request) {
-        TripData tripData = getJourneyAndTripForUser(request);
+        TripTrackingData tripData = getJourneyAndTripForUser(request);
         if (tripData != null) {
             return completeJourney(tripData.journey, false);
         }
@@ -143,7 +141,7 @@ public class ManageTripTracking {
      * to restart it.
      */
     public static EndTrackingResponse forciblyEndTracking(Request request) {
-        TripData tripData = getTripAndJourneyForUser(request);
+        TripTrackingData tripData = getTripAndJourneyForUser(request);
         if (tripData != null) {
             if (tripData.journey != null) {
                 return completeJourney(tripData.journey, true);
@@ -222,37 +220,25 @@ public class ManageTripTracking {
         }
     }
 
-    private static class TripData {
-        public final MonitoredTrip trip;
-        public final TrackedJourney journey;
-        public final List<TrackingLocation> locations;
-
-        public TripData(MonitoredTrip trip, TrackedJourney journey, List<TrackingLocation> locations) {
-            this.trip = trip;
-            this.journey = journey;
-            this.locations = locations;
-        }
-    }
-
-    private static TripData getTripAndJourneyForUser(Request request) {
+    private static TripTrackingData getTripAndJourneyForUser(Request request) {
         GeneralPayload payload = getPayloadFromRequest(request);
         if (payload != null) {
             var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
             if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                return new TripData(monitoredTrip, getOngoingTrackedJourney(payload.tripId), payload.getLocations());
+                return new TripTrackingData(monitoredTrip, getOngoingTrackedJourney(payload.tripId), payload.getLocations());
             }
         }
         return null;
     }
 
-    private static TripData getJourneyAndTripForUser(Request request) {
+    private static TripTrackingData getJourneyAndTripForUser(Request request) {
         GeneralPayload payload = getPayloadFromRequest(request);
         if (payload != null) {
             var trackedJourney = getActiveJourney(request, payload.journeyId);
             if (trackedJourney != null) {
                 var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
                 if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                    return new TripData(monitoredTrip, trackedJourney, payload.getLocations());
+                    return new TripTrackingData(monitoredTrip, trackedJourney, payload.getLocations());
                 }
             }
         }
