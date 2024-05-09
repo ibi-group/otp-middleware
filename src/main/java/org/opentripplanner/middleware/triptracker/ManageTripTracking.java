@@ -1,20 +1,13 @@
 package org.opentripplanner.middleware.triptracker;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.mongodb.client.model.Filters;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.triptracker.payload.GeneralPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import spark.Request;
 
-import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
-import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
@@ -29,7 +22,7 @@ public class ManageTripTracking {
      * Start tracking by providing a unique journey id and tracking update frequency to the caller.
      */
     public static TrackingResponse startTracking(Request request) {
-        TripTrackingData tripData = getTripAndJourneyForUser(request);
+        TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
         if (tripData != null) {
             if (tripData.journey != null) {
                 // Make sure the journey hasn't already been started by the user. There could potentially be a few
@@ -75,7 +68,7 @@ public class ManageTripTracking {
      * Update the tracking location information provided by the caller.
      */
     public static TrackingResponse updateTracking(Request request) {
-        TripTrackingData tripData = getJourneyAndTripForUser(request);
+        TripTrackingData tripData = TripTrackingData.fromRequestJourneyId(request);
         if (tripData != null) {
             return updateTracking(request, tripData);
         }
@@ -113,7 +106,7 @@ public class ManageTripTracking {
      * Update the tracking location information provided by the caller.
      */
     public static TrackingResponse startOrUpdateTracking(Request request) {
-        TripTrackingData tripData = getTripAndJourneyForUser(request);
+        TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
         if (tripData != null) {
             if (tripData.journey != null) {
                 return updateTracking(request, tripData);
@@ -128,7 +121,7 @@ public class ManageTripTracking {
      * End tracking by saving the end condition and date.
      */
     public static EndTrackingResponse endTracking(Request request) {
-        TripTrackingData tripData = getJourneyAndTripForUser(request);
+        TripTrackingData tripData = TripTrackingData.fromRequestJourneyId(request);
         if (tripData != null) {
             return completeJourney(tripData.journey, false);
         }
@@ -141,7 +134,7 @@ public class ManageTripTracking {
      * to restart it.
      */
     public static EndTrackingResponse forciblyEndTracking(Request request) {
-        TripTrackingData tripData = getTripAndJourneyForUser(request);
+        TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
         if (tripData != null) {
             if (tripData.journey != null) {
                 return completeJourney(tripData.journey, true);
@@ -167,81 +160,5 @@ public class ManageTripTracking {
             TripStatus.ENDED.name()
         );
 
-    }
-
-    /**
-     * Confirm that the monitored trip that the user is on belongs to them.
-     */
-    private static boolean isTripAssociatedWithUser(Request request, MonitoredTrip monitoredTrip) {
-        var user = Auth0Connection.getUserFromRequest(request);
-
-        if (monitoredTrip == null || (user.otpUser != null && !monitoredTrip.userId.equals(user.otpUser.id))) {
-            logMessageAndHalt(request, HttpStatus.FORBIDDEN_403, "Monitored trip is not associated with this user!");
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Get active, tracked journey, based on the tracked journey id. If the end time is populated the journey has
-     * already been completed.
-     */
-    private static TrackedJourney getActiveJourney(Request request, String trackedJourneyId) {
-        var trackedJourney = Persistence.trackedJourneys.getById(trackedJourneyId);
-        if (trackedJourney != null && trackedJourney.endTime == null) {
-            return trackedJourney;
-        } else {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Provided journey does not exist or has already been completed!");
-            return null;
-        }
-    }
-
-    /**
-     * Get the ongoing tracked journey for trip id.
-     */
-    public static TrackedJourney getOngoingTrackedJourney(String tripId) {
-        return Persistence.trackedJourneys.getOneFiltered(
-            Filters.and(
-                eq(TrackedJourney.TRIP_ID_FIELD_NAME, tripId),
-                eq(TrackedJourney.END_TIME_FIELD_NAME, null)
-            )
-        );
-    }
-
-    /**
-     * Get the expected tracking payload for the request.
-     */
-    private static GeneralPayload getPayloadFromRequest(Request request) {
-        try {
-            return getPOJOFromRequestBody(request, GeneralPayload.class);
-        } catch (JsonProcessingException e) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing JSON tracking payload.", e);
-            return null;
-        }
-    }
-
-    private static TripTrackingData getTripAndJourneyForUser(Request request) {
-        GeneralPayload payload = getPayloadFromRequest(request);
-        if (payload != null) {
-            var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
-            if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                return new TripTrackingData(monitoredTrip, getOngoingTrackedJourney(payload.tripId), payload.getLocations());
-            }
-        }
-        return null;
-    }
-
-    private static TripTrackingData getJourneyAndTripForUser(Request request) {
-        GeneralPayload payload = getPayloadFromRequest(request);
-        if (payload != null) {
-            var trackedJourney = getActiveJourney(request, payload.journeyId);
-            if (trackedJourney != null) {
-                var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
-                if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                    return new TripTrackingData(monitoredTrip, trackedJourney, payload.getLocations());
-                }
-            }
-        }
-        return null;
     }
 }
