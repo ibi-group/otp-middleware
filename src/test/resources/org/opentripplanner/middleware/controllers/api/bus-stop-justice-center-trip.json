@@ -1,0 +1,118 @@
+{
+  "accessibilityScore": null,
+  "duration": 243,
+  "endTime": 1706296263000,
+  "legs": [
+    {
+      "accessibilityScore": null,
+      "agency": null,
+      "alerts": [],
+      "arrivalDelay": 0,
+      "departureDelay": 0,
+      "distance": 432.07,
+      "dropoffType": "SCHEDULED",
+      "duration": 243,
+      "endTime": 1706296263000,
+      "fareProducts": [],
+      "from": {
+        "lat": 33.9502679,
+        "lon": -83.9899201,
+        "name": "Ride Gwinnett Bus Stop (Central), Nash St & Stone Mountain St",
+        "rentalVehicle": null,
+        "stop": null,
+        "vertexType": "NORMAL"
+      },
+      "headsign": null,
+      "interlineWithPreviousLeg": false,
+      "intermediateStops": null,
+      "legGeometry": {
+        "length": 32,
+        "points": "a|enE~gs_O?B@NF|@DVHXKDSLIDKHOF}A~@DHA@IFq@^}Al@C@WJQLGNCN?LANANAHBV@LIhAH@CXj@D"
+      },
+      "mode": "WALK",
+      "pickupBookingInfo": null,
+      "pickupType": "SCHEDULED",
+      "realTime": false,
+      "realtimeState": null,
+      "rentedBike": false,
+      "rideHailingEstimate": null,
+      "route": null,
+      "startTime": 1706296020000,
+      "steps": [
+        {
+          "absoluteDirection": "WEST",
+          "alerts": [],
+          "area": false,
+          "distance": 62.96,
+          "elevationProfile": [],
+          "lat": 33.9502572,
+          "lon": -83.9899188,
+          "relativeDirection": "DEPART",
+          "stayOn": false,
+          "streetName": "sidewalk"
+        },
+        {
+          "absoluteDirection": "NORTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 7.22,
+          "elevationProfile": [],
+          "lat": 33.9501254,
+          "lon": -83.9905791,
+          "relativeDirection": "RIGHT",
+          "stayOn": true,
+          "streetName": "service road"
+        },
+        {
+          "absoluteDirection": "NORTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 96.34,
+          "elevationProfile": [],
+          "lat": 33.9501853,
+          "lon": -83.9906094,
+          "relativeDirection": "CONTINUE",
+          "stayOn": false,
+          "streetName": "Langley Drive"
+        },
+        {
+          "absoluteDirection": "SOUTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 5.28,
+          "elevationProfile": [],
+          "lat": 33.9509412,
+          "lon": -83.9911196,
+          "relativeDirection": "LEFT",
+          "stayOn": false,
+          "streetName": "service road"
+        },
+        {
+          "absoluteDirection": "NORTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 260.26,
+          "elevationProfile": [],
+          "lat": 33.9509174,
+          "lon": -83.9911691,
+          "relativeDirection": "RIGHT",
+          "stayOn": true,
+          "streetName": "path"
+        }
+      ],
+      "to": {
+        "lat": 33.9517237,
+        "lon": -83.9929288,
+        "name": "Gwinnett Justice Center (Central)",
+        "rentalVehicle": null,
+        "stop": null,
+        "vertexType": "NORMAL"
+      },
+      "transitLeg": false,
+      "trip": null
+    }
+  ],
+  "startTime": 1706296020000,
+  "waitingTime": 0,
+  "walkTime": 243
+}

@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.models;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -14,12 +13,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.MODE_PARAM;
 
 /**
  * Holds tests for some methods in MonitoredTrip.
  */
-public class MonitoredTripTest {
+class MonitoredTripTest {
     /**
      * Abbreviated query params with mode params you would get from UI.
      */
@@ -32,7 +33,7 @@ public class MonitoredTripTest {
      */
     @ParameterizedTest
     @MethodSource("createUpdateModeInQueryParamTestCases")
-    public void canUpdateModeInQueryParams(Leg accessLeg, Set<String> expectedModeParams) throws URISyntaxException {
+    void canUpdateModeInQueryParams(Leg accessLeg, Set<String> expectedModeParams) throws URISyntaxException {
         // Setup a trip with an initial queryParams argument.
         MonitoredTrip trip = new MonitoredTrip();
         trip.queryParams = UI_QUERY_PARAMS;
@@ -57,7 +58,7 @@ public class MonitoredTripTest {
         String[] modeParams = paramsMap.get(MODE_PARAM).split(",");
         Set<String> actualModeParams = Set.of(modeParams);
 
-        Assertions.assertEquals(expectedModeParams, actualModeParams,
+        assertEquals(expectedModeParams, actualModeParams,
             String.format("This set of mode params %s is incorrect for access mode %s.", actualModeParams, accessLeg.mode)
         );
     }
@@ -100,14 +101,33 @@ public class MonitoredTripTest {
      * that focuses on ignoring the leading question mark in the query params, if any.
      */
     @Test
-    public void canIgnoreLeadingQuestionMarkInQueryParams() throws URISyntaxException {
+    void canIgnoreLeadingQuestionMarkInQueryParams() throws URISyntaxException {
         // Setup a trip with an initial queryParams argument.
         MonitoredTrip trip = new MonitoredTrip();
         trip.queryParams = UI_QUERY_PARAMS;
 
         Map<String, String> paramsMap = trip.parseQueryParams();
         for (String key : paramsMap.keySet()) {
-            Assertions.assertFalse(key.startsWith("?"));
+            assertFalse(key.startsWith("?"));
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("createOneTimeTripCases")
+    void canDetermineOneTimeTrips(MonitoredTrip trip, boolean isOneTime) {
+        assertEquals(isOneTime, trip.isOneTime());
+    }
+
+    private static Stream<Arguments> createOneTimeTripCases() {
+        return Stream.of(
+            Arguments.of(createRecurrentTrip(), false),
+            Arguments.of(new MonitoredTrip(), true)
+        );
+    }
+
+    private static MonitoredTrip createRecurrentTrip() {
+        MonitoredTrip recurrentTrip = new MonitoredTrip();
+        recurrentTrip.tuesday = true;
+        return recurrentTrip;
     }
 }

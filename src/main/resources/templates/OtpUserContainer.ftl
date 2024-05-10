@@ -13,12 +13,14 @@
 </div>
 <#-- footer -->
 <hr/>
-<div>
+<footer>
     <p>
         <small>
-            You're receiving this email because you're subscribed to notifications through ${OTP_UI_NAME}. You can manage that subscription <a href="${OTP_UI_URL}/#/account">here</a>.
+            ${emailFooter}
+            <br/>
+            <a href="${manageLinkUrl}">${manageLinkText}</a>
         </small>
     </p>
-</div>
+</footer>
 </#macro>
 

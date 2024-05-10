@@ -9,29 +9,32 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.text.MatchesPattern.matchesPattern;
 
 class DateTimeUtilsTest {
     @ParameterizedTest
     @MethodSource("createDateFormatCases")
-    void supportsDateFormatsInSeveralLocales(String localeTag, String result) {
+    void supportsDateFormatsInSeveralLocales(String localeTag, String pattern) {
         ZonedDateTime zonedTime = ZonedDateTime.of(2023, 2, 12, 17, 44, 0, 0, DateTimeUtils.getOtpZoneId());
-        assertEquals(result, DateTimeUtils.formatShortDate(
-            Date.from(zonedTime.toInstant()),
-            Locale.forLanguageTag(localeTag))
+        assertThat(
+            DateTimeUtils.formatShortDate(Date.from(zonedTime.toInstant()), Locale.forLanguageTag(localeTag)),
+            matchesPattern(pattern)
         );
     }
 
     private static Stream<Arguments> createDateFormatCases() {
+        // JDK 20 uses narrow no-break space U+202F before "PM" for time format; earlier JDKs just use a space.
+        // Also, JDK 20 uses 24-hour format for Chinese (as does Format.JS library); earlier JDKs use "下午".
         return Stream.of(
-            Arguments.of("en-US", "5:44 PM"),
+            Arguments.of("en-US", "5:44[\\u202f ]PM"),
             Arguments.of("fr", "17:44"),
             Arguments.of("es", "17:44"),
             Arguments.of("ko", "오후 5:44"),
             Arguments.of("vi", "17:44"),
-            Arguments.of("zh", "下午5:44"), // Note: The Format.JS library shows 24-hour format for Chinese.
+            Arguments.of("zh", "(17|下午5):44"),
             Arguments.of("ru", "17:44"),
-            Arguments.of("tl", "5:44 PM")
+            Arguments.of("tl", "5:44[\\u202f ]PM")
         );
     }
 }

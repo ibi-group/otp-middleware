@@ -12,10 +12,10 @@ class DelayNotificationTestCase {
     public NotificationType delayType;
 
     /**
-     * The expected body of the notification message. If this is not set, it is assumed in the test case that a
-     * notification should not be generated.
+     * A regex pattern to match the expected body of the notification message. If this is not set, it is assumed
+     * in the test case that a notification should not be generated.
      */
-    public String expectedNotificationMessage;
+    public String expectedNotificationPattern;
 
     /**
      * Message for test case
@@ -31,12 +31,12 @@ class DelayNotificationTestCase {
     public DelayNotificationTestCase(
         CheckMonitoredTrip checkMonitoredTrip,
         NotificationType delayType,
-        String expectedNotificationMessage,
+        String expectedNotificationPattern,
         String message
     ) {
         this.checkMonitoredTrip = checkMonitoredTrip;
         this.delayType = delayType;
-        this.expectedNotificationMessage = expectedNotificationMessage;
+        this.expectedNotificationPattern = expectedNotificationPattern;
         this.message = message;
     }
 }

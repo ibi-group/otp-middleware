@@ -195,16 +195,14 @@ public class MonitoredTrip extends Model {
 
     /**
      * Checks that, for each query provided, an itinerary exists.
-     * @param checkAllDays Determines whether all days of the week are checked,
-     *                     or just the days the trip is set to be monitored.
      * @return a summary of the itinerary existence results for each day of the week
      */
-    public boolean checkItineraryExistence(boolean checkAllDays, boolean replaceItinerary) throws URISyntaxException {
+    public boolean checkItineraryExistence(boolean replaceItinerary) throws URISyntaxException {
         // Get queries to execute by date.
-        List<OtpRequest> queriesByDate = getItineraryExistenceQueries(checkAllDays);
+        List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
         this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary, this.arriveBy);
-        this.itineraryExistence.checkExistence();
-        boolean itineraryExists = this.itineraryExistence.allCheckedDaysAreValid();
+        this.itineraryExistence.checkExistence(this);
+        boolean itineraryExists = this.itineraryExistence.allMonitoredDaysAreValid(this);
         // If itinerary should be replaced, do so if all checked days are valid.
         return replaceItinerary && itineraryExists
             ? this.updateTripWithVerifiedItinerary()
@@ -244,11 +242,11 @@ public class MonitoredTrip extends Model {
      */
     @JsonIgnore
     @BsonIgnore
-    public List<OtpRequest> getItineraryExistenceQueries(boolean checkAllDays)
+    public List<OtpRequest> getItineraryExistenceQueries()
         throws URISyntaxException {
         return ItineraryUtils.getOtpRequestsForDates(
             ItineraryUtils.excludeRealtime(parseQueryParams()),
-            ItineraryUtils.getDatesToCheckItineraryExistence(this, checkAllDays)
+            ItineraryUtils.getDatesToCheckItineraryExistence(this)
         );
     }
 
@@ -293,15 +291,6 @@ public class MonitoredTrip extends Model {
         thursday = value;
         friday = value;
         return this;
-    }
-
-    /**
-     * Returns true if the trip is not active overall or if all days of the week are set to false
-     */
-    public boolean isInactive() {
-        return !isActive || (
-          !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday
-        );
     }
 
     public boolean isActiveOnDate(ZonedDateTime zonedDateTime) {
@@ -433,5 +422,13 @@ public class MonitoredTrip extends Model {
     public int tripTimeMinute() {
         return Integer.valueOf(tripTime.split(":")[1]);
     }
-}
 
+    /**
+     * @return true if this trip is one-time, false otherwise.
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public boolean isOneTime() {
+        return !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday;
+    }
+}

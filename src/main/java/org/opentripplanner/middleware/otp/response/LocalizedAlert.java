@@ -1,7 +1,11 @@
 package org.opentripplanner.middleware.otp.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
+
 import java.util.Date;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 public class LocalizedAlert {
     public String alertHeaderText;
@@ -13,9 +17,48 @@ public class LocalizedAlert {
 
     public String id;
 
+    /** Regex to find both Windows and Unix line endings. */
+    private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\R");
+
+    /** Main, passive constructor for persistence */
+    public LocalizedAlert() {
+        // Does nothing
+    }
+
+    /** Constructor, mainly for tests and object comparisons. */
+    public LocalizedAlert(String header, String description) {
+        alertHeaderText = header;
+        alertDescriptionText = description;
+    }
+
+    /** Header getter for the notification template processor. */
+    public String getAlertHeaderText() {
+        return alertHeaderText != null ? alertHeaderText : "";
+    }
+
+    /** Description getter for the notification template processor. */
+    public String getAlertDescriptionText() {
+        return alertDescriptionText != null ? alertDescriptionText : "";
+    }
+
+    /**
+     * Line returns are not preserved if using the HTML email renderer,
+     * so we insert line returns as line-break (br) tags to match the itinerary-body UI.
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public String getAlertDescriptionForHtml() {
+        return alertDescriptionText != null
+            ? NEWLINE_PATTERN.matcher(alertDescriptionText).replaceAll("<br/>" + System.lineSeparator())
+            : "";
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(alertHeaderText, alertDescriptionText, alertUrl, effectiveStartDate, effectiveEndDate);
+        // Exclude effectiveEndDate from the hash code for cases where a given alert is "extended",
+        // e.g. incidents that take longer to resolve than initially planned.
+        // Use getters instead of fields to treat null same as "" for comparison purposes.
+        return Objects.hash(getAlertHeaderText(), getAlertDescriptionText(), alertUrl, effectiveStartDate);
     }
 
     public boolean equals(Object o) {
@@ -23,23 +66,11 @@ public class LocalizedAlert {
             return false;
         }
         LocalizedAlert ao = (LocalizedAlert) o;
-        if (alertDescriptionText == null) {
-            if (ao.alertDescriptionText != null) {
-                return false;
-            }
-        } else {
-            if (!alertDescriptionText.equals(ao.alertDescriptionText)) {
-                return false;
-            }
-        }
-        if (alertHeaderText == null) {
-            if (ao.alertHeaderText != null) {
-                return false;
-            }
-        } else {
-            if (!alertHeaderText.equals(ao.alertHeaderText)) {
-                return false;
-            }
+        if (
+            !getAlertDescriptionText().equals(ao.getAlertDescriptionText()) ||
+            !getAlertHeaderText().equals(ao.getAlertHeaderText())
+        ) {
+            return false;
         }
         if (alertUrl == null) {
             return ao.alertUrl == null;

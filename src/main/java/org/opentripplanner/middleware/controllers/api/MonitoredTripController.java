@@ -63,24 +63,29 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
         preCreateOrUpdateChecks(monitoredTrip, req);
 
-        try {
-            // Check itinerary existence and replace the provided trip's itinerary with a verified, non-realtime
-            // version of it.
-            boolean success = monitoredTrip.checkItineraryExistence(false, true);
-            if (!success) {
+        // FIXME: Pending https://github.com/ibi-group/otp-middleware/pull/219,
+        //   check itinerary existence for recurring trips only for now.
+        //   (Existence should ultimately be checked on all trips.)
+        if (!monitoredTrip.isOneTime()) {
+            try {
+                // Check itinerary existence for all days and replace the provided trip's itinerary with a verified,
+                // non-realtime version of it.
+                boolean success = monitoredTrip.checkItineraryExistence(true);
+                if (!success) {
+                    logMessageAndHalt(
+                        req,
+                        HttpStatus.BAD_REQUEST_400,
+                        monitoredTrip.itineraryExistence.message
+                    );
+                }
+            } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
                 logMessageAndHalt(
                     req,
-                    HttpStatus.BAD_REQUEST_400,
-                    monitoredTrip.itineraryExistence.message
+                    HttpStatus.INTERNAL_SERVER_ERROR_500,
+                    "Error parsing the trip query parameters.",
+                    e
                 );
             }
-        } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
-            logMessageAndHalt(
-                req,
-                HttpStatus.INTERNAL_SERVER_ERROR_500,
-                "Error parsing the trip query parameters.",
-                e
-            );
         }
 
         return monitoredTrip;
@@ -194,7 +199,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         }
         try {
             trip.initializeFromItineraryAndQueryParams();
-            trip.checkItineraryExistence(true, false);
+            trip.checkItineraryExistence(false);
         } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
             logMessageAndHalt(
                 request,

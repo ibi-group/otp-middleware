@@ -1,50 +1,38 @@
 package org.opentripplanner.middleware.models;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.ZonedDateTime;
-import java.util.Comparator;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.text.MatchesPattern.matchesPattern;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class TripMonitorNotificationTest {
-    public static final Locale EN_US_LOCALE = Locale.forLanguageTag("en-US");
-
-    @Test
-    void testSortOrderPutsInitialReminderFirst() {
-        TripMonitorNotification reminder = new TripMonitorNotification(NotificationType.INITIAL_REMINDER, "reminder");
-        Set<TripMonitorNotification> notifications = Set.of(
-            new TripMonitorNotification(NotificationType.ALERT_FOUND, "alert"),
-            new TripMonitorNotification(NotificationType.DEPARTURE_DELAY, "departure delay"),
-            reminder,
-            new TripMonitorNotification(NotificationType.ARRIVAL_DELAY, "arrival delay")
-        );
-
-        List<TripMonitorNotification> sortedNotifications = notifications.stream()
-            .sorted(Comparator.comparingInt(TripMonitorNotification::sortOrder))
-            .collect(Collectors.toList());
-
-        assertEquals(reminder, sortedNotifications.get(0));
-        for (int i = 1; i < sortedNotifications.size(); i++) {
-            assertNotEquals(reminder, sortedNotifications.get(i));
-        }
+    @ParameterizedTest
+    @MethodSource("createInitialReminderCases")
+    void canCreateInitialReminder(Locale locale, String text) {
+        MonitoredTrip trip = makeSampleTrip();
+        TripMonitorNotification notification = TripMonitorNotification.createInitialReminderNotification(trip, locale);
+        assertNotNull(notification);
+        // JDK 20 uses narrow no-break space U+202F for time format; earlier JDKs just use a space.
+        assertThat(notification.body, matchesPattern(text));
     }
 
-    @Test
-    void canCreateInitialReminder() {
-        MonitoredTrip trip = makeSampleTrip();
-        TripMonitorNotification notification = TripMonitorNotification.createInitialReminderNotification(trip, EN_US_LOCALE);
-        assertEquals("Reminder for Sample Trip at 5:44 PM.", notification.body);
+    private static Stream<Arguments> createInitialReminderCases() {
+        return Stream.of(
+            Arguments.of( Locale.ENGLISH, "Reminder for Sample Trip at 5:44[\\u202f ]PM\\."),
+            Arguments.of(Locale.FRENCH, "Rappel pour Sample Trip à 17:44.")
+        );
     }
 
     @Test
@@ -54,10 +42,14 @@ class TripMonitorNotificationTest {
             10,
             trip.itinerary.startTime,
             NotificationType.ARRIVAL_DELAY,
-            EN_US_LOCALE
+            Locale.ENGLISH
         );
         assertNotNull(notification);
-        assertEquals("Your trip is now predicted to arrive 10 minutes late (at 5:44 PM).", notification.body);
+        // JDK 20 uses narrow no-break space U+202F for time format; earlier JDKs just use a space.
+        assertThat(
+            notification.body,
+            matchesPattern("⏱ Your trip is now predicted to arrive 10 minutes late \\(at 5:44[\\u202f ]PM\\)\\.")
+        );
     }
 
     private static MonitoredTrip makeSampleTrip() {
