@@ -40,24 +40,30 @@ public class TripInstruction {
     /** Instruction is for a trip that is on track. */
     private boolean tripOnTrack;
 
-    /**
-     * On track instruction.
-     */
-    public TripInstruction(double distance, Step legStep) {
+    /** If the traveler is within the upcoming radius an instruction will be provided. */
+    public boolean hasInstruction;
+
+    public TripInstruction(boolean isDestination, double distance) {
         this.distance = distance;
-        this.legStep = legStep;
         this.tripOnTrack = true;
-        setPrefix(false);
+        setPrefix(isDestination);
+        hasInstruction = distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
     }
 
     /**
-     * On track instruction.
+     * On track instruction to step.
+     */
+    public TripInstruction(double distance, Step legStep) {
+        this(false, distance);
+        this.legStep = legStep;
+    }
+
+    /**
+     * On track instruction to destination.
      */
     public TripInstruction(double distance, String locationName) {
-        this.distance = distance;
+        this(true, distance);
         this.locationName = locationName;
-        this.tripOnTrack = true;
-        setPrefix(true);
     }
 
     /**
@@ -103,7 +109,7 @@ public class TripInstruction {
      */
 
     private String buildOnTrackInstruction() {
-        if (prefix != null) {
+        if (hasInstruction) {
             if (legStep != null) {
                 String relativeDirection = (legStep.relativeDirection.equals("DEPART"))
                     ? "Head " + legStep.absoluteDirection

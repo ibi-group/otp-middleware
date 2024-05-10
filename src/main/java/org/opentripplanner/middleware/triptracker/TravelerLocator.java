@@ -32,19 +32,19 @@ public class TravelerLocator {
         TravelerPosition travelerPosition,
         boolean isStartOfTrip
     ) {
-        if (hasRequiredTripStatus(tripStatus) && hasRequiredWalkLeg(travelerPosition)
-        ) {
-            TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
-            if (tripInstruction != null) {
-                return tripInstruction.build();
+        if (hasRequiredWalkLeg(travelerPosition)) {
+            if (hasRequiredTripStatus(tripStatus)) {
+                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
+                if (tripInstruction != null) {
+                    return tripInstruction.build();
+                }
             }
-        }
 
-        if (tripStatus.equals(TripStatus.DEVIATED) && hasRequiredWalkLeg(travelerPosition)
-        ) {
-            TripInstruction tripInstruction = getBackOnTrack(travelerPosition);
-            if (tripInstruction != null) {
-                return tripInstruction.build();
+            if (tripStatus.equals(TripStatus.DEVIATED)) {
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
+                if (tripInstruction != null) {
+                    return tripInstruction.build();
+                }
             }
         }
         return NO_INSTRUCTION;
@@ -63,17 +63,19 @@ public class TravelerLocator {
      * The trip instruction can only be provided if the traveler is close to the indicated route.
      */
     private static boolean hasRequiredTripStatus(TripStatus tripStatus) {
-        return
-            !tripStatus.equals(TripStatus.NO_STATUS) &&
-            !tripStatus.equals(TripStatus.DEVIATED) &&
-            !tripStatus.equals(TripStatus.ENDED);
+        return !tripStatus.equals(TripStatus.DEVIATED) && !tripStatus.equals(TripStatus.ENDED);
     }
 
     /**
-     * Suggest the closest street to head towards if deviated from trip.
+     * Attempt to align the deviated traveler to the trip. If the traveler happens to be within an upcoming instruction
+     * provider this, else suggest the closest street to head towards.
      */
     @Nullable
-    private static TripInstruction getBackOnTrack(TravelerPosition travelerPosition) {
+    private static TripInstruction getBackOnTrack(TravelerPosition travelerPosition, boolean isStartOfTrip) {
+        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
+        if (instruction != null && instruction.hasInstruction) {
+            return instruction;
+        }
         Step nearestStep = snapToStep(travelerPosition);
         return (nearestStep != null)
             ? new TripInstruction(nearestStep.streetName)
@@ -98,21 +100,49 @@ public class TravelerLocator {
                 : null;
         }
 
-        Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.to);
-        double distanceToDestination = getDistance(travelerPosition.currentPosition, legDestination);
-        if (distanceToDestination <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
-            // Assuming traveler is approaching the destination.
-            return new TripInstruction(distanceToDestination, travelerPosition.expectedLeg.to.name);
+        if (isApproachingDestination(travelerPosition)) {
+            return new TripInstruction(getDistanceToDestination(travelerPosition), travelerPosition.expectedLeg.to.name);
         }
 
         Step nextStep = snapToStep(travelerPosition);
-        if (nextStep != null) {
+        if (nextStep != null && !isPositionPastStep(travelerPosition, nextStep)) {
             return new TripInstruction(
                 getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
                 nextStep
             );
         }
         return null;
+    }
+
+    /**
+     * Check that the current position is not past the "next step". This is to prevent an instruction being provided
+     * for a step which is behind the traveler, but is within radius.
+     */
+    private static boolean isPositionPastStep(TravelerPosition travelerPosition, Step nextStep) {
+        double distanceFromPositionToEndOfLegSegment = getDistance(
+            travelerPosition.legSegmentFromPosition.end,
+            travelerPosition.currentPosition
+        );
+        double distanceFromStepToEndOfLegSegment = getDistance(
+            travelerPosition.legSegmentFromPosition.end,
+            new Coordinates(nextStep)
+        );
+        return distanceFromPositionToEndOfLegSegment < distanceFromStepToEndOfLegSegment;
+    }
+
+    /**
+     * Is the traveler approaching the leg destination.
+     */
+    private static boolean isApproachingDestination(TravelerPosition travelerPosition) {
+        return getDistanceToDestination(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
+    }
+
+    /**
+     * Get the distance from the traveler's current position to the leg destination.
+     */
+    private static double getDistanceToDestination(TravelerPosition travelerPosition) {
+        Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.to);
+        return getDistance(travelerPosition.currentPosition, legDestination);
     }
 
     /**
