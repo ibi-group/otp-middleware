@@ -34,14 +34,10 @@ public class ManageTripTracking {
                     "A journey of this trip has already been started. End the current journey before starting another."
                 );
             } else {
-                return startTracking(request, tripData);
+                return doUpdateTracking(request, tripData, true);
             }
         }
         return null;
-    }
-
-    private static TrackingResponse startTracking(Request request, TripTrackingData tripData) {
-        return doUpdateTracking(request, tripData, true);
     }
 
     private static TrackingResponse doUpdateTracking(Request request, TripTrackingData tripData, boolean create) {
@@ -90,13 +86,9 @@ public class ManageTripTracking {
     public static TrackingResponse updateTracking(Request request) {
         TripTrackingData tripData = TripTrackingData.fromRequestJourneyId(request);
         if (tripData != null) {
-            return updateTracking(request, tripData);
+            return doUpdateTracking(request, tripData, false);
         }
         return null;
-    }
-
-    private static TrackingResponse updateTracking(Request request, TripTrackingData tripData) {
-        return doUpdateTracking(request, tripData, false);
     }
 
     /**
@@ -105,11 +97,7 @@ public class ManageTripTracking {
     public static TrackingResponse startOrUpdateTracking(Request request) {
         TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
         if (tripData != null) {
-            if (tripData.journey != null) {
-                return updateTracking(request, tripData);
-            } else {
-                return startTracking(request, tripData);
-            }
+            return doUpdateTracking(request, tripData, tripData.journey == null);
         }
         return null;
     }
