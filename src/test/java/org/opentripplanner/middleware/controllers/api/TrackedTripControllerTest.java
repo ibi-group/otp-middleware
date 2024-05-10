@@ -37,7 +37,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -126,8 +125,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         var updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
-        assertEquals(0, updateTrackingResponse.frequencySeconds);
-        assertNull(updateTrackingResponse.journeyId);
+        assertNotEquals(0, updateTrackingResponse.frequencySeconds);
+        assertNotNull(updateTrackingResponse.journeyId);
         assertEquals(HttpStatus.OK_200, response.status);
 
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
@@ -202,8 +201,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         assertEquals(HttpStatus.OK_200, response.status);
         trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
-        assertEquals(0, trackResponse.frequencySeconds);
-        assertNull(trackResponse.journeyId);
+        assertNotEquals(0, trackResponse.frequencySeconds);
+        assertNotNull(trackResponse.journeyId);
     }
 
     @Test

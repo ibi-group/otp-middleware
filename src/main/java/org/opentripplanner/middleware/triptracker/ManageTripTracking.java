@@ -93,7 +93,9 @@ public class ManageTripTracking {
             );
             // Provide response.
             return new TrackingResponse(
+                TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
                 TravelerLocator.getInstruction(tripStatus, travelerPosition, false),
+                trackedJourney.id,
                 tripStatus.name()
             );
         } catch (UnsupportedOperationException e) {

@@ -27,11 +27,6 @@ public class TrackingResponse {
         // do nothing.
     }
 
-    public TrackingResponse(String instruction, String tripStatus) {
-        this.instruction = instruction;
-        this.tripStatus = tripStatus;
-    }
-
     public TrackingResponse(int frequencySeconds, String instruction, String journeyId, String tripStatus) {
         this.frequencySeconds = frequencySeconds;
         this.instruction = instruction;
