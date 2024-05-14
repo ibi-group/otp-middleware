@@ -3,8 +3,6 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
-import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
-import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -39,17 +37,17 @@ public class TrackedJourney extends Model {
     public TrackedJourney() {
     }
 
-    public TrackedJourney(StartTrackingPayload trackingPayload) {
+    public TrackedJourney(String tripId, TrackingLocation location) {
         startTime = new Date();
-        locations.add(trackingPayload.location);
-        tripId = trackingPayload.tripId;
+        locations.add(location);
+        this.tripId = tripId;
     }
 
     /**
      * Remove duplicates before adding to tracked locations.
      */
-    public void update(UpdatedTrackingPayload trackingPayload) {
-        locations.addAll(trackingPayload.locations);
+    public void update(List<TrackingLocation> locations) {
+        this.locations.addAll(locations);
     }
 
     public void end(boolean isForciblyEnded) {
