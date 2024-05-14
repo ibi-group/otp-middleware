@@ -42,7 +42,8 @@ public class ManageTripTracking {
                     var trackedJourney = new TrackedJourney(payload);
                     TravelerPosition travelerPosition = new TravelerPosition(
                         trackedJourney,
-                        monitoredTrip.journeyState.matchingItinerary
+                        monitoredTrip.journeyState.matchingItinerary,
+                        Auth0Connection.getUserFromRequest(request).otpUser
                     );
                     TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
                     trackedJourney.lastLocation().tripStatus = tripStatus;
@@ -75,7 +76,8 @@ public class ManageTripTracking {
                     try {
                         TravelerPosition travelerPosition = new TravelerPosition(
                             trackedJourney,
-                            monitoredTrip.journeyState.matchingItinerary
+                            monitoredTrip.journeyState.matchingItinerary,
+                            Auth0Connection.getUserFromRequest(request).otpUser
                         );
                         // Update tracked journey.
                         trackedJourney.update(payload);
@@ -110,7 +112,12 @@ public class ManageTripTracking {
             if (trackedJourney != null) {
                 var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
                 if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                    return completeJourney(trackedJourney, false);
+                    TravelerPosition travelerPosition = new TravelerPosition(
+                        trackedJourney,
+                        monitoredTrip.journeyState.matchingItinerary,
+                        Auth0Connection.getUserFromRequest(request).otpUser
+                    );
+                    return completeJourney(travelerPosition, false);
                 }
             }
         }
@@ -129,7 +136,12 @@ public class ManageTripTracking {
             if (trackedJourney != null) {
                 var monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
                 if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                    return completeJourney(trackedJourney, true);
+                    TravelerPosition travelerPosition = new TravelerPosition(
+                        trackedJourney,
+                        monitoredTrip.journeyState.matchingItinerary,
+                        Auth0Connection.getUserFromRequest(request).otpUser
+                    );
+                    return completeJourney(travelerPosition, true);
                 }
             }
         }
@@ -137,9 +149,12 @@ public class ManageTripTracking {
     }
 
     /**
-     * Complete a journey by defining the ending type, time and condition.
+     * Complete a journey by defining the ending type, time and condition. Also cancel possible upcoming bus
+     * notification.
      */
-    private static EndTrackingResponse completeJourney(TrackedJourney trackedJourney, boolean isForciblyEnded) {
+    private static EndTrackingResponse completeJourney(TravelerPosition travelerPosition, boolean isForciblyEnded) {
+        NotifyBusOperator.cancelNotification(travelerPosition);
+        TrackedJourney trackedJourney = travelerPosition.trackedJourney;
         trackedJourney.end(isForciblyEnded);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_TIME_FIELD_NAME, trackedJourney.endTime);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_CONDITION_FIELD_NAME, trackedJourney.endCondition);

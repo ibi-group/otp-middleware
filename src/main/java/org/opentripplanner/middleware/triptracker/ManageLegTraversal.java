@@ -71,10 +71,26 @@ public class ManageLegTraversal {
     }
 
     /**
+     * Get the leg following the expected leg.
+     */
+    @Nullable
+    public static Leg getNextLeg(Leg expectedLeg, Itinerary itinerary) {
+        if (canUseTripLegs(itinerary)) {
+            for (int i = 0; i < itinerary.legs.size(); i++) {
+                Leg leg = itinerary.legs.get(i);
+                if (leg.equals(expectedLeg) && (i + 1 < itinerary.legs.size())) {
+                    return itinerary.legs.get(i + 1);
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * Get the leg that is nearest to the current position. Note, to be considered when working with transit legs: if
      * the trip involves traversing a cul-de-sac, the entrance and exit legs would be very close together if not
      * identical. In this scenario it would be possible for the current position to be attributed to the exit leg,
-     * therefore missing the instruction at the end of the cul-de-dac.
+     * therefore missing the instruction at the end of the cul-de-sac.
      */
     private static Leg getNearestLeg(Coordinates position, Itinerary itinerary) {
         double shortestDistance = Double.MAX_VALUE;

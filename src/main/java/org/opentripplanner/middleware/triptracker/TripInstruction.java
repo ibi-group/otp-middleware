@@ -1,10 +1,16 @@
 package org.opentripplanner.middleware.triptracker;
 
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
+
+import java.time.Duration;
+import java.time.Instant;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 
 public class TripInstruction {
+
+    public enum TripInstructionType { ON_TRACK, DEVIATED, WAIT_FOR_BUS }
 
     /** The radius in meters under which an immediate instruction is given. */
     public static final int TRIP_INSTRUCTION_IMMEDIATE_RADIUS
@@ -37,17 +43,25 @@ public class TripInstruction {
     /** Name of final destination or street. */
     public String locationName;
 
-    /** Instruction is for a trip that is on track. */
-    private boolean tripOnTrack;
+    /** Provided if the next leg for the traveler will be a bus transit leg. */
+    public Leg busLeg;
 
-    /** If the traveler is within the upcoming radius an instruction will be provided. */
-    public boolean hasInstruction;
+    /** The time provided by the traveler */
+    public Instant currentTime;
+
+    TripInstructionType tripInstructionType;
 
     public TripInstruction(boolean isDestination, double distance) {
         this.distance = distance;
-        this.tripOnTrack = true;
+        this.tripInstructionType = TripInstructionType.ON_TRACK;
         setPrefix(isDestination);
-        hasInstruction = distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
+    }
+
+    /**
+     * If the traveler is within the upcoming radius an instruction will be provided.
+     */
+    public boolean hasInstruction() {
+        return distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
     }
 
     /**
@@ -70,7 +84,17 @@ public class TripInstruction {
      * Deviated instruction.
      */
     public TripInstruction(String locationName) {
+        this.tripInstructionType = TripInstructionType.DEVIATED;
         this.locationName = locationName;
+    }
+
+    /**
+     * Provide bus related trip instruction.
+     */
+    public TripInstruction(Leg busLeg, Instant currentTime) {
+        this.tripInstructionType = TripInstructionType.WAIT_FOR_BUS;
+        this.busLeg = busLeg;
+        this.currentTime = currentTime;
     }
 
     /**
@@ -86,16 +110,19 @@ public class TripInstruction {
     }
 
     /**
-     * Build on track or deviated instruction.
+     * Build instruction based on the traveler's location.
      */
     public String build() {
-        if (tripOnTrack) {
-            return buildOnTrackInstruction();
-        } else if (locationName != null) {
-            // Traveler has deviated.
-            return String.format("Head to %s", locationName);
+        switch (tripInstructionType) {
+            case ON_TRACK:
+                return buildOnTrackInstruction();
+            case DEVIATED:
+                return String.format("Head to %s", locationName);
+            case WAIT_FOR_BUS:
+                return buildWaitForBusInstruction();
+            default:
+                return NO_INSTRUCTION;
         }
-        return NO_INSTRUCTION;
     }
 
     /**
@@ -109,7 +136,7 @@ public class TripInstruction {
      */
 
     private String buildOnTrackInstruction() {
-        if (hasInstruction) {
+        if (hasInstruction()) {
             if (legStep != null) {
                 String relativeDirection = (legStep.relativeDirection.equals("DEPART"))
                     ? "Head " + legStep.absoluteDirection
@@ -120,5 +147,18 @@ public class TripInstruction {
             }
         }
         return NO_INSTRUCTION;
+    }
+
+    /**
+     * Build wait for bus instruction.
+     */
+    private String buildWaitForBusInstruction() {
+        String routeId = busLeg.routeId.split(":")[1];
+        if (busLeg.departureDelay > 0) {
+            long waitInMinutes = Duration.between(busLeg.getScheduledStartTime(), currentTime).toMinutes();
+            return String.format("Wait %s minute(s) for bus %s", waitInMinutes, routeId);
+        } else {
+            return String.format("Wait for bus %s scheduled to arrive at %s", routeId, busLeg.getScheduledStartTime());
+        }
     }
 }

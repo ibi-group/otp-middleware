@@ -34,14 +34,14 @@ public class TravelerLocator {
     ) {
         if (hasRequiredWalkLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
-                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
+                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, tripStatus);
                 if (tripInstruction != null) {
                     return tripInstruction.build();
                 }
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
-                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip, tripStatus);
                 if (tripInstruction != null) {
                     return tripInstruction.build();
                 }
@@ -71,9 +71,13 @@ public class TravelerLocator {
      * provider this, else suggest the closest street to head towards.
      */
     @Nullable
-    private static TripInstruction getBackOnTrack(TravelerPosition travelerPosition, boolean isStartOfTrip) {
-        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
-        if (instruction != null && instruction.hasInstruction) {
+    private static TripInstruction getBackOnTrack(
+        TravelerPosition travelerPosition,
+        boolean isStartOfTrip,
+        TripStatus tripStatus
+    ) {
+        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, tripStatus);
+        if (instruction != null && instruction.hasInstruction()) {
             return instruction;
         }
         Step nearestStep = snapToStep(travelerPosition);
@@ -86,7 +90,11 @@ public class TravelerLocator {
      * Align the traveler's position to the nearest step or destination.
      */
     @Nullable
-    public static TripInstruction alignTravelerToTrip(TravelerPosition travelerPosition, boolean isStartOfTrip) {
+    public static TripInstruction alignTravelerToTrip(
+        TravelerPosition travelerPosition,
+        boolean isStartOfTrip,
+        TripStatus tripStatus
+    ) {
 
         if (isStartOfTrip) {
             // If the traveler has just started the trip and is within a set distance of the first step.
@@ -100,8 +108,14 @@ public class TravelerLocator {
                 : null;
         }
 
-        if (isApproachingDestination(travelerPosition)) {
-            return new TripInstruction(getDistanceToDestination(travelerPosition), travelerPosition.expectedLeg.to.name);
+        if (isApproachingEndOfLeg(travelerPosition)) {
+            if (NotifyBusOperator.isBusLeg(travelerPosition.nextLeg)) {
+                // The preceding leg is a bus leg.
+                NotifyBusOperator.sendNotification(tripStatus, travelerPosition);
+                // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
+                return new TripInstruction(travelerPosition.nextLeg, travelerPosition.currentTime);
+            }
+            return new TripInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name);
         }
 
         Step nextStep = snapToStep(travelerPosition);
@@ -133,14 +147,14 @@ public class TravelerLocator {
     /**
      * Is the traveler approaching the leg destination.
      */
-    private static boolean isApproachingDestination(TravelerPosition travelerPosition) {
-        return getDistanceToDestination(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
+    private static boolean isApproachingEndOfLeg(TravelerPosition travelerPosition) {
+        return getDistanceToEndOfLeg(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
     }
 
     /**
      * Get the distance from the traveler's current position to the leg destination.
      */
-    private static double getDistanceToDestination(TravelerPosition travelerPosition) {
+    private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
         Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.to);
         return getDistance(travelerPosition.currentPosition, legDestination);
     }

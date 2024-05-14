@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.auth.RequestingUser;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
@@ -18,6 +20,7 @@ import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import org.opentripplanner.middleware.triptracker.TravelerLocator;
 import org.opentripplanner.middleware.triptracker.TripStatus;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -52,6 +55,9 @@ public class ManageLegTraversalTest {
 
     @BeforeAll
     public static void setUp() throws IOException {
+        // Load configuration.
+        ConfigUtils.loadConfig(new String[]{});
+
         busStopToJusticeCenterItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/bus-stop-justice-center-trip.json"),
             Itinerary.class
@@ -72,7 +78,7 @@ public class ManageLegTraversalTest {
         TrackedJourney trackedJourney = new TrackedJourney();
         TrackingLocation trackingLocation = new TrackingLocation(time, lat, lon);
         trackedJourney.locations = List.of(trackingLocation);
-        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary, new OtpUser());
         TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
         assertEquals(expected, tripStatus, message);
     }
@@ -371,9 +377,8 @@ public class ManageLegTraversalTest {
                         new Date(currentTime.toInstant().toEpochMilli())
                     )
                 );
-                TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
+                TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary, null);
                 TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
-                System.out.println(tripStatus.name());
                 assertEquals(TripStatus.ON_SCHEDULE.name(), tripStatus.name());
                 cumulativeTravelTime += legSegment.timeInSegment;
                 currentTime = startOfTrip.plus(
