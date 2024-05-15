@@ -87,25 +87,12 @@ public class TravelerLocator {
      */
     @Nullable
     public static TripInstruction alignTravelerToTrip(TravelerPosition travelerPosition, boolean isStartOfTrip) {
-
-        if (isStartOfTrip) {
-            // If the traveler has just started the trip and is within a set distance of the first step.
-            Step firstStep = travelerPosition.expectedLeg.steps.get(0);
-            if (firstStep == null) {
-                return null;
-            }
-            double distance = getDistance(travelerPosition.currentPosition, new Coordinates(firstStep));
-            return (distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS)
-                ? new TripInstruction(distance, firstStep)
-                : null;
-        }
-
         if (isApproachingDestination(travelerPosition)) {
             return new TripInstruction(getDistanceToDestination(travelerPosition), travelerPosition.expectedLeg.to.name);
         }
 
         Step nextStep = snapToStep(travelerPosition);
-        if (nextStep != null && !isPositionPastStep(travelerPosition, nextStep)) {
+        if (nextStep != null && (!isPositionPastStep(travelerPosition, nextStep) || isStartOfTrip)) {
             return new TripInstruction(
                 getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
                 nextStep
