@@ -49,7 +49,8 @@ public class TripInstruction {
     /** The time provided by the traveler */
     public Instant currentTime;
 
-    TripInstructionType tripInstructionType;
+    /** The type of instruction to be provided to te traveler. */
+    private final TripInstructionType tripInstructionType;
 
     public TripInstruction(boolean isDestination, double distance) {
         this.distance = distance;
@@ -153,7 +154,7 @@ public class TripInstruction {
      * Build wait for bus instruction.
      */
     private String buildWaitForBusInstruction() {
-        String routeId = busLeg.routeId.split(":")[1];
+        String routeId = busLeg.route.id.split(":")[1];
         if (busLeg.departureDelay > 0) {
             long waitInMinutes = Duration.between(busLeg.getScheduledStartTime(), currentTime).toMinutes();
             return String.format("Wait %s minute(s) for bus %s", waitInMinutes, routeId);

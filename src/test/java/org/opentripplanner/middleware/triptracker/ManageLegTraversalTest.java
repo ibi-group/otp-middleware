@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.controllers.api;
+package org.opentripplanner.middleware.triptracker;
 
 import io.leonard.PolylineUtils;
 import io.leonard.Position;
@@ -55,7 +55,7 @@ public class ManageLegTraversalTest {
 
     @BeforeAll
     public static void setUp() throws IOException {
-        // Load configuration.
+        // Load default env.yml configuration.
         ConfigUtils.loadConfig(new String[]{});
 
         busStopToJusticeCenterItinerary = JsonUtils.getPOJOFromJSON(

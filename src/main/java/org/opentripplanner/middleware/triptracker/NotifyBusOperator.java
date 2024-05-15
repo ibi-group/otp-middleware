@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,13 +32,17 @@ public class NotifyBusOperator {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotifyBusOperator.class);
 
+    private static final DateTimeFormatter BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        .withZone(ZoneId.systemDefault());
+
     private static final String BUS_OPERATOR_NOTIFIER_API_URL
         = getConfigPropertyAsText("BUS_OPERATOR_NOTIFIER_API_URL", "not-provided");
 
     private static final String BUS_OPERATOR_NOTIFIER_API_SUBSCRIPTION_KEY
         = getConfigPropertyAsText("BUS_OPERATOR_NOTIFIER_API_SUBSCRIPTION_KEY", "not-provided");
 
-    private static final List<String> QUALIFYING_BUS_NOTIFIER_ROUTES = getBusOperatorNotifierQualifyingRoutes();
+    public static List<String> QUALIFYING_BUS_NOTIFIER_ROUTES = getBusOperatorNotifierQualifyingRoutes();
 
     private static final int ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES = 15;
 
@@ -64,6 +70,13 @@ public class NotifyBusOperator {
     }
 
     /**
+     * Used for unit tests and overrides the qualifying routes held in config.
+     */
+    public static void getBusOperatorNotifierQualifyingRoutes(List<String> routeId) {
+        QUALIFYING_BUS_NOTIFIER_ROUTES = routeId;
+    }
+
+    /**
      * Stage notification to bus operator by making sure all required conditions are met.
      */
     public static void sendNotification(TripStatus tripStatus, TravelerPosition travelerPosition) {
@@ -71,13 +84,13 @@ public class NotifyBusOperator {
             if (
                 isBusLeg(travelerPosition.nextLeg) &&
                 isWithinOperationalNotifyWindow(tripStatus, travelerPosition) &&
-                hasNotPreviouslyNotifiedBusDriverForRoute(travelerPosition.trackedJourney, travelerPosition.nextLeg.routeId) &&
-                supportsBusOperatorNotification(travelerPosition.nextLeg.routeId)
+                hasNotPreviouslyNotifiedBusDriverForRoute(travelerPosition.trackedJourney, travelerPosition.nextLeg.route.id) &&
+                supportsBusOperatorNotification(travelerPosition.nextLeg.route.id)
             ) {
                 var body = createPostBody(travelerPosition);
                 var httpStatus = doPost(body);
                 if (httpStatus == HttpStatus.OK_200) {
-                    travelerPosition.trackedJourney.updateNotificationRequest(travelerPosition.nextLeg.routeId, body);
+                    travelerPosition.trackedJourney.updateNotificationRequest(travelerPosition.nextLeg.route.id, body);
                 } else {
                     LOG.error("Error {} while trying to initiate notification to bus operator.", httpStatus);
                 }
@@ -95,10 +108,10 @@ public class NotifyBusOperator {
         try {
             if (isBusLeg(travelerPosition.nextLeg)) {
                 HashMap<String, String> busNotificationRequests = travelerPosition.trackedJourney.busNotificationRequests;
-                if (busNotificationRequests.containsKey(travelerPosition.nextLeg.routeId)) {
-                    var httpStatus = doPost(busNotificationRequests.get(travelerPosition.nextLeg.routeId));
+                if (busNotificationRequests.containsKey(travelerPosition.nextLeg.route.id)) {
+                    var httpStatus = doPost(busNotificationRequests.get(travelerPosition.nextLeg.route.id));
                     if (httpStatus == HttpStatus.OK_200) {
-                        travelerPosition.trackedJourney.removeNotificationRequest(travelerPosition.nextLeg.routeId);
+                        travelerPosition.trackedJourney.removeNotificationRequest(travelerPosition.nextLeg.route.id);
                     } else {
                         LOG.error("Error {} while trying to cancel notification to bus operator.", httpStatus);
                     }
@@ -189,23 +202,23 @@ public class NotifyBusOperator {
      * 'To' fields omitted as they are not need for requests for single transit legs.
      */
     public static class NotifyBody {
-        public Instant timestamp;
+        public String timestamp;
         public String agency_id;
         public String from_route_id;
         public String from_trip_id;
         public String from_stop_id;
-        public Instant from_arrival_time;
+        public String from_arrival_time;
         public String msg_type;
         public String mobility_codes;
         public boolean trusted_companion;
 
         public NotifyBody(Instant timestamp, TravelerPosition travelerPosition) {
-            this.timestamp = timestamp;
+            this.timestamp = BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT.format(timestamp);
             this.agency_id = travelerPosition.nextLeg.agencyId;
-            this.from_route_id = travelerPosition.nextLeg.routeId;
+            this.from_route_id = travelerPosition.nextLeg.route.id;
             this.from_trip_id = travelerPosition.nextLeg.tripId;
             this.from_stop_id = travelerPosition.nextLeg.from.stopId;
-            this.from_arrival_time = travelerPosition.nextLeg.getScheduledStartTime().toInstant();
+            this.from_arrival_time = BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT.format(travelerPosition.nextLeg.getScheduledStartTime().toInstant());
             this.msg_type = "1";
             this.mobility_codes = travelerPosition.mobilityMode;
             this.trusted_companion = false;
