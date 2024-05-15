@@ -30,8 +30,8 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
-import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,9 +56,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String TRACK_TRIP_PATH = ROUTE_PATH + "track";
     private static final String END_TRACKING_TRIP_PATH = ROUTE_PATH + "endtracking";
     private static final String FORCIBLY_END_TRACKING_TRIP_PATH = ROUTE_PATH + "forciblyendtracking";
+    private static HashMap<String, String> headers;
 
     @BeforeAll
-    public static void setUp() throws IOException {
+    public static void setUp() throws Exception {
         assumeTrue(IS_END_TO_END);
         setAuthDisabled(false);
         OtpTestUtils.mockOtpServer();
@@ -75,6 +76,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip = new MonitoredTrip();
         monitoredTrip.userId = soloOtpUser.id;
         Persistence.monitoredTrips.create(monitoredTrip);
+        headers = getMockHeaders(soloOtpUser);
     }
 
     @AfterAll
@@ -102,7 +104,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var response = makeRequest(
             START_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createStartTrackingPayload()),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -119,7 +121,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             UPDATE_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createUpdateTrackingPayload(startTrackingResponse.journeyId)),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -138,7 +140,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             END_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createEndTrackingPayload(startTrackingResponse.journeyId)),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
         var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
@@ -155,7 +157,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var response = makeRequest(
             START_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createStartTrackingPayload()),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -166,7 +168,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             START_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createStartTrackingPayload()),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -182,7 +184,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var response = makeRequest(
             TRACK_TRIP_PATH,
             JsonUtils.toJson(createTrackPayload()),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -195,7 +197,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             TRACK_TRIP_PATH,
             JsonUtils.toJson(createTrackPayload()),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -213,7 +215,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var response = makeRequest(
             START_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createStartTrackingPayload()),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -224,7 +226,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             FORCIBLY_END_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createForceEndTrackingPayload(monitoredTrip.id)),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
         var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
@@ -239,7 +241,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         HttpResponseValues response = makeRequest(
             START_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createStartTrackingPayload("unassociated-trip-id")),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -255,7 +257,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         HttpResponseValues response = makeRequest(
             UPDATE_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createUpdateTrackingPayload("unknown-journey-id")),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -271,7 +273,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var response = makeRequest(
             START_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createStartTrackingPayload()),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -284,7 +286,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             END_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createEndTrackingPayload(startTrackingResponse.journeyId)),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
         assertEquals(HttpStatus.OK_200, response.status);
@@ -292,7 +294,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             UPDATE_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createUpdateTrackingPayload(startTrackingResponse.journeyId)),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
