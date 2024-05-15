@@ -233,6 +233,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         assertEquals(HttpStatus.OK_200, response.status);
         trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertNotEquals(0, trackResponse.frequencySeconds);
         assertEquals(instruction, trackResponse.instruction, message);
         assertNotNull(trackResponse.journeyId);
         assertEquals(trackedJourney.id, trackResponse.journeyId);
