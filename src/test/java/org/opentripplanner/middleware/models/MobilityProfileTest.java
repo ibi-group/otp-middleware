@@ -36,6 +36,7 @@ public class MobilityProfileTest {
         var prof = new MobilityProfile();
         prof.mobilityDevices = devices;
         prof.updateMobilityMode();
+        System.out.println(prof.mobilityMode);
         Assertions.assertEquals(mode, prof.mobilityMode);
     }
 
@@ -55,6 +56,7 @@ public class MobilityProfileTest {
         prof.mobilityDevices = devices;
         prof.visionLimitation = limitation;
         prof.updateMobilityMode();
+        System.out.println(prof.mobilityMode);
         Assertions.assertEquals(mode, prof.mobilityMode);
     }
 }

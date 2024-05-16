@@ -2,10 +2,12 @@ package org.opentripplanner.middleware.triptracker;
 
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.Duration;
 import java.time.Instant;
 
+import static org.opentripplanner.middleware.triptracker.BusOpNotificationMessage.BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 
 public class TripInstruction {
@@ -156,10 +158,28 @@ public class TripInstruction {
     private String buildWaitForBusInstruction() {
         String routeId = busLeg.route.id.split(":")[1];
         if (busLeg.departureDelay > 0) {
-            long waitInMinutes = Duration.between(busLeg.getScheduledStartTime(), currentTime).toMinutes();
-            return String.format("Wait %s minute(s) for bus %s", waitInMinutes, routeId);
+            long waitInMinutes = Duration
+                .between(currentTime.atZone(DateTimeUtils.getOtpZoneId()), busLeg.getScheduledStartTime())
+                .toMinutes();
+            return String.format("Wait%s for bus %s", getReadableMinutes(waitInMinutes), routeId);
         } else {
-            return String.format("Wait for bus %s scheduled to arrive at %s", routeId, busLeg.getScheduledStartTime());
+            return String.format(
+                "Wait for bus %s scheduled to arrive at %s",
+                routeId,
+                BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT.format(busLeg.getScheduledStartTime())
+            );
         }
+    }
+
+    /**
+     * Get the number of minutes to wait for a bus. If the wait is zero (or less than zero!) return empty string.
+     */
+    private String getReadableMinutes(long waitInMinutes) {
+        if (waitInMinutes == 1) {
+            return String.format(" %s minute", waitInMinutes);
+        } else if (waitInMinutes > 1) {
+            return String.format(" %s minutes", waitInMinutes);
+        }
+        return "";
     }
 }

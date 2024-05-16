@@ -45,8 +45,12 @@ public class Leg implements Cloneable {
     public Integer routeType;
     public String routeId;
     public String agencyId;
+    // TODO: Look to remove once OTP2 work has been merged.
+    public Agency agency;
     public String tripBlockId;
     public String tripId;
+    // TODO: Look to remove once OTP2 work has been merged.
+    public Trip trip;
     public String serviceDate;
     public List<EncodedPolyline> interStopGeometry = null;
     public String routeShortName;
