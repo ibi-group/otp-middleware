@@ -150,8 +150,8 @@ public class ManageLegTraversalTest {
     @MethodSource("createTurnByTurnTrace")
     void canTrackTurnByTurn(TurnTrace turnTrace) {
         TravelerPosition travelerPosition = new TravelerPosition(turnTrace.itinerary.legs.get(0), turnTrace.position);
-        String tripInstruction = TravelerLocator.getInstruction(turnTrace.tripStatus, travelerPosition, turnTrace.isStartOfTrip);
-        assertEquals(turnTrace.expectedInstruction, Objects.requireNonNullElse(tripInstruction, NO_INSTRUCTION), turnTrace.message);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(turnTrace.tripStatus, travelerPosition, turnTrace.isStartOfTrip);
+        assertEquals(turnTrace.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, turnTrace.message);
     }
 
     private static Stream<Arguments> createTurnByTurnTrace() {

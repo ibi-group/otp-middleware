@@ -7,6 +7,7 @@ import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import spark.Request;
 
+import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -68,9 +69,10 @@ public class ManageTripTracking {
             }
 
             // Provide response.
+            TripInstruction instruction = TravelerLocator.getInstruction(tripStatus, travelerPosition, true);
             return new TrackingResponse(
                 TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
-                TravelerLocator.getInstruction(tripStatus, travelerPosition, true),
+                instruction != null ? instruction.build() : NO_INSTRUCTION,
                 trackedJourney.id,
                 tripStatus.name()
             );
@@ -141,7 +143,7 @@ public class ManageTripTracking {
 
         // Provide response.
         return new EndTrackingResponse(
-            TripInstruction.NO_INSTRUCTION,
+            NO_INSTRUCTION,
             TripStatus.ENDED.name()
         );
 
