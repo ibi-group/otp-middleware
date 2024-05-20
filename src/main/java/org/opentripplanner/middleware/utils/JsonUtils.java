@@ -16,6 +16,7 @@ import spark.HaltException;
 import spark.Request;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 
@@ -66,6 +67,18 @@ public class JsonUtils {
             return mapper.readValue(json, clazz);
         } catch (JsonProcessingException e) {
             LOG.error("Could not parse JSON `{}` into POJO for class {}", json, clazz, e);
+            throw e;
+        }
+    }
+
+    /**
+     * Utility method to parse generic object from stream.
+     */
+    public static <T> T getPOJOFromJSON(InputStream stream, Class<T> clazz) throws IOException {
+        try {
+            return mapper.readValue(stream, clazz);
+        } catch (IOException e) {
+            LOG.error("Could not parse stream into POJO for class {}", clazz, e);
             throw e;
         }
     }
