@@ -14,6 +14,7 @@ import spark.Request;
 import java.util.List;
 
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
+import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_IMMEDIATE_PREFIX;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_UPCOMING_PREFIX;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -76,11 +77,16 @@ public class ManageTripTracking {
             }
 
             // Provide response.
-            TripInstruction instruction = TravelerLocator.getInstruction(tripStatus, travelerPosition, true);
+            TripInstruction instruction = TravelerLocator.getInstruction(tripStatus, travelerPosition, create);
 
             // Perform interactions such as triggering traffic signals when approaching segments so configured.
             // It is assumed to be ok to repeatedly perform the interaction.
-            if (instruction != null && TRIP_INSTRUCTION_UPCOMING_PREFIX.equals(instruction.prefix)) {
+            if (
+                instruction != null && (
+                    TRIP_INSTRUCTION_UPCOMING_PREFIX.equals(instruction.prefix) ||
+                        TRIP_INSTRUCTION_IMMEDIATE_PREFIX.equals(instruction.prefix)
+                )
+            ) {
                 OtpUser user = Persistence.otpUsers.getById(tripData.trip.userId);
                 Step upcomingStep = instruction.legStep;
                 List<Step> steps = travelerPosition.expectedLeg.steps;
