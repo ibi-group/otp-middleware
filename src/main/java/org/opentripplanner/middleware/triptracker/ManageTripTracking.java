@@ -1,21 +1,15 @@
 package org.opentripplanner.middleware.triptracker;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
-import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.interactions.SegmentsWithInteractions;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
-import org.opentripplanner.middleware.utils.Coordinates;
 import spark.Request;
 
-import java.util.List;
-
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_IMMEDIATE_PREFIX;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_UPCOMING_PREFIX;
+import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -81,24 +75,12 @@ public class ManageTripTracking {
 
             // Perform interactions such as triggering traffic signals when approaching segments so configured.
             // It is assumed to be ok to repeatedly perform the interaction.
-            if (
-                instruction != null && (
-                    TRIP_INSTRUCTION_UPCOMING_PREFIX.equals(instruction.prefix) ||
-                        TRIP_INSTRUCTION_IMMEDIATE_PREFIX.equals(instruction.prefix)
-                )
-            ) {
-                OtpUser user = Persistence.otpUsers.getById(tripData.trip.userId);
-                Step upcomingStep = instruction.legStep;
-                List<Step> steps = travelerPosition.expectedLeg.steps;
-                int upcomingStepIndex = steps.indexOf(upcomingStep);
-                if (upcomingStepIndex < steps.size() - 1) {
-                    Step stepAfter = steps.get(upcomingStepIndex + 1);
-                    Segment segment = new Segment(
-                        new Coordinates(upcomingStep),
-                        new Coordinates(stepAfter)
-                    );
-                    SegmentsWithInteractions.handleSegmentAction(segment, user);
-                }
+            if (instruction != null && instruction.distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
+                SegmentsWithInteractions.handleSegmentAction(
+                    instruction.legStep,
+                    travelerPosition.expectedLeg.steps,
+                    Persistence.otpUsers.getById(tripData.trip.userId)
+                );
             }
 
             return new TrackingResponse(
