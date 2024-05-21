@@ -66,12 +66,17 @@ public class TripActions {
     public void handleSegmentAction(Segment segment, OtpUser otpUser) {
         SegmentAction action = getSegmentAction(segment);
         if (action != null) {
+            Interaction interaction = null;
             try {
                 Class<?> interactionClass = Class.forName(action.trigger);
-                Interaction interaction = (Interaction) interactionClass.getDeclaredConstructor().newInstance();
+                interaction = (Interaction) interactionClass.getDeclaredConstructor().newInstance();
                 interaction.triggerAction(action, otpUser);
             } catch (Exception e) {
-                LOG.error("Error instantiating class {}", action.trigger, e);
+                if (interaction == null) {
+                    LOG.error("Error instantiating class {}", action.trigger, e);
+                } else {
+                    LOG.error("Could not trigger class {} on action {}", action.trigger, action.id, e);
+                }
                 throw new RuntimeException(e);
             }
         }

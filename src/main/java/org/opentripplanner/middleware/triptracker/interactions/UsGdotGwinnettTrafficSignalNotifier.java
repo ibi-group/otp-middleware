@@ -51,22 +51,18 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
         String pathAndQuery = PED_SIGNAL_CALL_API_HOST +
             String.format(PED_SIGNAL_CALL_API_PATH, signalId, crossingId) +
             (extended ? "?extended=true" : "");
-        try {
-            Map<String, String> headers = Map.of("X-API-KEY", PED_SIGNAL_CALL_API_KEY);
-            var httpResponse = HttpUtils.httpRequestRawResponse(
-                URI.create(pathAndQuery),
-                30,
-                HttpMethod.POST,
-                headers,
-                ""
-            );
-            if (httpResponse.status == 200) {
-                LOG.info("Triggered pedestrian call {}", pathAndQuery);
-            } else {
-                LOG.error("Error {} while triggering pedestrian call", httpResponse.status);
-            }
-        } catch (Exception e) {
-            LOG.error("Could not trigger pedestrian {}", pathAndQuery, e);
+        Map<String, String> headers = Map.of("X-API-KEY", PED_SIGNAL_CALL_API_KEY);
+        var httpResponse = HttpUtils.httpRequestRawResponse(
+            URI.create(pathAndQuery),
+            30,
+            HttpMethod.POST,
+            headers,
+            ""
+        );
+        if (httpResponse.status == 200) {
+            LOG.info("Triggered pedestrian call {}", pathAndQuery);
+        } else {
+            LOG.error("Error {} while triggering pedestrian call", httpResponse.status);
         }
     }
 }
