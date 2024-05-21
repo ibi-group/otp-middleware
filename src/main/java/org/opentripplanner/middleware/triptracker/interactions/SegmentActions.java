@@ -1,40 +1,41 @@
 package org.opentripplanner.middleware.triptracker.interactions;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.triptracker.Segment;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.GeometryUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.YamlUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 /** Holds segments with configured interactions. */
-public class SegmentsWithInteractions {
-    private static final Logger LOG = LoggerFactory.getLogger(SegmentsWithInteractions.class);
+public class SegmentActions {
+    private static final Logger LOG = LoggerFactory.getLogger(SegmentActions.class);
 
-    public static final String DEFAULT_SEGMENTS = "configurations/default/segments.json";
+    public static final String DEFAULT_SEGMENTS_FILE = "configurations/default/segments.yml";
 
-    public static final SegmentsWithInteractions KNOWN_INTERACTIONS;
-
-    public List<SegmentAction> segments = new ArrayList<>();
+    private static final List<SegmentAction> KNOWN_INTERACTIONS;
 
     static {
-        try (InputStream stream = new FileInputStream(DEFAULT_SEGMENTS)) {
-            KNOWN_INTERACTIONS = JsonUtils.getPOJOFromJSON(stream, SegmentsWithInteractions.class);
+        try (InputStream stream = new FileInputStream(DEFAULT_SEGMENTS_FILE)) {
+            JsonNode segmentsYml = YamlUtils.yamlMapper.readTree(stream);
+            KNOWN_INTERACTIONS = JsonUtils.getPOJOFromJSONAsList(segmentsYml, SegmentAction.class);
         } catch (IOException e) {
+            LOG.error("Error parsing segments.yml", e);
             throw new RuntimeException(e);
         }
     }
 
-    public SegmentsWithInteractions() {
-        // For persistence
+    private SegmentActions() {
+        // No public constructor
     }
 
     /**
@@ -42,7 +43,7 @@ public class SegmentsWithInteractions {
      * @return The first {@link SegmentAction} found for the given segment
      */
     public static SegmentAction getSegmentAction(Segment segment) {
-        for (SegmentAction a : KNOWN_INTERACTIONS.segments) {
+        for (SegmentAction a : KNOWN_INTERACTIONS) {
             if (segmentMatchesAction(segment, a)) {
                 return a;
             }

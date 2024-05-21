@@ -3,7 +3,7 @@ package org.opentripplanner.middleware.triptracker;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.triptracker.interactions.SegmentsWithInteractions;
+import org.opentripplanner.middleware.triptracker.interactions.SegmentActions;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import spark.Request;
@@ -76,7 +76,7 @@ public class ManageTripTracking {
             // Perform interactions such as triggering traffic signals when approaching segments so configured.
             // It is assumed to be ok to repeatedly perform the interaction.
             if (instruction != null && instruction.distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
-                SegmentsWithInteractions.handleSegmentAction(
+                SegmentActions.handleSegmentAction(
                     instruction.legStep,
                     travelerPosition.expectedLeg.steps,
                     Persistence.otpUsers.getById(tripData.trip.userId)

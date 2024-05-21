@@ -1,0 +1,8 @@
+- id: 1001:SWSE
+  start:
+    lat: 33.95684
+    lon: -83.97971
+  end:
+    lat: 33.95653
+    lon: -83.97973
+  trigger: org.opentripplanner.middleware.triptracker.interactions.UsGdotGwinnettTrafficSignalNotifier
