@@ -69,8 +69,9 @@ class TripActionsTest {
 
     private Step createStep(Coordinates coords) {
         Step step = new Step();
-        step.lat = coords.lat;
-        step.lon = coords.lon;
+        // Add tiny offsets to test the threshold.
+        step.lat = coords.lat + 0.00001;
+        step.lon = coords.lon + 0.00001;
         return step;
     }
 
