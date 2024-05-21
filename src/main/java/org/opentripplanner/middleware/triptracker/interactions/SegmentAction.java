@@ -21,10 +21,6 @@ public class SegmentAction {
         // For persistence.
     }
 
-    public SegmentAction(String id, Segment segment) {
-        this(id, segment, null);
-    }
-
     public SegmentAction(String id, Segment segment, String trigger) {
         this.id = id;
         this.start = segment.start;

@@ -22,28 +22,33 @@ public class TripActions {
 
     public static final String TRIP_ACTIONS_YML = "configurations/default/trip-actions.yml";
 
-    private static final List<SegmentAction> TRIP_ACTIONS;
+    private static TripActions defaultInstance;
 
-    static {
-        try (InputStream stream = new FileInputStream(TRIP_ACTIONS_YML)) {
-            JsonNode tripActionsYml = YamlUtils.yamlMapper.readTree(stream);
-            TRIP_ACTIONS = JsonUtils.getPOJOFromJSONAsList(tripActionsYml, SegmentAction.class);
-        } catch (IOException e) {
-            LOG.error("Error parsing trip-actions.yml", e);
-            throw new RuntimeException(e);
+    private final List<SegmentAction> segmentActions;
+
+    public static TripActions getDefault() {
+        if (defaultInstance == null) {
+            try (InputStream stream = new FileInputStream(TRIP_ACTIONS_YML)) {
+                JsonNode tripActionsYml = YamlUtils.yamlMapper.readTree(stream);
+                defaultInstance = new TripActions(JsonUtils.getPOJOFromJSONAsList(tripActionsYml, SegmentAction.class));
+            } catch (IOException e) {
+                LOG.error("Error parsing trip-actions.yml", e);
+                throw new RuntimeException(e);
+            }
         }
+        return defaultInstance;
     }
 
-    private TripActions() {
-        // No public constructor
+    public TripActions(List<SegmentAction> segmentActions) {
+        this.segmentActions = segmentActions;
     }
 
     /**
      * @param segment The {@link Segment} to test
      * @return The first {@link SegmentAction} found for the given segment
      */
-    public static SegmentAction getSegmentAction(Segment segment) {
-        for (SegmentAction a : TRIP_ACTIONS) {
+    public SegmentAction getSegmentAction(Segment segment) {
+        for (SegmentAction a : segmentActions) {
             if (segmentMatchesAction(segment, a)) {
                 return a;
             }
@@ -58,7 +63,7 @@ public class TripActions {
             (GeometryUtils.getDistance(segment.start, action.end) <= MAX_RADIUS && GeometryUtils.getDistance(segment.end, action.start) <= MAX_RADIUS);
     }
 
-    public static void handleSegmentAction(Segment segment, OtpUser otpUser) {
+    public void handleSegmentAction(Segment segment, OtpUser otpUser) {
         SegmentAction action = getSegmentAction(segment);
         if (action != null) {
             try {
@@ -72,7 +77,7 @@ public class TripActions {
         }
     }
 
-    public static void handleSegmentAction(Step step, List<Step> steps, OtpUser user) {
+    public void handleSegmentAction(Step step, List<Step> steps, OtpUser user) {
         int stepIndex = steps.indexOf(step);
         if (stepIndex < steps.size() - 1) {
             Step stepAfter = steps.get(stepIndex + 1);
