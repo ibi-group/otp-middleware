@@ -95,6 +95,42 @@ The follow parameters are used to interact with an OTP server.
 | OTP_API_ROOT | This is the address of the OTP server, including the root path to the OTP API, to which all OTP related requests will be sent to. | http://otp-server.example.com/otp | 
 | OTP_PLAN_ENDPOINT | This defines the plan endpoint part of the requesting URL. If a request is made to this, the assumption is that a plan request has been made and that the response should be processed accordingly. | /plan |
 
+### Trip Actions
+
+OTP-middleware supports triggering certain actions when someone activates live tracking of a monitored trip
+and reaches a location or is about to enter a path. Actions include location-sensitive API calls to notify various services.
+In the context of live trip tracking, actions may include notifying transit vehicle operators or triggering traffic signals.
+
+Trip actions are defined in the optional file `trip-actions.yml` in the same configuration folder as `env.yml`.
+The file contains a list of actions defined by an ID, start and end coordinates, and a fully-qualified trigger class:
+
+```yaml
+- id: id1
+  start:
+    lat: 33.95684
+    lon: -83.97971
+  end:
+    lat: 33.95653
+    lon: -83.97973
+  trigger: com.example.package.MyTriggerClass
+- id: id2
+  start:
+    lat: 33.95584
+    lon: -83.97871
+  end:
+    lat: 33.95553
+    lon: -83.97873
+  trigger: com.example.package.MyTriggerClass
+...
+```
+
+Known trigger classes below are in package `org.opentripplanner.middleware.triptracker.interactions`
+and implement its `Interaction` interface:
+
+| Class | Description |
+| ----- | ----------- |
+| UsGdotGwinnettTrafficSignalNotifier | Triggers select pedestrian signals in Gwinnett County, GA, USA |
+
 ### Monitored Components
 
 This application allows you to monitor various system components (e.g., OTP API, OTP UI, and Data Tools) that work together 
@@ -273,4 +309,7 @@ The special E2E client settings should be defined in `env.yml`:
 | TRIP_INSTRUCTION_UPCOMING_RADIUS | integer | Optional | 10 | The radius in meters under which an upcoming instruction is given. |
 | TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |
 | TWILIO_AUTH_TOKEN | string | Optional | your-auth-token | Twilio settings available at: https://twilio.com/user/account |
+| US_GDOT_GWINNETT_PED_SIGNAL_API_HOST | string | Optional | http://host.example.com | Host server for the US GDOT Gwinnett County pedestrian signal controller API |
+| US_GDOT_GWINNETT_PED_SIGNAL_API_PATH | string | Optional | /intersections/%s/crossings/%s/call | Optional relative path template to trigger a US GDOT Gwinnett County pedestrian signal |
+| US_GDOT_GWINNETT_PED_SIGNAL_API_KEY | string | Optional | your-api-key | API key for the US GDOT Gwinnett County pedestrian signal controller |
 | VALIDATE_ENVIRONMENT_CONFIG | boolean | Optional | true | If set to false, the validation of the env.yml file against this schema will be skipped. |
