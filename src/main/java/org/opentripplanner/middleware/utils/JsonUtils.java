@@ -72,18 +72,6 @@ public class JsonUtils {
     }
 
     /**
-     * Utility method to parse generic object from stream.
-     */
-    public static <T> T getPOJOFromJSON(InputStream stream, Class<T> clazz) throws IOException {
-        try {
-            return mapper.readValue(stream, clazz);
-        } catch (IOException e) {
-            LOG.error("Could not parse stream into POJO for class {}", clazz, e);
-            throw e;
-        }
-    }
-
-    /**
      * Check if an {@link HttpResponse} is OK (i.e., the response object not null and HTTP status code is not in the
      * error range).
      */
