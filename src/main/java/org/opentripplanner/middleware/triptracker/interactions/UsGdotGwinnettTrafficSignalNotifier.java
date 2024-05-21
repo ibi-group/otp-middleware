@@ -66,7 +66,7 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
                 LOG.error("Error {} while triggering pedestrian call", httpResponse.status);
             }
         } catch (Exception e) {
-            LOG.error("Could not trigger pedestrian {}", pathAndQuery);
+            LOG.error("Could not trigger pedestrian {}", pathAndQuery, e);
         }
     }
 }
