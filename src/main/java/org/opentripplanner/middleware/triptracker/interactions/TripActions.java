@@ -16,25 +16,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-/** Holds segments with configured interactions. */
-public class SegmentActions {
-    private static final Logger LOG = LoggerFactory.getLogger(SegmentActions.class);
+/** Holds configured trip actions. */
+public class TripActions {
+    private static final Logger LOG = LoggerFactory.getLogger(TripActions.class);
 
-    public static final String DEFAULT_SEGMENTS_FILE = "configurations/default/segments.yml";
+    public static final String TRIP_ACTIONS_YML = "configurations/default/trip-actions.yml";
 
-    private static final List<SegmentAction> KNOWN_INTERACTIONS;
+    private static final List<SegmentAction> TRIP_ACTIONS;
 
     static {
-        try (InputStream stream = new FileInputStream(DEFAULT_SEGMENTS_FILE)) {
-            JsonNode segmentsYml = YamlUtils.yamlMapper.readTree(stream);
-            KNOWN_INTERACTIONS = JsonUtils.getPOJOFromJSONAsList(segmentsYml, SegmentAction.class);
+        try (InputStream stream = new FileInputStream(TRIP_ACTIONS_YML)) {
+            JsonNode tripActionsYml = YamlUtils.yamlMapper.readTree(stream);
+            TRIP_ACTIONS = JsonUtils.getPOJOFromJSONAsList(tripActionsYml, SegmentAction.class);
         } catch (IOException e) {
-            LOG.error("Error parsing segments.yml", e);
+            LOG.error("Error parsing trip-actions.yml", e);
             throw new RuntimeException(e);
         }
     }
 
-    private SegmentActions() {
+    private TripActions() {
         // No public constructor
     }
 
@@ -43,7 +43,7 @@ public class SegmentActions {
      * @return The first {@link SegmentAction} found for the given segment
      */
     public static SegmentAction getSegmentAction(Segment segment) {
-        for (SegmentAction a : KNOWN_INTERACTIONS) {
+        for (SegmentAction a : TRIP_ACTIONS) {
             if (segmentMatchesAction(segment, a)) {
                 return a;
             }
