@@ -25,6 +25,23 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
     );
     private static final String PED_SIGNAL_CALL_API_KEY = getConfigPropertyAsText("US_GDOT_GWINNETT_PED_SIGNAL_API_KEY");
 
+    private final String host;
+    private final String path;
+    private final String key;
+
+    public UsGdotGwinnettTrafficSignalNotifier() {
+        host = PED_SIGNAL_CALL_API_HOST;
+        path = PED_SIGNAL_CALL_API_PATH;
+        key = PED_SIGNAL_CALL_API_KEY;
+    }
+
+    public UsGdotGwinnettTrafficSignalNotifier(String host, String path, String key) {
+        this.host = host;
+        this.path = path;
+        this.key = key;
+    }
+
+    @Override
     public void triggerAction(SegmentAction segmentAction, OtpUser otpUser) {
         String[] idParts = segmentAction.id.split(":");
         String signalId = idParts[0];
@@ -41,32 +58,42 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
         return mode != null && !mode.equalsIgnoreCase("None");
     }
 
+    /**  */
+    public String getUrl(String signalId, String crossingId, boolean extended) {
+        return host + String.format(path, signalId, crossingId) + (extended ? "?extended=true" : "");
+    }
+
+    public Map<String, String> getHeaders() {
+        return Map.of("X-API-KEY", key);
+    }
+
+    public String getBody() {
+        return "";
+    }
+
     /**
      * Trigger a pedestrian call for the given traffic signal and given crossing.
      * @param signalId The ID of the targeted traffic signal.
      * @param crossingId The ID of the crossing to activate at the targeted traffic signal.
      */
-    public static void triggerPedestrianCall(String signalId, String crossingId, boolean extended) {
-        if (PED_SIGNAL_CALL_API_HOST == null || PED_SIGNAL_CALL_API_KEY == null) {
-            LOG.error("Not triggering pedestrian call: Host and key were not configured.");
+    public void triggerPedestrianCall(String signalId, String crossingId, boolean extended) {
+        if (host == null || key == null) {
+            LOG.error("Not triggering pedestrian call: Host and key are not configured.");
             return;
         }
 
-        String pathAndQuery = PED_SIGNAL_CALL_API_HOST +
-            String.format(PED_SIGNAL_CALL_API_PATH, signalId, crossingId) +
-            (extended ? "?extended=true" : "");
-        Map<String, String> headers = Map.of("X-API-KEY", PED_SIGNAL_CALL_API_KEY);
+        String pathAndQuery = getUrl(signalId, crossingId, extended);
         var httpResponse = HttpUtils.httpRequestRawResponse(
             URI.create(pathAndQuery),
             30,
             HttpMethod.POST,
-            headers,
-            ""
+            getHeaders(),
+            getBody()
         );
         if (httpResponse.status == 200) {
             LOG.info("Triggered pedestrian call {}", pathAndQuery);
         } else {
-            LOG.error("Error {} while triggering pedestrian call", httpResponse.status);
+            LOG.error("Error {} while triggering pedestrian call {}", httpResponse.status, pathAndQuery);
         }
     }
 }
