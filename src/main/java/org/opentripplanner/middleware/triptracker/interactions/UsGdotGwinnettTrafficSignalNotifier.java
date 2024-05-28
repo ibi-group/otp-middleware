@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.triptracker.interactions;
 
 import org.eclipse.jetty.http.HttpMethod;
+import org.opentripplanner.middleware.models.MobilityProfile;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.slf4j.Logger;
@@ -33,8 +34,11 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
 
     /** Whether a user needs an extended phase or extra time to cross a signaled intersection. */
     public static boolean needsExtendedPhase(OtpUser otpUser) {
-        // TODO: criteria for extended phase.
-        return otpUser.mobilityProfile.mobilityMode.equalsIgnoreCase("WChairE");
+        MobilityProfile profile = otpUser.mobilityProfile;
+        if (profile == null) return false;
+
+        String mode = profile.mobilityMode;
+        return mode != null && !mode.equalsIgnoreCase("None");
     }
 
     /**
