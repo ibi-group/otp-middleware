@@ -77,8 +77,14 @@ class UsGdotGwinnettTrafficSignalNotifierTest {
     @Test
     void testGetUrl() {
         UsGdotGwinnettTrafficSignalNotifier notifier = createNotifier();
-        assertEquals("http://pedsignal.example.com/signal-path/signal-12/crossing-path/crossing-114/trigger-path",  notifier.getUrl(SIGNAL_ID, CROSSING_ID, false));
-        assertEquals("http://pedsignal.example.com/signal-path/signal-12/crossing-path/crossing-114/trigger-path?extended=true",  notifier.getUrl(SIGNAL_ID, CROSSING_ID, true));
+        assertEquals(
+            "http://pedsignal.example.com/signal-path/signal-12/crossing-path/crossing-114/trigger-path",
+            notifier.getUrl(SIGNAL_ID, CROSSING_ID, false)
+        );
+        assertEquals(
+            "http://pedsignal.example.com/signal-path/signal-12/crossing-path/crossing-114/trigger-path?extended=true",
+            notifier.getUrl(SIGNAL_ID, CROSSING_ID, true)
+        );
     }
 
     @Test

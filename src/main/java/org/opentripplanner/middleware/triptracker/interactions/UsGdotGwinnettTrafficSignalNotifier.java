@@ -19,12 +19,16 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
  */
 public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
     private static final Logger LOG = LoggerFactory.getLogger(UsGdotGwinnettTrafficSignalNotifier.class);
-    private static final String PED_SIGNAL_CALL_API_HOST = getConfigPropertyAsText("US_GDOT_GWINNETT_PED_SIGNAL_API_HOST");
+    private static final String PED_SIGNAL_CALL_API_HOST = getConfigPropertyAsText(
+        "US_GDOT_GWINNETT_PED_SIGNAL_API_HOST"
+    );
     private static final String PED_SIGNAL_CALL_API_PATH = getConfigPropertyAsText(
         "US_GDOT_GWINNETT_PED_SIGNAL_API_PATH",
         "/intersections/%s/crossings/%s/call"
     );
-    private static final String PED_SIGNAL_CALL_API_KEY = getConfigPropertyAsText("US_GDOT_GWINNETT_PED_SIGNAL_API_KEY");
+    private static final String PED_SIGNAL_CALL_API_KEY = getConfigPropertyAsText(
+        "US_GDOT_GWINNETT_PED_SIGNAL_API_KEY"
+    );
 
     private static final AtomicAvailability availability = new AtomicAvailability();
 
