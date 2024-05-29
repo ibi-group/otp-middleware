@@ -4,6 +4,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.models.MobilityProfile;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.utils.HttpUtils;
+import org.opentripplanner.middleware.utils.AtomicAvailability;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,20 +26,25 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
     );
     private static final String PED_SIGNAL_CALL_API_KEY = getConfigPropertyAsText("US_GDOT_GWINNETT_PED_SIGNAL_API_KEY");
 
+    private static final AtomicAvailability availability = new AtomicAvailability();
+
     private final String host;
     private final String path;
     private final String key;
+    private final boolean isTesting;
 
     public UsGdotGwinnettTrafficSignalNotifier() {
         host = PED_SIGNAL_CALL_API_HOST;
         path = PED_SIGNAL_CALL_API_PATH;
         key = PED_SIGNAL_CALL_API_KEY;
+        isTesting = false;
     }
 
     public UsGdotGwinnettTrafficSignalNotifier(String host, String path, String key) {
         this.host = host;
         this.path = path;
         this.key = key;
+        this.isTesting = true;
     }
 
     @Override
@@ -58,7 +64,6 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
         return mode != null && !mode.equalsIgnoreCase("None");
     }
 
-    /**  */
     public String getUrl(String signalId, String crossingId, boolean extended) {
         return host + String.format(path, signalId, crossingId) + (extended ? "?extended=true" : "");
     }
@@ -76,24 +81,38 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
      * @param signalId The ID of the targeted traffic signal.
      * @param crossingId The ID of the crossing to activate at the targeted traffic signal.
      */
-    public void triggerPedestrianCall(String signalId, String crossingId, boolean extended) {
+    public boolean triggerPedestrianCall(String signalId, String crossingId, boolean extended) {
         if (host == null || key == null) {
             LOG.error("Not triggering pedestrian call: Host and key are not configured.");
-            return;
+            return false;
         }
 
-        String pathAndQuery = getUrl(signalId, crossingId, extended);
-        var httpResponse = HttpUtils.httpRequestRawResponse(
-            URI.create(pathAndQuery),
-            30,
-            HttpMethod.POST,
-            getHeaders(),
-            getBody()
-        );
-        if (httpResponse.status == 200) {
-            LOG.info("Triggered pedestrian call {}", pathAndQuery);
-        } else {
-            LOG.error("Error {} while triggering pedestrian call {}", httpResponse.status, pathAndQuery);
+        if (availability.claim()) {
+            try (availability) {
+                if (isTesting) {
+                    // For testing, just wait so that other calls can be attempted.
+                    Thread.sleep(2000);
+                    return true;
+                } else {
+                    String pathAndQuery = getUrl(signalId, crossingId, extended);
+                    var httpResponse = HttpUtils.httpRequestRawResponse(
+                        URI.create(pathAndQuery),
+                        30,
+                        HttpMethod.POST,
+                        getHeaders(),
+                        getBody()
+                    );
+                    if (httpResponse.status == 200) {
+                        LOG.info("Triggered pedestrian call {}", pathAndQuery);
+                        return true;
+                    } else {
+                        LOG.error("Error {} while triggering pedestrian call {}", httpResponse.status, pathAndQuery);
+                    }
+                }
+            } catch (InterruptedException e) {
+                // Continue with the rest.
+            }
         }
+        return false;
     }
 }

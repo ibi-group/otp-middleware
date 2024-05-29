@@ -16,6 +16,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UsGdotGwinnettTrafficSignalNotifierTest {
 
+    public static final String SIGNAL_ID = "signal-12";
+    public static final String CROSSING_ID = "crossing-114";
     private static final String EXTENDED_PHASE_MESSAGE =
         "Extended phase should always be requested, except for the 'None' and null profiles";
     public static final String DUMMY_KEY = "secret";
@@ -74,11 +76,9 @@ class UsGdotGwinnettTrafficSignalNotifierTest {
 
     @Test
     void testGetUrl() {
-        String signalId = "signal-12";
-        String crossingId = "crossing-114";
         UsGdotGwinnettTrafficSignalNotifier notifier = createNotifier();
-        assertEquals("http://pedsignal.example.com/signal-path/signal-12/crossing-path/crossing-114/trigger-path",  notifier.getUrl(signalId, crossingId, false));
-        assertEquals("http://pedsignal.example.com/signal-path/signal-12/crossing-path/crossing-114/trigger-path?extended=true",  notifier.getUrl(signalId, crossingId, true));
+        assertEquals("http://pedsignal.example.com/signal-path/signal-12/crossing-path/crossing-114/trigger-path",  notifier.getUrl(SIGNAL_ID, CROSSING_ID, false));
+        assertEquals("http://pedsignal.example.com/signal-path/signal-12/crossing-path/crossing-114/trigger-path?extended=true",  notifier.getUrl(SIGNAL_ID, CROSSING_ID, true));
     }
 
     @Test
@@ -87,5 +87,25 @@ class UsGdotGwinnettTrafficSignalNotifierTest {
         assertEquals(1, headers.size());
         assertTrue(headers.containsKey("X-API-KEY"));
         assertEquals(DUMMY_KEY, headers.get("X-API-KEY"));
+    }
+
+    @Test
+    void testMultipleInvocations() throws InterruptedException {
+        // Start a separate thread that simulates a long-running request.
+        Thread thread = new Thread(() -> {
+            UsGdotGwinnettTrafficSignalNotifier notifier = createNotifier();
+            notifier.triggerPedestrianCall(SIGNAL_ID, CROSSING_ID, true);
+        });
+        thread.start();
+
+        // Attempt to request pedestrian signals after a brief wait, these attempts should fail and return immediately.
+        Thread.sleep(200);
+
+        for (int i = 0; i < 4; i++) {
+            UsGdotGwinnettTrafficSignalNotifier notifier = createNotifier();
+            assertFalse(notifier.triggerPedestrianCall(SIGNAL_ID, CROSSING_ID, true));
+        }
+
+        thread.join(10000);
     }
 }
