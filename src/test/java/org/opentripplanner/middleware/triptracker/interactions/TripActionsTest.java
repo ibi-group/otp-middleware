@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.triptracker.Segment;
 import org.opentripplanner.middleware.utils.Coordinates;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -82,14 +83,15 @@ class TripActionsTest {
         Step stepOnSegment1 = createStep(SEGMENT1_START);
         Step stepAfterSegment1 = createStep(SEGMENT1_END);
 
-        List<Step> steps = List.of(
-            stepBeforeSegment1,
-            stepOnSegment1,
-            stepAfterSegment1
-        );
+        // We use an ArrayList here (and not List.of(...)) to match runtime parsing of the OTP response.
+        List<Step> steps = new ArrayList<>();
+        steps.add(stepBeforeSegment1);
+        steps.add(stepOnSegment1);
+        steps.add(stepAfterSegment1);
 
         assertNull(TrivialTripAction.getLastSegmentId());
-        tripActions.handleSegmentAction(steps.get(stepIndex), steps, null);
+        Step step = stepIndex == -1 ? null : steps.get(stepIndex);
+        tripActions.handleSegmentAction(step, steps, null);
         assertEquals(expectedActionId, TrivialTripAction.getLastSegmentId(), message);
     }
 
@@ -109,6 +111,11 @@ class TripActionsTest {
                 2,
                 null,
                 "Leg step not near a trip action should not match configured segments"
+            ),
+            Arguments.of(
+                -1,
+                null,
+                "Null leg step not near a trip action should not match configured segments (or cause errors)"
             )
         );
     }

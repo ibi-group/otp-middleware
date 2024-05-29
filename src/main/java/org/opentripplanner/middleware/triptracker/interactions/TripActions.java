@@ -84,7 +84,7 @@ public class TripActions {
 
     public void handleSegmentAction(Step step, List<Step> steps, OtpUser user) {
         int stepIndex = steps.indexOf(step);
-        if (stepIndex < steps.size() - 1) {
+        if (stepIndex >= 0 && stepIndex < steps.size() - 1) {
             Step stepAfter = steps.get(stepIndex + 1);
             Segment segment = new Segment(
                 new Coordinates(step),
@@ -92,6 +92,5 @@ public class TripActions {
             );
             handleSegmentAction(segment, user);
         }
-
     }
 }
