@@ -1,0 +1,2 @@
+- agencyId: GCT
+  trigger: org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator

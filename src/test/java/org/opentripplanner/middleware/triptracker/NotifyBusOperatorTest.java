@@ -14,6 +14,9 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.AgencyAction;
+import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
+import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
@@ -26,7 +29,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.opentripplanner.middleware.triptracker.NotifyBusOperator.ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES;
+import static org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator.ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES;
 
 class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
@@ -36,14 +39,18 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     private static final String routeId = "GwinnettCountyTransit:40";
 
+    private final BusOperatorActions busOperatorActions = new BusOperatorActions(List.of(
+        new AgencyAction("GCT", UsRideGwinnettNotifyBusOperator.class.getName())
+    ));
+
     @BeforeAll
     public static void setUp() throws IOException {
         walkToBusTransition = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-transition.json"),
             Itinerary.class
         );
-        NotifyBusOperator.IS_TEST = true;
-        NotifyBusOperator.QUALIFYING_BUS_NOTIFIER_ROUTES = List.of(routeId);
+        UsRideGwinnettNotifyBusOperator.IS_TEST = true;
+        UsRideGwinnettNotifyBusOperator.US_RIDE_GWINNETT_QUALIFYING_BUS_NOTIFIER_ROUTES = List.of(routeId);
     }
 
     @AfterEach
@@ -88,10 +95,10 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
     void canCancelBusOperatorNotification() {
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates());
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
-        NotifyBusOperator.sendNotification(TripStatus.ON_SCHEDULE, travelerPosition);
+        busOperatorActions.handleSendNotificationAction(TripStatus.ON_SCHEDULE, travelerPosition);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(routeId));
-        NotifyBusOperator.cancelNotification(travelerPosition);
+        busOperatorActions.handleCancelNotificationAction(travelerPosition);
         updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertFalse(updated.busNotificationMessages.containsKey(routeId));
     }
@@ -100,10 +107,10 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
     void canNotifyBusOperatorOnlyOnce() {
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates());
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
-        NotifyBusOperator.sendNotification(TripStatus.ON_SCHEDULE, travelerPosition);
+        busOperatorActions.handleSendNotificationAction(TripStatus.ON_SCHEDULE, travelerPosition);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(routeId));
-        assertFalse(NotifyBusOperator.hasNotPreviouslyNotifiedBusDriverForRoute(trackedJourney, routeId));
+        assertFalse(UsRideGwinnettNotifyBusOperator.hasNotPreviouslyNotifiedBusDriverForRoute(trackedJourney, routeId));
     }
 
     @ParameterizedTest
@@ -114,7 +121,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         TravelerPosition travelerPosition,
         String message
     ) {
-        assertEquals(expected, NotifyBusOperator.isWithinOperationalNotifyWindow(tripStatus, travelerPosition), message);
+        assertEquals(expected, UsRideGwinnettNotifyBusOperator.isWithinOperationalNotifyWindow(tripStatus, travelerPosition), message);
     }
 
     private static Stream<Arguments> createWithinOperationalNotifyWindowTrace() {
@@ -142,7 +149,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     private static OtpUser createOtpUser() {
         MobilityProfile mobilityProfile = new MobilityProfile();
-        mobilityProfile.mobilityMode = "WchairE";
+        mobilityProfile.mobilityMode = "WChairE";
         OtpUser otpUser = new OtpUser();
         otpUser.mobilityProfile = mobilityProfile;
         return otpUser;

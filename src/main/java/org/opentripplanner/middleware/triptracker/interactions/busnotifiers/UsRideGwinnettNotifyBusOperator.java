@@ -1,9 +1,11 @@
-package org.opentripplanner.middleware.triptracker;
+package org.opentripplanner.middleware.triptracker.interactions.busnotifiers;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.triptracker.TravelerPosition;
+import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -19,25 +21,27 @@ import java.util.Map;
 
 import static org.opentripplanner.middleware.triptracker.TripStatus.getSegmentStartTime;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
 
 /**
  * If conditions are correct notify a bus operator of a traveler joining the service at a given stop.
  */
-public class NotifyBusOperator {
+public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
 
-    public NotifyBusOperator() {}
+    public UsRideGwinnettNotifyBusOperator() {}
 
     public static boolean IS_TEST = false;
 
-    private static final Logger LOG = LoggerFactory.getLogger(NotifyBusOperator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UsRideGwinnettNotifyBusOperator.class);
 
-    private static final String BUS_OPERATOR_NOTIFIER_API_URL
-        = getConfigPropertyAsText("BUS_OPERATOR_NOTIFIER_API_URL", "not-provided");
+    private static final String US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_URL
+        = getConfigPropertyAsText("US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_URL", "not-provided");
 
-    private static final String BUS_OPERATOR_NOTIFIER_API_SUBSCRIPTION_KEY
-        = getConfigPropertyAsText("BUS_OPERATOR_NOTIFIER_API_SUBSCRIPTION_KEY", "not-provided");
+    private static final String US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY
+        = getConfigPropertyAsText("US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY", "not-provided");
 
-    public static List<String> QUALIFYING_BUS_NOTIFIER_ROUTES = getBusOperatorNotifierQualifyingRoutes();
+    public static List<String> US_RIDE_GWINNETT_QUALIFYING_BUS_NOTIFIER_ROUTES = getBusOperatorNotifierQualifyingRoutes();
 
     public static final int ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES = 15;
 
@@ -45,7 +49,7 @@ public class NotifyBusOperator {
      * Headers that are required for each request.
      */
     private static final Map<String, String> BUS_OPERATOR_NOTIFIER_API_HEADERS = Map.of(
-        "Ocp-Apim-Subscription-Key", BUS_OPERATOR_NOTIFIER_API_SUBSCRIPTION_KEY,
+        "Ocp-Apim-Subscription-Key", US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY,
         "Content-Type", "application/json"
     );
 
@@ -58,7 +62,7 @@ public class NotifyBusOperator {
      */
     private static List<String> getBusOperatorNotifierQualifyingRoutes() {
         String busOperatorNotifierQualifyingRoutes
-            = getConfigPropertyAsText("BUS_OPERATOR_NOTIFIER_QUALIFYING_ROUTES");
+            = getConfigPropertyAsText("US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_QUALIFYING_ROUTES");
         if (busOperatorNotifierQualifyingRoutes != null) {
             return Arrays.asList(busOperatorNotifierQualifyingRoutes.split(","));
         }
@@ -68,18 +72,22 @@ public class NotifyBusOperator {
     /**
      * Stage notification to bus operator by making sure all required conditions are met.
      */
-    public static void sendNotification(TripStatus tripStatus, TravelerPosition travelerPosition) {
+    public void sendNotification(TripStatus tripStatus, TravelerPosition travelerPosition) {
+        var routeId = getRouteIdFromLeg(travelerPosition.nextLeg);
         try {
             if (
                 isBusLeg(travelerPosition.nextLeg) &&
                 isWithinOperationalNotifyWindow(tripStatus, travelerPosition) &&
-                hasNotPreviouslyNotifiedBusDriverForRoute(travelerPosition.trackedJourney, travelerPosition.nextLeg.route.id) &&
-                supportsBusOperatorNotification(travelerPosition.nextLeg.route.id)
+                hasNotPreviouslyNotifiedBusDriverForRoute(travelerPosition.trackedJourney, routeId) &&
+                supportsBusOperatorNotification(routeId)
             ) {
+                // Immediately set the notification state to pending, so that subsequent calls don't initiate another
+                // request before this one completes.
+                travelerPosition.trackedJourney.updateNotificationMessage(routeId, "pending");
                 var body = createPostBody(travelerPosition);
                 var httpStatus = doPost(body);
                 if (httpStatus == HttpStatus.OK_200) {
-                    travelerPosition.trackedJourney.updateNotificationMessage(travelerPosition.nextLeg.route.id, body);
+                    travelerPosition.trackedJourney.updateNotificationMessage(routeId, body);
                 } else {
                     LOG.error("Error {} while trying to initiate notification to bus operator.", httpStatus);
                 }
@@ -92,19 +100,19 @@ public class NotifyBusOperator {
     /**
      * Cancel a previously sent notification for the next bus leg.
      */
-    public static void cancelNotification(TravelerPosition travelerPosition) {
+    public void cancelNotification(TravelerPosition travelerPosition) {
+        var routeId = getRouteIdFromLeg(travelerPosition.nextLeg);
         try {
-            if (isBusLeg(travelerPosition.nextLeg) && travelerPosition.nextLeg.route.id != null) {
-                String routeId = travelerPosition.nextLeg.route.id;
+            if (isBusLeg(travelerPosition.nextLeg) && routeId != null) {
                 Map<String, String> busNotificationRequests = travelerPosition.trackedJourney.busNotificationMessages;
                 if (busNotificationRequests.containsKey(routeId)) {
-                    BusOpNotificationMessage busOpNotificationMessage = JsonUtils.getPOJOFromJSON(
+                    UsRideGwinnettBusOpNotificationMessage usRideGwinnettBusOpNotificationMessage = JsonUtils.getPOJOFromJSON(
                         busNotificationRequests.get(routeId),
-                        BusOpNotificationMessage.class
+                        UsRideGwinnettBusOpNotificationMessage.class
                     );
                     // Changed the saved message type from notify to cancel.
-                    busOpNotificationMessage.msg_type = 0;
-                    var httpStatus = doPost(JsonUtils.toJson(busOpNotificationMessage));
+                    usRideGwinnettBusOpNotificationMessage.msg_type = 0;
+                    var httpStatus = doPost(JsonUtils.toJson(usRideGwinnettBusOpNotificationMessage));
                     if (httpStatus == HttpStatus.OK_200) {
                         travelerPosition.trackedJourney.removeNotificationMessage(routeId);
                     } else {
@@ -126,7 +134,7 @@ public class NotifyBusOperator {
             return 200;
         }
         var httpResponse = HttpUtils.httpRequestRawResponse(
-            URI.create(BUS_OPERATOR_NOTIFIER_API_URL),
+            URI.create(US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_URL),
             1000,
             HttpMethod.POST,
             BUS_OPERATOR_NOTIFIER_API_HEADERS,
@@ -139,26 +147,23 @@ public class NotifyBusOperator {
      * Create post body that will be sent to bus notification API.
      */
     public static String createPostBody(TravelerPosition travelerPosition) {
-        return JsonUtils.toJson(new BusOpNotificationMessage(travelerPosition.currentTime, travelerPosition));
-    }
-
-    /**
-     * Make sure the leg in question is a bus transit leg.
-     */
-    public static boolean isBusLeg(Leg leg) {
-        return leg != null && leg.mode.equalsIgnoreCase("BUS") && leg.transitLeg;
+        return JsonUtils.toJson(new UsRideGwinnettBusOpNotificationMessage(travelerPosition.currentTime, travelerPosition));
     }
 
     /**
      * Make sure the bus route associated with this leg supports notifying the bus operator. The 'gtfsId' is expected in
-     * the format agency_id:route_id e.g. GwinnettCountyTransit:360.
+     * the format agency_id:route_id e.g. GwinnettCountyTransit:360. If no routes are defined it is assumed that all
+     * routes support notification.
      */
     public static boolean supportsBusOperatorNotification(String gtfsId) {
-        return QUALIFYING_BUS_NOTIFIER_ROUTES.contains(gtfsId);
+        return
+            US_RIDE_GWINNETT_QUALIFYING_BUS_NOTIFIER_ROUTES.isEmpty() ||
+            US_RIDE_GWINNETT_QUALIFYING_BUS_NOTIFIER_ROUTES.contains(gtfsId);
     }
 
     /**
-     * Has the bus driver already been notified for this journey. The driver must only be notified once.
+     * Has the bus driver already been notified or in the process of being notified for this journey.
+     * The driver must only be notified once.
      */
     public static boolean hasNotPreviouslyNotifiedBusDriverForRoute(TrackedJourney trackedJourney, String routeId) {
         for (String notifiedRouteId : trackedJourney.busNotificationMessages.keySet()) {

@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.triptracker;
 import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import javax.annotation.Nullable;
@@ -14,6 +15,8 @@ import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INST
 import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.isPointBetween;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.removeAgencyPrefix;
 
 /**
  * Locate the traveler in relation to the nearest step or destination and provide the appropriate instructions.
@@ -109,9 +112,11 @@ public class TravelerLocator {
         }
 
         if (isApproachingEndOfLeg(travelerPosition)) {
-            if (NotifyBusOperator.isBusLeg(travelerPosition.nextLeg)) {
-                // The preceding leg is a bus leg.
-                NotifyBusOperator.sendNotification(tripStatus, travelerPosition);
+            if (isBusLeg(travelerPosition.nextLeg)) {
+                // The upcoming leg is a bus leg.
+                BusOperatorActions
+                    .getDefault()
+                    .handleSendNotificationAction(tripStatus, travelerPosition);
                 // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
                 return new TripInstruction(travelerPosition.nextLeg, travelerPosition.currentTime);
             }

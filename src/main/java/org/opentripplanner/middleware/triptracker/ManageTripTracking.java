@@ -1,14 +1,16 @@
 package org.opentripplanner.middleware.triptracker;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
+import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import spark.Request;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.removeAgencyPrefix;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
@@ -54,8 +56,7 @@ public class ManageTripTracking {
             TravelerPosition travelerPosition = new TravelerPosition(
                 trackedJourney,
                 tripData.trip.journeyState.matchingItinerary,
-                Auth0Connection.getUserFromRequest(request).otpUser
-
+                Persistence.otpUsers.getById(tripData.trip.userId)
             );
             TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
             trackedJourney.lastLocation().tripStatus = tripStatus;
@@ -111,7 +112,7 @@ public class ManageTripTracking {
     public static EndTrackingResponse endTracking(Request request) {
         TripTrackingData tripData = TripTrackingData.fromRequestJourneyId(request);
         if (tripData != null) {
-            return completeJourney(request, tripData, false);
+            return completeJourney(tripData, false);
         }
         return null;
     }
@@ -125,7 +126,7 @@ public class ManageTripTracking {
         TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
         if (tripData != null) {
             if (tripData.journey != null) {
-                return completeJourney(request, tripData, true);
+                return completeJourney(tripData, true);
             } else {
                 logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Journey for provided trip id does not exist!");
                 return null;
@@ -138,13 +139,15 @@ public class ManageTripTracking {
      * Complete a journey by defining the ending type, time and condition. Also cancel possible upcoming bus
      * notification.
      */
-    private static EndTrackingResponse completeJourney(Request request, TripTrackingData tripData, boolean isForciblyEnded) {
+    private static EndTrackingResponse completeJourney(TripTrackingData tripData, boolean isForciblyEnded) {
         TravelerPosition travelerPosition = new TravelerPosition(
             tripData.journey,
             tripData.trip.journeyState.matchingItinerary,
-            Auth0Connection.getUserFromRequest(request).otpUser
+            Persistence.otpUsers.getById(tripData.trip.userId)
         );
-        NotifyBusOperator.cancelNotification(travelerPosition);
+        BusOperatorActions
+            .getDefault()
+            .handleCancelNotificationAction(travelerPosition);
         TrackedJourney trackedJourney = travelerPosition.trackedJourney;
         trackedJourney.end(isForciblyEnded);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_TIME_FIELD_NAME, trackedJourney.endTime);

@@ -53,8 +53,8 @@ public class TravelerPosition {
 
     /** Used for unit testing. */
     public TravelerPosition(Leg expectedLeg, Coordinates currentPosition) {
-        this.currentPosition = currentPosition;
         this.expectedLeg = expectedLeg;
+        this.currentPosition = currentPosition;
         legSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
     }
 }

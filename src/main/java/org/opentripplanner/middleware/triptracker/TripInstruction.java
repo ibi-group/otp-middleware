@@ -7,8 +7,10 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import java.time.Duration;
 import java.time.Instant;
 
-import static org.opentripplanner.middleware.triptracker.BusOpNotificationMessage.BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT;
+import static org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettBusOpNotificationMessage.BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.removeAgencyPrefix;
 
 public class TripInstruction {
 
@@ -51,7 +53,7 @@ public class TripInstruction {
     /** The time provided by the traveler */
     public Instant currentTime;
 
-    /** The type of instruction to be provided to te traveler. */
+    /** The type of instruction to be provided to the traveler. */
     private final TripInstructionType tripInstructionType;
 
     public TripInstruction(boolean isDestination, double distance) {
@@ -156,7 +158,7 @@ public class TripInstruction {
      * Build wait for bus instruction.
      */
     private String buildWaitForBusInstruction() {
-        String routeId = busLeg.route.id.split(":")[1];
+        String routeId = removeAgencyPrefix(getRouteIdFromLeg(busLeg));
         if (busLeg.departureDelay > 0) {
             long waitInMinutes = Duration
                 .between(currentTime.atZone(DateTimeUtils.getOtpZoneId()), busLeg.getScheduledStartTime())
