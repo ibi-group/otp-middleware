@@ -338,27 +338,34 @@ public class ItineraryUtils {
      * Get the route id from leg.
      */
     public static String getRouteIdFromLeg(Leg leg) {
-        return (leg != null) ? leg.route.id : null;
+        return (leg != null) ? leg.routeId : null;
     }
 
     /**
      * Get the agency id from leg.
      */
     public static String getAgencyIdFromLeg(Leg leg) {
-        return (leg != null) ? leg.agency.id : null;
+        return (leg != null) ? leg.agencyId : null;
     }
 
     /**
      * Get the trip id from leg.
      */
     public static String getTripIdFromLeg(Leg leg) {
-        return (leg != null) ? leg.trip.id : null;
+        return (leg != null) ? leg.tripId : null;
     }
 
     /**
      * Get the stop id from place.
      */
     public static String getStopIdFromPlace(Place place) {
-        return (place != null) ? place.stop.id : null;
+        return (place != null) ? place.stopId : null;
+    }
+
+    /**
+     * Get the route short name from leg.
+     */
+    public static String getRouteShortNameFromLeg(Leg leg) {
+        return leg.routeShortName;
     }
 }

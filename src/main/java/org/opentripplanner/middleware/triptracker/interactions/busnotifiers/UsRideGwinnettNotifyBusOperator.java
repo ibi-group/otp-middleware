@@ -1,9 +1,9 @@
 package org.opentripplanner.middleware.triptracker.interactions.busnotifiers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TrackedJourney;
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -13,13 +13,11 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static org.opentripplanner.middleware.triptracker.TripStatus.getSegmentStartTime;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
@@ -78,7 +76,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
             if (
                 isBusLeg(travelerPosition.nextLeg) &&
                 isWithinOperationalNotifyWindow(tripStatus, travelerPosition) &&
-                hasNotPreviouslyNotifiedBusDriverForRoute(travelerPosition.trackedJourney, routeId) &&
+                hasNotSentNotificationForRoute(travelerPosition.trackedJourney, routeId) &&
                 supportsBusOperatorNotification(routeId)
             ) {
                 // Immediately set the notification state to pending, so that subsequent calls don't initiate another
@@ -103,18 +101,21 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
     public void cancelNotification(TravelerPosition travelerPosition) {
         var routeId = getRouteIdFromLeg(travelerPosition.nextLeg);
         try {
-            if (isBusLeg(travelerPosition.nextLeg) && routeId != null) {
+            if (
+                isBusLeg(travelerPosition.nextLeg) && routeId != null &&
+                hasNotCancelledNotificationForRoute(travelerPosition.trackedJourney, routeId)
+            ) {
                 Map<String, String> busNotificationRequests = travelerPosition.trackedJourney.busNotificationMessages;
                 if (busNotificationRequests.containsKey(routeId)) {
-                    UsRideGwinnettBusOpNotificationMessage usRideGwinnettBusOpNotificationMessage = JsonUtils.getPOJOFromJSON(
+                    UsRideGwinnettBusOpNotificationMessage body = JsonUtils.getPOJOFromJSON(
                         busNotificationRequests.get(routeId),
                         UsRideGwinnettBusOpNotificationMessage.class
                     );
                     // Changed the saved message type from notify to cancel.
-                    usRideGwinnettBusOpNotificationMessage.msg_type = 0;
-                    var httpStatus = doPost(JsonUtils.toJson(usRideGwinnettBusOpNotificationMessage));
+                    body.msg_type = 0;
+                    var httpStatus = doPost(JsonUtils.toJson(body));
                     if (httpStatus == HttpStatus.OK_200) {
-                        travelerPosition.trackedJourney.removeNotificationMessage(routeId);
+                        travelerPosition.trackedJourney.updateNotificationMessage(routeId, JsonUtils.toJson(body));
                     } else {
                         LOG.error("Error {} while trying to cancel notification to bus operator.", httpStatus);
                     }
@@ -165,13 +166,25 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      * Has the bus driver already been notified or in the process of being notified for this journey.
      * The driver must only be notified once.
      */
-    public static boolean hasNotPreviouslyNotifiedBusDriverForRoute(TrackedJourney trackedJourney, String routeId) {
-        for (String notifiedRouteId : trackedJourney.busNotificationMessages.keySet()) {
-            if (notifiedRouteId.equalsIgnoreCase(routeId)) {
-                return false;
-            }
+    public static boolean hasNotSentNotificationForRoute(TrackedJourney trackedJourney, String routeId) {
+        return !trackedJourney.busNotificationMessages.containsKey(routeId);
+    }
+
+    /**
+     * Has a previous notification already been cancelled.
+     */
+    public static boolean hasNotCancelledNotificationForRoute(TrackedJourney trackedJourney, String routeId) throws JsonProcessingException {
+        String messageBody = trackedJourney.busNotificationMessages.get(routeId);
+        if (messageBody == null) {
+            // It should not be possible to get here because a notification must exist before it can be cancelled.
+            return false;
         }
-        return true;
+        UsRideGwinnettBusOpNotificationMessage message = getNotificationMessage(messageBody);
+        return message.msg_type != 1;
+    }
+
+    public static UsRideGwinnettBusOpNotificationMessage getNotificationMessage(String body) throws JsonProcessingException {
+        return JsonUtils.getPOJOFromJSON(body, UsRideGwinnettBusOpNotificationMessage.class);
     }
 
     /**
@@ -191,11 +204,8 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      * Get how far ahead in minutes the traveler is from the expected schedule.
      */
     public static long getMinutesAheadOfSchedule(TravelerPosition travelerPosition) {
-        Instant segmentStartTime = travelerPosition
-            .expectedLeg
-            .startTime
-            .toInstant()
-            .plusSeconds((long) getSegmentStartTime(travelerPosition.legSegmentFromPosition));
-        return Duration.between(segmentStartTime, travelerPosition.currentTime).toMinutes();
+        return Duration
+            .between(TripStatus.getSegmentStartTime(travelerPosition), travelerPosition.currentTime)
+            .toMinutes();
     }
 }

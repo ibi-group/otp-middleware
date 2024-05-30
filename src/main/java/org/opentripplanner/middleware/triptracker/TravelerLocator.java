@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.utils.Coordinates;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
@@ -85,7 +86,7 @@ public class TravelerLocator {
         }
         Step nearestStep = snapToStep(travelerPosition);
         return (nearestStep != null)
-            ? new TripInstruction(nearestStep.streetName)
+            ? new TripInstruction(nearestStep.streetName, travelerPosition.locale)
             : null;
     }
 
@@ -98,7 +99,7 @@ public class TravelerLocator {
         boolean isStartOfTrip,
         TripStatus tripStatus
     ) {
-
+        Locale locale = travelerPosition.locale;
         if (isStartOfTrip) {
             // If the traveler has just started the trip and is within a set distance of the first step.
             Step firstStep = travelerPosition.expectedLeg.steps.get(0);
@@ -107,7 +108,7 @@ public class TravelerLocator {
             }
             double distance = getDistance(travelerPosition.currentPosition, new Coordinates(firstStep));
             return (distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS)
-                ? new TripInstruction(distance, firstStep)
+                ? new TripInstruction(distance, firstStep, locale)
                 : null;
         }
 
@@ -118,16 +119,17 @@ public class TravelerLocator {
                     .getDefault()
                     .handleSendNotificationAction(tripStatus, travelerPosition);
                 // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
-                return new TripInstruction(travelerPosition.nextLeg, travelerPosition.currentTime);
+                return new TripInstruction(travelerPosition.nextLeg, travelerPosition.currentTime, locale);
             }
-            return new TripInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name);
+            return new TripInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
         }
 
         Step nextStep = snapToStep(travelerPosition);
         if (nextStep != null && !isPositionPastStep(travelerPosition, nextStep)) {
             return new TripInstruction(
                 getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
-                nextStep
+                nextStep,
+                locale
             );
         }
         return null;

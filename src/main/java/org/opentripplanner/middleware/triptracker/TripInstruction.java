@@ -4,13 +4,13 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
+import java.util.Date;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Locale;
 
-import static org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettBusOpNotificationMessage.BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteIdFromLeg;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.removeAgencyPrefix;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteShortNameFromLeg;
 
 public class TripInstruction {
 
@@ -56,9 +56,13 @@ public class TripInstruction {
     /** The type of instruction to be provided to the traveler. */
     private final TripInstructionType tripInstructionType;
 
-    public TripInstruction(boolean isDestination, double distance) {
+    /** The traveler's locale. */
+    private final Locale locale;
+
+    public TripInstruction(boolean isDestination, double distance, Locale locale) {
         this.distance = distance;
         this.tripInstructionType = TripInstructionType.ON_TRACK;
+        this.locale = locale;
         setPrefix(isDestination);
     }
 
@@ -72,34 +76,36 @@ public class TripInstruction {
     /**
      * On track instruction to step.
      */
-    public TripInstruction(double distance, Step legStep) {
-        this(false, distance);
+    public TripInstruction(double distance, Step legStep, Locale locale) {
+        this(false, distance, locale);
         this.legStep = legStep;
     }
 
     /**
      * On track instruction to destination.
      */
-    public TripInstruction(double distance, String locationName) {
-        this(true, distance);
+    public TripInstruction(double distance, String locationName, Locale locale) {
+        this(true, distance, locale);
         this.locationName = locationName;
     }
 
     /**
      * Deviated instruction.
      */
-    public TripInstruction(String locationName) {
+    public TripInstruction(String locationName, Locale locale) {
         this.tripInstructionType = TripInstructionType.DEVIATED;
         this.locationName = locationName;
+        this.locale = locale;
     }
 
     /**
      * Provide bus related trip instruction.
      */
-    public TripInstruction(Leg busLeg, Instant currentTime) {
+    public TripInstruction(Leg busLeg, Instant currentTime, Locale locale) {
         this.tripInstructionType = TripInstructionType.WAIT_FOR_BUS;
         this.busLeg = busLeg;
         this.currentTime = currentTime;
+        this.locale = locale;
     }
 
     /**
@@ -158,19 +164,23 @@ public class TripInstruction {
      * Build wait for bus instruction.
      */
     private String buildWaitForBusInstruction() {
-        String routeId = removeAgencyPrefix(getRouteIdFromLeg(busLeg));
-        if (busLeg.departureDelay > 0) {
-            long waitInMinutes = Duration
-                .between(currentTime.atZone(DateTimeUtils.getOtpZoneId()), busLeg.getScheduledStartTime())
-                .toMinutes();
-            return String.format("Wait%s for bus %s", getReadableMinutes(waitInMinutes), routeId);
-        } else {
-            return String.format(
-                "Wait for bus %s scheduled to arrive at %s",
-                routeId,
-                BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT.format(busLeg.getScheduledStartTime())
-            );
-        }
+        String routeShortName = getRouteShortNameFromLeg(busLeg);
+        long delayInMinutes = busLeg.departureDelay;
+        long absoluteMinutes = Math.abs(delayInMinutes);
+        long waitInMinutes = Duration
+            .between(currentTime.atZone(DateTimeUtils.getOtpZoneId()), busLeg.getScheduledStartTime())
+            .toMinutes();
+        String delayInfo = (delayInMinutes > 0) ? "late" : "early";
+        String arrivalInfo = (absoluteMinutes <= 1)
+            ? ", on time"
+            : String.format("now %s %s", getReadableMinutes(delayInMinutes), delayInfo);
+        return String.format(
+            "Wait %s for your bus, route %s, scheduled at %s %s",
+            getReadableMinutes(waitInMinutes),
+            routeShortName,
+            DateTimeUtils.formatShortDate(Date.from(busLeg.getScheduledStartTime().toInstant()), locale),
+            arrivalInfo
+        );
     }
 
     /**
@@ -178,9 +188,9 @@ public class TripInstruction {
      */
     private String getReadableMinutes(long waitInMinutes) {
         if (waitInMinutes == 1) {
-            return String.format(" %s minute", waitInMinutes);
+            return String.format("%s minute", waitInMinutes);
         } else if (waitInMinutes > 1) {
-            return String.format(" %s minutes", waitInMinutes);
+            return String.format("%s minutes", waitInMinutes);
         }
         return "";
     }

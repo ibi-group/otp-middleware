@@ -28,10 +28,12 @@ public class UsRideGwinnettBusOpNotificationMessage {
         // Required for JSON deserialization.
     }
 
+    /** This is the date format required by the API. */
     private static final DateTimeFormatter BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT = DateTimeFormatter
         .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         .withZone(getOtpZoneId());
 
+    /** This is the time format required by the API. */
     public static final DateTimeFormatter BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT = DateTimeFormatter
         .ofPattern("HH:mm:ss")
         .withZone(getOtpZoneId());
@@ -78,8 +80,8 @@ public class UsRideGwinnettBusOpNotificationMessage {
         this.timestamp = BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT.format(timestamp);
         this.agency_id = removeAgencyPrefix(getAgencyIdFromLeg(nextLeg));
         this.from_route_id = removeAgencyPrefix(getRouteIdFromLeg(nextLeg));
-        this.from_trip_id = getTripIdFromLeg(nextLeg);
-        this.from_stop_id = getStopIdFromPlace(nextLeg.from);
+        this.from_trip_id = removeAgencyPrefix(getTripIdFromLeg(nextLeg));
+        this.from_stop_id = removeAgencyPrefix(getStopIdFromPlace(nextLeg.from));
         this.from_arrival_time = BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT.format(
             nextLeg.getScheduledStartTime().toInstant()
         );

@@ -21,8 +21,6 @@ public class Place implements Cloneable {
     public String orig;
     public String vertexType;
     public String stopId;
-    // TODO: Look to remove once OTP2 work has been merged.
-    public Stop stop;
     public Date arrival;
     public Integer stopIndex;
     public Integer stopSequence;

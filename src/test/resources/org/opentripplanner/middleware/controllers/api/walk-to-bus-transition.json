@@ -178,6 +178,7 @@
     },
     {
       "accessibilityScore": null,
+      "agencyId": "GwinnettCountyTransit:GCT",
       "agency": {
         "alerts": [
           {
@@ -270,6 +271,7 @@
         "lon": -84.000314,
         "name": "Gwinnett Central High School IB",
         "rentalVehicle": null,
+        "stopId": "GwinnettCountyTransit:U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MzYw",
         "stop": {
           "alerts": [],
           "code": "360",
@@ -333,6 +335,8 @@
       "realtimeState": null,
       "rentedBike": null,
       "rideHailingEstimate": null,
+      "routeId":  "GwinnettCountyTransit:40",
+      "routeShortName": "40",
       "route": {
         "alerts": [],
         "color": "AB0634",
@@ -359,6 +363,7 @@
         "vertexType": "TRANSIT"
       },
       "transitLeg": true,
+      "tripId": "GwinnettCountyTransit:VHJpcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6dDNBNC1iMTMwLXNsNg",
       "trip": {
         "arrivalStoptime": {
           "stop": {

@@ -36,7 +36,6 @@ public class MobilityProfileTest {
         var prof = new MobilityProfile();
         prof.mobilityDevices = devices;
         prof.updateMobilityMode();
-        System.out.println(prof.mobilityMode);
         Assertions.assertEquals(mode, prof.mobilityMode);
     }
 

@@ -31,6 +31,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -50,6 +51,8 @@ public class ManageLegTraversalTest {
     private static Itinerary edmundParkDriveToRockSpringsItinerary;
 
     private static Itinerary adairAvenueToMonroeDriveItinerary;
+
+    private static final Locale locale = Locale.US;
 
     @BeforeAll
     public static void setUp() throws IOException {
@@ -189,7 +192,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     originCoords,
-                    new TripInstruction(10, adairAvenueNortheastStep).build(),
+                    new TripInstruction(10, adairAvenueNortheastStep, locale).build(),
                     true,
                     "Just started the trip and near to the instruction for the first step. "
                 )
@@ -197,7 +200,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     originCoords,
-                    new TripInstruction(10, adairAvenueNortheastStep).build(),
+                    new TripInstruction(10, adairAvenueNortheastStep, locale).build(),
                     false,
                     "Coming up on first instruction."
                 )
@@ -205,7 +208,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     adairAvenueNortheastCoords,
-                    new TripInstruction(2, adairAvenueNortheastStep).build(),
+                    new TripInstruction(2, adairAvenueNortheastStep, locale).build(),
                     false,
                     "On first instruction."
                 )
@@ -214,7 +217,7 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, NORTH_WEST_BEARING),
-                    new TripInstruction(adairAvenueNortheastStep.streetName).build(),
+                    new TripInstruction(adairAvenueNortheastStep.streetName, locale).build(),
                     false,
                     "Deviated to the north of east to west path. Suggest path to head towards."
                 )
@@ -223,7 +226,7 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, SOUTH_WEST_BEARING),
-                    new TripInstruction(adairAvenueNortheastStep.streetName).build(),
+                    new TripInstruction(adairAvenueNortheastStep.streetName, locale).build(),
                     false,
                     "Deviated to the south of east to west path. Suggest path to head towards."
                 )
@@ -240,7 +243,7 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     TripStatus.DEVIATED,
                     createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING),
-                    new TripInstruction(9, virginiaCircleNortheastStep).build(),
+                    new TripInstruction(9, virginiaCircleNortheastStep, locale).build(),
                     false,
                     "Deviated from path, but within the upcoming radius of second instruction."
                 )
@@ -248,7 +251,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     virginiaCircleNortheastCoords,
-                    new TripInstruction(0, virginiaCircleNortheastStep).build(),
+                    new TripInstruction(0, virginiaCircleNortheastStep, locale).build(),
                     false,
                     "On second instruction."
                 )
@@ -257,7 +260,7 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     TripStatus.DEVIATED,
                     createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_WEST_BEARING),
-                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep).build(),
+                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
                     false,
                     "Deviated to the west of south to north path. Suggest path to head towards."
                 )
@@ -266,7 +269,7 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     TripStatus.DEVIATED,
                     createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_EAST_BEARING),
-                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep).build(),
+                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
                     false,
                     "Deviated to the east of south to north path. Suggest path to head towards."
                 )
@@ -274,7 +277,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new TripInstruction(10, virginiaAvenueNortheastStep).build(),
+                    new TripInstruction(10, virginiaAvenueNortheastStep, locale).build(),
                     false,
                     "Approaching left turn on Virginia Avenue (Test to make sure turn is not missed)."
                 )
@@ -282,7 +285,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     createPoint(pointBeforeTurn, 17, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new TripInstruction(2, virginiaAvenueNortheastStep).build(),
+                    new TripInstruction(2, virginiaAvenueNortheastStep, locale).build(),
                     false,
                     "Turn left on to Virginia Avenue (Test to make sure turn is not missed)."
                 )
@@ -298,7 +301,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     createPoint(destinationCoords, 8, SOUTH_BEARING),
-                    new TripInstruction(10, destinationName).build(),
+                    new TripInstruction(10, destinationName, locale).build(),
                     false,
                     "Coming up on destination instruction."
                 )
@@ -306,7 +309,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     destinationCoords,
-                    new TripInstruction(2, destinationName).build(),
+                    new TripInstruction(2, destinationName, locale).build(),
                     false,
                     "On destination instruction."
                 )

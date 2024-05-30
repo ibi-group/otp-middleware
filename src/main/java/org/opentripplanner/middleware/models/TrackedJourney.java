@@ -91,14 +91,4 @@ public class TrackedJourney extends Model {
             busNotificationMessages
         );
     }
-
-    public void removeNotificationMessage(String routeId) {
-        busNotificationMessages.remove(routeId);
-        Persistence.trackedJourneys.updateField(
-            id,
-            BUS_NOTIFICATION_MESSAGES_FIELD_NAME,
-            busNotificationMessages
-        );
-    }
-
 }
