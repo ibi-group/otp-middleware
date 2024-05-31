@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.triptracker.interactions;
 
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.MobilityProfile;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -76,10 +77,6 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
         return Map.of("X-API-KEY", key);
     }
 
-    public String getBody() {
-        return "";
-    }
-
     /**
      * Trigger a pedestrian call for the given traffic signal and given crossing.
      * @param signalId The ID of the targeted traffic signal.
@@ -104,9 +101,9 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
                         30,
                         HttpMethod.POST,
                         getHeaders(),
-                        getBody()
+                        ""
                     );
-                    if (httpResponse.status == 200) {
+                    if (httpResponse.status == HttpStatus.OK_200) {
                         LOG.info("Triggered pedestrian call {}", pathAndQuery);
                         return true;
                     } else {
