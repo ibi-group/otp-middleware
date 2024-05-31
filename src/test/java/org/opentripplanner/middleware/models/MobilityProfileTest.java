@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 public class MobilityProfileTest {
     // The mobility modes tested are tightly coupled with algorithms in the
     // Georgia Tech Mobility Profile Configuration / Logical Flow document, as
-    // implemented in the MobilityPorfile#updateMobilityMode() method.  Changes
+    // implemented in the MobilityProfile#updateMobilityMode() method.  Changes
     // to that document must be reflected in that method and in these tests.
 
     private static Stream<Arguments> provideModes() {
@@ -55,7 +55,6 @@ public class MobilityProfileTest {
         prof.mobilityDevices = devices;
         prof.visionLimitation = limitation;
         prof.updateMobilityMode();
-        System.out.println(prof.mobilityMode);
         Assertions.assertEquals(mode, prof.mobilityMode);
     }
 }

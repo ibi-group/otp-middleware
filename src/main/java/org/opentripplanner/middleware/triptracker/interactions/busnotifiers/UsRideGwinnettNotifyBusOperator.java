@@ -23,11 +23,9 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteIdFrom
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
 
 /**
- * If conditions are correct notify a bus operator of a traveler joining the service at a given stop.
+ * If conditions are correct, notify a bus operator of a traveler waiting to board at a given stop.
  */
 public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
-
-    public UsRideGwinnettNotifyBusOperator() {}
 
     public static boolean IS_TEST = false;
 
@@ -87,11 +85,11 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
                 if (httpStatus == HttpStatus.OK_200) {
                     travelerPosition.trackedJourney.updateNotificationMessage(routeId, body);
                 } else {
-                    LOG.error("Error {} while trying to initiate notification to bus operator.", httpStatus);
+                    LOG.error("Error {} while trying to initiate Ride Gwinnett notification to bus operator.", httpStatus);
                 }
             }
         } catch (Exception e) {
-            LOG.error("Could not initiate notification to bus operator.", e);
+            LOG.error("Could not initiate Ride Gwinnett notification to bus operator.", e);
         }
     }
 
@@ -117,12 +115,12 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
                     if (httpStatus == HttpStatus.OK_200) {
                         travelerPosition.trackedJourney.updateNotificationMessage(routeId, JsonUtils.toJson(body));
                     } else {
-                        LOG.error("Error {} while trying to cancel notification to bus operator.", httpStatus);
+                        LOG.error("Error {} while trying to cancel Ride Gwinnett notification to bus operator.", httpStatus);
                     }
                 }
             }
         } catch (Exception e) {
-            LOG.error("Could not cancel notification to bus operator.", e);
+            LOG.error("Could not cancel Ride Gwinnett notification to bus operator.", e);
         }
     }
 
@@ -131,8 +129,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      */
     public static int doPost(String body) {
         if (IS_TEST) {
-            // TODO figure out how to mock a static method!
-            return 200;
+            return HttpStatus.OK_200;
         }
         var httpResponse = HttpUtils.httpRequestRawResponse(
             URI.create(US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_URL),
@@ -156,10 +153,10 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      * the format agency_id:route_id e.g. GwinnettCountyTransit:360. If no routes are defined it is assumed that all
      * routes support notification.
      */
-    public static boolean supportsBusOperatorNotification(String gtfsId) {
+    public static boolean supportsBusOperatorNotification(String routeId) {
         return
             US_RIDE_GWINNETT_QUALIFYING_BUS_NOTIFIER_ROUTES.isEmpty() ||
-            US_RIDE_GWINNETT_QUALIFYING_BUS_NOTIFIER_ROUTES.contains(gtfsId);
+            US_RIDE_GWINNETT_QUALIFYING_BUS_NOTIFIER_ROUTES.contains(routeId);
     }
 
     /**
@@ -173,11 +170,13 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
     /**
      * Has a previous notification already been cancelled.
      */
-    public static boolean hasNotCancelledNotificationForRoute(TrackedJourney trackedJourney, String routeId) throws JsonProcessingException {
+    public static boolean hasNotCancelledNotificationForRoute(
+        TrackedJourney trackedJourney,
+        String routeId
+    ) throws JsonProcessingException {
         String messageBody = trackedJourney.busNotificationMessages.get(routeId);
         if (messageBody == null) {
-            // It should not be possible to get here because a notification must exist before it can be cancelled.
-            return false;
+            throw new IllegalStateException("A notification must exist before it can be cancelled!");
         }
         UsRideGwinnettBusOpNotificationMessage message = getNotificationMessage(messageBody);
         return message.msg_type != 1;

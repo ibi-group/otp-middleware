@@ -30,9 +30,11 @@ public class BusOperatorActions {
         if (defaultInstance == null) {
             try (InputStream stream = new FileInputStream(BUS_NOTIFIER_ACTIONS_YML)) {
                 JsonNode busNotifierActionsYml = YamlUtils.yamlMapper.readTree(stream);
-                defaultInstance = new BusOperatorActions(JsonUtils.getPOJOFromJSONAsList(busNotifierActionsYml, AgencyAction.class));
+                defaultInstance = new BusOperatorActions(
+                    JsonUtils.getPOJOFromJSONAsList(busNotifierActionsYml, AgencyAction.class)
+                );
             } catch (IOException e) {
-                LOG.error("Error parsing trip-actions.yml", e);
+                LOG.error("Error parsing bus-notifier-actions.yml", e);
                 throw new RuntimeException(e);
             }
         }

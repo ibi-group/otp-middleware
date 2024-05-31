@@ -103,5 +103,4 @@ public class UsRideGwinnettBusOpNotificationMessage {
         }
         return mobilityCodes;
     }
-
 }

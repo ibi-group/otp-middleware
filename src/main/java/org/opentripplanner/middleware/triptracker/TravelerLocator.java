@@ -17,7 +17,6 @@ import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_IN
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.isPointBetween;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.removeAgencyPrefix;
 
 /**
  * Locate the traveler in relation to the nearest step or destination and provide the appropriate instructions.

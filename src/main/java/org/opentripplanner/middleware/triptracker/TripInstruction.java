@@ -173,9 +173,9 @@ public class TripInstruction {
         String delayInfo = (delayInMinutes > 0) ? "late" : "early";
         String arrivalInfo = (absoluteMinutes <= 1)
             ? ", on time"
-            : String.format("now %s %s", getReadableMinutes(delayInMinutes), delayInfo);
+            : String.format(" now%s %s", getReadableMinutes(delayInMinutes), delayInfo);
         return String.format(
-            "Wait %s for your bus, route %s, scheduled at %s %s",
+            "Wait%s for your bus, route %s, scheduled at %s%s",
             getReadableMinutes(waitInMinutes),
             routeShortName,
             DateTimeUtils.formatShortDate(Date.from(busLeg.getScheduledStartTime().toInstant()), locale),
@@ -188,9 +188,9 @@ public class TripInstruction {
      */
     private String getReadableMinutes(long waitInMinutes) {
         if (waitInMinutes == 1) {
-            return String.format("%s minute", waitInMinutes);
+            return String.format(" %s minute", waitInMinutes);
         } else if (waitInMinutes > 1) {
-            return String.format("%s minutes", waitInMinutes);
+            return String.format(" %s minutes", waitInMinutes);
         }
         return "";
     }

@@ -327,11 +327,11 @@ public class ItineraryUtils {
     }
 
     /**
-     * Get the second element from the OTP agency id by removing the OTP agency prefix.
+     * Get the second element from the OTP id by removing the OTP agency prefix.
      * E.g. GwinnettCountyTransit:GCT will return just GCT.
      */
-    public static String removeAgencyPrefix(String otpAgencyId) {
-        return (otpAgencyId != null) ? otpAgencyId.split(":")[1] : null;
+    public static String removeAgencyPrefix(String idParts) {
+        return (idParts != null) ? idParts.split(":")[1] : null;
     }
 
     /**
