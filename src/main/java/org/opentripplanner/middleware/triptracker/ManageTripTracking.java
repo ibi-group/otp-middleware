@@ -74,7 +74,7 @@ public class ManageTripTracking {
             // Provide response.
             return new TrackingResponse(
                 TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
-                TravelerLocator.getInstruction(tripStatus, travelerPosition, true),
+                TravelerLocator.getInstruction(tripStatus, travelerPosition, create),
                 trackedJourney.id,
                 tripStatus.name()
             );
