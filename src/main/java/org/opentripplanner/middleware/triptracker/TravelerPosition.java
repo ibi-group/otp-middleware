@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.triptracker;
 
-import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -64,5 +63,11 @@ public class TravelerPosition {
         this.expectedLeg = expectedLeg;
         this.currentPosition = currentPosition;
         legSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
+    }
+
+    /** Used for unit testing. */
+    public TravelerPosition(Leg nextLeg, Instant currentTime) {
+        this.nextLeg = nextLeg;
+        this.currentTime = currentTime;
     }
 }

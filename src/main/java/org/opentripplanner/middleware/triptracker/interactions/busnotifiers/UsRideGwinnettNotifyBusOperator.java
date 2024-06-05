@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,8 +37,6 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
         = getConfigPropertyAsText("US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY", "not-provided");
 
     public static List<String> US_RIDE_GWINNETT_QUALIFYING_BUS_NOTIFIER_ROUTES = getBusOperatorNotifierQualifyingRoutes();
-
-    public static final int ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES = 15;
 
     /**
      * Headers that are required for each request.
@@ -72,8 +69,6 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
         var routeId = getRouteIdFromLeg(travelerPosition.nextLeg);
         try {
             if (
-                isBusLeg(travelerPosition.nextLeg) &&
-                isWithinOperationalNotifyWindow(tripStatus, travelerPosition) &&
                 hasNotSentNotificationForRoute(travelerPosition.trackedJourney, routeId) &&
                 supportsBusOperatorNotification(routeId)
             ) {
@@ -184,27 +179,5 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
 
     public static UsRideGwinnettBusOpNotificationMessage getNotificationMessage(String body) throws JsonProcessingException {
         return JsonUtils.getPOJOFromJSON(body, UsRideGwinnettBusOpNotificationMessage.class);
-    }
-
-    /**
-     * Make sure the traveler is on schedule or ahead of schedule (but not too far) to be within an operational window
-     * for the bus service.
-     */
-    public static boolean isWithinOperationalNotifyWindow(TripStatus tripStatus, TravelerPosition travelerPosition) {
-        return
-            tripStatus.equals(TripStatus.ON_SCHEDULE) ||
-            (
-                tripStatus.equals(TripStatus.AHEAD_OF_SCHEDULE) &&
-                ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES >= getMinutesAheadOfSchedule(travelerPosition)
-            );
-    }
-
-    /**
-     * Get how far ahead in minutes the traveler is from the expected schedule.
-     */
-    public static long getMinutesAheadOfSchedule(TravelerPosition travelerPosition) {
-        return Duration
-            .between(TripStatus.getSegmentStartTime(travelerPosition), travelerPosition.currentTime)
-            .toMinutes();
     }
 }

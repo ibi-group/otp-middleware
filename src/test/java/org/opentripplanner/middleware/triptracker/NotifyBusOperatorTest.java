@@ -32,7 +32,8 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator.ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES;
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES;
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.getBusDepartureTime;
 import static org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator.getNotificationMessage;
 
 class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
@@ -69,11 +70,12 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canNotifyBusOperatorForScheduledDeparture() {
-        trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates());
+        Leg busLeg = walkToBusTransition.legs.get(1);
+        Instant busDepartureTime = getBusDepartureTime(busLeg);
+        trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates(), busDepartureTime);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
         String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
-        Leg busLeg = walkToBusTransition.legs.get(1);
-        TripInstruction expectInstruction = new TripInstruction(busLeg, Instant.now(), locale);
+        TripInstruction expectInstruction = new TripInstruction(busLeg, busDepartureTime, locale);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(routeId));
         assertEquals(expectInstruction.build(), tripInstruction);
@@ -89,7 +91,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         Instant timeAtEndOfWalkLeg = walkLeg.endTime.toInstant();
         timeAtEndOfWalkLeg = timeAtEndOfWalkLeg.minusSeconds(120);
 
-        trackedJourney = createAndPersistTrackedJourney(true, getEndOfWalkLegCoordinates(), timeAtEndOfWalkLeg);
+        trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates(), timeAtEndOfWalkLeg);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
         String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
 
@@ -124,35 +126,36 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("createWithinOperationalNotifyWindowTrace")
-    void isWithinOperationalNotifyWindow(
-        boolean expected,
-        TripStatus tripStatus,
-        TravelerPosition travelerPosition,
-        String message
-    ) {
-        assertEquals(expected, UsRideGwinnettNotifyBusOperator.isWithinOperationalNotifyWindow(tripStatus, travelerPosition), message);
+    void isWithinOperationalNotifyWindow(boolean expected, TravelerPosition travelerPosition,String message) {
+        assertEquals(expected, TravelerLocator.isWithinOperationalNotifyWindow(travelerPosition), message);
     }
 
     private static Stream<Arguments> createWithinOperationalNotifyWindowTrace() {
-        Leg walkLeg = walkToBusTransition.legs.get(0);
-        Instant timeAtEndOfWalkLeg = walkLeg.endTime.toInstant();
-        TrackedJourney trackedJourney = createAndPersistTrackedJourney(
-            false,
-            getEndOfWalkLegCoordinates(),
-            timeAtEndOfWalkLeg
-        );
-        TravelerPosition travelerPosition1 = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
-        trackedJourney = createAndPersistTrackedJourney(
-            false,
-            getEndOfWalkLegCoordinates(),
-            timeAtEndOfWalkLeg.plusSeconds(60 * ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES)
-        );
-        TravelerPosition travelerPosition2 = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
+        var busLeg = walkToBusTransition.legs.get(1);
+        var busDepartureTime = getBusDepartureTime(busLeg);
+
         return Stream.of(
-            Arguments.of(true, TripStatus.ON_SCHEDULE, null, "Traveler is on schedule, notification can be sent."),
-            Arguments.of(false, TripStatus.BEHIND_SCHEDULE, null, "Traveler is behind schedule, notification can not be sent."),
-            Arguments.of(true, TripStatus.AHEAD_OF_SCHEDULE, travelerPosition1, "Traveler is ahead of schedule, but within the notify window."),
-            Arguments.of(false, TripStatus.AHEAD_OF_SCHEDULE, travelerPosition2, "Too far ahead of schedule to notify bus operator.")
+            Arguments.of(
+                true,
+                new TravelerPosition(busLeg, busDepartureTime),
+                "Traveler is on schedule, notification can be sent."
+            ),
+            Arguments.of(
+                false,
+                new TravelerPosition(busLeg, busDepartureTime.plusSeconds(60)),
+                "Traveler is behind schedule, notification can not be sent."
+            ),
+            Arguments.of(
+                true,
+                new TravelerPosition(busLeg, busDepartureTime.minusSeconds(60)),
+                "Traveler is ahead of schedule, but within the notify window."
+            ),
+            Arguments.of(false,
+                new TravelerPosition(
+                    busLeg,
+                    busDepartureTime.plusSeconds((ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES + 1) * 60)
+                ),
+                "Too far ahead of schedule to notify bus operator.")
         );
     }
 
@@ -165,13 +168,13 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
     }
 
     private static TrackedJourney createAndPersistTrackedJourney(Coordinates legToCoords) {
-        return createAndPersistTrackedJourney(true, legToCoords, Instant.now());
+        return createAndPersistTrackedJourney(legToCoords, Instant.now());
     }
 
-    private static TrackedJourney createAndPersistTrackedJourney(boolean persist, Coordinates legToCoords, Instant dateTime) {
+    private static TrackedJourney createAndPersistTrackedJourney(Coordinates legToCoords, Instant dateTime) {
         trackedJourney = new TrackedJourney();
         trackedJourney.locations.add(new TrackingLocation(legToCoords.lat, legToCoords.lon, Date.from(dateTime)));
-        if (persist) Persistence.trackedJourneys.create(trackedJourney);
+        Persistence.trackedJourneys.create(trackedJourney);
         return trackedJourney;
     }
 

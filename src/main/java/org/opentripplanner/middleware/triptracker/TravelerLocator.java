@@ -5,8 +5,12 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.utils.Coordinates;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -22,6 +26,8 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
  * Locate the traveler in relation to the nearest step or destination and provide the appropriate instructions.
  */
 public class TravelerLocator {
+
+    public static final int ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES = 15;
 
     private TravelerLocator() {
     }
@@ -101,8 +107,7 @@ public class TravelerLocator {
         Locale locale = travelerPosition.locale;
 
         if (isApproachingEndOfLeg(travelerPosition)) {
-            if (isBusLeg(travelerPosition.nextLeg)) {
-                // The upcoming leg is a bus leg.
+            if (isBusLeg(travelerPosition.nextLeg) && isWithinOperationalNotifyWindow(travelerPosition)) {
                 BusOperatorActions
                     .getDefault()
                     .handleSendNotificationAction(tripStatus, travelerPosition);
@@ -144,6 +149,34 @@ public class TravelerLocator {
      */
     private static boolean isApproachingEndOfLeg(TravelerPosition travelerPosition) {
         return getDistanceToEndOfLeg(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
+    }
+
+    /**
+     * Make sure the traveler is on schedule or ahead of schedule (but not too far) to be within an operational window
+     * for the bus service.
+     */
+    public static boolean isWithinOperationalNotifyWindow(TravelerPosition travelerPosition) {
+        var busDepartureTime = getBusDepartureTime(travelerPosition.nextLeg);
+        return
+            (travelerPosition.currentTime.equals(busDepartureTime) || travelerPosition.currentTime.isBefore(busDepartureTime)) &&
+            ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES >= getMinutesAheadOfDeparture(travelerPosition.currentTime, busDepartureTime);
+    }
+
+    /**
+     * Get how far ahead in minutes the traveler is from the bus departure time.
+     */
+    public static long getMinutesAheadOfDeparture(Instant currentTime, Instant busDepartureTime) {
+        return Duration.between(busDepartureTime, currentTime).toMinutes();
+    }
+
+    /**
+     * Get the bus departure time.
+     */
+    public static Instant getBusDepartureTime(Leg busLeg) {
+        return ZonedDateTime.ofInstant(
+            busLeg.startTime.toInstant().plusSeconds(busLeg.departureDelay),
+            DateTimeUtils.getOtpZoneId()
+        ).toInstant();
     }
 
     /**
