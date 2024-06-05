@@ -10,7 +10,10 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.payload.GeneralPayload;
 import spark.Request;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
@@ -88,10 +91,20 @@ public class TripTrackingData {
         if (payload != null) {
             var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
             if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                return new TripTrackingData(monitoredTrip, getOngoingTrackedJourney(payload.tripId), payload.getLocations());
+                List<TrackingLocation> locationsMillis = getTrackingLocationsMillis(payload);
+                return new TripTrackingData(monitoredTrip, getOngoingTrackedJourney(payload.tripId), locationsMillis);
             }
         }
         return null;
+    }
+
+    /** HACK: Convert locations so that the time stamp is in milliseconds not seconds. */
+    private static List<TrackingLocation> getTrackingLocationsMillis(GeneralPayload payload) {
+        return payload
+            .getLocations()
+            .stream()
+            .map(l -> new TrackingLocation(l.bearing, l.lat, l.lon, l.speed, Date.from(Instant.ofEpochMilli(l.timestamp.getTime() * 1000))))
+            .collect(Collectors.toList());
     }
 
     /** Obtain trip, journey, and locations from the journey id contained in the request. */
