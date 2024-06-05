@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.triptracker.payload.GeneralPayload;
 import spark.Request;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -100,8 +101,9 @@ public class TripTrackingData {
 
     /** HACK: Convert locations so that the time stamp is in milliseconds not seconds. */
     private static List<TrackingLocation> getTrackingLocationsMillis(GeneralPayload payload) {
-        return payload
-            .getLocations()
+        List<TrackingLocation> rawLocations = payload.getLocations();
+        if (rawLocations == null) rawLocations = new ArrayList<>();
+        return rawLocations
             .stream()
             .map(l -> new TrackingLocation(l.bearing, l.lat, l.lon, l.speed, Date.from(Instant.ofEpochSecond(l.timestamp.getTime()))))
             .collect(Collectors.toList());
