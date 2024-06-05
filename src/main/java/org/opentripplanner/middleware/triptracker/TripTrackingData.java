@@ -103,7 +103,7 @@ public class TripTrackingData {
         return payload
             .getLocations()
             .stream()
-            .map(l -> new TrackingLocation(l.bearing, l.lat, l.lon, l.speed, Date.from(Instant.ofEpochMilli(l.timestamp.getTime() * 1000))))
+            .map(l -> new TrackingLocation(l.bearing, l.lat, l.lon, l.speed, Date.from(Instant.ofEpochSecond(l.timestamp.getTime()))))
             .collect(Collectors.toList());
     }
 
