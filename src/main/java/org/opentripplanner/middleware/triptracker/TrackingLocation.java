@@ -42,4 +42,9 @@ public class TrackingLocation {
     public TrackingLocation(Instant instant, double lat, double lon) {
         this(lat, lon, new Date(instant.toEpochMilli()));
     }
+
+    /** Used in testing **/
+    public TrackingLocation(Date timestamp, double lat, double lon) {
+        this(lat, lon, timestamp);
+    }
 }

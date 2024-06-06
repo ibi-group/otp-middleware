@@ -10,13 +10,12 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.payload.GeneralPayload;
 import spark.Request;
 
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.convertDateFromSecondsToMillis;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -92,20 +91,26 @@ public class TripTrackingData {
         if (payload != null) {
             var monitoredTrip = Persistence.monitoredTrips.getById(payload.tripId);
             if (isTripAssociatedWithUser(request, monitoredTrip)) {
-                List<TrackingLocation> locationsMillis = getTrackingLocationsMillis(payload);
-                return new TripTrackingData(monitoredTrip, getOngoingTrackedJourney(payload.tripId), locationsMillis);
+                return new TripTrackingData(
+                    monitoredTrip,
+                    getOngoingTrackedJourney(payload.tripId),
+                    getTrackingLocations(payload)
+                );
             }
         }
         return null;
     }
 
-    /** HACK: Convert locations so that the time stamp is in milliseconds not seconds. */
-    private static List<TrackingLocation> getTrackingLocationsMillis(GeneralPayload payload) {
+    /**
+     * Get the tracking locations and convert the timestamp from seconds (as provided by the mobile app) into
+     * milliseconds.
+     */
+    private static List<TrackingLocation> getTrackingLocations(GeneralPayload payload) {
         List<TrackingLocation> rawLocations = payload.getLocations();
         if (rawLocations == null) rawLocations = new ArrayList<>();
         return rawLocations
             .stream()
-            .map(l -> new TrackingLocation(l.bearing, l.lat, l.lon, l.speed, Date.from(Instant.ofEpochSecond(l.timestamp.getTime()))))
+            .map(l -> new TrackingLocation(l.bearing, l.lat, l.lon, l.speed, convertDateFromSecondsToMillis(l.timestamp)))
             .collect(Collectors.toList());
     }
 
