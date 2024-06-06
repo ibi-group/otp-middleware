@@ -111,7 +111,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         String messageBody = updated.busNotificationMessages.get(routeId);
         UsRideGwinnettBusOpNotificationMessage message = getNotificationMessage(messageBody);
-        assertTrue(message.msg_type == 1);
+        assertEquals(1, message.msg_type);
     }
 
     @Test

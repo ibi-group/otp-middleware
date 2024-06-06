@@ -70,6 +70,7 @@ public class UsRideGwinnettBusOpNotificationMessage {
     public String from_route_id;
     public String from_trip_id;
     public String from_stop_id;
+    public String to_stop_id;
     public String from_arrival_time;
     public Integer msg_type;
     public List<Integer> mobility_codes;
@@ -82,6 +83,7 @@ public class UsRideGwinnettBusOpNotificationMessage {
         this.from_route_id = removeAgencyPrefix(getRouteIdFromLeg(nextLeg));
         this.from_trip_id = removeAgencyPrefix(getTripIdFromLeg(nextLeg));
         this.from_stop_id = removeAgencyPrefix(getStopIdFromPlace(nextLeg.from));
+        this.to_stop_id = removeAgencyPrefix(getStopIdFromPlace(nextLeg.to));
         this.from_arrival_time = BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT.format(
             nextLeg.getScheduledStartTime().toInstant()
         );
