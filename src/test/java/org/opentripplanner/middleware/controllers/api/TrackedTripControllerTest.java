@@ -7,15 +7,22 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
+import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
+import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
@@ -26,13 +33,16 @@ import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
+import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
-import java.io.IOException;
+import java.time.Instant;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -43,12 +53,15 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisable
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
+import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
+import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
 public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     private static OtpUser soloOtpUser;
     private static MonitoredTrip monitoredTrip;
     private static TrackedJourney trackedJourney;
+    private static Itinerary itinerary;
 
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
@@ -56,12 +69,19 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String TRACK_TRIP_PATH = ROUTE_PATH + "track";
     private static final String END_TRACKING_TRIP_PATH = ROUTE_PATH + "endtracking";
     private static final String FORCIBLY_END_TRACKING_TRIP_PATH = ROUTE_PATH + "forciblyendtracking";
+    private static HashMap<String, String> headers;
 
     @BeforeAll
-    public static void setUp() throws IOException {
+    public static void setUp() throws Exception {
         assumeTrue(IS_END_TO_END);
         setAuthDisabled(false);
         OtpTestUtils.mockOtpServer();
+
+        itinerary = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/adair-avenue-to-monroe-drive.json"),
+            Itinerary.class
+        );
+
         soloOtpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
         try {
             // Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
@@ -69,11 +89,15 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             var auth0User = Auth0Users.createAuth0UserForEmail(soloOtpUser.email, TEMP_AUTH0_USER_PASSWORD);
             soloOtpUser.auth0UserId = auth0User.getId();
             Persistence.otpUsers.replace(soloOtpUser.id, soloOtpUser);
+            headers = getMockHeaders(soloOtpUser);
         } catch (Auth0Exception e) {
             throw new RuntimeException(e);
         }
         monitoredTrip = new MonitoredTrip();
         monitoredTrip.userId = soloOtpUser.id;
+        monitoredTrip.itinerary = itinerary;
+        monitoredTrip.journeyState = new JourneyState();
+        monitoredTrip.journeyState.matchingItinerary = itinerary;
         Persistence.monitoredTrips.create(monitoredTrip);
     }
 
@@ -102,7 +126,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var response = makeRequest(
             START_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createStartTrackingPayload()),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -119,7 +143,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             UPDATE_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createUpdateTrackingPayload(startTrackingResponse.journeyId)),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -138,7 +162,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             END_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createEndTrackingPayload(startTrackingResponse.journeyId)),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
         var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
@@ -152,10 +176,12 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     void canNotRestartAnOngoingJourney() throws Exception {
         assumeTrue(IS_END_TO_END);
 
+        String jsonPayload = JsonUtils.toJson(createStartTrackingPayload());
+
         var response = makeRequest(
             START_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createStartTrackingPayload()),
-            getMockHeaders(soloOtpUser),
+            jsonPayload,
+            headers,
             HttpMethod.POST
         );
 
@@ -165,8 +191,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         response = makeRequest(
             START_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createStartTrackingPayload()),
-            getMockHeaders(soloOtpUser),
+            jsonPayload,
+            headers,
             HttpMethod.POST
         );
 
@@ -175,35 +201,90 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(HttpStatus.FORBIDDEN_403, response.status);
     }
 
-    @Test
-    void canStartThenUpdateOngoingJourney() throws Exception {
+    @ParameterizedTest
+    @MethodSource("createStartThenUpdateCases")
+    void canStartThenUpdateOngoingJourney(Coordinates coords, String instruction, String message) throws Exception {
         assumeTrue(IS_END_TO_END);
 
+        String jsonPayload = JsonUtils.toJson(createTrackPayload(coords));
+
+        // First request for starting a journey.
         var response = makeRequest(
             TRACK_TRIP_PATH,
-            JsonUtils.toJson(createTrackPayload()),
-            getMockHeaders(soloOtpUser),
+            jsonPayload,
+            headers,
             HttpMethod.POST
         );
 
         assertEquals(HttpStatus.OK_200, response.status);
         var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertNotEquals(0, trackResponse.frequencySeconds);
+        assertEquals(instruction, trackResponse.instruction, message);
         assertNotNull(trackResponse.journeyId);
         trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
 
+        // Second request to update a journey
         response = makeRequest(
             TRACK_TRIP_PATH,
-            JsonUtils.toJson(createTrackPayload()),
-            getMockHeaders(soloOtpUser),
+            jsonPayload,
+            headers,
             HttpMethod.POST
         );
 
         assertEquals(HttpStatus.OK_200, response.status);
         trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertNotEquals(0, trackResponse.frequencySeconds);
+        assertEquals(instruction, trackResponse.instruction, message);
         assertNotNull(trackResponse.journeyId);
         assertEquals(trackedJourney.id, trackResponse.journeyId);
+    }
+
+    private static Stream<Arguments> createStartThenUpdateCases() {
+        final int NORTH_WEST_BEARING = 315;
+        final int NORTH_EAST_BEARING = 45;
+        final int WEST_BEARING = 270;
+
+        Leg firstLeg = itinerary.legs.get(0);
+        Coordinates firstStepCoords = new Coordinates(firstLeg.steps.get(0));
+        Coordinates thirdStepCoords = new Coordinates(firstLeg.steps.get(2));
+
+        return Stream.of(
+            Arguments.of(
+                createPoint(firstStepCoords, 1, NORTH_EAST_BEARING),
+                "IMMEDIATE: Head WEST on Adair Avenue Northeast",
+                "Coords near first step should produce relevant instruction"
+            ),
+            Arguments.of(
+                createPoint(firstStepCoords, 4, NORTH_EAST_BEARING),
+                "UPCOMING: Head WEST on Adair Avenue Northeast",
+                "Coords near first step should produce relevant instruction"
+            ),
+            Arguments.of(
+                createPoint(firstStepCoords, 30, NORTH_EAST_BEARING),
+                "Head to Adair Avenue Northeast",
+                "Deviated coords near first step should produce instruction to head to first step #1"
+            ),
+            Arguments.of(
+                createPoint(firstStepCoords, 15, NORTH_WEST_BEARING),
+                "Head to Adair Avenue Northeast",
+                "Deviated coords near first step should produce instruction to head to first step #2"
+            ),
+            Arguments.of(
+                createPoint(firstStepCoords, 20, WEST_BEARING),
+                NO_INSTRUCTION,
+                "Coords along a step should produce no instruction"
+            ),
+            Arguments.of(
+                thirdStepCoords,
+                "IMMEDIATE: LEFT on Ponce de Leon Place Northeast",
+                "Coords near a not-first step should produce relevant instruction"
+            ),
+            Arguments.of(
+                createPoint(thirdStepCoords, 30, NORTH_WEST_BEARING),
+                "Head to Ponce de Leon Place Northeast",
+                "Deviated coords near a not-first step should produce instruction to head to step"
+            )
+        );
     }
 
     @Test
@@ -213,7 +294,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var response = makeRequest(
             START_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createStartTrackingPayload()),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -224,7 +305,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             FORCIBLY_END_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createForceEndTrackingPayload(monitoredTrip.id)),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
         var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
@@ -239,7 +320,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         HttpResponseValues response = makeRequest(
             START_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createStartTrackingPayload("unassociated-trip-id")),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -255,7 +336,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         HttpResponseValues response = makeRequest(
             UPDATE_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createUpdateTrackingPayload("unknown-journey-id")),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -271,7 +352,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var response = makeRequest(
             START_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createStartTrackingPayload()),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -284,7 +365,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             END_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createEndTrackingPayload(startTrackingResponse.journeyId)),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
         assertEquals(HttpStatus.OK_200, response.status);
@@ -292,7 +373,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         response = makeRequest(
             UPDATE_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createUpdateTrackingPayload(startTrackingResponse.journeyId)),
-            getMockHeaders(soloOtpUser),
+            headers,
             HttpMethod.POST
         );
 
@@ -332,11 +413,15 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         return payload;
     }
 
-    private TrackPayload createTrackPayload() {
+    private TrackPayload createTrackPayload(List<TrackingLocation> locations) {
         var payload = new TrackPayload();
         payload.tripId = monitoredTrip.id;
-        payload.locations = createTrackingLocations();
+        payload.locations = locations;
         return payload;
+    }
+
+    private TrackPayload createTrackPayload(Coordinates coords) {
+        return createTrackPayload(List.of(new TrackingLocation(Instant.now(), coords.lat, coords.lon)));
     }
 
     private EndTrackingPayload createEndTrackingPayload(String journeyId) {
