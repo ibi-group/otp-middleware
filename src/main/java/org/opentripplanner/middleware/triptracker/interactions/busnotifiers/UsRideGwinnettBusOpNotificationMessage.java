@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.triptracker.interactions.busnotifiers;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,14 +79,16 @@ public class UsRideGwinnettBusOpNotificationMessage {
 
     public UsRideGwinnettBusOpNotificationMessage(Instant timestamp, TravelerPosition travelerPosition) {
         var nextLeg = travelerPosition.nextLeg;
-        this.timestamp = BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT.format(timestamp);
+        this.timestamp = BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT.format(
+            ZonedDateTime.ofInstant(timestamp, getOtpZoneId())
+        );
         this.agency_id = removeAgencyPrefix(getAgencyIdFromLeg(nextLeg));
         this.from_route_id = removeAgencyPrefix(getRouteIdFromLeg(nextLeg));
         this.from_trip_id = removeAgencyPrefix(getTripIdFromLeg(nextLeg));
         this.from_stop_id = removeAgencyPrefix(getStopIdFromPlace(nextLeg.from));
         this.to_stop_id = removeAgencyPrefix(getStopIdFromPlace(nextLeg.to));
         this.from_arrival_time = BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT.format(
-            nextLeg.getScheduledStartTime().toInstant()
+            nextLeg.getScheduledStartTime()
         );
         // 1 = Notify, 0 = Cancel.
         this.msg_type = 1;
