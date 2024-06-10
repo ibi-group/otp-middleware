@@ -3,7 +3,7 @@ package org.opentripplanner.middleware.triptracker.interactions.busnotifiers;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,10 +29,9 @@ public class UsRideGwinnettBusOpNotificationMessage {
         // Required for JSON deserialization.
     }
 
-    /** This is the date format required by the API. */
+    /** This is the date format required by the API. The date/time must be provided in UTC. */
     private static final DateTimeFormatter BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT = DateTimeFormatter
-        .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-        .withZone(getOtpZoneId());
+        .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
     /** This is the time format required by the API. */
     public static final DateTimeFormatter BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT = DateTimeFormatter
@@ -77,11 +76,9 @@ public class UsRideGwinnettBusOpNotificationMessage {
     public List<Integer> mobility_codes;
     public boolean trusted_companion;
 
-    public UsRideGwinnettBusOpNotificationMessage(Instant timestamp, TravelerPosition travelerPosition) {
+    public UsRideGwinnettBusOpNotificationMessage(Instant currentTime, TravelerPosition travelerPosition) {
         var nextLeg = travelerPosition.nextLeg;
-        this.timestamp = BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT.format(
-            ZonedDateTime.ofInstant(timestamp, getOtpZoneId())
-        );
+        this.timestamp = BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT.format(currentTime.atZone(ZoneOffset.UTC));
         this.agency_id = removeAgencyPrefix(getAgencyIdFromLeg(nextLeg));
         this.from_route_id = removeAgencyPrefix(getRouteIdFromLeg(nextLeg));
         this.from_trip_id = removeAgencyPrefix(getTripIdFromLeg(nextLeg));
