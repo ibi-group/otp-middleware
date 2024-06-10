@@ -318,4 +318,54 @@ public class ItineraryUtils {
             zonedDateTimeA.getMinute() == zonedDateTimeB.getMinute() &&
             zonedDateTimeA.getSecond() == zonedDateTimeB.getSecond();
     }
+
+    /**
+     * Make sure the leg in question is a bus transit leg.
+     */
+    public static boolean isBusLeg(Leg leg) {
+        return leg != null && leg.mode.equalsIgnoreCase("BUS") && leg.transitLeg;
+    }
+
+    /**
+     * Get the second element from the OTP id by removing the OTP agency prefix.
+     * E.g. GwinnettCountyTransit:GCT will return just GCT.
+     */
+    public static String removeAgencyPrefix(String idParts) {
+        return (idParts != null) ? idParts.split(":")[1] : null;
+    }
+
+    /**
+     * Get the route id from leg.
+     */
+    public static String getRouteIdFromLeg(Leg leg) {
+        return (leg != null) ? leg.routeId : null;
+    }
+
+    /**
+     * Get the agency id from leg.
+     */
+    public static String getAgencyIdFromLeg(Leg leg) {
+        return (leg != null) ? leg.agencyId : null;
+    }
+
+    /**
+     * Get the trip id from leg.
+     */
+    public static String getTripIdFromLeg(Leg leg) {
+        return (leg != null) ? leg.tripId : null;
+    }
+
+    /**
+     * Get the stop id from place.
+     */
+    public static String getStopIdFromPlace(Place place) {
+        return (place != null) ? place.stopId : null;
+    }
+
+    /**
+     * Get the route short name from leg.
+     */
+    public static String getRouteShortNameFromLeg(Leg leg) {
+        return leg.routeShortName;
+    }
 }

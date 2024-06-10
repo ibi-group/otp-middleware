@@ -26,8 +26,10 @@ import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
+import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.GeneralPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
@@ -388,21 +390,17 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     private StartTrackingPayload createStartTrackingPayload(String monitorTripId) {
-        return createStartTrackingPayload(monitorTripId, 24.1111111111111, -79.2222222222222, new Date().getTime());
-    }
-
-    private StartTrackingPayload createStartTrackingPayload(String monitorTripId, double lat, double lon, long timestamp) {
         var payload = new StartTrackingPayload();
         payload.tripId = monitorTripId;
-        payload.location = new TrackingLocation(90, lat, lon, 29, new Date(timestamp));
+        payload.location = new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, getDateAndConvertToSeconds());
         return payload;
     }
 
     private static List<TrackingLocation> createTrackingLocations() {
         return List.of(
-            new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, new Date()),
-            new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, new Date()),
-            new TrackingLocation(90, 29.5398938204469, -80.3772773742676, 31, new Date())
+            new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, getDateAndConvertToSeconds()),
+            new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, getDateAndConvertToSeconds()),
+            new TrackingLocation(90, 29.5398938204469, -80.3772773742676, 31, getDateAndConvertToSeconds())
         );
     }
 
@@ -421,7 +419,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     private TrackPayload createTrackPayload(Coordinates coords) {
-        return createTrackPayload(List.of(new TrackingLocation(Instant.now(), coords.lat, coords.lon)));
+        return createTrackPayload(List.of(new TrackingLocation(getDateAndConvertToSeconds(), coords.lat, coords.lon)));
     }
 
     private EndTrackingPayload createEndTrackingPayload(String journeyId) {
@@ -434,5 +432,13 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var payload = new ForceEndTrackingPayload();
         payload.tripId = monitorTripId;
         return payload;
+    }
+
+    /**
+     * The mobile app sends timestamps in seconds which is then converted into milliseconds in {@link TripTrackingData}.
+     * To represent this in testing, provide the time in seconds from epoch.
+     */
+    private static Date getDateAndConvertToSeconds() {
+        return new Date(new Date().getTime() / 1000);
     }
 }

@@ -20,6 +20,7 @@ import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.I18nUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
@@ -894,8 +895,7 @@ public class CheckMonitoredTrip implements Runnable {
      * Retrieves and caches the user on first call (assuming the user for a trip does not change).
      */
     private Locale getOtpUserLocale() {
-        OtpUser user = getOtpUser();
-        return Locale.forLanguageTag(user == null || user.preferredLocale == null ? "en-US" : user.preferredLocale);
+        return I18nUtils.getOtpUserLocale(getOtpUser());
     }
 
     private String getTripUrl() {

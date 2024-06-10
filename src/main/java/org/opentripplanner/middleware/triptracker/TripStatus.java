@@ -62,11 +62,7 @@ public enum TripStatus {
             travelerPosition.legSegmentFromPosition != null &&
             isWithinModeRadius(travelerPosition)
         ) {
-            Instant segmentStartTime = travelerPosition
-                .expectedLeg
-                .startTime
-                .toInstant()
-                .plusSeconds((long) getSegmentStartTime(travelerPosition.legSegmentFromPosition));
+            Instant segmentStartTime = getSegmentStartTime(travelerPosition);
             Instant segmentEndTime = travelerPosition
                 .expectedLeg
                 .startTime
@@ -83,8 +79,16 @@ public enum TripStatus {
         return TripStatus.DEVIATED;
     }
 
-    public static double getSegmentStartTime(LegSegment legSegmentFromPosition) {
+    public static double getLegSegmentStartTime(LegSegment legSegmentFromPosition) {
         return legSegmentFromPosition.cumulativeTime - legSegmentFromPosition.timeInSegment;
+    }
+
+    public static Instant getSegmentStartTime(TravelerPosition travelerPosition) {
+        return travelerPosition
+            .expectedLeg
+            .startTime
+            .toInstant()
+            .plusSeconds((long) getLegSegmentStartTime(travelerPosition.legSegmentFromPosition));
     }
 
     /**

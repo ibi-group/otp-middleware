@@ -6,7 +6,9 @@ import org.opentripplanner.middleware.triptracker.TrackingLocation;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -22,9 +24,12 @@ public class TrackedJourney extends Model {
 
     public List<TrackingLocation> locations = new ArrayList<>();
 
+    public Map<String, String> busNotificationMessages = new HashMap<>();
+
     public static final String TRIP_ID_FIELD_NAME = "tripId";
 
     public static final String LOCATIONS_FIELD_NAME = "locations";
+    public static final String BUS_NOTIFICATION_MESSAGES_FIELD_NAME = "busNotificationMessages";
 
     public static final String END_TIME_FIELD_NAME = "endTime";
 
@@ -76,5 +81,14 @@ public class TrackedJourney extends Model {
 
     public TrackingLocation lastLocation() {
         return locations.get(locations.size() - 1);
+    }
+
+    public void updateNotificationMessage(String routeId, String body) {
+        busNotificationMessages.put(routeId, body);
+        Persistence.trackedJourneys.updateField(
+            id,
+            BUS_NOTIFICATION_MESSAGES_FIELD_NAME,
+            busNotificationMessages
+        );
     }
 }
