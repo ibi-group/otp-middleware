@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getBusDepartureTime;
@@ -74,11 +75,14 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         Instant busDepartureTime = getBusDepartureTime(busLeg);
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates(), busDepartureTime);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
-        String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        assertNotNull(tripInstruction);
+
         TripInstruction expectInstruction = new TripInstruction(busLeg, busDepartureTime, locale);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(routeId));
-        assertEquals(expectInstruction.build(), tripInstruction);
+        assertEquals(expectInstruction.build(), tripInstruction.build());
     }
 
     @Test
@@ -93,11 +97,12 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates(), timeAtEndOfWalkLeg);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
-        String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        assertNotNull(tripInstruction);
 
         Leg busLeg = itinerary.legs.get(1);
         TripInstruction expectInstruction = new TripInstruction(busLeg, timeAtEndOfWalkLeg, locale);
-        assertEquals(expectInstruction.build(), tripInstruction);
+        assertEquals(expectInstruction.build(), tripInstruction.build());
     }
 
     @Test
