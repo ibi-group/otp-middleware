@@ -130,6 +130,22 @@ and implement its `Interaction` interface:
 | Class | Description |
 | ----- | ----------- |
 | UsGdotGwinnettTrafficSignalNotifier | Triggers select pedestrian signals in Gwinnett County, GA, USA |
+#### Bus Notify Actions
+
+Bus notifier actions are defined in the optional file `bus-notifier-actions.yml` in the same configuration folder as `env.yml`.
+The file contains a list of actions defined by an agency ID and a fully-qualified trigger class:
+
+```yaml
+- agencyId: id1
+  trigger: com.example.package.MyTriggerClass
+```
+
+Known trigger classes below are in package `org.opentripplanner.middleware.triptracker.interactions.busnotifiers`
+and implement its `BusOperatorInteraction` interface:
+
+| Class | Description                                                                  |
+| ----- |------------------------------------------------------------------------------|
+| UsRideGwinnettNotifyBusOperator | Triggers select route bus operator notifications in Gwinnett County, GA, USA |
 
 ### Monitored Components
 
@@ -312,4 +328,7 @@ The special E2E client settings should be defined in `env.yml`:
 | US_GDOT_GWINNETT_PED_SIGNAL_API_HOST | string | Optional | http://host.example.com | Host server for the US GDOT Gwinnett County pedestrian signal controller API |
 | US_GDOT_GWINNETT_PED_SIGNAL_API_PATH | string | Optional | /intersections/%s/crossings/%s/call | Optional relative path template to trigger a US GDOT Gwinnett County pedestrian signal |
 | US_GDOT_GWINNETT_PED_SIGNAL_API_KEY | string | Optional | your-api-key | API key for the US GDOT Gwinnett County pedestrian signal controller |
+| US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_URL | string | Optional | http://host.example.com | US Ride Gwinnett County bus notifier API. |
+| US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY | string | Optional | your-api-key | API key for the US Ride Gwinnett County bus notifier API. |
+| US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_QUALIFYING_ROUTES | string | Optional | agency_id:route_id | A comma separated list of US Ride Gwinnett County routes that can be notified. |
 | VALIDATE_ENVIRONMENT_CONFIG | boolean | Optional | true | If set to false, the validation of the env.yml file against this schema will be skipped. |

@@ -1,10 +1,20 @@
 package org.opentripplanner.middleware.triptracker;
 
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
+
+import java.util.Date;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Locale;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteShortNameFromLeg;
 
 public class TripInstruction {
+
+    public enum TripInstructionType { ON_TRACK, DEVIATED, WAIT_FOR_BUS }
 
     /** The radius in meters under which an immediate instruction is given. */
     public static final int TRIP_INSTRUCTION_IMMEDIATE_RADIUS
@@ -37,40 +47,65 @@ public class TripInstruction {
     /** Name of final destination or street. */
     public String locationName;
 
-    /** Instruction is for a trip that is on track. */
-    private boolean tripOnTrack;
+    /** Provided if the next leg for the traveler will be a bus transit leg. */
+    public Leg busLeg;
 
-    /** If the traveler is within the upcoming radius an instruction will be provided. */
-    public boolean hasInstruction;
+    /** The time provided by the traveler */
+    public Instant currentTime;
 
-    public TripInstruction(boolean isDestination, double distance) {
+    /** The type of instruction to be provided to the traveler. */
+    private final TripInstructionType tripInstructionType;
+
+    /** The traveler's locale. */
+    private final Locale locale;
+
+    public TripInstruction(boolean isDestination, double distance, Locale locale) {
         this.distance = distance;
-        this.tripOnTrack = true;
+        this.tripInstructionType = TripInstructionType.ON_TRACK;
+        this.locale = locale;
         setPrefix(isDestination);
-        hasInstruction = distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
+    }
+
+    /**
+     * If the traveler is within the upcoming radius an instruction will be provided.
+     */
+    public boolean hasInstruction() {
+        return distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
     }
 
     /**
      * On track instruction to step.
      */
-    public TripInstruction(double distance, Step legStep) {
-        this(false, distance);
+    public TripInstruction(double distance, Step legStep, Locale locale) {
+        this(false, distance, locale);
         this.legStep = legStep;
     }
 
     /**
      * On track instruction to destination.
      */
-    public TripInstruction(double distance, String locationName) {
-        this(true, distance);
+    public TripInstruction(double distance, String locationName, Locale locale) {
+        this(true, distance, locale);
         this.locationName = locationName;
     }
 
     /**
      * Deviated instruction.
      */
-    public TripInstruction(String locationName) {
+    public TripInstruction(String locationName, Locale locale) {
+        this.tripInstructionType = TripInstructionType.DEVIATED;
         this.locationName = locationName;
+        this.locale = locale;
+    }
+
+    /**
+     * Provide bus related trip instruction.
+     */
+    public TripInstruction(Leg busLeg, Instant currentTime, Locale locale) {
+        this.tripInstructionType = TripInstructionType.WAIT_FOR_BUS;
+        this.busLeg = busLeg;
+        this.currentTime = currentTime;
+        this.locale = locale;
     }
 
     /**
@@ -86,16 +121,19 @@ public class TripInstruction {
     }
 
     /**
-     * Build on track or deviated instruction.
+     * Build instruction based on the traveler's location.
      */
     public String build() {
-        if (tripOnTrack) {
-            return buildOnTrackInstruction();
-        } else if (locationName != null) {
-            // Traveler has deviated.
-            return String.format("Head to %s", locationName);
+        switch (tripInstructionType) {
+            case ON_TRACK:
+                return buildOnTrackInstruction();
+            case DEVIATED:
+                return String.format("Head to %s", locationName);
+            case WAIT_FOR_BUS:
+                return buildWaitForBusInstruction();
+            default:
+                return NO_INSTRUCTION;
         }
-        return NO_INSTRUCTION;
     }
 
     /**
@@ -109,7 +147,7 @@ public class TripInstruction {
      */
 
     private String buildOnTrackInstruction() {
-        if (hasInstruction) {
+        if (hasInstruction()) {
             if (legStep != null) {
                 String relativeDirection = (legStep.relativeDirection.equals("DEPART"))
                     ? "Head " + legStep.absoluteDirection
@@ -120,5 +158,40 @@ public class TripInstruction {
             }
         }
         return NO_INSTRUCTION;
+    }
+
+    /**
+     * Build wait for bus instruction.
+     */
+    private String buildWaitForBusInstruction() {
+        String routeShortName = getRouteShortNameFromLeg(busLeg);
+        long delayInMinutes = busLeg.departureDelay;
+        long absoluteMinutes = Math.abs(delayInMinutes);
+        long waitInMinutes = Duration
+            .between(currentTime.atZone(DateTimeUtils.getOtpZoneId()), busLeg.getScheduledStartTime())
+            .toMinutes();
+        String delayInfo = (delayInMinutes > 0) ? "late" : "early";
+        String arrivalInfo = (absoluteMinutes <= 1)
+            ? ", on time"
+            : String.format(" now%s %s", getReadableMinutes(delayInMinutes), delayInfo);
+        return String.format(
+            "Wait%s for your bus, route %s, scheduled at %s%s",
+            getReadableMinutes(waitInMinutes),
+            routeShortName,
+            DateTimeUtils.formatShortDate(Date.from(busLeg.getScheduledStartTime().toInstant()), locale),
+            arrivalInfo
+        );
+    }
+
+    /**
+     * Get the number of minutes to wait for a bus. If the wait is zero (or less than zero!) return empty string.
+     */
+    private String getReadableMinutes(long waitInMinutes) {
+        if (waitInMinutes == 1) {
+            return String.format(" %s minute", waitInMinutes);
+        } else if (waitInMinutes > 1) {
+            return String.format(" %s minutes", waitInMinutes);
+        }
+        return "";
     }
 }
