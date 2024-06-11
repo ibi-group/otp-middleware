@@ -1,0 +1,391 @@
+{
+  "accessibilityScore": null,
+  "duration": 2137,
+  "endTime": 1715348772000,
+  "legs": [
+    {
+      "accessibilityScore": null,
+      "agency": null,
+      "alerts": [],
+      "arrivalDelay": 0,
+      "departureDelay": 0,
+      "distance": 1922.85,
+      "dropoffType": "SCHEDULED",
+      "duration": 1871,
+      "endTime": 1715348506000,
+      "fareProducts": [],
+      "from": {
+        "lat": 33.9567218,
+        "lon": -83.9829405,
+        "name": "Private Residence (Northeast)",
+        "rentalVehicle": null,
+        "stop": null,
+        "vertexType": "NORMAL"
+      },
+      "headsign": null,
+      "interlineWithPreviousLeg": false,
+      "intermediateStops": null,
+      "legGeometry": {
+        "length": 129,
+        "points": "gdgnEj|q_O@fABpA@j@?D@T?L?L@f@@R?LBv@?F?F@dA@PDV@@?BAD?BAZAXA??@@B@F@D?DFvB?D?D?L?L?F@D?@?\\?`@?D?F@J@?H?H?F?Bj@FdBDj@?H?H@L?B?FD`BFvA?J?D@F@XAB?@@\\?F?D@b@@F?DB`AFlB?D?H?J@DDdADfA?B?D@PJxBJfBJt@VjA^dABJFJR`@d@n@n@p@FDFFpBjBNB^\\DDNLh@d@CFNDJJHFJHBBD?H?B?FRxBzBPFXVTRDJ~@r@RXl@n@bAbAt@~@FHHJJNt@fABB@Bb@l@BBJRT^`AtB@?"
+      },
+      "mode": "WALK",
+      "pickupBookingInfo": null,
+      "pickupType": "SCHEDULED",
+      "realTime": false,
+      "realtimeState": null,
+      "rentedBike": false,
+      "rideHailingEstimate": null,
+      "route": null,
+      "startTime": 1715346635000,
+      "steps": [
+        {
+          "absoluteDirection": "WEST",
+          "alerts": [],
+          "area": false,
+          "distance": 405.01,
+          "elevationProfile": [],
+          "lat": 33.9566839,
+          "lon": -83.9829385,
+          "relativeDirection": "DEPART",
+          "stayOn": false,
+          "streetName": "sidewalk 634432391 (634432391, 11177444159→11488394695) r0.125 l34.840 tmp r0.936 l32.593"
+        },
+        {
+          "absoluteDirection": "SOUTH",
+          "alerts": [],
+          "area": false,
+          "distance": 17.43,
+          "elevationProfile": [],
+          "lat": 33.9564868,
+          "lon": -83.9873097,
+          "relativeDirection": "LEFT",
+          "stayOn": true,
+          "streetName": "sidewalk 1229990743 (1229990743, 5987163859→11406239363) ☑"
+        },
+        {
+          "absoluteDirection": "WEST",
+          "alerts": [],
+          "area": false,
+          "distance": 926.13,
+          "elevationProfile": [],
+          "lat": 33.9563302,
+          "lon": -83.9873003,
+          "relativeDirection": "RIGHT",
+          "stayOn": true,
+          "streetName": "sidewalk 634418500 (634418500, 10052651843→5987155585) ☑"
+        },
+        {
+          "absoluteDirection": "SOUTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 26.49,
+          "elevationProfile": [],
+          "lat": 33.9536642,
+          "lon": -83.9961217,
+          "relativeDirection": "SLIGHTLY_RIGHT",
+          "stayOn": false,
+          "streetName": "crossing over Langley Drive (1201573779, 11140140288→11140140287) r0.335 l8.864"
+        },
+        {
+          "absoluteDirection": "SOUTH",
+          "alerts": [],
+          "area": false,
+          "distance": 10.9,
+          "elevationProfile": [],
+          "lat": 33.9534736,
+          "lon": -83.9962939,
+          "relativeDirection": "SLIGHTLY_LEFT",
+          "stayOn": false,
+          "streetName": "crossing over turn lane (1201573778, 11142713418→11140140285) r0.754 l8.197"
+        },
+        {
+          "absoluteDirection": "SOUTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 109.69,
+          "elevationProfile": [],
+          "lat": 33.9533756,
+          "lon": -83.9962951,
+          "relativeDirection": "RIGHT",
+          "stayOn": false,
+          "streetName": "sidewalk 1201723672 (1201723672, 7423585497→11141711246) ☑"
+        },
+        {
+          "absoluteDirection": "SOUTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 33.51,
+          "elevationProfile": [],
+          "lat": 33.9526332,
+          "lon": -83.9970512,
+          "relativeDirection": "SLIGHTLY_RIGHT",
+          "stayOn": false,
+          "streetName": "crossing over service road (1201723673, 11141711246→10242855762) r0.544 l18.219"
+        },
+        {
+          "absoluteDirection": "SOUTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 297.38,
+          "elevationProfile": [],
+          "lat": 33.9523934,
+          "lon": -83.9972712,
+          "relativeDirection": "CONTINUE",
+          "stayOn": false,
+          "streetName": "sidewalk 1201723674 (1201723674, 11141711247→11141711257) r0.524 l100.031"
+        },
+        {
+          "absoluteDirection": "SOUTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 30.19,
+          "elevationProfile": [],
+          "lat": 33.9504509,
+          "lon": -83.9994645,
+          "relativeDirection": "CONTINUE",
+          "stayOn": false,
+          "streetName": "crossing over Gwinnett Drive (1201573770, 11140140268→7417511007) r0.371 l11.196"
+        },
+        {
+          "absoluteDirection": "SOUTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 66.11,
+          "elevationProfile": [],
+          "lat": 33.9502891,
+          "lon": -83.9997262,
+          "relativeDirection": "CONTINUE",
+          "stayOn": false,
+          "streetName": "sidewalk 1206016159 (1206016159, 7417511008→11140099970) ☑ split r0.316 l66.107"
+        }
+      ],
+      "to": {
+        "lat": 33.949949,
+        "lon": -84.000314,
+        "name": "Gwinnett Central High School IB",
+        "rentalVehicle": null,
+        "stop": {
+          "alerts": [],
+          "code": "360",
+          "gtfsId": "GwinnettCountyTransit:360",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MzYw"
+        },
+        "vertexType": "TRANSIT"
+      },
+      "transitLeg": false,
+      "trip": null
+    },
+    {
+      "accessibilityScore": null,
+      "agencyId": "GwinnettCountyTransit:GCT",
+      "agency": {
+        "alerts": [
+          {
+            "alertDescriptionText": "Expect Delays - Starting on January 22, Atlanta Gas Light will be replacing natural gas pipelines along Buford Highway in Norcross and Peachtree Corners.\n",
+            "alertHeaderText": "Expect Delays - Starting on January 22, Atlanta Gas Light will be replacing natural gas pipelines along Buford Highway in Norcross and Peachtree Corners.\n",
+            "alertUrl": null,
+            "effectiveStartDate": 1705881600,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjI1MzA"
+          },
+          {
+            "alertDescriptionText": "This work may result in delays on routes 10A/10B, 20, and 35.  Work will take place from 7PM to 5AM Saturday through Friday each week. The final phase of replacement work is expected to begin in late summer 2024.",
+            "alertHeaderText": "This work may result in delays on routes 10A/10B, 20, and 35.  Work will take place from 7PM to 5AM Saturday through Friday each week. The final phase of replacement work is expected to begin in late summer 2024.",
+            "alertUrl": null,
+            "effectiveStartDate": 1705881600,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjI1MzE"
+          },
+          {
+            "alertDescriptionText": "Delay in Service - Due to mechanical issues, the route 35 outbound from Peachtree Pkwy at the Forum at 8:20am and  inbound from Doraville Marta Station at 9:25am is delayed.  We apologize for the inconvenience.",
+            "alertHeaderText": "Delay in Service - Due to mechanical issues, the route 35 outbound from Peachtree Pkwy at the Forum at 8:20am and  inbound from Doraville Marta Station at 9:25am is delayed.  We apologize for the inconvenience.",
+            "alertUrl": null,
+            "effectiveStartDate": 1715299200,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjI4MDQ"
+          },
+          {
+            "alertDescriptionText": "Delay in Service - Due to mechanical issues, the route 35 outbound from Peachtree Parkway and the Forum at 8:20apm and inbound from Doraville Marta Station at 9:25am is delayed.  We apologize for the inconvenience.",
+            "alertHeaderText": "Delay in Service - Due to mechanical issues, the route 35 outbound from Peachtree Parkway and the Forum at 8:20apm and inbound from Doraville Marta Station at 9:25am is delayed.  We apologize for the inconvenience.",
+            "alertUrl": null,
+            "effectiveStartDate": 1715299200,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjI4MDU"
+          },
+          {
+            "alertDescriptionText": "Attention Route 50 Riders: The following outbound bus stops are not active on Route 50.  \n-\tWoodward Crossing Blvd & The Complex – Stop 5051\n-\tMall of GA Blvd & Nature Pkwy OB – Stop 5054",
+            "alertHeaderText": "Attention Route 50 Riders: The following outbound bus stops are not active on Route 50.  \n-\tWoodward Crossing Blvd & The Complex – Stop 5051\n-\tMall of GA Blvd & Nature Pkwy OB – Stop 5054",
+            "alertUrl": null,
+            "effectiveStartDate": 1707350400,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjI1ODk"
+          },
+          {
+            "alertDescriptionText": "Alert – Due to a rehabilitation program at Indian Creek MARTA Station, bus bay closures will be in effect starting April 3, to June 5, 2024.  All Ride Gwinnett Route 70 buses will be re-routed.  Please follow MARTA signage for the temporary pick-up point.",
+            "alertHeaderText": "Alert – Due to a rehabilitation program at Indian Creek MARTA Station, bus bay closures will be in effect starting April 3, to June 5, 2024.  All Ride Gwinnett Route 70 buses will be re-routed.  Please follow MARTA signage for the temporary pick-up point.",
+            "alertUrl": null,
+            "effectiveStartDate": 1712016000,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjI3MDc"
+          }
+        ],
+        "gtfsId": "GwinnettCountyTransit:GCT",
+        "id": "GwinnettCountyTransit:GCT",
+        "name": "Gwinnett County Transit",
+        "timezone": "America/New_York",
+        "url": "https://www.ridegwinnett.com/"
+      },
+      "alerts": [
+        {
+          "alertDescriptionText": "Alert – Due to a rehabilitation program at Indian Creek MARTA Station, bus bay closures will be in effect starting April 3, to June 5, 2024.  All Ride Gwinnett Route 70 buses will be re-routed.  Please follow MARTA signage for the temporary pick-up point.",
+          "alertHeaderText": "Alert – Due to a rehabilitation program at Indian Creek MARTA Station, bus bay closures will be in effect starting April 3, to June 5, 2024.  All Ride Gwinnett Route 70 buses will be re-routed.  Please follow MARTA signage for the temporary pick-up point.",
+          "alertUrl": null,
+          "effectiveStartDate": 1712016000,
+          "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjI3MDc"
+        },
+        {
+          "alertDescriptionText": "Expect Delays - Starting on January 22, Atlanta Gas Light will be replacing natural gas pipelines along Buford Highway in Norcross and Peachtree Corners.\n",
+          "alertHeaderText": "Expect Delays - Starting on January 22, Atlanta Gas Light will be replacing natural gas pipelines along Buford Highway in Norcross and Peachtree Corners.\n",
+          "alertUrl": null,
+          "effectiveStartDate": 1705881600,
+          "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjI1MzA"
+        },
+        {
+          "alertDescriptionText": "This work may result in delays on routes 10A/10B, 20, and 35.  Work will take place from 7PM to 5AM Saturday through Friday each week. The final phase of replacement work is expected to begin in late summer 2024.",
+          "alertHeaderText": "This work may result in delays on routes 10A/10B, 20, and 35.  Work will take place from 7PM to 5AM Saturday through Friday each week. The final phase of replacement work is expected to begin in late summer 2024.",
+          "alertUrl": null,
+          "effectiveStartDate": 1705881600,
+          "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjI1MzE"
+        },
+        {
+          "alertDescriptionText": "Attention Route 50 Riders: The following outbound bus stops are not active on Route 50.  \n-\tWoodward Crossing Blvd & The Complex – Stop 5051\n-\tMall of GA Blvd & Nature Pkwy OB – Stop 5054",
+          "alertHeaderText": "Attention Route 50 Riders: The following outbound bus stops are not active on Route 50.  \n-\tWoodward Crossing Blvd & The Complex – Stop 5051\n-\tMall of GA Blvd & Nature Pkwy OB – Stop 5054",
+          "alertUrl": null,
+          "effectiveStartDate": 1707350400,
+          "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjI1ODk"
+        }
+      ],
+      "arrivalDelay": 0,
+      "departureDelay": 0,
+      "distance": 1998.77,
+      "dropoffType": "SCHEDULED",
+      "duration": 219,
+      "endTime": 1715348725000,
+      "from": {
+        "lat": 33.949949,
+        "lon": -84.000314,
+        "name": "Gwinnett Central High School IB",
+        "rentalVehicle": null,
+        "stopId": "GwinnettCountyTransit:U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MzYw",
+        "stop": {
+          "alerts": [],
+          "code": "360",
+          "gtfsId": "GwinnettCountyTransit:360",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MzYw"
+        },
+        "vertexType": "TRANSIT"
+      },
+      "headsign": "Transit Center",
+      "interlineWithPreviousLeg": false,
+      "intermediateStops": [
+        {
+          "lat": 33.948037,
+          "locationType": "STOP",
+          "lon": -83.99822,
+          "name": "Gwinnett Dr & HS Football Field",
+          "stopCode": "355",
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MzU1"
+        },
+        {
+          "lat": 33.946601,
+          "locationType": "STOP",
+          "lon": -83.997147,
+          "name": "Gwinnett Dr & Police Security Bldg",
+          "stopCode": "354",
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MzU0"
+        },
+        {
+          "lat": 33.943999,
+          "locationType": "STOP",
+          "lon": -83.993521,
+          "name": "Gwinnett Dr & Stone Mountain St",
+          "stopCode": "358",
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MzU4"
+        },
+        {
+          "lat": 33.943243,
+          "locationType": "STOP",
+          "lon": -83.992318,
+          "name": "Gwinnett Dr & Bridgestone Tire",
+          "stopCode": "350",
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MzUw"
+        },
+        {
+          "lat": 33.941479,
+          "locationType": "STOP",
+          "lon": -83.990338,
+          "name": "Gwinnett Dr & PNC Bank",
+          "stopCode": "356",
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MzU2"
+        }
+      ],
+      "legGeometry": {
+        "length": 31,
+        "points": "szenEjiu_OACO[Wg@s@uAVMlE{A|FsD????zGwE@???~EwD`HwO@A??tCqF??DGrCaGnAsA|Bu@??nAg@hAiAz@oBN}@OiIp@cGGsD"
+      },
+      "mode": "BUS",
+      "pickupBookingInfo": null,
+      "pickupType": "SCHEDULED",
+      "realTime": true,
+      "realtimeState": null,
+      "rentedBike": null,
+      "rideHailingEstimate": null,
+      "routeId":  "GwinnettCountyTransit:40",
+      "routeShortName": "40",
+      "route": {
+        "alerts": [],
+        "color": "AB0634",
+        "gtfsId": "GwinnettCountyTransit:40",
+        "id": "GwinnettCountyTransit:40",
+        "longName": "Lawrenceville - GTC - Sugarloaf Mills",
+        "shortName": "40",
+        "textColor": "FFFFFF",
+        "type": 3
+      },
+      "startTime": 1715348506000,
+      "steps": [],
+      "to": {
+        "lat": 33.940172,
+        "lon": -83.984931,
+        "name": "Gwinnett Dr & Kroger Shopping IB",
+        "rentalVehicle": null,
+        "stop": {
+          "alerts": [],
+          "code": "353",
+          "gtfsId": "GwinnettCountyTransit:353",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MzUz"
+        },
+        "vertexType": "TRANSIT"
+      },
+      "transitLeg": true,
+      "tripId": "GwinnettCountyTransit:VHJpcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6dDNBNC1iMTMwLXNsNg",
+      "trip": {
+        "arrivalStoptime": {
+          "stop": {
+            "gtfsId": "GwinnettCountyTransit:3",
+            "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6Mw"
+          },
+          "stopPosition": 3480
+        },
+        "departureStoptime": {
+          "stop": {
+            "gtfsId": "GwinnettCountyTransit:16",
+            "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTY"
+          },
+          "stopPosition": 0
+        },
+        "gtfsId": "GwinnettCountyTransit:t3A4-b130-sl6",
+        "id": "VHJpcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6dDNBNC1iMTMwLXNsNg"
+      }
+    }
+  ],
+  "startTime": 1715346635000,
+  "transfers": 0,
+  "waitingTime": 0,
+  "walkTime": 1918
+}

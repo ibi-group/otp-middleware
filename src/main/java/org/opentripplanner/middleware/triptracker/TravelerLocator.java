@@ -3,22 +3,31 @@ package org.opentripplanner.middleware.triptracker;
 import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.utils.Coordinates;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.isPointBetween;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
 
 /**
  * Locate the traveler in relation to the nearest step or destination and provide the appropriate instructions.
  */
 public class TravelerLocator {
+
+    public static final int ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES = 15;
 
     private TravelerLocator() {
     }
@@ -34,14 +43,14 @@ public class TravelerLocator {
     ) {
         if (hasRequiredWalkLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
-                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
+                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, tripStatus);
                 if (tripInstruction != null) {
                     return tripInstruction.build();
                 }
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
-                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip, tripStatus);
                 if (tripInstruction != null) {
                     return tripInstruction.build();
                 }
@@ -71,14 +80,18 @@ public class TravelerLocator {
      * provider this, else suggest the closest street to head towards.
      */
     @Nullable
-    private static TripInstruction getBackOnTrack(TravelerPosition travelerPosition, boolean isStartOfTrip) {
-        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
-        if (instruction != null && instruction.hasInstruction) {
+    private static TripInstruction getBackOnTrack(
+        TravelerPosition travelerPosition,
+        boolean isStartOfTrip,
+        TripStatus tripStatus
+    ) {
+        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, tripStatus);
+        if (instruction != null && instruction.hasInstruction()) {
             return instruction;
         }
         Step nearestStep = snapToStep(travelerPosition);
         return (nearestStep != null)
-            ? new TripInstruction(nearestStep.streetName)
+            ? new TripInstruction(nearestStep.streetName, travelerPosition.locale)
             : null;
     }
 
@@ -86,16 +99,30 @@ public class TravelerLocator {
      * Align the traveler's position to the nearest step or destination.
      */
     @Nullable
-    public static TripInstruction alignTravelerToTrip(TravelerPosition travelerPosition, boolean isStartOfTrip) {
-        if (isApproachingDestination(travelerPosition)) {
-            return new TripInstruction(getDistanceToDestination(travelerPosition), travelerPosition.expectedLeg.to.name);
+    public static TripInstruction alignTravelerToTrip(
+        TravelerPosition travelerPosition,
+        boolean isStartOfTrip,
+        TripStatus tripStatus
+    ) {
+        Locale locale = travelerPosition.locale;
+
+        if (isApproachingEndOfLeg(travelerPosition)) {
+            if (isBusLeg(travelerPosition.nextLeg) && isWithinOperationalNotifyWindow(travelerPosition)) {
+                BusOperatorActions
+                    .getDefault()
+                    .handleSendNotificationAction(tripStatus, travelerPosition);
+                // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
+                return new TripInstruction(travelerPosition.nextLeg, travelerPosition.currentTime, locale);
+            }
+            return new TripInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
         }
 
         Step nextStep = snapToStep(travelerPosition);
         if (nextStep != null && (!isPositionPastStep(travelerPosition, nextStep) || isStartOfTrip)) {
             return new TripInstruction(
                 getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
-                nextStep
+                nextStep,
+                locale
             );
         }
         return null;
@@ -120,14 +147,42 @@ public class TravelerLocator {
     /**
      * Is the traveler approaching the leg destination.
      */
-    private static boolean isApproachingDestination(TravelerPosition travelerPosition) {
-        return getDistanceToDestination(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
+    private static boolean isApproachingEndOfLeg(TravelerPosition travelerPosition) {
+        return getDistanceToEndOfLeg(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
+    }
+
+    /**
+     * Make sure the traveler is on schedule or ahead of schedule (but not too far) to be within an operational window
+     * for the bus service.
+     */
+    public static boolean isWithinOperationalNotifyWindow(TravelerPosition travelerPosition) {
+        var busDepartureTime = getBusDepartureTime(travelerPosition.nextLeg);
+        return
+            (travelerPosition.currentTime.equals(busDepartureTime) || travelerPosition.currentTime.isBefore(busDepartureTime)) &&
+            ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES >= getMinutesAheadOfDeparture(travelerPosition.currentTime, busDepartureTime);
+    }
+
+    /**
+     * Get how far ahead in minutes the traveler is from the bus departure time.
+     */
+    public static long getMinutesAheadOfDeparture(Instant currentTime, Instant busDepartureTime) {
+        return Duration.between(busDepartureTime, currentTime).toMinutes();
+    }
+
+    /**
+     * Get the bus departure time.
+     */
+    public static Instant getBusDepartureTime(Leg busLeg) {
+        return ZonedDateTime.ofInstant(
+            busLeg.startTime.toInstant().plusSeconds(busLeg.departureDelay),
+            DateTimeUtils.getOtpZoneId()
+        ).toInstant();
     }
 
     /**
      * Get the distance from the traveler's current position to the leg destination.
      */
-    private static double getDistanceToDestination(TravelerPosition travelerPosition) {
+    private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
         Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.to);
         return getDistance(travelerPosition.currentPosition, legDestination);
     }

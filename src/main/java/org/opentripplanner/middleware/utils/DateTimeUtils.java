@@ -294,4 +294,11 @@ public class DateTimeUtils {
     public static LocalDateTime getPreviousWholeHourFromNow() {
         return LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(1);
     }
+
+    /**
+     * Converts a date provided in seconds to a date in milliseconds.
+     */
+    public static Date convertDateFromSecondsToMillis(Date date) {
+        return Date.from(Instant.ofEpochSecond(date.getTime()));
+    }
 }

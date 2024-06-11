@@ -27,7 +27,6 @@ public class Leg implements Cloneable {
     public Double distance;
     public Boolean pathway;
     public String mode;
-    public String route;
     public Boolean interlineWithPreviousLeg;
     public Place from;
     public Place to;

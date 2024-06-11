@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
 import org.opentripplanner.middleware.i18n.Message;
+import org.opentripplanner.middleware.models.OtpUser;
 
 import java.util.Collection;
 import java.util.Locale;
@@ -22,4 +23,12 @@ public class I18nUtils {
     public static String label(String labelText, Locale locale) {
         return label(labelText, "", locale);
     }
+
+    /**
+     * Get the OTP user's locale.
+     */
+    public static Locale getOtpUserLocale(OtpUser user) {
+        return Locale.forLanguageTag(user == null || user.preferredLocale == null ? "en-US" : user.preferredLocale);
+    }
+
 }

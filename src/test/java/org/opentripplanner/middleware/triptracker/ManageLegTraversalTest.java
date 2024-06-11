@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.controllers.api;
+package org.opentripplanner.middleware.triptracker;
 
 import io.leonard.PolylineUtils;
 import io.leonard.Position;
@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.auth.RequestingUser;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
@@ -18,6 +20,7 @@ import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import org.opentripplanner.middleware.triptracker.TravelerLocator;
 import org.opentripplanner.middleware.triptracker.TripStatus;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -28,6 +31,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -48,8 +52,13 @@ public class ManageLegTraversalTest {
 
     private static Itinerary adairAvenueToMonroeDriveItinerary;
 
+    private static final Locale locale = Locale.US;
+
     @BeforeAll
     public static void setUp() throws IOException {
+        // Load default env.yml configuration.
+        ConfigUtils.loadConfig(new String[]{});
+
         busStopToJusticeCenterItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/bus-stop-justice-center-trip.json"),
             Itinerary.class
@@ -70,7 +79,7 @@ public class ManageLegTraversalTest {
         TrackedJourney trackedJourney = new TrackedJourney();
         TrackingLocation trackingLocation = new TrackingLocation(instant, lat, lon);
         trackedJourney.locations = List.of(trackingLocation);
-        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary, new OtpUser());
         TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
         assertEquals(expected, tripStatus, message);
     }
@@ -183,7 +192,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     originCoords,
-                    new TripInstruction(10, adairAvenueNortheastStep).build(),
+                    new TripInstruction(10, adairAvenueNortheastStep, locale).build(),
                     true,
                     "Just started the trip and near to the instruction for the first step. "
                 )
@@ -191,7 +200,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     originCoords,
-                    new TripInstruction(10, adairAvenueNortheastStep).build(),
+                    new TripInstruction(10, adairAvenueNortheastStep, locale).build(),
                     false,
                     "Coming up on first instruction."
                 )
@@ -199,7 +208,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     adairAvenueNortheastCoords,
-                    new TripInstruction(2, adairAvenueNortheastStep).build(),
+                    new TripInstruction(2, adairAvenueNortheastStep, locale).build(),
                     false,
                     "On first instruction."
                 )
@@ -208,7 +217,7 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, NORTH_WEST_BEARING),
-                    new TripInstruction(adairAvenueNortheastStep.streetName).build(),
+                    new TripInstruction(adairAvenueNortheastStep.streetName, locale).build(),
                     false,
                     "Deviated to the north of east to west path. Suggest path to head towards."
                 )
@@ -217,7 +226,7 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, SOUTH_WEST_BEARING),
-                    new TripInstruction(adairAvenueNortheastStep.streetName).build(),
+                    new TripInstruction(adairAvenueNortheastStep.streetName, locale).build(),
                     false,
                     "Deviated to the south of east to west path. Suggest path to head towards."
                 )
@@ -234,7 +243,7 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     TripStatus.DEVIATED,
                     createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING),
-                    new TripInstruction(9, virginiaCircleNortheastStep).build(),
+                    new TripInstruction(9, virginiaCircleNortheastStep, locale).build(),
                     false,
                     "Deviated from path, but within the upcoming radius of second instruction."
                 )
@@ -242,7 +251,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     virginiaCircleNortheastCoords,
-                    new TripInstruction(0, virginiaCircleNortheastStep).build(),
+                    new TripInstruction(0, virginiaCircleNortheastStep, locale).build(),
                     false,
                     "On second instruction."
                 )
@@ -251,7 +260,7 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     TripStatus.DEVIATED,
                     createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_WEST_BEARING),
-                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep).build(),
+                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
                     false,
                     "Deviated to the west of south to north path. Suggest path to head towards."
                 )
@@ -260,7 +269,7 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     TripStatus.DEVIATED,
                     createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_EAST_BEARING),
-                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep).build(),
+                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
                     false,
                     "Deviated to the east of south to north path. Suggest path to head towards."
                 )
@@ -268,7 +277,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new TripInstruction(10, virginiaAvenueNortheastStep).build(),
+                    new TripInstruction(10, virginiaAvenueNortheastStep, locale).build(),
                     false,
                     "Approaching left turn on Virginia Avenue (Test to make sure turn is not missed)."
                 )
@@ -276,7 +285,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     createPoint(pointBeforeTurn, 17, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new TripInstruction(2, virginiaAvenueNortheastStep).build(),
+                    new TripInstruction(2, virginiaAvenueNortheastStep, locale).build(),
                     false,
                     "Turn left on to Virginia Avenue (Test to make sure turn is not missed)."
                 )
@@ -292,7 +301,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     createPoint(destinationCoords, 8, SOUTH_BEARING),
-                    new TripInstruction(10, destinationName).build(),
+                    new TripInstruction(10, destinationName, locale).build(),
                     false,
                     "Coming up on destination instruction."
                 )
@@ -300,7 +309,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TurnTrace(
                     destinationCoords,
-                    new TripInstruction(2, destinationName).build(),
+                    new TripInstruction(2, destinationName, locale).build(),
                     false,
                     "On destination instruction."
                 )
@@ -371,9 +380,8 @@ public class ManageLegTraversalTest {
                         new Date(currentTime.toInstant().toEpochMilli())
                     )
                 );
-                TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary);
+                TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, busStopToJusticeCenterItinerary, null);
                 TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
-                System.out.println(tripStatus.name());
                 assertEquals(TripStatus.ON_SCHEDULE.name(), tripStatus.name());
                 cumulativeTravelTime += legSegment.timeInSegment;
                 currentTime = startOfTrip.plus(
