@@ -166,12 +166,21 @@ public class TravelerLocator {
         }
 
         Place nextStop = snapToStop(travelerPosition);
-        if (nextStop != null && (!isPositionPastStop(travelerPosition, nextStop))) {
-            return new TripInstruction(
-                getDistance(travelerPosition.currentPosition, new Coordinates(nextStop)),
-                nextStop,
-                locale
-            );
+        if (nextStop != null) {
+            int stopsRemaining = stopsUntilEndOfLeg(nextStop, travelerPosition.expectedLeg);
+            if (stopsRemaining <= 1) {
+                return TripInstruction.getOffBusNextStop(
+                    getDistance(travelerPosition.currentPosition, new Coordinates(nextStop)),
+                    travelerPosition.expectedLeg.to.name,
+                    locale
+                );
+            } else if (stopsRemaining <= 3) {
+                return TripInstruction.getOffBusSoon(
+                    getDistance(travelerPosition.currentPosition, new Coordinates(nextStop)),
+                    travelerPosition.expectedLeg.to.name,
+                    locale
+                );
+            }
         }
         return null;
     }
@@ -188,23 +197,6 @@ public class TravelerLocator {
         double distanceFromStepToEndOfLegSegment = getDistance(
             travelerPosition.legSegmentFromPosition.end,
             new Coordinates(nextStep)
-        );
-        return distanceFromPositionToEndOfLegSegment < distanceFromStepToEndOfLegSegment;
-    }
-
-    /**
-     * Check that the current position is not past the "next intermediate stop". This is to prevent an instruction being provided
-     * for a step which is behind the traveler, but is within radius.
-     * TODO: refactor with walk leg??
-     */
-    private static boolean isPositionPastStop(TravelerPosition travelerPosition, Place nextStop) {
-        double distanceFromPositionToEndOfLegSegment = getDistance(
-            travelerPosition.legSegmentFromPosition.end,
-            travelerPosition.currentPosition
-        );
-        double distanceFromStepToEndOfLegSegment = getDistance(
-            travelerPosition.legSegmentFromPosition.end,
-            new Coordinates(nextStop)
         );
         return distanceFromPositionToEndOfLegSegment < distanceFromStepToEndOfLegSegment;
     }
@@ -312,6 +304,7 @@ public class TravelerLocator {
             .stream()
             .map(Coordinates::new)
             .collect(Collectors.toList());
+        stopCoordinates.add(new Coordinates(leg.to));
         return injectWaypointsIntoLegPositions(leg, stopCoordinates);
     }
 
@@ -382,6 +375,9 @@ public class TravelerLocator {
                     return stop;
                 }
             }
+            if (positions.get(i).equals(new Coordinates(leg.to))) {
+                return leg.to;
+            }
         }
         return null;
     }
@@ -447,5 +443,10 @@ public class TravelerLocator {
             }
         }
         return false;
+    }
+
+    public static int stopsUntilEndOfLeg(Place stop, Leg leg) {
+        List<Place> stops = leg.intermediateStops;
+        return stops.size() - stops.indexOf(stop);
     }
 }

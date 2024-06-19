@@ -350,28 +350,25 @@ public class ManageLegTraversalTest {
             ),
             Arguments.of(
                 new TurnTrace(
-                    new Coordinates(33.79032, -84.37523),
+                    new Coordinates(33.78792, -84.37776),
                     NO_INSTRUCTION,
-                    "Between two stops, so no instruction is given."
+                    "Between two stops far from arrival stop, so no instruction is given."
                 )
             ),
-            /* TODO
             Arguments.of(
                 new TurnTrace(
-                    new Coordinates(intermediateStops.get(intermediateStops.size() - 1)),
+                    new Coordinates(33.79415, -84.37187),
                     String.format("Get off at next stop (%s)", destinationName),
                     "One-stop warning from the stop where you should get off."
                 )
             ),
             Arguments.of(
                 new TurnTrace(
-                    new Coordinates(33.79578, -84.37024),
+                    new Coordinates(33.79478, -84.37127),
                     String.format("Get off at next stop (%s)", destinationName),
                     "Past the one-stop warning from the stop where you should get off."
                 )
             ),
-
-             */
             Arguments.of(
                 new TurnTrace(
                     createPoint(destinationCoords, 8, SOUTH_WEST_BEARING),
