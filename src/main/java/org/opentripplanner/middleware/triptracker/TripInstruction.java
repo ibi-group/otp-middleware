@@ -15,7 +15,7 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteShortN
 
 public class TripInstruction {
 
-    public enum TripInstructionType { ON_TRACK, DEVIATED, WAIT_FOR_BUS, GET_OFF_BUS }
+    public enum TripInstructionType { ON_TRACK, DEVIATED, WAIT_FOR_BUS, GET_OFF_BUS_HERE}
 
     /** The radius in meters under which an immediate instruction is given. */
     public static final int TRIP_INSTRUCTION_IMMEDIATE_RADIUS
@@ -122,7 +122,7 @@ public class TripInstruction {
 
     public static TripInstruction getOffBus(double distance, String stopName, Locale locale) {
         TripInstruction instr = new TripInstruction(distance, stopName, locale);
-        instr.tripInstructionType = TripInstructionType.GET_OFF_BUS;
+        instr.tripInstructionType = TripInstructionType.GET_OFF_BUS_HERE;
         return instr;
     }
 
@@ -149,8 +149,8 @@ public class TripInstruction {
                 return String.format("Head to %s", locationName);
             case WAIT_FOR_BUS:
                 return buildWaitForBusInstruction();
-            case GET_OFF_BUS:
-                return buildBusGetOffInstruction();
+            case GET_OFF_BUS_HERE:
+                return buildGetOffBusHereInstruction();
             default:
                 return NO_INSTRUCTION;
         }
@@ -203,7 +203,7 @@ public class TripInstruction {
         );
     }
 
-    private String buildBusGetOffInstruction() {
+    private String buildGetOffBusHereInstruction() {
         return String.format("Get off here (%s)", locationName);
     }
 
