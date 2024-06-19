@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.triptracker;
 
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
@@ -14,7 +15,7 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteShortN
 
 public class TripInstruction {
 
-    public enum TripInstructionType { ON_TRACK, DEVIATED, WAIT_FOR_BUS }
+    public enum TripInstructionType { ON_TRACK, DEVIATED, WAIT_FOR_BUS, GET_OFF_BUS }
 
     /** The radius in meters under which an immediate instruction is given. */
     public static final int TRIP_INSTRUCTION_IMMEDIATE_RADIUS
@@ -41,6 +42,9 @@ public class TripInstruction {
     /** Step aligned with traveler's position. */
     public Step legStep;
 
+    /** Stop/place aligned with traveler's position. */
+    public Place place;
+
     /** Instruction prefix. */
     public String prefix;
 
@@ -54,7 +58,7 @@ public class TripInstruction {
     public Instant currentTime;
 
     /** The type of instruction to be provided to the traveler. */
-    private final TripInstructionType tripInstructionType;
+    private TripInstructionType tripInstructionType;
 
     /** The traveler's locale. */
     private final Locale locale;
@@ -79,6 +83,14 @@ public class TripInstruction {
     public TripInstruction(double distance, Step legStep, Locale locale) {
         this(false, distance, locale);
         this.legStep = legStep;
+    }
+
+    /**
+     * On track instruction to stop.
+     */
+    public TripInstruction(double distance, Place place, Locale locale) {
+        this(false, distance, locale);
+        this.place = place;
     }
 
     /**
@@ -108,6 +120,12 @@ public class TripInstruction {
         this.locale = locale;
     }
 
+    public static TripInstruction getOffBus(double distance, String stopName, Locale locale) {
+        TripInstruction instr = new TripInstruction(distance, stopName, locale);
+        instr.tripInstructionType = TripInstructionType.GET_OFF_BUS;
+        return instr;
+    }
+
     /**
      * The prefix is defined depending on the traveler either approaching a step or destination and the predefined
      * distances from these points.
@@ -131,6 +149,8 @@ public class TripInstruction {
                 return String.format("Head to %s", locationName);
             case WAIT_FOR_BUS:
                 return buildWaitForBusInstruction();
+            case GET_OFF_BUS:
+                return buildBusGetOffInstruction();
             default:
                 return NO_INSTRUCTION;
         }
@@ -181,6 +201,10 @@ public class TripInstruction {
             DateTimeUtils.formatShortDate(Date.from(busLeg.getScheduledStartTime().toInstant()), locale),
             arrivalInfo
         );
+    }
+
+    private String buildBusGetOffInstruction() {
+        return String.format("Get off here (%s)", locationName);
     }
 
     /**

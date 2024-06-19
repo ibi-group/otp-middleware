@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.triptracker;
 
 import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.utils.Coordinates;
@@ -55,6 +56,17 @@ public class TravelerLocator {
                     return tripInstruction.build();
                 }
             }
+        } else if (hasRequiredTransitLeg(travelerPosition)) {
+            if (hasRequiredTripStatus(tripStatus)) {
+                TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition, isStartOfTrip, tripStatus);
+                if (tripInstruction != null) {
+                    return tripInstruction.build();
+                }
+            }
+
+            if (tripStatus.equals(TripStatus.DEVIATED)) {
+                // Figure out what to say
+            }
         }
         return NO_INSTRUCTION;
     }
@@ -66,6 +78,15 @@ public class TravelerLocator {
         return
             travelerPosition.expectedLeg != null &&
             travelerPosition.expectedLeg.mode.equalsIgnoreCase("walk");
+    }
+
+    /**
+     * Has required walk leg.
+     */
+    private static boolean hasRequiredTransitLeg(TravelerPosition travelerPosition) {
+        return
+            travelerPosition.expectedLeg != null &&
+                travelerPosition.expectedLeg.transitLeg;
     }
 
     /**
@@ -129,6 +150,33 @@ public class TravelerLocator {
     }
 
     /**
+     * Align the traveler's position to the nearest step or destination.
+     * TODO refactor with walk leg??
+     */
+    @Nullable
+    public static TripInstruction alignTravelerToTransitTrip(
+        TravelerPosition travelerPosition,
+        boolean isStartOfTrip,
+        TripStatus tripStatus
+    ) {
+        Locale locale = travelerPosition.locale;
+
+        if (isApproachingEndOfLeg(travelerPosition)) {
+            return TripInstruction.getOffBus(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
+        }
+
+        Place nextStop = snapToStop(travelerPosition);
+        if (nextStop != null && (!isPositionPastStop(travelerPosition, nextStop))) {
+            return new TripInstruction(
+                getDistance(travelerPosition.currentPosition, new Coordinates(nextStop)),
+                nextStop,
+                locale
+            );
+        }
+        return null;
+    }
+
+    /**
      * Check that the current position is not past the "next step". This is to prevent an instruction being provided
      * for a step which is behind the traveler, but is within radius.
      */
@@ -140,6 +188,23 @@ public class TravelerLocator {
         double distanceFromStepToEndOfLegSegment = getDistance(
             travelerPosition.legSegmentFromPosition.end,
             new Coordinates(nextStep)
+        );
+        return distanceFromPositionToEndOfLegSegment < distanceFromStepToEndOfLegSegment;
+    }
+
+    /**
+     * Check that the current position is not past the "next intermediate stop". This is to prevent an instruction being provided
+     * for a step which is behind the traveler, but is within radius.
+     * TODO: refactor with walk leg??
+     */
+    private static boolean isPositionPastStop(TravelerPosition travelerPosition, Place nextStop) {
+        double distanceFromPositionToEndOfLegSegment = getDistance(
+            travelerPosition.legSegmentFromPosition.end,
+            travelerPosition.currentPosition
+        );
+        double distanceFromStepToEndOfLegSegment = getDistance(
+            travelerPosition.legSegmentFromPosition.end,
+            new Coordinates(nextStop)
         );
         return distanceFromPositionToEndOfLegSegment < distanceFromStepToEndOfLegSegment;
     }
@@ -229,24 +294,47 @@ public class TravelerLocator {
     }
 
     /**
-     * Inject the step positions into the leg positions. It is assumed that both sets of points are on the same route
-     * and are in between the start and end positions. If b = beginning, p = point on leg, S = step and e = end, create
-     * a list of coordinates which can be traversed to get the next step.
-     * <p>
-     * b|p|S|p|p|p|p|p|p|S|p|p|S|p|p|p|p|p|S|e
+     * Inject the step positions into the leg positions.
      */
     public static List<Coordinates> injectStepsIntoLegPositions(Leg leg) {
+        List<Coordinates> stepCoordinates = leg.steps
+            .stream()
+            .map(Coordinates::new)
+            .collect(Collectors.toList());
+        return injectWaypointsIntoLegPositions(leg, stepCoordinates);
+    }
+
+    /**
+     * Inject the intermediate stop positions into the leg positions.
+     */
+    public static List<Coordinates> injectIntermediateStopsIntoLegPositions(Leg leg) {
+        List<Coordinates> stopCoordinates = leg.intermediateStops
+            .stream()
+            .map(Coordinates::new)
+            .collect(Collectors.toList());
+        return injectWaypointsIntoLegPositions(leg, stopCoordinates);
+    }
+
+    /**
+     * Inject waypoints (could be steps on a walk leg, or intermediate stops on a transit leg)
+     * into the leg positions. It is assumed that both sets of points are on the same route
+     * and are in between the start and end positions. If b = beginning, p = point on leg, W = waypoint and e = end, create
+     * a list of coordinates which can be traversed to get the next step.
+     * <p>
+     * b|p|W|p|p|p|p|p|p|W|p|p|W|p|p|p|p|p|W|e
+     */
+    public static List<Coordinates> injectWaypointsIntoLegPositions(Leg leg, List<Coordinates> wayPoints) {
         List<Coordinates> allPositions = getAllLegPositions(leg);
-        List<Step> injectedSteps = new ArrayList<>();
+        List<Coordinates> injectedPoints = new ArrayList<>();
         List<Coordinates> finalPositions = new ArrayList<>();
         for (int i = 0; i < allPositions.size() - 1; i++) {
             Coordinates p1 = allPositions.get(i);
             finalPositions.add(p1);
             Coordinates p2 = allPositions.get(i + 1);
-            for (Step step : leg.steps) {
-                if (isPointBetween(p1, p2, new Coordinates(step)) && !injectedSteps.contains(step)) {
-                    finalPositions.add(new Coordinates(step));
-                    injectedSteps.add(step);
+            for (Coordinates wayPoint : wayPoints) {
+                if (isPointBetween(p1, p2, wayPoint) && !injectedPoints.contains(wayPoint)) {
+                    finalPositions.add(wayPoint);
+                    injectedPoints.add(wayPoint);
                 }
             }
         }
@@ -254,21 +342,48 @@ public class TravelerLocator {
         // Add the destination coords which are missed because of the -1 condition above.
         finalPositions.add(allPositions.get(allPositions.size() - 1));
 
-        if (injectedSteps.size() != leg.steps.size()) {
-            // One or more steps have not been injected because they are not between two geometry points. Inject these
+        if (injectedPoints.size() != wayPoints.size()) {
+            // One or more waypoints have not been injected because they are not between two geometry points. Inject these
             // based on proximity.
-            List<Step> missedSteps = leg.steps
+            List<Coordinates> missedPoints = wayPoints
                 .stream()
-                .filter(step -> !injectedSteps.contains(step))
+                .filter(pt -> !injectedPoints.contains(pt))
                 .collect(Collectors.toList());
-            for (Step missedStep : missedSteps) {
-                int pointIndex = getNearestPointIndex(finalPositions, new Coordinates(missedStep));
+            for (Coordinates missedPoint : missedPoints) {
+                int pointIndex = getNearestPointIndex(finalPositions, missedPoint);
                 if (pointIndex != -1) {
-                    finalPositions.add(pointIndex, new Coordinates(missedStep));
+                    finalPositions.add(pointIndex, missedPoint);
                 }
             }
         }
         return createExclusionZone(finalPositions, leg);
+    }
+
+    /**
+     * Align the traveler to the transit leg and provide the next intermediate stop from this point forward.
+     * TODO: refactor with walk leg??
+     */
+    private static Place snapToStop(TravelerPosition travelerPosition) {
+        List<Coordinates> legPositions = injectIntermediateStopsIntoLegPositions(travelerPosition.expectedLeg);
+        int pointIndex = getNearestPointIndex(legPositions, travelerPosition.currentPosition);
+        return (pointIndex != -1)
+            ? getNextStop(travelerPosition.expectedLeg, legPositions, pointIndex)
+            : null;
+    }
+
+    /**
+     * From the starting index, find the next transit stop along the leg.
+     * TODO: refactor with walk leg??
+     */
+    public static Place getNextStop(Leg leg, List<Coordinates> positions, int startIndex) {
+        for (int i = startIndex; i < positions.size(); i++) {
+            for (Place stop : leg.intermediateStops) {
+                if (positions.get(i).equals(new Coordinates(stop))) {
+                    return stop;
+                }
+            }
+        }
+        return null;
     }
 
     /**

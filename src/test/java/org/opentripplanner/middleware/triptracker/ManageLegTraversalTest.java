@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.utils.ConfigUtils;
@@ -44,6 +45,7 @@ public class ManageLegTraversalTest {
     private static Itinerary edmundParkDriveToRockSpringsItinerary;
 
     private static Itinerary adairAvenueToMonroeDriveItinerary;
+    private static Itinerary midtownToAnsleyItinerary;
 
     private static final Locale locale = Locale.US;
 
@@ -62,6 +64,10 @@ public class ManageLegTraversalTest {
         );
         adairAvenueToMonroeDriveItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/adair-avenue-to-monroe-drive.json"),
+            Itinerary.class
+        );
+        midtownToAnsleyItinerary = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/27nb-midtown-to-ansley.json"),
             Itinerary.class
         );
     }
@@ -311,6 +317,100 @@ public class ManageLegTraversalTest {
     }
 
     @ParameterizedTest
+    @MethodSource("createTransitRideTrace")
+    void canTrackTransitRide(TurnTrace turnTrace) {
+        Itinerary itinerary = midtownToAnsleyItinerary;
+        Leg transitLeg = itinerary.legs.get(1);
+        TravelerPosition travelerPosition = new TravelerPosition(transitLeg, turnTrace.position);
+        String tripInstruction = TravelerLocator.getInstruction(turnTrace.tripStatus, travelerPosition, false);
+        assertEquals(turnTrace.expectedInstruction, Objects.requireNonNullElse(tripInstruction, NO_INSTRUCTION), turnTrace.message);
+    }
+
+    private static Stream<Arguments> createTransitRideTrace() {
+        final int NORTH_BEARING = 0;
+        final int NORTH_EAST_BEARING = 45;
+        final int SOUTH_BEARING = 180;
+        final int SOUTH_WEST_BEARING = 225;
+        final int NORTH_WEST_BEARING = 315;
+
+        Leg transitLeg = midtownToAnsleyItinerary.legs.get(1);
+        String destinationName = transitLeg.to.name;
+        List<Place> intermediateStops = transitLeg.intermediateStops;
+
+        Coordinates originCoords = new Coordinates(transitLeg.from);
+        Coordinates destinationCoords = new Coordinates(transitLeg.to);
+
+        return Stream.of(
+            Arguments.of(
+                new TurnTrace(
+                    originCoords,
+                    NO_INSTRUCTION,
+                    "Just started the transit leg, there should not be an instruction."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    new Coordinates(33.79032, -84.37523),
+                    NO_INSTRUCTION,
+                    "Between two stops, so no instruction is given."
+                )
+            ),
+            /* TODO
+            Arguments.of(
+                new TurnTrace(
+                    new Coordinates(intermediateStops.get(intermediateStops.size() - 1)),
+                    String.format("Get off at next stop (%s)", destinationName),
+                    "One-stop warning from the stop where you should get off."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    new Coordinates(33.79578, -84.37024),
+                    String.format("Get off at next stop (%s)", destinationName),
+                    "Past the one-stop warning from the stop where you should get off."
+                )
+            ),
+
+             */
+            Arguments.of(
+                new TurnTrace(
+                    createPoint(destinationCoords, 8, SOUTH_WEST_BEARING),
+                    String.format("Get off here (%s)", destinationName),
+                    "Instruction approaching or at the stop where you should get off."
+                )
+            )
+            // TODO: Deviated (i) outside of instruction radius and (ii) within instruction radius
+            /*
+            Arguments.of(
+                new TurnTrace(
+                    TripStatus.DEVIATED,
+                    createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING),
+                    new TripInstruction(9, virginiaCircleNortheastStep, locale).build(),
+                    "Deviated from path, but within the upcoming radius of second instruction."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    TripStatus.DEVIATED,
+                    createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_WEST_BEARING),
+                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
+                    "Deviated to the west of south to north path. Suggest path to head towards."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    TripStatus.DEVIATED,
+                    createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_EAST_BEARING),
+                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
+                    "Deviated to the east of south to north path. Suggest path to head towards."
+                )
+            )
+
+             */
+        );
+    }
+
+    @ParameterizedTest
     @MethodSource("createGetNearestStepTrace")
     void canGetNearestStep(Step expectedStep, int startIndex, String message) {
         Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
@@ -410,12 +510,20 @@ public class ManageLegTraversalTest {
             this.message = message;
         }
 
+        public TurnTrace(Coordinates position, String expectedInstruction, String message) {
+            this(position, expectedInstruction, false, message);
+        }
+
         public TurnTrace(TripStatus tripStatus, Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
             this.tripStatus = tripStatus;
             this.position = position;
             this.expectedInstruction = expectedInstruction;
             this.isStartOfTrip = isStartOfTrip;
             this.message = message;
+        }
+
+        public TurnTrace(TripStatus tripStatus, Coordinates position, String expectedInstruction, String message) {
+            this(tripStatus, position, expectedInstruction, false, message);
         }
     }
 
