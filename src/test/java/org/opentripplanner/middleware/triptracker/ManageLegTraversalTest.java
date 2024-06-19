@@ -352,7 +352,14 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     new Coordinates(33.78792, -84.37776),
                     NO_INSTRUCTION,
-                    "Between two stops far from arrival stop, so no instruction is given."
+                    "Somewhere far from the arrival stop, so no instruction is given."
+                )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    new Coordinates(33.79139, -84.37441),
+                    String.format("Your stop is coming up (%s)", destinationName),
+                    "Upcoming arrival stop instruction."
                 )
             ),
             Arguments.of(
