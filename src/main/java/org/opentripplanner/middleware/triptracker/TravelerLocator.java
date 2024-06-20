@@ -15,6 +15,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
@@ -60,7 +61,7 @@ public class TravelerLocator {
             }
         } else if (hasRequiredTransitLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
-                TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition, isStartOfTrip, tripStatus);
+                TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition);
                 if (tripInstruction != null) {
                     return tripInstruction.build();
                 }
@@ -154,18 +155,14 @@ public class TravelerLocator {
 
     /**
      * Align the traveler's position to the nearest step or destination.
-     * TODO refactor with walk leg??
      */
     @Nullable
-    public static TripInstruction alignTravelerToTransitTrip(
-        TravelerPosition travelerPosition,
-        boolean isStartOfTrip,
-        TripStatus tripStatus
-    ) {
+    public static TripInstruction alignTravelerToTransitTrip(TravelerPosition travelerPosition) {
         Locale locale = travelerPosition.locale;
+        String finalStop = travelerPosition.expectedLeg.to.name;
 
         if (isApproachingEndOfLeg(travelerPosition)) {
-            return TripInstruction.getOffBus(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
+            return TripInstruction.getOffBus(getDistanceToEndOfLeg(travelerPosition), finalStop, locale);
         }
 
         Place nextStop = snapToStop(travelerPosition);
@@ -174,13 +171,13 @@ public class TravelerLocator {
             if (stopsRemaining <= 1) {
                 return TripInstruction.getOffBusNextStop(
                     getDistance(travelerPosition.currentPosition, new Coordinates(nextStop)),
-                    travelerPosition.expectedLeg.to.name,
+                    finalStop,
                     locale
                 );
             } else if (stopsRemaining <= 3) {
                 return TripInstruction.getOffBusSoon(
                     getDistance(travelerPosition.currentPosition, new Coordinates(nextStop)),
-                    travelerPosition.expectedLeg.to.name,
+                    finalStop,
                     locale
                 );
             } else if (
@@ -267,17 +264,34 @@ public class TravelerLocator {
     }
 
     /**
-     * From the starting index, find the next step along the leg.
+     * From the starting index, find the next waypoint along a leg.
      */
-    public static Step getNextStep(Leg leg, List<Coordinates> positions, int startIndex) {
+    public static <T> T getNextWayPoint(List<Coordinates> positions, Map<T, Coordinates> waypoints, int startIndex) {
         for (int i = startIndex; i < positions.size(); i++) {
-            for (Step step : leg.steps) {
-                if (positions.get(i).equals(new Coordinates(step))) {
-                    return step;
+            Coordinates pos = positions.get(i);
+            for (var entry : waypoints.entrySet()) {
+                if (pos.equals(entry.getValue())) {
+                    return entry.getKey();
                 }
             }
         }
         return null;
+    }
+
+    public static Step getNextStep(Leg leg, List<Coordinates> positions, int startIndex) {
+        return getNextWayPoint(
+            positions,
+            leg.steps.stream().collect(Collectors.toMap(s -> s, Coordinates::new)),
+            startIndex
+        );
+    }
+
+    public static Place getNextStop(Leg leg, List<Coordinates> positions, int startIndex) {
+        return getNextWayPoint(
+            positions,
+            leg.intermediateStops.stream().collect(Collectors.toMap(s -> s, Coordinates::new)),
+            startIndex
+        );
     }
 
     /**
@@ -373,24 +387,6 @@ public class TravelerLocator {
         return (pointIndex != -1)
             ? getNextStop(travelerPosition.expectedLeg, legPositions, pointIndex)
             : null;
-    }
-
-    /**
-     * From the starting index, find the next transit stop along the leg.
-     * TODO: refactor with walk leg??
-     */
-    public static Place getNextStop(Leg leg, List<Coordinates> positions, int startIndex) {
-        for (int i = startIndex; i < positions.size(); i++) {
-            for (Place stop : leg.intermediateStops) {
-                if (positions.get(i).equals(new Coordinates(stop))) {
-                    return stop;
-                }
-            }
-            if (positions.get(i).equals(new Coordinates(leg.to))) {
-                return leg.to;
-            }
-        }
-        return null;
     }
 
     /**
