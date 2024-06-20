@@ -11,7 +11,6 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
-import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.utils.ConfigUtils;
@@ -327,15 +326,9 @@ public class ManageLegTraversalTest {
     }
 
     private static Stream<Arguments> createTransitRideTrace() {
-        final int NORTH_BEARING = 0;
-        final int NORTH_EAST_BEARING = 45;
-        final int SOUTH_BEARING = 180;
         final int SOUTH_WEST_BEARING = 225;
-        final int NORTH_WEST_BEARING = 315;
-
         Leg transitLeg = midtownToAnsleyItinerary.legs.get(1);
         String destinationName = transitLeg.to.name;
-        List<Place> intermediateStops = transitLeg.intermediateStops;
 
         Coordinates originCoords = new Coordinates(transitLeg.from);
         Coordinates destinationCoords = new Coordinates(transitLeg.to);
@@ -391,34 +384,6 @@ public class ManageLegTraversalTest {
                     "No instruction provided besides the trip status if on a deviated route, whether the bus is deviated or they missed their stop."
                 )
             )
-            // TODO: Deviated (i) outside of instruction radius and (ii) within instruction radius
-            /*
-            Arguments.of(
-                new TurnTrace(
-                    TripStatus.DEVIATED,
-                    createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING),
-                    new TripInstruction(9, virginiaCircleNortheastStep, locale).build(),
-                    "Deviated from path, but within the upcoming radius of second instruction."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    TripStatus.DEVIATED,
-                    createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_WEST_BEARING),
-                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
-                    "Deviated to the west of south to north path. Suggest path to head towards."
-                )
-            ),
-            Arguments.of(
-                new TurnTrace(
-                    TripStatus.DEVIATED,
-                    createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_EAST_BEARING),
-                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
-                    "Deviated to the east of south to north path. Suggest path to head towards."
-                )
-            )
-
-             */
         );
     }
 
