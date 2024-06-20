@@ -30,6 +30,8 @@ public class TravelerLocator {
 
     public static final int ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES = 15;
 
+    private static final int MIN_TRANSIT_VEHICLE_SPEED = 5; // meters per second. 11.1 mph or 18 km/h.
+
     private TravelerLocator() {
     }
 
@@ -179,6 +181,14 @@ public class TravelerLocator {
                 return TripInstruction.getOffBusSoon(
                     getDistance(travelerPosition.currentPosition, new Coordinates(nextStop)),
                     travelerPosition.expectedLeg.to.name,
+                    locale
+                );
+            } else if (
+                stopsRemaining == travelerPosition.expectedLeg.intermediateStops.size() &&
+                travelerPosition.speed >= MIN_TRANSIT_VEHICLE_SPEED
+            ) {
+                return TripInstruction.summarizeBusLeg(
+                    travelerPosition.expectedLeg,
                     locale
                 );
             }

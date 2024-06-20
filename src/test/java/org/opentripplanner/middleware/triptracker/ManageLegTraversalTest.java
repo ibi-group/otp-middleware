@@ -320,7 +320,7 @@ public class ManageLegTraversalTest {
     void canTrackTransitRide(TurnTrace turnTrace) {
         Itinerary itinerary = midtownToAnsleyItinerary;
         Leg transitLeg = itinerary.legs.get(1);
-        TravelerPosition travelerPosition = new TravelerPosition(transitLeg, turnTrace.position);
+        TravelerPosition travelerPosition = new TravelerPosition(transitLeg, turnTrace.position, turnTrace.speed);
         String tripInstruction = TravelerLocator.getInstruction(turnTrace.tripStatus, travelerPosition, false);
         assertEquals(turnTrace.expectedInstruction, Objects.requireNonNullElse(tripInstruction, NO_INSTRUCTION), turnTrace.message);
     }
@@ -338,14 +338,24 @@ public class ManageLegTraversalTest {
                 new TurnTrace(
                     originCoords,
                     NO_INSTRUCTION,
-                    "Just started the transit leg, there should not be an instruction."
+                    "Just boarded the transit vehicle leg, there should not be an instruction."
+                )
+            ),
+            // This instruction can be missed if the transit vehicle is in a slow/congested area
+            // with speeds less than 5 meters/second (11.1 mph, 18 km/h).
+            Arguments.of(
+                new TurnTrace(
+                    new Coordinates(33.78647, -84.38041),
+                    6, // meters per second, ~13.4 mph or 21.6 km/h. The threshold is 5 meters per second.
+                    String.format("Ride 4 min / 8 stops to %s", destinationName),
+                    "Summarize the transit trip as vehicle departs."
                 )
             ),
             Arguments.of(
                 new TurnTrace(
                     new Coordinates(33.78792, -84.37776),
                     NO_INSTRUCTION,
-                    "Somewhere far from the arrival stop, so no instruction is given."
+                    "On the transit segment, but far from the arrival stop, so no instruction is given."
                 )
             ),
             Arguments.of(
@@ -476,6 +486,7 @@ public class ManageLegTraversalTest {
         Itinerary itinerary = adairAvenueToMonroeDriveItinerary;
         TripStatus tripStatus = TripStatus.ON_SCHEDULE;
         Coordinates position;
+        int speed;
         String expectedInstruction;
         boolean isStartOfTrip;
         String message;
@@ -489,6 +500,11 @@ public class ManageLegTraversalTest {
 
         public TurnTrace(Coordinates position, String expectedInstruction, String message) {
             this(position, expectedInstruction, false, message);
+        }
+
+        public TurnTrace(Coordinates position, int speed, String expectedInstruction, String message) {
+            this(position, expectedInstruction, false, message);
+            this.speed = speed;
         }
 
         public TurnTrace(TripStatus tripStatus, Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
