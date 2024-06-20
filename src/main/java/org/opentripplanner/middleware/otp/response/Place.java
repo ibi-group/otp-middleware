@@ -2,9 +2,9 @@ package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.util.Date;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -12,11 +12,9 @@ import java.util.Set;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Place implements Cloneable {
+public class Place extends Coordinates implements Cloneable {
 
     public String name;
-    public Double lon;
-    public Double lat;
     public Date departure;
     public String orig;
     public String vertexType;

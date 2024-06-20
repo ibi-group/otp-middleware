@@ -29,7 +29,6 @@ import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
-import org.opentripplanner.middleware.triptracker.payload.GeneralPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
@@ -40,7 +39,6 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
-import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -247,8 +245,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         final int WEST_BEARING = 270;
 
         Leg firstLeg = itinerary.legs.get(0);
-        Coordinates firstStepCoords = new Coordinates(firstLeg.steps.get(0));
-        Coordinates thirdStepCoords = new Coordinates(firstLeg.steps.get(2));
+        Coordinates firstStepCoords = firstLeg.steps.get(0);
+        Coordinates thirdStepCoords = firstLeg.steps.get(2);
 
         return Stream.of(
             Arguments.of(
