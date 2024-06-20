@@ -35,8 +35,7 @@ public class Coordinates {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Coordinates that = (Coordinates) o;
-        return sameCoordinates(that);
+        return sameCoordinates((Coordinates) o);
     }
 
     public boolean sameCoordinates(Coordinates that) {
