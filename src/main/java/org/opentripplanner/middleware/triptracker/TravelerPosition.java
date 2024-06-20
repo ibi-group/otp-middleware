@@ -46,7 +46,7 @@ public class TravelerPosition {
     public TravelerPosition(TrackedJourney trackedJourney, Itinerary itinerary, OtpUser otpUser) {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
         currentTime = lastLocation.timestamp.toInstant();
-        currentPosition = new Coordinates(lastLocation);
+        currentPosition = lastLocation;
         speed = lastLocation.speed;
         expectedLeg = getExpectedLeg(currentPosition, itinerary);
         if (expectedLeg != null) {

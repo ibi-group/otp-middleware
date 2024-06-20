@@ -1,18 +1,16 @@
 package org.opentripplanner.middleware.triptracker;
 
+import org.opentripplanner.middleware.utils.Coordinates;
+
 import java.time.Instant;
 import java.util.Date;
 
 /**
  * A user's location details.
  */
-public class TrackingLocation {
+public class TrackingLocation extends Coordinates {
 
     public int bearing;
-
-    public Double lat;
-
-    public Double lon;
 
     public int speed;
 
