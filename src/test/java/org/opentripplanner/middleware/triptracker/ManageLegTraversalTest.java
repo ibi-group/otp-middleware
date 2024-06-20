@@ -382,6 +382,14 @@ public class ManageLegTraversalTest {
                     String.format("Get off here (%s)", destinationName),
                     "Instruction approaching or at the stop where you should get off."
                 )
+            ),
+            Arguments.of(
+                new TurnTrace(
+                    TripStatus.DEVIATED,
+                    new Coordinates(33.79371, -84.37711),
+                    NO_INSTRUCTION,
+                    "No instruction provided besides the trip status if on a deviated route, whether the bus is deviated or they missed their stop."
+                )
             )
             // TODO: Deviated (i) outside of instruction radius and (ii) within instruction radius
             /*

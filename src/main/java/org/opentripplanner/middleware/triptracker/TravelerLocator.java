@@ -65,7 +65,8 @@ public class TravelerLocator {
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
-                // Figure out what to say
+                TripInstruction tripInstruction = TripInstruction.deviatedBus(travelerPosition.locale);
+                return tripInstruction.build();
             }
         }
         return NO_INSTRUCTION;
