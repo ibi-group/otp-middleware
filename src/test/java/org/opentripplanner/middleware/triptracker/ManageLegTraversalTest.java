@@ -155,10 +155,12 @@ public class ManageLegTraversalTest {
 
     @ParameterizedTest
     @MethodSource("createTurnByTurnTrace")
-    void canTrackTurnByTurn(TurnTrace turnTrace) {
-        TravelerPosition travelerPosition = new TravelerPosition(turnTrace.itinerary.legs.get(0), turnTrace.position);
-        String tripInstruction = TravelerLocator.getInstruction(turnTrace.tripStatus, travelerPosition, turnTrace.isStartOfTrip);
-        assertEquals(turnTrace.expectedInstruction, Objects.requireNonNullElse(tripInstruction, NO_INSTRUCTION), turnTrace.message);
+    void canTrackTurnByTurn(TraceData traceData) {
+        Itinerary itinerary = adairAvenueToMonroeDriveItinerary;
+        Leg walkLeg = itinerary.legs.get(0);
+        TravelerPosition travelerPosition = new TravelerPosition(walkLeg, traceData.position);
+        String tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
+        assertEquals(traceData.expectedInstruction, Objects.requireNonNullElse(tripInstruction, NO_INSTRUCTION), traceData.message);
     }
 
     private static Stream<Arguments> createTurnByTurnTrace() {
@@ -188,7 +190,7 @@ public class ManageLegTraversalTest {
 
         return Stream.of(
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     originCoords,
                     new TripInstruction(10, adairAvenueNortheastStep, locale).build(),
                     true,
@@ -196,7 +198,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     originCoords,
                     new TripInstruction(10, adairAvenueNortheastStep, locale).build(),
                     false,
@@ -204,7 +206,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     adairAvenueNortheastCoords,
                     new TripInstruction(2, adairAvenueNortheastStep, locale).build(),
                     false,
@@ -212,7 +214,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, NORTH_WEST_BEARING),
                     new TripInstruction(adairAvenueNortheastStep.streetName, locale).build(),
@@ -221,7 +223,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, SOUTH_WEST_BEARING),
                     new TripInstruction(adairAvenueNortheastStep.streetName, locale).build(),
@@ -230,7 +232,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     createPoint(virginiaCircleNortheastCoords, 12, SOUTH_WEST_BEARING),
                     NO_INSTRUCTION,
                     false,
@@ -238,7 +240,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING),
                     new TripInstruction(9, virginiaCircleNortheastStep, locale).build(),
@@ -247,7 +249,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     virginiaCircleNortheastCoords,
                     new TripInstruction(0, virginiaCircleNortheastStep, locale).build(),
                     false,
@@ -255,7 +257,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_WEST_BEARING),
                     new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
@@ -264,7 +266,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_EAST_BEARING),
                     new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
@@ -273,7 +275,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
                     new TripInstruction(10, virginiaAvenueNortheastStep, locale).build(),
                     false,
@@ -281,7 +283,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     createPoint(pointBeforeTurn, 17, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
                     new TripInstruction(2, virginiaAvenueNortheastStep, locale).build(),
                     false,
@@ -289,7 +291,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     createPoint(pointAfterTurn, 0, calculateBearing(pointAfterTurn, virginiaAvenuePoint)),
                     NO_INSTRUCTION,
                     false,
@@ -297,7 +299,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     createPoint(destinationCoords, 8, SOUTH_BEARING),
                     new TripInstruction(10, destinationName, locale).build(),
                     false,
@@ -305,7 +307,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     destinationCoords,
                     new TripInstruction(2, destinationName, locale).build(),
                     false,
@@ -317,12 +319,12 @@ public class ManageLegTraversalTest {
 
     @ParameterizedTest
     @MethodSource("createTransitRideTrace")
-    void canTrackTransitRide(TurnTrace turnTrace) {
+    void canTrackTransitRide(TraceData traceData) {
         Itinerary itinerary = midtownToAnsleyItinerary;
         Leg transitLeg = itinerary.legs.get(1);
-        TravelerPosition travelerPosition = new TravelerPosition(transitLeg, turnTrace.position, turnTrace.speed);
-        String tripInstruction = TravelerLocator.getInstruction(turnTrace.tripStatus, travelerPosition, false);
-        assertEquals(turnTrace.expectedInstruction, Objects.requireNonNullElse(tripInstruction, NO_INSTRUCTION), turnTrace.message);
+        TravelerPosition travelerPosition = new TravelerPosition(transitLeg, traceData.position, traceData.speed);
+        String tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, false);
+        assertEquals(traceData.expectedInstruction, Objects.requireNonNullElse(tripInstruction, NO_INSTRUCTION), traceData.message);
     }
 
     private static Stream<Arguments> createTransitRideTrace() {
@@ -335,7 +337,7 @@ public class ManageLegTraversalTest {
 
         return Stream.of(
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     originCoords,
                     NO_INSTRUCTION,
                     "Just boarded the transit vehicle leg, there should not be an instruction."
@@ -344,7 +346,7 @@ public class ManageLegTraversalTest {
             // This instruction can be missed if the transit vehicle is in a slow/congested area
             // with speeds less than 5 meters/second (11.1 mph, 18 km/h).
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     new Coordinates(33.78647, -84.38041),
                     6, // meters per second, ~13.4 mph or 21.6 km/h. The threshold is 5 meters per second.
                     String.format("Ride 4 min / 8 stops to %s", destinationName),
@@ -352,46 +354,46 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     new Coordinates(33.78792, -84.37776),
                     NO_INSTRUCTION,
                     "On the transit segment, but far from the arrival stop, so no instruction is given."
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     new Coordinates(33.79139, -84.37441),
                     String.format("Your stop is coming up (%s)", destinationName),
                     "Upcoming arrival stop instruction."
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     new Coordinates(33.79415, -84.37187),
                     String.format("Get off at next stop (%s)", destinationName),
                     "One-stop warning from the stop where you should get off."
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     new Coordinates(33.79478, -84.37127),
                     String.format("Get off at next stop (%s)", destinationName),
                     "Past the one-stop warning from the stop where you should get off."
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     createPoint(destinationCoords, 8, SOUTH_WEST_BEARING),
                     String.format("Get off here (%s)", destinationName),
                     "Instruction approaching or at the stop where you should get off."
                 )
             ),
             Arguments.of(
-                new TurnTrace(
+                new TraceData(
                     TripStatus.DEVIATED,
                     new Coordinates(33.79371, -84.37711),
                     NO_INSTRUCTION,
-                    "No instruction provided besides the trip status if on a deviated route, whether the bus is deviated or they missed their stop."
+                    "No instruction provided besides trip status if bus is deviated or user missed their stop."
                 )
             )
         );
@@ -482,8 +484,7 @@ public class ManageLegTraversalTest {
         assertEquals(busStopToJusticeCenterItinerary.legs.get(0).duration, cumulative, 0.01f);
     }
 
-    private static class TurnTrace {
-        Itinerary itinerary = adairAvenueToMonroeDriveItinerary;
+    private static class TraceData {
         TripStatus tripStatus = TripStatus.ON_SCHEDULE;
         Coordinates position;
         int speed;
@@ -491,23 +492,23 @@ public class ManageLegTraversalTest {
         boolean isStartOfTrip;
         String message;
 
-        public TurnTrace(Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
+        public TraceData(Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
             this.position = position;
             this.expectedInstruction = expectedInstruction;
             this.isStartOfTrip = isStartOfTrip;
             this.message = message;
         }
 
-        public TurnTrace(Coordinates position, String expectedInstruction, String message) {
+        public TraceData(Coordinates position, String expectedInstruction, String message) {
             this(position, expectedInstruction, false, message);
         }
 
-        public TurnTrace(Coordinates position, int speed, String expectedInstruction, String message) {
+        public TraceData(Coordinates position, int speed, String expectedInstruction, String message) {
             this(position, expectedInstruction, false, message);
             this.speed = speed;
         }
 
-        public TurnTrace(TripStatus tripStatus, Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
+        public TraceData(TripStatus tripStatus, Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
             this.tripStatus = tripStatus;
             this.position = position;
             this.expectedInstruction = expectedInstruction;
@@ -515,7 +516,7 @@ public class ManageLegTraversalTest {
             this.message = message;
         }
 
-        public TurnTrace(TripStatus tripStatus, Coordinates position, String expectedInstruction, String message) {
+        public TraceData(TripStatus tripStatus, Coordinates position, String expectedInstruction, String message) {
             this(tripStatus, position, expectedInstruction, false, message);
         }
     }
