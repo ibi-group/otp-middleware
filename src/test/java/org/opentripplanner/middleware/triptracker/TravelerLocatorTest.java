@@ -12,6 +12,7 @@ class TravelerLocatorTest {
     @Test
     void testStopsUntilEndOfLeg() {
         Leg leg = new Leg();
+        leg.to = createPlace("FinalStop");
         leg.intermediateStops = List.of(
             createPlace("Stop0"),
             createPlace("Stop1"),
@@ -26,6 +27,7 @@ class TravelerLocatorTest {
             Place stop = leg.intermediateStops.get(i);
             assertEquals(7 - i, TravelerLocator.stopsUntilEndOfLeg(stop, leg), stop.stopId);
         }
+        assertEquals(0, TravelerLocator.stopsUntilEndOfLeg(leg.to, leg), leg.to.stopId);
     }
 
     Place createPlace(String id) {

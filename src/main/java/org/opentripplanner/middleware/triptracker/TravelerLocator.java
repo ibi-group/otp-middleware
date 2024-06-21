@@ -414,6 +414,8 @@ public class TravelerLocator {
     }
 
     public static int stopsUntilEndOfLeg(Place stop, Leg leg) {
+        if (stop == leg.to) return 0;
+
         List<Place> stops = leg.intermediateStops;
         return stops.size() - stops.indexOf(stop);
     }
