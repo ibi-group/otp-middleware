@@ -3,19 +3,15 @@ package org.opentripplanner.middleware.triptracker;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
 
-import java.util.Date;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteShortNameFromLeg;
 
 public class TripInstruction {
 
-    public enum TripInstructionType { ON_TRACK, DEVIATED, GET_OFF_BUS_HERE, GET_OFF_BUS_NEXT_STOP, GET_OFF_BUS_SOON, DEVIATED_BUS }
+    public enum TripInstructionType { ON_TRACK, DEVIATED, GET_OFF_BUS_HERE, GET_OFF_BUS_NEXT_STOP, GET_OFF_BUS_SOON }
 
     /** The radius in meters under which an immediate instruction is given. */
     public static final int TRIP_INSTRUCTION_IMMEDIATE_RADIUS
@@ -126,12 +122,6 @@ public class TripInstruction {
     public static TripInstruction getOffBusSoon(double distance, String stopName, Locale locale) {
         TripInstruction instr = new TripInstruction(distance, stopName, locale);
         instr.tripInstructionType = TripInstructionType.GET_OFF_BUS_SOON;
-        return instr;
-    }
-
-    public static TripInstruction deviatedBus(Locale locale) {
-        TripInstruction instr = new TripInstruction("", locale);
-        instr.tripInstructionType = TripInstructionType.DEVIATED_BUS;
         return instr;
     }
 
