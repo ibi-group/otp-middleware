@@ -31,8 +31,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
-import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextStep;
-import static org.opentripplanner.middleware.triptracker.TravelerLocator.injectStepsIntoLegPositions;
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextWayPoint;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithinExclusionZone;
 import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
@@ -400,14 +399,14 @@ public class ManageLegTraversalTest {
     }
 
     @ParameterizedTest
-    @MethodSource("createGetNearestStepTrace")
-    void canGetNearestStep(Step expectedStep, int startIndex, String message) {
+    @MethodSource("createGetNearestWaypointTrace")
+    void canGetNearestWaypoint(Step expectedStep, int startIndex, String message) {
         Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
-        List<Coordinates> allPositions = injectStepsIntoLegPositions(edmundParkDriveToRockSpringsItinerary.legs.get(0));
-        assertEquals(expectedStep, getNextStep(leg, allPositions, startIndex), message);
+        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps);
+        assertEquals(expectedStep, getNextWayPoint(allPositions, leg.steps, startIndex), message);
     }
 
-    private static Stream<Arguments> createGetNearestStepTrace() {
+    private static Stream<Arguments> createGetNearestWaypointTrace() {
         Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
         return Stream.of(
             Arguments.of(leg.steps.get(0), 0, "At the beginning, expecting the first step."),
@@ -423,12 +422,12 @@ public class ManageLegTraversalTest {
     }
 
     @Test
-    void canInjectSteps() {
+    void canInjectWaypoints() {
         Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
         List<Position> legPositions = PolylineUtils.decode(leg.legGeometry.points, 5);
         int excluded = getNumberOfExcludedPoints(legPositions, leg);
         int expectedNumberOfPositions = (legPositions.size() - excluded) + leg.steps.size() + 2; // from and to points.
-        List<Coordinates> allPositions = injectStepsIntoLegPositions(leg);
+        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps);
         assertEquals(expectedNumberOfPositions, allPositions.size());
     }
 
