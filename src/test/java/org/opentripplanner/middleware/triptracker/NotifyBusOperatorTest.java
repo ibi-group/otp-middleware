@@ -180,6 +180,6 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     private static Coordinates getEndOfWalkLegCoordinates() {
         Leg walkLeg = walkToBusTransition.legs.get(0);
-        return walkLeg.to;
+        return new Coordinates(walkLeg.to);
     }
 }
