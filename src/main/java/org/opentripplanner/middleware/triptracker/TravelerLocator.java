@@ -309,7 +309,7 @@ public class TravelerLocator {
      * <p>
      * b|p|W|p|p|p|p|p|p|W|p|p|W|p|p|p|p|p|W|e
      */
-    public static List<Coordinates> injectWaypointsIntoLegPositions(Leg leg, List<? extends Coordinates> waypoints) {
+    public static List<Coordinates> injectWaypointsIntoLegPositions(Leg leg, List<? extends Coordinates> wayPoints) {
         List<Coordinates> allPositions = getAllLegPositions(leg);
         List<Coordinates> injectedPoints = new ArrayList<>();
         List<Coordinates> finalPositions = new ArrayList<>();
@@ -317,10 +317,10 @@ public class TravelerLocator {
             Coordinates p1 = allPositions.get(i);
             finalPositions.add(p1);
             Coordinates p2 = allPositions.get(i + 1);
-            for (Coordinates waypoint : waypoints) {
-                if (isPointBetween(p1, p2, waypoint) && !injectedPoints.contains(waypoint)) {
-                    finalPositions.add(waypoint);
-                    injectedPoints.add(waypoint);
+            for (Coordinates wayPoint : wayPoints) {
+                if (isPointBetween(p1, p2, wayPoint) && !injectedPoints.contains(wayPoint)) {
+                    finalPositions.add(wayPoint);
+                    injectedPoints.add(wayPoint);
                 }
             }
         }
@@ -328,10 +328,10 @@ public class TravelerLocator {
         // Add the destination coords which are missed because of the -1 condition above.
         finalPositions.add(allPositions.get(allPositions.size() - 1));
 
-        if (injectedPoints.size() != waypoints.size()) {
+        if (injectedPoints.size() != wayPoints.size()) {
             // One or more waypoints have not been injected because they are not between two geometry points. Inject these
             // based on proximity.
-            List<Coordinates> missedPoints = waypoints
+            List<Coordinates> missedPoints = wayPoints
                 .stream()
                 .filter(pt -> !injectedPoints.contains(pt))
                 .collect(Collectors.toList());
