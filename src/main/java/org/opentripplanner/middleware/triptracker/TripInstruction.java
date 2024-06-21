@@ -15,7 +15,7 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteShortN
 
 public class TripInstruction {
 
-    public enum TripInstructionType { ON_TRACK, DEVIATED, WAIT_FOR_BUS, GET_OFF_BUS_HERE, GET_OFF_BUS_NEXT_STOP, GET_OFF_BUS_SOON, DEVIATED_BUS, BUS_LEG_SUMMARY }
+    public enum TripInstructionType { ON_TRACK, DEVIATED, WAIT_FOR_BUS, GET_OFF_BUS_HERE, GET_OFF_BUS_NEXT_STOP, GET_OFF_BUS_SOON, DEVIATED_BUS }
 
     /** The radius in meters under which an immediate instruction is given. */
     public static final int TRIP_INSTRUCTION_IMMEDIATE_RADIUS
@@ -86,14 +86,6 @@ public class TripInstruction {
     }
 
     /**
-     * On track instruction to stop.
-     */
-    public TripInstruction(double distance, Place place, Locale locale) {
-        this(false, distance, locale);
-        this.place = place;
-    }
-
-    /**
      * On track instruction to destination.
      */
     public TripInstruction(double distance, String locationName, Locale locale) {
@@ -144,13 +136,6 @@ public class TripInstruction {
         return instr;
     }
 
-    public static TripInstruction summarizeBusLeg(Leg leg, Locale locale) {
-        TripInstruction instr = new TripInstruction(leg.to.name, locale);
-        instr.busLeg = leg;
-        instr.tripInstructionType = TripInstructionType.BUS_LEG_SUMMARY;
-        return instr;
-    }
-
     /**
      * The prefix is defined depending on the traveler either approaching a step or destination and the predefined
      * distances from these points.
@@ -180,8 +165,6 @@ public class TripInstruction {
                 return buildGetOffBusNextStopInstruction();
             case GET_OFF_BUS_SOON:
                 return buildGetOffBusSoonInstruction();
-            case BUS_LEG_SUMMARY:
-                return buildBusLegSummaryInstruction();
             default:
                 return NO_INSTRUCTION;
         }
@@ -244,17 +227,6 @@ public class TripInstruction {
 
     private String buildGetOffBusSoonInstruction() {
         return String.format("Your stop is coming up (%s)", locationName);
-    }
-
-    private String buildBusLegSummaryInstruction() {
-        return String.format(
-            "Ride %d min / %d stops to %s",
-            // Use Math.floor to be consistent with UI for transit leg durations.
-            (int)(Math.floor(busLeg.duration / 60)),
-            // OTP returns an empty list if there are no intermediate stops.
-            busLeg.intermediateStops.size() + 1,
-            locationName
-        );
     }
 
     /**

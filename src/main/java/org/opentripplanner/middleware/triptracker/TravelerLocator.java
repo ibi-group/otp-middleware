@@ -4,6 +4,7 @@ import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.triptracker.instruction.TransitLegSummaryInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
@@ -185,10 +186,7 @@ public class TravelerLocator {
                 stopsRemaining == travelerPosition.expectedLeg.intermediateStops.size() &&
                 travelerPosition.speed >= MIN_TRANSIT_VEHICLE_SPEED
             ) {
-                return TripInstruction.summarizeBusLeg(
-                    travelerPosition.expectedLeg,
-                    locale
-                );
+                return new TransitLegSummaryInstruction(travelerPosition.expectedLeg, locale);
             }
         }
         return null;
