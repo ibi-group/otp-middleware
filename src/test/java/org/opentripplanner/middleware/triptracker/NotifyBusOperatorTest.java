@@ -15,6 +15,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.AgencyAction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettBusOpNotificationMessage;
@@ -75,7 +76,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates(), busDepartureTime);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
         String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
-        TripInstruction expectInstruction = new TripInstruction(busLeg, busDepartureTime, locale);
+        TripInstruction expectInstruction = new WaitForTransitInstruction(busLeg, busDepartureTime, locale);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(routeId));
         assertEquals(expectInstruction.build(), tripInstruction);
@@ -96,7 +97,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
 
         Leg busLeg = itinerary.legs.get(1);
-        TripInstruction expectInstruction = new TripInstruction(busLeg, timeAtEndOfWalkLeg, locale);
+        TripInstruction expectInstruction = new WaitForTransitInstruction(busLeg, timeAtEndOfWalkLeg, locale);
         assertEquals(expectInstruction.build(), tripInstruction);
     }
 

@@ -5,6 +5,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.triptracker.instruction.TransitLegSummaryInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
@@ -139,7 +140,7 @@ public class TravelerLocator {
                     .getDefault()
                     .handleSendNotificationAction(tripStatus, travelerPosition);
                 // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
-                return new TripInstruction(travelerPosition.nextLeg, travelerPosition.currentTime, locale);
+                return new WaitForTransitInstruction(travelerPosition.nextLeg, travelerPosition.currentTime, locale);
             }
             return new TripInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
         }

@@ -15,7 +15,7 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteShortN
 
 public class TripInstruction {
 
-    public enum TripInstructionType { ON_TRACK, DEVIATED, WAIT_FOR_BUS, GET_OFF_BUS_HERE, GET_OFF_BUS_NEXT_STOP, GET_OFF_BUS_SOON, DEVIATED_BUS }
+    public enum TripInstructionType { ON_TRACK, DEVIATED, GET_OFF_BUS_HERE, GET_OFF_BUS_NEXT_STOP, GET_OFF_BUS_SOON, DEVIATED_BUS }
 
     /** The radius in meters under which an immediate instruction is given. */
     public static final int TRIP_INSTRUCTION_IMMEDIATE_RADIUS
@@ -61,7 +61,7 @@ public class TripInstruction {
     private TripInstructionType tripInstructionType;
 
     /** The traveler's locale. */
-    private final Locale locale;
+    protected Locale locale;
 
     public TripInstruction(boolean isDestination, double distance, Locale locale) {
         this.distance = distance;
@@ -106,7 +106,6 @@ public class TripInstruction {
      * Provide bus related trip instruction.
      */
     public TripInstruction(Leg busLeg, Instant currentTime, Locale locale) {
-        this.tripInstructionType = TripInstructionType.WAIT_FOR_BUS;
         this.busLeg = busLeg;
         this.currentTime = currentTime;
         this.locale = locale;
@@ -157,8 +156,6 @@ public class TripInstruction {
                 return buildOnTrackInstruction();
             case DEVIATED:
                 return String.format("Head to %s", locationName);
-            case WAIT_FOR_BUS:
-                return buildWaitForBusInstruction();
             case GET_OFF_BUS_HERE:
                 return buildGetOffBusHereInstruction();
             case GET_OFF_BUS_NEXT_STOP:
@@ -194,29 +191,6 @@ public class TripInstruction {
         return NO_INSTRUCTION;
     }
 
-    /**
-     * Build wait for bus instruction.
-     */
-    private String buildWaitForBusInstruction() {
-        String routeShortName = getRouteShortNameFromLeg(busLeg);
-        long delayInMinutes = busLeg.departureDelay;
-        long absoluteMinutes = Math.abs(delayInMinutes);
-        long waitInMinutes = Duration
-            .between(currentTime.atZone(DateTimeUtils.getOtpZoneId()), busLeg.getScheduledStartTime())
-            .toMinutes();
-        String delayInfo = (delayInMinutes > 0) ? "late" : "early";
-        String arrivalInfo = (absoluteMinutes <= 1)
-            ? ", on time"
-            : String.format(" now%s %s", getReadableMinutes(delayInMinutes), delayInfo);
-        return String.format(
-            "Wait%s for your bus, route %s, scheduled at %s%s",
-            getReadableMinutes(waitInMinutes),
-            routeShortName,
-            DateTimeUtils.formatShortDate(Date.from(busLeg.getScheduledStartTime().toInstant()), locale),
-            arrivalInfo
-        );
-    }
-
     private String buildGetOffBusHereInstruction() {
         return String.format("Get off here (%s)", locationName);
     }
@@ -232,7 +206,7 @@ public class TripInstruction {
     /**
      * Get the number of minutes to wait for a bus. If the wait is zero (or less than zero!) return empty string.
      */
-    private String getReadableMinutes(long waitInMinutes) {
+    protected String getReadableMinutes(long waitInMinutes) {
         if (waitInMinutes == 1) {
             return String.format(" %s minute", waitInMinutes);
         } else if (waitInMinutes > 1) {
