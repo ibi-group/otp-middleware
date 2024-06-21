@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.utils.Coordinates;
+import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import javax.annotation.Nullable;
@@ -314,23 +315,16 @@ public class TravelerLocator {
      * Inject the step positions into the leg positions.
      */
     public static List<Coordinates> injectStepsIntoLegPositions(Leg leg) {
-        List<Coordinates> stepCoordinates = leg.steps
-            .stream()
-            .map(Coordinates::new)
-            .collect(Collectors.toList());
-        return injectWaypointsIntoLegPositions(leg, stepCoordinates);
+        return injectWaypointsIntoLegPositions(leg, leg.steps);
     }
 
     /**
      * Inject the intermediate stop positions into the leg positions.
      */
     public static List<Coordinates> injectIntermediateStopsIntoLegPositions(Leg leg) {
-        List<Coordinates> stopCoordinates = leg.intermediateStops
-            .stream()
-            .map(Coordinates::new)
-            .collect(Collectors.toList());
-        stopCoordinates.add(new Coordinates(leg.to));
-        return injectWaypointsIntoLegPositions(leg, stopCoordinates);
+        ArrayList<ConvertsToCoordinates> stops = new ArrayList<>(leg.intermediateStops);
+        stops.add(leg.to);
+        return injectWaypointsIntoLegPositions(leg, stops);
     }
 
     /**
@@ -341,18 +335,22 @@ public class TravelerLocator {
      * <p>
      * b|p|W|p|p|p|p|p|p|W|p|p|W|p|p|p|p|p|W|e
      */
-    public static List<Coordinates> injectWaypointsIntoLegPositions(Leg leg, List<Coordinates> wayPoints) {
+    public static List<Coordinates> injectWaypointsIntoLegPositions(Leg leg, List<? extends ConvertsToCoordinates> steps) {
         List<Coordinates> allPositions = getAllLegPositions(leg);
+        List<Coordinates> waypoints = steps
+            .stream()
+            .map(ConvertsToCoordinates::toCoordinates)
+            .collect(Collectors.toList());
         List<Coordinates> injectedPoints = new ArrayList<>();
         List<Coordinates> finalPositions = new ArrayList<>();
         for (int i = 0; i < allPositions.size() - 1; i++) {
             Coordinates p1 = allPositions.get(i);
             finalPositions.add(p1);
             Coordinates p2 = allPositions.get(i + 1);
-            for (Coordinates wayPoint : wayPoints) {
-                if (isPointBetween(p1, p2, wayPoint) && !injectedPoints.contains(wayPoint)) {
-                    finalPositions.add(wayPoint);
-                    injectedPoints.add(wayPoint);
+            for (Coordinates waypoint : waypoints) {
+                if (isPointBetween(p1, p2, waypoint) && !injectedPoints.contains(waypoint)) {
+                    finalPositions.add(waypoint);
+                    injectedPoints.add(waypoint);
                 }
             }
         }
@@ -360,10 +358,10 @@ public class TravelerLocator {
         // Add the destination coords which are missed because of the -1 condition above.
         finalPositions.add(allPositions.get(allPositions.size() - 1));
 
-        if (injectedPoints.size() != wayPoints.size()) {
+        if (injectedPoints.size() != waypoints.size()) {
             // One or more waypoints have not been injected because they are not between two geometry points. Inject these
             // based on proximity.
-            List<Coordinates> missedPoints = wayPoints
+            List<Coordinates> missedPoints = waypoints
                 .stream()
                 .filter(pt -> !injectedPoints.contains(pt))
                 .collect(Collectors.toList());
