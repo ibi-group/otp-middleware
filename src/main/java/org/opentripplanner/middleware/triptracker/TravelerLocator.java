@@ -115,7 +115,7 @@ public class TravelerLocator {
         if (instruction != null && instruction.hasInstruction()) {
             return instruction;
         }
-        Step nearestStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps);
+        Step nearestStep = snapToStep(travelerPosition);
         return (nearestStep != null)
             ? new TripInstruction(nearestStep.streetName, travelerPosition.locale)
             : null;
@@ -143,7 +143,7 @@ public class TravelerLocator {
             return new TripInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
         }
 
-        Step nextStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps);
+        Step nextStep = snapToStep(travelerPosition);
         if (nextStep != null && (!isPositionPastStep(travelerPosition, nextStep) || isStartOfTrip)) {
             return new TripInstruction(
                 getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
@@ -166,7 +166,7 @@ public class TravelerLocator {
             return TripInstruction.getOffBus(getDistanceToEndOfLeg(travelerPosition), finalStop, locale);
         }
 
-        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(travelerPosition.expectedLeg));
+        Place nextStop = snapToStop(travelerPosition);
         if (nextStop != null) {
             int stopsRemaining = stopsUntilEndOfLeg(nextStop, travelerPosition.expectedLeg);
             if (stopsRemaining <= 1) {
@@ -254,13 +254,20 @@ public class TravelerLocator {
     }
 
     /**
+     * Align the traveler to the leg and provide the next step from this point forward.
+     */
+    private static Step snapToStep(TravelerPosition travelerPosition) {
+        List<Coordinates> legPositions = injectStepsIntoLegPositions(travelerPosition.expectedLeg);
+        int pointIndex = getNearestPointIndex(legPositions, travelerPosition.currentPosition);
+        return (pointIndex != -1)
+            ? getNextStep(travelerPosition.expectedLeg, legPositions, pointIndex)
+            : null;
+    }
+
+    /**
      * From the starting index, find the next waypoint along a leg.
      */
-    public static <T extends ConvertsToCoordinates> T getNextWayPoint(List<Coordinates> positions, List<T> steps, int startIndex) {
-        Map<T, Coordinates> waypoints = steps
-            .stream()
-            .collect(Collectors.toMap(s -> s, ConvertsToCoordinates::toCoordinates));
-
+    public static <T> T getNextWayPoint(List<Coordinates> positions, Map<T, Coordinates> waypoints, int startIndex) {
         for (int i = startIndex; i < positions.size(); i++) {
             Coordinates pos = positions.get(i);
             for (var entry : waypoints.entrySet()) {
@@ -270,6 +277,22 @@ public class TravelerLocator {
             }
         }
         return null;
+    }
+
+    public static Step getNextStep(Leg leg, List<Coordinates> positions, int startIndex) {
+        return getNextWayPoint(
+            positions,
+            leg.steps.stream().collect(Collectors.toMap(s -> s, Coordinates::new)),
+            startIndex
+        );
+    }
+
+    public static Place getNextStop(Leg leg, List<Coordinates> positions, int startIndex) {
+        return getNextWayPoint(
+            positions,
+            leg.intermediateStops.stream().collect(Collectors.toMap(s -> s, Coordinates::new)),
+            startIndex
+        );
     }
 
     /**
@@ -288,10 +311,20 @@ public class TravelerLocator {
         return pointIndex;
     }
 
-    private static List<Place> getIntermediateAndLastStop(Leg leg) {
-        ArrayList<Place> stops = new ArrayList<>(leg.intermediateStops);
+    /**
+     * Inject the step positions into the leg positions.
+     */
+    public static List<Coordinates> injectStepsIntoLegPositions(Leg leg) {
+        return injectWaypointsIntoLegPositions(leg, leg.steps);
+    }
+
+    /**
+     * Inject the intermediate stop positions into the leg positions.
+     */
+    public static List<Coordinates> injectIntermediateStopsIntoLegPositions(Leg leg) {
+        ArrayList<ConvertsToCoordinates> stops = new ArrayList<>(leg.intermediateStops);
         stops.add(leg.to);
-        return stops;
+        return injectWaypointsIntoLegPositions(leg, stops);
     }
 
     /**
@@ -342,12 +375,15 @@ public class TravelerLocator {
     }
 
     /**
-     * Align the traveler to the transit leg and provide the next waypoint from this point forward.
+     * Align the traveler to the transit leg and provide the next intermediate stop from this point forward.
+     * TODO: refactor with walk leg??
      */
-    private static <T extends ConvertsToCoordinates> T snapToWaypoint(TravelerPosition pos, List<T> waypoints) {
-        List<Coordinates> legPositions = injectWaypointsIntoLegPositions(pos.expectedLeg, waypoints);
-        int pointIndex = getNearestPointIndex(legPositions, pos.currentPosition);
-        return pointIndex != -1 ? getNextWayPoint(legPositions, waypoints, pointIndex) : null;
+    private static Place snapToStop(TravelerPosition travelerPosition) {
+        List<Coordinates> legPositions = injectIntermediateStopsIntoLegPositions(travelerPosition.expectedLeg);
+        int pointIndex = getNearestPointIndex(legPositions, travelerPosition.currentPosition);
+        return (pointIndex != -1)
+            ? getNextStop(travelerPosition.expectedLeg, legPositions, pointIndex)
+            : null;
     }
 
     /**
