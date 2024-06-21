@@ -11,6 +11,9 @@ import java.util.Locale;
 
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteShortNameFromLeg;
 
+/**
+ * Instruction to wait for a transit vehicle, typically emitted when someone is arriving at a transit stop.
+ */
 public class WaitForTransitInstruction extends TripInstruction {
     public WaitForTransitInstruction(Leg transitLeg, Instant currentTime, Locale locale) {
         super(transitLeg, currentTime, locale);
