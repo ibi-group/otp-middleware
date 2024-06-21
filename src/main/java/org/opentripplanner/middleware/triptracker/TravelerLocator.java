@@ -359,17 +359,18 @@ public class TravelerLocator {
         finalPositions.add(allPositions.get(allPositions.size() - 1));
 
         if (injectedPoints.size() != waypoints.size()) {
-            // One or more waypoints have not been injected because they are not between two geometry points.
-            // Inject these based on proximity.
-            waypoints
+            // One or more waypoints have not been injected because they are not between two geometry points. Inject these
+            // based on proximity.
+            List<Coordinates> missedPoints = waypoints
                 .stream()
                 .filter(pt -> !injectedPoints.contains(pt))
-                .forEach(missedPoint -> {
-                    int pointIndex = getNearestPointIndex(finalPositions, missedPoint);
-                    if (pointIndex != -1) {
-                        finalPositions.add(pointIndex, missedPoint);
-                    }
-                });
+                .collect(Collectors.toList());
+            for (Coordinates missedPoint : missedPoints) {
+                int pointIndex = getNearestPointIndex(finalPositions, missedPoint);
+                if (pointIndex != -1) {
+                    finalPositions.add(pointIndex, missedPoint);
+                }
+            }
         }
         return createExclusionZone(finalPositions, leg);
     }
