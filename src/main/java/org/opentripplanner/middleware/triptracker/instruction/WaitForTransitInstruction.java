@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.triptracker.instruction;
 
 import org.opentripplanner.middleware.otp.response.Leg;
-import org.opentripplanner.middleware.triptracker.TripInstruction;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.Duration;
@@ -14,9 +13,11 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteShortN
 /**
  * Instruction to wait for a transit vehicle, typically emitted when someone is arriving at a transit stop.
  */
-public class WaitForTransitInstruction extends TripInstruction {
+public class WaitForTransitInstruction extends TransitLegInstruction {
     public WaitForTransitInstruction(Leg transitLeg, Instant currentTime, Locale locale) {
-        super(transitLeg, currentTime, locale);
+        this.transitLeg = transitLeg;
+        this.currentTime = currentTime;
+        this.locale = locale;
     }
 
     @Override

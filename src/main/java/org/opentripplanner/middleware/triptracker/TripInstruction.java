@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.triptracker;
 
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 
@@ -47,9 +46,6 @@ public class TripInstruction {
     /** Name of final destination or street. */
     public String locationName;
 
-    /** Provided if the next leg for the traveler will be a bus transit leg. */
-    public Leg transitLeg;
-
     /** The time provided by the traveler */
     public Instant currentTime;
 
@@ -58,6 +54,10 @@ public class TripInstruction {
 
     /** The traveler's locale. */
     protected Locale locale;
+
+    protected TripInstruction() {
+        // For use by subclasses.
+    }
 
     public TripInstruction(boolean isDestination, double distance, Locale locale) {
         this.distance = distance;
@@ -95,15 +95,6 @@ public class TripInstruction {
     public TripInstruction(String locationName, Locale locale) {
         this.tripInstructionType = TripInstructionType.DEVIATED;
         this.locationName = locationName;
-        this.locale = locale;
-    }
-
-    /**
-     * Provide transit related trip instruction.
-     */
-    public TripInstruction(Leg transitLeg, Instant currentTime, Locale locale) {
-        this.transitLeg = transitLeg;
-        this.currentTime = currentTime;
         this.locale = locale;
     }
 
