@@ -160,32 +160,26 @@ public class TravelerLocator {
     @Nullable
     public static TripInstruction alignTravelerToTransitTrip(TravelerPosition travelerPosition) {
         Locale locale = travelerPosition.locale;
-        String finalStop = travelerPosition.expectedLeg.to.name;
+        Leg expectedLeg = travelerPosition.expectedLeg;
+        String finalStop = expectedLeg.to.name;
 
         if (isApproachingEndOfLeg(travelerPosition)) {
             return new GetOffHereTransitInstruction(finalStop, locale);
         }
 
-        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(travelerPosition.expectedLeg));
+        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
         if (nextStop != null) {
-            int stopsRemaining = stopsUntilEndOfLeg(nextStop, travelerPosition.expectedLeg);
-            if (stopsRemaining <= 1) {
-                return new GetOffNextStopTransitInstruction(
-                    getDistance(travelerPosition.currentPosition, new Coordinates(nextStop)),
-                    finalStop,
-                    locale
-                );
+            int stopsRemaining = stopsUntilEndOfLeg(nextStop, expectedLeg);
+            double distance = getDistance(travelerPosition.currentPosition, new Coordinates(nextStop));
+            if (stopsRemaining == 1 && distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS && !isPositionPastStep(travelerPosition, nextStop) || stopsRemaining == 0) {
+                return new GetOffNextStopTransitInstruction(finalStop, locale);
             } else if (stopsRemaining <= 3) {
-                return new GetOffSoonTransitInstruction(
-                    getDistance(travelerPosition.currentPosition, new Coordinates(nextStop)),
-                    finalStop,
-                    locale
-                );
+                return new GetOffSoonTransitInstruction(finalStop, locale);
             } else if (
-                stopsRemaining == travelerPosition.expectedLeg.intermediateStops.size() &&
+                stopsRemaining == expectedLeg.intermediateStops.size() &&
                 travelerPosition.speed >= MIN_TRANSIT_VEHICLE_SPEED
             ) {
-                return new TransitLegSummaryInstruction(travelerPosition.expectedLeg, locale);
+                return new TransitLegSummaryInstruction(expectedLeg, locale);
             }
         }
         return null;
@@ -195,14 +189,14 @@ public class TravelerLocator {
      * Check that the current position is not past the "next step". This is to prevent an instruction being provided
      * for a step which is behind the traveler, but is within radius.
      */
-    private static boolean isPositionPastStep(TravelerPosition travelerPosition, Step nextStep) {
+    private static boolean isPositionPastStep(TravelerPosition travelerPosition, ConvertsToCoordinates nextStep) {
         double distanceFromPositionToEndOfLegSegment = getDistance(
             travelerPosition.legSegmentFromPosition.end,
             travelerPosition.currentPosition
         );
         double distanceFromStepToEndOfLegSegment = getDistance(
             travelerPosition.legSegmentFromPosition.end,
-            new Coordinates(nextStep)
+            nextStep.toCoordinates()
         );
         return distanceFromPositionToEndOfLegSegment < distanceFromStepToEndOfLegSegment;
     }
@@ -341,10 +335,18 @@ public class TravelerLocator {
     /**
      * Align the traveler to the transit leg and provide the next waypoint from this point forward.
      */
-    private static <T extends ConvertsToCoordinates> T snapToWaypoint(TravelerPosition pos, List<T> waypoints) {
+    private static <T extends ConvertsToCoordinates> T snapToWaypoint(TravelerPosition pos, List<T> waypoints, boolean excludeCurrent) {
         List<Coordinates> legPositions = injectWaypointsIntoLegPositions(pos.expectedLeg, waypoints);
         int pointIndex = getNearestPointIndex(legPositions, pos.currentPosition);
-        return pointIndex != -1 ? getNextWayPoint(legPositions, waypoints, pointIndex) : null;
+        int startingIndex = excludeCurrent ? Math.min(pointIndex + 1, legPositions.size() - 1) : pointIndex;
+        return pointIndex != -1 ? getNextWayPoint(legPositions, waypoints, startingIndex) : null;
+    }
+
+    /**
+     * Shorthand for above method.
+     */
+    private static <T extends ConvertsToCoordinates> T snapToWaypoint(TravelerPosition pos, List<T> waypoints) {
+        return snapToWaypoint(pos, waypoints, false);
     }
 
     /**

@@ -9,8 +9,8 @@ import java.util.Locale;
  */
 public class GetOffSoonTransitInstruction extends TripInstruction {
 
-    public GetOffSoonTransitInstruction(double distance, String stopName, Locale locale) {
-        super(distance, stopName, locale); // TODO: fix distance arg.
+    public GetOffSoonTransitInstruction(String stopName, Locale locale) {
+        super(0, stopName, locale); // TODO: fix distance arg.
     }
 
     @Override

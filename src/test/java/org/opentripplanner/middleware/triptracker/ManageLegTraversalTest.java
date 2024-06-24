@@ -368,9 +368,16 @@ public class ManageLegTraversalTest {
             ),
             Arguments.of(
                 new TraceData(
-                    new Coordinates(33.79415, -84.37187),
+                    new Coordinates(33.79362, -84.37235),
+                    String.format("Your stop is coming up (%s)", destinationName),
+                    "Between the third and second to last stop."
+                )
+            ),
+            Arguments.of(
+                new TraceData(
+                    new Coordinates(33.79445, -84.37156),
                     String.format("Get off at next stop (%s)", destinationName),
-                    "One-stop warning from the stop where you should get off."
+                    "One-stop warning (only within 'upcoming' distance of that stop) before the stop to get off"
                 )
             ),
             Arguments.of(
