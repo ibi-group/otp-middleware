@@ -21,11 +21,11 @@ public class WaitForTransitInstruction extends TripInstruction {
 
     @Override
     public String build() {
-        String routeShortName = getRouteShortNameFromLeg(busLeg);
-        long delayInMinutes = busLeg.departureDelay;
+        String routeShortName = getRouteShortNameFromLeg(transitLeg);
+        long delayInMinutes = transitLeg.departureDelay;
         long absoluteMinutes = Math.abs(delayInMinutes);
         long waitInMinutes = Duration
-            .between(currentTime.atZone(DateTimeUtils.getOtpZoneId()), busLeg.getScheduledStartTime())
+            .between(currentTime.atZone(DateTimeUtils.getOtpZoneId()), transitLeg.getScheduledStartTime())
             .toMinutes();
         String delayInfo = (delayInMinutes > 0) ? "late" : "early";
         String arrivalInfo = (absoluteMinutes <= 1)
@@ -35,7 +35,7 @@ public class WaitForTransitInstruction extends TripInstruction {
             "Wait%s for your bus, route %s, scheduled at %s%s",
             getReadableMinutes(waitInMinutes),
             routeShortName,
-            DateTimeUtils.formatShortDate(Date.from(busLeg.getScheduledStartTime().toInstant()), locale),
+            DateTimeUtils.formatShortDate(Date.from(transitLeg.getScheduledStartTime().toInstant()), locale),
             arrivalInfo
         );
     }

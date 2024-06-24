@@ -11,7 +11,7 @@ import java.util.Locale;
 public class TransitLegSummaryInstruction extends TripInstruction {
     public TransitLegSummaryInstruction(Leg leg, Locale locale) {
         super(leg.to.name, locale);
-        this.busLeg = leg;
+        this.transitLeg = leg;
     }
 
     @Override
@@ -19,9 +19,9 @@ public class TransitLegSummaryInstruction extends TripInstruction {
         return String.format(
             "Ride %d min / %d stops to %s",
             // Use Math.floor to be consistent with UI for transit leg durations.
-            (int)(Math.floor(busLeg.duration / 60)),
+            (int)(Math.floor(transitLeg.duration / 60)),
             // OTP returns an empty list if there are no intermediate stops.
-            busLeg.intermediateStops.size() + 1,
+            transitLeg.intermediateStops.size() + 1,
             locationName
         );
     }

@@ -48,7 +48,7 @@ public class TripInstruction {
     public String locationName;
 
     /** Provided if the next leg for the traveler will be a bus transit leg. */
-    public Leg busLeg;
+    public Leg transitLeg;
 
     /** The time provided by the traveler */
     public Instant currentTime;
@@ -99,10 +99,10 @@ public class TripInstruction {
     }
 
     /**
-     * Provide bus related trip instruction.
+     * Provide transit related trip instruction.
      */
-    public TripInstruction(Leg busLeg, Instant currentTime, Locale locale) {
-        this.busLeg = busLeg;
+    public TripInstruction(Leg transitLeg, Instant currentTime, Locale locale) {
+        this.transitLeg = transitLeg;
         this.currentTime = currentTime;
         this.locale = locale;
     }
