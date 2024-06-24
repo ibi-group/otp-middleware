@@ -4,6 +4,9 @@ import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.triptracker.instruction.GetOffHereTransitInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.GetOffNextStopTransitInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.GetOffSoonTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TransitLegSummaryInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
@@ -160,20 +163,20 @@ public class TravelerLocator {
         String finalStop = travelerPosition.expectedLeg.to.name;
 
         if (isApproachingEndOfLeg(travelerPosition)) {
-            return TripInstruction.getOffBus(getDistanceToEndOfLeg(travelerPosition), finalStop, locale);
+            return new GetOffHereTransitInstruction(finalStop, locale);
         }
 
         Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(travelerPosition.expectedLeg));
         if (nextStop != null) {
             int stopsRemaining = stopsUntilEndOfLeg(nextStop, travelerPosition.expectedLeg);
             if (stopsRemaining <= 1) {
-                return TripInstruction.getOffBusNextStop(
+                return new GetOffNextStopTransitInstruction(
                     getDistance(travelerPosition.currentPosition, new Coordinates(nextStop)),
                     finalStop,
                     locale
                 );
             } else if (stopsRemaining <= 3) {
-                return TripInstruction.getOffBusSoon(
+                return new GetOffSoonTransitInstruction(
                     getDistance(travelerPosition.currentPosition, new Coordinates(nextStop)),
                     finalStop,
                     locale

@@ -11,7 +11,7 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 
 public class TripInstruction {
 
-    public enum TripInstructionType { ON_TRACK, DEVIATED, GET_OFF_BUS_HERE, GET_OFF_BUS_NEXT_STOP, GET_OFF_BUS_SOON }
+    public enum TripInstructionType { ON_TRACK, DEVIATED }
 
     /** The radius in meters under which an immediate instruction is given. */
     public static final int TRIP_INSTRUCTION_IMMEDIATE_RADIUS
@@ -107,24 +107,6 @@ public class TripInstruction {
         this.locale = locale;
     }
 
-    public static TripInstruction getOffBus(double distance, String stopName, Locale locale) {
-        TripInstruction instr = new TripInstruction(distance, stopName, locale);
-        instr.tripInstructionType = TripInstructionType.GET_OFF_BUS_HERE;
-        return instr;
-    }
-
-    public static TripInstruction getOffBusNextStop(double distance, String stopName, Locale locale) {
-        TripInstruction instr = new TripInstruction(distance, stopName, locale);
-        instr.tripInstructionType = TripInstructionType.GET_OFF_BUS_NEXT_STOP;
-        return instr;
-    }
-
-    public static TripInstruction getOffBusSoon(double distance, String stopName, Locale locale) {
-        TripInstruction instr = new TripInstruction(distance, stopName, locale);
-        instr.tripInstructionType = TripInstructionType.GET_OFF_BUS_SOON;
-        return instr;
-    }
-
     /**
      * The prefix is defined depending on the traveler either approaching a step or destination and the predefined
      * distances from these points.
@@ -146,12 +128,6 @@ public class TripInstruction {
                 return buildOnTrackInstruction();
             case DEVIATED:
                 return String.format("Head to %s", locationName);
-            case GET_OFF_BUS_HERE:
-                return buildGetOffBusHereInstruction();
-            case GET_OFF_BUS_NEXT_STOP:
-                return buildGetOffBusNextStopInstruction();
-            case GET_OFF_BUS_SOON:
-                return buildGetOffBusSoonInstruction();
             default:
                 return NO_INSTRUCTION;
         }
@@ -179,18 +155,6 @@ public class TripInstruction {
             }
         }
         return NO_INSTRUCTION;
-    }
-
-    private String buildGetOffBusHereInstruction() {
-        return String.format("Get off here (%s)", locationName);
-    }
-
-    private String buildGetOffBusNextStopInstruction() {
-        return String.format("Get off at next stop (%s)", locationName);
-    }
-
-    private String buildGetOffBusSoonInstruction() {
-        return String.format("Your stop is coming up (%s)", locationName);
     }
 
     /**
