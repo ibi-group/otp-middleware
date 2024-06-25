@@ -10,11 +10,13 @@ import java.util.Locale;
 public class GetOffSoonTransitInstruction extends TripInstruction {
 
     public GetOffSoonTransitInstruction(String stopName, Locale locale) {
-        super(0, stopName, locale); // TODO: fix distance arg.
+        this.locationName = stopName;
+        this.locale = locale;
     }
 
     @Override
     public String build() {
+        // TODO: i18n
         return String.format("Your stop is coming up (%s)", locationName);
     }
 }

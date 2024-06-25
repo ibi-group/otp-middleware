@@ -22,6 +22,7 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
 
     @Override
     public String build() {
+        // TODO: i18n
         String routeShortName = getRouteShortNameFromLeg(transitLeg);
         long delayInMinutes = transitLeg.departureDelay;
         long absoluteMinutes = Math.abs(delayInMinutes);
