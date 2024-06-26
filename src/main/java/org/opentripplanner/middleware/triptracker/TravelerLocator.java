@@ -66,12 +66,10 @@ public class TravelerLocator {
                     return tripInstruction.build();
                 }
             }
-        } else if (hasRequiredTransitLeg(travelerPosition)) {
-            if (hasRequiredTripStatus(tripStatus)) {
-                TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition);
-                if (tripInstruction != null) {
-                    return tripInstruction.build();
-                }
+        } else if (hasRequiredTransitLeg(travelerPosition) && hasRequiredTripStatus(tripStatus)) {
+            TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition);
+            if (tripInstruction != null) {
+                return tripInstruction.build();
             }
         }
         return NO_INSTRUCTION;
@@ -87,12 +85,12 @@ public class TravelerLocator {
     }
 
     /**
-     * Has required walk leg.
+     * Has required transit leg.
      */
     private static boolean hasRequiredTransitLeg(TravelerPosition travelerPosition) {
         return
             travelerPosition.expectedLeg != null &&
-                travelerPosition.expectedLeg.transitLeg;
+            travelerPosition.expectedLeg.transitLeg;
     }
 
     /**
@@ -156,7 +154,7 @@ public class TravelerLocator {
     }
 
     /**
-     * Align the traveler's position to the nearest step or destination.
+     * Align the traveler's position to the nearest transit stop or destination.
      */
     @Nullable
     public static TripInstruction alignTravelerToTransitTrip(TravelerPosition travelerPosition) {
@@ -290,7 +288,7 @@ public class TravelerLocator {
      * Inject waypoints (could be steps on a walk leg, or intermediate stops on a transit leg)
      * into the leg positions. It is assumed that both sets of points are on the same route
      * and are in between the start and end positions. If b = beginning, p = point on leg, W = waypoint and e = end, create
-     * a list of coordinates which can be traversed to get the next step.
+     * a list of coordinates which can be traversed to get the next waypoint.
      * <p>
      * b|p|W|p|p|p|p|p|p|W|p|p|W|p|p|p|p|p|W|e
      */
