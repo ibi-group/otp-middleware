@@ -7,6 +7,7 @@ import org.opentripplanner.middleware.otp.response.Place;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.stopsUntilEndOfLeg;
 
 class TravelerLocatorTest {
     @Test
@@ -23,11 +24,11 @@ class TravelerLocatorTest {
             createPlace("Stop6")
         );
 
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < leg.intermediateStops.size(); i++) {
             Place stop = leg.intermediateStops.get(i);
-            assertEquals(7 - i, TravelerLocator.stopsUntilEndOfLeg(stop, leg), stop.stopId);
+            assertEquals(7 - i, stopsUntilEndOfLeg(stop, leg), stop.stopId);
         }
-        assertEquals(0, TravelerLocator.stopsUntilEndOfLeg(leg.to, leg), leg.to.stopId);
+        assertEquals(0, stopsUntilEndOfLeg(leg.to, leg), leg.to.stopId);
     }
 
     Place createPlace(String id) {
