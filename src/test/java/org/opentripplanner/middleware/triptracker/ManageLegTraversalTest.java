@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -33,7 +34,7 @@ import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getS
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextWayPoint;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithinExclusionZone;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
+import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 

@@ -1,7 +1,5 @@
 package org.opentripplanner.middleware.triptracker.instruction;
 
-import org.opentripplanner.middleware.triptracker.TripInstruction;
-
 import java.util.Locale;
 
 /**

@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.triptracker.instruction.GetOffHereTransitI
 import org.opentripplanner.middleware.triptracker.instruction.GetOffNextStopTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffSoonTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TransitLegSummaryInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.utils.Coordinates;
@@ -24,8 +25,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
+import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
+import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.isPointBetween;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;

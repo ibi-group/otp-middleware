@@ -15,6 +15,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.AgencyAction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
