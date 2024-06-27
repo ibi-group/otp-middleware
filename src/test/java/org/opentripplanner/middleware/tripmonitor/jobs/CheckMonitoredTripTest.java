@@ -88,6 +88,16 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         DateTimeUtils.useSystemDefaultClockAndTimezone();
     }
 
+    /** Provides a mock OTP 'plan' response */
+    public OtpResponse mockOtpPlanResponse() {
+        try {
+            // Setup an OTP mock response in order to trigger some of the monitor checks.
+            return OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * To run this trip, change the env.yml config values for OTP_API_ROOT
      * (and OTP_PLAN_ENDPOINT) to a valid OTP server.
@@ -107,7 +117,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         LOG.info("Created trip {}", monitoredTrip.id);
 
         // Setup an OTP mock response in order to trigger some of the monitor checks.
-        OtpResponse mockResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        OtpResponse mockResponse = mockOtpPlanResponse();
         Itinerary mockMondayJune15Itinerary = mockResponse.plan.itineraries.get(0);
 
         // parse original itinerary date/time and then update mock itinerary to occur on Monday June 15
@@ -131,7 +141,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         );
 
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
         checkMonitoredTrip.run();
         // Assert that there is one notification generated during check.
         // TODO: Improve assertions to use snapshots.
@@ -574,26 +584,20 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void shouldReportOneTimeTripInPastAsCompleted() throws CloneNotSupportedException, JsonProcessingException {
+    void shouldReportOneTimeTripInPastAsCompleted() throws CloneNotSupportedException {
         MonitoredTrip trip = makeMonitoredTripFromNow(-900, -300);
         trip.journeyState.matchingItinerary = trip.itinerary;
         trip.journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
 
-        // Build fake OTP response, using an existing one as template
-        OtpResponse otpResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
-
-        new CheckMonitoredTrip(trip, () -> otpResponse).checkOtpAndUpdateTripStatus();
+        new CheckMonitoredTrip(trip, this::mockOtpPlanResponse).checkOtpAndUpdateTripStatus();
         assertEquals(TripStatus.PAST_TRIP, trip.journeyState.tripStatus);
     }
 
     @Test
-    void shouldReportOneTimeTripInPastWithTrackingAsActive() throws CloneNotSupportedException, JsonProcessingException {
+    void shouldReportOneTimeTripInPastWithTrackingAsActive() throws CloneNotSupportedException {
         MonitoredTrip trip = createPastActiveTripWithTrackedJourney();
 
-        // Build fake OTP response, using an existing one as template
-        OtpResponse otpResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
-
-        new CheckMonitoredTrip(trip, () -> otpResponse).checkOtpAndUpdateTripStatus();
+        new CheckMonitoredTrip(trip, this::mockOtpPlanResponse).checkOtpAndUpdateTripStatus();
         assertEquals(TripStatus.TRIP_ACTIVE, trip.journeyState.tripStatus);
     }
 
@@ -645,10 +649,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         setRecurringTodayAndTomorrow(trip);
         String todayFormatted = trip.journeyState.targetDate;
 
-        // Build fake OTP response, using an existing one as template
-        OtpResponse otpResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
-
-        CheckMonitoredTrip check = new CheckMonitoredTrip(trip, () -> otpResponse);
+        CheckMonitoredTrip check = new CheckMonitoredTrip(trip, this::mockOtpPlanResponse);
         check.shouldSkipMonitoredTripCheck(false);
         check.checkOtpAndUpdateTripStatus();
         // Trip should remain active, and the target date should still be "today".
