@@ -160,7 +160,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         journeyState.baselineDepartureTimeEpochMillis += previousDelayMillis;
         journeyState.baselineArrivalTimeEpochMillis += previousDelayMillis;
 
-        CheckMonitoredTrip check = createCheckMonitoredTrip(journeyState, null);
+        CheckMonitoredTrip check = createCheckMonitoredTrip(journeyState, this::mockOtpPlanResponse);
         check.matchingItinerary.offsetTimes(TimeUnit.MILLISECONDS.convert(minutesLate, TimeUnit.MINUTES));
 
         NotificationType[] notificationTypes = new NotificationType[] {
@@ -235,9 +235,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             false,
             journeyState
         );
-        CheckMonitoredTrip checkMonitoredTrip = otpResponseProvider != null
-            ? new CheckMonitoredTrip(monitoredTrip, otpResponseProvider)
-            : new CheckMonitoredTrip(monitoredTrip);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, otpResponseProvider);
         checkMonitoredTrip.matchingItinerary = OtpTestUtils.createDefaultItinerary();
         return checkMonitoredTrip;
     }
