@@ -27,7 +27,6 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -67,8 +66,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         .withMinute(0);
 
     @BeforeAll
-    public static void setup() throws IOException {
-        OtpTestUtils.mockOtpServer();
+    public static void setup() {
         user = PersistenceTestUtils.createUser("user@example.com");
     }
 
@@ -82,7 +80,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     @AfterEach
     public void tearDownAfterTest() {
-        OtpTestUtils.resetOtpMocks();
         DateTimeUtils.useSystemDefaultClockAndTimezone();
     }
 
@@ -102,9 +99,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     void canMonitorTrip() throws Exception {
-        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.clone(),
+            false,
+            OtpTestUtils.createDefaultJourneyState()
+        );
         monitoredTrip.updateAllDaysOfWeek(true);
-        monitoredTrip.userId = user.id;
         monitoredTrip.tripName = "My Morning Commute";
         monitoredTrip.itineraryExistence = new ItineraryExistence();
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
