@@ -105,9 +105,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             false,
             OtpTestUtils.createDefaultJourneyState()
         );
-        monitoredTrip.updateAllDaysOfWeek(true);
-        monitoredTrip.tripName = "My Morning Commute";
-        monitoredTrip.itineraryExistence = new ItineraryExistence();
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
@@ -140,7 +137,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
         checkMonitoredTrip.run();
         // Assert that there is one notification generated during check.
-        // TODO: Improve assertions to use snapshots.
         Assertions.assertEquals(1, checkMonitoredTrip.notifications.size());
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
@@ -366,8 +362,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canMakeOTPRequestAndUpdateMatchingItineraryForPreviouslyUnmatchedItinerary() throws Exception {
         // create an OTP mock to return
-        OtpResponse mockWeekdayResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
-        // create a mock monitored trip and CheckMonitorTrip instance
+        OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
+        // create a mock monitored trip and CheckMonitorTrip instance.
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
@@ -430,8 +427,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canMakeOTPRequestAndResolveUnmatchedItinerary() throws Exception {
         // create an OTP mock to return
-        OtpResponse mockWeekdayResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
         // create a mock monitored trip and CheckMonitorTrip instance
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
@@ -506,8 +504,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canMakeOTPRequestAndResolveNoLongerPossibleTrip() throws Exception {
         // create an OTP mock to return
-        OtpResponse mockWeekdayResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
         // create a mock monitored trip and CheckMonitorTrip instance
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
@@ -626,10 +625,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         setRecurringTodayAndTomorrow(trip);
 
         // Build fake OTP response, using an existing one as template
-        OtpResponse otpResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        OtpResponse otpResponse = mockOtpPlanResponse();
         Itinerary adjustedItinerary = trip.itinerary.clone();
         otpResponse.plan.itineraries = List.of(adjustedItinerary);
 
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip check = new CheckMonitoredTrip(trip, () -> otpResponse);
         check.shouldSkipMonitoredTripCheck(false);
         check.checkOtpAndUpdateTripStatus();
