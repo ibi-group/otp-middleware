@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -207,13 +208,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 "On-time trip previously late => show on-time notifications"
             )
         );
-    }
-
-    /**
-     * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
-     */
-    private static CheckMonitoredTrip createCheckMonitoredTrip() throws Exception {
-        return createCheckMonitoredTrip(OtpTestUtils.createDefaultJourneyState(), null);
     }
 
     /**
@@ -580,19 +574,26 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void shouldReportOneTimeTripInPastAsCompleted() throws CloneNotSupportedException {
+    void shouldReportOneTimeTripInPastAsCompleted() throws CloneNotSupportedException, JsonProcessingException {
         MonitoredTrip trip = makeMonitoredTripFromNow(-900, -300);
         trip.journeyState.matchingItinerary = trip.itinerary;
         trip.journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
 
-        new CheckMonitoredTrip(trip).checkOtpAndUpdateTripStatus();
+        // Build fake OTP response, using an existing one as template
+        OtpResponse otpResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+
+        new CheckMonitoredTrip(trip, () -> otpResponse).checkOtpAndUpdateTripStatus();
         assertEquals(TripStatus.PAST_TRIP, trip.journeyState.tripStatus);
     }
 
     @Test
-    void shouldReportOneTimeTripInPastWithTrackingAsActive() throws CloneNotSupportedException {
+    void shouldReportOneTimeTripInPastWithTrackingAsActive() throws CloneNotSupportedException, JsonProcessingException {
         MonitoredTrip trip = createPastActiveTripWithTrackedJourney();
-        new CheckMonitoredTrip(trip).checkOtpAndUpdateTripStatus();
+
+        // Build fake OTP response, using an existing one as template
+        OtpResponse otpResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+
+        new CheckMonitoredTrip(trip, () -> otpResponse).checkOtpAndUpdateTripStatus();
         assertEquals(TripStatus.TRIP_ACTIVE, trip.journeyState.tripStatus);
     }
 
@@ -644,7 +645,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         setRecurringTodayAndTomorrow(trip);
         String todayFormatted = trip.journeyState.targetDate;
 
-        CheckMonitoredTrip check = new CheckMonitoredTrip(trip);
+        // Build fake OTP response, using an existing one as template
+        OtpResponse otpResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+
+        CheckMonitoredTrip check = new CheckMonitoredTrip(trip, () -> otpResponse);
         check.shouldSkipMonitoredTripCheck(false);
         check.checkOtpAndUpdateTripStatus();
         // Trip should remain active, and the target date should still be "today".
