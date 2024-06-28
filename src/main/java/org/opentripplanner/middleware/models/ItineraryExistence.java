@@ -2,13 +2,11 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
-import org.opentripplanner.middleware.otp.OtpVersion;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -184,14 +182,11 @@ public class ItineraryExistence extends Model {
                 result = new ItineraryExistenceResult();
                 setResultForDayOfWeek(result, dayOfWeek);
             }
+
             // Send off each plan query to OTP.
-            OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP1, otpRequest);
-            TripPlan plan = null;
-            try {
-                plan = response.getResponse().plan;
-            } catch (JsonProcessingException e) {
-                LOG.error("Could not parse plan response for otpRequest {}", otpRequest, e);
-            }
+            OtpResponse response = OtpDispatcher.sendOtpRequestWithErrorHandling(otpRequest);
+            TripPlan plan = response.plan;
+
             // Handle response if valid itineraries exist.
             if (plan != null && plan.itineraries != null) {
                 for (Itinerary itineraryCandidate : plan.itineraries) {

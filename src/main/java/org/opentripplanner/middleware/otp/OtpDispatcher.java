@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -126,9 +127,17 @@ public class OtpDispatcher {
     }
 
     public static OtpResponse sendOtpRequestWithErrorHandling(String sentParams) {
+        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP1, sentParams));
+    }
+
+    public static OtpResponse sendOtpRequestWithErrorHandling(OtpRequest otpRequest) {
+        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP1, otpRequest));
+    }
+
+    private static OtpResponse handleOtpDispatcherResponse(Supplier<OtpDispatcherResponse> otpDispatcherResponseSupplier) {
         OtpDispatcherResponse otpDispatcherResponse;
         try {
-            otpDispatcherResponse = sendOtpPlanRequest(OtpVersion.OTP1, sentParams);
+            otpDispatcherResponse = otpDispatcherResponseSupplier.get();
         } catch (Exception e) {
             BugsnagReporter.reportErrorToBugsnag(
                 "Encountered an error while making a request ot the OTP server.",
@@ -154,4 +163,5 @@ public class OtpDispatcher {
             return null;
         }
     }
+
 }
