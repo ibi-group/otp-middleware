@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstructio
 import org.opentripplanner.middleware.triptracker.instruction.GetOffHereTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffNextStopTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffSoonTransitInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TransitLegSummaryInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
@@ -140,12 +141,12 @@ public class TravelerLocator {
                 // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
                 return new WaitForTransitInstruction(travelerPosition.nextLeg, travelerPosition.currentTime, locale);
             }
-            return new TripInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
+            return new OnTrackInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
         }
 
         Step nextStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps);
         if (nextStep != null && (!isPositionPastStep(travelerPosition, nextStep) || isStartOfTrip)) {
-            return new TripInstruction(
+            return new OnTrackInstruction(
                 getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
                 nextStep,
                 locale

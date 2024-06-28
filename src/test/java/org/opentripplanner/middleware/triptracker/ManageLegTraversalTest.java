@@ -14,7 +14,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
-import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -193,7 +193,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TraceData(
                     originCoords,
-                    new TripInstruction(10, adairAvenueNortheastStep, locale).build(),
+                    new OnTrackInstruction(10, adairAvenueNortheastStep, locale).build(),
                     true,
                     "Just started the trip and near to the instruction for the first step. "
                 )
@@ -201,7 +201,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TraceData(
                     originCoords,
-                    new TripInstruction(10, adairAvenueNortheastStep, locale).build(),
+                    new OnTrackInstruction(10, adairAvenueNortheastStep, locale).build(),
                     false,
                     "Coming up on first instruction."
                 )
@@ -209,7 +209,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TraceData(
                     adairAvenueNortheastCoords,
-                    new TripInstruction(2, adairAvenueNortheastStep, locale).build(),
+                    new OnTrackInstruction(2, adairAvenueNortheastStep, locale).build(),
                     false,
                     "On first instruction."
                 )
@@ -244,7 +244,7 @@ public class ManageLegTraversalTest {
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING),
-                    new TripInstruction(9, virginiaCircleNortheastStep, locale).build(),
+                    new OnTrackInstruction(9, virginiaCircleNortheastStep, locale).build(),
                     false,
                     "Deviated from path, but within the upcoming radius of second instruction."
                 )
@@ -252,7 +252,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TraceData(
                     virginiaCircleNortheastCoords,
-                    new TripInstruction(0, virginiaCircleNortheastStep, locale).build(),
+                    new OnTrackInstruction(0, virginiaCircleNortheastStep, locale).build(),
                     false,
                     "On second instruction."
                 )
@@ -260,8 +260,8 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TraceData(
                     TripStatus.DEVIATED,
-                    createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_WEST_BEARING),
-                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
+                    createPoint(ponceDeLeonPlaceNortheastCoords, 10, NORTH_WEST_BEARING),
+                    new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale).build(),
                     false,
                     "Deviated to the west of south to north path. Suggest path to head towards."
                 )
@@ -269,8 +269,8 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TraceData(
                     TripStatus.DEVIATED,
-                    createPoint(ponceDeLeonPlaceNortheastCoords, 8, NORTH_EAST_BEARING),
-                    new TripInstruction(10, ponceDeLeonPlaceNortheastStep, locale).build(),
+                    createPoint(ponceDeLeonPlaceNortheastCoords, 10, NORTH_EAST_BEARING),
+                    new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale).build(),
                     false,
                     "Deviated to the east of south to north path. Suggest path to head towards."
                 )
@@ -278,7 +278,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TraceData(
                     createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new TripInstruction(10, virginiaAvenueNortheastStep, locale).build(),
+                    new OnTrackInstruction(10, virginiaAvenueNortheastStep, locale).build(),
                     false,
                     "Approaching left turn on Virginia Avenue (Test to make sure turn is not missed)."
                 )
@@ -286,7 +286,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TraceData(
                     createPoint(pointBeforeTurn, 17, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new TripInstruction(2, virginiaAvenueNortheastStep, locale).build(),
+                    new OnTrackInstruction(2, virginiaAvenueNortheastStep, locale).build(),
                     false,
                     "Turn left on to Virginia Avenue (Test to make sure turn is not missed)."
                 )
@@ -302,7 +302,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TraceData(
                     createPoint(destinationCoords, 8, SOUTH_BEARING),
-                    new TripInstruction(10, destinationName, locale).build(),
+                    new OnTrackInstruction(10, destinationName, locale).build(),
                     false,
                     "Coming up on destination instruction."
                 )
@@ -310,7 +310,7 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TraceData(
                     destinationCoords,
-                    new TripInstruction(2, destinationName, locale).build(),
+                    new OnTrackInstruction(2, destinationName, locale).build(),
                     false,
                     "On destination instruction."
                 )
