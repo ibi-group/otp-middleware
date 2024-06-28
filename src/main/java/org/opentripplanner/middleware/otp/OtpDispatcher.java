@@ -1,7 +1,11 @@
 package org.opentripplanner.middleware.otp;
 
 import java.util.Map;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -119,5 +123,35 @@ public class OtpDispatcher {
                 headers,
                 bodyContent);
         return new OtpDispatcherResponse(otpResponse);
+    }
+
+    public static OtpResponse sendOtpRequestWithErrorHandling(String sentParams) {
+        OtpDispatcherResponse otpDispatcherResponse;
+        try {
+            otpDispatcherResponse = sendOtpPlanRequest(OtpVersion.OTP1, sentParams);
+        } catch (Exception e) {
+            BugsnagReporter.reportErrorToBugsnag(
+                "Encountered an error while making a request ot the OTP server.",
+                e
+            );
+            return null;
+        }
+
+        if (otpDispatcherResponse.statusCode >= 400) {
+            BugsnagReporter.reportErrorToBugsnag(
+                "Received an error from the OTP server.",
+                otpDispatcherResponse,
+                null
+            );
+            return null;
+        }
+
+        try {
+            return otpDispatcherResponse.getResponse();
+        } catch (JsonProcessingException e) {
+            // don't report to Bugsnag since the getResponse method will already have reported to Bugsnag.
+            LOG.error("Unable to parse OTP response!", e);
+            return null;
+        }
     }
 }
