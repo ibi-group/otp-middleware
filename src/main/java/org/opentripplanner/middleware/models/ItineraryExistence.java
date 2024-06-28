@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
@@ -68,6 +69,8 @@ public class ItineraryExistence extends Model {
      */
     public Date timestamp = new Date();
 
+    private Function<OtpRequest, OtpResponse> otpResponseProvider = ItineraryExistence::getOtpResponse;
+
     // Required for persistence.
     public ItineraryExistence() {}
 
@@ -75,6 +78,16 @@ public class ItineraryExistence extends Model {
         this.otpRequests = otpRequests;
         this.referenceItinerary = referenceItinerary;
         this.tripIsArriveBy = tripIsArriveBy;
+    }
+
+    public ItineraryExistence(
+        List<OtpRequest> otpRequests,
+        Itinerary referenceItinerary,
+        boolean tripIsArriveBy,
+        Function<OtpRequest, OtpResponse> otpResponseProvider
+    ) {
+        this(otpRequests, referenceItinerary, tripIsArriveBy);
+        this.otpResponseProvider = otpResponseProvider;
     }
 
     /**
@@ -184,7 +197,7 @@ public class ItineraryExistence extends Model {
             }
 
             // Send off each plan query to OTP.
-            OtpResponse response = OtpDispatcher.sendOtpRequestWithErrorHandling(otpRequest);
+            OtpResponse response = this.otpResponseProvider.apply(otpRequest);
             TripPlan plan = response.plan;
 
             // Handle response if valid itineraries exist.
@@ -214,6 +227,10 @@ public class ItineraryExistence extends Model {
             );
             this.error = true;
         }
+    }
+
+    private static OtpResponse getOtpResponse(OtpRequest otpRequest) {
+        return OtpDispatcher.sendOtpRequestWithErrorHandling(otpRequest);
     }
 
     /**
