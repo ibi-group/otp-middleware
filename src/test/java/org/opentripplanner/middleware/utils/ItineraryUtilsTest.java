@@ -1,9 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
 import com.google.common.collect.Lists;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -20,7 +18,6 @@ import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -102,16 +99,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         return OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
     }
 
-    @BeforeAll
-    public static void setup() throws IOException {
-        OtpTestUtils.mockOtpServer();
-    }
-
-    @AfterEach
-    public void tearDownAfterTest() {
-        OtpTestUtils.resetOtpMocks();
-    }
-
     /**
      * Test that itineraries exist and result.allCheckedDatesAreValid are as expected.
      */
@@ -129,13 +116,13 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         mockOtpResponses.set(FRIDAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
         mockOtpResponses.set(WEDNESDAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
 
-        OtpTestUtils.setupOtpMocks(mockOtpResponses);
+        MockOtpResponseProvider mockResponses = new MockOtpResponseProvider(mockOtpResponses);
 
         // Also set trip itinerary to the template itinerary for easy/lazy match.
         Itinerary expectedItinerary = mockOtpResponses.get(0).plan.itineraries.get(0);
         trip.itinerary = expectedItinerary;
 
-        trip.checkItineraryExistence(false);
+        trip.checkItineraryExistence(false, mockResponses::getMockResponse);
         ItineraryExistence existence = trip.itineraryExistence;
 
         boolean allDaysValid = !insertInvalidDay;
@@ -165,6 +152,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         // Days not monitored had an error response, so the check should return invalid for those days.
         assertFalse(existence.wednesday.isValid());
         assertFalse(existence.friday.isValid());
+
+        // Make sure all mpcks were used
+        assertTrue(mockResponses.areAllMocksUsed());
     }
 
     private static Stream<Arguments> createCheckAllItinerariesExistTestCases() {
@@ -524,4 +514,25 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         }
     }
 
+    /**
+     * Provides a set of mock OTP responses in the order they are expected to be used.
+     */
+    static class MockOtpResponseProvider {
+        private int index = 0;
+        private final List<OtpResponse> mockResponses;
+
+        MockOtpResponseProvider(List<OtpResponse> mockResponses) {
+            this.mockResponses = mockResponses;
+        }
+
+        public OtpResponse getMockResponse(OtpRequest otpRequest) {
+            // otpRequest is ignored, and the next response is given.
+            // If index is out of bounds, an error will be thrown.
+            return mockResponses.get(index++);
+        }
+
+        public boolean areAllMocksUsed() {
+            return index == mockResponses.size();
+        }
+    }
 }
