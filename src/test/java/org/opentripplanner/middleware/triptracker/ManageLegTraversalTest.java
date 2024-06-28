@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.Coordinates;
@@ -217,7 +218,7 @@ public class ManageLegTraversalTest {
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, NORTH_WEST_BEARING),
-                    new TripInstruction(adairAvenueNortheastStep.streetName, locale).build(),
+                    new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale).build(),
                     false,
                     "Deviated to the north of east to west path. Suggest path to head towards."
                 )
@@ -226,7 +227,7 @@ public class ManageLegTraversalTest {
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, SOUTH_WEST_BEARING),
-                    new TripInstruction(adairAvenueNortheastStep.streetName, locale).build(),
+                    new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale).build(),
                     false,
                     "Deviated to the south of east to west path. Suggest path to head towards."
                 )

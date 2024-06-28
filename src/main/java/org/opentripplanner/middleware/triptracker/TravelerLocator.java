@@ -4,6 +4,7 @@ import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffHereTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffNextStopTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffSoonTransitInstruction;
@@ -116,7 +117,7 @@ public class TravelerLocator {
         }
         Step nearestStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps);
         return (nearestStep != null)
-            ? new TripInstruction(nearestStep.streetName, travelerPosition.locale)
+            ? new DeviatedInstruction(nearestStep.streetName, travelerPosition.locale)
             : null;
     }
 

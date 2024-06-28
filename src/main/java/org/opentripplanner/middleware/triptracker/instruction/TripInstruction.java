@@ -10,7 +10,7 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 
 public class TripInstruction {
 
-    public enum TripInstructionType { ON_TRACK, DEVIATED }
+    public enum TripInstructionType { ON_TRACK }
 
     /** The radius in meters under which an immediate instruction is given. */
     public static final int TRIP_INSTRUCTION_IMMEDIATE_RADIUS
@@ -90,15 +90,6 @@ public class TripInstruction {
     }
 
     /**
-     * Deviated instruction.
-     */
-    public TripInstruction(String locationName, Locale locale) {
-        this.tripInstructionType = TripInstructionType.DEVIATED;
-        this.locationName = locationName;
-        this.locale = locale;
-    }
-
-    /**
      * The prefix is defined depending on the traveler either approaching a step or destination and the predefined
      * distances from these points.
      */
@@ -117,8 +108,6 @@ public class TripInstruction {
         switch (tripInstructionType) {
             case ON_TRACK:
                 return buildOnTrackInstruction();
-            case DEVIATED:
-                return String.format("Head to %s", locationName);
             default:
                 return NO_INSTRUCTION;
         }
