@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -22,12 +23,10 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
-import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -48,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.setRecurringTodayAndTomorrow;
 
@@ -68,8 +66,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         .withMinute(0);
 
     @BeforeAll
-    public static void setup() throws IOException {
-        OtpTestUtils.mockOtpServer();
+    public static void setup() {
         user = PersistenceTestUtils.createUser("user@example.com");
     }
 
@@ -83,8 +80,17 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     @AfterEach
     public void tearDownAfterTest() {
-        OtpTestUtils.resetOtpMocks();
         DateTimeUtils.useSystemDefaultClockAndTimezone();
+    }
+
+    /** Provides a mock OTP 'plan' response */
+    public OtpResponse mockOtpPlanResponse() {
+        try {
+            // Setup an OTP mock response in order to trigger some of the monitor checks.
+            return OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -93,20 +99,18 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     void canMonitorTrip() throws Exception {
-        // Do not run this test in a CI environment because it requires a live OTP server
-        // FIXME: Add live otp server to e2e tests.
-        assumeTrue(!ConfigUtils.isRunningCi && OtpMiddlewareTestEnvironment.IS_END_TO_END);
-        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
-        monitoredTrip.updateAllDaysOfWeek(true);
-        monitoredTrip.userId = user.id;
-        monitoredTrip.tripName = "My Morning Commute";
-        monitoredTrip.itineraryExistence = new ItineraryExistence();
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.clone(),
+            false,
+            OtpTestUtils.createDefaultJourneyState()
+        );
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
 
         // Setup an OTP mock response in order to trigger some of the monitor checks.
-        OtpResponse mockResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        OtpResponse mockResponse = mockOtpPlanResponse();
         Itinerary mockMondayJune15Itinerary = mockResponse.plan.itineraries.get(0);
 
         // parse original itinerary date/time and then update mock itinerary to occur on Monday June 15
@@ -133,7 +137,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
         checkMonitoredTrip.run();
         // Assert that there is one notification generated during check.
-        // TODO: Improve assertions to use snapshots.
         Assertions.assertEquals(1, checkMonitoredTrip.notifications.size());
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
@@ -153,7 +156,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         journeyState.baselineDepartureTimeEpochMillis += previousDelayMillis;
         journeyState.baselineArrivalTimeEpochMillis += previousDelayMillis;
 
-        CheckMonitoredTrip check = createCheckMonitoredTrip(journeyState, null);
+        CheckMonitoredTrip check = createCheckMonitoredTrip(journeyState, this::mockOtpPlanResponse);
         check.matchingItinerary.offsetTimes(TimeUnit.MILLISECONDS.convert(minutesLate, TimeUnit.MINUTES));
 
         NotificationType[] notificationTypes = new NotificationType[] {
@@ -212,13 +215,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     /**
      * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
      */
-    private static CheckMonitoredTrip createCheckMonitoredTrip() throws Exception {
-        return createCheckMonitoredTrip(OtpTestUtils.createDefaultJourneyState(), null);
-    }
-
-    /**
-     * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
-     */
     private static CheckMonitoredTrip createCheckMonitoredTrip(Supplier<OtpResponse> otpResponseProvider) throws Exception {
         return createCheckMonitoredTrip(OtpTestUtils.createDefaultJourneyState(), otpResponseProvider);
     }
@@ -235,9 +231,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             false,
             journeyState
         );
-        CheckMonitoredTrip checkMonitoredTrip = otpResponseProvider != null
-            ? new CheckMonitoredTrip(monitoredTrip, otpResponseProvider)
-            : new CheckMonitoredTrip(monitoredTrip);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, otpResponseProvider);
         checkMonitoredTrip.matchingItinerary = OtpTestUtils.createDefaultItinerary();
         return checkMonitoredTrip;
     }
@@ -368,8 +362,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canMakeOTPRequestAndUpdateMatchingItineraryForPreviouslyUnmatchedItinerary() throws Exception {
         // create an OTP mock to return
-        OtpResponse mockWeekdayResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
-        // create a mock monitored trip and CheckMonitorTrip instance
+        OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
+        // create a mock monitored trip and CheckMonitorTrip instance.
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
@@ -432,8 +427,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canMakeOTPRequestAndResolveUnmatchedItinerary() throws Exception {
         // create an OTP mock to return
-        OtpResponse mockWeekdayResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
         // create a mock monitored trip and CheckMonitorTrip instance
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
@@ -508,8 +504,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canMakeOTPRequestAndResolveNoLongerPossibleTrip() throws Exception {
         // create an OTP mock to return
-        OtpResponse mockWeekdayResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
         // create a mock monitored trip and CheckMonitorTrip instance
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
@@ -585,14 +582,15 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         trip.journeyState.matchingItinerary = trip.itinerary;
         trip.journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
 
-        new CheckMonitoredTrip(trip).checkOtpAndUpdateTripStatus();
+        new CheckMonitoredTrip(trip, this::mockOtpPlanResponse).checkOtpAndUpdateTripStatus();
         assertEquals(TripStatus.PAST_TRIP, trip.journeyState.tripStatus);
     }
 
     @Test
     void shouldReportOneTimeTripInPastWithTrackingAsActive() throws CloneNotSupportedException {
         MonitoredTrip trip = createPastActiveTripWithTrackedJourney();
-        new CheckMonitoredTrip(trip).checkOtpAndUpdateTripStatus();
+
+        new CheckMonitoredTrip(trip, this::mockOtpPlanResponse).checkOtpAndUpdateTripStatus();
         assertEquals(TripStatus.TRIP_ACTIVE, trip.journeyState.tripStatus);
     }
 
@@ -627,10 +625,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         setRecurringTodayAndTomorrow(trip);
 
         // Build fake OTP response, using an existing one as template
-        OtpResponse otpResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        OtpResponse otpResponse = mockOtpPlanResponse();
         Itinerary adjustedItinerary = trip.itinerary.clone();
         otpResponse.plan.itineraries = List.of(adjustedItinerary);
 
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip check = new CheckMonitoredTrip(trip, () -> otpResponse);
         check.shouldSkipMonitoredTripCheck(false);
         check.checkOtpAndUpdateTripStatus();
@@ -644,7 +643,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         setRecurringTodayAndTomorrow(trip);
         String todayFormatted = trip.journeyState.targetDate;
 
-        CheckMonitoredTrip check = new CheckMonitoredTrip(trip);
+        CheckMonitoredTrip check = new CheckMonitoredTrip(trip, this::mockOtpPlanResponse);
         check.shouldSkipMonitoredTripCheck(false);
         check.checkOtpAndUpdateTripStatus();
         // Trip should remain active, and the target date should still be "today".
