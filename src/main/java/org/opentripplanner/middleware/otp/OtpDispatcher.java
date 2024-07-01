@@ -140,7 +140,7 @@ public class OtpDispatcher {
             otpDispatcherResponse = otpDispatcherResponseSupplier.get();
         } catch (Exception e) {
             BugsnagReporter.reportErrorToBugsnag(
-                "Encountered an error while making a request ot the OTP server.",
+                "Encountered an error while making a request to the OTP server.",
                 e
             );
             return null;
