@@ -153,7 +153,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         assertFalse(existence.wednesday.isValid());
         assertFalse(existence.friday.isValid());
 
-        // Make sure all mpcks were used
+        // Make sure all mocks were used
         assertTrue(mockResponses.areAllMocksUsed());
     }
 
