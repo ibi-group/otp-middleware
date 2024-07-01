@@ -2,18 +2,14 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
-import org.opentripplanner.middleware.otp.OtpVersion;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
@@ -25,6 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.function.Function;
 
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
@@ -34,8 +31,6 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  * particular day of the week.
  */
 public class ItineraryExistence extends Model {
-    private static final Logger LOG = LoggerFactory.getLogger(ItineraryExistence.class);
-
     /**
      * Initial set of requests on which to base the itinerary existence checks. We do not want these persisted.
      */
@@ -74,13 +69,21 @@ public class ItineraryExistence extends Model {
      */
     public Date timestamp = new Date();
 
+    private transient Function<OtpRequest, OtpResponse> otpResponseProvider = ItineraryExistence::getOtpResponse;
+
     // Required for persistence.
     public ItineraryExistence() {}
 
-    public ItineraryExistence(List<OtpRequest> otpRequests, Itinerary referenceItinerary, boolean tripIsArriveBy) {
+    public ItineraryExistence(
+        List<OtpRequest> otpRequests,
+        Itinerary referenceItinerary,
+        boolean tripIsArriveBy,
+        Function<OtpRequest, OtpResponse> otpResponseProvider
+    ) {
         this.otpRequests = otpRequests;
         this.referenceItinerary = referenceItinerary;
         this.tripIsArriveBy = tripIsArriveBy;
+        if (otpResponseProvider != null) this.otpResponseProvider = otpResponseProvider;
     }
 
     /**
@@ -232,15 +235,11 @@ public class ItineraryExistence extends Model {
                 result = new ItineraryExistenceResult();
                 setResultForDayOfWeek(result, dayOfWeek);
             }
+
             // Send off each plan query to OTP.
-            String variables = ItineraryExistence.paramsToVariables(otpRequest.requestParameters);
-            OtpDispatcherResponse response = OtpDispatcher.sendGraphQLPostRequest(OtpVersion.OTP2, variables);
-            TripPlan plan = null;
-            try {
-                plan = response.getResponse().plan;
-            } catch (JsonProcessingException e) {
-                LOG.error("Could not parse plan response for otpRequest {}", otpRequest, e);
-            }
+            OtpResponse response = this.otpResponseProvider.apply(otpRequest);
+            TripPlan plan = response.plan;
+
             // Handle response if valid itineraries exist.
             if (plan != null && plan.itineraries != null) {
                 for (Itinerary itineraryCandidate : plan.itineraries) {
@@ -268,6 +267,10 @@ public class ItineraryExistence extends Model {
             );
             this.error = true;
         }
+    }
+
+    private static OtpResponse getOtpResponse(OtpRequest otpRequest) {
+        return OtpDispatcher.sendOtpRequestWithErrorHandling(otpRequest);
     }
 
     /**
