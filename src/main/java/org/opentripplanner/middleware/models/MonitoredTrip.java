@@ -205,9 +205,9 @@ public class MonitoredTrip extends Model {
     ) throws URISyntaxException {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
-        this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary, this.arriveBy, otpResponseProvider);
-        this.itineraryExistence.checkExistence(this);
-        boolean itineraryExists = this.itineraryExistence.allMonitoredDaysAreValid(this);
+        itineraryExistence = new ItineraryExistence(queriesByDate, itinerary, arriveBy, otpResponseProvider);
+        itineraryExistence.checkExistence(this);
+        boolean itineraryExists = itineraryExistence.allMonitoredDaysAreValid(this);
         // If itinerary should be replaced, do so if all checked days are valid.
         return replaceItinerary && itineraryExists
             ? this.updateTripWithVerifiedItinerary()
@@ -215,19 +215,10 @@ public class MonitoredTrip extends Model {
     }
 
     /**
-     * Checks that, for each query provided, an itinerary exists.
-     * @return a summary of the itinerary existence results for each day of the week
+     * Shorthand for above method using the default otpResponseProvider.
      */
     public boolean checkItineraryExistence(boolean replaceItinerary) throws URISyntaxException {
-        // Get queries to execute by date.
-        List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
-        this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary, this.arriveBy);
-        this.itineraryExistence.checkExistence(this);
-        boolean itineraryExists = this.itineraryExistence.allMonitoredDaysAreValid(this);
-        // If itinerary should be replaced, do so if all checked days are valid.
-        return replaceItinerary && itineraryExists
-            ? this.updateTripWithVerifiedItinerary()
-            : itineraryExists;
+        return checkItineraryExistence(replaceItinerary, null);
     }
 
     /**

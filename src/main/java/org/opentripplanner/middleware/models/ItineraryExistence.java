@@ -65,16 +65,10 @@ public class ItineraryExistence extends Model {
      */
     public Date timestamp = new Date();
 
-    private Function<OtpRequest, OtpResponse> otpResponseProvider = ItineraryExistence::getOtpResponse;
+    private transient Function<OtpRequest, OtpResponse> otpResponseProvider = ItineraryExistence::getOtpResponse;
 
     // Required for persistence.
     public ItineraryExistence() {}
-
-    public ItineraryExistence(List<OtpRequest> otpRequests, Itinerary referenceItinerary, boolean tripIsArriveBy) {
-        this.otpRequests = otpRequests;
-        this.referenceItinerary = referenceItinerary;
-        this.tripIsArriveBy = tripIsArriveBy;
-    }
 
     public ItineraryExistence(
         List<OtpRequest> otpRequests,
@@ -82,8 +76,10 @@ public class ItineraryExistence extends Model {
         boolean tripIsArriveBy,
         Function<OtpRequest, OtpResponse> otpResponseProvider
     ) {
-        this(otpRequests, referenceItinerary, tripIsArriveBy);
-        this.otpResponseProvider = otpResponseProvider;
+        this.otpRequests = otpRequests;
+        this.referenceItinerary = referenceItinerary;
+        this.tripIsArriveBy = tripIsArriveBy;
+        if (otpResponseProvider != null) this.otpResponseProvider = otpResponseProvider;
     }
 
     /**
