@@ -108,7 +108,7 @@ public class ItineraryExistence extends Model {
      * can't use JSON packages to get the types right, must hardcode them specifically for ItineraryExistence
      * so that only the values that are actually {@code String}s have {@code \"} around them.
      */
-    private static String paramsToVariables(Map<String, String> params) {
+    public static String paramsToVariables(Map<String, String> params) {
         StringBuilder builder = new StringBuilder("{");
         params.forEach((k, v) -> {
             switch (k) {

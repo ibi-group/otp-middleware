@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.utils.GraphQLUtils;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
