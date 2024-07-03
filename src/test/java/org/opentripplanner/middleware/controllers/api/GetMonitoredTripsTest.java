@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -21,11 +22,13 @@ import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.MockOtpResponseProvider;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -115,6 +118,8 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         BasicDBObject multiFilter = new BasicDBObject();
         multiFilter.put("userId", multiOtpUser.id);
         Persistence.monitoredTrips.removeFiltered(multiFilter);
+
+        ItineraryExistence.setDefaultOtpResponseProvider(ItineraryExistence.REAL_OTP_RESPONSE_PROVIDER);
     }
 
     /**
@@ -206,13 +211,14 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
      * Creates a {@link MonitoredTrip} for the specified user.
      */
     private static void createMonitoredTripAsUser(OtpUser otpUser) throws Exception {
-        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE);
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
 
         // Set mock OTP responses so that trip existence checks in the
         // POST call below to save the monitored trip can pass.
-        OtpTestUtils.setupOtpMocks(OtpTestUtils.createMockOtpResponsesForTripExistence());
+        MockOtpResponseProvider mockResponses = new MockOtpResponseProvider(OtpTestUtils.createMockOtpResponsesForTripExistence());
+        ItineraryExistence.setDefaultOtpResponseProvider(mockResponses::getMockResponse);
 
         HttpResponseValues createTripResponse = mockAuthenticatedRequest(MONITORED_TRIP_PATH,
             JsonUtils.toJson(monitoredTrip),
@@ -220,10 +226,7 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        // Reset mocks after POST, because the next call to this function will need it.
-        // (The mocks will be also reset in the @AfterEach phase if there are any failures.)
-        OtpTestUtils.resetOtpMocks();
-
         assertEquals(HttpStatus.OK_200, createTripResponse.status);
+        assertTrue(mockResponses.areAllMocksUsed());
     }
 }

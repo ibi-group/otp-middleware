@@ -31,6 +31,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  * particular day of the week.
  */
 public class ItineraryExistence extends Model {
+    public static final Function<OtpRequest, OtpResponse> REAL_OTP_RESPONSE_PROVIDER = ItineraryExistence::getOtpResponse;
     /**
      * Initial set of requests on which to base the itinerary existence checks. We do not want these persisted.
      */
@@ -69,7 +70,9 @@ public class ItineraryExistence extends Model {
      */
     public Date timestamp = new Date();
 
-    private transient Function<OtpRequest, OtpResponse> otpResponseProvider = ItineraryExistence::getOtpResponse;
+    private static Function<OtpRequest, OtpResponse> defaultOtpResponseProvider = REAL_OTP_RESPONSE_PROVIDER;
+
+    private transient Function<OtpRequest, OtpResponse> otpResponseProvider = defaultOtpResponseProvider;
 
     // Required for persistence.
     public ItineraryExistence() {}
@@ -100,6 +103,10 @@ public class ItineraryExistence extends Model {
             case SUNDAY: return sunday;
         }
         throw new IllegalArgumentException("Invalid day of week provided!");
+    }
+
+    public static void setDefaultOtpResponseProvider(Function<OtpRequest, OtpResponse> otpResponseProvider) {
+        defaultOtpResponseProvider = otpResponseProvider;
     }
 
     /**

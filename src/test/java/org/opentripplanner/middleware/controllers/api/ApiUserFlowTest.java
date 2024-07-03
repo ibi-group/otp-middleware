@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -22,6 +23,7 @@ import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.MockOtpResponseProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +32,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
@@ -211,7 +214,8 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
 
         // Set mock OTP responses so that trip existence checks in the
         // POST call below to save the monitored trip can pass.
-        OtpTestUtils.setupOtpMocks(OtpTestUtils.createMockOtpResponsesForTripExistence());
+        MockOtpResponseProvider mockResponses = new MockOtpResponseProvider(OtpTestUtils.createMockOtpResponsesForTripExistence());
+        ItineraryExistence.setDefaultOtpResponseProvider(mockResponses::getMockResponse);
 
         HttpResponseValues createTripResponseAsApiUser = makeRequest(
             MONITORED_TRIP_PATH,
@@ -220,13 +224,10 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        // After POST is complete, reset mock OTP responses for subsequent mock OTP calls below.
-        // (The mocks will also be reset in the @AfterEach phase if there are failures.)
-        OtpTestUtils.resetOtpMocks();
-
         String responseBody = createTripResponseAsApiUser.responseBody;
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.status);
         MonitoredTrip monitoredTripResponse = JsonUtils.getPOJOFromJSON(responseBody, MonitoredTrip.class);
+        assertTrue(mockResponses.areAllMocksUsed());
 
         // As API user, try to assign this trip to another user the API user doesn't manage.
         // (This trip should not be persisted.)
