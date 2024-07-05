@@ -7,7 +7,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.opentripplanner.middleware.models.Device;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,6 +54,32 @@ class NotificationUtilsTest {
             "https://get.example.com/devices/?user=first.last%2Bsuffix%40example.com",
             getPushDevicesUrl(base, email)
         );
+    }
+
+    @Test
+    void testNumberOfUniqueDevices() {
+        String payload =
+            "[" +
+            "  {" +
+            "    \"DeviceName\": null" +
+            "  }," +
+            "  {" +
+            "    \"DeviceName\": null" +
+            "  }," +
+            "  {" +
+            "    \"DeviceName\": \"iPhone\"" +
+            "  }," +
+            "  {" +
+            "    \"DeviceName\": null" +
+            "  }," +
+            "  {" +
+            "    \"DeviceName\": \"Android\"" +
+            "  }" +
+            "]";
+
+        List<Device> devices = JsonUtils.getPOJOFromJSONAsList(payload, Device.class);
+        assertEquals(5, devices.size());
+        assertEquals(2, NotificationUtils.getNumberOfUniqueDevices(devices));
     }
 
     @ParameterizedTest

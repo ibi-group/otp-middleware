@@ -14,6 +14,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.StringUtil;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
+import org.opentripplanner.middleware.models.Device;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -22,7 +23,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
@@ -348,9 +352,9 @@ public class NotificationUtils {
                 null
             );
             if (httpResponse.status == 200) {
-                // We don't use any of this information, we only care how many devices are registered.
-                var devices = JsonUtils.getPOJOFromHttpBodyAsList(httpResponse, Object.class);
-                return devices.size();
+                return getNumberOfUniqueDevices(
+                    Objects.requireNonNull(JsonUtils.getPOJOFromHttpBodyAsList(httpResponse, Device.class))
+                );
             } else {
                 LOG.error("Error {} while getting info on push notification devices", httpResponse.status);
             }
@@ -358,6 +362,18 @@ public class NotificationUtils {
             LOG.error("No info on push notification devices", e);
         }
         return 0;
+    }
+
+    /**
+     * Return the number of unique, non null, device names.
+     */
+    public static int getNumberOfUniqueDevices(List<Device> devices) {
+        return devices
+            .stream()
+            .map(Device::getDeviceName)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet())
+            .size();
     }
 
     static String getPushDevicesUrl(String baseUrl, String toUser) {
