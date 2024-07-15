@@ -1,7 +1,11 @@
 package org.opentripplanner.middleware.otp;
 
 import java.util.Map;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -10,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -120,4 +125,43 @@ public class OtpDispatcher {
                 bodyContent);
         return new OtpDispatcherResponse(otpResponse);
     }
+
+    public static OtpResponse sendOtpRequestWithErrorHandling(String sentParams) {
+        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP1, sentParams));
+    }
+
+    public static OtpResponse sendOtpRequestWithErrorHandling(OtpRequest otpRequest) {
+        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP1, otpRequest));
+    }
+
+    private static OtpResponse handleOtpDispatcherResponse(Supplier<OtpDispatcherResponse> otpDispatcherResponseSupplier) {
+        OtpDispatcherResponse otpDispatcherResponse;
+        try {
+            otpDispatcherResponse = otpDispatcherResponseSupplier.get();
+        } catch (Exception e) {
+            BugsnagReporter.reportErrorToBugsnag(
+                "Encountered an error while making a request to the OTP server.",
+                e
+            );
+            return null;
+        }
+
+        if (otpDispatcherResponse.statusCode >= 400) {
+            BugsnagReporter.reportErrorToBugsnag(
+                "Received an error from the OTP server.",
+                otpDispatcherResponse,
+                null
+            );
+            return null;
+        }
+
+        try {
+            return otpDispatcherResponse.getResponse();
+        } catch (JsonProcessingException e) {
+            // don't report to Bugsnag since the getResponse method will already have reported to Bugsnag.
+            LOG.error("Unable to parse OTP response!", e);
+            return null;
+        }
+    }
+
 }

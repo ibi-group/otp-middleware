@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -30,6 +31,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -197,16 +199,26 @@ public class MonitoredTrip extends Model {
      * Checks that, for each query provided, an itinerary exists.
      * @return a summary of the itinerary existence results for each day of the week
      */
-    public boolean checkItineraryExistence(boolean replaceItinerary) throws URISyntaxException {
+    public boolean checkItineraryExistence(
+        boolean replaceItinerary,
+        Function<OtpRequest, OtpResponse> otpResponseProvider
+    ) throws URISyntaxException {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
-        this.itineraryExistence = new ItineraryExistence(queriesByDate, this.itinerary, this.arriveBy);
-        this.itineraryExistence.checkExistence(this);
-        boolean itineraryExists = this.itineraryExistence.allMonitoredDaysAreValid(this);
+        itineraryExistence = new ItineraryExistence(queriesByDate, itinerary, arriveBy, otpResponseProvider);
+        itineraryExistence.checkExistence(this);
+        boolean itineraryExists = itineraryExistence.allMonitoredDaysAreValid(this);
         // If itinerary should be replaced, do so if all checked days are valid.
         return replaceItinerary && itineraryExists
             ? this.updateTripWithVerifiedItinerary()
             : itineraryExists;
+    }
+
+    /**
+     * Shorthand for above method using the default otpResponseProvider.
+     */
+    public boolean checkItineraryExistence(boolean replaceItinerary) throws URISyntaxException {
+        return checkItineraryExistence(replaceItinerary, null);
     }
 
     /**
