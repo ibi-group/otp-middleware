@@ -120,7 +120,7 @@ public class PublicApiDocGenerator {
         // Remove unwanted fields that spark-swagger created, add fields that were missed.
         removeTypeFields(ItineraryExistence.ItineraryExistenceResult.class.getSimpleName(), "itineraries");
         addTypeField(ItineraryExistence.ItineraryExistenceResult.class.getSimpleName(), "valid", "boolean");
-        removeTypeFields(ItineraryExistence.class.getSimpleName(), "otpRequests", "referenceItinerary", "tripIsArriveBy");
+        removeTypeFields(ItineraryExistence.class.getSimpleName(), "otpRequests", "referenceItinerary", "tripIsArriveBy", "otpResponseProvider");
 
         // Cleanup the final document.
         generateMissingTypes();
