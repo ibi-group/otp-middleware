@@ -1,8 +1,11 @@
 package org.opentripplanner.middleware.otp;
 
 import java.util.Map;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
-import org.opentripplanner.middleware.utils.GraphQLUtils;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -11,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -29,9 +33,9 @@ public class OtpDispatcher {
     public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
 
     /**
-     * Location of the OTP GraphQL endpoint (e.g. /gtfs/v1).
+     * Location of the OTP GraphQL endpoint (e.g. /routers/default/index/graphql).
      */
-    public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/gtfs/v1");
+    public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/routers/default/index/graphql");
 
     private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
 
@@ -56,18 +60,6 @@ public class OtpDispatcher {
     ) {
         LOG.debug("Original query string: {}", query);
         return sendOtpRequest(buildOtpUri(version, query, path), HttpMethod.POST, headers, bodyContent);
-    }
-
-    /**
-     * Send GraphQL POST request. Builds a JSON object with two fields. The first field is {@code "query"}
-     * and its value is a long String of the entire JSON-ish plan query template. The second field is
-     * {@code "variables"} and its value is a proper JSON object of key/value string pairs.
-     * @param version OTP version passed along to post request
-     * @param variables a string of a proper JSON object of key/value string pairs
-     */
-    public static OtpDispatcherResponse sendGraphQLPostRequest(OtpVersion version, String variables) {
-        String body = "{\"query\":\"" + GraphQLUtils.getPlanQueryTemplate() + "\",\n\"variables\":" + variables + "}";
-        return sendOtpPostRequest(version, "", OTP_GRAPHQL_ENDPOINT, HttpUtils.HEADERS_JSON, body);
     }
 
     /**
@@ -133,4 +125,43 @@ public class OtpDispatcher {
                 bodyContent);
         return new OtpDispatcherResponse(otpResponse);
     }
+
+    public static OtpResponse sendOtpRequestWithErrorHandling(String sentParams) {
+        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP1, sentParams));
+    }
+
+    public static OtpResponse sendOtpRequestWithErrorHandling(OtpRequest otpRequest) {
+        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP1, otpRequest));
+    }
+
+    private static OtpResponse handleOtpDispatcherResponse(Supplier<OtpDispatcherResponse> otpDispatcherResponseSupplier) {
+        OtpDispatcherResponse otpDispatcherResponse;
+        try {
+            otpDispatcherResponse = otpDispatcherResponseSupplier.get();
+        } catch (Exception e) {
+            BugsnagReporter.reportErrorToBugsnag(
+                "Encountered an error while making a request to the OTP server.",
+                e
+            );
+            return null;
+        }
+
+        if (otpDispatcherResponse.statusCode >= 400) {
+            BugsnagReporter.reportErrorToBugsnag(
+                "Received an error from the OTP server.",
+                otpDispatcherResponse,
+                null
+            );
+            return null;
+        }
+
+        try {
+            return otpDispatcherResponse.getResponse();
+        } catch (JsonProcessingException e) {
+            // don't report to Bugsnag since the getResponse method will already have reported to Bugsnag.
+            LOG.error("Unable to parse OTP response!", e);
+            return null;
+        }
+    }
+
 }

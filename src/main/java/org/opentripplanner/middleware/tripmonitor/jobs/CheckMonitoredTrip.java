@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
@@ -8,10 +7,8 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
-import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
@@ -27,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -322,37 +320,27 @@ public class CheckMonitoredTrip implements Runnable {
 
     /** Default implementation for OtpResponse provider that actually invokes the OTP server. */
     private OtpResponse getOtpResponse() {
-        OtpDispatcherResponse otpDispatcherResponse;
+        Map<String, String> params = getQueryParamsForTargetZonedDateTime();
+        if (params == null) return null;
+        return OtpDispatcher.sendOtpRequestWithErrorHandling(ItineraryUtils.toQueryString(params));
+    }
+
+    /**
+     * Generate the appropriate OTP query params for the trip for the current check by replacing the date query
+     * parameter with the appropriate date.
+     */
+    private Map<String, String> getQueryParamsForTargetZonedDateTime() {
+        Map<String, String> params = null;
         try {
-            // Generate the appropriate OTP query params for the trip for the current check by replacing the date query
-            // parameter with the appropriate date.
-            Map<String, String> params = trip.parseQueryParams();
+            params = trip.parseQueryParams();
             params.put(ItineraryUtils.DATE_PARAM, targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER));
-            otpDispatcherResponse = OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP1, ItineraryUtils.toQueryString(params));
-        } catch (Exception e) {
+        } catch (URISyntaxException e) {
             BugsnagReporter.reportErrorToBugsnag(
-                "Encountered an error while making a request ot the OTP server.",
+                "Encountered an error parsing trip query params.",
                 e
             );
-            return null;
         }
-
-        if (otpDispatcherResponse.statusCode >= 400) {
-            BugsnagReporter.reportErrorToBugsnag(
-                "Received an error from the OTP server.",
-                otpDispatcherResponse,
-                null
-            );
-            return null;
-        }
-
-        try {
-            return otpDispatcherResponse.getResponse();
-        } catch (JsonProcessingException e) {
-            // don't report to Bugsnag since the getResponse method will already have reported to Bugsnag.
-            LOG.error("Unable to parse OTP response!", e);
-            return null;
-        }
+        return params;
     }
 
     /**
