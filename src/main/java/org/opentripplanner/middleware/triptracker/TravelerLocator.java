@@ -103,8 +103,9 @@ public class TravelerLocator {
     }
 
     /**
-     * Attempt to align the deviated traveler to the trip. If the traveler happens to be within an upcoming instruction
-     * provider this, else suggest the closest street to head towards.
+     * Attempt to align the deviated traveler to the trip when on access legs (e.g. walk legs).
+     * If the traveler happens to be within an upcoming instruction, the instruction will be issued,
+     * else suggest the closest street to head towards.
      */
     @Nullable
     private static TripInstruction getBackOnTrack(
@@ -344,7 +345,7 @@ public class TravelerLocator {
     }
 
     /**
-     * Shorthand for above method.
+     * Align the traveler to the transit leg and provide the next waypoint forward, excluding the current position.
      */
     private static <T extends ConvertsToCoordinates> T snapToWaypoint(TravelerPosition pos, List<T> waypoints) {
         return snapToWaypoint(pos, waypoints, false);
