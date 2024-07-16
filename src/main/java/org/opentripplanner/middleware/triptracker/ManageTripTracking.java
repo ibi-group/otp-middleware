@@ -3,14 +3,13 @@ package org.opentripplanner.middleware.triptracker;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
-import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import spark.Request;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.removeAgencyPrefix;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
