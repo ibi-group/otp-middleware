@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import com.mongodb.client.FindIterable;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,8 @@ public class TripRequest extends Model {
     /** A dictionary of the parameters provided in the request that triggered this response. */
     public Map<String, String> requestParameters;
 
+    public OtpGraphQLVariables graphQLVariables;
+
     /**
      * This no-arg constructor exists to make MongoDB happy.
      */
@@ -52,13 +55,27 @@ public class TripRequest extends Model {
         String batchId,
         String fromPlace,
         String toPlace,
-        Map requestParameters
+        Map<String, String> requestParameters
     ) {
         this.userId = userId;
         this.batchId = batchId;
         this.fromPlace = fromPlace;
         this.toPlace = toPlace;
         this.requestParameters = requestParameters;
+    }
+
+    public TripRequest(
+        String userId,
+        String batchId,
+        String fromPlace,
+        String toPlace,
+        OtpGraphQLVariables graphQLVariables
+    ) {
+        this.userId = userId;
+        this.batchId = batchId;
+        this.fromPlace = fromPlace;
+        this.toPlace = toPlace;
+        this.graphQLVariables = graphQLVariables;
     }
 
     @Override
