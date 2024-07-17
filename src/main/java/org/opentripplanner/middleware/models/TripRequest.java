@@ -5,7 +5,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
+import java.util.Map;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
@@ -39,7 +39,7 @@ public class TripRequest extends Model {
     public String toPlace;
 
     /** A dictionary of the parameters provided in the request that triggered this response. */
-    public HashMap<String, String> requestParameters;
+    public Map<String, String> requestParameters;
 
     /**
      * This no-arg constructor exists to make MongoDB happy.
@@ -52,7 +52,7 @@ public class TripRequest extends Model {
         String batchId,
         String fromPlace,
         String toPlace,
-        HashMap<String, String> requestParameters
+        Map requestParameters
     ) {
         this.userId = userId;
         this.batchId = batchId;

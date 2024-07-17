@@ -6,6 +6,7 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.apache.http.Header;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.otp.response.OtpResponseGraphQLWrapper;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -67,7 +68,7 @@ public class OtpDispatcherResponse implements Serializable {
      */
     public OtpResponse getResponse() throws JsonProcessingException {
         try {
-            return JsonUtils.getPOJOFromJSON(responseBody, OtpResponse.class);
+            return JsonUtils.getPOJOFromJSON(responseBody, OtpResponseGraphQLWrapper.class).data;
         } catch (JsonProcessingException e) {
             BugsnagReporter.reportErrorToBugsnag("Failed to parse OTP response!", responseBody, e);
             throw e;

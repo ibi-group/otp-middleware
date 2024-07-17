@@ -189,15 +189,13 @@ public class OtpRequestProcessor implements Endpoint {
                 *
                 * Other requests will still be proxied, just not stored.
                 */
+                // TODO: Tighten up the map types
                 HashMap graphQlVariables = (HashMap) getPOJOFromJSON(requestBody, Map.class).get("variables");
-
-                String fromPlace = (String) graphQlVariables.get("fromPlace");
-                String toPlace = (String) graphQlVariables.get("toPlace");
 
                 // Follows the method used in otp-ui core-utils storage.js
                 String randomBatchId = Integer.toString((int) (Math.random() * 1_000_000_000), 36);
 
-                if(!handlePlanTripResponse(randomBatchId, fromPlace, toPlace, otpDispatcherResponse, otpUser)) {
+                if(!handlePlanTripResponse(randomBatchId, graphQlVariables, otpDispatcherResponse, otpUser)) {
                     logMessageAndHalt(
                             request,
                             HttpStatus.INTERNAL_SERVER_ERROR_500,
@@ -277,8 +275,7 @@ public class OtpRequestProcessor implements Endpoint {
     ) {
         return handlePlanTripResponse(
                 request.queryParams("batchId"),
-                request.queryParams("fromPlace"),
-                request.queryParams("toPlace"),
+                request.params(),
                 otpDispatcherResponse,
                 otpUser
         );
@@ -286,8 +283,7 @@ public class OtpRequestProcessor implements Endpoint {
 
     private static boolean handlePlanTripResponse(
             String batchId,
-            String fromPlace,
-            String toPlace,
+            Map graphQlVariables,
             OtpDispatcherResponse otpDispatcherResponse,
             OtpUser otpUser
     ) {
@@ -309,12 +305,15 @@ public class OtpRequestProcessor implements Endpoint {
             }
 
             if (otpResponse != null) {
+                String fromPlace = (String) graphQlVariables.get("fromPlace");
+                String toPlace = (String) graphQlVariables.get("toPlace");
+
                 TripRequest tripRequest = new TripRequest(
                     otpUser.id,
                     batchId,
                     fromPlace,
                     toPlace,
-                    otpResponse.requestParameters
+                    graphQlVariables
                 );
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
