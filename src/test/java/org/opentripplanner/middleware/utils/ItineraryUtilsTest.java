@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
@@ -30,6 +31,7 @@ import java.util.Date;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -479,6 +481,35 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         }
         itinerary.legs = new ArrayList<>();
         return itinerary;
+    }
+
+    @ParameterizedTest
+    @MethodSource("createDeriveModesFromItineraryTestCases")
+    void canDeriveModesFromItinerary(List<String> legModes, List<String> expectedModes, String message) {
+        Itinerary itinerary = simpleItinerary(Instant.EPOCH.toEpochMilli(), false);
+        itinerary.legs = legModes.stream().map(legMode -> {
+            String[] modeParts = legMode.split("_");
+            boolean isRent = legMode.endsWith("_RENT");
+            Leg leg = new Leg();
+            leg.mode = modeParts[0];
+            // Field 'rentedbike' includes rented bikes and rented scooters.
+            leg.rentedBike = ("BICYCLE".equals(leg.mode) || "SCOOTER".equals(leg.mode)) && isRent;
+            leg.rentedCar = "CAR".equals(leg.mode) && isRent;
+            return leg;
+        }).collect(Collectors.toList());
+
+        Set<OtpGraphQLTransportMode> derivedModes = ItineraryUtils.deriveModesFromItinerary(itinerary);
+        expectedModes.forEach(expMode -> {
+            Assertions.assertEquals(1, derivedModes.stream().filter(m -> m.sameAs(OtpGraphQLTransportMode.fromModeString(expMode))).count());
+        });
+    }
+
+    private static Stream<Arguments> createDeriveModesFromItineraryTestCases() {
+        return Stream.of(
+            Arguments.of(List.of("WALK"), List.of("WALK"), "Walk only"),
+            Arguments.of(List.of("WALK", "BICYCLE_RENT"), List.of("BICYCLE_RENT"), "Bike rent only"),
+            Arguments.of(List.of("WALK", "BUS"), List.of("BUS"), "Walk + Bus")
+        );
     }
 
     /**

@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
@@ -106,20 +107,25 @@ public class ItineraryUtils {
      * Derives the set of modes for the mode query param that is needed to recreate an OTP {@link Itinerary} using the
      * plan trip endpoint.
      */
-    public static Set<String> deriveModesFromItinerary(Itinerary itinerary) {
-        Set<String> modes = itinerary.legs.stream()
-            .map(leg -> leg.mode)
+    public static Set<OtpGraphQLTransportMode> deriveModesFromItinerary(Itinerary itinerary) {
+        Set<OtpGraphQLTransportMode> modes = itinerary.legs.stream()
+            .map(leg -> {
+                OtpGraphQLTransportMode graphQLMode = new OtpGraphQLTransportMode();
+                graphQLMode.mode = leg.mode;
+                if ("BICYCLE".equals(leg.mode) || "SCOOTER".equals(leg.mode)) {
+                    // Field 'rentedbike' includes rented bikes and rented scooters.
+                    if (leg.rentedBike) graphQLMode.qualifier = "RENT";
+                }
+                return graphQLMode;
+            })
             .collect(Collectors.toSet());
 
-        // Remove WALK if non-car access modes are present (i.e. {BICYCLE|MICROMOBILITY}[_RENT]).
+        // Remove WALK if non-car access modes are present (i.e. {BICYCLE|SCOOTER}[_RENT]).
         // Removing WALK is necessary for OTP to return certain bicycle+transit itineraries.
         // Including WALK is necessary for OTP to return certain car+transit itineraries.
-        boolean hasAccessModes = modes.stream().anyMatch(mode -> {
-            String mainMode = mode.split("_")[0];
-            return List.of("BICYCLE", "MICROMOBILITY").contains(mainMode);
-        });
+        boolean hasAccessModes = modes.stream().anyMatch(mode -> List.of("BICYCLE", "SCOOTER").contains(mode.mode));
         if (hasAccessModes) {
-            modes.remove("WALK");
+            modes.removeIf(m -> "WALK".equals(m.mode));
         }
 
         // Replace the "CAR" in the set of modes with the correct CAR query mode (CAR_PARK, CAR_RENT, CAR_HAIL)
@@ -128,17 +134,16 @@ public class ItineraryUtils {
         boolean hasCarAndTransit = firstCarLeg.isPresent() && itinerary.hasTransit();
         if (hasCarAndTransit) {
             Leg carLeg = firstCarLeg.get();
-            String carQueryMode;
+            String carQualifier;
 
             if (Boolean.TRUE.equals(carLeg.rentedCar)) {
-                carQueryMode = "CAR_RENT";
+                carQualifier = "RENT";
             } else if (Boolean.TRUE.equals(carLeg.hailedCar)) {
-                carQueryMode = "CAR_HAIL";
+                carQualifier = "HAIL";
             } else {
-                carQueryMode = "CAR_PARK";
+                carQualifier = "PARK";
             }
-            modes.remove("CAR");
-            modes.add(carQueryMode);
+            modes.stream().filter(m -> "CAR".equals(m.mode)).forEach(m -> m.qualifier = carQualifier);
         }
         return modes;
     }
