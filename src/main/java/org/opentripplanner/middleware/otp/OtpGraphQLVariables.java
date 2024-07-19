@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.otp;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import spark.Request;
 
@@ -8,6 +10,8 @@ import java.util.List;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromJSON;
 
 /** OTP 'plan' query variables */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class OtpGraphQLVariables implements Cloneable {
     public boolean arriveBy;
     public OtpGraphQLRoutesAndTrips banned;
@@ -38,7 +42,9 @@ public class OtpGraphQLVariables implements Cloneable {
         clone.carReluctance = carReluctance;
         clone.date = date;
         clone.fromPlace = fromPlace;
-        clone.modes = List.copyOf(modes);
+        if (modes != null) {
+            clone.modes = List.copyOf(modes);
+        }
         clone.numItineraries = numItineraries;
         if (preferred != null) {
             clone.preferred = preferred.clone();

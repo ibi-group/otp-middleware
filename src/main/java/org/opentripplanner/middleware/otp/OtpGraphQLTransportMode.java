@@ -1,8 +1,12 @@
 package org.opentripplanner.middleware.otp;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.commons.lang3.StringUtils;
 
 /** Describes a transport mode for OTP GraphQL */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class OtpGraphQLTransportMode {
     /** A mode such as WALK, BUS, BIKE */
     public String mode;
