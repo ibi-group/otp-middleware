@@ -20,6 +20,23 @@ public class OtpGraphQLTransportMode {
         return graphQLMode;
     }
 
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) return false;
+        if (!(other instanceof OtpGraphQLTransportMode)) return false;
+        return sameAs((OtpGraphQLTransportMode) other);
+    }
+
+    @Override
+    public int hashCode() {
+        return toString().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return mode + (qualifier != null ? "_" + qualifier : "");
+    }
+
     public boolean sameAs(OtpGraphQLTransportMode other) {
         return StringUtils.equals(mode, other.mode) && StringUtils.equals(qualifier, other.qualifier);
     }

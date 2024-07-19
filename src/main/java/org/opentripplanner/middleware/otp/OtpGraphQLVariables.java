@@ -40,10 +40,14 @@ public class OtpGraphQLVariables implements Cloneable {
         clone.fromPlace = fromPlace;
         clone.modes = List.copyOf(modes);
         clone.numItineraries = numItineraries;
-        clone.preferred = preferred.clone();
+        if (preferred != null) {
+            clone.preferred = preferred.clone();
+        }
         clone.time = time;
         clone.toPlace = toPlace;
-        clone.unpreferred = unpreferred.clone();
+        if (unpreferred != null) {
+            clone.unpreferred = unpreferred.clone();
+        }
         clone.walkReluctance = walkReluctance;
         clone.walkSpeed = walkSpeed;
         clone.wheelchair = wheelchair;
