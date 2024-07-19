@@ -195,7 +195,8 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.responseBody, OtpUser.class);
 
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
-        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
+        // TODO: refactor this call
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.getSampleQueryParams(), OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
         HttpResponseValues createTripResponseAsOtpUser = mockAuthenticatedRequest(

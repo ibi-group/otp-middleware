@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
@@ -19,7 +20,6 @@ import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -30,16 +30,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.IGNORE_REALTIME_UPDATES_PARAM;
 
 public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryUtilsTest.class);
@@ -206,22 +204,22 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      * Check that the query date parameter is properly modified to simulate the given OTP query for different dates.
      */
     @Test
-    void canGetQueriesFromDates() throws URISyntaxException {
+    void canGetQueriesFromDates() {
         MonitoredTrip trip = makeTestTrip();
         // Create test dates.
         List<String> testDateStrings = List.of("2020-12-30", "2020-12-31", "2021-01-01");
         LOG.info(String.join(", ", testDateStrings));
         List<ZonedDateTime> testDates = datesToZonedDateTimes(testDateStrings);
         // Get OTP requests modified with dates.
-        List<OtpRequest> requests = ItineraryUtils.getOtpRequestsForDates(trip.parseQueryParams(), testDates);
+        List<OtpRequest> requests = ItineraryUtils.getOtpRequestsForDates(trip.otp2QueryParams, testDates);
         Assertions.assertEquals(testDateStrings.size(), requests.size());
         // Iterate over OTP requests and verify that query dates match the input.
         for (int i = 0; i < testDates.size(); i++) {
             ZonedDateTime testDate = testDates.get(i);
-            Map<String, String> newParams = requests.get(i).requestParameters;
+            OtpGraphQLVariables newParams = requests.get(i).requestParameters;
             Assertions.assertEquals(
                 testDate.format(DateTimeUtils.DEFAULT_DATE_FORMATTER),
-                newParams.get(DATE_PARAM)
+                newParams.date
             );
         }
     }
@@ -231,28 +229,11 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      * for which we want to check itinerary existence.
      */
     @Test
-    void canGetDatesToCheckItineraryExistence() throws URISyntaxException {
+    void canGetDatesToCheckItineraryExistence() {
         MonitoredTrip trip = makeTestTrip();
         List<ZonedDateTime> testDates = datesToZonedDateTimes(MONITORED_TRIP_DATES);
         List<ZonedDateTime> datesToCheck = ItineraryUtils.getDatesToCheckItineraryExistence(trip);
         Assertions.assertEquals(testDates, datesToCheck);
-    }
-
-    /**
-     * Check that the ignoreRealtime query parameter is set to true
-     * regardless of whether it was originally missing or false.
-     */
-    @Test
-    void canAddIgnoreRealtimeParam() throws URISyntaxException {
-        String queryWithRealtimeParam = BASE_QUERY + "&" + IGNORE_REALTIME_UPDATES_PARAM + "=false";
-        List<String> queries = List.of(BASE_QUERY, queryWithRealtimeParam);
-
-        for (String query : queries) {
-            MonitoredTrip trip = new MonitoredTrip();
-            trip.queryParams = query;
-            Map<String, String> params = ItineraryUtils.excludeRealtime(trip.parseQueryParams());
-            Assertions.assertEquals("true", params.get(IGNORE_REALTIME_UPDATES_PARAM));
-        }
     }
 
     /**
@@ -340,6 +321,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip trip = new MonitoredTrip();
         trip.id = "Test trip";
         trip.queryParams = BASE_QUERY;
+        trip.otp2QueryParams = new OtpGraphQLVariables();
+        trip.otp2QueryParams.date = QUERY_DATE;
+        trip.otp2QueryParams.time = QUERY_TIME;
         trip.tripTime = QUERY_TIME;
 
         trip.from = targetPlace;
@@ -495,12 +479,15 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             // Field 'rentedbike' includes rented bikes and rented scooters.
             leg.rentedBike = ("BICYCLE".equals(leg.mode) || "SCOOTER".equals(leg.mode)) && isRent;
             leg.rentedCar = "CAR".equals(leg.mode) && isRent;
+            leg.hailedCar = "CAR".equals(leg.mode) && legMode.endsWith("_HAIL");
+            leg.transitLeg = "BUS".equals(leg.mode);
             return leg;
         }).collect(Collectors.toList());
 
         Set<OtpGraphQLTransportMode> derivedModes = ItineraryUtils.deriveModesFromItinerary(itinerary);
+        assertEquals(expectedModes.size(), derivedModes.size());
         expectedModes.forEach(expMode -> {
-            Assertions.assertEquals(1, derivedModes.stream().filter(m -> m.sameAs(OtpGraphQLTransportMode.fromModeString(expMode))).count());
+            assertEquals(1, derivedModes.stream().filter(m -> m.sameAs(OtpGraphQLTransportMode.fromModeString(expMode))).count(), message);
         });
     }
 
@@ -508,7 +495,12 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         return Stream.of(
             Arguments.of(List.of("WALK"), List.of("WALK"), "Walk only"),
             Arguments.of(List.of("WALK", "BICYCLE_RENT"), List.of("BICYCLE_RENT"), "Bike rent only"),
-            Arguments.of(List.of("WALK", "BUS"), List.of("BUS"), "Walk + Bus")
+            // In OTP2: WALK is implied if a transit mode is also present and can be removed in those cases.
+            Arguments.of(List.of("WALK", "BUS"), List.of("BUS"), "Walk + Bus"),
+            Arguments.of(List.of("WALK", "BICYCLE", "BUS"), List.of("BICYCLE", "BUS"), "Walk + Bicycle + Bus"),
+            Arguments.of(List.of("WALK", "CAR_RENT", "BUS"), List.of("CAR_RENT", "BUS"), "Rented car + Bus"),
+            Arguments.of(List.of("WALK", "CAR_PARK", "BUS"), List.of("CAR_PARK", "BUS"), "P+R + Bus"),
+            Arguments.of(List.of("WALK", "CAR_HAIL", "BUS"), List.of("CAR_HAIL", "BUS"), "Hail car + Bus")
         );
     }
 

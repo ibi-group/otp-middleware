@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.testutils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -174,6 +175,17 @@ public class OtpTestUtils {
             "28.54834,-81.37745",
             "08:35"
         );
+    }
+
+    /**
+     * Sample GraphQL params for testing.
+     */
+    public static OtpGraphQLVariables getSampleQueryParams() {
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.fromPlace = "28.45119,-81.36818";
+        params.toPlace = "28.54834,-81.37745";
+        params.time = "08:35";
+        return params;
     }
 
     public static List<OtpResponse> createMockOtpResponsesForTripExistence() throws Exception {

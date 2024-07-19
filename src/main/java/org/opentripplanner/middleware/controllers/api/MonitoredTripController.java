@@ -85,6 +85,8 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                     "Error parsing the trip query parameters.",
                     e
                 );
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
             }
         }
 
@@ -132,7 +134,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      */
     private void processTripQueryParams(MonitoredTrip monitoredTrip, Request req) {
         try {
-            monitoredTrip.initializeFromItineraryAndQueryParams();
+            monitoredTrip.initializeFromItineraryAndQueryParams(req);
         } catch (Exception e) {
             logMessageAndHalt(
                 req,
@@ -198,9 +200,9 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             return null;
         }
         try {
-            trip.initializeFromItineraryAndQueryParams();
+            trip.initializeFromItineraryAndQueryParams(trip.otp2QueryParams);
             trip.checkItineraryExistence(false);
-        } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
+        } catch (URISyntaxException | JsonProcessingException e) { // triggered by OtpQueryUtils#getQueryParams.
             logMessageAndHalt(
                 request,
                 HttpStatus.INTERNAL_SERVER_ERROR_500,

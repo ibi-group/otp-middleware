@@ -6,9 +6,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.utils.GraphQLUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtils;
+import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +75,23 @@ public class OtpDispatcher {
      * Provides a response from the OTP server target service based on the input {@link OtpRequest}.
      */
     public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, OtpRequest otpRequest) {
-        return sendOtpPlanRequest(version, ItineraryUtils.toQueryString(otpRequest.requestParameters));
+        return sendOtpPlanRequest(version, otpRequest.requestParameters);
+    }
+
+    /**
+     * Provides a response from the OTP server target service based on the input {@link OtpRequest}.
+     */
+    public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, OtpGraphQLVariables params) {
+        OtpGraphQLQuery query = new OtpGraphQLQuery();
+        query.query = GraphQLUtils.getPlanQueryTemplate();
+        query.variables = params;
+        return sendOtpPostRequest(
+            version,
+            "",
+            OTP_GRAPHQL_ENDPOINT,
+            Map.of("Content-Type", "application/json"),
+            JsonUtils.toJson(query).replace("\\\\n", "\\n").replace("\\\\\"", "\"")
+        );
     }
 
     /**
@@ -115,7 +132,7 @@ public class OtpDispatcher {
             Map<String, String> headers,
             String bodyContent
     ) {
-        LOG.info("Sending request to OTP: {}", uri.toString());
+        LOG.info("Sending request to OTP: {}", uri);
         HttpResponseValues otpResponse =
             HttpUtils.httpRequestRawResponse(
                 uri,
@@ -127,11 +144,15 @@ public class OtpDispatcher {
     }
 
     public static OtpResponse sendOtpRequestWithErrorHandling(String sentParams) {
-        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP1, sentParams));
+        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP2, sentParams));
     }
 
     public static OtpResponse sendOtpRequestWithErrorHandling(OtpRequest otpRequest) {
-        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP1, otpRequest));
+        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP2, otpRequest));
+    }
+
+    public static OtpResponse sendOtpRequestWithErrorHandling(OtpGraphQLVariables params) {
+        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP2, params));
     }
 
     private static OtpResponse handleOtpDispatcherResponse(Supplier<OtpDispatcherResponse> otpDispatcherResponseSupplier) {

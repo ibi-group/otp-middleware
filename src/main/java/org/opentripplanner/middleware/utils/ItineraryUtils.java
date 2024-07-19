@@ -6,16 +6,15 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.OtpRequest;
 
-import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,10 +31,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  */
 public class ItineraryUtils {
 
-    public static final String IGNORE_REALTIME_UPDATES_PARAM = "ignoreRealtimeUpdates";
-    public static final String DATE_PARAM = "date";
     public static final String MODE_PARAM = "mode";
-    public static final String TIME_PARAM = "time";
     public static final int ITINERARY_CHECK_WINDOW = 7;
     public static final int SERVICE_DAY_START_HOUR = getConfigPropertyAsInt("SERVICE_DAY_START_HOUR", 3);
 
@@ -54,16 +50,15 @@ public class ItineraryUtils {
      * with the date changed to the desired one.
      * @param params a map of the base OTP query parameters.
      * @param dates a list of the desired dates in YYYY-MM-DD format.
-     * @return a map of query strings with, and indexed by the specified dates.
+     * @return a list of query strings with, and indexed by the specified dates.
      */
-    public static List<OtpRequest> getOtpRequestsForDates(Map<String, String> params, List<ZonedDateTime> dates) {
+    public static List<OtpRequest> getOtpRequestsForDates(OtpGraphQLVariables params, List<ZonedDateTime> dates) {
         // Create a copy of the original params in which we change the date.
         List<OtpRequest> requests = new ArrayList<>();
         for (ZonedDateTime date : dates) {
             // Get updated date string and add to params copy.
-            Map<String, String> paramsCopy = new HashMap<>(params);
-            String dateString = DateTimeUtils.getStringFromDate(date.toLocalDate(), DEFAULT_DATE_FORMAT_PATTERN);
-            paramsCopy.put(DATE_PARAM, dateString);
+            OtpGraphQLVariables paramsCopy = params.clone();
+            paramsCopy.date = DateTimeUtils.getStringFromDate(date.toLocalDate(), DEFAULT_DATE_FORMAT_PATTERN);
             requests.add(new OtpRequest(date, paramsCopy));
         }
         return requests;
@@ -76,13 +71,12 @@ public class ItineraryUtils {
      * @param trip The trip from which to extract the monitored dates to check.
      * @return A list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor, sorted from earliest.
      */
-    public static List<ZonedDateTime> getDatesToCheckItineraryExistence(MonitoredTrip trip)
-        throws URISyntaxException {
+    public static List<ZonedDateTime> getDatesToCheckItineraryExistence(MonitoredTrip trip) {
         List<ZonedDateTime> datesToCheck = new ArrayList<>();
-        Map<String, String> params = trip.parseQueryParams();
+        OtpGraphQLVariables params = trip.otp2QueryParams;
 
         // Start from the query date, if available.
-        String startingDateString = params.get(DATE_PARAM);
+        String startingDateString = params.date;
         // If there is no query date, start from today.
         LocalDate startingDate = DateTimeUtils.getDateFromQueryDateString(startingDateString);
         ZonedDateTime startingDateTime = trip.tripZonedDateTime(startingDate);
@@ -92,15 +86,6 @@ public class ItineraryUtils {
         }
 
         return datesToCheck;
-    }
-
-    /**
-     * @return a copy of the specified query parameter map, with ignoreRealtimeUpdates set to true.
-     */
-    public static Map<String, String> excludeRealtime(Map<String, String> params) {
-        Map<String, String> result = new HashMap<>(params);
-        result.put(IGNORE_REALTIME_UPDATES_PARAM, "true");
-        return result;
     }
 
     /**
@@ -123,8 +108,9 @@ public class ItineraryUtils {
         // Remove WALK if non-car access modes are present (i.e. {BICYCLE|SCOOTER}[_RENT]).
         // Removing WALK is necessary for OTP to return certain bicycle+transit itineraries.
         // Including WALK is necessary for OTP to return certain car+transit itineraries.
+        // In OTP2: WALK is implied if a transit mode is also present and can be removed in those cases.
         boolean hasAccessModes = modes.stream().anyMatch(mode -> List.of("BICYCLE", "SCOOTER").contains(mode.mode));
-        if (hasAccessModes) {
+        if (hasAccessModes || itinerary.hasTransit()) {
             modes.removeIf(m -> "WALK".equals(m.mode));
         }
 

@@ -38,7 +38,6 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.checkUser;
 import static org.opentripplanner.middleware.auth.Auth0Connection.getUserFromRequest;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthHeaderPresent;
 import static org.opentripplanner.middleware.controllers.api.ApiController.USER_ID_PARAM;
-import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromJSON;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -190,7 +189,7 @@ public class OtpRequestProcessor implements Endpoint {
                 *
                 * Other requests will still be proxied, just not stored.
                 */
-                OtpGraphQLVariables graphQlVariables = getPOJOFromJSON(requestBody, OtpGraphQLQuery.class).variables;
+                OtpGraphQLVariables graphQlVariables =  OtpGraphQLVariables.fromRequest(request);
 
                 // Follows the method used in otp-ui core-utils storage.js
                 String randomBatchId = Integer.toString((int) (Math.random() * 1_000_000_000), 36);
@@ -274,8 +273,8 @@ public class OtpRequestProcessor implements Endpoint {
             OtpUser otpUser
     ) throws JsonProcessingException {
         return handlePlanTripResponse(
-                request.queryParams("batchId"),
-                getPOJOFromJSON(request.body(), OtpGraphQLQuery.class).variables,
+                request.queryParams("batchId"), // TODO: check if this still applies
+                OtpGraphQLVariables.fromRequest(request),
                 otpDispatcherResponse,
                 otpUser
         );

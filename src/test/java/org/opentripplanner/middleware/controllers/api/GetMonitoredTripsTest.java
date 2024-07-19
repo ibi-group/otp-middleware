@@ -206,7 +206,7 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
      * Creates a {@link MonitoredTrip} for the specified user.
      */
     private static void createMonitoredTripAsUser(OtpUser otpUser) throws Exception {
-        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.getSampleQueryParams(), OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
 
