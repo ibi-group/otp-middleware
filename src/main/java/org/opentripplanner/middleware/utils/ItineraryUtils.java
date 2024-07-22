@@ -271,7 +271,13 @@ public class ItineraryUtils {
         }
 
         // stop code must match
-        if (!equalsIgnoreCaseOrReferenceWasEmpty(stopA.stopCode, stopB.stopCode)) return false;
+        if (
+            stopA.stop != null &&
+            stopB.stop != null &&
+            !equalsIgnoreCaseOrReferenceWasEmpty(stopA.stop.code, stopB.stop.code)
+        ) {
+            return false;
+        }
 
         // stop positions must be no further than 5 meters apart
         double stopDistanceMeters = DistanceUtils.radians2Dist(

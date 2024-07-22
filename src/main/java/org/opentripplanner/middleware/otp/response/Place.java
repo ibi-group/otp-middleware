@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Date;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -22,6 +21,7 @@ public class Place implements Cloneable {
     public String vertexType;
     public String stopId;
     public Date arrival;
+    public Stop stop;
     public Integer stopIndex;
     public Integer stopSequence;
     public String stopCode;
