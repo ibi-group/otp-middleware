@@ -15,8 +15,8 @@ import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromJSON;
 public class OtpGraphQLVariables implements Cloneable {
     public boolean arriveBy;
     public OtpGraphQLRoutesAndTrips banned;
-    public float bikeReluctance;
-    public float carReluctance;
+    public Float bikeReluctance;
+    public Float carReluctance;
     public String date;
     public String fromPlace;
     public List<OtpGraphQLTransportMode> modes;
@@ -25,8 +25,8 @@ public class OtpGraphQLVariables implements Cloneable {
     public String time;
     public String toPlace;
     public OtpGraphQLRoutesAndTrips unpreferred;
-    public float walkReluctance;
-    public float walkSpeed;
+    public Float walkReluctance;
+    public Float walkSpeed;
     public boolean wheelchair;
 
     public static OtpGraphQLVariables fromRequest(Request request) throws JsonProcessingException {
