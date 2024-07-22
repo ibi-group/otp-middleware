@@ -7,10 +7,12 @@ import org.apache.http.message.BasicNameValuePair;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.response.Agency;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.OtpRequest;
+import org.opentripplanner.middleware.otp.response.Route;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -215,23 +217,10 @@ public class ItineraryUtils {
         // - The leg has the same interlining qualities with the previous leg
         if (
             !equalsOrReferenceWasNull(referenceItineraryLeg.mode, candidateItineraryLeg.mode) ||
-                !equalsIgnoreCaseOrReferenceWasEmpty(
-                    referenceItineraryLeg.agencyName,
-                    candidateItineraryLeg.agencyName
-                ) ||
-                !equalsIgnoreCaseOrReferenceWasEmpty(
-                    referenceItineraryLeg.routeLongName,
-                    candidateItineraryLeg.routeLongName
-                ) ||
-                !equalsIgnoreCaseOrReferenceWasEmpty(
-                    referenceItineraryLeg.routeShortName,
-                    candidateItineraryLeg.routeShortName
-                ) ||
-                !equalsIgnoreCaseOrReferenceWasEmpty(
-                    referenceItineraryLeg.headsign,
-                    candidateItineraryLeg.headsign
-                ) ||
-                (referenceItineraryLeg.interlineWithPreviousLeg != candidateItineraryLeg.interlineWithPreviousLeg)
+            !agenciesMatch(referenceItineraryLeg.agency, candidateItineraryLeg.agency) ||
+            !routesMatch(referenceItineraryLeg.route, candidateItineraryLeg.route) ||
+            !equalsIgnoreCaseOrReferenceWasEmpty(referenceItineraryLeg.headsign, candidateItineraryLeg.headsign) ||
+            (referenceItineraryLeg.interlineWithPreviousLeg != candidateItineraryLeg.interlineWithPreviousLeg)
         ) {
             return false;
         }
@@ -290,6 +279,32 @@ public class ItineraryUtils {
 
         // if this point is reached, the stops are assumed to match
         return true;
+    }
+
+    /**
+     * Checks whether two agencies are deemed the same for itinerary comparison purposes.
+     */
+    private static boolean agenciesMatch(Agency agencyA, Agency agencyB) {
+        return (
+            agencyA != null &&
+            agencyB != null &&
+            equalsIgnoreCaseOrReferenceWasEmpty(
+                agencyA.name,
+                agencyB.name
+            )
+        );
+    }
+
+    /**
+     * Checks whether two transit routes are deemed the same for itinerary comparison purposes.
+     */
+    private static boolean routesMatch(Route routeA, Route routeB) {
+        return (
+            routeA != null &&
+            routeB != null &&
+            equalsIgnoreCaseOrReferenceWasEmpty(routeA.longName, routeB.longName) &&
+            equalsIgnoreCaseOrReferenceWasEmpty(routeA.shortName, routeB.shortName)
+        );
     }
 
     /**
