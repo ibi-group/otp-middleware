@@ -2,8 +2,6 @@ package org.opentripplanner.middleware.utils;
 
 import com.spatial4j.core.distance.DistanceUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.message.BasicNameValuePair;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
@@ -18,13 +16,11 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
@@ -38,21 +34,10 @@ public class ItineraryUtils {
     public static final int SERVICE_DAY_START_HOUR = getConfigPropertyAsInt("SERVICE_DAY_START_HOUR", 3);
 
     /**
-     * Converts a {@link Map} to a URL query string (does not include a leading '?').
-     */
-    public static String toQueryString(Map<String, String> params) {
-        List<BasicNameValuePair> nameValuePairs = params.entrySet().stream()
-            .map(e -> new BasicNameValuePair(e.getKey(), e.getValue()))
-            .collect(Collectors.toList());
-        return URLEncodedUtils.format(nameValuePairs, UTF_8);
-    }
-
-    /**
-     * Creates a map of new query strings based on the one provided,
-     * with the date changed to the desired one.
-     * @param params a map of the base OTP query parameters.
+     * Generates itinerary request data for the desired dates, based on the provided query parameters.
+     * @param params The base OTP GraphQL query parameters.
      * @param dates a list of the desired dates in YYYY-MM-DD format.
-     * @return a list of query strings with, and indexed by the specified dates.
+     * @return a list of request data for the corresponding request dates.
      */
     public static List<OtpRequest> getOtpRequestsForDates(OtpGraphQLVariables params, List<ZonedDateTime> dates) {
         // Create a copy of the original params in which we change the date.
@@ -74,15 +59,14 @@ public class ItineraryUtils {
      * @return A list of date strings in YYYY-MM-DD format corresponding to each day of the week to monitor, sorted from earliest.
      */
     public static List<ZonedDateTime> getDatesToCheckItineraryExistence(MonitoredTrip trip) {
-        List<ZonedDateTime> datesToCheck = new ArrayList<>();
-        OtpGraphQLVariables params = trip.otp2QueryParams;
-
         // Start from the query date, if available.
-        String startingDateString = params.date;
+        String startingDateString = trip.otp2QueryParams.date;
         // If there is no query date, start from today.
         LocalDate startingDate = DateTimeUtils.getDateFromQueryDateString(startingDateString);
         ZonedDateTime startingDateTime = trip.tripZonedDateTime(startingDate);
+
         // Get the dates to check starting from the query date and continuing through the full date range window.
+        List<ZonedDateTime> datesToCheck = new ArrayList<>();
         for (int i = 0; i < ITINERARY_CHECK_WINDOW; i++) {
             datesToCheck.add(startingDateTime.plusDays(i));
         }
@@ -288,10 +272,7 @@ public class ItineraryUtils {
         return (
             agencyA != null &&
             agencyB != null &&
-            equalsIgnoreCaseOrReferenceWasEmpty(
-                agencyA.name,
-                agencyB.name
-            )
+            equalsIgnoreCaseOrReferenceWasEmpty(agencyA.name, agencyB.name)
         );
     }
 
