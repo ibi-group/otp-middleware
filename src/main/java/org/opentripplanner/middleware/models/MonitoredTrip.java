@@ -22,7 +22,6 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import spark.Request;
 
-import java.net.URISyntaxException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -182,8 +181,7 @@ public class MonitoredTrip extends Model {
     /**
      * Used only during testing
      */
-    public MonitoredTrip(OtpGraphQLVariables otp2QueryParams, OtpDispatcherResponse otpDispatcherResponse) throws URISyntaxException,
-        JsonProcessingException {
+    public MonitoredTrip(OtpGraphQLVariables otp2QueryParams, OtpDispatcherResponse otpDispatcherResponse) throws JsonProcessingException {
         TripPlan plan = otpDispatcherResponse.getResponse().plan;
         itinerary = plan.itineraries.get(0);
 
@@ -198,7 +196,7 @@ public class MonitoredTrip extends Model {
     public boolean checkItineraryExistence(
         boolean replaceItinerary,
         Function<OtpRequest, OtpResponse> otpResponseProvider
-    ) throws URISyntaxException, JsonProcessingException {
+    ) {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
         itineraryExistence = new ItineraryExistence(queriesByDate, itinerary, arriveBy, otpResponseProvider);
@@ -213,7 +211,7 @@ public class MonitoredTrip extends Model {
     /**
      * Shorthand for above method using the default otpResponseProvider.
      */
-    public boolean checkItineraryExistence(boolean replaceItinerary) throws URISyntaxException, JsonProcessingException {
+    public boolean checkItineraryExistence(boolean replaceItinerary) {
         return checkItineraryExistence(replaceItinerary, null);
     }
 
@@ -221,7 +219,7 @@ public class MonitoredTrip extends Model {
      * Replace the itinerary provided with the monitored trip
      * with a non-real-time, verified itinerary from the responses provided.
      */
-    private boolean updateTripWithVerifiedItinerary() throws URISyntaxException, JsonProcessingException {
+    private boolean updateTripWithVerifiedItinerary() {
         String queryDate = otp2QueryParams.date;
         DayOfWeek dayOfWeek = DateTimeUtils.getDateFromQueryDateString(queryDate).getDayOfWeek();
 
@@ -260,7 +258,7 @@ public class MonitoredTrip extends Model {
      * Initializes a MonitoredTrip by deriving some fields from the currently set itinerary. Also, the realtime info of
      * the itinerary is removed.
      */
-    public void initializeFromItineraryAndQueryParams(Request req) throws IllegalArgumentException, URISyntaxException, JsonProcessingException {
+    public void initializeFromItineraryAndQueryParams(Request req) throws IllegalArgumentException, JsonProcessingException {
         initializeFromItineraryAndQueryParams(OtpGraphQLVariables.fromRequest(req));
     }
 
@@ -268,7 +266,7 @@ public class MonitoredTrip extends Model {
      * Initializes a MonitoredTrip by deriving some fields from the currently set itinerary. Also, the realtime info of
      * the itinerary is removed.
      */
-    public void initializeFromItineraryAndQueryParams(OtpGraphQLVariables graphQLVariables) throws IllegalArgumentException, URISyntaxException, JsonProcessingException {
+    public void initializeFromItineraryAndQueryParams(OtpGraphQLVariables graphQLVariables) throws IllegalArgumentException {
         int lastLegIndex = itinerary.legs.size() - 1;
         from = itinerary.legs.get(0).from;
         to = itinerary.legs.get(lastLegIndex).to;

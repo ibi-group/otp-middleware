@@ -16,7 +16,6 @@ import org.opentripplanner.middleware.utils.SwaggerUtils;
 import spark.Request;
 import spark.Response;
 
-import java.net.URISyntaxException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -67,26 +66,15 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         //   check itinerary existence for recurring trips only for now.
         //   (Existence should ultimately be checked on all trips.)
         if (!monitoredTrip.isOneTime()) {
-            try {
-                // Check itinerary existence for all days and replace the provided trip's itinerary with a verified,
-                // non-realtime version of it.
-                boolean success = monitoredTrip.checkItineraryExistence(true);
-                if (!success) {
-                    logMessageAndHalt(
-                        req,
-                        HttpStatus.BAD_REQUEST_400,
-                        monitoredTrip.itineraryExistence.message
-                    );
-                }
-            } catch (URISyntaxException e) { // triggered by OtpQueryUtils#getQueryParams.
+            // Check itinerary existence for all days and replace the provided trip's itinerary with a verified,
+            // non-realtime version of it.
+            boolean success = monitoredTrip.checkItineraryExistence(true);
+            if (!success) {
                 logMessageAndHalt(
                     req,
-                    HttpStatus.INTERNAL_SERVER_ERROR_500,
-                    "Error parsing the trip query parameters.",
-                    e
+                    HttpStatus.BAD_REQUEST_400,
+                    monitoredTrip.itineraryExistence.message
                 );
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
             }
         }
 
@@ -199,17 +187,8 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for MonitoredTrip", e);
             return null;
         }
-        try {
-            trip.initializeFromItineraryAndQueryParams(trip.otp2QueryParams);
-            trip.checkItineraryExistence(false);
-        } catch (URISyntaxException | JsonProcessingException e) { // triggered by OtpQueryUtils#getQueryParams.
-            logMessageAndHalt(
-                request,
-                HttpStatus.INTERNAL_SERVER_ERROR_500,
-                "Error parsing the trip query parameters.",
-                e
-            );
-        }
+        trip.initializeFromItineraryAndQueryParams(trip.otp2QueryParams);
+        trip.checkItineraryExistence(false);
         return trip.itineraryExistence;
     }
 
