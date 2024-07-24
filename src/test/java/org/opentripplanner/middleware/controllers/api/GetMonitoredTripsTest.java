@@ -110,12 +110,14 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
 
     @AfterEach
     public void tearDownAfterTest() {
-        BasicDBObject soloFilter = new BasicDBObject();
-        soloFilter.put("userId", soloOtpUser.id);
-        Persistence.monitoredTrips.removeFiltered(soloFilter);
-        BasicDBObject multiFilter = new BasicDBObject();
-        multiFilter.put("userId", multiOtpUser.id);
-        Persistence.monitoredTrips.removeFiltered(multiFilter);
+        Persistence.monitoredTrips.removeFiltered(getUserFilter(soloOtpUser.id));
+        Persistence.monitoredTrips.removeFiltered(getUserFilter(multiOtpUser.id));
+    }
+
+    private static BasicDBObject getUserFilter(String id) {
+        BasicDBObject userFilter = new BasicDBObject();
+        userFilter.put("userId", id);
+        return userFilter;
     }
 
     /**
@@ -158,8 +160,7 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         // Create a trip for the solo OTP user.
         createMonitoredTripForUser(soloOtpUser);
 
-        BasicDBObject filter = new BasicDBObject();
-        filter.put("userId", soloOtpUser.id);
+        BasicDBObject filter = getUserFilter(soloOtpUser.id);
 
         // Expect only 1 trip for solo Otp user.
         assertEquals(1, Persistence.monitoredTrips.getCountFiltered(filter));
