@@ -35,7 +35,7 @@ tags:
 - name: "api/secure/connected-data"
   description: "Interface for listing and downloading CDP files from S3."
 - name: "otp"
-  description: "Proxy interface for OTP 1 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+  description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
 - name: "otp2"
   description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
@@ -2109,7 +2109,7 @@ paths:
     get:
       tags:
       - "otp"
-      description: "Forwards any GET request to OTP 1. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+      description: "Forwards any GET request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
       produces:
       - "application/json"
@@ -2127,7 +2127,7 @@ paths:
     post:
       tags:
       - "otp"
-      description: "Forwards any POST request to OTP 1. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+      description: "Forwards any POST request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
       produces:
       - "application/json"
@@ -2835,7 +2835,63 @@ definitions:
       toPlace:
         type: "string"
       requestParameters:
-        $ref: "#/definitions/HashMap"
+        $ref: "#/definitions/Map"
+      graphQLVariables:
+        $ref: "#/definitions/OtpGraphQLVariables"
+  OtpGraphQLRoutesAndTrips:
+    type: "object"
+    properties:
+      routes:
+        type: "string"
+      trips:
+        type: "string"
+  OtpGraphQLTransportMode:
+    type: "object"
+    properties:
+      mode:
+        type: "string"
+      qualifier:
+        type: "string"
+  OtpGraphQLVariables:
+    type: "object"
+    properties:
+      arriveBy:
+        type: "boolean"
+      banned:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      bikeReluctance:
+        type: "number"
+        format: "float"
+      carReluctance:
+        type: "number"
+        format: "float"
+      date:
+        type: "string"
+      fromPlace:
+        type: "string"
+      modes:
+        type: "array"
+        items:
+          $ref: "#/definitions/OtpGraphQLTransportMode"
+      numItineraries:
+        type: "integer"
+        format: "int32"
+      preferred:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      time:
+        type: "string"
+      toPlace:
+        type: "string"
+      unpreferred:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      walkReluctance:
+        type: "number"
+        format: "float"
+      walkSpeed:
+        type: "number"
+        format: "float"
+      wheelchair:
+        type: "boolean"
   MonitoredComponent:
     type: "object"
     properties:
