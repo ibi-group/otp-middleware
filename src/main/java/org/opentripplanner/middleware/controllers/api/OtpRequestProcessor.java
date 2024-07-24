@@ -273,9 +273,10 @@ public class OtpRequestProcessor implements Endpoint {
             OtpDispatcherResponse otpDispatcherResponse,
             OtpUser otpUser
     ) throws JsonProcessingException {
+        String body = request.body();
         return handlePlanTripResponse(
                 request.queryParams("batchId"),
-                getPOJOFromJSON(request.body(), OtpGraphQLQuery.class).variables,
+                body.isEmpty() ? new OtpGraphQLVariables() : getPOJOFromJSON(body, OtpGraphQLQuery.class).variables,
                 otpDispatcherResponse,
                 otpUser
         );
