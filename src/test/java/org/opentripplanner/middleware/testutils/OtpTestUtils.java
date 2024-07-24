@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.otp.response.OtpResponseGraphQLWrapper;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -123,7 +124,9 @@ public class OtpTestUtils {
             }
             LOG.info("Returning mock response at index {}", mockResponseIndex);
             // send back response and increment response index
-            String responseBody = mapper.writeValueAsString(mockResponses.get(mockResponseIndex));
+            OtpResponseGraphQLWrapper wrapper = new OtpResponseGraphQLWrapper();
+            wrapper.data = mockResponses.get(mockResponseIndex);
+            String responseBody = mapper.writeValueAsString(wrapper);
             mockResponseIndex++;
             return responseBody;
         }
