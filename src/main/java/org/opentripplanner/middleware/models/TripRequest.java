@@ -42,7 +42,7 @@ public class TripRequest extends Model {
     /** A dictionary of the parameters provided in the request that triggered this response. */
     public Map<String, String> requestParameters;
 
-    public OtpGraphQLVariables graphQLVariables;
+    public OtpGraphQLVariables otp2QueryParams;
 
     /**
      * This no-arg constructor exists to make MongoDB happy.
@@ -69,13 +69,13 @@ public class TripRequest extends Model {
         String batchId,
         String fromPlace,
         String toPlace,
-        OtpGraphQLVariables graphQLVariables
+        OtpGraphQLVariables otp2QueryParams
     ) {
         this.userId = userId;
         this.batchId = batchId;
         this.fromPlace = fromPlace;
         this.toPlace = toPlace;
-        this.graphQLVariables = graphQLVariables;
+        this.otp2QueryParams = otp2QueryParams;
     }
 
     @Override

@@ -2836,7 +2836,7 @@ definitions:
         type: "string"
       requestParameters:
         $ref: "#/definitions/Map"
-      graphQLVariables:
+      otp2QueryParams:
         $ref: "#/definitions/OtpGraphQLVariables"
   OtpGraphQLRoutesAndTrips:
     type: "object"
