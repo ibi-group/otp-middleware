@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.mongodb.client.FindIterable;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -15,6 +17,8 @@ import static org.opentripplanner.middleware.persistence.TypedPersistence.filter
  * A trip request represents an OTP UI trip request (initiated by a user) destined for an OpenTripPlanner instance.
  * otp-middleware stores these trip requests for reporting purposes.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TripRequest extends Model {
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(TripRequest.class);
