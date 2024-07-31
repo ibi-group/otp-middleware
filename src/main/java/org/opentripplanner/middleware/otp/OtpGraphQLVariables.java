@@ -11,8 +11,8 @@ import java.util.List;
 public class OtpGraphQLVariables {
     public boolean arriveBy;
     public OtpGraphQLRoutesAndTrips banned;
-    public float bikeReluctance;
-    public float carReluctance;
+    public Float bikeReluctance;
+    public Float carReluctance;
     public String date;
     public String fromPlace;
     public String mobilityProfile;
@@ -22,7 +22,7 @@ public class OtpGraphQLVariables {
     public String time;
     public String toPlace;
     public OtpGraphQLRoutesAndTrips unpreferred;
-    public float walkReluctance;
-    public float walkSpeed;
+    public Float walkReluctance;
+    public Float walkSpeed;
     public boolean wheelchair;
 }
