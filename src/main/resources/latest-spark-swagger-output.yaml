@@ -2836,7 +2836,7 @@ definitions:
         type: "string"
       requestParameters:
         $ref: "#/definitions/Map"
-      graphQLVariables:
+      otp2QueryParams:
         $ref: "#/definitions/OtpGraphQLVariables"
   OtpGraphQLRoutesAndTrips:
     type: "object"
@@ -2868,6 +2868,8 @@ definitions:
       date:
         type: "string"
       fromPlace:
+        type: "string"
+      mobilityProfile:
         type: "string"
       modes:
         type: "array"

@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.mongodb.client.FindIterable;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -15,6 +17,8 @@ import static org.opentripplanner.middleware.persistence.TypedPersistence.filter
  * A trip request represents an OTP UI trip request (initiated by a user) destined for an OpenTripPlanner instance.
  * otp-middleware stores these trip requests for reporting purposes.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TripRequest extends Model {
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(TripRequest.class);
@@ -42,7 +46,7 @@ public class TripRequest extends Model {
     /** A dictionary of the parameters provided in the request that triggered this response. */
     public Map<String, String> requestParameters;
 
-    public OtpGraphQLVariables graphQLVariables;
+    public OtpGraphQLVariables otp2QueryParams;
 
     /**
      * This no-arg constructor exists to make MongoDB happy.
@@ -69,13 +73,13 @@ public class TripRequest extends Model {
         String batchId,
         String fromPlace,
         String toPlace,
-        OtpGraphQLVariables graphQLVariables
+        OtpGraphQLVariables otp2QueryParams
     ) {
         this.userId = userId;
         this.batchId = batchId;
         this.fromPlace = fromPlace;
         this.toPlace = toPlace;
-        this.graphQLVariables = graphQLVariables;
+        this.otp2QueryParams = otp2QueryParams;
     }
 
     @Override

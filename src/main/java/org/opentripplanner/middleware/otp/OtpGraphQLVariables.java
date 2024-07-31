@@ -19,6 +19,7 @@ public class OtpGraphQLVariables implements Cloneable {
     public Float carReluctance;
     public String date;
     public String fromPlace;
+    public String mobilityProfile;
     public List<OtpGraphQLTransportMode> modes;
     public int numItineraries;
     public OtpGraphQLRoutesAndTrips preferred;
