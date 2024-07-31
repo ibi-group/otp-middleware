@@ -2869,6 +2869,8 @@ definitions:
         type: "string"
       fromPlace:
         type: "string"
+      mobilityProfile:
+        type: "string"
       modes:
         type: "array"
         items:
