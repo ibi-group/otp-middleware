@@ -195,7 +195,7 @@ public class OtpRequestProcessor implements Endpoint {
                 // Follows the method used in otp-ui core-utils storage.js
                 String randomBatchId = Integer.toString((int) (Math.random() * 1_000_000_000), 36);
 
-                if(!handlePlanTripResponse(randomBatchId, graphQlVariables, otpDispatcherResponse, otpUser)) {
+                if (!handlePlanTripResponse(randomBatchId, graphQlVariables, otpDispatcherResponse, otpUser)) {
                     logMessageAndHalt(
                             request,
                             HttpStatus.INTERNAL_SERVER_ERROR_500,
@@ -203,9 +203,9 @@ public class OtpRequestProcessor implements Endpoint {
                     );
                     return null;
                 }
-            } catch(JsonProcessingException e) {
+            } catch (JsonProcessingException e) {
                 LOG.warn("Invalid GraphQL Request received. Still passing to OTP2: {}", e.getMessage());
-            } catch(NullPointerException e) {
+            } catch (NullPointerException e) {
                 LOG.warn("Failed to read variables from GraphQL Plan request. Still passing to OTP2: {}", e.getMessage());
             }
         }
