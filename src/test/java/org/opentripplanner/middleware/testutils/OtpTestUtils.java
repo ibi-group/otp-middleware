@@ -61,6 +61,11 @@ public class OtpTestUtils {
     public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
         initializeMockPlanResponse("otp/response/planErrorResponse.json");
 
+
+    /** OTP2 plan mock response. */
+    public static final OtpDispatcherResponse OTP2_DISPATCHER_PLAN_RESPONSE =
+        initializeMockPlanResponse("otp/response/planResponse-otp2.json");
+
     /**
      * Prevents the mock OTP server from being initialized more than once
      */

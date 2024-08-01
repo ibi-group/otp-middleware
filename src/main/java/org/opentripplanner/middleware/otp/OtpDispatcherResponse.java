@@ -24,7 +24,9 @@ import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT
 public class OtpDispatcherResponse implements Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcherResponse.class);
 
-    public OtpDispatcherResponse() {}
+    public OtpDispatcherResponse() {
+        // Needed for serialization
+    }
 
     public OtpDispatcherResponse(HttpResponseValues otpResponse) {
         requestUri = otpResponse.uri;
@@ -63,22 +65,29 @@ public class OtpDispatcherResponse implements Serializable {
     public String responseBody = null;
 
     /**
-     * Response. POJO version of response from an OTP server.
+     * POJO version of response from an OTP server.
      * Do not persist in case these classes change. This should always be re-instantiated from responseBody if needed.
      */
     public OtpResponse getResponse() throws JsonProcessingException {
         try {
-            return JsonUtils.getPOJOFromJSON(responseBody, OtpResponseGraphQLWrapper.class).data;
+            return JsonUtils.getPOJOFromJSON(responseBody, OtpResponse.class);
         } catch (JsonProcessingException e) {
             BugsnagReporter.reportErrorToBugsnag("Failed to parse OTP response!", responseBody, e);
             throw e;
         }
     }
 
-    public void setResponse(OtpResponse response) {
-        responseBody = JsonUtils.toJson(response);
+    /**
+     * POJO version of response from an OTP2 server.
+     */
+    public OtpResponse getOtp2Response() throws JsonProcessingException {
+        try {
+            return JsonUtils.getPOJOFromJSON(responseBody, OtpResponseGraphQLWrapper.class).data;
+        } catch (JsonProcessingException e) {
+            BugsnagReporter.reportErrorToBugsnag("Failed to parse OTP2 response!", responseBody, e);
+            throw e;
+        }
     }
-
 
     @Override
     public String toString() {

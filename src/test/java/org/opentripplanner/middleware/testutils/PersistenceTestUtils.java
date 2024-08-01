@@ -139,7 +139,7 @@ public class PersistenceTestUtils {
      * Create trip summary from static plan response file and store in database.
      */
     public static TripSummary createTripSummary(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
-        OtpResponse planResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        OtpResponse planResponse = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getOtp2Response();
         TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId, batchId);
         if (createDate != null) {
             tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);

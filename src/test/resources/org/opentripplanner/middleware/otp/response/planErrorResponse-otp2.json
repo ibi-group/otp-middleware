@@ -1,0 +1,14 @@
+{
+  "data": {
+    "plan": {
+      "itineraries": [],
+      "routingErrors": [
+        {
+          "code": "NO_STOPS_IN_RANGE",
+          "description": "The location was found, but no stops could be found within the search radius.",
+          "inputField": "TO"
+        }
+      ]
+    }
+  }
+}
