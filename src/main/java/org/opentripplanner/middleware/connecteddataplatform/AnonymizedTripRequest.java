@@ -157,7 +157,7 @@ public class AnonymizedTripRequest {
     /**
      * Extract modes from the trip request and return as an array.
      */
-    public List<String> getModes(List<TransportMode> tripRequestModes) {
+    public static List<String> getModes(List<TransportMode> tripRequestModes) {
         return tripRequestModes != null
             ? tripRequestModes.stream().map(TransportMode::toString).collect(Collectors.toList())
             : new ArrayList<>();
