@@ -1,7 +1,7 @@
-package org.opentripplanner.middleware.otp;
+package org.opentripplanner.middleware.otp.graphql;
 
 /** OTP GraphQL data structure for preferred/unpreferred/banned routes and trips */
-public class OtpGraphQLRoutesAndTrips {
+public class RoutesAndTrips {
     public String routes;
     public String trips;
 }

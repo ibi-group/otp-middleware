@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.testutils;
 
-import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
-import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.graphql.TransportMode;
+import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
@@ -103,19 +103,19 @@ public class PersistenceTestUtils {
         String fromPlace = "Airport, College Park, GA, USA :: 33.64070037704429,-84.44622866991179";
         String toPlace = "177 Gibson Street SE, Atlanta, GA, USA :: 33.748893261983575,-84.35611735540574";
 
-        OtpGraphQLVariables requestVars = new OtpGraphQLVariables();
-        requestVars.date = "2021-09-22";
-        requestVars.time = "15:54";
-        requestVars.walkSpeed = 1.34F;
+        QueryVariables queryVariables = new QueryVariables();
+        queryVariables.date = "2021-09-22";
+        queryVariables.time = "15:54";
+        queryVariables.walkSpeed = 1.34F;
         if (provideMode) {
             List<String> modes = mode != null ? List.of(mode) : List.of("WALK", "BUS", "RAIL");
-            requestVars.modes = modes
+            queryVariables.modes = modes
                 .stream()
-                .map(OtpGraphQLTransportMode::new)
+                .map(TransportMode::new)
                 .collect(Collectors.toList());
         }
 
-        TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, requestVars);
+        TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, queryVariables);
         if (createDate != null) {
             tripRequest.dateCreated = createDate;
         }

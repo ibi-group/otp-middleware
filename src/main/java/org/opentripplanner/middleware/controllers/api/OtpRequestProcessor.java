@@ -17,8 +17,8 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
-import org.opentripplanner.middleware.otp.OtpGraphQLQuery;
-import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.graphql.Query;
+import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
@@ -190,12 +190,12 @@ public class OtpRequestProcessor implements Endpoint {
                 *
                 * Other requests will still be proxied, just not stored.
                 */
-                OtpGraphQLVariables graphQlVariables = getPOJOFromJSON(requestBody, OtpGraphQLQuery.class).variables;
+                QueryVariables queryVariables = getPOJOFromJSON(requestBody, Query.class).variables;
 
                 // Follows the method used in otp-ui core-utils storage.js
                 String randomBatchId = Integer.toString((int) (Math.random() * 1_000_000_000), 36);
 
-                if (!handlePlanTripResponse(randomBatchId, graphQlVariables, otpDispatcherResponse, otpUser)) {
+                if (!handlePlanTripResponse(randomBatchId, queryVariables, otpDispatcherResponse, otpUser)) {
                     logMessageAndHalt(
                             request,
                             HttpStatus.INTERNAL_SERVER_ERROR_500,
@@ -276,7 +276,7 @@ public class OtpRequestProcessor implements Endpoint {
         String body = request.body();
         return handlePlanTripResponse(
                 request.queryParams("batchId"),
-                body.isEmpty() ? new OtpGraphQLVariables() : getPOJOFromJSON(body, OtpGraphQLQuery.class).variables,
+                body.isEmpty() ? new QueryVariables() : getPOJOFromJSON(body, Query.class).variables,
                 otpDispatcherResponse,
                 otpUser
         );
@@ -284,7 +284,7 @@ public class OtpRequestProcessor implements Endpoint {
 
     private static boolean handlePlanTripResponse(
             String batchId,
-            OtpGraphQLVariables graphQlVariables,
+            QueryVariables queryVariables,
             OtpDispatcherResponse otpDispatcherResponse,
             OtpUser otpUser
     ) {
@@ -309,9 +309,9 @@ public class OtpRequestProcessor implements Endpoint {
                 TripRequest tripRequest = new TripRequest(
                     otpUser.id,
                     batchId,
-                    graphQlVariables.fromPlace,
-                    graphQlVariables.toPlace,
-                    graphQlVariables
+                    queryVariables.fromPlace,
+                    queryVariables.toPlace,
+                    queryVariables
                 );
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
