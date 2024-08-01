@@ -7,4 +7,13 @@ public class OtpGraphQLTransportMode {
 
     /** Optional qualifier such as RENT for bike or other vehicle rentals. */
     public String qualifier;
+
+    public OtpGraphQLTransportMode() {
+        // Needed for serialization
+    }
+
+    /** Creates an instance with a mode and no initial qualifier */
+    public OtpGraphQLTransportMode(String mode) {
+        this.mode = mode;
+    }
 }

@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.testutils;
 
+import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
@@ -19,9 +21,8 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Utility class to aid with creating and storing objects in Mongo.
@@ -101,19 +102,20 @@ public class PersistenceTestUtils {
     public static TripRequest createTripRequest(String userId, String batchId, Date createDate, String mode, boolean provideMode) {
         String fromPlace = "Airport, College Park, GA, USA :: 33.64070037704429,-84.44622866991179";
         String toPlace = "177 Gibson Street SE, Atlanta, GA, USA :: 33.748893261983575,-84.35611735540574";
-        HashMap<String, String> requestParameters = new HashMap<>();
-        requestParameters.put("date", " 2021-09-22");
-        requestParameters.put("time", "15:54");
-        requestParameters.put("arriveBy", "false");
+
+        OtpGraphQLVariables requestVars = new OtpGraphQLVariables();
+        requestVars.date = "2021-09-22";
+        requestVars.time = "15:54";
+        requestVars.walkSpeed = 1.34F;
         if (provideMode) {
-            requestParameters.put("mode", Objects.requireNonNullElse(mode, "WALK,BUS,RAIL"));
+            List<String> modes = mode != null ? List.of(mode) : List.of("WALK", "BUS", "RAIL");
+            requestVars.modes = modes
+                .stream()
+                .map(OtpGraphQLTransportMode::new)
+                .collect(Collectors.toList());
         }
-        requestParameters.put("showIntermediateStops", "true");
-        requestParameters.put("maxWalkDistance", "1027");
-        requestParameters.put("optimize", "QUICK");
-        requestParameters.put("walkSpeed", "1.34");
-        requestParameters.put("ignoreRealtimeUpdates", "true");
-        TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, requestParameters);
+
+        TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, requestVars);
         if (createDate != null) {
             tripRequest.dateCreated = createDate;
         }
