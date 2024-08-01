@@ -2837,28 +2837,14 @@ definitions:
       requestParameters:
         $ref: "#/definitions/Map"
       otp2QueryParams:
-        $ref: "#/definitions/OtpGraphQLVariables"
-  OtpGraphQLRoutesAndTrips:
-    type: "object"
-    properties:
-      routes:
-        type: "string"
-      trips:
-        type: "string"
-  OtpGraphQLTransportMode:
-    type: "object"
-    properties:
-      mode:
-        type: "string"
-      qualifier:
-        type: "string"
-  OtpGraphQLVariables:
+        $ref: "#/definitions/QueryVariables"
+  QueryVariables:
     type: "object"
     properties:
       arriveBy:
         type: "boolean"
       banned:
-        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+        $ref: "#/definitions/RoutesAndTrips"
       bikeReluctance:
         type: "number"
         format: "float"
@@ -2874,18 +2860,18 @@ definitions:
       modes:
         type: "array"
         items:
-          $ref: "#/definitions/OtpGraphQLTransportMode"
+          $ref: "#/definitions/TransportMode"
       numItineraries:
         type: "integer"
         format: "int32"
       preferred:
-        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+        $ref: "#/definitions/RoutesAndTrips"
       time:
         type: "string"
       toPlace:
         type: "string"
       unpreferred:
-        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+        $ref: "#/definitions/RoutesAndTrips"
       walkReluctance:
         type: "number"
         format: "float"
@@ -2894,6 +2880,20 @@ definitions:
         format: "float"
       wheelchair:
         type: "boolean"
+  RoutesAndTrips:
+    type: "object"
+    properties:
+      routes:
+        type: "string"
+      trips:
+        type: "string"
+  TransportMode:
+    type: "object"
+    properties:
+      mode:
+        type: "string"
+      qualifier:
+        type: "string"
   MonitoredComponent:
     type: "object"
     properties:
