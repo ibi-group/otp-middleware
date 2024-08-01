@@ -79,7 +79,6 @@ jobs:
           NOTIFICATION_FROM_PHONE: ${{ secrets.NOTIFICATION_FROM_PHONE }}
           OTP_ADMIN_DASHBOARD_URL: ${{ secrets.OTP_ADMIN_DASHBOARD_URL }}
           OTP_API_ROOT: ${{ secrets.OTP_API_ROOT }}
-          OTP2_API_ROOT: ${{ secrets.OTP_API_ROOT }}
           OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
           OTP_TIMEZONE: ${{ secrets.OTP_TIMEZONE }}
           OTP_UI_URL: ${{ secrets.OTP_UI_URL }}
