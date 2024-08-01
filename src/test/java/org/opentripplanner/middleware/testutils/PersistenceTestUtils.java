@@ -20,6 +20,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -108,9 +109,8 @@ public class PersistenceTestUtils {
         queryVariables.time = "15:54";
         queryVariables.walkSpeed = 1.34F;
         if (provideMode) {
-            List<String> modes = mode != null ? List.of(mode) : List.of("WALK", "BUS", "RAIL");
-            queryVariables.modes = modes
-                .stream()
+            String[] modes = (mode != null ? mode : "WALK,BUS,RAIL").split(",");
+            queryVariables.modes = Arrays.stream(modes)
                 .map(TransportMode::new)
                 .collect(Collectors.toList());
         }
