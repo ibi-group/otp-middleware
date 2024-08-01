@@ -106,7 +106,7 @@ public class OtpMiddlewareMain {
                     new LogController(API_PREFIX),
                     new ErrorEventsController(API_PREFIX),
                     new CDPFilesController(API_PREFIX),
-                    new OtpRequestProcessor("/otp", OtpVersion.OTP2),
+                    new OtpRequestProcessor("/otp", OtpVersion.OTP1),
                     new OtpRequestProcessor("/otp2", OtpVersion.OTP2)
                     // TODO Add other models.
                 ))
