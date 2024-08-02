@@ -229,8 +229,9 @@ public class ConnectedDataManager {
                 request = tripRequest;
             }
             QueryVariables queryVariables = request.otp2QueryParams;
-            if (queryVariables != null && queryVariables.modes != null) {
-                allUniqueModes.addAll(AnonymizedTripRequest.getModes(queryVariables.modes));
+            List<TransportMode> modes = queryVariables != null ? queryVariables.modes : null;
+            if (modes != null && !modes.isEmpty()) {
+                allUniqueModes.addAll(AnonymizedTripRequest.getModes(modes));
             }
         }
         if (request != null && request.otp2QueryParams != null) {

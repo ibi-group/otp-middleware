@@ -12,7 +12,6 @@ import org.opentripplanner.middleware.otp.response.PlannerError;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -156,11 +155,12 @@ public class AnonymizedTripRequest {
 
     /**
      * Extract modes from the trip request and return as an array.
+     * @return A list of strings, and at a minimum, a list with one element which is an empty string.
      */
     public static List<String> getModes(List<TransportMode> tripRequestModes) {
-        return tripRequestModes != null
+        return tripRequestModes != null && !tripRequestModes.isEmpty()
             ? tripRequestModes.stream().map(TransportMode::toString).collect(Collectors.toList())
-            : new ArrayList<>();
+            : List.of("");
     }
 
     /**
