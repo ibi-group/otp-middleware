@@ -5,10 +5,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.mongodb.client.FindIterable;
 import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
@@ -43,9 +42,9 @@ public class TripRequest extends Model {
      */
     public String toPlace;
 
-    /** A dictionary of the parameters provided in the request that triggered this response. */
-    public Map<String, String> requestParameters;
-
+    /**
+     * The variables passed to the OTP GraphQL `plan` request that triggered this response.
+     */
     public QueryVariables otp2QueryParams;
 
     /**
@@ -57,14 +56,12 @@ public class TripRequest extends Model {
     public TripRequest(
         String userId,
         String batchId,
-        String fromPlace,
-        String toPlace,
         QueryVariables otp2QueryParams
     ) {
         this.userId = userId;
         this.batchId = batchId;
-        this.fromPlace = fromPlace;
-        this.toPlace = toPlace;
+        this.fromPlace = otp2QueryParams.fromPlace;
+        this.toPlace = otp2QueryParams.toPlace;
         this.otp2QueryParams = otp2QueryParams;
     }
 
@@ -75,7 +72,7 @@ public class TripRequest extends Model {
             ", batchId='" + batchId + '\'' +
             ", fromPlace='" + fromPlace + '\'' +
             ", toPlace='" + toPlace + '\'' +
-            ", requestParameters=" + requestParameters +
+            ", otp2QueryParams=" + JsonUtils.toJson(otp2QueryParams) +
             '}';
     }
 

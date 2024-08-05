@@ -2834,8 +2834,6 @@ definitions:
         type: "string"
       toPlace:
         type: "string"
-      requestParameters:
-        $ref: "#/definitions/Map"
       otp2QueryParams:
         $ref: "#/definitions/QueryVariables"
   QueryVariables:
