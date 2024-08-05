@@ -1,0 +1,290 @@
+{
+    "duration": 1242,
+    "startTime": 1718295118000,
+    "endTime": 1718296360000,
+    "walkTime": 645,
+    "transitTime": 297,
+    "waitingTime": 300,
+    "walkDistance": 696.05,
+    "walkLimitExceeded": false,
+    "elevationLost": 0,
+    "elevationGained": 0,
+    "transfers": 0,
+    "fare": {
+      "fare": {},
+      "details": {}
+    },
+    "legs": [
+      {
+        "startTime": 1718295118000,
+        "endTime": 1718295183000,
+        "departureDelay": 0,
+        "arrivalDelay": 0,
+        "realTime": false,
+        "distance": 69.22,
+        "pathway": false,
+        "mode": "WALK",
+        "interlineWithPreviousLeg": false,
+        "from": {
+          "name": "Sheraton Midtown Atlanta at Colony Square, Atlanta, GA, USA",
+          "lon": -84.3809644,
+          "lat": 33.7863653,
+          "departure": 1718295118000,
+          "vertexType": "NORMAL"
+        },
+        "to": {
+          "name": "14th St at Juniper St",
+          "lon": -84.381713,
+          "lat": 33.78645,
+          "departure": 1718295483000,
+          "vertexType": "TRANSIT",
+          "stopId": "MARTA:69356",
+          "arrival": 1718295183000,
+          "stopCode": "902581"
+        },
+        "legGeometry": {
+          "points": "a|emE`t_bO?B@l@?`A?`@I?",
+          "length": 6
+        },
+        "rentedBike": false,
+        "transitLeg": false,
+        "duration": 65,
+        "steps": [
+          {
+            "distance": 69.22,
+            "relativeDirection": "DEPART",
+            "streetName": "sidewalk 635800755 (635800755, 9535944810→5996570686)",
+            "absoluteDirection": "WEST",
+            "stayOn": false,
+            "area": false,
+            "bogusName": true,
+            "lon": -84.3809643,
+            "lat": 33.7864111
+          }
+        ]
+      },
+      {
+        "startTime": 1718295483000,
+        "endTime": 1718295780000,
+        "departureDelay": 0,
+        "arrivalDelay": 0,
+        "realTime": false,
+        "distance": 1593.54,
+        "pathway": false,
+        "mode": "BUS",
+        "interlineWithPreviousLeg": false,
+        "from": {
+          "name": "14th St at Juniper St",
+          "lon": -84.381713,
+          "lat": 33.78645,
+          "departure": 1718295483000,
+          "vertexType": "TRANSIT",
+          "stopId": "MARTA:69356",
+          "arrival": 1718295183000,
+          "stopIndex": 3,
+          "stopSequence": 4,
+          "stopCode": "902581"
+        },
+        "to": {
+          "name": "Piedmont Ave NE at Monroe Dr",
+          "lon": -84.370392,
+          "lat": 33.795571,
+          "departure": 1718295780000,
+          "vertexType": "TRANSIT",
+          "stopId": "MARTA:99973628",
+          "arrival": 1718295780000,
+          "stopIndex": 11,
+          "stopSequence": 12,
+          "stopCode": "213258"
+        },
+        "legGeometry": {
+          "points": "q|emEvx_bO?o@?a@DqJ??@eA?e@C_DS?gBA??C?_AA_@Iq@c@e@g@OQSQEG??SWeBoB_@c@k@o@??IMm@q@{@_AiCsBeFuD??MKWWm@c@_C{BoAkA??QQ_C{Bk@m@{AuAA???cC}BqAsA",
+          "length": 45
+        },
+        "transitLeg": true,
+        "duration": 297,
+        "intermediateStops": [
+          {
+            "name": "14th St NE at 14th Pl",
+            "lon": -84.379461,
+            "lat": 33.786415,
+            "departure": 1718295521000,
+            "vertexType": "TRANSIT",
+            "stopId": "MARTA:99972303",
+            "arrival": 1718295521000,
+            "stopIndex": 4,
+            "stopSequence": 5,
+            "stopCode": "211955"
+          },
+          {
+            "name": "Piedmont Ave NE at 14th St NE",
+            "lon": -84.37807,
+            "lat": 33.78709,
+            "departure": 1718295556000,
+            "vertexType": "TRANSIT",
+            "stopId": "MARTA:69325",
+            "arrival": 1718295556000,
+            "stopIndex": 5,
+            "stopSequence": 6,
+            "stopCode": "902521"
+          },
+          {
+            "name": "Piedmont Ave NE at 15th St NE",
+            "lon": -84.377418,
+            "lat": 33.788224,
+            "departure": 1718295583000,
+            "vertexType": "TRANSIT",
+            "stopId": "MARTA:69326",
+            "arrival": 1718295583000,
+            "stopIndex": 6,
+            "stopSequence": 7,
+            "stopCode": "902522"
+          },
+          {
+            "name": "Piedmont Ave NE at Prado",
+            "lon": -84.376309,
+            "lat": 33.7892,
+            "departure": 1718295610000,
+            "vertexType": "TRANSIT",
+            "stopId": "MARTA:69328",
+            "arrival": 1718295610000,
+            "stopIndex": 7,
+            "stopSequence": 8,
+            "stopCode": "902523"
+          },
+          {
+            "name": "Piedmont Ave NE at The Prado",
+            "lon": -84.374179,
+            "lat": 33.791636,
+            "departure": 1718295672000,
+            "vertexType": "TRANSIT",
+            "stopId": "MARTA:69330",
+            "arrival": 1718295672000,
+            "stopIndex": 8,
+            "stopSequence": 9,
+            "stopCode": "902524"
+          },
+          {
+            "name": "Piedmont Ave NE at Westminster Dr NE",
+            "lon": -84.37282,
+            "lat": 33.793095,
+            "departure": 1718295710000,
+            "vertexType": "TRANSIT",
+            "stopId": "MARTA:69332",
+            "arrival": 1718295710000,
+            "stopIndex": 9,
+            "stopSequence": 10,
+            "stopCode": "902528"
+          },
+          {
+            "name": "Piedmont Ave NE at Avery Dr NE",
+            "lon": -84.371451,
+            "lat": 33.79451,
+            "departure": 1718295747000,
+            "vertexType": "TRANSIT",
+            "stopId": "MARTA:69334",
+            "arrival": 1718295747000,
+            "stopIndex": 10,
+            "stopSequence": 11,
+            "stopCode": "902529"
+          }
+        ],
+        "steps": [],
+        "agencyName": "Metropolitan Atlanta Rapid Transit Authority",
+        "agencyUrl": "https://www.itsmarta.com",
+        "routeType": 3,
+        "routeId": "MARTA:21634",
+        "agencyId": "MARTA:MARTA",
+        "tripBlockId": "1153735",
+        "tripId": "MARTA:9101693",
+        "serviceDate": "2024-06-13",
+        "routeShortName": "27",
+        "routeLongName": "Cheshire Bridge Road",
+        "routeColor": "FF0080",
+        "routeTextColor": "000000",
+        "headsign": "Lenox Station"
+      },
+      {
+        "startTime": 1718295780000,
+        "endTime": 1718296360000,
+        "departureDelay": 0,
+        "arrivalDelay": 0,
+        "realTime": false,
+        "distance": 626.83,
+        "pathway": false,
+        "mode": "WALK",
+        "interlineWithPreviousLeg": false,
+        "from": {
+          "name": "Piedmont Ave NE at Monroe Dr",
+          "lon": -84.370392,
+          "lat": 33.795571,
+          "departure": 1718295780000,
+          "vertexType": "TRANSIT",
+          "stopId": "MARTA:99973628",
+          "arrival": 1718295780000,
+          "stopCode": "213258"
+        },
+        "to": {
+          "name": "33.79868, -84.37128",
+          "lon": -84.371285,
+          "lat": 33.798675,
+          "vertexType": "NORMAL",
+          "arrival": 1718296360000
+        },
+        "legGeometry": {
+          "points": "iugmE~q}aO`CcCAAIKKWKc@[gAAY?I?EBIKIUOQW[k@Wa@GKEEOL]Ve@^kCzBKJA@QPOHc@Ze@\\c@ZuFvDOJ",
+          "length": 31
+        },
+        "rentedBike": false,
+        "transitLeg": false,
+        "duration": 580,
+        "steps": [
+          {
+            "distance": 101.06,
+            "relativeDirection": "DEPART",
+            "streetName": "path 226324516 (226324516, 2351728397→2351728398)",
+            "absoluteDirection": "NORTHEAST",
+            "stayOn": false,
+            "area": false,
+            "bogusName": true,
+            "lon": -84.369738,
+            "lat": 33.7949285
+          },
+          {
+            "distance": 95,
+            "relativeDirection": "LEFT",
+            "streetName": "path 226324515 (226324515, 2351728380→2938286004)",
+            "absoluteDirection": "NORTHEAST",
+            "stayOn": true,
+            "area": false,
+            "bogusName": true,
+            "lon": -84.3687447,
+            "lat": 33.7952379
+          },
+          {
+            "distance": 31.03,
+            "relativeDirection": "LEFT",
+            "streetName": "Monroe Drive Northeast (569578148, 2938286005→2351731996)",
+            "absoluteDirection": "NORTHWEST",
+            "stayOn": false,
+            "area": false,
+            "bogusName": false,
+            "lon": -84.3680125,
+            "lat": 33.7958264
+          },
+          {
+            "distance": 399.75,
+            "relativeDirection": "CONTINUE",
+            "streetName": "crossing over Worcester Drive NE (636623277, 6003263567→6003263568)",
+            "absoluteDirection": "NORTHWEST",
+            "stayOn": false,
+            "area": false,
+            "bogusName": false,
+            "lon": -84.3682076,
+            "lat": 33.7960535
+          }
+        ]
+      }
+    ],
+    "alerts": []
+}

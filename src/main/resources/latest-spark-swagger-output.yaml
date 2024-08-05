@@ -2269,6 +2269,38 @@ definitions:
         type: "string"
       S3DownloadTimes:
         $ref: "#/definitions/Map"
+  Agency:
+    type: "object"
+    properties:
+      alerts:
+        type: "array"
+        items:
+          $ref: "#/definitions/LocalizedAlert"
+      gtfsId:
+        type: "string"
+      id:
+        type: "string"
+      name:
+        type: "string"
+  Stop:
+    type: "object"
+    properties:
+      alerts:
+        type: "array"
+        items:
+          $ref: "#/definitions/LocalizedAlert"
+      code:
+        type: "string"
+      gtfsId:
+        type: "string"
+      id:
+        type: "string"
+      lon:
+        type: "number"
+        format: "double"
+      lat:
+        type: "number"
+        format: "double"
   TripMonitorNotification:
     type: "object"
     properties:
@@ -2283,6 +2315,13 @@ definitions:
         - "INITIAL_REMINDER"
       body:
         type: "string"
+  OtpGraphQLRoutesAndTrips:
+    type: "object"
+    properties:
+      routes:
+        type: "string"
+      trips:
+        type: "string"
   EncodedPolyline:
     type: "object"
     properties:
@@ -2293,6 +2332,13 @@ definitions:
       length:
         type: "integer"
         format: "int32"
+  OtpGraphQLTransportMode:
+    type: "object"
+    properties:
+      mode:
+        type: "string"
+      qualifier:
+        type: "string"
   FareDetails:
     type: "object"
     properties:
@@ -2462,13 +2508,17 @@ definitions:
           $ref: "#/definitions/LocalizedAlert"
       headsign:
         type: "string"
+      agency:
+        $ref: "#/definitions/Agency"
+      route:
+        $ref: "#/definitions/Route"
   OtpRequest:
     type: "object"
     properties:
       dateTime:
         $ref: "#/definitions/ZonedDateTime"
       requestParameters:
-        $ref: "#/definitions/Map"
+        $ref: "#/definitions/OtpGraphQLVariables"
   Price:
     type: "object"
     properties:
@@ -2614,6 +2664,48 @@ definitions:
         type: "array"
         items:
           type: "string"
+  OtpGraphQLVariables:
+    type: "object"
+    properties:
+      arriveBy:
+        type: "boolean"
+      banned:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      bikeReluctance:
+        type: "number"
+        format: "float"
+      carReluctance:
+        type: "number"
+        format: "float"
+      date:
+        type: "string"
+      fromPlace:
+        type: "string"
+      mobilityProfile:
+        type: "string"
+      modes:
+        type: "array"
+        items:
+          $ref: "#/definitions/OtpGraphQLTransportMode"
+      numItineraries:
+        type: "integer"
+        format: "int32"
+      preferred:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      time:
+        type: "string"
+      toPlace:
+        type: "string"
+      unpreferred:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      walkReluctance:
+        type: "number"
+        format: "float"
+      walkSpeed:
+        type: "number"
+        format: "float"
+      wheelchair:
+        type: "boolean"
   FareWrapper:
     type: "object"
     properties:
@@ -2644,6 +2736,8 @@ definitions:
       arrival:
         type: "string"
         format: "date"
+      stop:
+        $ref: "#/definitions/Stop"
       stopIndex:
         type: "integer"
         format: "int32"
@@ -2681,6 +2775,28 @@ definitions:
         format: "date"
       id:
         type: "string"
+  Route:
+    type: "object"
+    properties:
+      alerts:
+        type: "array"
+        items:
+          $ref: "#/definitions/LocalizedAlert"
+      color:
+        type: "string"
+      gtfsId:
+        type: "string"
+      id:
+        type: "string"
+      longName:
+        type: "string"
+      shortName:
+        type: "string"
+      textColor:
+        type: "string"
+      type:
+        type: "integer"
+        format: "int32"
   MonitoredTrip:
     type: "object"
     properties:
@@ -2721,6 +2837,8 @@ definitions:
         type: "boolean"
       queryParams:
         type: "string"
+      otp2QueryParams:
+        $ref: "#/definitions/OtpGraphQLVariables"
       itinerary:
         $ref: "#/definitions/Itinerary"
       notifyOnAlert:
@@ -2834,31 +2952,15 @@ definitions:
         type: "string"
       toPlace:
         type: "string"
-      requestParameters:
-        $ref: "#/definitions/Map"
       otp2QueryParams:
-        $ref: "#/definitions/OtpGraphQLVariables"
-  OtpGraphQLRoutesAndTrips:
-    type: "object"
-    properties:
-      routes:
-        type: "string"
-      trips:
-        type: "string"
-  OtpGraphQLTransportMode:
-    type: "object"
-    properties:
-      mode:
-        type: "string"
-      qualifier:
-        type: "string"
-  OtpGraphQLVariables:
+        $ref: "#/definitions/QueryVariables"
+  QueryVariables:
     type: "object"
     properties:
       arriveBy:
         type: "boolean"
       banned:
-        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+        $ref: "#/definitions/RoutesAndTrips"
       bikeReluctance:
         type: "number"
         format: "float"
@@ -2874,18 +2976,18 @@ definitions:
       modes:
         type: "array"
         items:
-          $ref: "#/definitions/OtpGraphQLTransportMode"
+          $ref: "#/definitions/TransportMode"
       numItineraries:
         type: "integer"
         format: "int32"
       preferred:
-        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+        $ref: "#/definitions/RoutesAndTrips"
       time:
         type: "string"
       toPlace:
         type: "string"
       unpreferred:
-        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+        $ref: "#/definitions/RoutesAndTrips"
       walkReluctance:
         type: "number"
         format: "float"
@@ -2894,6 +2996,20 @@ definitions:
         format: "float"
       wheelchair:
         type: "boolean"
+  RoutesAndTrips:
+    type: "object"
+    properties:
+      routes:
+        type: "string"
+      trips:
+        type: "string"
+  TransportMode:
+    type: "object"
+    properties:
+      mode:
+        type: "string"
+      qualifier:
+        type: "string"
   MonitoredComponent:
     type: "object"
     properties:

@@ -25,6 +25,9 @@ public class TravelerPosition {
     /** Traveler current coordinates. */
     public Coordinates currentPosition;
 
+    /** Speed reported at the position, in meters per second. */
+    public int speed;
+
     /** Traveler current time. */
     public Instant currentTime;
 
@@ -44,6 +47,7 @@ public class TravelerPosition {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
         currentTime = lastLocation.timestamp.toInstant();
         currentPosition = new Coordinates(lastLocation);
+        speed = lastLocation.speed;
         expectedLeg = getExpectedLeg(currentPosition, itinerary);
         if (expectedLeg != null) {
             nextLeg = getNextLeg(expectedLeg, itinerary);
@@ -59,10 +63,17 @@ public class TravelerPosition {
     }
 
     /** Used for unit testing. */
-    public TravelerPosition(Leg expectedLeg, Coordinates currentPosition) {
+    public TravelerPosition(Leg expectedLeg, Coordinates currentPosition, int speed) {
         this.expectedLeg = expectedLeg;
         this.currentPosition = currentPosition;
+        this.speed = speed;
         legSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
+    }
+
+    /** Used for unit testing. */
+    public TravelerPosition(Leg expectedLeg, Coordinates currentPosition) {
+        // Anywhere the speed is zero means that speed is not considered for a specific logic.
+        this(expectedLeg, currentPosition, 0);
     }
 
     /** Used for unit testing. */

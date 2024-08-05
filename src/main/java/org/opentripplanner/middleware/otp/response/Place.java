@@ -2,6 +2,8 @@ package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.opentripplanner.middleware.utils.Coordinates;
+import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
 
 import java.util.Date;
 import java.util.Set;
@@ -11,7 +13,7 @@ import java.util.Set;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Place implements Cloneable {
+public class Place implements ConvertsToCoordinates, Cloneable {
 
     public String name;
     public Double lon;
@@ -38,5 +40,9 @@ public class Place implements Cloneable {
      */
     protected Place clone() throws CloneNotSupportedException {
         return (Place) super.clone();
+    }
+
+    public Coordinates toCoordinates() {
+        return new Coordinates(lat, lon);
     }
 }

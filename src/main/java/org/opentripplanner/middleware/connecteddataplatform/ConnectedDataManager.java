@@ -5,18 +5,18 @@ import com.mongodb.client.DistinctIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.graphql.QueryVariables;
+import org.opentripplanner.middleware.otp.graphql.TransportMode;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.opentripplanner.middleware.utils.S3Exception;
 import org.opentripplanner.middleware.utils.S3Utils;
 import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
@@ -26,12 +26,12 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
@@ -228,15 +228,17 @@ public class ConnectedDataManager {
                 // overwritten at the end of this method).
                 request = tripRequest;
             }
-            if (request.requestParameters != null && request.requestParameters.containsKey("mode")) {
-                allUniqueModes.addAll(
-                        Arrays.asList(tripRequest.requestParameters.get("mode").split(","))
-                );
+            QueryVariables queryVariables = request.otp2QueryParams;
+            List<TransportMode> modes = queryVariables != null ? queryVariables.modes : null;
+            if (modes != null && !modes.isEmpty()) {
+                allUniqueModes.addAll(AnonymizedTripRequest.getModes(modes));
             }
         }
-        if (request != null && request.requestParameters != null) {
+        if (request != null && request.otp2QueryParams != null) {
             // Replace the mode parameter in the first request with all unique modes from across the batch.
-            request.requestParameters.put("mode", StringUtils.join(allUniqueModes, ","));
+            request.otp2QueryParams.modes = allUniqueModes.stream()
+                .map(TransportMode::new)
+                .collect(Collectors.toList());
         }
         return request;
     }

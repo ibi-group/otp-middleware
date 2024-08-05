@@ -3,12 +3,11 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.mongodb.client.FindIterable;
-import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
@@ -43,10 +42,10 @@ public class TripRequest extends Model {
      */
     public String toPlace;
 
-    /** A dictionary of the parameters provided in the request that triggered this response. */
-    public Map<String, String> requestParameters;
-
-    public OtpGraphQLVariables otp2QueryParams;
+    /**
+     * The variables passed to the OTP GraphQL `plan` request that triggered this response.
+     */
+    public QueryVariables otp2QueryParams;
 
     /**
      * This no-arg constructor exists to make MongoDB happy.
@@ -57,28 +56,12 @@ public class TripRequest extends Model {
     public TripRequest(
         String userId,
         String batchId,
-        String fromPlace,
-        String toPlace,
-        Map<String, String> requestParameters
+        QueryVariables otp2QueryParams
     ) {
         this.userId = userId;
         this.batchId = batchId;
-        this.fromPlace = fromPlace;
-        this.toPlace = toPlace;
-        this.requestParameters = requestParameters;
-    }
-
-    public TripRequest(
-        String userId,
-        String batchId,
-        String fromPlace,
-        String toPlace,
-        OtpGraphQLVariables otp2QueryParams
-    ) {
-        this.userId = userId;
-        this.batchId = batchId;
-        this.fromPlace = fromPlace;
-        this.toPlace = toPlace;
+        this.fromPlace = otp2QueryParams.fromPlace;
+        this.toPlace = otp2QueryParams.toPlace;
         this.otp2QueryParams = otp2QueryParams;
     }
 
@@ -89,7 +72,7 @@ public class TripRequest extends Model {
             ", batchId='" + batchId + '\'' +
             ", fromPlace='" + fromPlace + '\'' +
             ", toPlace='" + toPlace + '\'' +
-            ", requestParameters=" + requestParameters +
+            ", otp2QueryParams=" + JsonUtils.toJson(otp2QueryParams) +
             '}';
     }
 
