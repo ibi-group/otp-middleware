@@ -306,13 +306,7 @@ public class OtpRequestProcessor implements Endpoint {
             }
 
             if (otpResponse != null) {
-                TripRequest tripRequest = new TripRequest(
-                    otpUser.id,
-                    batchId,
-                    queryVariables.fromPlace,
-                    queryVariables.toPlace,
-                    queryVariables
-                );
+                TripRequest tripRequest = new TripRequest(otpUser.id, batchId, queryVariables);
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
                 if (tripRequestSaved) {

@@ -105,6 +105,8 @@ public class PersistenceTestUtils {
         String toPlace = "177 Gibson Street SE, Atlanta, GA, USA :: 33.748893261983575,-84.35611735540574";
 
         QueryVariables queryVariables = new QueryVariables();
+        queryVariables.fromPlace = fromPlace;
+        queryVariables.toPlace = toPlace;
         queryVariables.date = "2021-09-22";
         queryVariables.time = "15:54";
         queryVariables.walkSpeed = 1.34F;
@@ -115,7 +117,7 @@ public class PersistenceTestUtils {
                 .collect(Collectors.toList());
         }
 
-        TripRequest tripRequest = new TripRequest(userId, batchId, fromPlace, toPlace, queryVariables);
+        TripRequest tripRequest = new TripRequest(userId, batchId, queryVariables);
         if (createDate != null) {
             tripRequest.dateCreated = createDate;
         }

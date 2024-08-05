@@ -57,14 +57,12 @@ public class TripRequest extends Model {
     public TripRequest(
         String userId,
         String batchId,
-        String fromPlace,
-        String toPlace,
         QueryVariables otp2QueryParams
     ) {
         this.userId = userId;
         this.batchId = batchId;
-        this.fromPlace = fromPlace;
-        this.toPlace = toPlace;
+        this.fromPlace = otp2QueryParams.fromPlace;
+        this.toPlace = otp2QueryParams.toPlace;
         this.otp2QueryParams = otp2QueryParams;
     }
 
