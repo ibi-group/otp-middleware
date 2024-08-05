@@ -7,7 +7,6 @@ import io.github.manusant.ss.rest.Endpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -18,6 +17,8 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
+import org.opentripplanner.middleware.otp.graphql.Query;
+import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
@@ -121,7 +122,7 @@ public class OtpRequestProcessor implements Endpoint {
      * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
      * status) is passed back to the requester.
      */
-    private String proxyGet(Request request, spark.Response response) {
+    private String proxyGet(Request request, spark.Response response) throws JsonProcessingException {
         OtpUser otpUser = checkUserPermissions(request);
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replaceFirst(basePath, "");
@@ -133,7 +134,7 @@ public class OtpRequestProcessor implements Endpoint {
         }
         // If the request path ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
         if (otpRequestPath.endsWith(OtpDispatcher.OTP_PLAN_ENDPOINT) && otpUser != null) {
-            if(!handlePlanTripResponse(request, otpDispatcherResponse, otpUser)) {
+            if (!handlePlanTripResponse(request, otpDispatcherResponse, otpUser)) {
                 logMessageAndHalt(
                     request,
                     HttpStatus.INTERNAL_SERVER_ERROR_500,
@@ -189,15 +190,12 @@ public class OtpRequestProcessor implements Endpoint {
                 *
                 * Other requests will still be proxied, just not stored.
                 */
-                HashMap graphQlVariables = (HashMap) getPOJOFromJSON(requestBody, Map.class).get("variables");
-
-                String fromPlace = (String) graphQlVariables.get("fromPlace");
-                String toPlace = (String) graphQlVariables.get("toPlace");
+                QueryVariables queryVariables = getPOJOFromJSON(requestBody, Query.class).variables;
 
                 // Follows the method used in otp-ui core-utils storage.js
                 String randomBatchId = Integer.toString((int) (Math.random() * 1_000_000_000), 36);
 
-                if(!handlePlanTripResponse(randomBatchId, fromPlace, toPlace, otpDispatcherResponse, otpUser)) {
+                if (!handlePlanTripResponse(randomBatchId, queryVariables, otpDispatcherResponse, otpUser)) {
                     logMessageAndHalt(
                             request,
                             HttpStatus.INTERNAL_SERVER_ERROR_500,
@@ -205,9 +203,9 @@ public class OtpRequestProcessor implements Endpoint {
                     );
                     return null;
                 }
-            } catch(JsonProcessingException e) {
+            } catch (JsonProcessingException e) {
                 LOG.warn("Invalid GraphQL Request received. Still passing to OTP2: {}", e.getMessage());
-            } catch(NullPointerException e) {
+            } catch (NullPointerException e) {
                 LOG.warn("Failed to read variables from GraphQL Plan request. Still passing to OTP2: {}", e.getMessage());
             }
         }
@@ -274,11 +272,11 @@ public class OtpRequestProcessor implements Endpoint {
             Request request,
             OtpDispatcherResponse otpDispatcherResponse,
             OtpUser otpUser
-    ) {
+    ) throws JsonProcessingException {
+        String body = request.body();
         return handlePlanTripResponse(
                 request.queryParams("batchId"),
-                request.queryParams("fromPlace"),
-                request.queryParams("toPlace"),
+                body.isEmpty() ? new QueryVariables() : getPOJOFromJSON(body, Query.class).variables,
                 otpDispatcherResponse,
                 otpUser
         );
@@ -286,8 +284,7 @@ public class OtpRequestProcessor implements Endpoint {
 
     private static boolean handlePlanTripResponse(
             String batchId,
-            String fromPlace,
-            String toPlace,
+            QueryVariables queryVariables,
             OtpDispatcherResponse otpDispatcherResponse,
             OtpUser otpUser
     ) {
@@ -309,13 +306,7 @@ public class OtpRequestProcessor implements Endpoint {
             }
 
             if (otpResponse != null) {
-                TripRequest tripRequest = new TripRequest(
-                    otpUser.id,
-                    batchId,
-                    fromPlace,
-                    toPlace,
-                    otpResponse.requestParameters
-                );
+                TripRequest tripRequest = new TripRequest(otpUser.id, batchId, queryVariables);
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
                 if (tripRequestSaved) {
@@ -330,5 +321,4 @@ public class OtpRequestProcessor implements Endpoint {
         LOG.debug("Trip storage added {} ms", DateTimeUtils.currentTimeMillis() - tripStorageStartTime);
         return result;
     }
-
 }

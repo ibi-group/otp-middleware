@@ -2834,8 +2834,64 @@ definitions:
         type: "string"
       toPlace:
         type: "string"
-      requestParameters:
-        $ref: "#/definitions/HashMap"
+      otp2QueryParams:
+        $ref: "#/definitions/QueryVariables"
+  QueryVariables:
+    type: "object"
+    properties:
+      arriveBy:
+        type: "boolean"
+      banned:
+        $ref: "#/definitions/RoutesAndTrips"
+      bikeReluctance:
+        type: "number"
+        format: "float"
+      carReluctance:
+        type: "number"
+        format: "float"
+      date:
+        type: "string"
+      fromPlace:
+        type: "string"
+      mobilityProfile:
+        type: "string"
+      modes:
+        type: "array"
+        items:
+          $ref: "#/definitions/TransportMode"
+      numItineraries:
+        type: "integer"
+        format: "int32"
+      preferred:
+        $ref: "#/definitions/RoutesAndTrips"
+      time:
+        type: "string"
+      toPlace:
+        type: "string"
+      unpreferred:
+        $ref: "#/definitions/RoutesAndTrips"
+      walkReluctance:
+        type: "number"
+        format: "float"
+      walkSpeed:
+        type: "number"
+        format: "float"
+      wheelchair:
+        type: "boolean"
+  RoutesAndTrips:
+    type: "object"
+    properties:
+      routes:
+        type: "string"
+      trips:
+        type: "string"
+  TransportMode:
+    type: "object"
+    properties:
+      mode:
+        type: "string"
+      qualifier:
+        type: "string"
   MonitoredComponent:
     type: "object"
     properties:
