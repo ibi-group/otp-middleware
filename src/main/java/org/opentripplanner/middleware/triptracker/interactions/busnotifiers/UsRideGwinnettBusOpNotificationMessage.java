@@ -70,6 +70,8 @@ public class UsRideGwinnettBusOpNotificationMessage {
     public String from_route_id;
     public String from_trip_id;
     public String from_stop_id;
+    public String to_route_id;
+    public String to_trip_id;
     public String to_stop_id;
     public String from_arrival_time;
     public Integer msg_type;
@@ -83,6 +85,10 @@ public class UsRideGwinnettBusOpNotificationMessage {
         this.from_route_id = removeAgencyPrefix(getRouteIdFromLeg(nextLeg));
         this.from_trip_id = removeAgencyPrefix(getTripIdFromLeg(nextLeg));
         this.from_stop_id = removeAgencyPrefix(getStopIdFromPlace(nextLeg.from));
+        // For now, assume one notification request is made per transit leg.
+        // TODO: Determine how interlined legs should be handled.
+        this.to_route_id = this.from_route_id;
+        this.to_trip_id = this.from_trip_id;
         this.to_stop_id = removeAgencyPrefix(getStopIdFromPlace(nextLeg.to));
         this.from_arrival_time = BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT.format(
             nextLeg.getScheduledStartTime()
