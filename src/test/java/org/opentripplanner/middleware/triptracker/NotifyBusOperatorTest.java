@@ -106,14 +106,19 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
     void canCancelBusOperatorNotification() throws JsonProcessingException {
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates());
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
+
         busOperatorActions.handleSendNotificationAction(TripStatus.ON_SCHEDULE, travelerPosition);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(routeId));
-        busOperatorActions.handleCancelNotificationAction(travelerPosition);
-        updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         String messageBody = updated.busNotificationMessages.get(routeId);
         UsRideGwinnettBusOpNotificationMessage message = getNotificationMessage(messageBody);
         assertEquals(1, message.msg_type);
+
+        busOperatorActions.handleCancelNotificationAction(travelerPosition);
+        updated = Persistence.trackedJourneys.getById(trackedJourney.id);
+        String cancelMessageBody = updated.busNotificationMessages.get(routeId);
+        UsRideGwinnettBusOpNotificationMessage cancelMessage = getNotificationMessage(cancelMessageBody);
+        assertEquals(0, cancelMessage.msg_type);
     }
 
     @Test
