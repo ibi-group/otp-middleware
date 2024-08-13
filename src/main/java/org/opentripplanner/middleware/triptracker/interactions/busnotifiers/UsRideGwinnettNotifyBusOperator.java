@@ -96,7 +96,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
         try {
             if (
                 isBusLeg(travelerPosition.nextLeg) && routeId != null &&
-                hasNotCancelledNotificationForRoute(travelerPosition.trackedJourney, routeId)
+                hasNotCanceledNotificationForRoute(travelerPosition.trackedJourney, routeId)
             ) {
                 Map<String, String> busNotificationRequests = travelerPosition.trackedJourney.busNotificationMessages;
                 if (busNotificationRequests.containsKey(routeId)) {
@@ -165,7 +165,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
     /**
      * Has a previous notification already been cancelled.
      */
-    public static boolean hasNotCancelledNotificationForRoute(
+    public static boolean hasNotCanceledNotificationForRoute(
         TrackedJourney trackedJourney,
         String routeId
     ) throws JsonProcessingException {
@@ -174,7 +174,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
             throw new IllegalStateException("A notification must exist before it can be cancelled!");
         }
         UsRideGwinnettBusOpNotificationMessage message = getNotificationMessage(messageBody);
-        return message.msg_type != 1;
+        return message.msg_type != 0;
     }
 
     public static UsRideGwinnettBusOpNotificationMessage getNotificationMessage(String body) throws JsonProcessingException {
