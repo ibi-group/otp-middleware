@@ -106,9 +106,10 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
                     );
                     // Changed the saved message type from notify to cancel.
                     body.msg_type = 0;
-                    var httpStatus = doPost(JsonUtils.toJson(body));
+                    String bodyJson = JsonUtils.toJson(body);
+                    var httpStatus = doPost(bodyJson);
                     if (httpStatus == HttpStatus.OK_200) {
-                        travelerPosition.trackedJourney.updateNotificationMessage(routeId, JsonUtils.toJson(body));
+                        travelerPosition.trackedJourney.updateNotificationMessage(routeId, bodyJson);
                     } else {
                         LOG.error("Error {} while trying to cancel Ride Gwinnett notification to bus operator.", httpStatus);
                     }
