@@ -25,8 +25,8 @@ import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.io.IOException;
-import java.sql.Date;
 import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
@@ -103,27 +103,54 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void canCancelBusOperatorNotification() throws JsonProcessingException {
+    void canCancelBusOperatorNotification() throws JsonProcessingException, InterruptedException {
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates());
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
+
         busOperatorActions.handleSendNotificationAction(TripStatus.ON_SCHEDULE, travelerPosition);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(routeId));
+        assertEquals(1, getMessage(updated).msg_type);
+
         busOperatorActions.handleCancelNotificationAction(travelerPosition);
-        updated = Persistence.trackedJourneys.getById(trackedJourney.id);
+        UsRideGwinnettBusOpNotificationMessage cancelMessage1 = getMessage(
+            Persistence.trackedJourneys.getById(trackedJourney.id)
+        );
+        assertEquals(0, cancelMessage1.msg_type);
+
+
+        // A second request to cancel should not touch the previous request.
+        Thread.sleep(20);
+        busOperatorActions.handleCancelNotificationAction(travelerPosition);
+        UsRideGwinnettBusOpNotificationMessage cancelMessage2 = getMessage(
+            Persistence.trackedJourneys.getById(trackedJourney.id)
+        );
+        assertEquals(0, cancelMessage2.msg_type);
+        assertEquals(cancelMessage1.timestamp, cancelMessage2.timestamp);
+    }
+
+    private static UsRideGwinnettBusOpNotificationMessage getMessage(TrackedJourney updated) throws JsonProcessingException {
         String messageBody = updated.busNotificationMessages.get(routeId);
-        UsRideGwinnettBusOpNotificationMessage message = getNotificationMessage(messageBody);
-        assertEquals(1, message.msg_type);
+        return getNotificationMessage(messageBody);
     }
 
     @Test
-    void canNotifyBusOperatorOnlyOnce() {
+    void canNotifyBusOperatorOnlyOnce() throws InterruptedException, JsonProcessingException {
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates());
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
+
         busOperatorActions.handleSendNotificationAction(TripStatus.ON_SCHEDULE, travelerPosition);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(routeId));
-        assertFalse(UsRideGwinnettNotifyBusOperator.hasNotSentNotificationForRoute(trackedJourney, routeId));
+        assertFalse(UsRideGwinnettNotifyBusOperator.hasNotSentNotificationForRoute(updated, routeId));
+        UsRideGwinnettBusOpNotificationMessage notifyMessage = getMessage(updated);
+
+        // A second request to notify the operator should not touch the previous request.
+        Thread.sleep(20);
+        busOperatorActions.handleSendNotificationAction(TripStatus.ON_SCHEDULE, travelerPosition);
+        TrackedJourney updated2 = Persistence.trackedJourneys.getById(trackedJourney.id);
+        assertFalse(UsRideGwinnettNotifyBusOperator.hasNotSentNotificationForRoute(updated2, routeId));
+        assertEquals(notifyMessage.timestamp, getMessage(updated2).timestamp);
     }
 
     @ParameterizedTest
