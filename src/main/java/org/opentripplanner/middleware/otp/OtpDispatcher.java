@@ -37,7 +37,11 @@ public class OtpDispatcher {
      */
     public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/routers/default/index/graphql");
 
-    private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
+    /**
+     * Match the OTP GraphQL request timeout defined at
+     * https://github.com/opentripplanner/OpenTripPlanner/blob/176e5f51923e82f8a4c2aa2a0b8284e1497b4439/src/main/java/org/opentripplanner/apis/gtfs/GtfsGraphQLAPI.java#L54
+     */
+    private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 30;
 
     /**
      * Provides a response from the OTP server target service based on the query parameters provided.
