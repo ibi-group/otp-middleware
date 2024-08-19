@@ -24,7 +24,7 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
     public String build() {
         // TODO: i18n
         String routeShortName = getRouteShortNameFromLeg(transitLeg);
-        long delayInMinutes = transitLeg.departureDelay;
+        long delayInMinutes = transitLeg.departureDelay / 60;
         long absoluteMinutes = Math.abs(delayInMinutes);
         long waitInMinutes = Duration
             .between(currentTime.atZone(DateTimeUtils.getOtpZoneId()), transitLeg.getScheduledStartTime())
