@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.triptracker;
 import io.leonard.PolylineUtils;
 import io.leonard.Position;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -11,6 +12,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
@@ -46,6 +48,7 @@ public class ManageLegTraversalTest {
 
     private static Itinerary adairAvenueToMonroeDriveItinerary;
     private static Itinerary midtownToAnsleyItinerary;
+    private static List<Place> midtownToAnsleyIntermediateStops;
 
     private static final Locale locale = Locale.US;
 
@@ -70,6 +73,13 @@ public class ManageLegTraversalTest {
             CommonTestUtils.getTestResourceAsString("controllers/api/27nb-midtown-to-ansley.json"),
             Itinerary.class
         );
+        // Hold on to the original list of intermediate stops (some tests will overwrite it)
+        midtownToAnsleyIntermediateStops = midtownToAnsleyItinerary.legs.get(1).intermediateStops;
+    }
+
+    @BeforeEach
+    void beforeEach() {
+        midtownToAnsleyItinerary.legs.get(1).intermediateStops = midtownToAnsleyIntermediateStops;
     }
 
     @ParameterizedTest
@@ -323,6 +333,12 @@ public class ManageLegTraversalTest {
     void canTrackTransitRide(TraceData traceData) {
         Itinerary itinerary = midtownToAnsleyItinerary;
         Leg transitLeg = itinerary.legs.get(1);
+
+        // In some cases, simulate missing intermediateStops field from OTP. Tests should still run to end.
+        if (traceData.dismissIntermediateStops) {
+            transitLeg.intermediateStops = null;
+        }
+
         TravelerPosition travelerPosition = new TravelerPosition(transitLeg, traceData.position, traceData.speed);
         String tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, false);
         assertEquals(traceData.expectedInstruction, Objects.requireNonNullElse(tripInstruction, NO_INSTRUCTION), traceData.message);
@@ -386,7 +402,8 @@ public class ManageLegTraversalTest {
                 new TraceData(
                     new Coordinates(33.79478, -84.37127),
                     String.format("Get off at next stop (%s)", destinationName),
-                    "Past the one-stop warning from the stop where you should get off."
+                    "Past the one-stop warning from the stop where you should get off.",
+                    true
                 )
             ),
             Arguments.of(
@@ -505,6 +522,7 @@ public class ManageLegTraversalTest {
         int speed;
         String expectedInstruction;
         boolean isStartOfTrip;
+        boolean dismissIntermediateStops;
         String message;
 
         public TraceData(Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
@@ -516,6 +534,11 @@ public class ManageLegTraversalTest {
 
         public TraceData(Coordinates position, String expectedInstruction, String message) {
             this(position, expectedInstruction, false, message);
+        }
+
+        public TraceData(Coordinates position, String expectedInstruction, String message, boolean dismissIntermediateStops) {
+            this(position, expectedInstruction, false, message);
+            this.dismissIntermediateStops = true;
         }
 
         public TraceData(Coordinates position, int speed, String expectedInstruction, String message) {

@@ -282,7 +282,9 @@ public class TravelerLocator {
     }
 
     private static List<Place> getIntermediateAndLastStop(Leg leg) {
-        ArrayList<Place> stops = new ArrayList<>(leg.intermediateStops);
+        ArrayList<Place> stops = leg.intermediateStops == null
+            ? new ArrayList<>()
+            : new ArrayList<>(leg.intermediateStops);
         stops.add(leg.to);
         return stops;
     }
