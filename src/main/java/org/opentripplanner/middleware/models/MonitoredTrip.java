@@ -259,7 +259,7 @@ public class MonitoredTrip extends Model {
      * the itinerary is removed.
      */
     public void initializeFromItineraryAndQueryParams(Request req) throws IllegalArgumentException, JsonProcessingException {
-        initializeFromItineraryAndQueryParams(OtpGraphQLVariables.fromRequest(req));
+        initializeFromItineraryAndQueryParams(OtpGraphQLVariables.fromMonitoredTripRequest(req));
     }
 
     /**
