@@ -190,12 +190,8 @@ public class OtpRequestProcessor implements Endpoint {
                 *
                 * Other requests will still be proxied, just not stored.
                 */
-                QueryVariables queryVariables = getPOJOFromJSON(requestBody, Query.class).variables;
-
-                // Follows the method used in otp-ui core-utils storage.js
-                String randomBatchId = Integer.toString((int) (Math.random() * 1_000_000_000), 36);
-
-                if (!handlePlanTripResponse(randomBatchId, queryVariables, otpDispatcherResponse, otpUser)) {
+                Query query = getPOJOFromJSON(requestBody, Query.class);
+                if (!handlePlanTripResponse(query.batchId, query.variables, otpDispatcherResponse, otpUser)) {
                     logMessageAndHalt(
                             request,
                             HttpStatus.INTERNAL_SERVER_ERROR_500,
