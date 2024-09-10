@@ -63,6 +63,9 @@ public class ConnectedDataManager {
     public static final String CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME");
 
+    public static final String CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY =
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY", "hourly");
+
     private ConnectedDataManager() {}
 
     public static void scheduleTripHistoryUploadJob() {
