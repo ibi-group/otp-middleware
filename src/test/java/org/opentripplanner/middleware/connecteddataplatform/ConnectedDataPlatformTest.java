@@ -315,6 +315,22 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
+     * If the system is down for a period of time, make sure that the days between the last upload and the current day
+     * are correctly staged.
+     */
+    @Test
+    void canCorrectlyStageDays() {
+        LocalDateTime fourDaysAgo = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(4);
+        TripHistoryUpload tripHistoryUpload = new TripHistoryUpload(fourDaysAgo);
+        Persistence.tripHistoryUploads.create(tripHistoryUpload);
+        TripHistoryUploadJob.stageUploadDays();
+        assertEquals(
+            1, // If system is down, it will only upload the previous day.
+            Persistence.tripHistoryUploads.getCountFiltered(Filters.gt("uploadHour", fourDaysAgo))
+        );
+    }
+
+    /**
      * Add an OTP user with 'storeTripHistory' set to true and related trip requests/summaries. Via the API update the
      * 'storeTripHistory' to false and confirm that the trip history is removed and the appropriate days are flagged for
      * updating.
