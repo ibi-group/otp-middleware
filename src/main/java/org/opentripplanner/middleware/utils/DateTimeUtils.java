@@ -291,8 +291,15 @@ public class DateTimeUtils {
     /**
      * Return the previous whole hour from now. E.g. If the time is 07:30, return 06:00.
      */
-    public static LocalDateTime getPreviousWholeHourFromNow() {
-        return LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(1);
+    public static LocalDateTime getPreviousWholeHourFrom(LocalDateTime dateTime) {
+        return dateTime.truncatedTo(ChronoUnit.HOURS).minusHours(1);
+    }
+
+    /**
+     * Return the previous day from now. E.g. If today is Wednesday 07:30, return Tuesday.
+     */
+    public static LocalDateTime getPreviousDayFrom(LocalDateTime dateTime) {
+        return dateTime.truncatedTo(ChronoUnit.DAYS).minusDays(1);
     }
 
     /**

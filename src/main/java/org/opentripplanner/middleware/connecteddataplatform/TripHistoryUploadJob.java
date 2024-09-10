@@ -29,7 +29,7 @@ public class TripHistoryUploadJob implements Runnable {
      * if not already accounted for.
      */
     public static void stageUploadHours() {
-        LocalDateTime previousWholeHourFromNow = DateTimeUtils.getPreviousWholeHourFromNow();
+        LocalDateTime previousWholeHourFromNow = DateTimeUtils.getPreviousWholeHourFrom(LocalDateTime.now());
         TripHistoryUpload lastCreated = TripHistoryUpload.getLastCreated();
         if (lastCreated == null) {
             // Stage first ever upload hour.

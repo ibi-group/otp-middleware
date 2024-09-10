@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.getFileName;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getPreviousWholeHourFromNow;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getPreviousWholeHourFrom;
 import static org.opentripplanner.middleware.utils.FileUtils.getContentsOfFileInZip;
 
 public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
@@ -54,7 +54,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     private String zipFileName;
     private static OtpUser otpUser;
     private static final String OTP_USER_PATH = "api/secure/user";
-    private static final LocalDateTime PREVIOUS_WHOLE_HOUR_FROM_NOW = getPreviousWholeHourFromNow();
+    private static final LocalDateTime PREVIOUS_WHOLE_HOUR_FROM_NOW = getPreviousWholeHourFrom(LocalDateTime.now());
 
     @BeforeAll
     public static void setUp() {
