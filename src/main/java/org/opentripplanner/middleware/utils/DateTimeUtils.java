@@ -265,6 +265,13 @@ public class DateTimeUtils {
     }
 
     /**
+     * Get the end of a day from a {@link LocalDateTime} object which is returned as a {@link Date} object.
+     */
+    public static Date getEndOfDay(LocalDateTime date) {
+        return convertToDate(date.truncatedTo(ChronoUnit.DAYS).plusDays(1).minusSeconds(1));
+    }
+
+    /**
      * Get the start of the current hour.
      */
     public static LocalDateTime getStartOfCurrentHour() {

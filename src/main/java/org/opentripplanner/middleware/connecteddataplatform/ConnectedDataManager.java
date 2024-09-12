@@ -139,10 +139,14 @@ public class ConnectedDataManager {
      */
     private static int streamAnonymousTripsToFile(
         String pathAndFileName,
-        LocalDateTime hourToBeAnonymized
+        LocalDateTime periodToBeAnonymized
     ) throws IOException {
-        Date startOfHour = DateTimeUtils.getStartOfHour(hourToBeAnonymized);
-        Date endOfHour = DateTimeUtils.getEndOfHour(hourToBeAnonymized);
+        // (Calling getStartOfHour is probably redundant because the starting hour (or day) to be anonymized
+        // should already be rounded to a whole hour/day.)
+        Date startOfPeriod = DateTimeUtils.getStartOfHour(periodToBeAnonymized);
+        Date endOfPeriod = "daily".equals(CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY)
+            ? DateTimeUtils.getEndOfDay(periodToBeAnonymized)
+            : DateTimeUtils.getEndOfHour(periodToBeAnonymized);
         final String dateCreatedFieldName = "dateCreated";
         final String batchIdFieldName = "batchId";
 
@@ -150,8 +154,8 @@ public class ConnectedDataManager {
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
             batchIdFieldName,
             Filters.and(
-                Filters.gte(dateCreatedFieldName, startOfHour),
-                Filters.lte(dateCreatedFieldName, endOfHour),
+                Filters.gte(dateCreatedFieldName, startOfPeriod),
+                Filters.lte(dateCreatedFieldName, endOfPeriod),
                 Filters.ne(batchIdFieldName, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
             ),
             String.class
@@ -174,7 +178,7 @@ public class ConnectedDataManager {
         for (String uniqueBatchId : uniqueBatchIds) {
             pos++;
             // Anonymize trip request.
-            AnonymizedTripRequest anonymizedTripRequest = getAnonymizedTripRequest(uniqueBatchId, startOfHour, endOfHour);
+            AnonymizedTripRequest anonymizedTripRequest = getAnonymizedTripRequest(uniqueBatchId, startOfPeriod, endOfPeriod);
             if (anonymizedTripRequest != null) {
                 // Append content to file.
                 FileUtils.writeToFile(pathAndFileName, true, JsonUtils.toJson(anonymizedTripRequest));
