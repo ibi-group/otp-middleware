@@ -69,8 +69,8 @@ public class ConnectedDataManager {
     public static final String CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY", "hourly");
 
-    public static final String CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION_FREQUENCY =
-        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION_FREQUENCY", "none");
+    public static final String CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION =
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION", "none");
 
     private ConnectedDataManager() {}
 
@@ -279,7 +279,7 @@ public class ConnectedDataManager {
                         "%s/%s",
                         getUploadFolderName(
                             CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME,
-                            CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION_FREQUENCY,
+                            CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION,
                             hourToBeAnonymized.toLocalDate()
                         ),
                         zipFileName
