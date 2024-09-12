@@ -74,12 +74,28 @@ public class ConnectedDataManager {
 
     private ConnectedDataManager() {}
 
-    public static void scheduleTripHistoryUploadJob() {
+    public static boolean canScheduleUploads() {
         if (!isConnectedDataPlatformEnabled()) {
             LOG.warn("Connected Data Platform is not enabled (CONNECTED_DATA_PLATFORM_ENABLED is set to false).");
-            return;
+            return false;
         }
-        if (shouldProcessTripHistory(CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME)) {
+
+        ReportedEntities reportedEntities = ReportedEntities.defaults();
+        if (reportedEntities == null) {
+            LOG.warn("No entities marked for reporting (CONNECTED_DATA_PLATFORM_REPORTED_ENTITIES has no known entities).");
+            return false;
+        }
+
+        if (Strings.isBlank(CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME)) {
+            LOG.warn("Not scheduling trip history upload (CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME is not set).");
+            return false;
+        }
+
+        return true;
+    }
+
+    public static void scheduleTripHistoryUploadJob() {
+        if (canScheduleUploads()) {
             LOG.info("Scheduling trip history upload for every {} minute(s)",
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES);
             Scheduler.scheduleJob(
@@ -87,8 +103,6 @@ public class ConnectedDataManager {
                 0,
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
                 TimeUnit.MINUTES);
-        } else {
-            LOG.warn("Not scheduling trip history upload (CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME is not set).");
         }
     }
 
@@ -332,14 +346,6 @@ public class ConnectedDataManager {
             getStringFromDate(date, DEFAULT_DATE_FORMAT_PATTERN),
             fileNameSuffix
         );
-    }
-
-    /**
-     * Determines whether trip history should be processed based on the configured bucket name.
-     * @return true if trip history should be processed, false otherwise.
-     */
-    public static boolean shouldProcessTripHistory(String configBucketName) {
-        return !Strings.isBlank(configBucketName);
     }
 
     /**

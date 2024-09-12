@@ -422,13 +422,6 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void shouldProcessTripHistory() {
-        assertTrue(ConnectedDataManager.shouldProcessTripHistory("some-bucket-name"));
-        assertFalse(ConnectedDataManager.shouldProcessTripHistory(null));
-        assertFalse(ConnectedDataManager.shouldProcessTripHistory(""));
-    }
-
-    @Test
     void canHandleMissingPlaceCoordinates() throws Exception {
         assumeTrue(IS_END_TO_END);
 
