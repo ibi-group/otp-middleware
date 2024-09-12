@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.otp;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import spark.Request;
 
 import java.util.List;
@@ -30,8 +31,8 @@ public class OtpGraphQLVariables implements Cloneable {
     public Float walkSpeed;
     public boolean wheelchair;
 
-    public static OtpGraphQLVariables fromRequest(Request request) throws JsonProcessingException {
-        return getPOJOFromJSON(request.body(), OtpGraphQLQuery.class).variables;
+    public static OtpGraphQLVariables fromMonitoredTripRequest(Request request) throws JsonProcessingException {
+        return getPOJOFromJSON(request.body(), MonitoredTrip.class).otp2QueryParams;
     }
 
     @Override

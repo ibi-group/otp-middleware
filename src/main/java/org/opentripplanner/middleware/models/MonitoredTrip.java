@@ -8,7 +8,6 @@ import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
-import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -27,7 +26,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -259,7 +257,7 @@ public class MonitoredTrip extends Model {
      * the itinerary is removed.
      */
     public void initializeFromItineraryAndQueryParams(Request req) throws IllegalArgumentException, JsonProcessingException {
-        initializeFromItineraryAndQueryParams(OtpGraphQLVariables.fromRequest(req));
+        initializeFromItineraryAndQueryParams(OtpGraphQLVariables.fromMonitoredTripRequest(req));
     }
 
     /**
@@ -271,11 +269,6 @@ public class MonitoredTrip extends Model {
         from = itinerary.legs.get(0).from;
         to = itinerary.legs.get(lastLegIndex).to;
         this.otp2QueryParams = graphQLVariables;
-
-        // Update modes in query params with set derived from itinerary. This ensures that, when sending requests to OTP
-        // for trip monitoring, we are querying the modes retained by the user when they saved the itinerary.
-        Set<OtpGraphQLTransportMode> modes = ItineraryUtils.deriveModesFromItinerary(itinerary);
-        graphQLVariables.modes = List.copyOf(modes);
         this.arriveBy = graphQLVariables.arriveBy;
 
         // Ensure the itinerary we store does not contain any realtime info.
