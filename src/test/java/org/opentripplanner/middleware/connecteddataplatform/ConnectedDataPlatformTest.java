@@ -516,21 +516,21 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("createWeeklyMondaySundayFolderNameCases")
-    void canGetWeeklyMondaySundayFolderName(int day, String expected) {
-        LocalDate date = LocalDate.of(2024, 9, day);
-        assertEquals(expected, ConnectedDataManager.getWeeklyMondaySundayFolderName("PMD", date));
+    void canGetWeeklyMondaySundayFolderName(LocalDate date, String suffix) {
+        final String prefix = "TripData";
+        assertEquals(String.format("%s_%s", prefix, suffix), ConnectedDataManager.getWeeklyMondaySundayFolderName(prefix, date));
     }
 
     private static Stream<Arguments> createWeeklyMondaySundayFolderNameCases() {
         return Stream.of(
-            Arguments.of(6, "PMD_2024-09-02_2024-09-08"),
-            Arguments.of(7, "PMD_2024-09-02_2024-09-08"),
-            Arguments.of(8, "PMD_2024-09-02_2024-09-08"),
-            Arguments.of(9, "PMD_2024-09-09_2024-09-15"),
-            Arguments.of(10, "PMD_2024-09-09_2024-09-15"),
-            Arguments.of(11, "PMD_2024-09-09_2024-09-15"),
-            Arguments.of(12, "PMD_2024-09-09_2024-09-15"),
-            Arguments.of(13, "PMD_2024-09-09_2024-09-15")
+            Arguments.of(LocalDate.of(2024, 9, 6), "2024-09-02_2024-09-08"),
+            Arguments.of(LocalDate.of(2024, 9, 7), "2024-09-02_2024-09-08"),
+            Arguments.of(LocalDate.of(2024, 9, 8), "2024-09-02_2024-09-08"),
+            Arguments.of(LocalDate.of(2024, 9, 9), "2024-09-09_2024-09-15"),
+            Arguments.of(LocalDate.of(2024, 9, 10), "2024-09-09_2024-09-15"),
+            Arguments.of(LocalDate.of(2024, 9, 11), "2024-09-09_2024-09-15"),
+            Arguments.of(LocalDate.of(2024, 9, 12), "2024-09-09_2024-09-15"),
+            Arguments.of(LocalDate.of(2024, 9, 13), "2024-09-09_2024-09-15")
         );
     }
 }
