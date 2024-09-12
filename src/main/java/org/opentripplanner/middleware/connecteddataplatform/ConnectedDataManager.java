@@ -69,6 +69,9 @@ public class ConnectedDataManager {
     public static final String CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY", "hourly");
 
+    public static final String CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION_FREQUENCY =
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION_FREQUENCY", "none");
+
     private ConnectedDataManager() {}
 
     public static void scheduleTripHistoryUploadJob() {
@@ -268,7 +271,15 @@ public class ConnectedDataManager {
                 FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
                 S3Utils.putObject(
                     CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
-                    CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME + "/" + zipFileName,
+                    String.format(
+                        "%s/%s",
+                        getUploadFolderName(
+                            CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME,
+                            CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION_FREQUENCY,
+                            hourToBeAnonymized.toLocalDate()
+                        ),
+                        zipFileName
+                    ),
                     new File(tempZipFile)
                 );
             }
@@ -336,8 +347,16 @@ public class ConnectedDataManager {
 
     /** Gets the folder name, monday-sunday in YYYY-MM-DD format, based on the prefix and date. */
     public static String getWeeklyMondaySundayFolderName(String prefix, LocalDate date) {
-        LocalDate monday = date.minusDays(date.getDayOfWeek().getValue() - DayOfWeek.MONDAY.getValue());
+        LocalDate monday = date.minusDays((long)date.getDayOfWeek().getValue() - DayOfWeek.MONDAY.getValue());
         LocalDate sunday = monday.plusDays(6);
         return String.format("%s_%s_%s", prefix, monday.format(DEFAULT_DATE_FORMATTER), sunday.format(DEFAULT_DATE_FORMATTER));
+    }
+
+    /** Compute the upload folder name based on aggregation setting and date. */
+    public static String getUploadFolderName(String baseFolderName, String aggregationFrequency, LocalDate date) {
+        if ("weekly-monday-sunday".equals(aggregationFrequency)) {
+            return getWeeklyMondaySundayFolderName(baseFolderName, date);
+        }
+        return baseFolderName;
     }
 }

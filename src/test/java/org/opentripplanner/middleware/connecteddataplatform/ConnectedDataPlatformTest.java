@@ -533,4 +533,15 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(LocalDate.of(2024, 9, 13), "2024-09-09_2024-09-15")
         );
     }
+
+    @Test
+    void canGetFolderName() {
+        LocalDate date = LocalDate.of(2024, 9, 12);
+        final String baseFolderName = "TripData";
+        assertEquals(baseFolderName, ConnectedDataManager.getUploadFolderName(baseFolderName, "none", date));
+        assertEquals(
+            String.format("%s_2024-09-09_2024-09-15", baseFolderName),
+            ConnectedDataManager.getUploadFolderName(baseFolderName, "weekly-monday-sunday", date)
+        );
+    }
 }
