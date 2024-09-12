@@ -7,6 +7,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -23,11 +26,13 @@ import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.S3Utils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.zenika.snapshotmatcher.SnapshotMatcher.matchesSnapshot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -507,5 +512,25 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         assertNotNull(anonymizedTripRequests);
         // Confirm that no modes are included in the anonymized trip request.
         assertEquals("", anonymizedTripRequests.get(0).mode.get(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("createWeeklyMondaySundayFolderNameCases")
+    void canGetWeeklyMondaySundayFolderName(int day, String expected) {
+        LocalDate date = LocalDate.of(2024, 9, day);
+        assertEquals(expected, ConnectedDataManager.getWeeklyMondaySundayFolderName("PMD", date));
+    }
+
+    private static Stream<Arguments> createWeeklyMondaySundayFolderNameCases() {
+        return Stream.of(
+            Arguments.of(6, "PMD_2024-09-02_2024-09-08"),
+            Arguments.of(7, "PMD_2024-09-02_2024-09-08"),
+            Arguments.of(8, "PMD_2024-09-02_2024-09-08"),
+            Arguments.of(9, "PMD_2024-09-09_2024-09-15"),
+            Arguments.of(10, "PMD_2024-09-09_2024-09-15"),
+            Arguments.of(11, "PMD_2024-09-09_2024-09-15"),
+            Arguments.of(12, "PMD_2024-09-09_2024-09-15"),
+            Arguments.of(13, "PMD_2024-09-09_2024-09-15")
+        );
     }
 }

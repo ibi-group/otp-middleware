@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -36,6 +38,7 @@ import java.util.stream.Collectors;
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMATTER;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getStartOfCurrentHour;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getStartOfHour;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDate;
@@ -329,5 +332,12 @@ public class ConnectedDataManager {
      */
     private static boolean isConnectedDataPlatformEnabled() {
         return CONNECTED_DATA_PLATFORM_ENABLED.equalsIgnoreCase("true");
+    }
+
+    /** Gets the folder name, monday-sunday in YYYY-MM-DD format, based on the prefix and date. */
+    public static String getWeeklyMondaySundayFolderName(String prefix, LocalDate date) {
+        LocalDate monday = date.minusDays(date.getDayOfWeek().getValue() - DayOfWeek.MONDAY.getValue());
+        LocalDate sunday = monday.plusDays(6);
+        return String.format("%s_%s_%s", prefix, monday.format(DEFAULT_DATE_FORMATTER), sunday.format(DEFAULT_DATE_FORMATTER));
     }
 }
