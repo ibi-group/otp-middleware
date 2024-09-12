@@ -261,6 +261,7 @@ The special E2E client settings should be defined in `env.yml`:
 | CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION | string | Optional | none, weekly-monday-sunday | Specifies how to organize uploaded files. 'none' puts all uploaded files to the same folder CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME. 'weekly-monday-sunday' creates a folder of the form `<CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME>_<YYYY-MM-DD>_<YYYY-MM-DD>`  Defaults to none. |
 | CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME | string | Optional | bucket-name | Specifies the S3 bucket name for the CDP trip history push. |
 | CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME | string | Optional | folder-name | Specifies the S3 folder name for the CDP trip history push. |
+| CONNECTED_DATA_PLATFORM_REPORTED_ENTITIES | object | Optional | { "MonitoredTrip": "all", "OtpUser": "all", "TripRequest": "all" } | Entities to report. Set the value to 'all' for reporting all fields of an entity. Omitted entities are ignored. |
 | CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES | integer | Optional | 5 | CDP trip history upload frequency. |
 | BUGSNAG_WEBHOOK_PERMITTED_IPS | string | Optional | 104.196.245.109, 104.196.254.247 | Bugsnag IP addresses which webhook requests are expected to come from. |
 | DEFAULT_USAGE_PLAN_ID | string | Required | 123e45 | AWS API gateway default usage plan used when creating API keys for API users. |
