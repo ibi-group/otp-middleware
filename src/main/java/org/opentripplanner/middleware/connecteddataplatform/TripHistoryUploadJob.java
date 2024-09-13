@@ -20,14 +20,10 @@ public class TripHistoryUploadJob implements Runnable {
     private static final int HISTORIC_UPLOAD_HOURS_BACK_STOP = 24;
 
     public void run() {
-        switch (ConnectedDataManager.CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY) {
-            case "daily":
-                stageUploadDays();
-                break;
-            case "hourly":
-                stageUploadHours();
-                break;
-            default:
+        if (ConnectedDataManager.isAggregationDaily()) {
+            stageUploadDays();
+        } else {
+            stageUploadHours();
         }
         processTripHistory(false);
     }
@@ -103,12 +99,12 @@ public class TripHistoryUploadJob implements Runnable {
     public static void processTripHistory(boolean isTest) {
         List<TripHistoryUpload> incompleteUploads = ConnectedDataManager.getIncompleteUploads();
         incompleteUploads.forEach(tripHistoryUpload -> {
-            int numTripRequestsUpload = ConnectedDataManager.compileAndUploadTripHistory(tripHistoryUpload.uploadHour, isTest);
-            if (numTripRequestsUpload != Integer.MIN_VALUE) {
+            int numRecordsToUpload = ConnectedDataManager.compileAndUploadTripHistory(tripHistoryUpload.uploadHour, isTest);
+            if (numRecordsToUpload != Integer.MIN_VALUE) {
                 // If successfully compiled and updated, update the status to 'completed' and record the number of trip
                 // requests uploaded (if any).
                 tripHistoryUpload.status = TripHistoryUploadStatus.COMPLETED.getValue();
-                tripHistoryUpload.numTripRequestsUploaded = numTripRequestsUpload;
+                tripHistoryUpload.numTripRequestsUploaded = numRecordsToUpload;
                 Persistence.tripHistoryUploads.replace(tripHistoryUpload.id, tripHistoryUpload);
             }
         });

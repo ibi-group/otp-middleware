@@ -158,7 +158,7 @@ public class ConnectedDataManager {
         // (Calling getStartOfHour is probably redundant because the starting hour (or day) to be anonymized
         // should already be rounded to a whole hour/day.)
         Date startOfPeriod = DateTimeUtils.getStartOfHour(periodToBeAnonymized);
-        Date endOfPeriod = "daily".equals(CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY)
+        Date endOfPeriod = isAggregationDaily()
             ? DateTimeUtils.getEndOfDay(periodToBeAnonymized)
             : DateTimeUtils.getEndOfHour(periodToBeAnonymized);
         final String dateCreatedFieldName = "dateCreated";
@@ -206,6 +206,10 @@ public class ConnectedDataManager {
         }
         FileUtils.writeToFile(pathAndFileName, true, "]");
         return numTripRequestsWrittenToFile;
+    }
+
+    public static boolean isAggregationDaily() {
+        return "daily".equals(CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY);
     }
 
     /**
