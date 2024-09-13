@@ -14,6 +14,7 @@ import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.graphql.TransportMode;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -51,6 +52,8 @@ public class ConnectedDataManager {
     public static final String FILE_NAME_SUFFIX = "anon-trip-data";
     public static final String ZIP_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".zip";
     public static final String DATA_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".json";
+    public static final String ZIP_FILE_EXTENSION = "zip";
+    public static final String JSON_FILE_EXTENSION = "json";
 
     private static final String CONNECTED_DATA_PLATFORM_ENABLED =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_ENABLED", "false");
@@ -80,8 +83,7 @@ public class ConnectedDataManager {
             return false;
         }
 
-        ReportedEntities reportedEntities = ReportedEntities.defaults();
-        if (reportedEntities == null) {
+        if (ReportedEntities.entityMap.isEmpty()) {
             LOG.warn("No entities marked for reporting (CONNECTED_DATA_PLATFORM_REPORTED_ENTITIES has no known entities).");
             return false;
         }
@@ -208,8 +210,41 @@ public class ConnectedDataManager {
         return numTripRequestsWrittenToFile;
     }
 
+    /**
+     * Stream an entity to file. This approach is used to avoid having a large amount of data in memory which could
+     * cause an out-of-memory error if there are a lot of trip requests to process.
+     */
+    private static int streamFullCollectionToFile(
+        TypedPersistence<?> persistenceType,
+        String pathAndFileName
+    ) throws IOException {
+        long count = persistenceType.getCount();
+
+        long numTripRequestsWrittenToFile = 0;
+
+        long pos = 0;
+        FileUtils.writeToFile(pathAndFileName, false, "[");
+        for (var item : persistenceType.getAll()) {
+            pos++;
+            // Append content to file.
+            FileUtils.writeToFile(pathAndFileName, true, JsonUtils.toJson(item));
+            if (pos < count) {
+                // Add a comma to separate each trip request, except for the last item in the stream
+                // prevent JSON formatting errors.
+                FileUtils.writeToFile(pathAndFileName, true, ",");
+            }
+            numTripRequestsWrittenToFile++;
+        }
+        FileUtils.writeToFile(pathAndFileName, true, "]");
+        return (int)numTripRequestsWrittenToFile;
+    }
+
     public static boolean isAggregationDaily() {
         return "daily".equals(CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY);
+    }
+
+    public static boolean isAggregationDaily(String aggregationFrequency) {
+        return "daily".equals(aggregationFrequency);
     }
 
     /**
@@ -279,55 +314,77 @@ public class ConnectedDataManager {
      * local disk.
      */
     public static int compileAndUploadTripHistory(LocalDateTime hourToBeAnonymized, boolean isTest) {
-        String zipFileName = getFileName(hourToBeAnonymized, ZIP_FILE_NAME_SUFFIX);
-        String tempZipFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
-        String tempDataFile = String.join(
-            "/",
-            FileUtils.getTempDirectory().getAbsolutePath(),
-            getFileName(hourToBeAnonymized, DATA_FILE_NAME_SUFFIX)
-        );
-        try {
-            int numTripRequestsWrittenToFile = streamAnonymousTripsToFile(tempDataFile, hourToBeAnonymized);
-            if (numTripRequestsWrittenToFile > 0) {
-                // No point doing these tasks if no trip requests were written to file.
-                FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
-                S3Utils.putObject(
-                    CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
-                    String.format(
-                        "%s/%s",
-                        getUploadFolderName(
-                            CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME,
-                            CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION,
-                            hourToBeAnonymized.toLocalDate()
-                        ),
-                        zipFileName
-                    ),
-                    new File(tempZipFile)
-                );
-            }
-            return numTripRequestsWrittenToFile;
-        } catch (Exception e) {
-            BugsnagReporter.reportErrorToBugsnag(
-                String.format("Failed to process trip data for (%s)", hourToBeAnonymized),
-                e
+        long allRecordsWritten = 0;
+
+        for (var entry : ReportedEntities.entityMap.entrySet()) {
+            String entityName = entry.getKey();
+            String reportingMode = entry.getValue();
+
+            // Not null because ReportedEntities only contains entries that correspond to persistenceMap.
+            TypedPersistence<?> typedPersistence = ReportedEntities.persistenceMap.get(entityName);
+            String filePrefix = getFilePrefix(
+                CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY,
+                hourToBeAnonymized,
+                entityName
             );
-            return Integer.MIN_VALUE;
-        } finally {
-            // Delete the temporary files. This is done here in case the S3 upload fails.
+            String tempFileFolder = FileUtils.getTempDirectory().getAbsolutePath();
+
+            String zipFileName = String.join(".", filePrefix, ZIP_FILE_EXTENSION);
+            String tempZipFile = String.join("/", tempFileFolder, zipFileName);
+
+            String jsonFileName = String.join(".", filePrefix, JSON_FILE_EXTENSION);
+            String tempDataFile = String.join("/", tempFileFolder, jsonFileName);
+
             try {
-                LOG.error("Deleting CDP zip file {} as an error occurred while processing the data it was supposed to contain.", tempZipFile);
-                FileUtils.deleteFile(tempDataFile);
-                if (!isTest) {
-                    FileUtils.deleteFile(tempZipFile);
-                } else {
-                    LOG.warn("In test mode, temp zip file {} not deleted. This is expected to be deleted by the calling test.",
-                        tempZipFile
+                int recordsWritten = Integer.MIN_VALUE;
+                if ("all".equals(reportingMode)) {
+                    recordsWritten = streamFullCollectionToFile(typedPersistence, tempDataFile);
+                }
+
+                if (recordsWritten > 0) {
+                    // No point doing these tasks if no records were written to file.
+                    FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
+                    S3Utils.putObject(
+                        CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
+                        String.format(
+                            "%s/%s",
+                            getUploadFolderName(
+                                CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME,
+                                CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION,
+                                hourToBeAnonymized.toLocalDate()
+                            ),
+                            zipFileName
+                        ),
+                        new File(tempZipFile)
                     );
                 }
-            } catch (IOException e) {
-                LOG.error("Failed to delete temp files", e);
+                allRecordsWritten += recordsWritten;
+            } catch (Exception e) {
+                BugsnagReporter.reportErrorToBugsnag(
+                    String.format("Failed to process trip data for (%s)", hourToBeAnonymized),
+                    e
+                );
+                return Integer.MIN_VALUE;
+            } finally {
+                // Delete the temporary files. This is done here in case the S3 upload fails.
+                try {
+                    LOG.error("Deleting CDP zip file {} as an error occurred while processing the data it was supposed to contain.", tempZipFile);
+                    FileUtils.deleteFile(tempDataFile);
+                    if (!isTest) {
+                        FileUtils.deleteFile(tempZipFile);
+                    } else {
+                        LOG.warn("In test mode, temp zip file {} not deleted. This is expected to be deleted by the calling test.",
+                            tempZipFile
+                        );
+                    }
+                } catch (IOException e) {
+                    LOG.error("Failed to delete temp files", e);
+                }
             }
+
         }
+
+        return (int)allRecordsWritten;
     }
 
     /**
@@ -340,15 +397,26 @@ public class ConnectedDataManager {
         return tripHistoryUploads.into(new ArrayList<>());
     }
 
-    /**
-     * Produce file name.
-     */
-    public static String getFileName(LocalDateTime date, String fileNameSuffix) {
+    public static String getHourlyFileName(LocalDateTime date, String fileNameSuffix) {
         final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd-HH";
         return String.format(
             "%s-%s",
             getStringFromDate(date, DEFAULT_DATE_FORMAT_PATTERN),
             fileNameSuffix
+        );
+    }
+
+    /**
+     * Produce file name.
+     */
+    public static String getFilePrefix(String aggregationFrequency, LocalDateTime date, String entityName) {
+        final String DEFAULT_DATE_FORMAT_PATTERN = isAggregationDaily(aggregationFrequency)
+            ? "yyyy-MM-dd"
+            : "yyyy-MM-dd-HH";
+        return String.format(
+            "%s-%s",
+            getStringFromDate(date, DEFAULT_DATE_FORMAT_PATTERN),
+            entityName
         );
     }
 
