@@ -7,6 +7,9 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Singleton that holds configuration data about entities to report.
  * Note: Fields are PascalCased to reflect the casing of respective class names.
@@ -47,5 +50,25 @@ public class ReportedEntities {
             initialized = true;
         }
         return defaultInstance;
+    }
+
+    public Map<String, Class<?>> getEntityMap() {
+        HashMap<String, Class<?>> map = new HashMap<>();
+        if ("all".equals(MonitoredTrip)) {
+            map.put("MonitoredTrip", org.opentripplanner.middleware.models.MonitoredTrip.class);
+        }
+        if ("all".equals(OtpUser)) {
+            map.put("OtpUser", org.opentripplanner.middleware.models.OtpUser.class);
+        }
+        if ("all".equals(TrackedJourney)) {
+            map.put("TrackedJourney", org.opentripplanner.middleware.models.TrackedJourney.class);
+        }
+        if ("all".equals(TripRequest)) {
+            map.put("TripRequest", org.opentripplanner.middleware.models.TripRequest.class);
+        }
+        if ("all".equals(TripSummary)) {
+            map.put("TripSummary", org.opentripplanner.middleware.models.TripSummary.class);
+        }
+        return map;
     }
 }
