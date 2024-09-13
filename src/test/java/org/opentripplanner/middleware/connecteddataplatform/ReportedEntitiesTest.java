@@ -1,25 +1,27 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class ReportedEntitiesTest {
+class ReportedEntitiesTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canGetEntityMap() {
-        ReportedEntities reportedEntities = new ReportedEntities();
-        reportedEntities.MonitoredTrip = "all";
-        reportedEntities.TrackedJourney = "all";
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("MonitoredTrip", "all");
+        node.put("TripRequest", "interval");
+        node.put("UnknownClass", "abc123");
 
-        Map<String, TypedPersistence<?>> expected = Map.of(
-            "MonitoredTrip", Persistence.monitoredTrips,
-            "TrackedJourney", Persistence.trackedJourneys
+        Map<String, String> expected = Map.of(
+            "MonitoredTrip", "all",
+            "TripRequest", "interval"
         );
 
-        assertEquals(expected, reportedEntities.getEntityMap());
+        assertEquals(expected, ReportedEntities.getEntityMap(node));
     }
 }
