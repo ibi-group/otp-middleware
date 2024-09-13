@@ -2,6 +2,8 @@ package org.opentripplanner.middleware.connecteddataplatform;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -52,22 +54,22 @@ public class ReportedEntities {
         return defaultInstance;
     }
 
-    public Map<String, Class<?>> getEntityMap() {
-        HashMap<String, Class<?>> map = new HashMap<>();
+    public Map<String, TypedPersistence<?>> getEntityMap() {
+        HashMap<String,TypedPersistence<?>> map = new HashMap<>();
         if ("all".equals(MonitoredTrip)) {
-            map.put("MonitoredTrip", org.opentripplanner.middleware.models.MonitoredTrip.class);
+            map.put("MonitoredTrip", Persistence.monitoredTrips);
         }
         if ("all".equals(OtpUser)) {
-            map.put("OtpUser", org.opentripplanner.middleware.models.OtpUser.class);
+            map.put("OtpUser", Persistence.otpUsers);
         }
         if ("all".equals(TrackedJourney)) {
-            map.put("TrackedJourney", org.opentripplanner.middleware.models.TrackedJourney.class);
+            map.put("TrackedJourney", Persistence.trackedJourneys);
         }
         if ("all".equals(TripRequest)) {
-            map.put("TripRequest", org.opentripplanner.middleware.models.TripRequest.class);
+            map.put("TripRequest", Persistence.tripRequests);
         }
         if ("all".equals(TripSummary)) {
-            map.put("TripSummary", org.opentripplanner.middleware.models.TripSummary.class);
+            map.put("TripSummary", Persistence.tripSummaries);
         }
         return map;
     }
