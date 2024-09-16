@@ -76,6 +76,8 @@ public class ConnectedDataManager {
     public static final String CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION", "none");
 
+    private static final String DATE_CREATED_FIELD = "dateCreated";
+
     private ConnectedDataManager() {}
 
     public static boolean canScheduleUploads() {
@@ -164,15 +166,14 @@ public class ConnectedDataManager {
         Date endOfPeriod = isAggregationDaily()
             ? DateTimeUtils.getEndOfDay(periodToBeAnonymized)
             : DateTimeUtils.getEndOfHour(periodToBeAnonymized);
-        final String dateCreatedFieldName = "dateCreated";
         final String batchIdFieldName = "batchId";
 
         // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
             batchIdFieldName,
             Filters.and(
-                Filters.gte(dateCreatedFieldName, startOfPeriod),
-                Filters.lte(dateCreatedFieldName, endOfPeriod),
+                Filters.gte(DATE_CREATED_FIELD, startOfPeriod),
+                Filters.lte(DATE_CREATED_FIELD, endOfPeriod),
                 Filters.ne(batchIdFieldName, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
             ),
             String.class
@@ -212,37 +213,21 @@ public class ConnectedDataManager {
     }
 
     /**
-     * Stream an entity to file. This approach is used to avoid having a large amount of data in memory which could
-     * cause an out-of-memory error if there are a lot of trip requests to process.
+     * Stream the full Mongo collection to file.
      */
     private static int streamFullCollectionToFile(
         TypedPersistence<?> persistenceType,
         String pathAndFileName
     ) throws IOException {
-        long count = persistenceType.getCount();
-
-        long numTripRequestsWrittenToFile = 0;
-
-        long pos = 0;
-        FileUtils.writeToFile(pathAndFileName, false, "[");
-        for (var item : persistenceType.getAll()) {
-            pos++;
-            // Append content to file.
-            FileUtils.writeToFile(pathAndFileName, true, JsonUtils.toJson(item));
-            if (pos < count) {
-                // Add a comma to separate each trip request, except for the last item in the stream
-                // prevent JSON formatting errors.
-                FileUtils.writeToFile(pathAndFileName, true, ",");
-            }
-            numTripRequestsWrittenToFile++;
-        }
-        FileUtils.writeToFile(pathAndFileName, true, "]");
-        return (int)numTripRequestsWrittenToFile;
+        return streamCollectionToFile(
+            pathAndFileName,
+            persistenceType.getAll(),
+            persistenceType.getCount()
+        );
     }
 
     /**
-     * Stream an entity to file. This approach is used to avoid having a large amount of data in memory which could
-     * cause an out-of-memory error if there are a lot of trip requests to process.
+     * Stream the records in a given time interval to a file.
      */
     private static int streamPartialCollectionToFile(
         TypedPersistence<?> persistenceType,
@@ -255,21 +240,35 @@ public class ConnectedDataManager {
         Date endOfPeriod = isAggregationDaily()
             ? DateTimeUtils.getEndOfDay(periodStart)
             : DateTimeUtils.getEndOfHour(periodStart);
-        final String dateCreatedFieldName = "dateCreated";
 
         // The creation time corresponds to a time a trip request is made/a tracked journey is started.
         Bson dateFilter = Filters.and(
-            Filters.gte(dateCreatedFieldName, startOfPeriod),
-            Filters.lte(dateCreatedFieldName, endOfPeriod)
+            Filters.gte(DATE_CREATED_FIELD, startOfPeriod),
+            Filters.lte(DATE_CREATED_FIELD, endOfPeriod)
         );
 
-        long count = persistenceType.getCountFiltered(dateFilter);
+        return streamCollectionToFile(
+            pathAndFileName,
+            persistenceType.getFiltered(dateFilter),
+            persistenceType.getCountFiltered(dateFilter)
+        );
+    }
+
+    /**
+     * Stream an entity to file using the provided iterator and count.
+     * This approach is used to avoid having a large amount of data in memory which could
+     * cause an out-of-memory error if there are many records to process in a Mongo collection.
+     */
+    private static int streamCollectionToFile(
+        String pathAndFileName,
+        FindIterable<?> findIterable,
+        long count
+    ) throws IOException {
 
         long numTripRequestsWrittenToFile = 0;
-
         long pos = 0;
         FileUtils.writeToFile(pathAndFileName, false, "[");
-        for (var item : persistenceType.getFiltered(dateFilter)) {
+        for (var item : findIterable) {
             pos++;
             // Append content to file.
             FileUtils.writeToFile(pathAndFileName, true, JsonUtils.toJson(item));
@@ -300,16 +299,15 @@ public class ConnectedDataManager {
         Date startOfHour,
         Date endOfHour
     ) {
-        final String dateCreatedFieldName = "dateCreated";
         final String batchIdFieldName = "batchId";
         // Get trip request batch.
         FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getFiltered(
             Filters.and(
-                Filters.gte(dateCreatedFieldName, startOfHour),
-                Filters.lte(dateCreatedFieldName, endOfHour),
+                Filters.gte(DATE_CREATED_FIELD, startOfHour),
+                Filters.lte(DATE_CREATED_FIELD, endOfHour),
                 Filters.eq(batchIdFieldName, uniqueBatchId)
             ),
-            Sorts.descending(dateCreatedFieldName, batchIdFieldName)
+            Sorts.descending(DATE_CREATED_FIELD, batchIdFieldName)
         );
         TripRequest tripRequest = getAllModesUsedInBatch(tripRequests);
         if (tripRequest == null) {
@@ -319,7 +317,7 @@ public class ConnectedDataManager {
         // Get all trip summaries matching the batch id.
         FindIterable<TripSummary> tripSummaries = Persistence.tripSummaries.getFiltered(
             eq(batchIdFieldName, uniqueBatchId),
-            Sorts.descending(dateCreatedFieldName)
+            Sorts.descending(DATE_CREATED_FIELD)
         );
         // Anonymize trip request.
         return new AnonymizedTripRequest(tripRequest, tripSummaries);
