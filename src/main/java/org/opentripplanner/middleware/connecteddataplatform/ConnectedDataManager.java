@@ -6,6 +6,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import org.apache.logging.log4j.util.Strings;
+import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
@@ -239,6 +240,50 @@ public class ConnectedDataManager {
         return (int)numTripRequestsWrittenToFile;
     }
 
+    /**
+     * Stream an entity to file. This approach is used to avoid having a large amount of data in memory which could
+     * cause an out-of-memory error if there are a lot of trip requests to process.
+     */
+    private static int streamPartialCollectionToFile(
+        TypedPersistence<?> persistenceType,
+        String pathAndFileName,
+        LocalDateTime periodStart
+    ) throws IOException {
+        // (Calling getStartOfHour is probably redundant because the starting hour (or day) to be anonymized
+        // should already be rounded to a whole hour/day.)
+        Date startOfPeriod = DateTimeUtils.getStartOfHour(periodStart);
+        Date endOfPeriod = isAggregationDaily()
+            ? DateTimeUtils.getEndOfDay(periodStart)
+            : DateTimeUtils.getEndOfHour(periodStart);
+        final String dateCreatedFieldName = "dateCreated";
+
+        // The creation time corresponds to a time a trip request is made/a tracked journey is started.
+        Bson dateFilter = Filters.and(
+            Filters.gte(dateCreatedFieldName, startOfPeriod),
+            Filters.lte(dateCreatedFieldName, endOfPeriod)
+        );
+
+        long count = persistenceType.getCountFiltered(dateFilter);
+
+        long numTripRequestsWrittenToFile = 0;
+
+        long pos = 0;
+        FileUtils.writeToFile(pathAndFileName, false, "[");
+        for (var item : persistenceType.getFiltered(dateFilter)) {
+            pos++;
+            // Append content to file.
+            FileUtils.writeToFile(pathAndFileName, true, JsonUtils.toJson(item));
+            if (pos < count) {
+                // Add a comma to separate each trip request, except for the last item in the stream
+                // prevent JSON formatting errors.
+                FileUtils.writeToFile(pathAndFileName, true, ",");
+            }
+            numTripRequestsWrittenToFile++;
+        }
+        FileUtils.writeToFile(pathAndFileName, true, "]");
+        return (int)numTripRequestsWrittenToFile;
+    }
+
     public static boolean isAggregationDaily() {
         return "daily".equals(CONNECTED_DATA_PLATFORM_AGGREGATION_INTERVAL);
     }
@@ -337,8 +382,20 @@ public class ConnectedDataManager {
 
             try {
                 int recordsWritten = Integer.MIN_VALUE;
-                if ("all".equals(reportingMode)) {
-                    recordsWritten = streamFullCollectionToFile(typedPersistence, tempDataFile);
+
+                // TripRequests must be processed separately because they must be combined, one per batchId.
+                if ("TripRequest".equals(entityName)) {
+                    if ("all".equals(reportingMode)) {
+                        LOG.error("TripRequest report all is not implemented.");
+                    } else if ("interval".equals(reportingMode)) {
+                        LOG.error("TripRequest report interval is not implemented.");
+                    }
+                } else {
+                    if ("all".equals(reportingMode)) {
+                        recordsWritten = streamFullCollectionToFile(typedPersistence, tempDataFile);
+                    } else if ("interval".equals(reportingMode)) {
+                        recordsWritten = streamPartialCollectionToFile(typedPersistence, tempDataFile, hourToBeAnonymized);
+                    }
                 }
 
                 if (recordsWritten > 0) {
