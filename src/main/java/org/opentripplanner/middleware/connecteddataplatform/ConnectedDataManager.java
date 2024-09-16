@@ -330,10 +330,10 @@ public class ConnectedDataManager {
             String tempFileFolder = FileUtils.getTempDirectory().getAbsolutePath();
 
             String zipFileName = String.join(".", filePrefix, ZIP_FILE_EXTENSION);
-            String tempZipFile = String.join("/", tempFileFolder, zipFileName);
+            String tempZipFile = String.join(File.separator, tempFileFolder, zipFileName);
 
             String jsonFileName = String.join(".", filePrefix, JSON_FILE_EXTENSION);
-            String tempDataFile = String.join("/", tempFileFolder, jsonFileName);
+            String tempDataFile = String.join(File.separator, tempFileFolder, jsonFileName);
 
             try {
                 int recordsWritten = Integer.MIN_VALUE;
