@@ -257,7 +257,7 @@ The special E2E client settings should be defined in `env.yml`:
 | BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS | integer | Optional | 24 | Frequency in hours to trigger event requests. |
 | BUGSNAG_PROJECT_NOTIFIER_API_KEY | string | Optional | 123e4567e89b12d3a4564266 | A valid Bugsnag project API key. |
 | BUGSNAG_REPORTING_WINDOW_IN_DAYS | integer | Optional | 14 | Specifies how far in the past events should be retrieved. |
-| CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY | string | Optional | daily, hourly | Specifies how often to aggregate and upload usage data. Defaults to hourly. |
+| CONNECTED_DATA_PLATFORM_AGGREGATION_INTERVAL | string | Optional | daily, hourly | Specifies how often to aggregate and upload usage data. Defaults to hourly. |
 | CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION | string | Optional | none, weekly-monday-sunday | Specifies how to organize uploaded files. 'none' puts all uploaded files to the same folder CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME. 'weekly-monday-sunday' creates a folder of the form `<CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME>_<YYYY-MM-DD>_<YYYY-MM-DD>`  Defaults to none. |
 | CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME | string | Optional | bucket-name | Specifies the S3 bucket name for the CDP trip history push. |
 | CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME | string | Optional | folder-name | Specifies the S3 folder name for the CDP trip history push. |

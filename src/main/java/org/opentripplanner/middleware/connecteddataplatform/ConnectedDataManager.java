@@ -69,8 +69,8 @@ public class ConnectedDataManager {
     public static final String CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME");
 
-    public static final String CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY =
-        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY", "hourly");
+    public static final String CONNECTED_DATA_PLATFORM_AGGREGATION_INTERVAL =
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_AGGREGATION_INTERVAL", "hourly");
 
     public static final String CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION", "none");
@@ -240,7 +240,7 @@ public class ConnectedDataManager {
     }
 
     public static boolean isAggregationDaily() {
-        return "daily".equals(CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY);
+        return "daily".equals(CONNECTED_DATA_PLATFORM_AGGREGATION_INTERVAL);
     }
 
     public static boolean isAggregationDaily(String aggregationFrequency) {
@@ -323,7 +323,7 @@ public class ConnectedDataManager {
             // Not null because ReportedEntities only contains entries that correspond to persistenceMap.
             TypedPersistence<?> typedPersistence = ReportedEntities.persistenceMap.get(entityName);
             String filePrefix = getFilePrefix(
-                CONNECTED_DATA_PLATFORM_AGGREGATION_FREQUENCY,
+                CONNECTED_DATA_PLATFORM_AGGREGATION_INTERVAL,
                 hourToBeAnonymized,
                 entityName
             );
