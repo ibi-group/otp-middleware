@@ -155,103 +155,31 @@ public class ConnectedDataManager {
      * 1) Extract unique batch ids for a given hour.
      * 2) For each batch id get matching trip requests.
      * 3) Workout which trip request uses the most modes.
-     * 4) Define lat/lon for 'from' and 'to' places, scrambling location coordinates for non-public locations.
-     * 5) Anonymize trip request with the most modes.
-     * 6) Get related trip summaries and anonymize.
-     * 7) Write anonymous trip requests to file.
-     */
-    private static int streamAnonymousTripsToFile(
-        String pathAndFileName,
-        LocalDateTime periodToBeAnonymized
-    ) throws IOException {
-        // (Calling getStartOfHour is probably redundant because the starting hour (or day) to be anonymized
-        // should already be rounded to a whole hour/day.)
-        Date startOfPeriod = DateTimeUtils.getStartOfHour(periodToBeAnonymized);
-        Date endOfPeriod = isAggregationDaily()
-            ? DateTimeUtils.getEndOfDay(periodToBeAnonymized)
-            : DateTimeUtils.getEndOfHour(periodToBeAnonymized);
-
-        // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
-        DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
-            BATCH_ID_FIELD,
-            Filters.and(
-                Filters.gte(DATE_CREATED_FIELD, startOfPeriod),
-                Filters.lte(DATE_CREATED_FIELD, endOfPeriod),
-                Filters.ne(BATCH_ID_FIELD, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
-            ),
-            String.class
-        );
-
-        // Needed to correctly format the JSON content.
-        int numberOfUniqueBatchIds = 0;
-        for (String batchId : uniqueBatchIds) {
-            numberOfUniqueBatchIds++;
-        }
-
-        int numTripRequestsWrittenToFile = 0;
-        if (numberOfUniqueBatchIds == 0) {
-            // No unique batch ids (and therefore no trip requests) to process.
-            return numTripRequestsWrittenToFile;
-        }
-
-        int pos = 0;
-        FileUtils.writeToFile(pathAndFileName, false, "[");
-        for (String uniqueBatchId : uniqueBatchIds) {
-            pos++;
-            // Anonymize trip request.
-            AnonymizedTripRequest anonymizedTripRequest = getAnonymizedTripRequest(uniqueBatchId, startOfPeriod, endOfPeriod);
-            if (anonymizedTripRequest != null) {
-                // Append content to file.
-                FileUtils.writeToFile(pathAndFileName, true, JsonUtils.toJson(anonymizedTripRequest));
-                if (pos < numberOfUniqueBatchIds) {
-                    // Add a comma to separate each trip request. This is not required for the last trip request to
-                    // prevent JSON formatting errors.
-                    FileUtils.writeToFile(pathAndFileName, true, ",");
-                }
-                numTripRequestsWrittenToFile++;
-            }
-        }
-        FileUtils.writeToFile(pathAndFileName, true, "]");
-        return numTripRequestsWrittenToFile;
-    }
-
-    /**
-     * Stream trip requests to file. This approach is used to avoid having a large amount of data in memory which could
-     * cause an out-of-memory error if there are a lot of trip requests to process.
-     *
-     * Process:
-     *
-     * 1) Extract unique batch ids for a given hour.
-     * 2) For each batch id get matching trip requests.
-     * 3) Workout which trip request uses the most modes.
-     * 4) Define lat/lon for 'from' and 'to' places, scrambling location coordinates for non-public locations.
-     * 5) Anonymize trip request with the most modes.
-     * 6) Get related trip summaries and anonymize.
-     * 7) Write anonymous trip requests to file.
+     * If anonymizing:
+     *   4) Define lat/lon for 'from' and 'to' places, scrambling location coordinates for non-public locations.
+     *   5) Anonymize trip request with the most modes.
+     *   6) Get related trip summaries and anonymize.
+     * 7) Write resulting trip requests to file.
      */
     private static int streamTripsToFile(
         String pathAndFileName,
-        LocalDateTime periodToBeAnonymized
+        LocalDateTime periodStart,
+        boolean anonymize
     ) throws IOException {
-        // (Calling getStartOfHour is probably redundant because the starting hour (or day) to be anonymized
-        // should already be rounded to a whole hour/day.)
-        Date startOfPeriod = DateTimeUtils.getStartOfHour(periodToBeAnonymized);
-        Date endOfPeriod = isAggregationDaily()
-            ? DateTimeUtils.getEndOfDay(periodToBeAnonymized)
-            : DateTimeUtils.getEndOfHour(periodToBeAnonymized);
+        Bson dateFilter = getDateFilter(periodStart);
 
         // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
             BATCH_ID_FIELD,
             Filters.and(
-                Filters.gte(DATE_CREATED_FIELD, startOfPeriod),
-                Filters.lte(DATE_CREATED_FIELD, endOfPeriod),
+                dateFilter,
                 Filters.ne(BATCH_ID_FIELD, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
             ),
             String.class
         );
 
         // Needed to correctly format the JSON content.
+        // (If needed for perf and if settings permit: skip writing file if no records.)
         int numberOfUniqueBatchIds = 0;
         for (String batchId : uniqueBatchIds) {
             numberOfUniqueBatchIds++;
@@ -262,10 +190,18 @@ public class ConnectedDataManager {
         FileUtils.writeToFile(pathAndFileName, false, "[");
         for (String uniqueBatchId : uniqueBatchIds) {
             pos++;
-            TripRequest combinedTripRequest = getCombinedTripRequest(uniqueBatchId, startOfPeriod, endOfPeriod);
-            if (combinedTripRequest != null) {
+
+            Bson tripRequestFilter = Filters.and(
+                dateFilter,
+                Filters.eq(BATCH_ID_FIELD, uniqueBatchId)
+            );
+
+            Object tripRequestToWrite = anonymize
+                ? getAnonymizedTripRequest(tripRequestFilter, uniqueBatchId)
+                : getCombinedTripRequest(tripRequestFilter);
+            if (tripRequestToWrite != null) {
                 // Append content to file.
-                FileUtils.writeToFile(pathAndFileName, true, JsonUtils.toJson(combinedTripRequest));
+                FileUtils.writeToFile(pathAndFileName, true, JsonUtils.toJson(tripRequestToWrite));
                 if (pos < numberOfUniqueBatchIds) {
                     // Add a comma to separate each trip request. This is not required for the last trip request to
                     // prevent JSON formatting errors.
@@ -300,6 +236,15 @@ public class ConnectedDataManager {
         String pathAndFileName,
         LocalDateTime periodStart
     ) throws IOException {
+        Bson dateFilter = getDateFilter(periodStart);
+        return streamCollectionToFile(
+            pathAndFileName,
+            persistenceType.getFiltered(dateFilter),
+            persistenceType.getCountFiltered(dateFilter)
+        );
+    }
+
+    private static Bson getDateFilter(LocalDateTime periodStart) {
         // (Calling getStartOfHour is probably redundant because the starting hour (or day) to be anonymized
         // should already be rounded to a whole hour/day.)
         Date startOfPeriod = DateTimeUtils.getStartOfHour(periodStart);
@@ -308,15 +253,9 @@ public class ConnectedDataManager {
             : DateTimeUtils.getEndOfHour(periodStart);
 
         // The creation time corresponds to a time a trip request is made/a tracked journey is started.
-        Bson dateFilter = Filters.and(
+        return Filters.and(
             Filters.gte(DATE_CREATED_FIELD, startOfPeriod),
             Filters.lte(DATE_CREATED_FIELD, endOfPeriod)
-        );
-
-        return streamCollectionToFile(
-            pathAndFileName,
-            persistenceType.getFiltered(dateFilter),
-            persistenceType.getCountFiltered(dateFilter)
         );
     }
 
@@ -361,21 +300,8 @@ public class ConnectedDataManager {
     /**
      * Extract trip request and trip summary data and create an {@link AnonymizedTripRequest}.
      */
-    private static AnonymizedTripRequest getAnonymizedTripRequest(
-        String uniqueBatchId,
-        Date startOfHour,
-        Date endOfHour
-    ) {
-        // Get trip request batch.
-        FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getFiltered(
-            Filters.and(
-                Filters.gte(DATE_CREATED_FIELD, startOfHour),
-                Filters.lte(DATE_CREATED_FIELD, endOfHour),
-                Filters.eq(BATCH_ID_FIELD, uniqueBatchId)
-            ),
-            Sorts.descending(DATE_CREATED_FIELD, BATCH_ID_FIELD)
-        );
-        TripRequest tripRequest = getAllModesUsedInBatch(tripRequests);
+    private static AnonymizedTripRequest getAnonymizedTripRequest(Bson filter, String uniqueBatchId) {
+        TripRequest tripRequest = getCombinedTripRequest(filter);
         if (tripRequest == null) {
             // This is possible if no trip requests are within the start and end hour.
             return null;
@@ -392,18 +318,9 @@ public class ConnectedDataManager {
     /**
      * Extract a single trip request from multiple trip requests with the same batch id.
      */
-    private static TripRequest getCombinedTripRequest(
-        String uniqueBatchId,
-        Date startOfHour,
-        Date endOfHour
-    ) {
-        // Get trip request batch.
+    private static TripRequest getCombinedTripRequest(Bson filter) {
         FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getFiltered(
-            Filters.and(
-                Filters.gte(DATE_CREATED_FIELD, startOfHour),
-                Filters.lte(DATE_CREATED_FIELD, endOfHour),
-                Filters.eq(BATCH_ID_FIELD, uniqueBatchId)
-            ),
+            filter,
             Sorts.descending(DATE_CREATED_FIELD, BATCH_ID_FIELD)
         );
         return getAllModesUsedInBatch(tripRequests);
@@ -469,12 +386,8 @@ public class ConnectedDataManager {
 
                 if ("TripRequest".equals(entityName)) {
                     // TripRequests must be processed separately because they must be combined, one per batchId.
-                    if (isAnonymousInterval(reportingMode)) {
-                        // Anonymized trips include TripRequest and TripSummary in the same entity.
-                        recordsWritten = streamAnonymousTripsToFile(tempDataFile, hourToBeAnonymized);
-                    } else {
-                        recordsWritten = streamTripsToFile(tempDataFile, hourToBeAnonymized);
-                    }
+                    // Note: Anonymized trips include TripRequest and TripSummary in the same entity.
+                    recordsWritten = streamTripsToFile(tempDataFile, hourToBeAnonymized, isAnonymousInterval(reportingMode));
                 } else if (
                     "TripSummary".equals(entityName) &&
                     isAnonymousInterval(ReportedEntities.entityMap.get("TripRequest"))
