@@ -80,6 +80,7 @@ public class ConnectedDataManager {
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES", "false");
 
     private static final String DATE_CREATED_FIELD = "dateCreated";
+    public static final String BATCH_ID_FIELD = "batchId";
 
     private ConnectedDataManager() {}
 
@@ -169,15 +170,14 @@ public class ConnectedDataManager {
         Date endOfPeriod = isAggregationDaily()
             ? DateTimeUtils.getEndOfDay(periodToBeAnonymized)
             : DateTimeUtils.getEndOfHour(periodToBeAnonymized);
-        final String batchIdFieldName = "batchId";
 
         // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
-            batchIdFieldName,
+            BATCH_ID_FIELD,
             Filters.and(
                 Filters.gte(DATE_CREATED_FIELD, startOfPeriod),
                 Filters.lte(DATE_CREATED_FIELD, endOfPeriod),
-                Filters.ne(batchIdFieldName, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
+                Filters.ne(BATCH_ID_FIELD, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
             ),
             String.class
         );
@@ -239,15 +239,14 @@ public class ConnectedDataManager {
         Date endOfPeriod = isAggregationDaily()
             ? DateTimeUtils.getEndOfDay(periodToBeAnonymized)
             : DateTimeUtils.getEndOfHour(periodToBeAnonymized);
-        final String batchIdFieldName = "batchId";
 
         // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
-            batchIdFieldName,
+            BATCH_ID_FIELD,
             Filters.and(
                 Filters.gte(DATE_CREATED_FIELD, startOfPeriod),
                 Filters.lte(DATE_CREATED_FIELD, endOfPeriod),
-                Filters.ne(batchIdFieldName, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
+                Filters.ne(BATCH_ID_FIELD, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
             ),
             String.class
         );
@@ -367,15 +366,14 @@ public class ConnectedDataManager {
         Date startOfHour,
         Date endOfHour
     ) {
-        final String batchIdFieldName = "batchId";
         // Get trip request batch.
         FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getFiltered(
             Filters.and(
                 Filters.gte(DATE_CREATED_FIELD, startOfHour),
                 Filters.lte(DATE_CREATED_FIELD, endOfHour),
-                Filters.eq(batchIdFieldName, uniqueBatchId)
+                Filters.eq(BATCH_ID_FIELD, uniqueBatchId)
             ),
-            Sorts.descending(DATE_CREATED_FIELD, batchIdFieldName)
+            Sorts.descending(DATE_CREATED_FIELD, BATCH_ID_FIELD)
         );
         TripRequest tripRequest = getAllModesUsedInBatch(tripRequests);
         if (tripRequest == null) {
@@ -384,7 +382,7 @@ public class ConnectedDataManager {
         }
         // Get all trip summaries matching the batch id.
         FindIterable<TripSummary> tripSummaries = Persistence.tripSummaries.getFiltered(
-            eq(batchIdFieldName, uniqueBatchId),
+            eq(BATCH_ID_FIELD, uniqueBatchId),
             Sorts.descending(DATE_CREATED_FIELD)
         );
         // Anonymize trip request.
@@ -399,15 +397,14 @@ public class ConnectedDataManager {
         Date startOfHour,
         Date endOfHour
     ) {
-        final String batchIdFieldName = "batchId";
         // Get trip request batch.
         FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getFiltered(
             Filters.and(
                 Filters.gte(DATE_CREATED_FIELD, startOfHour),
                 Filters.lte(DATE_CREATED_FIELD, endOfHour),
-                Filters.eq(batchIdFieldName, uniqueBatchId)
+                Filters.eq(BATCH_ID_FIELD, uniqueBatchId)
             ),
-            Sorts.descending(DATE_CREATED_FIELD, batchIdFieldName)
+            Sorts.descending(DATE_CREATED_FIELD, BATCH_ID_FIELD)
         );
         return getAllModesUsedInBatch(tripRequests);
     }
