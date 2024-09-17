@@ -216,6 +216,70 @@ public class ConnectedDataManager {
     }
 
     /**
+     * Stream trip requests to file. This approach is used to avoid having a large amount of data in memory which could
+     * cause an out-of-memory error if there are a lot of trip requests to process.
+     *
+     * Process:
+     *
+     * 1) Extract unique batch ids for a given hour.
+     * 2) For each batch id get matching trip requests.
+     * 3) Workout which trip request uses the most modes.
+     * 4) Define lat/lon for 'from' and 'to' places, scrambling location coordinates for non-public locations.
+     * 5) Anonymize trip request with the most modes.
+     * 6) Get related trip summaries and anonymize.
+     * 7) Write anonymous trip requests to file.
+     */
+    private static int streamTripsToFile(
+        String pathAndFileName,
+        LocalDateTime periodToBeAnonymized
+    ) throws IOException {
+        // (Calling getStartOfHour is probably redundant because the starting hour (or day) to be anonymized
+        // should already be rounded to a whole hour/day.)
+        Date startOfPeriod = DateTimeUtils.getStartOfHour(periodToBeAnonymized);
+        Date endOfPeriod = isAggregationDaily()
+            ? DateTimeUtils.getEndOfDay(periodToBeAnonymized)
+            : DateTimeUtils.getEndOfHour(periodToBeAnonymized);
+        final String batchIdFieldName = "batchId";
+
+        // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
+        DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
+            batchIdFieldName,
+            Filters.and(
+                Filters.gte(DATE_CREATED_FIELD, startOfPeriod),
+                Filters.lte(DATE_CREATED_FIELD, endOfPeriod),
+                Filters.ne(batchIdFieldName, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
+            ),
+            String.class
+        );
+
+        // Needed to correctly format the JSON content.
+        int numberOfUniqueBatchIds = 0;
+        for (String batchId : uniqueBatchIds) {
+            numberOfUniqueBatchIds++;
+        }
+
+        int numTripRequestsWrittenToFile = 0;
+        int pos = 0;
+        FileUtils.writeToFile(pathAndFileName, false, "[");
+        for (String uniqueBatchId : uniqueBatchIds) {
+            pos++;
+            TripRequest combinedTripRequest = getCombinedTripRequest(uniqueBatchId, startOfPeriod, endOfPeriod);
+            if (combinedTripRequest != null) {
+                // Append content to file.
+                FileUtils.writeToFile(pathAndFileName, true, JsonUtils.toJson(combinedTripRequest));
+                if (pos < numberOfUniqueBatchIds) {
+                    // Add a comma to separate each trip request. This is not required for the last trip request to
+                    // prevent JSON formatting errors.
+                    FileUtils.writeToFile(pathAndFileName, true, ",");
+                }
+                numTripRequestsWrittenToFile++;
+            }
+        }
+        FileUtils.writeToFile(pathAndFileName, true, "]");
+        return numTripRequestsWrittenToFile;
+    }
+
+    /**
      * Stream the full Mongo collection to file.
      */
     private static int streamFullCollectionToFile(
@@ -261,6 +325,7 @@ public class ConnectedDataManager {
      * Stream an entity to file using the provided iterator and count.
      * This approach is used to avoid having a large amount of data in memory which could
      * cause an out-of-memory error if there are many records to process in a Mongo collection.
+     * If no records are found, this will produce a file with an empty JSON array "[]".
      */
     private static int streamCollectionToFile(
         String pathAndFileName,
@@ -327,6 +392,27 @@ public class ConnectedDataManager {
     }
 
     /**
+     * Extract a single trip request from multiple trip requests with the same batch id.
+     */
+    private static TripRequest getCombinedTripRequest(
+        String uniqueBatchId,
+        Date startOfHour,
+        Date endOfHour
+    ) {
+        final String batchIdFieldName = "batchId";
+        // Get trip request batch.
+        FindIterable<TripRequest> tripRequests = Persistence.tripRequests.getFiltered(
+            Filters.and(
+                Filters.gte(DATE_CREATED_FIELD, startOfHour),
+                Filters.lte(DATE_CREATED_FIELD, endOfHour),
+                Filters.eq(batchIdFieldName, uniqueBatchId)
+            ),
+            Sorts.descending(DATE_CREATED_FIELD, batchIdFieldName)
+        );
+        return getAllModesUsedInBatch(tripRequests);
+    }
+
+    /**
      * A single trip query results in many calls from the UI to OTP covering different combinations of modes. The trip
      * request to be included in the anonymous trip data must include all modes used across all trip requests within a
      * batch.
@@ -340,7 +426,7 @@ public class ConnectedDataManager {
                 // overwritten at the end of this method).
                 request = tripRequest;
             }
-            QueryVariables queryVariables = request.otp2QueryParams;
+            QueryVariables queryVariables = tripRequest.otp2QueryParams;
             List<TransportMode> modes = queryVariables != null ? queryVariables.modes : null;
             if (modes != null && !modes.isEmpty()) {
                 allUniqueModes.addAll(AnonymizedTripRequest.getModes(modes));
@@ -384,19 +470,26 @@ public class ConnectedDataManager {
             try {
                 int recordsWritten = Integer.MIN_VALUE;
 
-                // TripRequests must be processed separately because they must be combined, one per batchId.
                 if ("TripRequest".equals(entityName)) {
-                    if ("all".equals(reportingMode)) {
-                        LOG.error("TripRequest report all is not implemented.");
-                    } else if ("interval".equals(reportingMode)) {
-                        LOG.error("TripRequest report interval is not implemented.");
+                    // TripRequests must be processed separately because they must be combined, one per batchId.
+                    if (isAnonymousInterval(reportingMode)) {
+                        // Anonymized trips include TripRequest and TripSummary in the same entity.
+                        recordsWritten = streamAnonymousTripsToFile(tempDataFile, hourToBeAnonymized);
+                    } else {
+                        recordsWritten = streamTripsToFile(tempDataFile, hourToBeAnonymized);
                     }
+                } else if (
+                    "TripSummary".equals(entityName) &&
+                    isAnonymousInterval(ReportedEntities.entityMap.get("TripRequest"))
+                ) {
+                    // Anonymized trip requests already include TripSummary itineraries, so don't create a new file.
+                    LOG.info("Skipping TripSummary because they are already included in anonymized trip requests.");
+                } else if ("all".equals(reportingMode)) {
+                    recordsWritten = streamFullCollectionToFile(typedPersistence, tempDataFile);
+                } else if ("interval".equals(reportingMode)) {
+                    recordsWritten = streamPartialCollectionToFile(typedPersistence, tempDataFile, hourToBeAnonymized);
                 } else {
-                    if ("all".equals(reportingMode)) {
-                        recordsWritten = streamFullCollectionToFile(typedPersistence, tempDataFile);
-                    } else if ("interval".equals(reportingMode)) {
-                        recordsWritten = streamPartialCollectionToFile(typedPersistence, tempDataFile, hourToBeAnonymized);
-                    }
+                    LOG.error("Report mode '{}' is not implemented for {}.", reportingMode, entityName);
                 }
 
                 if (recordsWritten > 0 || "true".equals(CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES)) {
@@ -442,6 +535,11 @@ public class ConnectedDataManager {
         }
 
         return (int)allRecordsWritten;
+    }
+
+    public static boolean isAnonymousInterval(String reportingMode) {
+        List<String> reportingModes = List.of(reportingMode.split(" "));
+        return reportingModes.contains("interval") && reportingModes.contains("anonymous");
     }
 
     /**
