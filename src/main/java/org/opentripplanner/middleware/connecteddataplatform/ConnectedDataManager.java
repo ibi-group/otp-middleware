@@ -76,6 +76,9 @@ public class ConnectedDataManager {
     public static final String CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION", "none");
 
+    public static final String CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES =
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES", "false");
+
     private static final String DATE_CREATED_FIELD = "dateCreated";
 
     private ConnectedDataManager() {}
@@ -396,8 +399,8 @@ public class ConnectedDataManager {
                     }
                 }
 
-                if (recordsWritten > 0) {
-                    // No point doing these tasks if no records were written to file.
+                if (recordsWritten > 0 || "true".equals(CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES)) {
+                    // Upload the file if records were written or config setting requires uploading blank files.
                     FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
                     S3Utils.putObject(
                         CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
@@ -436,7 +439,6 @@ public class ConnectedDataManager {
                     LOG.error("Failed to delete temp files", e);
                 }
             }
-
         }
 
         return (int)allRecordsWritten;
