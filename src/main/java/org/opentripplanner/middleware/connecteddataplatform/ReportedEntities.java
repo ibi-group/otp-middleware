@@ -25,7 +25,9 @@ public class ReportedEntities {
         getEntityMap(ConfigUtils.getConfigProperty("CONNECTED_DATA_PLATFORM_REPORTED_ENTITIES"))
     );
 
-    public static Map<String, String> getEntityMap(JsonNode node) {
+    private ReportedEntities() {}
+
+    static Map<String, String> getEntityMap(JsonNode node) {
         if (node == null || node.isEmpty()) return Map.of();
 
         // Only include keys that are in persistenceMap.
@@ -37,5 +39,13 @@ public class ReportedEntities {
         }
 
         return map;
+    }
+
+    private static Map<String, String> getTestEntityMap() {
+        return Map.of("TripRequest", "interval anonymized");
+    }
+
+    public static Map<String, String> getEntitiesToReport(boolean isTest) {
+        return isTest ? getTestEntityMap() : entityMap;
     }
 }

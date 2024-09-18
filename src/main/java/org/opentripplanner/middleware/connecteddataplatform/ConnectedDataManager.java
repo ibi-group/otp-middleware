@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -50,9 +51,9 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDa
  */
 public class ConnectedDataManager {
 
-    public static final String FILE_NAME_SUFFIX = "anon-trip-data";
-    public static final String ZIP_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".zip";
-    public static final String DATA_FILE_NAME_SUFFIX = FILE_NAME_SUFFIX + ".json";
+    public static final String ANON_TRIP_FILE_NAME = "anon-trip-data";
+    public static final String ANON_TRIP_ZIP_FILE_NAME = ANON_TRIP_FILE_NAME + ".zip";
+    public static final String ANON_TRIP_JSON_FILE_NAME = ANON_TRIP_FILE_NAME + ".json";
     public static final String ZIP_FILE_EXTENSION = "zip";
     public static final String JSON_FILE_EXTENSION = "json";
 
@@ -361,8 +362,9 @@ public class ConnectedDataManager {
      */
     public static int compileAndUploadTripHistory(LocalDateTime hourToBeAnonymized, boolean isTest) {
         long allRecordsWritten = 0;
+        Map<String, String> entitiesToReport = ReportedEntities.getEntitiesToReport(isTest);
 
-        for (var entry : ReportedEntities.entityMap.entrySet()) {
+        for (var entry : entitiesToReport.entrySet()) {
             String entityName = entry.getKey();
             String reportingMode = entry.getValue();
 
@@ -385,12 +387,19 @@ public class ConnectedDataManager {
                 int recordsWritten = Integer.MIN_VALUE;
 
                 if ("TripRequest".equals(entityName)) {
+                    // Anonymized trip requests are stored under a special file name.
+                    boolean anonymize = isAnonymizedInterval(reportingMode);
+                    if (anonymize) {
+                        tempDataFile = tempDataFile.replace("TripRequest.json", ANON_TRIP_JSON_FILE_NAME);
+                        tempZipFile = tempZipFile.replace("TripRequest.zip", ANON_TRIP_ZIP_FILE_NAME);
+                    }
+
                     // TripRequests must be processed separately because they must be combined, one per batchId.
                     // Note: Anonymized trips include TripRequest and TripSummary in the same entity.
-                    recordsWritten = streamTripsToFile(tempDataFile, hourToBeAnonymized, isAnonymousInterval(reportingMode));
+                    recordsWritten = streamTripsToFile(tempDataFile, hourToBeAnonymized, anonymize);
                 } else if (
                     "TripSummary".equals(entityName) &&
-                    isAnonymousInterval(ReportedEntities.entityMap.get("TripRequest"))
+                    isAnonymizedInterval(entitiesToReport.get("TripRequest"))
                 ) {
                     // Anonymized trip requests already include TripSummary itineraries, so don't create a new file.
                     LOG.info("Skipping TripSummary because they are already included in anonymized trip requests.");
@@ -447,9 +456,9 @@ public class ConnectedDataManager {
         return (int)allRecordsWritten;
     }
 
-    public static boolean isAnonymousInterval(String reportingMode) {
+    public static boolean isAnonymizedInterval(String reportingMode) {
         List<String> reportingModes = List.of(reportingMode.split(" "));
-        return reportingModes.contains("interval") && reportingModes.contains("anonymous");
+        return reportingModes.contains("interval") && reportingModes.contains("anonymized");
     }
 
     /**

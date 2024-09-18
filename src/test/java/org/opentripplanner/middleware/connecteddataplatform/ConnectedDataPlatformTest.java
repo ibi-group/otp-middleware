@@ -144,7 +144,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequest.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         TripHistoryUploadJob.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(true);
-        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
+        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
             FileUtils.getTempDirectory().getAbsolutePath(),
@@ -152,7 +152,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         );
         String fileContents = getContentsOfFileInZip(
             tempFile,
-            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
         );
         MatcherAssert.assertThat(fileContents, matchesSnapshot());
 
@@ -188,7 +188,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripSummary = PersistenceTestUtils.createTripSummaryWithError(tripRequest.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         TripHistoryUploadJob.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(true);
-        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
+        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
             FileUtils.getTempDirectory().getAbsolutePath(),
@@ -196,7 +196,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         );
         String fileContents = getContentsOfFileInZip(
             tempFile,
-            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
         );
         MatcherAssert.assertThat(fileContents, matchesSnapshot());
 
@@ -234,7 +234,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         TripHistoryUploadJob.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(true);
-        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
+        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
             FileUtils.getTempDirectory().getAbsolutePath(),
@@ -242,7 +242,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         );
         String fileContents = getContentsOfFileInZip(
             tempFile,
-            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
         );
         // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
         List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
@@ -273,7 +273,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
         TripHistoryUploadJob.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(true);
-        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
+        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
             FileUtils.getTempDirectory().getAbsolutePath(),
@@ -281,7 +281,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         );
         String fileContents = getContentsOfFileInZip(
             tempFile,
-            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
         );
         List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
         // Confirm that the user's trip request saved to file contains the expected batch ids.
@@ -293,7 +293,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         TripHistoryUploadJob.processTripHistory(true);
         fileContents = getContentsOfFileInZip(
             tempFile,
-            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
         );
         anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
         assertNotNull(anonymizedTripRequests);
@@ -407,7 +407,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         Persistence.tripHistoryUploads.create(tripHistoryUpload);
 
         TripHistoryUploadJob.processTripHistory(true);
-        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
+        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
             FileUtils.getTempDirectory().getAbsolutePath(),
@@ -416,7 +416,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
         String fileContents = getContentsOfFileInZip(
             tempFile,
-            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
         );
         MatcherAssert.assertThat(fileContents, matchesSnapshot());
     }
@@ -454,7 +454,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
         TripHistoryUploadJob.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(true);
-        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
+        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
             FileUtils.getTempDirectory().getAbsolutePath(),
@@ -462,7 +462,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         );
         String fileContents = getContentsOfFileInZip(
             tempFile,
-            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
         );
         List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
         assertNotNull(anonymizedTripRequests);
@@ -491,7 +491,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         TripHistoryUploadJob.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(true);
-        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ZIP_FILE_NAME_SUFFIX);
+        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
             FileUtils.getTempDirectory().getAbsolutePath(),
@@ -499,7 +499,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         );
         String fileContents = getContentsOfFileInZip(
             tempFile,
-            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.DATA_FILE_NAME_SUFFIX)
+            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
         );
         List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
         assertNotNull(anonymizedTripRequests);
