@@ -71,8 +71,9 @@ public class ConnectedDataManager {
     public static final String CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME");
 
-    public static final ReportingInterval CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL =
-        ReportingInterval.valueOf(getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL", "hourly"));
+    public static final ReportingInterval CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL = ReportingInterval.valueOf(
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL", "hourly").toUpperCase()
+    );
 
     public static final String CONNECTED_DATA_PLATFORM_FOLDER_GROUPING =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_GROUPING", "none");
