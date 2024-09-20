@@ -71,11 +71,11 @@ public class ConnectedDataManager {
     public static final String CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME");
 
-    public static final String CONNECTED_DATA_PLATFORM_AGGREGATION_INTERVAL =
-        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_AGGREGATION_INTERVAL", "hourly");
+    public static final String CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL =
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL", "hourly");
 
-    public static final String CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION =
-        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION", "none");
+    public static final String CONNECTED_DATA_PLATFORM_FOLDER_GROUPING =
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_GROUPING", "none");
 
     public static final String CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES", "false");
@@ -249,7 +249,7 @@ public class ConnectedDataManager {
         // (Calling getStartOfHour is probably redundant because the starting hour (or day) to be anonymized
         // should already be rounded to a whole hour/day.)
         Date startOfPeriod = DateTimeUtils.getStartOfHour(periodStart);
-        Date endOfPeriod = isAggregationDaily()
+        Date endOfPeriod = isReportingDaily()
             ? DateTimeUtils.getEndOfDay(periodStart)
             : DateTimeUtils.getEndOfHour(periodStart);
 
@@ -290,11 +290,11 @@ public class ConnectedDataManager {
         return (int)numTripRequestsWrittenToFile;
     }
 
-    public static boolean isAggregationDaily() {
-        return "daily".equals(CONNECTED_DATA_PLATFORM_AGGREGATION_INTERVAL);
+    public static boolean isReportingDaily() {
+        return "daily".equals(CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL);
     }
 
-    public static boolean isAggregationDaily(String aggregationFrequency) {
+    public static boolean isReportingDaily(String aggregationFrequency) {
         return "daily".equals(aggregationFrequency);
     }
 
@@ -371,7 +371,7 @@ public class ConnectedDataManager {
             // Not null because ReportedEntities only contains entries that correspond to persistenceMap.
             TypedPersistence<?> typedPersistence = ReportedEntities.persistenceMap.get(entityName);
             String filePrefix = getFilePrefix(
-                CONNECTED_DATA_PLATFORM_AGGREGATION_INTERVAL,
+                CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL,
                 hourToBeAnonymized,
                 entityName
             );
@@ -420,7 +420,7 @@ public class ConnectedDataManager {
                             "%s/%s",
                             getUploadFolderName(
                                 CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME,
-                                CONNECTED_DATA_PLATFORM_FOLDER_AGGREGATION,
+                                CONNECTED_DATA_PLATFORM_FOLDER_GROUPING,
                                 hourToBeAnonymized.toLocalDate()
                             ),
                             zipFileName
@@ -484,7 +484,7 @@ public class ConnectedDataManager {
      * Produce file name.
      */
     public static String getFilePrefix(String aggregationFrequency, LocalDateTime date, String entityName) {
-        final String DEFAULT_DATE_FORMAT_PATTERN = isAggregationDaily(aggregationFrequency)
+        final String DEFAULT_DATE_FORMAT_PATTERN = isReportingDaily(aggregationFrequency)
             ? "yyyy-MM-dd"
             : "yyyy-MM-dd-HH";
         return String.format(

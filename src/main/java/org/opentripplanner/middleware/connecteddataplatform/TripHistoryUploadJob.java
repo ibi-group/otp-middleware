@@ -20,7 +20,7 @@ public class TripHistoryUploadJob implements Runnable {
     private static final int HISTORIC_UPLOAD_HOURS_BACK_STOP = 24;
 
     public void run() {
-        if (ConnectedDataManager.isAggregationDaily()) {
+        if (ConnectedDataManager.isReportingDaily()) {
             stageUploadDays();
         } else {
             stageUploadHours();
