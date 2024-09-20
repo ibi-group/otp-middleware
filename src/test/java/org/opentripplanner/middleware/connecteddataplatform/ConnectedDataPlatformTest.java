@@ -26,6 +26,7 @@ import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.S3Utils;
 
+import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -460,6 +461,44 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         MatcherAssert.assertThat(summaryContents, matchesSnapshot());
     }
 
+    /**
+     * Confirm that all trip summaries are written to file.
+     */
+    @Test
+    void canStreamTheCorrectNumberOfEntities() throws Exception {
+        assumeTrue(IS_END_TO_END);
+
+        setUpTripRequestsAndSummaries(PREVIOUS_DAY);
+
+        // Set backstop. This allows dates after this to trigger an upload.
+        createTripHistoryUpload(
+            LocalDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(2),
+            TripHistoryUploadStatus.COMPLETED
+        );
+        // Create trip history upload for required date.
+        createTripHistoryUpload(PREVIOUS_DAY, TripHistoryUploadStatus.PENDING);
+
+        TripHistoryUploadJob.processTripHistory(
+            ReportingInterval.DAILY,
+            Map.of("TripSummary", "all")
+        );
+
+        String tripFileName = ConnectedDataManager.getFilePrefix(ReportingInterval.DAILY, PREVIOUS_DAY, "TripRequest");
+        zipFileName = String.join(".", tripFileName, ZIP_FILE_EXTENSION);
+        tempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
+        // Trips file should not exist because trips are not requested in the report for this test.
+        assertFalse(new File(tempFile).exists());
+
+        String summaryFileName = ConnectedDataManager.getFilePrefix(ReportingInterval.DAILY, PREVIOUS_DAY, "TripSummary");
+        summaryZipFileName = String.join(".", summaryFileName, ZIP_FILE_EXTENSION);
+        summaryTempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), summaryZipFileName);
+
+        String summaryContents = getContentsOfFileInZip(summaryTempFile, String.join(".", summaryFileName, JSON_FILE_EXTENSION));
+        // Exactly all trip summaries created above should be in the file,
+        assertEquals(tripSummaries.size(), JsonUtils.getPOJOFromJSONAsList(summaryContents, TripSummary.class).size());
+        MatcherAssert.assertThat(summaryContents, matchesSnapshot());
+    }
+
     /** Create trip history upload for required date. */
      private static void createTripHistoryUpload(LocalDateTime time, TripHistoryUploadStatus status) {
         TripHistoryUpload upload = new TripHistoryUpload(time);
@@ -471,13 +510,18 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         String userId = UUID.randomUUID().toString();
         String batchIdOne = "99999999";
         String batchIdTwo = "11111111";
+        String otherBatchId = "otherBatchId";
+        LocalDateTime lastWeek = periodStart.minusDays(7);
 
         // Create required trip requests and add to list for deletion once the test has completed.
         TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(userId, batchIdOne, periodStart);
         TripRequest tripRequestTwo = PersistenceTestUtils.createTripRequest(userId, batchIdTwo, periodStart);
+        TripRequest tripRequestLastWeek = PersistenceTestUtils.createTripRequest(userId, otherBatchId, lastWeek);
         tripRequests.clear();
         tripRequests.add(tripRequestOne);
         tripRequests.add(tripRequestTwo);
+        // Extra trip request outside of the reporting interval, that should not be included in the report.
+        tripRequests.add(tripRequestLastWeek);
 
         // Create required trip summaries and add to list for deletion once the test has completed.
         tripSummaries.clear();
@@ -485,6 +529,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdOne, periodStart));
         tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestTwo.id, batchIdTwo, periodStart));
         tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestTwo.id, batchIdTwo, periodStart));
+        // Extra trip summary outside of the reporting interval, that should not be included in the report.
+        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestLastWeek.id, otherBatchId, lastWeek));
     }
 
     @Test

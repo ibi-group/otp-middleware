@@ -408,6 +408,7 @@ public class ConnectedDataManager {
                     recordsWritten = streamTripsToFile(tempDataFile, periodStart, reportingInterval, anonymize);
                 } else if (
                     "TripSummary".equals(entityName) &&
+                    entitiesToReport.containsKey("TripRequest") &&
                     isAnonymizedInterval(entitiesToReport.get("TripRequest"))
                 ) {
                     // Anonymized trip requests already include TripSummary itineraries, so don't create a new file.
