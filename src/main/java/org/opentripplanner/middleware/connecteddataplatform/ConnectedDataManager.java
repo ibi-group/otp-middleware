@@ -369,10 +369,13 @@ public class ConnectedDataManager {
     public static int compileAndUploadTripHistory(
         LocalDateTime periodStart,
         ReportingInterval reportingInterval,
-        boolean isTest
+        Map<String, String> desiredEntitiesToReport
     ) {
         int allRecordsWritten = 0;
-        Map<String, String> entitiesToReport = ReportedEntities.getEntitiesToReport(isTest);
+        boolean isTest = desiredEntitiesToReport != null;
+        Map<String, String> entitiesToReport = desiredEntitiesToReport != null
+            ? desiredEntitiesToReport
+            : ReportedEntities.entityMap;
 
         for (var entry : entitiesToReport.entrySet()) {
             String entityName = entry.getKey();

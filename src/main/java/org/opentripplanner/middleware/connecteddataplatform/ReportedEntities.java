@@ -40,12 +40,4 @@ public class ReportedEntities {
 
         return map;
     }
-
-    private static Map<String, String> getTestEntityMap() {
-        return Map.of("TripRequest", "interval anonymized");
-    }
-
-    public static Map<String, String> getEntitiesToReport(boolean isTest) {
-        return isTest ? getTestEntityMap() : entityMap;
-    }
 }

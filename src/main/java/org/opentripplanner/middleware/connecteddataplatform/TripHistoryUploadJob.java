@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This job is responsible for keeping the trip history held on s3 up-to-date by defining the hours which should be
@@ -25,7 +26,7 @@ public class TripHistoryUploadJob implements Runnable {
         } else {
             stageUploadHours();
         }
-        processTripHistory(ConnectedDataManager.CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL, false);
+        processTripHistory(ConnectedDataManager.CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL, null);
     }
 
     /**
@@ -96,13 +97,13 @@ public class TripHistoryUploadJob implements Runnable {
      * Process incomplete upload dates. This will be uploads which are flagged as 'pending'. If the upload date is
      * compiled and uploaded successfully, it is flagged as 'complete'.
      */
-    public static void processTripHistory(ReportingInterval reportingInterval, boolean isTest) {
+    public static void processTripHistory(ReportingInterval reportingInterval, Map<String, String> reportedEntities) {
         List<TripHistoryUpload> incompleteUploads = ConnectedDataManager.getIncompleteUploads();
         incompleteUploads.forEach(tripHistoryUpload -> {
             int numRecordsToUpload = ConnectedDataManager.compileAndUploadTripHistory(
                 tripHistoryUpload.uploadHour,
                 reportingInterval,
-                isTest
+                reportedEntities
             );
             if (numRecordsToUpload != Integer.MIN_VALUE) {
                 // If successfully compiled and updated, update the status to 'completed' and record the number of trip
@@ -113,5 +114,4 @@ public class TripHistoryUploadJob implements Runnable {
             }
         });
     }
-
 }
