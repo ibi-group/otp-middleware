@@ -96,7 +96,7 @@ public class TripHistoryUploadJob implements Runnable {
      * Process incomplete upload dates. This will be uploads which are flagged as 'pending'. If the upload date is
      * compiled and uploaded successfully, it is flagged as 'complete'.
      */
-    public static void processTripHistory(String reportingInterval, boolean isTest) {
+    public static void processTripHistory(ReportingInterval reportingInterval, boolean isTest) {
         List<TripHistoryUpload> incompleteUploads = ConnectedDataManager.getIncompleteUploads();
         incompleteUploads.forEach(tripHistoryUpload -> {
             int numRecordsToUpload = ConnectedDataManager.compileAndUploadTripHistory(

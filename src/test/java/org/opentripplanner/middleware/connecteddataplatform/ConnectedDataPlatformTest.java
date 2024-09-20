@@ -147,7 +147,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripRequest = PersistenceTestUtils.createTripRequest(userId, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequest.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         TripHistoryUploadJob.stageUploadHours();
-        TripHistoryUploadJob.processTripHistory("hourly", true);
+        TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, true);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
@@ -191,7 +191,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripRequest = PersistenceTestUtils.createTripRequest(userId, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         tripSummary = PersistenceTestUtils.createTripSummaryWithError(tripRequest.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         TripHistoryUploadJob.stageUploadHours();
-        TripHistoryUploadJob.processTripHistory("hourly", true);
+        TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, true);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
@@ -237,7 +237,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripRequests.add(tripRequestTwo);
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         TripHistoryUploadJob.stageUploadHours();
-        TripHistoryUploadJob.processTripHistory("hourly", true);
+        TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, true);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
@@ -276,7 +276,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdTwo, PREVIOUS_WHOLE_HOUR_FROM_NOW);
 
         TripHistoryUploadJob.stageUploadHours();
-        TripHistoryUploadJob.processTripHistory("hourly", true);
+        TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, true);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
@@ -294,7 +294,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         assertTrue(anonymizedTripRequests.stream().anyMatch(anonymizedTripRequest -> anonymizedTripRequest.requestId.equals(batchIdTwo)));
 
         ConnectedDataManager.removeUsersTripHistory(userIdOne);
-        TripHistoryUploadJob.processTripHistory("hourly", true);
+        TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, true);
         fileContents = getContentsOfFileInZip(
             tempFile,
             getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
@@ -410,7 +410,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripHistoryUpload.status = TripHistoryUploadStatus.PENDING.getValue();
         Persistence.tripHistoryUploads.create(tripHistoryUpload);
 
-        TripHistoryUploadJob.processTripHistory("hourly", true);
+        TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, true);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
@@ -461,8 +461,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripHistoryUpload.status = TripHistoryUploadStatus.PENDING.getValue();
         Persistence.tripHistoryUploads.create(tripHistoryUpload);
 
-        TripHistoryUploadJob.processTripHistory("daily", true);
-        String fileName = ConnectedDataManager.getFilePrefix("daily", PREVIOUS_DAY, ConnectedDataManager.ANON_TRIP_FILE_NAME);
+        TripHistoryUploadJob.processTripHistory(ReportingInterval.DAILY, true);
+        String fileName = ConnectedDataManager.getFilePrefix(ReportingInterval.DAILY, PREVIOUS_DAY, ConnectedDataManager.ANON_TRIP_FILE_NAME);
         zipFileName = String.join(".", fileName, ZIP_FILE_EXTENSION);
         tempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
 
@@ -502,7 +502,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         Persistence.tripSummaries.create(tripSummary);
 
         TripHistoryUploadJob.stageUploadHours();
-        TripHistoryUploadJob.processTripHistory("hourly", true);
+        TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, true);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
@@ -539,7 +539,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripRequests.add(tripRequestOne);
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         TripHistoryUploadJob.stageUploadHours();
-        TripHistoryUploadJob.processTripHistory("hourly", true);
+        TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, true);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
@@ -590,7 +590,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canGetFileName() {
         LocalDateTime date = LocalDateTime.of(2024, 9, 12, 15, 37, 44);
-        assertEquals("2024-09-12-15-MonitoredTrip", ConnectedDataManager.getFilePrefix("hourly", date, "MonitoredTrip"));
-        assertEquals("2024-09-12-MonitoredTrip",ConnectedDataManager.getFilePrefix("daily", date, "MonitoredTrip"));
+        assertEquals("2024-09-12-15-MonitoredTrip", ConnectedDataManager.getFilePrefix(ReportingInterval.HOURLY, date, "MonitoredTrip"));
+        assertEquals("2024-09-12-MonitoredTrip",ConnectedDataManager.getFilePrefix(ReportingInterval.DAILY, date, "MonitoredTrip"));
     }
 }

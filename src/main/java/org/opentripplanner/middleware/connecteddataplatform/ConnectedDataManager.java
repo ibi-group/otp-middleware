@@ -71,8 +71,8 @@ public class ConnectedDataManager {
     public static final String CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME");
 
-    public static final String CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL =
-        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL", "hourly");
+    public static final ReportingInterval CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL =
+        ReportingInterval.valueOf(getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL", "hourly"));
 
     public static final String CONNECTED_DATA_PLATFORM_FOLDER_GROUPING =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_GROUPING", "none");
@@ -165,7 +165,7 @@ public class ConnectedDataManager {
     private static int streamTripsToFile(
         String pathAndFileName,
         LocalDateTime periodStart,
-        String reportingInterval,
+        ReportingInterval reportingInterval,
         boolean anonymize
     ) throws IOException {
         Bson dateFilter = getDateFilter(periodStart, reportingInterval);
@@ -237,7 +237,7 @@ public class ConnectedDataManager {
         TypedPersistence<?> persistenceType,
         String pathAndFileName,
         LocalDateTime periodStart,
-        String reportingInterval
+        ReportingInterval reportingInterval
     ) throws IOException {
         Bson dateFilter = getDateFilter(periodStart, reportingInterval);
         return streamCollectionToFile(
@@ -247,7 +247,7 @@ public class ConnectedDataManager {
         );
     }
 
-    private static Bson getDateFilter(LocalDateTime periodStart, String reportingInterval) {
+    private static Bson getDateFilter(LocalDateTime periodStart, ReportingInterval reportingInterval) {
         // (Calling getStartOfHour is probably redundant because the starting hour (or day) to be anonymized
         // should already be rounded to a whole hour/day.)
         Date startOfPeriod = DateTimeUtils.getStartOfHour(periodStart);
@@ -293,11 +293,11 @@ public class ConnectedDataManager {
     }
 
     public static boolean isReportingDaily() {
-        return "daily".equals(CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL);
+        return isReportingDaily(CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL);
     }
 
-    public static boolean isReportingDaily(String reportingInterval) {
-        return "daily".equals(reportingInterval);
+    public static boolean isReportingDaily(ReportingInterval reportingInterval) {
+        return reportingInterval == ReportingInterval.DAILY;
     }
 
     /**
@@ -362,7 +362,11 @@ public class ConnectedDataManager {
      * Anonymize trip data, write to zip file, upload the zip file to S3 and finally delete the data and zip files from
      * local disk.
      */
-    public static int compileAndUploadTripHistory(LocalDateTime periodStart, String reportingInterval, boolean isTest) {
+    public static int compileAndUploadTripHistory(
+        LocalDateTime periodStart,
+        ReportingInterval reportingInterval,
+        boolean isTest
+    ) {
         int allRecordsWritten = 0;
         Map<String, String> entitiesToReport = ReportedEntities.getEntitiesToReport(isTest);
 
@@ -481,7 +485,7 @@ public class ConnectedDataManager {
     /**
      * Produce file name without path or extension.
      */
-    public static String getFilePrefix(String reportingInterval, LocalDateTime date, String entityName) {
+    public static String getFilePrefix(ReportingInterval reportingInterval, LocalDateTime date, String entityName) {
         final String DEFAULT_DATE_FORMAT_PATTERN = isReportingDaily(reportingInterval)
             ? "yyyy-MM-dd"
             : "yyyy-MM-dd-HH";
