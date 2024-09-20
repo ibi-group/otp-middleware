@@ -332,8 +332,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     void canCorrectlyStageHours() {
         LocalDateTime sevenHoursAgo = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(7);
         List<LocalDateTime> betweenHours = DateTimeUtils.getHoursBetween(sevenHoursAgo, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        TripHistoryUpload tripHistoryUpload = new TripHistoryUpload(sevenHoursAgo);
-        Persistence.tripHistoryUploads.create(tripHistoryUpload);
+        createTripHistoryUpload(sevenHoursAgo, TripHistoryUploadStatus.PENDING);
         TripHistoryUploadJob.stageUploadHours();
         assertEquals(
             betweenHours.size() + 1, // plus one for an hour ago.
@@ -348,8 +347,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canCorrectlyStageDays() {
         LocalDateTime fourDaysAgo = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(4);
-        TripHistoryUpload tripHistoryUpload = new TripHistoryUpload(fourDaysAgo);
-        Persistence.tripHistoryUploads.create(tripHistoryUpload);
+        createTripHistoryUpload(fourDaysAgo, TripHistoryUploadStatus.PENDING);
         TripHistoryUploadJob.stageUploadDays();
         assertEquals(
             1, // If system is down, it will only upload the previous day.
@@ -367,10 +365,10 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         assumeTrue(IS_END_TO_END);
 
         // Set backstop. This allows dates after this to trigger an upload.
-        LocalDateTime twentyHoursInThePast = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(20);
-        TripHistoryUpload tripHistoryUpload = new TripHistoryUpload(twentyHoursInThePast);
-        tripHistoryUpload.status = TripHistoryUploadStatus.COMPLETED.getValue();
-        Persistence.tripHistoryUploads.create(tripHistoryUpload);
+        createTripHistoryUpload(
+            LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(20),
+            TripHistoryUploadStatus.COMPLETED
+        );
 
         // Create OTP user and trip data.
         otpUser = PersistenceTestUtils.createUser("test@example.com");
@@ -399,34 +397,16 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     void canStreamTheCorrectNumberOfTripsHourly() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        String userId = UUID.randomUUID().toString();
-        String batchIdOne = "99999999";
-        String batchIdTwo = "11111111";
-
-        // Create required trip requests and add to list for deletion once the test has completed.
-        TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(userId, batchIdOne, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        TripRequest tripRequestTwo = PersistenceTestUtils.createTripRequest(userId, batchIdTwo, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        tripRequests.clear();
-        tripRequests.add(tripRequestOne);
-        tripRequests.add(tripRequestTwo);
-
-        // Create required trip summaries and add to list for deletion once the test has completed.
-        tripSummaries.clear();
-        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdOne, PREVIOUS_WHOLE_HOUR_FROM_NOW));
-        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdOne, PREVIOUS_WHOLE_HOUR_FROM_NOW));
-        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestTwo.id, batchIdTwo, PREVIOUS_WHOLE_HOUR_FROM_NOW));
-        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestTwo.id, batchIdTwo, PREVIOUS_WHOLE_HOUR_FROM_NOW));
+        setUpTripRequestsAndSummaries(PREVIOUS_WHOLE_HOUR_FROM_NOW);
 
         // Set backstop. This allows dates after this to trigger an upload.
-        LocalDateTime twentyHoursInThePast = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(20);
-        TripHistoryUpload tripHistoryUpload = new TripHistoryUpload(twentyHoursInThePast);
-        tripHistoryUpload.status = TripHistoryUploadStatus.COMPLETED.getValue();
-        Persistence.tripHistoryUploads.create(tripHistoryUpload);
+        createTripHistoryUpload(
+            LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(20),
+            TripHistoryUploadStatus.COMPLETED
+        );
 
         // Create trip history upload for required date.
-        tripHistoryUpload = new TripHistoryUpload(PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        tripHistoryUpload.status = TripHistoryUploadStatus.PENDING.getValue();
-        Persistence.tripHistoryUploads.create(tripHistoryUpload);
+        createTripHistoryUpload(PREVIOUS_WHOLE_HOUR_FROM_NOW, TripHistoryUploadStatus.PENDING);
 
         TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
@@ -450,34 +430,15 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     void canStreamTheCorrectNumberOfEntitiesDaily() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        String userId = UUID.randomUUID().toString();
-        String batchIdOne = "99999999";
-        String batchIdTwo = "11111111";
-
-        // Create required trip requests and add to list for deletion once the test has completed.
-        TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(userId, batchIdOne, PREVIOUS_DAY);
-        TripRequest tripRequestTwo = PersistenceTestUtils.createTripRequest(userId, batchIdTwo, PREVIOUS_DAY);
-        tripRequests.clear();
-        tripRequests.add(tripRequestOne);
-        tripRequests.add(tripRequestTwo);
-
-        // Create required trip summaries and add to list for deletion once the test has completed.
-        tripSummaries.clear();
-        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdOne, PREVIOUS_DAY));
-        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdOne, PREVIOUS_DAY));
-        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestTwo.id, batchIdTwo, PREVIOUS_DAY));
-        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestTwo.id, batchIdTwo, PREVIOUS_DAY));
+        setUpTripRequestsAndSummaries(PREVIOUS_DAY);
 
         // Set backstop. This allows dates after this to trigger an upload.
-        LocalDateTime twoDaysInThePast = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(2);
-        TripHistoryUpload tripHistoryUpload = new TripHistoryUpload(twoDaysInThePast);
-        tripHistoryUpload.status = TripHistoryUploadStatus.COMPLETED.getValue();
-        Persistence.tripHistoryUploads.create(tripHistoryUpload);
-
+        createTripHistoryUpload(
+            LocalDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(2),
+            TripHistoryUploadStatus.COMPLETED
+        );
         // Create trip history upload for required date.
-        tripHistoryUpload = new TripHistoryUpload(PREVIOUS_DAY);
-        tripHistoryUpload.status = TripHistoryUploadStatus.PENDING.getValue();
-        Persistence.tripHistoryUploads.create(tripHistoryUpload);
+        createTripHistoryUpload(PREVIOUS_DAY, TripHistoryUploadStatus.PENDING);
 
         TripHistoryUploadJob.processTripHistory(
             ReportingInterval.DAILY,
@@ -497,6 +458,33 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
         String summaryContents = getContentsOfFileInZip(summaryTempFile, String.join(".", summaryFileName, JSON_FILE_EXTENSION));
         MatcherAssert.assertThat(summaryContents, matchesSnapshot());
+    }
+
+    /** Create trip history upload for required date. */
+     private static void createTripHistoryUpload(LocalDateTime time, TripHistoryUploadStatus status) {
+        TripHistoryUpload upload = new TripHistoryUpload(time);
+        upload.status = status.getValue();
+        Persistence.tripHistoryUploads.create(upload);
+    }
+
+    private static void setUpTripRequestsAndSummaries(LocalDateTime periodStart) throws Exception {
+        String userId = UUID.randomUUID().toString();
+        String batchIdOne = "99999999";
+        String batchIdTwo = "11111111";
+
+        // Create required trip requests and add to list for deletion once the test has completed.
+        TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(userId, batchIdOne, periodStart);
+        TripRequest tripRequestTwo = PersistenceTestUtils.createTripRequest(userId, batchIdTwo, periodStart);
+        tripRequests.clear();
+        tripRequests.add(tripRequestOne);
+        tripRequests.add(tripRequestTwo);
+
+        // Create required trip summaries and add to list for deletion once the test has completed.
+        tripSummaries.clear();
+        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdOne, periodStart));
+        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdOne, periodStart));
+        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestTwo.id, batchIdTwo, periodStart));
+        tripSummaries.add(PersistenceTestUtils.createTripSummary(tripRequestTwo.id, batchIdTwo, periodStart));
     }
 
     @Test
