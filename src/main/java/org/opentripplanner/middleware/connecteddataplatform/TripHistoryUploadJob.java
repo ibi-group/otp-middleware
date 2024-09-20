@@ -25,7 +25,7 @@ public class TripHistoryUploadJob implements Runnable {
         } else {
             stageUploadHours();
         }
-        processTripHistory(false);
+        processTripHistory(ConnectedDataManager.CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL, false);
     }
 
     /**
@@ -96,10 +96,14 @@ public class TripHistoryUploadJob implements Runnable {
      * Process incomplete upload dates. This will be uploads which are flagged as 'pending'. If the upload date is
      * compiled and uploaded successfully, it is flagged as 'complete'.
      */
-    public static void processTripHistory(boolean isTest) {
+    public static void processTripHistory(String reportingInterval, boolean isTest) {
         List<TripHistoryUpload> incompleteUploads = ConnectedDataManager.getIncompleteUploads();
         incompleteUploads.forEach(tripHistoryUpload -> {
-            int numRecordsToUpload = ConnectedDataManager.compileAndUploadTripHistory(tripHistoryUpload.uploadHour, isTest);
+            int numRecordsToUpload = ConnectedDataManager.compileAndUploadTripHistory(
+                tripHistoryUpload.uploadHour,
+                reportingInterval,
+                isTest
+            );
             if (numRecordsToUpload != Integer.MIN_VALUE) {
                 // If successfully compiled and updated, update the status to 'completed' and record the number of trip
                 // requests uploaded (if any).

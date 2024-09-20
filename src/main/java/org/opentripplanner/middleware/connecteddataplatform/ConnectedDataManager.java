@@ -165,9 +165,10 @@ public class ConnectedDataManager {
     private static int streamTripsToFile(
         String pathAndFileName,
         LocalDateTime periodStart,
+        String reportingInterval,
         boolean anonymize
     ) throws IOException {
-        Bson dateFilter = getDateFilter(periodStart);
+        Bson dateFilter = getDateFilter(periodStart, reportingInterval);
 
         // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
         DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
@@ -235,9 +236,10 @@ public class ConnectedDataManager {
     private static int streamPartialCollectionToFile(
         TypedPersistence<?> persistenceType,
         String pathAndFileName,
-        LocalDateTime periodStart
+        LocalDateTime periodStart,
+        String reportingInterval
     ) throws IOException {
-        Bson dateFilter = getDateFilter(periodStart);
+        Bson dateFilter = getDateFilter(periodStart, reportingInterval);
         return streamCollectionToFile(
             pathAndFileName,
             persistenceType.getFiltered(dateFilter),
@@ -245,15 +247,15 @@ public class ConnectedDataManager {
         );
     }
 
-    private static Bson getDateFilter(LocalDateTime periodStart) {
+    private static Bson getDateFilter(LocalDateTime periodStart, String reportingInterval) {
         // (Calling getStartOfHour is probably redundant because the starting hour (or day) to be anonymized
         // should already be rounded to a whole hour/day.)
         Date startOfPeriod = DateTimeUtils.getStartOfHour(periodStart);
-        Date endOfPeriod = isReportingDaily()
+        Date endOfPeriod = isReportingDaily(reportingInterval)
             ? DateTimeUtils.getEndOfDay(periodStart)
             : DateTimeUtils.getEndOfHour(periodStart);
 
-        // The creation time corresponds to a time a trip request is made/a tracked journey is started.
+        // The creation time corresponds to a time a trip request or other entity is made/a tracked journey is started.
         return Filters.and(
             Filters.gte(DATE_CREATED_FIELD, startOfPeriod),
             Filters.lte(DATE_CREATED_FIELD, endOfPeriod)
@@ -294,8 +296,8 @@ public class ConnectedDataManager {
         return "daily".equals(CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL);
     }
 
-    public static boolean isReportingDaily(String aggregationFrequency) {
-        return "daily".equals(aggregationFrequency);
+    public static boolean isReportingDaily(String reportingInterval) {
+        return "daily".equals(reportingInterval);
     }
 
     /**
@@ -360,7 +362,7 @@ public class ConnectedDataManager {
      * Anonymize trip data, write to zip file, upload the zip file to S3 and finally delete the data and zip files from
      * local disk.
      */
-    public static int compileAndUploadTripHistory(LocalDateTime hourToBeAnonymized, boolean isTest) {
+    public static int compileAndUploadTripHistory(LocalDateTime periodStart, String reportingInterval, boolean isTest) {
         int allRecordsWritten = 0;
         Map<String, String> entitiesToReport = ReportedEntities.getEntitiesToReport(isTest);
 
@@ -370,11 +372,7 @@ public class ConnectedDataManager {
 
             // Not null because ReportedEntities only contains entries that correspond to persistenceMap.
             TypedPersistence<?> typedPersistence = ReportedEntities.persistenceMap.get(entityName);
-            String filePrefix = getFilePrefix(
-                CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL,
-                hourToBeAnonymized,
-                entityName
-            );
+            String filePrefix = getFilePrefix(reportingInterval, periodStart, entityName);
             String tempFileFolder = FileUtils.getTempDirectory().getAbsolutePath();
 
             String zipFileName = String.join(".", filePrefix, ZIP_FILE_EXTENSION);
@@ -396,7 +394,7 @@ public class ConnectedDataManager {
 
                     // TripRequests must be processed separately because they must be combined, one per batchId.
                     // Note: Anonymized trips include TripRequest and TripSummary in the same entity.
-                    recordsWritten = streamTripsToFile(tempDataFile, hourToBeAnonymized, anonymize);
+                    recordsWritten = streamTripsToFile(tempDataFile, periodStart, reportingInterval, anonymize);
                 } else if (
                     "TripSummary".equals(entityName) &&
                     isAnonymizedInterval(entitiesToReport.get("TripRequest"))
@@ -406,7 +404,7 @@ public class ConnectedDataManager {
                 } else if ("all".equals(reportingMode)) {
                     recordsWritten = streamFullCollectionToFile(typedPersistence, tempDataFile);
                 } else if ("interval".equals(reportingMode)) {
-                    recordsWritten = streamPartialCollectionToFile(typedPersistence, tempDataFile, hourToBeAnonymized);
+                    recordsWritten = streamPartialCollectionToFile(typedPersistence, tempDataFile, periodStart, reportingInterval);
                 } else {
                     LOG.error("Report mode '{}' is not implemented for {}.", reportingMode, entityName);
                 }
@@ -421,7 +419,7 @@ public class ConnectedDataManager {
                             getUploadFolderName(
                                 CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME,
                                 CONNECTED_DATA_PLATFORM_FOLDER_GROUPING,
-                                hourToBeAnonymized.toLocalDate()
+                                periodStart.toLocalDate()
                             ),
                             zipFileName
                         ),
@@ -431,7 +429,7 @@ public class ConnectedDataManager {
                 allRecordsWritten += recordsWritten;
             } catch (Exception e) {
                 BugsnagReporter.reportErrorToBugsnag(
-                    String.format("Failed to process trip data for (%s)", hourToBeAnonymized),
+                    String.format("Failed to process trip data for (%s)", periodStart),
                     e
                 );
                 return Integer.MIN_VALUE;
@@ -481,10 +479,10 @@ public class ConnectedDataManager {
     }
 
     /**
-     * Produce file name.
+     * Produce file name without path or extension.
      */
-    public static String getFilePrefix(String aggregationFrequency, LocalDateTime date, String entityName) {
-        final String DEFAULT_DATE_FORMAT_PATTERN = isReportingDaily(aggregationFrequency)
+    public static String getFilePrefix(String reportingInterval, LocalDateTime date, String entityName) {
+        final String DEFAULT_DATE_FORMAT_PATTERN = isReportingDaily(reportingInterval)
             ? "yyyy-MM-dd"
             : "yyyy-MM-dd-HH";
         return String.format(
@@ -508,9 +506,9 @@ public class ConnectedDataManager {
         return String.format("%s_%s_%s", prefix, monday.format(DEFAULT_DATE_FORMATTER), sunday.format(DEFAULT_DATE_FORMATTER));
     }
 
-    /** Compute the upload folder name based on aggregation setting and date. */
-    public static String getUploadFolderName(String baseFolderName, String aggregationFrequency, LocalDate date) {
-        if ("weekly-monday-sunday".equals(aggregationFrequency)) {
+    /** Compute the upload folder name based on folder grouping and date. */
+    public static String getUploadFolderName(String baseFolderName, String folderGrouping, LocalDate date) {
+        if ("weekly-monday-sunday".equals(folderGrouping)) {
             return getWeeklyMondaySundayFolderName(baseFolderName, date);
         }
         return baseFolderName;
