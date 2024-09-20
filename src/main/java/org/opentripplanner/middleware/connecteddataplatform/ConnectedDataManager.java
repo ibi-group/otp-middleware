@@ -272,8 +272,8 @@ public class ConnectedDataManager {
         long count
     ) throws IOException {
 
-        long numTripRequestsWrittenToFile = 0;
-        long pos = 0;
+        int numTripRequestsWrittenToFile = 0;
+        int pos = 0;
         FileUtils.writeToFile(pathAndFileName, false, "[");
         for (var item : findIterable) {
             pos++;
@@ -287,7 +287,7 @@ public class ConnectedDataManager {
             numTripRequestsWrittenToFile++;
         }
         FileUtils.writeToFile(pathAndFileName, true, "]");
-        return (int)numTripRequestsWrittenToFile;
+        return numTripRequestsWrittenToFile;
     }
 
     public static boolean isReportingDaily() {
@@ -361,7 +361,7 @@ public class ConnectedDataManager {
      * local disk.
      */
     public static int compileAndUploadTripHistory(LocalDateTime hourToBeAnonymized, boolean isTest) {
-        long allRecordsWritten = 0;
+        int allRecordsWritten = 0;
         Map<String, String> entitiesToReport = ReportedEntities.getEntitiesToReport(isTest);
 
         for (var entry : entitiesToReport.entrySet()) {
@@ -453,7 +453,7 @@ public class ConnectedDataManager {
             }
         }
 
-        return (int)allRecordsWritten;
+        return allRecordsWritten;
     }
 
     public static boolean isAnonymizedInterval(String reportingMode) {
