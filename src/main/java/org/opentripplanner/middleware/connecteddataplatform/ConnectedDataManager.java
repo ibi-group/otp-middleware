@@ -75,8 +75,11 @@ public class ConnectedDataManager {
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL", "hourly").toUpperCase()
     );
 
-    public static final String CONNECTED_DATA_PLATFORM_FOLDER_GROUPING =
-        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_GROUPING", "none");
+    public static final FolderGrouping CONNECTED_DATA_PLATFORM_FOLDER_GROUPING = FolderGrouping.valueOf(
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_FOLDER_GROUPING", "none")
+            .toUpperCase()
+            .replace('-', '_')
+    );
 
     public static final String CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES", "false");
@@ -512,8 +515,8 @@ public class ConnectedDataManager {
     }
 
     /** Compute the upload folder name based on folder grouping and date. */
-    public static String getUploadFolderName(String baseFolderName, String folderGrouping, LocalDate date) {
-        if ("weekly-monday-sunday".equals(folderGrouping)) {
+    public static String getUploadFolderName(String baseFolderName, FolderGrouping folderGrouping, LocalDate date) {
+        if (folderGrouping == FolderGrouping.WEEKLY_MONDAY_SUNDAY) {
             return getWeeklyMondaySundayFolderName(baseFolderName, date);
         }
         return baseFolderName;
