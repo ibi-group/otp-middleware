@@ -2312,6 +2312,10 @@ definitions:
         type: "string"
       status:
         type: "string"
+        enum:
+        - "PENDING"
+        - "CONFIRMED"
+        - "INVALID"
   TripMonitorNotification:
     type: "object"
     properties:
