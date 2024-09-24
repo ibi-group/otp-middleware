@@ -28,6 +28,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -178,6 +179,10 @@ public class MonitoredTrip extends Model {
      * Whether to notify the user when the monitoring of this trip starts.
      */
     public boolean notifyAtLeadingInterval = true;
+
+    public GuardianUser primary;
+    public GuardianUser companion;
+    public List<GuardianUser> observers = new ArrayList<>();
 
     public MonitoredTrip() {
     }
