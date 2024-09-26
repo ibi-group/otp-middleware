@@ -96,7 +96,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
 
     /** Contains the verified itinerary set for a trip upon persisting. */
     public static Itinerary getDefaultItinerary() throws Exception {
-        return OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
+        return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
     }
 
     /**
@@ -189,7 +189,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
 
             // Copy the template OTP response itinerary, and change the itinerary date to the monitored date,
             // in order to pass the same-day itinerary requirement.
-            OtpResponse resp = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+            OtpResponse resp = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
             for (Itinerary itin : resp.plan.itineraries) {
                 itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
                 itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);

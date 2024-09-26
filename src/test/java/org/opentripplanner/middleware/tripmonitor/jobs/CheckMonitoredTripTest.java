@@ -87,7 +87,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     public OtpResponse mockOtpPlanResponse() {
         try {
             // Setup an OTP mock response in order to trigger some of the monitor checks.
-            return OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+            return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -101,7 +101,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     void canMonitorTrip() throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
             false,
             OtpTestUtils.createDefaultJourneyState()
         );
@@ -227,7 +227,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     private static CheckMonitoredTrip createCheckMonitoredTrip(JourneyState journeyState, Supplier<OtpResponse> otpResponseProvider) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
             false,
             journeyState
         );
@@ -257,7 +257,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // - Return true for weekend trip when current time is on a weekday.
         MonitoredTrip weekendTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
             true,
             OtpTestUtils.createDefaultJourneyState()
         );

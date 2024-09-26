@@ -46,8 +46,13 @@ public class OtpTestUtils {
         )
     );
 
-    /**
-     * The response contains an itinerary with a request with the following request parameters:
+    /** Contains an OTP response with no itinerary found. */
+    public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
+        initializeMockPlanResponse("otp/response/planErrorResponse.json");
+
+
+    /** OTP2 plan mock response.
+     * Contains an itinerary with a request with the following request parameters:
      * - arriveBy: false
      * - date: 2020-06-09 (a Tuesday)
      * - desired start time: 08:35
@@ -56,15 +61,6 @@ public class OtpTestUtils {
      * - toPlace: Uncharted Realities, SW 3rd Ave, Downtown - Portland 97204::45.51639151281627,-122.67681483620306
      * - first itinerary end time: 8:58:44am
      */
-    public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_RESPONSE =
-        initializeMockPlanResponse("otp/response/planResponse.json");
-
-    /** Contains an OTP response with no itinerary found. */
-    public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
-        initializeMockPlanResponse("otp/response/planErrorResponse.json");
-
-
-    /** OTP2 plan mock response. */
     public static final OtpDispatcherResponse OTP2_DISPATCHER_PLAN_RESPONSE =
         initializeMockPlanResponse("otp/response/planResponse-otp2.json");
 
@@ -139,7 +135,7 @@ public class OtpTestUtils {
 
         // mocks not setup, simply return from a file every time
         LOG.info("Returning default mock response from file");
-        return OTP_DISPATCHER_PLAN_RESPONSE.responseBody;
+        return OTP2_DISPATCHER_PLAN_RESPONSE.responseBody;
     }
 
     /**
@@ -218,7 +214,7 @@ public class OtpTestUtils {
     }
 
     public static Itinerary createDefaultItinerary() throws Exception {
-        return OTP_DISPATCHER_PLAN_RESPONSE.clone().getResponse().plan.itineraries.get(0);
+        return OTP2_DISPATCHER_PLAN_RESPONSE.clone().getResponse().plan.itineraries.get(0);
     }
 
     public static JourneyState createDefaultJourneyState() throws Exception {
