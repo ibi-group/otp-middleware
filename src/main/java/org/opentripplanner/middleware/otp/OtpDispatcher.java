@@ -93,7 +93,7 @@ public class OtpDispatcher {
             version,
             "",
             OTP_GRAPHQL_ENDPOINT,
-            Map.of("Content-Type", "application/json"),
+            HttpUtils.HEADERS_JSON,
             JsonUtils.toJson(query).replace("\\\\n", "\\n").replace("\\\\\"", "\"")
         );
     }
