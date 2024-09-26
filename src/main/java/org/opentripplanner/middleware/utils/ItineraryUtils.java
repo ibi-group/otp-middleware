@@ -29,7 +29,6 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  */
 public class ItineraryUtils {
 
-    public static final String MODE_PARAM = "mode";
     public static final int ITINERARY_CHECK_WINDOW = 7;
     public static final int SERVICE_DAY_START_HOUR = getConfigPropertyAsInt("SERVICE_DAY_START_HOUR", 3);
 
