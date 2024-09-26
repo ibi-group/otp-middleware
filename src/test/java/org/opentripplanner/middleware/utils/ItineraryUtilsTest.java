@@ -536,26 +536,4 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             );
         }
     }
-
-    /**
-     * Provides a set of mock OTP responses in the order they are expected to be used.
-     */
-    static class MockOtpResponseProvider {
-        private int index = 0;
-        private final List<OtpResponse> mockResponses;
-
-        MockOtpResponseProvider(List<OtpResponse> mockResponses) {
-            this.mockResponses = mockResponses;
-        }
-
-        public OtpResponse getMockResponse(OtpRequest otpRequest) {
-            // otpRequest is ignored, and the next response is given.
-            // If index is out of bounds, an error will be thrown.
-            return mockResponses.get(index++);
-        }
-
-        public boolean areAllMocksUsed() {
-            return index == mockResponses.size();
-        }
-    }
 }

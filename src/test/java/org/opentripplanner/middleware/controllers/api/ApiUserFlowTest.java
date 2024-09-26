@@ -6,11 +6,11 @@ import com.auth0.json.mgmt.users.User;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -22,6 +22,7 @@ import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.MockOtpResponseProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
@@ -137,11 +139,6 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         if (otpUserStandalone != null) otpUserStandalone.delete(false);
     }
 
-    @AfterEach
-    public void tearDownAfterTest() {
-        OtpTestUtils.resetOtpMocks();
-    }
-
     /**
      * Tests to confirm that an otp user, related monitored trip and plan can be created and deleted leaving no orphaned
      * records. This also includes Auth0 users if auth is enabled. The basic script for this test is as follows:
@@ -212,7 +209,8 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
 
         // Set mock OTP responses so that trip existence checks in the
         // POST call below to save the monitored trip can pass.
-        OtpTestUtils.setupOtpMocks(OtpTestUtils.createMockOtpResponsesForTripExistence());
+        MockOtpResponseProvider mockResponses = new MockOtpResponseProvider(OtpTestUtils.createMockOtpResponsesForTripExistence());
+        ItineraryExistence.otpResponseProviderOverride = mockResponses::getMockResponse;
 
         HttpResponseValues createTripResponseAsApiUser = makeRequest(
             MONITORED_TRIP_PATH,
@@ -221,9 +219,10 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        // After POST is complete, reset mock OTP responses for subsequent mock OTP calls below.
-        // (The mocks will also be reset in the @AfterEach phase if there are failures.)
-        OtpTestUtils.resetOtpMocks();
+        // After POST is complete, reset OTP response provider to default.
+        ItineraryExistence.otpResponseProviderOverride = null;
+        // Make sure all mocks were used
+        assertTrue(mockResponses.areAllMocksUsed());
 
         String responseBody = createTripResponseAsApiUser.responseBody;
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.status);

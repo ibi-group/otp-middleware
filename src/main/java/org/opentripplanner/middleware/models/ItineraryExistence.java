@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
+import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -65,7 +66,9 @@ public class ItineraryExistence extends Model {
      */
     public Date timestamp = new Date();
 
-    private transient Function<OtpRequest, OtpResponse> otpResponseProvider = ItineraryExistence::getOtpResponse;
+    private transient Function<OtpRequest, OtpResponse> otpResponseProvider = getOtpResponseProvider();
+
+    public static Function<OtpRequest, OtpResponse> otpResponseProviderOverride = null;
 
     // Required for persistence.
     public ItineraryExistence() {}
@@ -80,6 +83,12 @@ public class ItineraryExistence extends Model {
         this.referenceItinerary = referenceItinerary;
         this.tripIsArriveBy = tripIsArriveBy;
         if (otpResponseProvider != null) this.otpResponseProvider = otpResponseProvider;
+    }
+
+    private Function<OtpRequest, OtpResponse> getOtpResponseProvider() {
+        return OtpMiddlewareMain.inTestEnvironment && otpResponseProviderOverride != null
+            ? otpResponseProviderOverride
+            : ItineraryExistence::getOtpResponse;
     }
 
     /**
