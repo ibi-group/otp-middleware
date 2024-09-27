@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_GRAPHQL_ENDPOINT;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 import static spark.Service.ignite;
@@ -99,6 +100,7 @@ public class OtpTestUtils {
             return;
         }
         Service http = ignite().port(8080);
+        http.post("/otp" + OTP_GRAPHQL_ENDPOINT, OtpTestUtils::mockOtpPlanResponse);
         http.get("/otp" + OTP_PLAN_ENDPOINT, OtpTestUtils::mockOtpPlanResponse);
         http.get("/*", (request, response) -> {
             logMessageAndHalt(
