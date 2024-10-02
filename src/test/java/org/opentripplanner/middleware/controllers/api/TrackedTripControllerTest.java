@@ -203,7 +203,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("createStartThenUpdateCases")
-    void canStartThenUpdateOngoingJourney(Coordinates coords, String instruction, String message) throws Exception {
+    void canStartThenUpdateOngoingJourney(Coordinates coords, String instruction, TripStatus status, String message) throws Exception {
         assumeTrue(IS_END_TO_END);
 
         String jsonPayload = JsonUtils.toJson(createTrackPayload(coords));
@@ -220,6 +220,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertNotEquals(0, trackResponse.frequencySeconds);
         assertEquals(instruction, trackResponse.instruction, message);
+        assertEquals(status.name(), trackResponse.tripStatus);
         assertNotNull(trackResponse.journeyId);
         trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
 
@@ -235,6 +236,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertNotEquals(0, trackResponse.frequencySeconds);
         assertEquals(instruction, trackResponse.instruction, message);
+        assertEquals(status.name(), trackResponse.tripStatus);
         assertNotNull(trackResponse.journeyId);
         assertEquals(trackedJourney.id, trackResponse.journeyId);
     }
@@ -247,42 +249,56 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         Leg firstLeg = itinerary.legs.get(0);
         Coordinates firstStepCoords = new Coordinates(firstLeg.steps.get(0));
         Coordinates thirdStepCoords = new Coordinates(firstLeg.steps.get(2));
+        Coordinates destinationCoords = new Coordinates(firstLeg.to);
 
         return Stream.of(
             Arguments.of(
                 createPoint(firstStepCoords, 1, NORTH_EAST_BEARING),
                 "IMMEDIATE: Head WEST on Adair Avenue Northeast",
+                TripStatus.BEHIND_SCHEDULE,
                 "Coords near first step should produce relevant instruction"
             ),
             Arguments.of(
                 createPoint(firstStepCoords, 4, NORTH_EAST_BEARING),
                 "UPCOMING: Head WEST on Adair Avenue Northeast",
-                "Coords near first step should produce relevant instruction"
+                TripStatus.DEVIATED,
+                "Coords deviated but near first step should produce relevant instruction"
             ),
             Arguments.of(
                 createPoint(firstStepCoords, 30, NORTH_EAST_BEARING),
                 "Head to Adair Avenue Northeast",
+                TripStatus.DEVIATED,
                 "Deviated coords near first step should produce instruction to head to first step #1"
             ),
             Arguments.of(
                 createPoint(firstStepCoords, 15, NORTH_WEST_BEARING),
                 "Head to Adair Avenue Northeast",
+                TripStatus.DEVIATED,
                 "Deviated coords near first step should produce instruction to head to first step #2"
             ),
             Arguments.of(
                 createPoint(firstStepCoords, 20, WEST_BEARING),
                 NO_INSTRUCTION,
+                TripStatus.BEHIND_SCHEDULE,
                 "Coords along a step should produce no instruction"
             ),
             Arguments.of(
                 thirdStepCoords,
                 "IMMEDIATE: LEFT on Ponce de Leon Place Northeast",
+                TripStatus.BEHIND_SCHEDULE,
                 "Coords near a not-first step should produce relevant instruction"
             ),
             Arguments.of(
                 createPoint(thirdStepCoords, 30, NORTH_WEST_BEARING),
                 "Head to Ponce de Leon Place Northeast",
+                TripStatus.DEVIATED,
                 "Deviated coords near a not-first step should produce instruction to head to step"
+            ),
+            Arguments.of(
+                createPoint(destinationCoords, 1, NORTH_WEST_BEARING),
+                "ARRIVED: Monroe Dr NE at Cooledge Ave NE",
+                TripStatus.COMPLETED,
+                "Instructions for destination coordinate"
             )
         );
     }
