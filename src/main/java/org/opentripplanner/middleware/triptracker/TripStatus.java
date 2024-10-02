@@ -64,8 +64,7 @@ public enum TripStatus {
      * Define the trip status based on the traveler's current position compared to expected and nearest points on the trip.
      */
     public static TripStatus getTripStatus(TravelerPosition travelerPosition) {
-        if (isAtEndOfLeg(travelerPosition)) {
-            // TODO: add condition for last leg.
+        if (isAtEndOfLeg(travelerPosition) && travelerPosition.nextLeg == null) {
             return TripStatus.COMPLETED;
         }
         if (travelerPosition.expectedLeg != null &&
