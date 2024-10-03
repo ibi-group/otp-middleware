@@ -95,11 +95,7 @@ public enum TripStatus {
      * Checks if the traveler's position is with an acceptable distance of the mode type.
      */
     private static boolean isWithinModeRadius(TravelerPosition travelerPosition) {
-        double distanceFromExpected = getDistanceFromLine(
-            travelerPosition.legSegmentFromPosition.start,
-            travelerPosition.legSegmentFromPosition.end,
-            travelerPosition.currentPosition
-        );
+        double distanceFromExpected = travelerPosition.getDeviationMeters();
         double modeBoundary = getModeRadius(travelerPosition.legSegmentFromPosition.mode);
         return distanceFromExpected <= modeBoundary;
     }

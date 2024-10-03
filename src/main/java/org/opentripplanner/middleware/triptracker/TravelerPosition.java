@@ -13,6 +13,7 @@ import java.util.Locale;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getNextLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
+import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
 
 public class TravelerPosition {
 
@@ -80,5 +81,10 @@ public class TravelerPosition {
     public TravelerPosition(Leg nextLeg, Instant currentTime) {
         this.nextLeg = nextLeg;
         this.currentTime = currentTime;
+    }
+
+    /** Computes the current deviation in meters from the expected itinerary. */
+    public double getDeviationMeters() {
+        return getDistanceFromLine(legSegmentFromPosition.start, legSegmentFromPosition.end, currentPosition);
     }
 }

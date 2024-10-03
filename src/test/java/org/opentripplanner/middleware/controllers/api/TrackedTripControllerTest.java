@@ -223,6 +223,11 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertNotNull(trackResponse.journeyId);
         trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
 
+        // Check that deviation fields get computed and recorded.
+        Double deviationMeters = trackedJourney.lastLocation().deviationMeters;
+        assertNotNull(deviationMeters);
+        assertNotEquals(0, deviationMeters);
+
         // Second request to update a journey
         response = makeRequest(
             TRACK_TRIP_PATH,
