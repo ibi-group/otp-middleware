@@ -50,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
+import static org.opentripplanner.middleware.models.TrackedJourney.FORCIBLY_TERMINATED;
+import static org.opentripplanner.middleware.models.TrackedJourney.TERMINATED_BY_USER;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
@@ -169,6 +171,11 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(TripStatus.ENDED.name(), endTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
 
+        // Check that the TrackedJourney Mongo record has been updated.
+        TrackedJourney mongoTrackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+        assertEquals(TERMINATED_BY_USER, mongoTrackedJourney.endCondition);
+        assertNotNull(mongoTrackedJourney.totalDeviation);
+        assertNotEquals(0.0, mongoTrackedJourney.totalDeviation);
         DateTimeUtils.useSystemDefaultClockAndTimezone();
     }
 
@@ -316,6 +323,12 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
         assertEquals(TripStatus.ENDED.name(), endTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
+
+        // Check that the TrackedJourney Mongo record has been updated.
+        TrackedJourney mongoTrackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+        assertEquals(FORCIBLY_TERMINATED, mongoTrackedJourney.endCondition);
+        assertNotNull(mongoTrackedJourney.totalDeviation);
+        assertNotEquals(0.0, mongoTrackedJourney.totalDeviation);
     }
 
     @Test

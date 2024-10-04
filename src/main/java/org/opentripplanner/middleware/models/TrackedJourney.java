@@ -37,6 +37,8 @@ public class TrackedJourney extends Model {
 
     public static final String END_CONDITION_FIELD_NAME = "endCondition";
 
+    public static final String TOTAL_DEVIATION_FIELD_NAME = "totalDeviation";
+
     public static final String TERMINATED_BY_USER = "Tracking terminated by user.";
 
     public static final String FORCIBLY_TERMINATED = "Tracking forcibly terminated.";
