@@ -257,10 +257,14 @@ The special E2E client settings should be defined in `env.yml`:
 | BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS | integer | Optional | 24 | Frequency in hours to trigger event requests. |
 | BUGSNAG_PROJECT_NOTIFIER_API_KEY | string | Optional | 123e4567e89b12d3a4564266 | A valid Bugsnag project API key. |
 | BUGSNAG_REPORTING_WINDOW_IN_DAYS | integer | Optional | 14 | Specifies how far in the past events should be retrieved. |
+| BUGSNAG_WEBHOOK_PERMITTED_IPS | string | Optional | 104.196.245.109, 104.196.254.247 | Bugsnag IP addresses which webhook requests are expected to come from. |
+| CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL | string | Optional | daily, hourly | Specifies how often to aggregate and upload usage data. Defaults to hourly. |
+| CONNECTED_DATA_PLATFORM_FOLDER_GROUPING | string | Optional | none, weekly-monday-sunday | Specifies how to organize uploaded files. 'none' puts all uploaded files to the same folder CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME. 'weekly-monday-sunday' creates a folder of the form `<CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME>_<YYYY-MM-DD>_<YYYY-MM-DD>` where the start date is a Monday and the end date is the following Sunday. Defaults to none. |
 | CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME | string | Optional | bucket-name | Specifies the S3 bucket name for the CDP trip history push. |
 | CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME | string | Optional | folder-name | Specifies the S3 folder name for the CDP trip history push. |
+| CONNECTED_DATA_PLATFORM_REPORTED_ENTITIES | object | Optional | { "MonitoredTrip": "all", "OtpUser": "all", "TripRequest": "interval" } | Use 'all' to report all full records. Use 'interval' to report full records whose dateCreated is within a reporting interval (e.g. day, hour). For TripRequest, you can use 'all anonymized' or 'interval anonymized' to anonymize records. Omitted entities are ignored. |
 | CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES | integer | Optional | 5 | CDP trip history upload frequency. |
-| BUGSNAG_WEBHOOK_PERMITTED_IPS | string | Optional | 104.196.245.109, 104.196.254.247 | Bugsnag IP addresses which webhook requests are expected to come from. |
+| CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES | boolean | Optional | true | Whether to upload files where no records have been written. Defaults to true. |
 | DEFAULT_USAGE_PLAN_ID | string | Required | 123e45 | AWS API gateway default usage plan used when creating API keys for API users. |
 | MAXIMUM_PERMITTED_MONITORED_TRIPS | integer | Optional | 5 | The maximum number of saved monitored trips. |
 | MONGO_DB_NAME | string | Required | otp_middleware | The name of the OTP Middleware Mongo DB. |
