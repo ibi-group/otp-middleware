@@ -296,7 +296,9 @@ The special E2E client settings should be defined in `env.yml`:
 | TRIP_INSTRUCTION_UPCOMING_RADIUS | integer | Optional | 10 | The radius in meters under which an upcoming instruction is given. |
 | TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |
 | TWILIO_AUTH_TOKEN | string | Optional | your-auth-token | Twilio settings available at: https://twilio.com/user/account |
-| US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_URL | string | Optional | http://host.example.com | US Ride Gwinnett County bus notifier API. |
-| US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY | string | Optional | your-api-key | API key for the US Ride Gwinnett County bus notifier API. |
-| US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_QUALIFYING_ROUTES | string | Optional | agency_id:route_id | A comma separated list of US Ride Gwinnett County routes that can be notified. |
+| US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_URL | string | Optional | http://host.example.com | US RideGwinnett bus notifier API. |
+| US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY | string | Optional | your-api-key | API key for the US RideGwinnett bus notifier API. |
+| US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_QUALIFYING_ROUTES | string | Optional | agency_id:route_id | A comma separated list of US RideGwinnett routes that can be notified. |
+| US_RIDE_GWINNETT_BUS_PRIORITY_API_URL | string | Optional | http://host.example.com | US RideGwinnett bus priority API. |
+| US_RIDE_GWINNETT_BUS_PRIORITY_API_KEY | string | Optional | your-api-key | API key for the US RideGwinnett bus priority API. |
 | VALIDATE_ENVIRONMENT_CONFIG | boolean | Optional | true | If set to false, the validation of the env.yml file against this schema will be skipped. |
