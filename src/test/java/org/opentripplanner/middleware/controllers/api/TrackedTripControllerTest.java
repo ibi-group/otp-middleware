@@ -271,8 +271,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         Coordinates thirdStepCoords = new Coordinates(firstLeg.steps.get(2));
         Coordinates destinationCoords = new Coordinates(firstLeg.to);
 
-        Leg multiItinFirstLeg = multiLegItinerary.legs.get(1);
-        Coordinates multiItinSecondLegDestCoords = new Coordinates(multiItinFirstLeg.to);
+        Leg multiItinFirstLeg = multiLegItinerary.legs.get(0);
+        Coordinates multiItinFirstLegDestCoords = new Coordinates(multiItinFirstLeg.to);
         Leg multiItinLastLeg = multiLegItinerary.legs.get(multiLegItinerary.legs.size() - 1);
         Coordinates multiItinLastLegDestCoords = new Coordinates(multiItinLastLeg.to);
 
@@ -335,10 +335,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             ),
             Arguments.of(
                 multiLegMonitoredTrip,
-                createPoint(multiItinSecondLegDestCoords, 1, NORTH_WEST_BEARING),
-                "Get off here (Piedmont Ave NE at Monroe Dr)",
+                createPoint(multiItinFirstLegDestCoords, 1.5, WEST_BEARING),
+                "ARRIVED: 14th St at Juniper St",
                 TripStatus.BEHIND_SCHEDULE,
-                "FIXME: No instruction for bus stop (code assumes we are on the transit leg already)."
+                "Arriving behind schedule at the end of first leg."
             ),
             Arguments.of(
                 multiLegMonitoredTrip,
@@ -480,11 +480,11 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     private TrackPayload createTrackPayload(Coordinates coords) {
-        return createTrackPayload(monitoredTrip, List.of(new TrackingLocation(getDateAndConvertToSeconds(), coords.lat, coords.lon)));
+        return createTrackPayload(monitoredTrip, coords);
     }
 
     private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords) {
-        return createTrackPayload(trip, List.of(new TrackingLocation(getDateAndConvertToSeconds(), coords.lat, coords.lon)));
+        return createTrackPayload(trip, coords, getDateAndConvertToSeconds());
     }
 
     private EndTrackingPayload createEndTrackingPayload(String journeyId) {
