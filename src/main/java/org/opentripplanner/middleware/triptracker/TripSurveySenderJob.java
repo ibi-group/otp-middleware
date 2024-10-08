@@ -66,7 +66,7 @@ public class TripSurveySenderJob implements Runnable {
     /**
      * Get users whose last trip survey notification was at least a week ago.
      */
-    public List<OtpUser> getUsersWithNotificationsOverAWeekAgo() {
+    public static List<OtpUser> getUsersWithNotificationsOverAWeekAgo() {
         Date aWeekAgo = Date.from(Instant.now().minus(7, ChronoUnit.DAYS));
         Bson dateFilter = Filters.lte(LAST_TRIP_SURVEY_NOTIF_SENT_FIELD, aWeekAgo);
 
@@ -76,7 +76,7 @@ public class TripSurveySenderJob implements Runnable {
     /**
      * Gets tracked journeys for all users that were completed in the past 24 hours.
      */
-    public List<TrackedJourney> getCompletedJourneysInPast24To48Hours() {
+    public static List<TrackedJourney> getCompletedJourneysInPast24To48Hours() {
         Date twentyFourHoursAgo = Date.from(Instant.now().minus(24, ChronoUnit.HOURS));
         Date fortyEightHoursAgo = Date.from(Instant.now().minus(48, ChronoUnit.HOURS));
         Bson dateFilter = Filters.and(
@@ -93,7 +93,7 @@ public class TripSurveySenderJob implements Runnable {
     /**
      * Gets the trips for the given journeys and users.
      */
-    public List<MonitoredTrip> getTripsForJourneysAndUsers(List<TrackedJourney> journeys, List<OtpUser> otpUsers) {
+    public static List<MonitoredTrip> getTripsForJourneysAndUsers(List<TrackedJourney> journeys, List<OtpUser> otpUsers) {
         Set<String> tripIds = journeys.stream().map(j -> j.tripId).collect(Collectors.toSet());
         Set<String> userIds = otpUsers.stream().map(u -> u.id).collect(Collectors.toSet());
 
@@ -107,7 +107,7 @@ public class TripSurveySenderJob implements Runnable {
     /**
      * Map journeys to users.
      */
-    public Map<OtpUser, List<TrackedJourney>> mapJourneysToUsers(List<TrackedJourney> journeys, List<OtpUser> otpUsers) {
+    public static Map<OtpUser, List<TrackedJourney>> mapJourneysToUsers(List<TrackedJourney> journeys, List<OtpUser> otpUsers) {
         List<MonitoredTrip> trips = getTripsForJourneysAndUsers(journeys, otpUsers);
 
         Map<String, OtpUser> userMap = otpUsers.stream().collect(Collectors.toMap(u -> u.id, Function.identity()));
@@ -121,7 +121,7 @@ public class TripSurveySenderJob implements Runnable {
         return map;
     }
 
-    public Optional<TrackedJourney> selectMostDeviatedJourney(List<TrackedJourney> journeys) {
+    public static Optional<TrackedJourney> selectMostDeviatedJourney(List<TrackedJourney> journeys) {
         if (journeys == null) return Optional.empty();
         return journeys.stream().max(Comparator.comparingDouble(j -> j.totalDeviation));
     }

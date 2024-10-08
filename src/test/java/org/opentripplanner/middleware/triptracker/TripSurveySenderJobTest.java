@@ -12,7 +12,6 @@ import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 
-import javax.sound.midi.Track;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -86,9 +85,7 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
     void canGetUsersWithNotificationsOverAWeekAgo() {
         assumeTrue(IS_END_TO_END);
 
-        TripSurveySenderJob job = new TripSurveySenderJob();
-        List<OtpUser> usersWithNotificationsOverAWeekAgo = job.getUsersWithNotificationsOverAWeekAgo();
-
+        List<OtpUser> usersWithNotificationsOverAWeekAgo = TripSurveySenderJob.getUsersWithNotificationsOverAWeekAgo();
         assertEquals(1, usersWithNotificationsOverAWeekAgo.size());
         assertEquals(user2notifiedAWeekAgo.id, usersWithNotificationsOverAWeekAgo.get(0).id);
     }
@@ -119,9 +116,7 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
             createJourney("journey-done-3-hours-ago", trip.id, threeHoursAgo, TERMINATED_BY_USER)
         );
 
-        TripSurveySenderJob job = new TripSurveySenderJob();
-        List<TrackedJourney> completedJourneys = job.getCompletedJourneysInPast24To48Hours();
-
+        List<TrackedJourney> completedJourneys = TripSurveySenderJob.getCompletedJourneysInPast24To48Hours();
         assertEquals(2, completedJourneys.size());
     }
 
@@ -137,6 +132,8 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canMapJourneysToUsers() {
+        assumeTrue(IS_END_TO_END);
+
         // Create journey, some for the stored trip, others orphan (they will be deleted explicitly after this test).
         journeys = List.of(
             createJourney("journey-1", trip.id, null, null),
@@ -145,13 +142,11 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
             createJourney("journey-4", "other-trip", null, null)
         );
 
-        TripSurveySenderJob job = new TripSurveySenderJob();
-        List<MonitoredTrip> trips = job.getTripsForJourneysAndUsers(journeys, otpUsers);
-
+        List<MonitoredTrip> trips = TripSurveySenderJob.getTripsForJourneysAndUsers(journeys, otpUsers);
         assertEquals(1, trips.size());
         assertEquals(trip.id, trips.get(0).id);
 
-        Map<OtpUser, List<TrackedJourney>> usersToJourneys = job.mapJourneysToUsers(journeys, otpUsers);
+        Map<OtpUser, List<TrackedJourney>> usersToJourneys = TripSurveySenderJob.mapJourneysToUsers(journeys, otpUsers);
         assertEquals(1, usersToJourneys.size());
         assertEquals(List.of(journeys.get(0), journeys.get(1)), usersToJourneys.get(otpUsers.get(0)));
     }
@@ -166,8 +161,7 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         journey2.totalDeviation = 400.0;
         journey2.endTime = Date.from(Instant.now().minus(5, ChronoUnit.HOURS));
 
-        TripSurveySenderJob job = new TripSurveySenderJob();
-        Optional<TrackedJourney> optJourney = job.selectMostDeviatedJourney(List.of(journey1, journey2));
+        Optional<TrackedJourney> optJourney = TripSurveySenderJob.selectMostDeviatedJourney(List.of(journey1, journey2));
         assertTrue(optJourney.isPresent());
         assertEquals(journey2, optJourney.get());
     }
