@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.models.MonitoredTrip.USER_ID_FIELD_NAME;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
@@ -216,7 +217,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      */
     private void verifyBelowMaxNumTrips(String userId, Request request) {
         // filter monitored trip on user id to find out how many have already been saved
-        Bson filter = Filters.and(eq("userId", userId));
+        Bson filter = Filters.and(eq(USER_ID_FIELD_NAME, userId));
         long count = this.persistence.getCountFiltered(filter);
         if (count >= MAXIMUM_PERMITTED_MONITORED_TRIPS) {
             logMessageAndHalt(

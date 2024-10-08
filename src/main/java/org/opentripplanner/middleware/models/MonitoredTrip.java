@@ -47,6 +47,8 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MonitoredTrip extends Model {
 
+    public static final String USER_ID_FIELD_NAME = "userId";
+
     /**
      * Mongo Id of the {@link OtpUser} who owns this monitored trip.
      */
