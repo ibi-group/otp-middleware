@@ -56,7 +56,8 @@ public class TripSurveySenderJob implements Runnable {
             if (optJourney.isPresent()) {
                 // Send push notification about that journey.
 
-                // Store time of last sent survey notification for user. (new Mongo collection)
+                // Store time of last sent survey notification for user.
+                Persistence.otpUsers.updateField(entry.getKey().id, LAST_TRIP_SURVEY_NOTIF_SENT_FIELD, new Date());
             }
         }
 
