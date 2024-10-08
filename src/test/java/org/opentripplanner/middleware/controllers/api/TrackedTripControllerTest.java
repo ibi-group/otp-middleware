@@ -39,6 +39,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -248,7 +249,9 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     ) throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        String jsonPayload = JsonUtils.toJson(createTrackPayload(trip, coords));
+        String jsonPayload = JsonUtils.toJson(
+            createTrackPayload(trip, coords, Date.from(Instant.ofEpochMilli(trip.itinerary.startTime.getTime() / 1000)))
+        );
 
         // Make a request to start a journey.
         var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
@@ -281,7 +284,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 monitoredTrip,
                 createPoint(firstStepCoords, 1, NORTH_EAST_BEARING),
                 "IMMEDIATE: Head WEST on Adair Avenue Northeast",
-                TripStatus.BEHIND_SCHEDULE,
+                TripStatus.ON_SCHEDULE,
                 "Coords near first step should produce relevant instruction"
             ),
             Arguments.of(
@@ -309,14 +312,14 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 monitoredTrip,
                 createPoint(firstStepCoords, 20, WEST_BEARING),
                 NO_INSTRUCTION,
-                TripStatus.BEHIND_SCHEDULE,
+                TripStatus.ON_SCHEDULE,
                 "Coords along a step should produce no instruction"
             ),
             Arguments.of(
                 monitoredTrip,
                 thirdStepCoords,
                 "IMMEDIATE: LEFT on Ponce de Leon Place Northeast",
-                TripStatus.BEHIND_SCHEDULE,
+                TripStatus.AHEAD_OF_SCHEDULE,
                 "Coords near a not-first step should produce relevant instruction"
             ),
             Arguments.of(
@@ -336,9 +339,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(
                 multiLegMonitoredTrip,
                 createPoint(multiItinFirstLegDestCoords, 1.5, WEST_BEARING),
-                "ARRIVED: 14th St at Juniper St",
-                TripStatus.BEHIND_SCHEDULE,
-                "Arriving behind schedule at the end of first leg."
+                // Time is in US Pacific time zone (instead of US Eastern) by configuration for other E2E tests.
+                "Wait 6 minutes for your bus, route 27, scheduled at 9:18 AM, on time",
+                TripStatus.AHEAD_OF_SCHEDULE,
+                "Arriving ahead of schedule to a bus stop at the end of first leg."
             ),
             Arguments.of(
                 multiLegMonitoredTrip,
@@ -485,6 +489,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords) {
         return createTrackPayload(trip, coords, getDateAndConvertToSeconds());
+    }
+
+    private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords, Date date) {
+        return createTrackPayload(trip, List.of(new TrackingLocation(date, coords.lat, coords.lon)));
     }
 
     private EndTrackingPayload createEndTrackingPayload(String journeyId) {
