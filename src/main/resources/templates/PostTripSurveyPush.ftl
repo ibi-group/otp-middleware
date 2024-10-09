@@ -6,4 +6,4 @@
     - Android: 240 characters (excluding notification title).
     The max length is thus 178 characters.
 -->
-How was your trip on ${tripDay} at ${tripTime}? Tap for a quick survey.
+How was your most recent trip starting at ${tripTime}? Tap for a quick survey.

@@ -61,9 +61,9 @@ public class TripSurveySenderJob implements Runnable {
                 OtpUser otpUser = entry.getKey();
                 TrackedJourney journey = optJourney.get();
                 MonitoredTrip trip = journey.trip;
-                Map<String, Object> data = new HashMap<>();
-                data.put("tripDay", DateTimeUtils.makeOtpZonedDateTime(journey.startTime).getDayOfWeek());
-                data.put("tripTime", DateTimeUtils.formatShortDate(trip.itinerary.startTime, I18nUtils.getOtpUserLocale(otpUser)));
+                Map<String, Object> data = Map.of(
+                    "tripTime", DateTimeUtils.formatShortDate(trip.itinerary.startTime, I18nUtils.getOtpUserLocale(otpUser))
+                );
                 NotificationUtils.sendPush(otpUser, "PostTripSurveyPush.ftl", data, trip.tripName, trip.id);
 
                 // Store time of last sent survey notification for user.
