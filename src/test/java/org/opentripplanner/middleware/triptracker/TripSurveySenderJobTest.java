@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
@@ -59,6 +60,8 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         trip = new MonitoredTrip();
         trip.id = String.format("%s-trip-id", user1notifiedNow.id);
         trip.userId = user2notifiedAWeekAgo.id;
+        trip.itinerary = new Itinerary();
+        trip.itinerary.startTime = new Date();
         Persistence.monitoredTrips.create(trip);
     }
 
@@ -117,6 +120,7 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         journey.tripId = tripId;
         journey.endCondition = endCondition;
         journey.endTime = endTime != null ? Date.from(endTime) : null;
+        journey.startTime = journey.endTime;
         journey.totalDeviation = deviation;
         Persistence.trackedJourneys.create(journey);
         return journey;
@@ -136,6 +140,9 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         List<TrackedJourney> userJourneys = usersToJourneys.get(otpUsers.get(1));
         assertEquals(5, userJourneys.size());
         assertTrue(userJourneys.containsAll(journeys.subList(0, 4)));
+        for (TrackedJourney journey : userJourneys) {
+            assertEquals(trip, journey.trip);
+        }
     }
 
     @Test

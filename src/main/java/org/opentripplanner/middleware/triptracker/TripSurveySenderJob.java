@@ -6,6 +6,9 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.I18nUtils;
+import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +50,7 @@ public class TripSurveySenderJob implements Runnable {
         // Collect journeys that were completed/terminated in the past 24-48 hrs. (skip ongoing journeys).
         List<TrackedJourney> journeysCompletedInPast24To48Hours = getCompletedJourneysInPast24To48Hours();
 
-        // Map users to journeys
+        // Map users to journeys.
         Map<OtpUser, List<TrackedJourney>> usersToJourneys = mapJourneysToUsers(journeysCompletedInPast24To48Hours, usersWithNotificationsOverAWeekAgo);
 
         for (Map.Entry<OtpUser, List<TrackedJourney>> entry : usersToJourneys.entrySet()) {
@@ -55,9 +58,16 @@ public class TripSurveySenderJob implements Runnable {
             Optional<TrackedJourney> optJourney = selectMostDeviatedJourney(entry.getValue());
             if (optJourney.isPresent()) {
                 // Send push notification about that journey.
+                OtpUser otpUser = entry.getKey();
+                TrackedJourney journey = optJourney.get();
+                MonitoredTrip trip = journey.trip;
+                Map<String, Object> data = new HashMap<>();
+                data.put("tripDay", DateTimeUtils.makeOtpZonedDateTime(journey.startTime).getDayOfWeek());
+                data.put("tripTime", DateTimeUtils.formatShortDate(trip.itinerary.startTime, I18nUtils.getOtpUserLocale(otpUser)));
+                NotificationUtils.sendPush(otpUser, "PostTripSurveyPush.ftl", data, trip.tripName, trip.id);
 
                 // Store time of last sent survey notification for user.
-                Persistence.otpUsers.updateField(entry.getKey().id, LAST_TRIP_SURVEY_NOTIF_SENT_FIELD, new Date());
+                Persistence.otpUsers.updateField(otpUser.id, LAST_TRIP_SURVEY_NOTIF_SENT_FIELD, new Date());
             }
         }
 
@@ -116,7 +126,12 @@ public class TripSurveySenderJob implements Runnable {
         HashMap<OtpUser, List<TrackedJourney>> map = new HashMap<>();
         for (MonitoredTrip trip : trips) {
             List<TrackedJourney> journeyList = map.computeIfAbsent(userMap.get(trip.userId), u -> new ArrayList<>());
-            journeyList.addAll(journeys.stream().filter(j -> trip.id.equals(j.tripId)).collect(Collectors.toList()));
+            for (TrackedJourney journey : journeys) {
+                if (trip.id.equals(journey.tripId)) {
+                    journey.trip = trip;
+                    journeyList.add(journey);
+                }
+            }
         }
 
         return map;

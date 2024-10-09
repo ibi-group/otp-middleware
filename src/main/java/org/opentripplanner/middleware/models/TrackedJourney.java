@@ -28,6 +28,8 @@ public class TrackedJourney extends Model {
 
     public Double totalDeviation;
 
+    public transient MonitoredTrip trip;
+
     public static final String TRIP_ID_FIELD_NAME = "tripId";
 
     public static final String LOCATIONS_FIELD_NAME = "locations";
