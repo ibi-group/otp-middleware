@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
+import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_IMMEDIATE_RADIUS;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.isPointBetween;
@@ -208,6 +209,13 @@ public class TravelerLocator {
      */
     private static boolean isApproachingEndOfLeg(TravelerPosition travelerPosition) {
         return getDistanceToEndOfLeg(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
+    }
+
+    /**
+     * Is the traveler at the leg destination.
+     */
+    public static boolean isAtEndOfLeg(TravelerPosition travelerPosition) {
+        return getDistanceToEndOfLeg(travelerPosition) <= TRIP_INSTRUCTION_IMMEDIATE_RADIUS;
     }
 
     /**
