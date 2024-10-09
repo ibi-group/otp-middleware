@@ -80,8 +80,10 @@ public class TripSurveySenderJob implements Runnable {
     public static List<OtpUser> getUsersWithNotificationsOverAWeekAgo() {
         Date aWeekAgo = Date.from(Instant.now().minus(7, ChronoUnit.DAYS));
         Bson dateFilter = Filters.lte(LAST_TRIP_SURVEY_NOTIF_SENT_FIELD, aWeekAgo);
+        Bson surveyNotSentFilter = Filters.not(Filters.exists(LAST_TRIP_SURVEY_NOTIF_SENT_FIELD));
+        Bson overallFilter = Filters.or(dateFilter, surveyNotSentFilter);
 
-        return Persistence.otpUsers.getFiltered(dateFilter).into(new ArrayList<>());
+        return Persistence.otpUsers.getFiltered(overallFilter).into(new ArrayList<>());
     }
 
     /**

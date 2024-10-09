@@ -95,8 +95,10 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         assumeTrue(IS_END_TO_END);
 
         List<OtpUser> usersWithNotificationsOverAWeekAgo = TripSurveySenderJob.getUsersWithNotificationsOverAWeekAgo();
-        assertEquals(1, usersWithNotificationsOverAWeekAgo.size());
-        assertEquals(user2notifiedAWeekAgo.id, usersWithNotificationsOverAWeekAgo.get(0).id);
+        assertEquals(2, usersWithNotificationsOverAWeekAgo.size());
+        List<String> expectedUserIds = List.of(user2notifiedAWeekAgo.id, user3neverNotified.id);
+        assertTrue(expectedUserIds.contains(usersWithNotificationsOverAWeekAgo.get(0).id));
+        assertTrue(expectedUserIds.contains(usersWithNotificationsOverAWeekAgo.get(1).id));
     }
 
     @Test
