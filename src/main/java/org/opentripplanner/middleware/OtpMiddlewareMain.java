@@ -23,6 +23,7 @@ import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitorAllTripsJob;
+import org.opentripplanner.middleware.triptracker.TripSurveySenderJob;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.Scheduler;
@@ -83,6 +84,16 @@ public class OtpMiddlewareMain {
                 0,
                 1,
                 TimeUnit.MINUTES
+            );
+
+            // Schedule recurring job for post-trip surveys, once every few hours
+            // TODO: Determine whether this should go in some other process.
+            TripSurveySenderJob tripSurveySenderJob = new TripSurveySenderJob();
+            Scheduler.scheduleJob(
+                tripSurveySenderJob,
+                0,
+                12,
+                TimeUnit.HOURS
             );
         }
     }
