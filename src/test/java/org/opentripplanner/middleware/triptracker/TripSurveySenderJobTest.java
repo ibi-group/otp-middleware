@@ -179,6 +179,20 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
+    void canSelectDeviatedJourneyWithDeviatedPointsThreshold() {
+        TrackedJourney journey1 = new TrackedJourney();
+        journey1.longestConsecutiveDeviatedPoints = 6;
+        journey1.endTime = Date.from(Instant.now().minus(3, ChronoUnit.HOURS));
+
+        TrackedJourney journey2 = new TrackedJourney();
+        journey2.longestConsecutiveDeviatedPoints = 8;
+        journey2.endTime = Date.from(Instant.now().minus(5, ChronoUnit.HOURS));
+
+        Optional<TrackedJourney> optJourney = TripSurveySenderJob.selectMostDeviatedJourneyUsingDeviatedPoints(List.of(journey1, journey2));
+        assertFalse(optJourney.isPresent());
+    }
+
+    @Test
     void canRunJob() {
         assumeTrue(IS_END_TO_END);
         createTestJourneys();

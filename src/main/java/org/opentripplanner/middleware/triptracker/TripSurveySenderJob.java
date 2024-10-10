@@ -32,6 +32,7 @@ import static org.opentripplanner.middleware.models.TrackedJourney.END_CONDITION
 import static org.opentripplanner.middleware.models.TrackedJourney.END_TIME_FIELD_NAME;
 import static org.opentripplanner.middleware.models.TrackedJourney.FORCIBLY_TERMINATED;
 import static org.opentripplanner.middleware.models.TrackedJourney.TERMINATED_BY_USER;
+import static org.opentripplanner.middleware.triptracker.ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS;
 
 /**
  * This job will analyze completed trips with deviations and send survey notifications about select trips.
@@ -146,6 +147,9 @@ public class TripSurveySenderJob implements Runnable {
 
     public static Optional<TrackedJourney> selectMostDeviatedJourneyUsingDeviatedPoints(List<TrackedJourney> journeys) {
         if (journeys == null) return Optional.empty();
-        return journeys.stream().max(Comparator.comparingInt(j -> j.longestConsecutiveDeviatedPoints));
+        final double INTERVALS_IN_ONE_MINUTE = Math.ceil(60.0 / TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS);
+        return journeys.stream()
+            .filter(j -> j.longestConsecutiveDeviatedPoints >= INTERVALS_IN_ONE_MINUTE)
+            .max(Comparator.comparingInt(j -> j.longestConsecutiveDeviatedPoints));
     }
 }
