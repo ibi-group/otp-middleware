@@ -55,7 +55,7 @@ public class TripSurveySenderJob implements Runnable {
 
         for (Map.Entry<OtpUser, List<TrackedJourney>> entry : usersToJourneys.entrySet()) {
             // Find journey with the largest total deviation.
-            Optional<TrackedJourney> optJourney = selectMostDeviatedJourney(entry.getValue());
+            Optional<TrackedJourney> optJourney = selectMostDeviatedJourneyUsingDeviatedPoints(entry.getValue());
             if (optJourney.isPresent()) {
                 // Send push notification about that journey.
                 OtpUser otpUser = entry.getKey();
@@ -142,5 +142,10 @@ public class TripSurveySenderJob implements Runnable {
     public static Optional<TrackedJourney> selectMostDeviatedJourney(List<TrackedJourney> journeys) {
         if (journeys == null) return Optional.empty();
         return journeys.stream().max(Comparator.comparingDouble(j -> j.totalDeviation));
+    }
+
+    public static Optional<TrackedJourney> selectMostDeviatedJourneyUsingDeviatedPoints(List<TrackedJourney> journeys) {
+        if (journeys == null) return Optional.empty();
+        return journeys.stream().max(Comparator.comparingInt(j -> j.longestConsecutiveDeviatedPoints));
     }
 }

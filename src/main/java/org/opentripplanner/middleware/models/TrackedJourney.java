@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
+import org.opentripplanner.middleware.triptracker.TripStatus;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,6 +28,8 @@ public class TrackedJourney extends Model {
     public Map<String, String> busNotificationMessages = new HashMap<>();
 
     public Double totalDeviation;
+
+    public int longestConsecutiveDeviatedPoints;
 
     public transient MonitoredTrip trip;
 
@@ -106,5 +109,26 @@ public class TrackedJourney extends Model {
             .filter(l -> l.deviationMeters != null)
             .map(l -> l.deviationMeters)
             .reduce(0.0, Double::sum);
+    }
+
+    /** The largest consecutive deviations for all tracking locations marked "deviated". */
+    public int computeLargestConsecutiveDeviations() {
+        if (locations == null) return -1;
+
+        int count = 0;
+        int maxCount = 0;
+        for (TrackingLocation location : locations) {
+            // Traveler must be moving (speed != 0) for a deviated location to be counted.
+            if (location.tripStatus == TripStatus.DEVIATED) {
+                if (location.speed != 0) {
+                    count++;
+                    if (maxCount < count) maxCount = count;
+                }
+            } else {
+                // If a location is not deviated, reset the streak.
+                count = 0;
+            }
+        }
+        return maxCount;
     }
 }

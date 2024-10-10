@@ -115,7 +115,7 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         String tripId,
         Instant endTime,
         String endCondition,
-        Double deviation
+        int points
     ) {
         TrackedJourney journey = new TrackedJourney();
         journey.id = id;
@@ -123,7 +123,8 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         journey.endCondition = endCondition;
         journey.endTime = endTime != null ? Date.from(endTime) : null;
         journey.startTime = journey.endTime;
-        journey.totalDeviation = deviation;
+        journey.totalDeviation = (double)points;
+        journey.longestConsecutiveDeviatedPoints = points;
         Persistence.trackedJourneys.create(journey);
         return journey;
     }
@@ -163,6 +164,21 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
+    void canSelectMostDeviatedJourneyUsingDeviatedPoints() {
+        TrackedJourney journey1 = new TrackedJourney();
+        journey1.longestConsecutiveDeviatedPoints = 250;
+        journey1.endTime = Date.from(Instant.now().minus(3, ChronoUnit.HOURS));
+
+        TrackedJourney journey2 = new TrackedJourney();
+        journey2.longestConsecutiveDeviatedPoints = 400;
+        journey2.endTime = Date.from(Instant.now().minus(5, ChronoUnit.HOURS));
+
+        Optional<TrackedJourney> optJourney = TripSurveySenderJob.selectMostDeviatedJourneyUsingDeviatedPoints(List.of(journey1, journey2));
+        assertTrue(optJourney.isPresent());
+        assertEquals(journey2, optJourney.get());
+    }
+
+    @Test
     void canRunJob() {
         assumeTrue(IS_END_TO_END);
         createTestJourneys();
@@ -192,23 +208,23 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         // Create journey for each trip for all users above (they will be deleted explicitly after each test).
         journeys = List.of(
             // Ongoing journey (should not be included)
-            createJourney("ongoing-journey", trip.id, null, null, 10.0),
+            createJourney("ongoing-journey", trip.id, null, null, 10),
 
             // Journey completed by user 30 hours ago (should be included)
-            createJourney("user-terminated-journey", trip.id, thirtyHoursAgo, TERMINATED_BY_USER, 200.0),
+            createJourney("user-terminated-journey", trip.id, thirtyHoursAgo, TERMINATED_BY_USER, 200),
 
             // Journey terminated forcibly 30 hours ago (should be included)
-            createJourney("forcibly-terminated-journey", trip.id, thirtyHoursAgo, FORCIBLY_TERMINATED, 400.0),
+            createJourney("forcibly-terminated-journey", trip.id, thirtyHoursAgo, FORCIBLY_TERMINATED, 400),
 
             // Additional journey completed over 48 hours (should not be included).
-            createJourney("journey-done-3-days-ago", trip.id, threeDaysAgo, TERMINATED_BY_USER, 10.0),
+            createJourney("journey-done-3-days-ago", trip.id, threeDaysAgo, TERMINATED_BY_USER, 10),
 
             // Additional journey completed within 24 hours (should not be included).
-            createJourney("journey-done-3-hours-ago", trip.id, threeHoursAgo, TERMINATED_BY_USER, 10.0),
+            createJourney("journey-done-3-hours-ago", trip.id, threeHoursAgo, TERMINATED_BY_USER, 10),
 
             // Orphan journeys (should not be included)
-            createJourney("journey-3", "other-trip", null, null, 10.0),
-            createJourney("journey-4", "other-trip", null, null, 0.0)
+            createJourney("journey-3", "other-trip", null, null, 10),
+            createJourney("journey-4", "other-trip", null, null, 0)
         );
     }
 }
