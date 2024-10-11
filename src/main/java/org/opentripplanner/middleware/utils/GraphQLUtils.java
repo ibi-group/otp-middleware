@@ -25,7 +25,7 @@ public class GraphQLUtils {
     private static final String PLAN_QUERY_RESOURCE_URI =
         getConfigPropertyAsText(
             "PLAN_QUERY_RESOURCE_URI",
-            "https://raw.githubusercontent.com/ibi-group/open-source-configurations/main/atlanta/arc/planQuery.graphql"
+            "https://raw.githubusercontent.com/opentripplanner/otp-ui/refs/heads/master/packages/core-utils/src/planQuery.graphql"
         );
 
 
