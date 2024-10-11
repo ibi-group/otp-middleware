@@ -23,7 +23,10 @@ public class GraphQLUtils {
      * Location of the GraphQL plan query template file, as URI resource.
      */
     private static final String PLAN_QUERY_RESOURCE_URI =
-        getConfigPropertyAsText("PLAN_QUERY_RESOURCE_URI", null);
+        getConfigPropertyAsText(
+            "PLAN_QUERY_RESOURCE_URI",
+            "https://raw.githubusercontent.com/ibi-group/open-source-configurations/main/atlanta/arc/planQuery.graphql"
+        );
 
 
     /**
