@@ -262,6 +262,26 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(status.name(), trackResponse.tripStatus);
         assertNotNull(trackResponse.journeyId);
         trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
+
+        // Check that deviation fields get computed and recorded.
+        Double deviationMeters = trackedJourney.lastLocation().deviationMeters;
+        assertNotNull(deviationMeters);
+        assertNotEquals(0, deviationMeters);
+
+        // Second request to update a journey
+        response = makeRequest(
+            TRACK_TRIP_PATH,
+            jsonPayload,
+            headers,
+            HttpMethod.POST
+        );
+
+        assertEquals(HttpStatus.OK_200, response.status);
+        trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertNotEquals(0, trackResponse.frequencySeconds);
+        assertEquals(instruction, trackResponse.instruction, message);
+        assertNotNull(trackResponse.journeyId);
+        assertEquals(trackedJourney.id, trackResponse.journeyId);
     }
 
     private static Stream<Arguments> createInstructionAndStatusCases() {

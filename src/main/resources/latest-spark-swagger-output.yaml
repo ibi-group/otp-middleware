@@ -2773,6 +2773,12 @@ definitions:
         - "ENDED"
         - "DEVIATED"
         - "COMPLETED"
+      locationAccuracy:
+        type: "number"
+        format: "double"
+      deviationMeters:
+        type: "number"
+        format: "double"
   TrackingResponse:
     type: "object"
     properties:
