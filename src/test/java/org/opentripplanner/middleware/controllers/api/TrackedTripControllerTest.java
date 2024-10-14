@@ -39,6 +39,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -60,8 +61,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     private static OtpUser soloOtpUser;
     private static MonitoredTrip monitoredTrip;
+    private static MonitoredTrip multiLegMonitoredTrip;
     private static TrackedJourney trackedJourney;
     private static Itinerary itinerary;
+    private static Itinerary multiLegItinerary;
 
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
@@ -81,6 +84,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             CommonTestUtils.getTestResourceAsString("controllers/api/adair-avenue-to-monroe-drive.json"),
             Itinerary.class
         );
+        multiLegItinerary = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/27nb-midtown-to-ansley.json"),
+            Itinerary.class
+        );
 
         soloOtpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
         try {
@@ -93,12 +100,19 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         } catch (Auth0Exception e) {
             throw new RuntimeException(e);
         }
-        monitoredTrip = new MonitoredTrip();
-        monitoredTrip.userId = soloOtpUser.id;
-        monitoredTrip.itinerary = itinerary;
-        monitoredTrip.journeyState = new JourneyState();
-        monitoredTrip.journeyState.matchingItinerary = itinerary;
-        Persistence.monitoredTrips.create(monitoredTrip);
+
+        monitoredTrip = createMonitoredTrip(itinerary);
+        multiLegMonitoredTrip = createMonitoredTrip(multiLegItinerary);
+    }
+
+    private static MonitoredTrip createMonitoredTrip(Itinerary itin) {
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.userId = soloOtpUser.id;
+        trip.itinerary = itin;
+        trip.journeyState = new JourneyState();
+        trip.journeyState.matchingItinerary = itin;
+        Persistence.monitoredTrips.create(trip);
+        return trip;
     }
 
     @AfterAll
@@ -109,6 +123,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         if (soloOtpUser != null) soloOtpUser.delete(true);
         monitoredTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
         if (monitoredTrip != null) monitoredTrip.delete();
+        multiLegMonitoredTrip = Persistence.monitoredTrips.getById(multiLegMonitoredTrip.id);
+        if (multiLegMonitoredTrip != null) multiLegMonitoredTrip.delete();
     }
 
     @AfterEach
@@ -178,48 +194,72 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         String jsonPayload = JsonUtils.toJson(createStartTrackingPayload());
 
-        var response = makeRequest(
-            START_TRACKING_TRIP_PATH,
-            jsonPayload,
-            headers,
-            HttpMethod.POST
-        );
+        // Make two identical requests to start and update a journey. The second one should fail.
+        for (int i = 0; i < 2; i++) {
+            var response = makeRequest(START_TRACKING_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
+            var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
 
-        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
-        trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
-        assertEquals(HttpStatus.OK_200, response.status);
+            if (i == 0) {
+                assertEquals(HttpStatus.OK_200, response.status);
+                trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+            } else {
+                assertEquals("A journey of this trip has already been started. End the current journey before starting another.", startTrackingResponse.message);
+                assertEquals(HttpStatus.FORBIDDEN_403, response.status);
+            }
+        }
+    }
 
-        response = makeRequest(
-            START_TRACKING_TRIP_PATH,
-            jsonPayload,
-            headers,
-            HttpMethod.POST
-        );
+    @Test
+    void canStartThenUpdateOngoingJourney() throws Exception {
+        assumeTrue(IS_END_TO_END);
 
-        startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
-        assertEquals("A journey of this trip has already been started. End the current journey before starting another.", startTrackingResponse.message);
-        assertEquals(HttpStatus.FORBIDDEN_403, response.status);
+        Leg firstLeg = itinerary.legs.get(0);
+        Coordinates coords = new Coordinates(firstLeg.steps.get(0));
+        String jsonPayload = JsonUtils.toJson(createTrackPayload(coords));
+
+        // Make two identical requests to start and update a journey. Record outcomes to see if they are same.
+        TrackingResponse[] trackResponses = new TrackingResponse[2];
+        for (int i = 0; i < 2; i++) {
+            var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
+            assertEquals(HttpStatus.OK_200, response.status);
+
+            var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+            trackResponses[i] = trackResponse;
+            assertNotEquals(0, trackResponse.frequencySeconds);
+            assertNotNull(trackResponse.journeyId);
+
+            if (trackedJourney == null) {
+                trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
+            }
+        }
+
+        assertEquals(trackResponses[0].instruction, trackResponses[1].instruction);
+        assertEquals(trackResponses[0].tripStatus, trackResponses[1].tripStatus);
+        assertEquals(trackResponses[0].journeyId, trackResponses[1].journeyId);
     }
 
     @ParameterizedTest
-    @MethodSource("createStartThenUpdateCases")
-    void canStartThenUpdateOngoingJourney(Coordinates coords, String instruction, String message) throws Exception {
+    @MethodSource("createInstructionAndStatusCases")
+    void canGenerateInstructionAndStatus(
+        MonitoredTrip trip,
+        Coordinates coords,
+        String instruction,
+        TripStatus status,
+        String message
+    ) throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        String jsonPayload = JsonUtils.toJson(createTrackPayload(coords));
-
-        // First request for starting a journey.
-        var response = makeRequest(
-            TRACK_TRIP_PATH,
-            jsonPayload,
-            headers,
-            HttpMethod.POST
+        String jsonPayload = JsonUtils.toJson(
+            createTrackPayload(trip, coords, Date.from(Instant.ofEpochMilli(trip.itinerary.startTime.getTime() / 1000)))
         );
+
+        // Make a request to start a journey.
+        var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
 
         assertEquals(HttpStatus.OK_200, response.status);
         var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
-        assertNotEquals(0, trackResponse.frequencySeconds);
         assertEquals(instruction, trackResponse.instruction, message);
+        assertEquals(status.name(), trackResponse.tripStatus);
         assertNotNull(trackResponse.journeyId);
         trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
 
@@ -244,7 +284,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(trackedJourney.id, trackResponse.journeyId);
     }
 
-    private static Stream<Arguments> createStartThenUpdateCases() {
+    private static Stream<Arguments> createInstructionAndStatusCases() {
         final int NORTH_WEST_BEARING = 315;
         final int NORTH_EAST_BEARING = 45;
         final int WEST_BEARING = 270;
@@ -252,42 +292,84 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         Leg firstLeg = itinerary.legs.get(0);
         Coordinates firstStepCoords = new Coordinates(firstLeg.steps.get(0));
         Coordinates thirdStepCoords = new Coordinates(firstLeg.steps.get(2));
+        Coordinates destinationCoords = new Coordinates(firstLeg.to);
+
+        Leg multiItinFirstLeg = multiLegItinerary.legs.get(0);
+        Coordinates multiItinFirstLegDestCoords = new Coordinates(multiItinFirstLeg.to);
+        Leg multiItinLastLeg = multiLegItinerary.legs.get(multiLegItinerary.legs.size() - 1);
+        Coordinates multiItinLastLegDestCoords = new Coordinates(multiItinLastLeg.to);
 
         return Stream.of(
             Arguments.of(
+                monitoredTrip,
                 createPoint(firstStepCoords, 1, NORTH_EAST_BEARING),
                 "IMMEDIATE: Head WEST on Adair Avenue Northeast",
+                TripStatus.ON_SCHEDULE,
                 "Coords near first step should produce relevant instruction"
             ),
             Arguments.of(
+                monitoredTrip,
                 createPoint(firstStepCoords, 4, NORTH_EAST_BEARING),
                 "UPCOMING: Head WEST on Adair Avenue Northeast",
-                "Coords near first step should produce relevant instruction"
+                TripStatus.DEVIATED,
+                "Coords deviated but near first step should produce relevant instruction"
             ),
             Arguments.of(
+                monitoredTrip,
                 createPoint(firstStepCoords, 30, NORTH_EAST_BEARING),
                 "Head to Adair Avenue Northeast",
+                TripStatus.DEVIATED,
                 "Deviated coords near first step should produce instruction to head to first step #1"
             ),
             Arguments.of(
+                monitoredTrip,
                 createPoint(firstStepCoords, 15, NORTH_WEST_BEARING),
                 "Head to Adair Avenue Northeast",
+                TripStatus.DEVIATED,
                 "Deviated coords near first step should produce instruction to head to first step #2"
             ),
             Arguments.of(
+                monitoredTrip,
                 createPoint(firstStepCoords, 20, WEST_BEARING),
                 NO_INSTRUCTION,
+                TripStatus.ON_SCHEDULE,
                 "Coords along a step should produce no instruction"
             ),
             Arguments.of(
+                monitoredTrip,
                 thirdStepCoords,
                 "IMMEDIATE: LEFT on Ponce de Leon Place Northeast",
+                TripStatus.AHEAD_OF_SCHEDULE,
                 "Coords near a not-first step should produce relevant instruction"
             ),
             Arguments.of(
+                monitoredTrip,
                 createPoint(thirdStepCoords, 30, NORTH_WEST_BEARING),
                 "Head to Ponce de Leon Place Northeast",
+                TripStatus.DEVIATED,
                 "Deviated coords near a not-first step should produce instruction to head to step"
+            ),
+            Arguments.of(
+                monitoredTrip,
+                createPoint(destinationCoords, 1, NORTH_WEST_BEARING),
+                "ARRIVED: Monroe Dr NE at Cooledge Ave NE",
+                TripStatus.COMPLETED,
+                "Instructions for destination coordinate"
+            ),
+            Arguments.of(
+                multiLegMonitoredTrip,
+                createPoint(multiItinFirstLegDestCoords, 1.5, WEST_BEARING),
+                // Time is in US Pacific time zone (instead of US Eastern) by configuration for other E2E tests.
+                "Wait 6 minutes for your bus, route 27, scheduled at 9:18 AM, on time",
+                TripStatus.AHEAD_OF_SCHEDULE,
+                "Arriving ahead of schedule to a bus stop at the end of first leg."
+            ),
+            Arguments.of(
+                multiLegMonitoredTrip,
+                createPoint(multiItinLastLegDestCoords, 1, NORTH_WEST_BEARING),
+                "ARRIVED: Ansley Mall Pet Shop",
+                TripStatus.COMPLETED,
+                "Instructions for destination coordinate of multi-leg trip"
             )
         );
     }
@@ -414,15 +496,23 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         return payload;
     }
 
-    private TrackPayload createTrackPayload(List<TrackingLocation> locations) {
+    private TrackPayload createTrackPayload(MonitoredTrip trip, List<TrackingLocation> locations) {
         var payload = new TrackPayload();
-        payload.tripId = monitoredTrip.id;
+        payload.tripId = trip.id;
         payload.locations = locations;
         return payload;
     }
 
     private TrackPayload createTrackPayload(Coordinates coords) {
-        return createTrackPayload(List.of(new TrackingLocation(getDateAndConvertToSeconds(), coords.lat, coords.lon)));
+        return createTrackPayload(monitoredTrip, coords);
+    }
+
+    private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords) {
+        return createTrackPayload(trip, coords, getDateAndConvertToSeconds());
+    }
+
+    private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords, Date date) {
+        return createTrackPayload(trip, List.of(new TrackingLocation(date, coords.lat, coords.lon)));
     }
 
     private EndTrackingPayload createEndTrackingPayload(String journeyId) {

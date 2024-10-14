@@ -265,6 +265,13 @@ public class DateTimeUtils {
     }
 
     /**
+     * Get the end of a day from a {@link LocalDateTime} object which is returned as a {@link Date} object.
+     */
+    public static Date getEndOfDay(LocalDateTime date) {
+        return convertToDate(date.truncatedTo(ChronoUnit.DAYS).plusDays(1).minusSeconds(1));
+    }
+
+    /**
      * Get the start of the current hour.
      */
     public static LocalDateTime getStartOfCurrentHour() {
@@ -272,27 +279,51 @@ public class DateTimeUtils {
     }
 
     /**
-     * Get the hours between two {@link LocalDateTime} objects. The list of {@link LocalDateTime} objects returned does
-     * not include the originally provided hours.
+     * Get the hours between two {@link LocalDateTime} objects, excluding the start and end hours.
      */
     public static List<LocalDateTime> getHoursBetween(LocalDateTime start, LocalDateTime end) {
+        return getTimeUnitsBetween(start, end, ChronoUnit.HOURS);
+    }
+
+    /**
+     * Get the days between two {@link LocalDateTime} objects, excluding start and end days.
+     */
+    public static List<LocalDateTime> getDaysBetween(LocalDateTime start, LocalDateTime end) {
+        return getTimeUnitsBetween(start, end, ChronoUnit.DAYS);
+    }
+
+    /**
+     * Get the time units (e.g. days, hours) between two {@link LocalDateTime} objects, excluding start and end.
+     */
+    public static List<LocalDateTime> getTimeUnitsBetween(
+        LocalDateTime start,
+        LocalDateTime end,
+        ChronoUnit chronoUnit
+    ) {
         if (start.isAfter(end) || start.isEqual(end)) {
             LOG.warn("Start date/time: {} is after/equal to end date/time: {}.", start, end);
             return Lists.newArrayList();
         }
-        // Bump the start by one hour, so it is not included in the returned list.
-        start = start.plusHours(1).truncatedTo(ChronoUnit.HOURS);
+        // Bump the start by one day, so it is not included in the returned list.
+        start = start.plus(1, chronoUnit).truncatedTo(chronoUnit);
         return Stream
-            .iterate(start, date -> date.plusHours(1))
-            .limit(ChronoUnit.HOURS.between(start, end))
+            .iterate(start, date -> date.plus(1, chronoUnit))
+            .limit(chronoUnit.between(start, end))
             .collect(Collectors.toList());
     }
 
     /**
-     * Return the previous whole hour from now. E.g. If the time is 07:30, return 06:00.
+     * Return the previous whole hour from a given date. E.g. If the time is 07:30, return 06:00.
      */
-    public static LocalDateTime getPreviousWholeHourFromNow() {
-        return LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(1);
+    public static LocalDateTime getPreviousWholeHourFrom(LocalDateTime dateTime) {
+        return dateTime.truncatedTo(ChronoUnit.HOURS).minusHours(1);
+    }
+
+    /**
+     * Return the previous day from now. E.g. If today is Wednesday 07:30, return Tuesday.
+     */
+    public static LocalDateTime getPreviousDayFrom(LocalDateTime dateTime) {
+        return dateTime.truncatedTo(ChronoUnit.DAYS).minusDays(1);
     }
 
     /**
