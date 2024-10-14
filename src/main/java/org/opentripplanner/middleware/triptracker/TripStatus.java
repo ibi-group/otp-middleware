@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.triptracker;
 
 import java.time.Instant;
 
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.isAtEndOfLeg;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
 
@@ -34,7 +35,12 @@ public enum TripStatus {
     /**
      * The traveler has deviated from the trip route.
      **/
-    DEVIATED;
+    DEVIATED,
+
+    /**
+     * The traveler has arrived at the trip's final destination.
+     **/
+    COMPLETED;
 
     public static final int TRIP_TRACKING_WALK_ON_TRACK_RADIUS
         = getConfigPropertyAsInt("TRIP_TRACKING_WALK_ON_TRACK_RADIUS", 5);
@@ -58,6 +64,9 @@ public enum TripStatus {
      * Define the trip status based on the traveler's current position compared to expected and nearest points on the trip.
      */
     public static TripStatus getTripStatus(TravelerPosition travelerPosition) {
+        if (isAtEndOfLeg(travelerPosition) && travelerPosition.nextLeg == null) {
+            return TripStatus.COMPLETED;
+        }
         if (travelerPosition.expectedLeg != null &&
             travelerPosition.legSegmentFromPosition != null &&
             isWithinModeRadius(travelerPosition)
