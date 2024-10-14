@@ -9,6 +9,8 @@ import org.opentripplanner.middleware.models.AbstractUser;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.otp.OtpGraphQLQuery;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
@@ -108,7 +111,7 @@ public class ApiTestUtils {
      * Send request to provided URL.
      */
     public static HttpResponseValues makeRequest(
-        String path, String body, HashMap<String, String> headers, HttpMethod requestMethod
+        String path, String body, Map<String, String> headers, HttpMethod requestMethod
     ) {
         return HttpUtils.httpRequestRawResponse(
             URI.create(BASE_URL + path),
@@ -160,6 +163,21 @@ public class ApiTestUtils {
      */
     public static HttpResponseValues mockAuthenticatedGet(String path, AbstractUser requestingUser) throws Exception {
         return makeGetRequest(path, getMockHeaders(requestingUser));
+    }
+
+    /**
+     * Construct http headers according to caller request and then make an authenticated 'POST' call.
+     */
+    public static HttpResponseValues mockAuthenticatedPlanPost(
+        String path,
+        OtpGraphQLVariables planVariables,
+        Map<String, String> headers,
+        AbstractUser requestingUser
+    ) throws Exception {
+        OtpGraphQLQuery query = new OtpGraphQLQuery();
+        query.variables = planVariables;
+        String dummyBody = JsonUtils.toJson(query);
+        return makeRequest(path, dummyBody, headers, HttpMethod.POST);
     }
 
     /**

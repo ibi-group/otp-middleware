@@ -70,7 +70,7 @@ public class OtpDispatcherResponse implements Serializable {
      */
     public OtpResponse getResponse() throws JsonProcessingException {
         try {
-            return JsonUtils.getPOJOFromJSON(responseBody, OtpResponse.class);
+            return JsonUtils.getPOJOFromJSON(responseBody, OtpResponseGraphQLWrapper.class).data;
         } catch (JsonProcessingException e) {
             BugsnagReporter.reportErrorToBugsnag("Failed to parse OTP response!", responseBody, e);
             throw e;
