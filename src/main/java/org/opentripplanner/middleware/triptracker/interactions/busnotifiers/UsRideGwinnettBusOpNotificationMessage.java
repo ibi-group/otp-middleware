@@ -5,7 +5,6 @@ import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +44,7 @@ public class UsRideGwinnettBusOpNotificationMessage {
      */
     private static Map<String, Integer> createMobilityCodesLookup() {
         HashMap<String, Integer> codes = new HashMap<>();
+        codes.put("None", 0);
         codes.put("Device", 1);
         codes.put("MScooter", 2);
         codes.put("WChairE", 3);
@@ -70,6 +70,8 @@ public class UsRideGwinnettBusOpNotificationMessage {
     public String from_route_id;
     public String from_trip_id;
     public String from_stop_id;
+    public String to_route_id;
+    public String to_trip_id;
     public String to_stop_id;
     public String from_arrival_time;
     public Integer msg_type;
@@ -83,6 +85,10 @@ public class UsRideGwinnettBusOpNotificationMessage {
         this.from_route_id = removeAgencyPrefix(getRouteIdFromLeg(nextLeg));
         this.from_trip_id = removeAgencyPrefix(getTripIdFromLeg(nextLeg));
         this.from_stop_id = removeAgencyPrefix(getStopIdFromPlace(nextLeg.from));
+        // For now, assume one notification request is made per transit leg.
+        // TODO: Determine how interlined legs should be handled.
+        this.to_route_id = this.from_route_id;
+        this.to_trip_id = this.from_trip_id;
         this.to_stop_id = removeAgencyPrefix(getStopIdFromPlace(nextLeg.to));
         this.from_arrival_time = BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT.format(
             nextLeg.getScheduledStartTime()
@@ -95,14 +101,10 @@ public class UsRideGwinnettBusOpNotificationMessage {
 
     /**
      * Get the mobility code that matches the mobility mode. The API can accept multiple codes (probably to cover
-     * multiple travelers at the same stop), but the OTP middleware currently only provides one.
+     * multiple travelers at the same stop), but the OTP middleware currently only provides exactly one.
      */
-    private static List<Integer> getMobilityCode(String mobilityMode) {
-        List<Integer> mobilityCodes = new ArrayList<>();
-        Integer code = MOBILITY_CODES_LOOKUP.get(mobilityMode);
-        if (code != null) {
-            mobilityCodes.add(code);
-        }
-        return mobilityCodes;
+    static List<Integer> getMobilityCode(String mobilityMode) {
+        // Fallback on the "None" mobility profile (code 0) if the given mode is unknown.
+        return List.of(MOBILITY_CODES_LOOKUP.getOrDefault(mobilityMode, 0));
     }
 }

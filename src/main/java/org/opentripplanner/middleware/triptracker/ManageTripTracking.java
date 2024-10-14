@@ -3,17 +3,17 @@ package org.opentripplanner.middleware.triptracker;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.triptracker.instruction.SelfLegInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.TripActions;
+import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
-import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import spark.Request;
 
-import static org.opentripplanner.middleware.triptracker.TripInstruction.NO_INSTRUCTION;
-import static org.opentripplanner.middleware.triptracker.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
+import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
+import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.removeAgencyPrefix;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
@@ -63,6 +63,7 @@ public class ManageTripTracking {
             );
             TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
             trackedJourney.lastLocation().tripStatus = tripStatus;
+            trackedJourney.lastLocation().deviationMeters = travelerPosition.getDeviationMeters();
 
             if (create) {
                 Persistence.trackedJourneys.create(trackedJourney);
@@ -79,9 +80,9 @@ public class ManageTripTracking {
 
             // Perform interactions such as triggering traffic signals when approaching segments so configured.
             // It is assumed to be ok to repeatedly perform the interaction.
-            if (instruction != null && instruction.distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
+            if (instruction instanceof SelfLegInstruction && instruction.distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
                 TripActions.getDefault().handleSegmentAction(
-                    instruction.legStep,
+                    ((SelfLegInstruction)instruction).getLegStep(),
                     travelerPosition.expectedLeg.steps,
                     Persistence.otpUsers.getById(tripData.trip.userId)
                 );

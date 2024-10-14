@@ -1,7 +1,11 @@
 package org.opentripplanner.middleware.otp;
 
 import java.util.Map;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
+import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -10,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -32,7 +37,11 @@ public class OtpDispatcher {
      */
     public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/routers/default/index/graphql");
 
-    private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 10;
+    /**
+     * Match the OTP GraphQL request timeout defined at
+     * https://github.com/opentripplanner/OpenTripPlanner/blob/176e5f51923e82f8a4c2aa2a0b8284e1497b4439/src/main/java/org/opentripplanner/apis/gtfs/GtfsGraphQLAPI.java#L54
+     */
+    private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 30;
 
     /**
      * Provides a response from the OTP server target service based on the query parameters provided.
@@ -120,4 +129,43 @@ public class OtpDispatcher {
                 bodyContent);
         return new OtpDispatcherResponse(otpResponse);
     }
+
+    public static OtpResponse sendOtpRequestWithErrorHandling(String sentParams) {
+        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP1, sentParams));
+    }
+
+    public static OtpResponse sendOtpRequestWithErrorHandling(OtpRequest otpRequest) {
+        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP1, otpRequest));
+    }
+
+    private static OtpResponse handleOtpDispatcherResponse(Supplier<OtpDispatcherResponse> otpDispatcherResponseSupplier) {
+        OtpDispatcherResponse otpDispatcherResponse;
+        try {
+            otpDispatcherResponse = otpDispatcherResponseSupplier.get();
+        } catch (Exception e) {
+            BugsnagReporter.reportErrorToBugsnag(
+                "Encountered an error while making a request to the OTP server.",
+                e
+            );
+            return null;
+        }
+
+        if (otpDispatcherResponse.statusCode >= 400) {
+            BugsnagReporter.reportErrorToBugsnag(
+                "Received an error from the OTP server.",
+                otpDispatcherResponse,
+                null
+            );
+            return null;
+        }
+
+        try {
+            return otpDispatcherResponse.getResponse();
+        } catch (JsonProcessingException e) {
+            // don't report to Bugsnag since the getResponse method will already have reported to Bugsnag.
+            LOG.error("Unable to parse OTP response!", e);
+            return null;
+        }
+    }
+
 }

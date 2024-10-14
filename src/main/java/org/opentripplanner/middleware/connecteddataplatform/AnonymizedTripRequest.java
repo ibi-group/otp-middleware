@@ -3,6 +3,8 @@ package org.opentripplanner.middleware.connecteddataplatform;
 import com.mongodb.client.FindIterable;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.graphql.QueryVariables;
+import org.opentripplanner.middleware.otp.graphql.TransportMode;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
@@ -10,8 +12,8 @@ import org.opentripplanner.middleware.otp.response.PlannerError;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Anonymous version of {@link org.opentripplanner.middleware.models.TripRequest} containing only parameters
@@ -72,18 +74,15 @@ public class AnonymizedTripRequest {
         this.requestId = tripRequest.batchId;
         this.fromPlace = getPlaceCoordinates(tripSummaries, true, tripRequest.fromPlace);
         this.toPlace = getPlaceCoordinates(tripSummaries, false, tripRequest.toPlace);
-        if (tripRequest.requestParameters != null) {
-            this.date = tripRequest.requestParameters.get("date");
-            this.time = tripRequest.requestParameters.get("time");
-            String isArriveBy = tripRequest.requestParameters.get("arriveBy");
-            if (isArriveBy != null && isArriveBy.equalsIgnoreCase("true")) {
-                this.timeSelection = AnonymousTripType.ARRIVE_BY;
-            } else if (isArriveBy != null && isArriveBy.equalsIgnoreCase("false")) {
-                this.timeSelection = AnonymousTripType.DEPART_AT;
-            }
-            this.mode = getModes(tripRequest.requestParameters.get("mode"));
-            this.maxWalkDistance = tripRequest.requestParameters.get("maxWalkDistance");
-            this.optimize = tripRequest.requestParameters.get("optimize");
+
+        QueryVariables queryVariables = tripRequest.otp2QueryParams;
+        if (queryVariables != null) {
+            this.date = queryVariables.date;
+            this.time = queryVariables.time;
+            this.timeSelection = queryVariables.arriveBy
+                ? AnonymousTripType.ARRIVE_BY
+                : AnonymousTripType.DEPART_AT;
+            this.mode = getModes(queryVariables.modes);
         }
 
         // Extract all trip summary itineraries, convert to anonymized itineraries and group.
@@ -156,9 +155,12 @@ public class AnonymizedTripRequest {
 
     /**
      * Extract modes from the trip request and return as an array.
+     * @return A list of strings, and at a minimum, a list with one element which is an empty string.
      */
-    public List<String> getModes(String tripRequestModes) {
-        return Arrays.asList(tripRequestModes.split(","));
+    public static List<String> getModes(List<TransportMode> tripRequestModes) {
+        return tripRequestModes != null && !tripRequestModes.isEmpty()
+            ? tripRequestModes.stream().map(TransportMode::toString).collect(Collectors.toList())
+            : List.of("");
     }
 
     /**

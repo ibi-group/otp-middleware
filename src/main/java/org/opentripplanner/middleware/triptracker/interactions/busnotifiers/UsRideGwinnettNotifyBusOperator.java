@@ -36,13 +36,27 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
     private static final String US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY
         = getConfigPropertyAsText("US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY", "not-provided");
 
+    private static final String US_RIDE_GWINNETT_BUS_PRIORITY_API_URL
+        = getConfigPropertyAsText("US_RIDE_GWINNETT_BUS_PRIORITY_API_URL", "not-provided");
+
+    private static final String US_RIDE_GWINNETT_BUS_PRIORITY_API_KEY
+        = getConfigPropertyAsText("US_RIDE_GWINNETT_BUS_PRIORITY_API_KEY", "not-provided");
+
     public static List<String> US_RIDE_GWINNETT_QUALIFYING_BUS_NOTIFIER_ROUTES = getBusOperatorNotifierQualifyingRoutes();
 
     /**
-     * Headers that are required for each request.
+     * Headers that are required for bus driver notifications.
      */
     private static final Map<String, String> BUS_OPERATOR_NOTIFIER_API_HEADERS = Map.of(
         "Ocp-Apim-Subscription-Key", US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY,
+        "Content-Type", "application/json"
+    );
+
+    /**
+     * Headers that are required for bus priority requests.
+     */
+    private static final Map<String, String> BUS_PRIORITY_API_HEADERS = Map.of(
+        "x-api-key", US_RIDE_GWINNETT_BUS_PRIORITY_API_KEY,
         "Content-Type", "application/json"
     );
 
@@ -76,12 +90,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
                 // request before this one completes.
                 travelerPosition.trackedJourney.updateNotificationMessage(routeId, "pending");
                 var body = createPostBody(travelerPosition);
-                var httpStatus = doPost(body);
-                if (httpStatus == HttpStatus.OK_200) {
-                    travelerPosition.trackedJourney.updateNotificationMessage(routeId, body);
-                } else {
-                    LOG.error("Error {} while trying to initiate Ride Gwinnett notification to bus operator.", httpStatus);
-                }
+                makeApiRequests(travelerPosition, body, routeId, "initiate");
             }
         } catch (Exception e) {
             LOG.error("Could not initiate Ride Gwinnett notification to bus operator.", e);
@@ -96,7 +105,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
         try {
             if (
                 isBusLeg(travelerPosition.nextLeg) && routeId != null &&
-                hasNotCancelledNotificationForRoute(travelerPosition.trackedJourney, routeId)
+                hasNotCanceledNotificationForRoute(travelerPosition.trackedJourney, routeId)
             ) {
                 Map<String, String> busNotificationRequests = travelerPosition.trackedJourney.busNotificationMessages;
                 if (busNotificationRequests.containsKey(routeId)) {
@@ -106,23 +115,37 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
                     );
                     // Changed the saved message type from notify to cancel.
                     body.msg_type = 0;
-                    var httpStatus = doPost(JsonUtils.toJson(body));
-                    if (httpStatus == HttpStatus.OK_200) {
-                        travelerPosition.trackedJourney.updateNotificationMessage(routeId, JsonUtils.toJson(body));
-                    } else {
-                        LOG.error("Error {} while trying to cancel Ride Gwinnett notification to bus operator.", httpStatus);
-                    }
+                    String bodyJson = JsonUtils.toJson(body);
+                    makeApiRequests(travelerPosition, bodyJson, routeId, "cancel");
                 }
             }
         } catch (Exception e) {
-            LOG.error("Could not cancel Ride Gwinnett notification to bus operator.", e);
+            LOG.error("Could not cancel RideGwinnett notification to bus operator.", e);
         }
     }
 
     /**
-     * Send notification and provide response. The service only provides the HTTP status as a response.
+     * Makes a call to the bus driver notification API, followed by a call to the bus priority API.
      */
-    public static int doPost(String body) {
+    private static void makeApiRequests(TravelerPosition travelerPosition, String body, String routeId, String action) {
+        var httpStatus = postBusDriverNotification(body);
+        if (httpStatus == HttpStatus.OK_200) {
+            travelerPosition.trackedJourney.updateNotificationMessage(routeId, body);
+        } else {
+            LOG.error("Error {} while trying to {} RideGwinnett notification to bus operator.", httpStatus, action);
+        }
+
+        // The same body is sent to the bus priority API.
+        httpStatus = postBusPriorityNotification(body);
+        if (httpStatus != HttpStatus.OK_200) {
+            LOG.error("Error {} while trying to {} RideGwinnett bus priority request.", httpStatus, action);
+        }
+    }
+
+    /**
+     * Send bus driver notification and provide response. The service only provides the HTTP status as a response.
+     */
+    public static int postBusDriverNotification(String body) {
         if (IS_TEST) {
             return HttpStatus.OK_200;
         }
@@ -131,6 +154,23 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
             1000,
             HttpMethod.POST,
             BUS_OPERATOR_NOTIFIER_API_HEADERS,
+            body
+        );
+        return httpResponse.status;
+    }
+
+    /**
+     * Send bus priority request and provide response. The service only provides the HTTP status as a response.
+     */
+    public static int postBusPriorityNotification(String body) {
+        if (IS_TEST) {
+            return HttpStatus.OK_200;
+        }
+        var httpResponse = HttpUtils.httpRequestRawResponse(
+            URI.create(US_RIDE_GWINNETT_BUS_PRIORITY_API_URL),
+            1000,
+            HttpMethod.POST,
+            BUS_PRIORITY_API_HEADERS,
             body
         );
         return httpResponse.status;
@@ -165,7 +205,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
     /**
      * Has a previous notification already been cancelled.
      */
-    public static boolean hasNotCancelledNotificationForRoute(
+    public static boolean hasNotCanceledNotificationForRoute(
         TrackedJourney trackedJourney,
         String routeId
     ) throws JsonProcessingException {
@@ -174,7 +214,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
             throw new IllegalStateException("A notification must exist before it can be cancelled!");
         }
         UsRideGwinnettBusOpNotificationMessage message = getNotificationMessage(messageBody);
-        return message.msg_type != 1;
+        return message.msg_type != 0;
     }
 
     public static UsRideGwinnettBusOpNotificationMessage getNotificationMessage(String body) throws JsonProcessingException {
