@@ -179,6 +179,11 @@ public class MonitoredTrip extends Model {
      */
     public boolean notifyAtLeadingInterval = true;
 
+    /**
+     * The number of attempts made to obtain a trip's itinerary from OTP which matches this trip.
+     */
+    public int attemptsToGetMatchingItinerary;
+
     public MonitoredTrip() {
     }
 
