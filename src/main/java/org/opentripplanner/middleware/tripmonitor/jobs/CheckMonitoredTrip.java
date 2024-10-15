@@ -1,12 +1,12 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
-import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -368,26 +367,16 @@ public class CheckMonitoredTrip implements Runnable {
 
     /** Default implementation for OtpResponse provider that actually invokes the OTP server. */
     private OtpResponse getOtpResponse() {
-        Map<String, String> params = getQueryParamsForTargetZonedDateTime();
-        if (params == null) return null;
-        return OtpDispatcher.sendOtpRequestWithErrorHandling(ItineraryUtils.toQueryString(params));
+        return OtpDispatcher.sendOtpRequestWithErrorHandling(getQueryParamsForTargetZonedDateTime());
     }
 
     /**
      * Generate the appropriate OTP query params for the trip for the current check by replacing the date query
      * parameter with the appropriate date.
      */
-    private Map<String, String> getQueryParamsForTargetZonedDateTime() {
-        Map<String, String> params = null;
-        try {
-            params = trip.parseQueryParams();
-            params.put(ItineraryUtils.DATE_PARAM, targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER));
-        } catch (URISyntaxException e) {
-            BugsnagReporter.reportErrorToBugsnag(
-                "Encountered an error parsing trip query params.",
-                e
-            );
-        }
+    private OtpGraphQLVariables getQueryParamsForTargetZonedDateTime() {
+        OtpGraphQLVariables params = trip.otp2QueryParams.clone();
+        params.date = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
         return params;
     }
 

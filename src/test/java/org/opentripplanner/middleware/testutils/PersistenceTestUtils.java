@@ -214,7 +214,7 @@ public class PersistenceTestUtils {
         boolean persist,
         JourneyState journeyState
     ) throws Exception {
-        MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.getSampleQueryParams(), otpDispatcherResponse);
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "test trip";
         monitoredTrip.leadTimeInMinutes = 240;

@@ -50,7 +50,7 @@ class ShouldSkipTripTestCase {
 
     public CheckMonitoredTrip generateCheckMonitoredTrip(OtpUser user) throws Exception {
         // create a mock OTP response for planning a trip on a weekday target datetime
-        OtpResponse mockWeekdayResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        OtpResponse mockWeekdayResponse = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
         Itinerary mockWeekdayItinerary = mockWeekdayResponse.plan.itineraries.get(0);
         OtpTestUtils.updateBaseItineraryTime(
             mockWeekdayItinerary,
@@ -62,7 +62,7 @@ class ShouldSkipTripTestCase {
         if (trip == null) {
             trip = PersistenceTestUtils.createMonitoredTrip(
                 user.id,
-                OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE,
+                OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
                 true,
                 OtpTestUtils.createDefaultJourneyState()
             );

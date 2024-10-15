@@ -6,11 +6,11 @@ import com.auth0.json.mgmt.users.User;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.ApiUser;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -22,6 +22,7 @@ import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.MockOtpResponseProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,16 +31,18 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.DEFAULT_USAGE_PLAN_ID;
-import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_GRAPHQL_ENDPOINT;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeDeleteRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedPlanPost;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
 
 /**
@@ -137,11 +140,6 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         if (otpUserStandalone != null) otpUserStandalone.delete(false);
     }
 
-    @AfterEach
-    public void tearDownAfterTest() {
-        OtpTestUtils.resetOtpMocks();
-    }
-
     /**
      * Tests to confirm that an otp user, related monitored trip and plan can be created and deleted leaving no orphaned
      * records. This also includes Auth0 users if auth is enabled. The basic script for this test is as follows:
@@ -195,7 +193,8 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.responseBody, OtpUser.class);
 
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
-        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.sendSamplePlanRequest());
+        // TODO: refactor this call
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.getSampleQueryParams(), OtpTestUtils.sendSamplePlanRequest());
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
         HttpResponseValues createTripResponseAsOtpUser = mockAuthenticatedRequest(
@@ -211,7 +210,8 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
 
         // Set mock OTP responses so that trip existence checks in the
         // POST call below to save the monitored trip can pass.
-        OtpTestUtils.setupOtpMocks(OtpTestUtils.createMockOtpResponsesForTripExistence());
+        MockOtpResponseProvider mockResponses = new MockOtpResponseProvider(OtpTestUtils.createMockOtpResponsesForTripExistence());
+        ItineraryExistence.otpResponseProviderOverride = mockResponses::getMockResponse;
 
         HttpResponseValues createTripResponseAsApiUser = makeRequest(
             MONITORED_TRIP_PATH,
@@ -220,9 +220,10 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        // After POST is complete, reset mock OTP responses for subsequent mock OTP calls below.
-        // (The mocks will also be reset in the @AfterEach phase if there are failures.)
-        OtpTestUtils.resetOtpMocks();
+        // After POST is complete, reset OTP response provider to default.
+        ItineraryExistence.otpResponseProviderOverride = null;
+        // Make sure all mocks were used
+        assertTrue(mockResponses.areAllMocksUsed());
 
         String responseBody = createTripResponseAsApiUser.responseBody;
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.status);
@@ -261,20 +262,27 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         // Plan trip with OTP proxy authenticating as an OTP user. Mock plan response will be returned. This will work
         // as an Otp user (created by MOD UI or an Api user) because the end point has no auth. A lack of auth also means
         // the plan is not saved.
-        String otpQueryForOtpUserRequest = OTP_PROXY_ENDPOINT +
-            OTP_PLAN_ENDPOINT +
-            "?fromPlace=28.45119,-81.36818&toPlace=28.54834,-81.37745";
-        HttpResponseValues planTripResponseAsOtpUser = mockAuthenticatedGet(otpQueryForOtpUserRequest, otpUserResponse);
+        String otpQueryForOtpUserRequest = OTP_PROXY_ENDPOINT + OTP_GRAPHQL_ENDPOINT;
+        HttpResponseValues planTripResponseAsOtpUser = mockAuthenticatedPlanPost(
+            otpQueryForOtpUserRequest,
+            monitoredTrip.otp2QueryParams,
+            ApiTestUtils.getMockHeaders(otpUserResponse),
+            otpUserResponse
+        );
         LOG.info("OTP user: Plan trip response: {}\n....",
             planTripResponseAsOtpUser.responseBody.substring(0, 300));
         assertEquals(HttpStatus.OK_200, planTripResponseAsOtpUser.status);
 
         // Plan trip with OTP proxy authenticating as an Api user. Mock plan response will be returned. This will work
         // as an Api user because the end point has no auth.
-        String otpQueryForApiUserRequest = OTP_PROXY_ENDPOINT +
-            OTP_PLAN_ENDPOINT +
-            String.format("?fromPlace=28.45119,-81.36818&toPlace=28.54834,-81.37745&userId=%s",otpUserResponse.id);
-        HttpResponseValues planTripResponseAsApiUser = makeGetRequest(otpQueryForApiUserRequest, apiUserHeaders);
+        String otpQueryForApiUserRequest = OTP_PROXY_ENDPOINT + OTP_GRAPHQL_ENDPOINT +
+            String.format("?userId=%s",otpUserResponse.id);
+        HttpResponseValues planTripResponseAsApiUser = mockAuthenticatedPlanPost(
+            otpQueryForApiUserRequest,
+            monitoredTrip.otp2QueryParams,
+            apiUserHeaders,
+            otpUserResponse
+        );
         LOG.info("API user (on behalf of an Otp user): Plan trip response: {}\n....",
             planTripResponseAsApiUser.responseBody.substring(0, 300));
         assertEquals(HttpStatus.OK_200, planTripResponseAsApiUser.status);
