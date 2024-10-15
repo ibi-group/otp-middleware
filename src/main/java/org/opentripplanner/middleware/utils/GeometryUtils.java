@@ -22,7 +22,7 @@ public class GeometryUtils {
     }
 
     /**
-     * Get the distance between a line and point.
+     * Get the distance in meters between a line and point.
      */
     public static double getDistanceFromLine(Coordinates start, Coordinates end, Coordinates traveler) {
         double[] startXY = convertLatLonToXY(start.lat, start.lon);

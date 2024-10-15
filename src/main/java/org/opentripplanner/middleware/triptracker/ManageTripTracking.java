@@ -59,6 +59,7 @@ public class ManageTripTracking {
             );
             TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
             trackedJourney.lastLocation().tripStatus = tripStatus;
+            trackedJourney.lastLocation().deviationMeters = travelerPosition.getDeviationMeters();
 
             if (create) {
                 Persistence.trackedJourneys.create(trackedJourney);

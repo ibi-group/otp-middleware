@@ -2918,6 +2918,13 @@ definitions:
         - "AHEAD_OF_SCHEDULE"
         - "ENDED"
         - "DEVIATED"
+        - "COMPLETED"
+      locationAccuracy:
+        type: "number"
+        format: "double"
+      deviationMeters:
+        type: "number"
+        format: "double"
   TrackingResponse:
     type: "object"
     properties:
