@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.testutils;
 
+import com.auth0.json.mgmt.users.User;
 import org.eclipse.jetty.http.HttpMethod;
 import com.auth0.json.auth.TokenHolder;
 import org.eclipse.jetty.http.HttpStatus;
@@ -197,4 +198,14 @@ public class ApiTestUtils {
         return String.format("%s-%s@example.com", prefix, UUID.randomUUID().toString());
     }
 
+    /**
+     * Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
+     * from being able to use TEMP_AUTH0_USER_PASSWORD.
+     */
+    public static HashMap<String, String> createAndAssignAuth0User(OtpUser user) throws Exception {
+        User auth0User = Auth0Users.createAuth0UserForEmail(user.email, TEMP_AUTH0_USER_PASSWORD);
+        user.auth0UserId = auth0User.getId();
+        Persistence.otpUsers.replace(user.id, user);
+        return getMockHeaders(user);
+    }
 }
