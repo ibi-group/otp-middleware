@@ -44,6 +44,7 @@ public class OtpGraphQLVariables implements Cloneable {
         clone.carReluctance = carReluctance;
         clone.date = date;
         clone.fromPlace = fromPlace;
+        clone.mobilityProfile = mobilityProfile;
         if (modes != null) {
             clone.modes = List.copyOf(modes);
         }

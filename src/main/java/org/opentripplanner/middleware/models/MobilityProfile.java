@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
@@ -53,7 +52,6 @@ public class MobilityProfile implements Serializable {
      * the Georgia Tech Mobility Profile Configuration / Logical Flow document,
      * so that the mode is constructed based on specific strings in a specific
      * order.  The device strings are expected to change on occasion.
-     * @param mobilityProfile consulted to construct and update mobility mode
      */
     public void updateMobilityMode() {
         // Variable names and the strings we parse are from Georgia Tech document, to facilitate syncing
