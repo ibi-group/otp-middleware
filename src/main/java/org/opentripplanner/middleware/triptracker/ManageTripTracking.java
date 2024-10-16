@@ -152,6 +152,8 @@ public class ManageTripTracking {
         trackedJourney.end(isForciblyEnded);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_TIME_FIELD_NAME, trackedJourney.endTime);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_CONDITION_FIELD_NAME, trackedJourney.endCondition);
+        trackedJourney.totalDeviation = trackedJourney.computeTotalDeviation();
+        Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.TOTAL_DEVIATION_FIELD_NAME, trackedJourney.totalDeviation);
 
         // Provide response.
         return new EndTrackingResponse(
