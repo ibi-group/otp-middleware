@@ -270,9 +270,11 @@ public class PersistenceTestUtils {
 
     public static void deleteOtpUser(OtpUser... optUsers) {
         for (OtpUser otpUser : optUsers) {
-            OtpUser user = Persistence.otpUsers.getById(otpUser.id);
-            if (user != null) {
-                user.delete(user.auth0UserId != null);
+            if (otpUser != null) {
+                OtpUser user = Persistence.otpUsers.getById(otpUser.id);
+                if (user != null) {
+                    user.delete(user.auth0UserId != null);
+                }
             }
         }
     }
