@@ -18,7 +18,14 @@ public class TrackingLocation {
 
     public Date timestamp;
 
+    /** Deviation or on-time status computed for this location. */
     public TripStatus tripStatus;
+
+    /** FIXME: Device location accuracy, reported by the device in a unit TBD. For reporting only. */
+    public Double locationAccuracy;
+
+    /** Perpendicular deviation, computed in meters, to the path closest to this location. */
+    public Double deviationMeters;
 
     public TrackingLocation() {
         // Needed for deserializing objects.

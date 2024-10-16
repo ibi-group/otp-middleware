@@ -2,10 +2,12 @@ package org.opentripplanner.middleware.testutils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.otp.response.OtpResponseGraphQLWrapper;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -26,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_GRAPHQL_ENDPOINT;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 import static spark.Service.ignite;
@@ -44,8 +47,13 @@ public class OtpTestUtils {
         )
     );
 
-    /**
-     * The response contains an itinerary with a request with the following request parameters:
+    /** Contains an OTP response with no itinerary found. */
+    public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
+        initializeMockPlanResponse("otp/response/planErrorResponse.json");
+
+
+    /** OTP2 plan mock response.
+     * Contains an itinerary with a request with the following request parameters:
      * - arriveBy: false
      * - date: 2020-06-09 (a Tuesday)
      * - desired start time: 08:35
@@ -54,15 +62,6 @@ public class OtpTestUtils {
      * - toPlace: Uncharted Realities, SW 3rd Ave, Downtown - Portland 97204::45.51639151281627,-122.67681483620306
      * - first itinerary end time: 8:58:44am
      */
-    public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_RESPONSE =
-        initializeMockPlanResponse("otp/response/planResponse.json");
-
-    /** Contains an OTP response with no itinerary found. */
-    public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
-        initializeMockPlanResponse("otp/response/planErrorResponse.json");
-
-
-    /** OTP2 plan mock response. */
     public static final OtpDispatcherResponse OTP2_DISPATCHER_PLAN_RESPONSE =
         initializeMockPlanResponse("otp/response/planResponse-otp2.json");
 
@@ -101,6 +100,7 @@ public class OtpTestUtils {
             return;
         }
         Service http = ignite().port(8080);
+        http.post("/otp" + OTP_GRAPHQL_ENDPOINT, OtpTestUtils::mockOtpPlanResponse);
         http.get("/otp" + OTP_PLAN_ENDPOINT, OtpTestUtils::mockOtpPlanResponse);
         http.get("/*", (request, response) -> {
             logMessageAndHalt(
@@ -128,14 +128,16 @@ public class OtpTestUtils {
             }
             LOG.info("Returning mock response at index {}", mockResponseIndex);
             // send back response and increment response index
-            String responseBody = mapper.writeValueAsString(mockResponses.get(mockResponseIndex));
+            OtpResponseGraphQLWrapper wrapper = new OtpResponseGraphQLWrapper();
+            wrapper.data = mockResponses.get(mockResponseIndex);
+            String responseBody = mapper.writeValueAsString(wrapper);
             mockResponseIndex++;
             return responseBody;
         }
 
         // mocks not setup, simply return from a file every time
         LOG.info("Returning default mock response from file");
-        return OTP_DISPATCHER_PLAN_RESPONSE.responseBody;
+        return OTP2_DISPATCHER_PLAN_RESPONSE.responseBody;
     }
 
     /**
@@ -181,6 +183,17 @@ public class OtpTestUtils {
         );
     }
 
+    /**
+     * Sample GraphQL params for testing.
+     */
+    public static OtpGraphQLVariables getSampleQueryParams() {
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.fromPlace = "28.45119,-81.36818";
+        params.toPlace = "28.54834,-81.37745";
+        params.time = "08:35";
+        return params;
+    }
+
     public static List<OtpResponse> createMockOtpResponsesForTripExistence() throws Exception {
         // Set up monitored days and mock responses for itinerary existence check, ordered by day.
         LocalDate today = DateTimeUtils.nowAsLocalDate();
@@ -203,7 +216,7 @@ public class OtpTestUtils {
     }
 
     public static Itinerary createDefaultItinerary() throws Exception {
-        return OTP_DISPATCHER_PLAN_RESPONSE.clone().getResponse().plan.itineraries.get(0);
+        return OTP2_DISPATCHER_PLAN_RESPONSE.clone().getResponse().plan.itineraries.get(0);
     }
 
     public static JourneyState createDefaultJourneyState() throws Exception {
