@@ -552,7 +552,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // fetch updated trip from persistence
         MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(mockTrip.id);
 
-        // verify that status is active
+        // verify that trip status is no longer possible
         assertEquals(
             TripStatus.NO_LONGER_POSSIBLE,
             updatedTrip.journeyState.tripStatus,
