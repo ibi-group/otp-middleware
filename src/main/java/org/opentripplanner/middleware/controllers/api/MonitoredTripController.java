@@ -5,16 +5,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.RequestingUser;
-import org.opentripplanner.middleware.models.GuardianUser;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
-import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.SwaggerUtils;
@@ -47,12 +42,6 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     protected void buildEndpoint(ApiEndpoint baseEndpoint) {
         // Add the api key route BEFORE the regular CRUD methods
         ApiEndpoint modifiedEndpoint = baseEndpoint
-            .get(path("/acceptdependent")
-                    .withDescription("Accept a dependent request.")
-                    .withResponses(SwaggerUtils.createStandardResponses(OtpUser.class))
-                    .withPathParam().withName(USER_ID_PARAM).withRequired(true).withDescription("The dependent user id.").and(),
-                MonitoredTripController::acceptDependent
-            )
             .post(path("/checkitinerary")
                     .withDescription("Returns the itinerary existence check results for a monitored trip.")
                     .withRequestType(MonitoredTrip.class)
@@ -184,52 +173,6 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     boolean preDeleteHook(MonitoredTrip monitoredTrip, Request req) {
         // Authorization checks are done prior to this hook
         return true;
-    }
-
-    /**
-     * Accept a request from another user to be their dependent. This will include both companions and observers.
-     */
-    private static OtpUser acceptDependent(Request request, Response response) {
-        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(request);
-        OtpUser guardianUser = requestingUser.otpUser;
-        if (guardianUser == null) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Otp user unknown.");
-            return null;
-        }
-
-        String dependentUserId = HttpUtils.getQueryParamFromRequest(request, USER_ID_PARAM, false);
-        if (dependentUserId.isEmpty()) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent user id not provided.");
-            return null;
-        }
-
-        OtpUser dependentUser = Persistence.otpUsers.getById(dependentUserId);
-        if (dependentUser == null) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent user unknown!");
-            return null;
-        }
-
-        boolean isGuardian = dependentUser.guardians
-            .stream()
-            .filter(guardian -> guardian.userId.equals(guardianUser.id))
-            // Update guardian status. This assumes the guardian with "pending" status was previously added.
-            .peek(guardian -> guardian.status = GuardianUser.GuardianUserStatus.CONFIRMED)
-            .findFirst()
-            .isPresent();
-
-        if (isGuardian) {
-            // Maintain a list of dependents.
-            guardianUser.dependents.add(dependentUserId);
-            Persistence.otpUsers.replace(guardianUser.id, guardianUser);
-            // Update list of guardians.
-            Persistence.otpUsers.replace(dependentUser.id, dependentUser);
-        } else {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent did not request user to be a guardian!");
-            return null;
-        }
-
-        // TODO: Not sure what is required in the response. For now, returning the updated guardian user.
-        return guardianUser;
     }
 
     /**

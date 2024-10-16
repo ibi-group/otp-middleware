@@ -86,7 +86,7 @@ public class OtpUser extends AbstractUser {
     public String applicationId;
 
     /** Companions and observers of this user. */
-    public List<GuardianUser> guardians = new ArrayList<>();
+    public List<RelatedUser> relatedUsers = new ArrayList<>();
 
     /** Users that are dependent on this user. */
     public List<String> dependents = new ArrayList<>();
@@ -128,9 +128,9 @@ public class OtpUser extends AbstractUser {
         for (String userId: dependents) {
             OtpUser dependent = Persistence.otpUsers.getById(userId);
             if (dependent != null) {
-                for (GuardianUser guardianUser : dependent.guardians) {
-                    if (guardianUser.userId.equals(this.id)) {
-                        guardianUser.status = GuardianUser.GuardianUserStatus.INVALID;
+                for (RelatedUser relatedUser : dependent.relatedUsers) {
+                    if (relatedUser.userId.equals(this.id)) {
+                        relatedUser.status = RelatedUser.RelatedUserStatus.INVALID;
                     }
                 }
                 Persistence.otpUsers.replace(dependent.id, dependent);
@@ -138,8 +138,8 @@ public class OtpUser extends AbstractUser {
         }
 
         // If a dependent, remove relationship with all guardians.
-        for (GuardianUser guardianUser : guardians) {
-            OtpUser guardian = Persistence.otpUsers.getById(guardianUser.userId);
+        for (RelatedUser relatedUser : relatedUsers) {
+            OtpUser guardian = Persistence.otpUsers.getById(relatedUser.userId);
             if (guardian != null) {
                 guardian.dependents.remove(this.id);
                 Persistence.otpUsers.replace(guardian.id, guardian);

@@ -267,4 +267,13 @@ public class PersistenceTestUtils {
         itinerary.legs = legs;
         return itinerary;
     }
+
+    public static void deleteOtpUser(OtpUser... optUsers) {
+        for (OtpUser otpUser : optUsers) {
+            OtpUser user = Persistence.otpUsers.getById(otpUser.id);
+            if (user != null) {
+                user.delete(user.auth0UserId != null);
+            }
+        }
+    }
 }

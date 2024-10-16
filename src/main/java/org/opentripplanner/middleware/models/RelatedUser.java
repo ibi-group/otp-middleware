@@ -1,20 +1,20 @@
 package org.opentripplanner.middleware.models;
 
-/** A guardian user is a companion or observer requested by a dependent. */
-public class GuardianUser {
-    public enum GuardianUserStatus {
+/** A related user is a companion or observer requested by a dependent. */
+public class RelatedUser {
+    public enum RelatedUserStatus {
         PENDING, CONFIRMED, INVALID
     }
 
     public String userId;
     public String email;
-    public GuardianUserStatus status;
+    public RelatedUserStatus status;
 
-    public GuardianUser() {
+    public RelatedUser() {
         // Required for JSON deserialization.
     }
 
-    public GuardianUser(String userId, String email, GuardianUserStatus status) {
+    public RelatedUser(String userId, String email, RelatedUserStatus status) {
         this.userId = userId;
         this.email = email;
         this.status = status;

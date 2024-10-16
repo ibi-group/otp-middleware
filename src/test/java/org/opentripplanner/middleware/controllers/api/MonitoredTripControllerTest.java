@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
-import org.opentripplanner.middleware.models.GuardianUser;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -24,24 +23,21 @@ import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Date;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
-import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
-import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.createAndAssignAuth0User;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
 
 /**
  * Tests to simulate getting trips as an Otp user with enhanced admin credentials. The following config parameters must
@@ -61,18 +57,11 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenti
  *
  * Auth0 must be correctly configured as described here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
  */
-public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
+public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static AdminUser multiAdminUser;
     private static OtpUser soloOtpUser;
     private static OtpUser multiOtpUser;
-    private static OtpUser guardianUserOne;
-    private static OtpUser dependentUserOne;
-    private static OtpUser guardianUserTwo;
-    private static OtpUser dependentUserTwo;
-    private static OtpUser guardianUserThree;
-    private static OtpUser dependentUserThree;
     private static final String MONITORED_TRIP_PATH = "api/secure/monitoredtrip";
-    private static final String ACCEPT_DEPENDENT_PATH = MONITORED_TRIP_PATH + "/acceptdependent";
 
     private static final String UI_QUERY_PARAMS
         = "?fromPlace=fromplace%3A%3A28.556631%2C-81.411781&toPlace=toplace%3A%3A28.545925%2C-81.348609&date=2020-11-13&time=14%3A21&arriveBy=false&mode=WALK%2CBUS%2CRAIL&numItineraries=3";
@@ -88,20 +77,12 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         assumeTrue(IS_END_TO_END);
         setAuthDisabled(false);
 
-        OtpTestUtils.mockOtpServer();
         String multiUserEmail = ApiTestUtils.generateEmailAddress("test-multiotpuser");
         soloOtpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
         multiOtpUser = PersistenceTestUtils.createUser(multiUserEmail);
         multiAdminUser = PersistenceTestUtils.createAdminUser(multiUserEmail);
-        guardianUserOne = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("guardian-one"));
-        dependentUserOne = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-one"));
-        guardianUserTwo = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("guardian-two"));
-        dependentUserTwo = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-two"));
-        guardianUserThree = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("guardian-three"));
-        dependentUserThree = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-three"));
         try {
             createAndAssignAuth0User(soloOtpUser);
-            guardianHeaders = createAndAssignAuth0User(guardianUserOne);
             User auth0User = Auth0Users.createAuth0UserForEmail(multiUserEmail, TEMP_AUTH0_USER_PASSWORD);
             multiOtpUser.auth0UserId = auth0User.getId();
             Persistence.otpUsers.replace(multiOtpUser.id, multiOtpUser);
@@ -114,17 +95,6 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
-     * Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
-     * from being able to use TEMP_AUTH0_USER_PASSWORD.
-     */
-    private static HashMap<String, String> createAndAssignAuth0User(OtpUser user) throws Exception {
-        User auth0User = Auth0Users.createAuth0UserForEmail(user.email, TEMP_AUTH0_USER_PASSWORD);
-        user.auth0UserId = auth0User.getId();
-        Persistence.otpUsers.replace(user.id, user);
-        return getMockHeaders(user);
-    }
-
-    /**
      * Delete the users if they were not already deleted during the test script.
      */
     @AfterAll
@@ -134,22 +104,9 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         multiAdminUser = Persistence.adminUsers.getById(multiAdminUser.id);
         if (multiAdminUser != null) multiAdminUser.delete();
         deleteOtpUser(
-            soloOtpUser.id,
-            multiOtpUser.id,
-            dependentUserOne.id,
-            guardianUserOne.id,
-            dependentUserTwo.id,
-            guardianUserTwo.id,
-            dependentUserThree.id,
-            guardianUserThree.id
+            soloOtpUser,
+            multiOtpUser
         );
-    }
-
-    private static void deleteOtpUser(String... ids) {
-        for (String id : ids) {
-            OtpUser user = Persistence.otpUsers.getById(id);
-            if (user != null) user.delete(false);
-        }
     }
 
     @AfterEach
@@ -238,48 +195,6 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         assertEquals(updatedTrip.userId, originalTrip.userId);
         assertEquals(updatedTrip.from.name, originalTrip.from.name);
         assertEquals(updatedTrip.to.name, originalTrip.to.name);
-    }
-
-    @Test
-    void canAcceptDependentRequest() {
-        dependentUserOne.guardians.add(new GuardianUser(guardianUserOne.id, guardianUserOne.email, GuardianUser.GuardianUserStatus.PENDING));
-        Persistence.otpUsers.replace(dependentUserOne.id, dependentUserOne);
-
-        String path = String.format("%s?userId=%s", ACCEPT_DEPENDENT_PATH, dependentUserOne.id);
-        makeGetRequest(path, guardianHeaders);
-
-        guardianUserOne = Persistence.otpUsers.getById(guardianUserOne.id);
-        assertTrue(guardianUserOne.dependents.contains(dependentUserOne.id));
-
-        dependentUserOne = Persistence.otpUsers.getById(dependentUserOne.id);
-        List<GuardianUser> guardians = dependentUserOne.guardians;
-        guardians
-            .stream()
-            .filter(user -> user.userId.equals(guardianUserOne.id))
-            .forEach(user -> assertEquals(GuardianUser.GuardianUserStatus.CONFIRMED, user.status));
-    }
-
-    @Test
-    void canInvalidateDependent() {
-        guardianUserTwo.dependents.add(dependentUserTwo.id);
-        Persistence.otpUsers.replace(guardianUserTwo.id, guardianUserTwo);
-        dependentUserTwo.guardians.add(new GuardianUser(guardianUserTwo.id, guardianUserTwo.email, GuardianUser.GuardianUserStatus.CONFIRMED));
-        Persistence.otpUsers.replace(dependentUserTwo.id, dependentUserTwo);
-        guardianUserTwo.delete(false);
-        dependentUserTwo = Persistence.otpUsers.getById(dependentUserTwo.id);
-        GuardianUser guardianUser = dependentUserTwo.guardians.get(0);
-        assertEquals(GuardianUser.GuardianUserStatus.INVALID, guardianUser.status);
-    }
-
-    @Test
-    void canRemoveGuardian() {
-        guardianUserThree.dependents.add(dependentUserThree.id);
-        Persistence.otpUsers.replace(guardianUserThree.id, guardianUserThree);
-        dependentUserThree.guardians.add(new GuardianUser(guardianUserThree.id, guardianUserThree.email, GuardianUser.GuardianUserStatus.CONFIRMED));
-        Persistence.otpUsers.replace(dependentUserThree.id, dependentUserThree);
-        dependentUserThree.delete(false);
-        guardianUserThree = Persistence.otpUsers.getById(guardianUserThree.id);
-        assertFalse(guardianUserThree.dependents.contains(dependentUserThree.id));
     }
 
     /**

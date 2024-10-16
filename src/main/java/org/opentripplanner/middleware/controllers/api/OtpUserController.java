@@ -7,11 +7,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
-import org.opentripplanner.middleware.models.MobilityProfile;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
+import org.opentripplanner.middleware.utils.SwaggerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -73,6 +75,16 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
 
         // Add the api key route BEFORE the regular CRUD methods
         ApiEndpoint modifiedEndpoint = baseEndpoint
+            .get(path("/acceptdependent")
+                    .withDescription("Accept a dependent request.")
+                    .withResponses(SwaggerUtils.createStandardResponses(OtpUser.class))
+                    .withPathParam()
+                    .withName(USER_ID_PARAM)
+                    .withRequired(true)
+                    .withDescription("The dependent user id.")
+                    .and(),
+                OtpUserController::acceptDependent
+            )
             .get(path(ROOT_ROUTE + String.format(VERIFY_ROUTE_TEMPLATE, ID_PARAM, VERIFY_PATH, PHONE_PARAM))
                     .withDescription("Request an SMS verification to be sent to an OtpUser's phone number.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the OtpUser.").and()
@@ -183,4 +195,51 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
         Matcher m = PHONE_E164_PATTERN.matcher(phoneNumber);
         return m.matches();
     }
+
+    /**
+     * Accept a request from another user to be their dependent. This will include both companions and observers.
+     */
+    private static OtpUser acceptDependent(Request request, Response response) {
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(request);
+        OtpUser relatedUser = requestingUser.otpUser;
+        if (relatedUser == null) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Otp user unknown.");
+            return null;
+        }
+
+        String dependentUserId = HttpUtils.getQueryParamFromRequest(request, USER_ID_PARAM, false);
+        if (dependentUserId.isEmpty()) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent user id not provided.");
+            return null;
+        }
+
+        OtpUser dependentUser = Persistence.otpUsers.getById(dependentUserId);
+        if (dependentUser == null) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent user unknown!");
+            return null;
+        }
+
+        boolean isRelated = dependentUser.relatedUsers
+            .stream()
+            .filter(related -> related.userId.equals(relatedUser.id))
+            // Update related user status. This assumes a related user with "pending" status was previously added.
+            .peek(related -> related.status = RelatedUser.RelatedUserStatus.CONFIRMED)
+            .findFirst()
+            .isPresent();
+
+        if (isRelated) {
+            // Maintain a list of dependents.
+            relatedUser.dependents.add(dependentUserId);
+            Persistence.otpUsers.replace(relatedUser.id, relatedUser);
+            // Update list of related users.
+            Persistence.otpUsers.replace(dependentUser.id, dependentUser);
+        } else {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent did not request user to be related!");
+            return null;
+        }
+
+        // TODO: Not sure what is required in the response. For now, returning the updated related user.
+        return relatedUser;
+    }
+
 }
