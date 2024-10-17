@@ -50,32 +50,21 @@ public class TravelerLocator {
      * Define the instruction based on the traveler's current position compared to expected and nearest points on the
      * trip.
      */
-    public static String getInstruction(
+    public static TripInstruction getInstruction(
         TripStatus tripStatus,
         TravelerPosition travelerPosition,
         boolean isStartOfTrip
     ) {
         if (hasRequiredWalkLeg(travelerPosition)) {
-            if (hasRequiredTripStatus(tripStatus)) {
-                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, tripStatus);
-                if (tripInstruction != null) {
-                    return tripInstruction.build();
-                }
-            }
-
-            if (tripStatus.equals(TripStatus.DEVIATED)) {
-                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip, tripStatus);
-                if (tripInstruction != null) {
-                    return tripInstruction.build();
-                }
+            if (hasRequiredTripStatus(tripStatus)) { // Not DEVIATED and not ENDED.
+                return alignTravelerToTrip(travelerPosition, isStartOfTrip, tripStatus);
+            } else if (tripStatus.equals(TripStatus.DEVIATED)) {
+                return getBackOnTrack(travelerPosition, isStartOfTrip, tripStatus);
             }
         } else if (hasRequiredTransitLeg(travelerPosition) && hasRequiredTripStatus(tripStatus)) {
-            TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition);
-            if (tripInstruction != null) {
-                return tripInstruction.build();
-            }
+            return alignTravelerToTransitTrip(travelerPosition);
         }
-        return NO_INSTRUCTION;
+        return null;
     }
 
     /**

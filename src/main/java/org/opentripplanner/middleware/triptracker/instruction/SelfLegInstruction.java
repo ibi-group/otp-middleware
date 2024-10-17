@@ -10,4 +10,8 @@ public class SelfLegInstruction extends TripInstruction {
     /** Step aligned with traveler's position. */
     protected Step legStep;
 
+    public Step getLegStep() {
+        return legStep;
+    }
+
 }

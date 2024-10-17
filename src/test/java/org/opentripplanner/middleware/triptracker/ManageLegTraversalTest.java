@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -29,7 +30,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -170,8 +170,8 @@ public class ManageLegTraversalTest {
         Itinerary itinerary = adairAvenueToMonroeDriveItinerary;
         Leg walkLeg = itinerary.legs.get(0);
         TravelerPosition travelerPosition = new TravelerPosition(walkLeg, traceData.position);
-        String tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
-        assertEquals(traceData.expectedInstruction, Objects.requireNonNullElse(tripInstruction, NO_INSTRUCTION), traceData.message);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
+        assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, traceData.message);
     }
 
     private static Stream<Arguments> createTurnByTurnTrace() {
@@ -340,8 +340,8 @@ public class ManageLegTraversalTest {
         }
 
         TravelerPosition travelerPosition = new TravelerPosition(transitLeg, traceData.position, traceData.speed);
-        String tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, false);
-        assertEquals(traceData.expectedInstruction, Objects.requireNonNullElse(tripInstruction, NO_INSTRUCTION), traceData.message);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, false);
+        assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, traceData.message);
     }
 
     private static Stream<Arguments> createTransitRideTrace() {
