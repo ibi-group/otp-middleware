@@ -101,6 +101,35 @@ OTP-middleware supports triggering certain actions when someone activates live t
 and reaches a location or is about to enter a path. Actions include location-sensitive API calls to notify various services.
 In the context of live trip tracking, actions may include notifying transit vehicle operators or triggering traffic signals.
 
+Trip actions are defined in the optional file `trip-actions.yml` in the same configuration folder as `env.yml`.
+The file contains a list of actions defined by an ID, start and end coordinates, and a fully-qualified trigger class:
+
+```yaml
+- id: id1
+  start:
+    lat: 33.95684
+    lon: -83.97971
+  end:
+    lat: 33.95653
+    lon: -83.97973
+  trigger: com.example.package.MyTriggerClass
+- id: id2
+  start:
+    lat: 33.95584
+    lon: -83.97871
+  end:
+    lat: 33.95553
+    lon: -83.97873
+  trigger: com.example.package.MyTriggerClass
+...
+```
+
+Known trigger classes below are in package `org.opentripplanner.middleware.triptracker.interactions`
+and implement its `Interaction` interface:
+
+| Class | Description |
+| ----- | ----------- |
+| UsGdotGwinnettTrafficSignalNotifier | Triggers select pedestrian signals in Gwinnett County, GA, USA |
 #### Bus Notify Actions
 
 Bus notifier actions are defined in the optional file `bus-notifier-actions.yml` in the same configuration folder as `env.yml`.
@@ -302,6 +331,9 @@ The special E2E client settings should be defined in `env.yml`:
 | TRIP_INSTRUCTION_UPCOMING_RADIUS | integer | Optional | 10 | The radius in meters under which an upcoming instruction is given. |
 | TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |
 | TWILIO_AUTH_TOKEN | string | Optional | your-auth-token | Twilio settings available at: https://twilio.com/user/account |
+| US_GDOT_GWINNETT_PED_SIGNAL_API_HOST | string | Optional | http://host.example.com | Host server for the US GDOT Gwinnett County pedestrian signal controller API |
+| US_GDOT_GWINNETT_PED_SIGNAL_API_PATH | string | Optional | /intersections/%s/crossings/%s/call | Optional relative path template to trigger a US GDOT Gwinnett County pedestrian signal |
+| US_GDOT_GWINNETT_PED_SIGNAL_API_KEY | string | Optional | your-api-key | API key for the US GDOT Gwinnett County pedestrian signal controller |
 | US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_URL | string | Optional | http://host.example.com | US RideGwinnett bus notifier API. |
 | US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY | string | Optional | your-api-key | API key for the US RideGwinnett bus notifier API. |
 | US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_QUALIFYING_ROUTES | string | Optional | agency_id:route_id | A comma separated list of US RideGwinnett routes that can be notified. |
