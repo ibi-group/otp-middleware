@@ -2608,6 +2608,9 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/RelatedUser"
+      attemptsToGetMatchingItinerary:
+        type: "integer"
+        format: "int32"
   StopTime:
     type: "object"
     properties:

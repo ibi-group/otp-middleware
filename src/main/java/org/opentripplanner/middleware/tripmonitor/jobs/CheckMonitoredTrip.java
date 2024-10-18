@@ -54,6 +54,9 @@ public class CheckMonitoredTrip implements Runnable {
 
     private final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
 
+    public static final int MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS =
+        ConfigUtils.getConfigPropertyAsInt("MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS", 3);
+
     private final String ACCOUNT_PATH = "/#/account";
 
     private final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
@@ -113,8 +116,15 @@ public class CheckMonitoredTrip implements Runnable {
     /** The OTP Response provider */
     private Supplier<OtpResponse> otpResponseProvider;
 
+    private final boolean hasTolerantItineraryCheck;
+
     public CheckMonitoredTrip(MonitoredTrip trip) throws CloneNotSupportedException {
+        this(trip, true);
+    }
+
+    public CheckMonitoredTrip(MonitoredTrip trip, boolean hasTolerantItineraryCheck) throws CloneNotSupportedException {
         this.trip = trip;
+        this.hasTolerantItineraryCheck = hasTolerantItineraryCheck;
         previousJourneyState = trip.journeyState;
         journeyState = previousJourneyState.clone();
         previousMatchingItinerary = trip.journeyState.matchingItinerary;
@@ -122,7 +132,16 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     public CheckMonitoredTrip(MonitoredTrip trip, Supplier<OtpResponse> otpResponseProvider) throws CloneNotSupportedException {
-        this(trip);
+        this(trip, false);
+        this.otpResponseProvider = otpResponseProvider;
+    }
+
+    public CheckMonitoredTrip(
+        MonitoredTrip trip,
+        Supplier<OtpResponse> otpResponseProvider,
+        boolean hasTolerantItineraryCheck
+    ) throws CloneNotSupportedException {
+        this(trip, hasTolerantItineraryCheck);
         this.otpResponseProvider = otpResponseProvider;
     }
 
@@ -246,6 +265,7 @@ public class CheckMonitoredTrip implements Runnable {
             if (ItineraryUtils.itinerariesMatch(trip.itinerary, candidateItinerary)) {
                 // matching itinerary found!
                 LOG.info("Found matching itinerary!");
+                trip.attemptsToGetMatchingItinerary = 0;
 
                 // Set the matching itinerary.
                 matchingItinerary = candidateItinerary;
@@ -283,38 +303,66 @@ public class CheckMonitoredTrip implements Runnable {
         // If this point is reached, a matching itinerary was not found
         LOG.warn("No comparison itinerary found in otp response for trip");
 
-        // Check whether this trip should no longer ever be checked due to not having matching itineraries on any
-        // monitored day of the week. For trips that are only monitored on one day of the week, they could have been not
-        // possible for just that day, but could again be possible the next week. Therefore, this checks if the trip
-        // was not possible on all monitored days of the previous week and if so, it updates the journeyState to say
-        // that the trip is no longer possible.
-        boolean noMatchingItineraryFoundOnPreviousChecks =
-            !trip.itineraryExistence.isPossibleOnAtLeastOneMonitoredDayOfTheWeek(trip);
-        journeyState.tripStatus = noMatchingItineraryFoundOnPreviousChecks
-            ? TripStatus.NO_LONGER_POSSIBLE
-            : TripStatus.NEXT_TRIP_NOT_POSSIBLE;
+        if (hasReachedMaxItineraryChecks()) {
+            // Check whether this trip should no longer ever be checked due to not having matching itineraries on any
+            // monitored day of the week. For trips that are only monitored on one day of the week, they could have been not
+            // possible for just that day, but could again be possible the next week. Therefore, this checks if the trip
+            // was not possible on all monitored days of the previous week and if so, it updates the journeyState to say
+            // that the trip is no longer possible.
+            boolean noMatchingItineraryFoundOnPreviousChecks =
+                !trip.itineraryExistence.isPossibleOnAtLeastOneMonitoredDayOfTheWeek(trip);
+            journeyState.tripStatus = noMatchingItineraryFoundOnPreviousChecks
+                ? TripStatus.NO_LONGER_POSSIBLE
+                : TripStatus.NEXT_TRIP_NOT_POSSIBLE;
 
-        LOG.info(
-            noMatchingItineraryFoundOnPreviousChecks
-                ? "Trip checking has no more possible days to check, TRIP NO LONGER POSSIBLE!"
-                : "Trip is not possible today, will check again next week."
-        );
+            LOG.info(
+                noMatchingItineraryFoundOnPreviousChecks
+                    ? "Trip checking has no more possible days to check, TRIP NO LONGER POSSIBLE!"
+                    : "Trip is not possible today, will check again next week."
+            );
 
-        // update trip itinerary existence to reflect that trip was not possible on this day of the week
-        trip.itineraryExistence
-            .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek())
-            .handleInvalidDate(targetZonedDateTime);
-        updateMonitoredTrip();
+            // update trip itinerary existence to reflect that trip was not possible on this day of the week
+            trip.itineraryExistence
+                .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek())
+                .handleInvalidDate(targetZonedDateTime);
+            updateMonitoredTrip();
 
-        // send an appropriate notification if the trip is still possible on another day of the week, or if it is now
-        // not possible on any day of the week that the trip should be monitored
-        enqueueNotification(
-            TripMonitorNotification.createItineraryNotFoundNotification(
-                !noMatchingItineraryFoundOnPreviousChecks,
-                getOtpUserLocale()
-            )
-        );
+            // send an appropriate notification if the trip is still possible on another day of the week, or if it is now
+            // not possible on any day of the week that the trip should be monitored
+            enqueueNotification(
+                TripMonitorNotification.createItineraryNotFoundNotification(
+                    !noMatchingItineraryFoundOnPreviousChecks,
+                    getOtpUserLocale()
+                )
+            );
+        }
         return false;
+    }
+
+    /**
+     * If the OTP response does not contain the expected itinerary, check the number of attempts made and decide whether
+     * to try again or stop checking.
+     */
+    private boolean hasReachedMaxItineraryChecks() {
+        if (!hasTolerantItineraryCheck) {
+            LOG.info("Tolerant itinerary check disabled.");
+            return true;
+        }
+        trip.attemptsToGetMatchingItinerary++;
+        LOG.info(
+            "Attempt {} of {} to get matching itinerary.",
+            trip.attemptsToGetMatchingItinerary,
+            MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS
+        );
+        if (trip.attemptsToGetMatchingItinerary < MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS) {
+            if (Persistence.monitoredTrips.getById(trip.id) == null) {
+                // Trip has been deleted. Continue as if maximum itinerary checks have been reached.
+                return true;
+            }
+            Persistence.monitoredTrips.replace(trip.id, trip);
+            return false;
+        }
+        return true;
     }
 
     /** Default implementation for OtpResponse provider that actually invokes the OTP server. */

@@ -178,6 +178,11 @@ public class MonitoredTrip extends Model {
     public RelatedUser companion;
     public List<RelatedUser> observers = new ArrayList<>();
 
+    /**
+     * The number of attempts made to obtain a trip's itinerary from OTP which matches this trip.
+     */
+    public int attemptsToGetMatchingItinerary;
+
     public MonitoredTrip() {
     }
 
