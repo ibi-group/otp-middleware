@@ -3116,6 +3116,9 @@ definitions:
           $ref: "#/definitions/UserLocation"
       storeTripHistory:
         type: "boolean"
+      lastTripSurveyNotificationSent:
+        type: "string"
+        format: "date"
       applicationId:
         type: "string"
   MobilityProfile:
