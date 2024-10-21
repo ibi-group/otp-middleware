@@ -140,11 +140,6 @@ public class TripSurveySenderJob implements Runnable {
         return map;
     }
 
-    public static Optional<TrackedJourney> selectMostDeviatedJourney(List<TrackedJourney> journeys) {
-        if (journeys == null) return Optional.empty();
-        return journeys.stream().max(Comparator.comparingDouble(j -> j.totalDeviation));
-    }
-
     public static Optional<TrackedJourney> selectMostDeviatedJourneyUsingDeviatedPoints(List<TrackedJourney> journeys) {
         if (journeys == null) return Optional.empty();
         final double INTERVALS_IN_ONE_MINUTE = Math.ceil(60.0 / TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS);

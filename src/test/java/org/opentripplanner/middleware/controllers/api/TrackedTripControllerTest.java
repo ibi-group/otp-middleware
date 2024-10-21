@@ -190,8 +190,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         // Check that the TrackedJourney Mongo record has been updated.
         TrackedJourney mongoTrackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(TERMINATED_BY_USER, mongoTrackedJourney.endCondition);
-        assertNotNull(mongoTrackedJourney.totalDeviation);
-        assertNotEquals(0.0, mongoTrackedJourney.totalDeviation);
+        assertNotEquals(-1, mongoTrackedJourney.longestConsecutiveDeviatedPoints);
         DateTimeUtils.useSystemDefaultClockAndTimezone();
     }
 
@@ -409,8 +408,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         // Check that the TrackedJourney Mongo record has been updated.
         TrackedJourney mongoTrackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(FORCIBLY_TERMINATED, mongoTrackedJourney.endCondition);
-        assertNotNull(mongoTrackedJourney.totalDeviation);
-        assertNotEquals(0.0, mongoTrackedJourney.totalDeviation);
+        assertNotEquals(-1, mongoTrackedJourney.longestConsecutiveDeviatedPoints);
     }
 
     @Test

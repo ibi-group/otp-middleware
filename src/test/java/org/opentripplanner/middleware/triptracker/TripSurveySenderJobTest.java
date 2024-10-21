@@ -123,7 +123,6 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         journey.endCondition = endCondition;
         journey.endTime = endTime != null ? Date.from(endTime) : null;
         journey.startTime = journey.endTime;
-        journey.totalDeviation = (double)points;
         journey.longestConsecutiveDeviatedPoints = points;
         Persistence.trackedJourneys.create(journey);
         return journey;
@@ -146,21 +145,6 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         for (TrackedJourney journey : userJourneys) {
             assertEquals(trip, journey.trip);
         }
-    }
-
-    @Test
-    void canSelectMostDeviatedJourney() {
-        TrackedJourney journey1 = new TrackedJourney();
-        journey1.totalDeviation = 250.0;
-        journey1.endTime = Date.from(Instant.now().minus(3, ChronoUnit.HOURS));
-
-        TrackedJourney journey2 = new TrackedJourney();
-        journey2.totalDeviation = 400.0;
-        journey2.endTime = Date.from(Instant.now().minus(5, ChronoUnit.HOURS));
-
-        Optional<TrackedJourney> optJourney = TripSurveySenderJob.selectMostDeviatedJourney(List.of(journey1, journey2));
-        assertTrue(optJourney.isPresent());
-        assertEquals(journey2, optJourney.get());
     }
 
     @Test

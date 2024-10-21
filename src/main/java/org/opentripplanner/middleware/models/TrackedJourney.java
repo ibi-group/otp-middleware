@@ -27,9 +27,7 @@ public class TrackedJourney extends Model {
 
     public Map<String, String> busNotificationMessages = new HashMap<>();
 
-    public Double totalDeviation;
-
-    public int longestConsecutiveDeviatedPoints;
+    public int longestConsecutiveDeviatedPoints = -1;
 
     public transient MonitoredTrip trip;
 
@@ -42,7 +40,7 @@ public class TrackedJourney extends Model {
 
     public static final String END_CONDITION_FIELD_NAME = "endCondition";
 
-    public static final String TOTAL_DEVIATION_FIELD_NAME = "totalDeviation";
+    public static final String LONGEST_CONSECUTIVE_DEVIATED_POINTS_FIELD_NAME = "longestConsecutiveDeviatedPoints";
 
     public static final String TERMINATED_BY_USER = "Tracking terminated by user.";
 
@@ -118,15 +116,20 @@ public class TrackedJourney extends Model {
         int count = 0;
         int maxCount = 0;
         for (TrackingLocation location : locations) {
-            // Traveler must be moving (speed != 0) for a deviated location to be counted.
-            if (location.tripStatus == TripStatus.DEVIATED) {
-                if (location.speed != 0) {
-                    count++;
-                    if (maxCount < count) maxCount = count;
+            // A trip status must have been computed for a location to count.
+            // (The mobile app will send many other more for reference, but only those for which we compute a status
+            // (i.e. the last coordinate in every batch) will potentially count.
+            if (location.tripStatus != null) {
+                // Traveler must be moving (speed != 0) for a deviated location to be counted.
+                if (location.tripStatus == TripStatus.DEVIATED) {
+                    if (location.speed != 0) {
+                        count++;
+                        if (maxCount < count) maxCount = count;
+                    }
+                } else {
+                    // If a location has a status computed and is not deviated, reset the streak.
+                    count = 0;
                 }
-            } else {
-                // If a location is not deviated, reset the streak.
-                count = 0;
             }
         }
         return maxCount;
