@@ -128,6 +128,8 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      * Makes a call to the bus driver notification API, followed by a call to the bus priority API.
      */
     private static void makeApiRequests(TravelerPosition travelerPosition, String body, String routeId, String action) {
+        LOG.info("Sending bus operator/priority requests: {}", body);
+
         var httpStatus = postBusDriverNotification(body);
         if (httpStatus == HttpStatus.OK_200) {
             travelerPosition.trackedJourney.updateNotificationMessage(routeId, body);
