@@ -56,6 +56,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     public static final int DEFAULT_OFFSET = 0;
     public static final String OFFSET_PARAM = "offset";
     public static final String USER_ID_PARAM = "userId";
+    public static final String ID_FIELD_NAME = "_id";
 
     public static final ParameterDescriptor LIMIT = ParameterDescriptor.newBuilder()
         .withName(LIMIT_PARAM)
@@ -219,7 +220,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
             // will be limited to just the entity matching this Otp user.
             Bson filter = (requestingUser.apiUser != null)
                 ? Filters.eq("applicationId", requestingUser.apiUser.id)
-                : Filters.eq("_id", requestingUser.otpUser.id);
+                : Filters.eq(ID_FIELD_NAME, requestingUser.otpUser.id);
             return persistence.getResponseList(filter, offset, limit);
         } else if (requestingUser.isAPIUser()) {
             // A user id must be provided if the request is being made by a third party user.

@@ -35,6 +35,8 @@ import java.util.function.Function;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MonitoredTrip extends Model {
 
+    public static final String USER_ID_FIELD_NAME = "userId";
+
     /**
      * Mongo Id of the {@link OtpUser} who owns this monitored trip.
      */
