@@ -35,7 +35,7 @@ tags:
 - name: "api/secure/connected-data"
   description: "Interface for listing and downloading CDP files from S3."
 - name: "otp"
-  description: "Proxy interface for OTP 1 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+  description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
 - name: "otp2"
   description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
@@ -56,9 +56,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
           schema:
+            $ref: "#/definitions/AdminUser"
+          responseSchema:
             $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -90,9 +90,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
           schema:
+            $ref: "#/definitions/AdminUser"
+          responseSchema:
             $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -123,9 +123,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/Job"
           schema:
+            $ref: "#/definitions/Job"
+          responseSchema:
             $ref: "#/definitions/Job"
   /api/admin/user:
     get:
@@ -155,9 +155,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -178,9 +178,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
           schema:
+            $ref: "#/definitions/AdminUser"
+          responseSchema:
             $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -220,9 +220,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
           schema:
+            $ref: "#/definitions/AdminUser"
+          responseSchema:
             $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -269,9 +269,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
           schema:
+            $ref: "#/definitions/AdminUser"
+          responseSchema:
             $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -309,9 +309,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/AdminUser"
           schema:
+            $ref: "#/definitions/AdminUser"
+          responseSchema:
             $ref: "#/definitions/AdminUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -356,9 +356,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -402,9 +402,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -447,9 +447,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/TokenHolder"
           schema:
+            $ref: "#/definitions/TokenHolder"
+          responseSchema:
             $ref: "#/definitions/TokenHolder"
   /api/secure/application/fromtoken:
     get:
@@ -464,9 +464,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -498,9 +498,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -531,9 +531,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/Job"
           schema:
+            $ref: "#/definitions/Job"
+          responseSchema:
             $ref: "#/definitions/Job"
   /api/secure/application:
     get:
@@ -563,9 +563,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -586,9 +586,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -628,9 +628,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -677,9 +677,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -717,9 +717,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ApiUser"
           schema:
+            $ref: "#/definitions/ApiUser"
+          responseSchema:
             $ref: "#/definitions/ApiUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -754,9 +754,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/CDPUser"
           schema:
+            $ref: "#/definitions/CDPUser"
+          responseSchema:
             $ref: "#/definitions/CDPUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -788,9 +788,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/CDPUser"
           schema:
+            $ref: "#/definitions/CDPUser"
+          responseSchema:
             $ref: "#/definitions/CDPUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -821,9 +821,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/Job"
           schema:
+            $ref: "#/definitions/Job"
+          responseSchema:
             $ref: "#/definitions/Job"
   /api/secure/cdp:
     get:
@@ -853,9 +853,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -876,9 +876,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/CDPUser"
           schema:
+            $ref: "#/definitions/CDPUser"
+          responseSchema:
             $ref: "#/definitions/CDPUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -918,9 +918,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/CDPUser"
           schema:
+            $ref: "#/definitions/CDPUser"
+          responseSchema:
             $ref: "#/definitions/CDPUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -967,9 +967,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/CDPUser"
           schema:
+            $ref: "#/definitions/CDPUser"
+          responseSchema:
             $ref: "#/definitions/CDPUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1007,9 +1007,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/CDPUser"
           schema:
+            $ref: "#/definitions/CDPUser"
+          responseSchema:
             $ref: "#/definitions/CDPUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1050,9 +1050,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/ItineraryExistence"
           schema:
+            $ref: "#/definitions/ItineraryExistence"
+          responseSchema:
             $ref: "#/definitions/ItineraryExistence"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1102,9 +1102,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -1125,9 +1125,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
           schema:
+            $ref: "#/definitions/MonitoredTrip"
+          responseSchema:
             $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1167,9 +1167,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
           schema:
+            $ref: "#/definitions/MonitoredTrip"
+          responseSchema:
             $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1216,9 +1216,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
           schema:
+            $ref: "#/definitions/MonitoredTrip"
+          responseSchema:
             $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1257,9 +1257,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredTrip"
           schema:
+            $ref: "#/definitions/MonitoredTrip"
+          responseSchema:
             $ref: "#/definitions/MonitoredTrip"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1298,9 +1298,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/TrackingResponse"
           schema:
+            $ref: "#/definitions/TrackingResponse"
+          responseSchema:
             $ref: "#/definitions/TrackingResponse"
   /api/secure/monitoredtrip/updatetracking:
     post:
@@ -1319,9 +1319,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/TrackingResponse"
           schema:
+            $ref: "#/definitions/TrackingResponse"
+          responseSchema:
             $ref: "#/definitions/TrackingResponse"
   /api/secure/monitoredtrip/track:
     post:
@@ -1340,9 +1340,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/TrackingResponse"
           schema:
+            $ref: "#/definitions/TrackingResponse"
+          responseSchema:
             $ref: "#/definitions/TrackingResponse"
   /api/secure/monitoredtrip/endtracking:
     post:
@@ -1361,9 +1361,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/EndTrackingResponse"
           schema:
+            $ref: "#/definitions/EndTrackingResponse"
+          responseSchema:
             $ref: "#/definitions/EndTrackingResponse"
   /api/secure/monitoredtrip/forciblyendtracking:
     post:
@@ -1382,9 +1382,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/EndTrackingResponse"
           schema:
+            $ref: "#/definitions/EndTrackingResponse"
+          responseSchema:
             $ref: "#/definitions/EndTrackingResponse"
   /api/secure/triprequests:
     get:
@@ -1430,9 +1430,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/TripRequest"
           schema:
+            $ref: "#/definitions/TripRequest"
+          responseSchema:
             $ref: "#/definitions/TripRequest"
   /api/secure/monitoredcomponent:
     get:
@@ -1462,9 +1462,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -1485,9 +1485,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
           schema:
+            $ref: "#/definitions/MonitoredComponent"
+          responseSchema:
             $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1527,9 +1527,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
           schema:
+            $ref: "#/definitions/MonitoredComponent"
+          responseSchema:
             $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1576,9 +1576,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
           schema:
+            $ref: "#/definitions/MonitoredComponent"
+          responseSchema:
             $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1617,9 +1617,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
           schema:
+            $ref: "#/definitions/MonitoredComponent"
+          responseSchema:
             $ref: "#/definitions/MonitoredComponent"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1660,9 +1660,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/VerificationResult"
           schema:
+            $ref: "#/definitions/VerificationResult"
+          responseSchema:
             $ref: "#/definitions/VerificationResult"
   /api/secure/user/{id}/verify_sms/{code}:
     post:
@@ -1683,9 +1683,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/VerificationResult"
           schema:
+            $ref: "#/definitions/VerificationResult"
+          responseSchema:
             $ref: "#/definitions/VerificationResult"
   /api/secure/user/fromtoken:
     get:
@@ -1700,9 +1700,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
           schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1734,9 +1734,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
           schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1767,9 +1767,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/Job"
           schema:
+            $ref: "#/definitions/Job"
+          responseSchema:
             $ref: "#/definitions/Job"
   /api/secure/user:
     get:
@@ -1799,9 +1799,9 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
           schema:
+            $ref: "#/definitions/ResponseList"
+          responseSchema:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
@@ -1822,9 +1822,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
           schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1864,9 +1864,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
           schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1913,9 +1913,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
           schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -1953,9 +1953,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/OtpUser"
           schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -2010,11 +2010,11 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
+          schema:
             type: "array"
             items:
               $ref: "#/definitions/ApiUsageResult"
-          schema:
+          responseSchema:
             type: "array"
             items:
               $ref: "#/definitions/ApiUsageResult"
@@ -2041,11 +2041,11 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
+          schema:
             type: "array"
             items:
               $ref: "#/definitions/BugsnagEvent"
-          schema:
+          responseSchema:
             type: "array"
             items:
               $ref: "#/definitions/BugsnagEvent"
@@ -2072,11 +2072,11 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
+          schema:
             type: "array"
             items:
               $ref: "#/definitions/CDPFile"
-          schema:
+          responseSchema:
             type: "array"
             items:
               $ref: "#/definitions/CDPFile"
@@ -2097,11 +2097,11 @@ paths:
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
+          schema:
             type: "array"
             items:
               $ref: "#/definitions/URL"
-          schema:
+          responseSchema:
             type: "array"
             items:
               $ref: "#/definitions/URL"
@@ -2109,7 +2109,7 @@ paths:
     get:
       tags:
       - "otp"
-      description: "Forwards any GET request to OTP 1. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+      description: "Forwards any GET request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
       produces:
       - "application/json"
@@ -2127,7 +2127,7 @@ paths:
     post:
       tags:
       - "otp"
-      description: "Forwards any POST request to OTP 1. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+      description: "Forwards any POST request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
       produces:
       - "application/json"
@@ -2269,6 +2269,32 @@ definitions:
         type: "string"
       S3DownloadTimes:
         $ref: "#/definitions/Map"
+  TripStop:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      gtfsId:
+        type: "string"
+  Stop:
+    type: "object"
+    properties:
+      alerts:
+        type: "array"
+        items:
+          $ref: "#/definitions/LocalizedAlert"
+      code:
+        type: "string"
+      gtfsId:
+        type: "string"
+      id:
+        type: "string"
+      lon:
+        type: "number"
+        format: "double"
+      lat:
+        type: "number"
+        format: "double"
   TripMonitorNotification:
     type: "object"
     properties:
@@ -2293,33 +2319,13 @@ definitions:
       length:
         type: "integer"
         format: "int32"
-  FareDetails:
+  OtpGraphQLTransportMode:
     type: "object"
     properties:
-      regular:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
-      student:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
-      senior:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
-      tram:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
-      special:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
-      youth:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
+      mode:
+        type: "string"
+      qualifier:
+        type: "string"
   Step:
     type: "object"
     properties:
@@ -2359,6 +2365,276 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/Itinerary"
+  Currency:
+    type: "object"
+    properties:
+      symbol:
+        type: "string"
+      currency:
+        type: "string"
+      defaultFractionDigits:
+        type: "integer"
+        format: "int32"
+      currencyCode:
+        type: "string"
+  Itinerary:
+    type: "object"
+    properties:
+      duration:
+        type: "integer"
+        format: "int64"
+      startTime:
+        type: "string"
+        format: "date"
+      endTime:
+        type: "string"
+        format: "date"
+      walkTime:
+        type: "integer"
+        format: "int64"
+      transitTime:
+        type: "integer"
+        format: "int64"
+      waitingTime:
+        type: "integer"
+        format: "int64"
+      walkDistance:
+        type: "number"
+        format: "double"
+      walkLimitExceeded:
+        type: "boolean"
+      elevationLost:
+        type: "number"
+        format: "double"
+      elevationGained:
+        type: "number"
+        format: "double"
+      transfers:
+        type: "integer"
+        format: "int32"
+      fare:
+        $ref: "#/definitions/FareWrapper"
+      legs:
+        type: "array"
+        items:
+          $ref: "#/definitions/Leg"
+  OtpGraphQLVariables:
+    type: "object"
+    properties:
+      arriveBy:
+        type: "boolean"
+      banned:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      bikeReluctance:
+        type: "number"
+        format: "float"
+      carReluctance:
+        type: "number"
+        format: "float"
+      date:
+        type: "string"
+      fromPlace:
+        type: "string"
+      mobilityProfile:
+        type: "string"
+      modes:
+        type: "array"
+        items:
+          $ref: "#/definitions/OtpGraphQLTransportMode"
+      numItineraries:
+        type: "integer"
+        format: "int32"
+      preferred:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      time:
+        type: "string"
+      toPlace:
+        type: "string"
+      unpreferred:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      walkReluctance:
+        type: "number"
+        format: "float"
+      walkSpeed:
+        type: "number"
+        format: "float"
+      wheelchair:
+        type: "boolean"
+  FareWrapper:
+    type: "object"
+    properties:
+      fare:
+        $ref: "#/definitions/Fare"
+      details:
+        $ref: "#/definitions/FareDetails"
+  LocalizedAlert:
+    type: "object"
+    properties:
+      alertHeaderText:
+        type: "string"
+      alertDescriptionText:
+        type: "string"
+      alertUrl:
+        type: "string"
+      effectiveStartDate:
+        type: "string"
+        format: "date"
+      effectiveEndDate:
+        type: "string"
+        format: "date"
+      id:
+        type: "string"
+  Route:
+    type: "object"
+    properties:
+      alerts:
+        type: "array"
+        items:
+          $ref: "#/definitions/LocalizedAlert"
+      color:
+        type: "string"
+      gtfsId:
+        type: "string"
+      id:
+        type: "string"
+      longName:
+        type: "string"
+      shortName:
+        type: "string"
+      textColor:
+        type: "string"
+      type:
+        type: "integer"
+        format: "int32"
+  MonitoredTrip:
+    type: "object"
+    properties:
+      userId:
+        type: "string"
+      tripName:
+        type: "string"
+      tripTime:
+        type: "string"
+      from:
+        $ref: "#/definitions/Place"
+      to:
+        $ref: "#/definitions/Place"
+      arriveBy:
+        type: "boolean"
+      leadTimeInMinutes:
+        type: "integer"
+        format: "int32"
+      monday:
+        type: "boolean"
+      tuesday:
+        type: "boolean"
+      wednesday:
+        type: "boolean"
+      thursday:
+        type: "boolean"
+      friday:
+        type: "boolean"
+      saturday:
+        type: "boolean"
+      sunday:
+        type: "boolean"
+      excludeFederalHolidays:
+        type: "boolean"
+      isActive:
+        type: "boolean"
+      snoozed:
+        type: "boolean"
+      queryParams:
+        type: "string"
+      otp2QueryParams:
+        $ref: "#/definitions/OtpGraphQLVariables"
+      itinerary:
+        $ref: "#/definitions/Itinerary"
+      notifyOnAlert:
+        type: "boolean"
+      departureVarianceMinutesThreshold:
+        type: "integer"
+        format: "int32"
+      arrivalVarianceMinutesThreshold:
+        type: "integer"
+        format: "int32"
+      notifyOnItineraryChange:
+        type: "boolean"
+      itineraryExistence:
+        $ref: "#/definitions/ItineraryExistence"
+      journeyState:
+        $ref: "#/definitions/JourneyState"
+      notifyAtLeadingInterval:
+        type: "boolean"
+      attemptsToGetMatchingItinerary:
+        type: "integer"
+        format: "int32"
+  StopTime:
+    type: "object"
+    properties:
+      stop:
+        $ref: "#/definitions/TripStop"
+      stopPosition:
+        type: "integer"
+        format: "int32"
+  Trip:
+    type: "object"
+    properties:
+      gtfsId:
+        type: "string"
+      id:
+        type: "string"
+      departureStoptime:
+        $ref: "#/definitions/StopTime"
+      arrivalStoptime:
+        $ref: "#/definitions/StopTime"
+  Agency:
+    type: "object"
+    properties:
+      alerts:
+        type: "array"
+        items:
+          $ref: "#/definitions/LocalizedAlert"
+      gtfsId:
+        type: "string"
+      id:
+        type: "string"
+      name:
+        type: "string"
+  OtpGraphQLRoutesAndTrips:
+    type: "object"
+    properties:
+      routes:
+        type: "string"
+      trips:
+        type: "string"
+  FareDetails:
+    type: "object"
+    properties:
+      regular:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
+      student:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
+      senior:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
+      tram:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
+      special:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
+      youth:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareComponent"
   Fare:
     type: "object"
     properties:
@@ -2462,13 +2738,19 @@ definitions:
           $ref: "#/definitions/LocalizedAlert"
       headsign:
         type: "string"
+      agency:
+        $ref: "#/definitions/Agency"
+      route:
+        $ref: "#/definitions/Route"
+      trip:
+        $ref: "#/definitions/Trip"
   OtpRequest:
     type: "object"
     properties:
       dateTime:
         $ref: "#/definitions/ZonedDateTime"
       requestParameters:
-        $ref: "#/definitions/Map"
+        $ref: "#/definitions/OtpGraphQLVariables"
   Price:
     type: "object"
     properties:
@@ -2511,18 +2793,6 @@ definitions:
         format: "date"
       otpResponseProvider:
         $ref: "#/definitions/Function"
-  Currency:
-    type: "object"
-    properties:
-      symbol:
-        type: "string"
-      currency:
-        type: "string"
-      defaultFractionDigits:
-        type: "integer"
-        format: "int32"
-      currencyCode:
-        type: "string"
   JourneyState:
     type: "object"
     properties:
@@ -2562,47 +2832,6 @@ definitions:
         - "PAST_TRIP"
       hasRealtimeData:
         type: "boolean"
-  Itinerary:
-    type: "object"
-    properties:
-      duration:
-        type: "integer"
-        format: "int64"
-      startTime:
-        type: "string"
-        format: "date"
-      endTime:
-        type: "string"
-        format: "date"
-      walkTime:
-        type: "integer"
-        format: "int64"
-      transitTime:
-        type: "integer"
-        format: "int64"
-      waitingTime:
-        type: "integer"
-        format: "int64"
-      walkDistance:
-        type: "number"
-        format: "double"
-      walkLimitExceeded:
-        type: "boolean"
-      elevationLost:
-        type: "number"
-        format: "double"
-      elevationGained:
-        type: "number"
-        format: "double"
-      transfers:
-        type: "integer"
-        format: "int32"
-      fare:
-        $ref: "#/definitions/FareWrapper"
-      legs:
-        type: "array"
-        items:
-          $ref: "#/definitions/Leg"
   FareComponent:
     type: "object"
     properties:
@@ -2614,13 +2843,6 @@ definitions:
         type: "array"
         items:
           type: "string"
-  FareWrapper:
-    type: "object"
-    properties:
-      fare:
-        $ref: "#/definitions/Fare"
-      details:
-        $ref: "#/definitions/FareDetails"
   Place:
     type: "object"
     properties:
@@ -2644,6 +2866,8 @@ definitions:
       arrival:
         type: "string"
         format: "date"
+      stop:
+        $ref: "#/definitions/Stop"
       stopIndex:
         type: "integer"
         format: "int32"
@@ -2664,81 +2888,6 @@ definitions:
           type: "string"
       address:
         type: "string"
-  LocalizedAlert:
-    type: "object"
-    properties:
-      alertHeaderText:
-        type: "string"
-      alertDescriptionText:
-        type: "string"
-      alertUrl:
-        type: "string"
-      effectiveStartDate:
-        type: "string"
-        format: "date"
-      effectiveEndDate:
-        type: "string"
-        format: "date"
-      id:
-        type: "string"
-  MonitoredTrip:
-    type: "object"
-    properties:
-      userId:
-        type: "string"
-      tripName:
-        type: "string"
-      tripTime:
-        type: "string"
-      from:
-        $ref: "#/definitions/Place"
-      to:
-        $ref: "#/definitions/Place"
-      arriveBy:
-        type: "boolean"
-      leadTimeInMinutes:
-        type: "integer"
-        format: "int32"
-      monday:
-        type: "boolean"
-      tuesday:
-        type: "boolean"
-      wednesday:
-        type: "boolean"
-      thursday:
-        type: "boolean"
-      friday:
-        type: "boolean"
-      saturday:
-        type: "boolean"
-      sunday:
-        type: "boolean"
-      excludeFederalHolidays:
-        type: "boolean"
-      isActive:
-        type: "boolean"
-      snoozed:
-        type: "boolean"
-      queryParams:
-        type: "string"
-      itinerary:
-        $ref: "#/definitions/Itinerary"
-      notifyOnAlert:
-        type: "boolean"
-      departureVarianceMinutesThreshold:
-        type: "integer"
-        format: "int32"
-      arrivalVarianceMinutesThreshold:
-        type: "integer"
-        format: "int32"
-      notifyOnItineraryChange:
-        type: "boolean"
-      itineraryExistence:
-        $ref: "#/definitions/ItineraryExistence"
-      journeyState:
-        $ref: "#/definitions/JourneyState"
-      notifyAtLeadingInterval:
-        type: "boolean"
   StartTrackingPayload:
     type: "object"
     properties:

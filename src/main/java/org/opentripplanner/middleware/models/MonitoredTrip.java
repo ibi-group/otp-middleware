@@ -4,13 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.FindIterable;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
-import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
@@ -21,24 +19,14 @@ import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
+import spark.Request;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.mongodb.client.model.Filters.eq;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.DATE_PARAM;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.MODE_PARAM;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.TIME_PARAM;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
@@ -139,7 +127,13 @@ public class MonitoredTrip extends Model {
     /**
      * Query params. Query parameters influencing trip.
      */
+    // TODO: Remove
     public String queryParams;
+
+    /**
+     * GraphQL query parameters for OTP.
+     */
+    public OtpGraphQLVariables otp2QueryParams = new OtpGraphQLVariables();
 
     /**
      * The trip's itinerary
@@ -181,20 +175,23 @@ public class MonitoredTrip extends Model {
      */
     public boolean notifyAtLeadingInterval = true;
 
+    /**
+     * The number of attempts made to obtain a trip's itinerary from OTP which matches this trip.
+     */
+    public int attemptsToGetMatchingItinerary;
+
     public MonitoredTrip() {
     }
 
     /**
      * Used only during testing
      */
-    public MonitoredTrip(OtpDispatcherResponse otpDispatcherResponse) throws URISyntaxException,
-        JsonProcessingException {
-        queryParams = otpDispatcherResponse.requestUri.getQuery();
+    public MonitoredTrip(OtpGraphQLVariables otp2QueryParams, OtpDispatcherResponse otpDispatcherResponse) throws JsonProcessingException {
         TripPlan plan = otpDispatcherResponse.getResponse().plan;
         itinerary = plan.itineraries.get(0);
 
         // extract trip time from parsed params and itinerary
-        initializeFromItineraryAndQueryParams();
+        initializeFromItineraryAndQueryParams(otp2QueryParams);
     }
 
     /**
@@ -204,7 +201,7 @@ public class MonitoredTrip extends Model {
     public boolean checkItineraryExistence(
         boolean replaceItinerary,
         Function<OtpRequest, OtpResponse> otpResponseProvider
-    ) throws URISyntaxException {
+    ) {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
         itineraryExistence = new ItineraryExistence(queriesByDate, itinerary, arriveBy, otpResponseProvider);
@@ -219,7 +216,7 @@ public class MonitoredTrip extends Model {
     /**
      * Shorthand for above method using the default otpResponseProvider.
      */
-    public boolean checkItineraryExistence(boolean replaceItinerary) throws URISyntaxException {
+    public boolean checkItineraryExistence(boolean replaceItinerary) {
         return checkItineraryExistence(replaceItinerary, null);
     }
 
@@ -227,9 +224,8 @@ public class MonitoredTrip extends Model {
      * Replace the itinerary provided with the monitored trip
      * with a non-real-time, verified itinerary from the responses provided.
      */
-    private boolean updateTripWithVerifiedItinerary() throws URISyntaxException {
-        Map<String, String> params = parseQueryParams();
-        String queryDate = params.get(DATE_PARAM);
+    private boolean updateTripWithVerifiedItinerary() {
+        String queryDate = otp2QueryParams.date;
         DayOfWeek dayOfWeek = DateTimeUtils.getDateFromQueryDateString(queryDate).getDayOfWeek();
 
         // Find the response corresponding to the day of the query.
@@ -241,7 +237,7 @@ public class MonitoredTrip extends Model {
         if (verifiedItinerary != null) {
             // Set itinerary for monitored trip if verified itinerary is available.
             this.itinerary = verifiedItinerary;
-            this.initializeFromItineraryAndQueryParams();
+            this.initializeFromItineraryAndQueryParams(otp2QueryParams);
             return true;
         } else {
             // Otherwise, set itinerary existence error/message.
@@ -256,10 +252,9 @@ public class MonitoredTrip extends Model {
      */
     @JsonIgnore
     @BsonIgnore
-    public List<OtpRequest> getItineraryExistenceQueries()
-        throws URISyntaxException {
+    public List<OtpRequest> getItineraryExistenceQueries() {
         return ItineraryUtils.getOtpRequestsForDates(
-            ItineraryUtils.excludeRealtime(parseQueryParams()),
+            otp2QueryParams,
             ItineraryUtils.getDatesToCheckItineraryExistence(this)
         );
     }
@@ -268,24 +263,26 @@ public class MonitoredTrip extends Model {
      * Initializes a MonitoredTrip by deriving some fields from the currently set itinerary. Also, the realtime info of
      * the itinerary is removed.
      */
-    public void initializeFromItineraryAndQueryParams() throws IllegalArgumentException, URISyntaxException {
+    public void initializeFromItineraryAndQueryParams(Request req) throws IllegalArgumentException, JsonProcessingException {
+        initializeFromItineraryAndQueryParams(OtpGraphQLVariables.fromMonitoredTripRequest(req));
+    }
+
+    /**
+     * Initializes a MonitoredTrip by deriving some fields from the currently set itinerary. Also, the realtime info of
+     * the itinerary is removed.
+     */
+    public void initializeFromItineraryAndQueryParams(OtpGraphQLVariables graphQLVariables) throws IllegalArgumentException {
         int lastLegIndex = itinerary.legs.size() - 1;
         from = itinerary.legs.get(0).from;
         to = itinerary.legs.get(lastLegIndex).to;
-        Map<String, String> parsedQueryParams = parseQueryParams();
-
-        // Update modes in query params with set derived from itinerary. This ensures that, when sending requests to OTP
-        // for trip monitoring, we are querying the modes retained by the user when they saved the itinerary.
-        Set<String> modes = ItineraryUtils.deriveModesFromItinerary(itinerary);
-        parsedQueryParams.put(MODE_PARAM, String.join(",", modes));
-        this.queryParams = ItineraryUtils.toQueryString(parsedQueryParams);
-        this.arriveBy = parsedQueryParams.getOrDefault("arriveBy", "false").equals("true");
+        this.otp2QueryParams = graphQLVariables;
+        this.arriveBy = graphQLVariables.arriveBy;
 
         // Ensure the itinerary we store does not contain any realtime info.
         clearRealtimeInfo();
 
         // set the trip time by parsing the query params
-        tripTime = parsedQueryParams.get(TIME_PARAM);
+        tripTime = graphQLVariables.time;
         if (tripTime == null) {
             throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
         }
@@ -373,10 +370,6 @@ public class MonitoredTrip extends Model {
         return super.canBeManagedBy(requestingUser);
     }
 
-    private Bson tripIdFilter() {
-        return eq("monitoredTripId", this.id);
-    }
-
     /**
      * Clear real-time info from itinerary to store.
      * FIXME: Do we need to clear more than the alerts?
@@ -396,22 +389,6 @@ public class MonitoredTrip extends Model {
     public boolean delete() {
         // TODO: Add journey state deletion.
         return Persistence.monitoredTrips.removeById(this.id);
-    }
-
-    /**
-     * Parse the query params for this trip into a map of the variables.
-     */
-    public Map<String, String> parseQueryParams() throws URISyntaxException {
-        // If for some reason a leading ? is present in queryParams, skip it.
-        // (We already include a ? when calling URLEncodedUtils.parse below.)
-        String queryParamsWithoutQuestion = queryParams.startsWith("?")
-            ? queryParams.substring(1)
-            : queryParams;
-
-        return URLEncodedUtils.parse(
-            new URI(String.format("http://example.com/plan?%s", queryParamsWithoutQuestion)),
-            UTF_8
-        ).stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
     }
 
     /**
