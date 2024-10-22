@@ -73,6 +73,8 @@ public class BusOperatorActions {
                 LOG.error("Could not trigger class {} for agency {}", action.trigger, action.agencyId, e);
                 throw new RuntimeException(e);
             }
+        } else {
+            LOG.warn("No agency action found for this notification.");
         }
     }
 
