@@ -351,7 +351,7 @@ public class ItineraryUtils {
      * Get the stop id from place.
      */
     public static String getStopIdFromPlace(Place place) {
-        return (place != null) ? place.stopId : null;
+        return (place != null) ? place.stop.gtfsId : null;
     }
 
     /**
