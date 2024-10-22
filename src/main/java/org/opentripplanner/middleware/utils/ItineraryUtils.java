@@ -330,21 +330,21 @@ public class ItineraryUtils {
      * Get the route id from leg.
      */
     public static String getRouteIdFromLeg(Leg leg) {
-        return (leg != null) ? leg.routeId : null;
+        return (leg != null) ? leg.route.gtfsId : null;
     }
 
     /**
      * Get the agency id from leg.
      */
     public static String getAgencyIdFromLeg(Leg leg) {
-        return (leg != null) ? leg.agencyId : null;
+        return (leg != null) ? leg.agency.gtfsId : null;
     }
 
     /**
      * Get the trip id from leg.
      */
     public static String getTripIdFromLeg(Leg leg) {
-        return (leg != null) ? leg.tripId : null;
+        return (leg != null) ? leg.trip.gtfsId : null;
     }
 
     /**
@@ -358,6 +358,6 @@ public class ItineraryUtils {
      * Get the route short name from leg.
      */
     public static String getRouteShortNameFromLeg(Leg leg) {
-        return leg.routeShortName;
+        return leg.route.shortName;
     }
 }
