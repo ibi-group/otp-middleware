@@ -2887,6 +2887,8 @@ definitions:
         - "PENDING"
         - "CONFIRMED"
         - "INVALID"
+      acceptDependentEmailSent:
+        type: "boolean"
   FareComponent:
     type: "object"
     properties:

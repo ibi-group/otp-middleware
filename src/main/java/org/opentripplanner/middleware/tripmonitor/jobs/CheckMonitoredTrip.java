@@ -57,11 +57,11 @@ public class CheckMonitoredTrip implements Runnable {
     public static final int MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS =
         ConfigUtils.getConfigPropertyAsInt("MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS", 3);
 
-    private final String ACCOUNT_PATH = "/#/account";
+    public static final String ACCOUNT_PATH = "/#/account";
 
     private final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
 
-    private final String SETTINGS_PATH = ACCOUNT_PATH + "/settings";
+    public static final String SETTINGS_PATH = ACCOUNT_PATH + "/settings";
 
     public final MonitoredTrip trip;
 

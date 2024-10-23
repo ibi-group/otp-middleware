@@ -9,6 +9,7 @@ public class RelatedUser {
     public String userId;
     public String email;
     public RelatedUserStatus status;
+    public boolean acceptDependentEmailSent;
 
     public RelatedUser() {
         // Required for JSON deserialization.

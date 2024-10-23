@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.createAndAssignAuth0User;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
@@ -35,6 +36,7 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenti
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_DEPENDENT_PATH;
 
 public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake US 555 number.
@@ -46,7 +48,6 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser relatedUserThree;
     private static OtpUser dependentUserThree;
     private static HashMap<String, String> relatedUserHeaders;
-    public static final String ACCEPT_DEPENDENT_PATH = "api/secure/user/acceptdependent";
 
     @BeforeAll
     public static void setUp() throws Exception {
