@@ -104,7 +104,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
      * monitored trip job, so return the trip as found in the database after the job completes.
      */
     private MonitoredTrip runCheckMonitoredTrip(MonitoredTrip monitoredTrip) throws Exception {
-        new CheckMonitoredTrip(monitoredTrip, false).run();
+        new CheckMonitoredTrip(monitoredTrip, true).run();
         return Persistence.monitoredTrips.getById(monitoredTrip.id);
     }
 
