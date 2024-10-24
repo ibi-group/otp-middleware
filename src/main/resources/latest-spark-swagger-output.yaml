@@ -1641,6 +1641,40 @@ paths:
           description: "An error occurred while performing the request. Contact an\
             \ API administrator for more information."
           examples: {}
+  /api/secure/user/acceptdependent:
+    get:
+      tags:
+      - "api/secure/user"
+      description: "Accept a dependent request."
+      parameters: []
+      responses:
+        "200":
+          description: "Successful operation"
+          examples: {}
+          schema:
+            $ref: "#/definitions/OtpUser"
+          responseSchema:
+            $ref: "#/definitions/OtpUser"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
   /api/secure/user/{id}/verify_sms/{phoneNumber}:
     get:
       tags:
@@ -2566,6 +2600,14 @@ definitions:
         $ref: "#/definitions/JourneyState"
       notifyAtLeadingInterval:
         type: "boolean"
+      primary:
+        $ref: "#/definitions/RelatedUser"
+      companion:
+        $ref: "#/definitions/RelatedUser"
+      observers:
+        type: "array"
+        items:
+          $ref: "#/definitions/RelatedUser"
       attemptsToGetMatchingItinerary:
         type: "integer"
         format: "int32"
@@ -2831,6 +2873,21 @@ definitions:
         - "TRIP_ACTIVE"
         - "PAST_TRIP"
       hasRealtimeData:
+        type: "boolean"
+  RelatedUser:
+    type: "object"
+    properties:
+      userId:
+        type: "string"
+      email:
+        type: "string"
+      status:
+        type: "string"
+        enum:
+        - "PENDING"
+        - "CONFIRMED"
+        - "INVALID"
+      acceptDependentEmailSent:
         type: "boolean"
   FareComponent:
     type: "object"
@@ -3118,6 +3175,14 @@ definitions:
         type: "boolean"
       applicationId:
         type: "string"
+      relatedUsers:
+        type: "array"
+        items:
+          $ref: "#/definitions/RelatedUser"
+      dependents:
+        type: "array"
+        items:
+          type: "string"
   MobilityProfile:
     type: "object"
     properties:

@@ -9,7 +9,12 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,7 +48,7 @@ public class OtpUser extends AbstractUser {
      * Notification preferences for this user
      * (EMAIL and/or SMS and/or PUSH).
      */
-    public EnumSet<OtpUser.Notification> notificationChannel = EnumSet.noneOf(OtpUser.Notification.class);
+    public EnumSet<Notification> notificationChannel = EnumSet.noneOf(OtpUser.Notification.class);
 
     /**
      * Verified phone number for SMS notifications, in +15551234 format (E.164 format, includes country code, no spaces).
@@ -80,6 +85,12 @@ public class OtpUser extends AbstractUser {
     /** If this user was created by an {@link ApiUser}, this parameter will match the {@link ApiUser}'s id */
     public String applicationId;
 
+    /** Companions and observers of this user. */
+    public List<RelatedUser> relatedUsers = new ArrayList<>();
+
+    /** Users that are dependent on this user. */
+    public List<String> dependents = new ArrayList<>();
+
     @Override
     public boolean delete() {
         return delete(true);
@@ -110,6 +121,28 @@ public class OtpUser extends AbstractUser {
             if (!success) {
                 LOG.error("Error deleting user's ({}) monitored trip {}", this.id, trip.id);
                 return false;
+            }
+        }
+
+        // If a guardian, invalidate relationship with all dependents.
+        for (String userId: dependents) {
+            OtpUser dependent = Persistence.otpUsers.getById(userId);
+            if (dependent != null) {
+                for (RelatedUser relatedUser : dependent.relatedUsers) {
+                    if (relatedUser.userId.equals(this.id)) {
+                        relatedUser.status = RelatedUser.RelatedUserStatus.INVALID;
+                    }
+                }
+                Persistence.otpUsers.replace(dependent.id, dependent);
+            }
+        }
+
+        // If a dependent, remove relationship with all guardians.
+        for (RelatedUser relatedUser : relatedUsers) {
+            OtpUser guardian = Persistence.otpUsers.getById(relatedUser.userId);
+            if (guardian != null) {
+                guardian.dependents.remove(this.id);
+                Persistence.otpUsers.replace(guardian.id, guardian);
             }
         }
 

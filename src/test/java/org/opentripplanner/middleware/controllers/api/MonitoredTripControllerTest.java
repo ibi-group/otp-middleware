@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.users.User;
 import com.mongodb.BasicDBObject;
 import org.eclipse.jetty.http.HttpMethod;
@@ -19,11 +18,13 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.util.Date;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -33,8 +34,10 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.createAndAssignAuth0User;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
 
 /**
  * Tests to simulate getting trips as an Otp user with enhanced admin credentials. The following config parameters must
@@ -54,7 +57,7 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenti
  *
  * Auth0 must be correctly configured as described here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
  */
-public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
+public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static AdminUser multiAdminUser;
     private static OtpUser soloOtpUser;
     private static OtpUser multiOtpUser;
@@ -63,6 +66,7 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
     private static final String UI_QUERY_PARAMS
         = "?fromPlace=fromplace%3A%3A28.556631%2C-81.411781&toPlace=toplace%3A%3A28.545925%2C-81.348609&date=2020-11-13&time=14%3A21&arriveBy=false&mode=WALK%2CBUS%2CRAIL&numItineraries=3";
     private static final String DUMMY_STRING = "ABCDxyz";
+    private static HashMap<String, String> guardianHeaders;
 
     /**
      * Create Otp and Admin user accounts. Create Auth0 account for just the Otp users. If
@@ -78,18 +82,14 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
         multiOtpUser = PersistenceTestUtils.createUser(multiUserEmail);
         multiAdminUser = PersistenceTestUtils.createAdminUser(multiUserEmail);
         try {
-            // Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
-            // from being able to use TEMP_AUTH0_USER_PASSWORD.
-            User auth0User = Auth0Users.createAuth0UserForEmail(soloOtpUser.email, TEMP_AUTH0_USER_PASSWORD);
-            soloOtpUser.auth0UserId = auth0User.getId();
-            Persistence.otpUsers.replace(soloOtpUser.id, soloOtpUser);
-            auth0User = Auth0Users.createAuth0UserForEmail(multiUserEmail, TEMP_AUTH0_USER_PASSWORD);
+            createAndAssignAuth0User(soloOtpUser);
+            User auth0User = Auth0Users.createAuth0UserForEmail(multiUserEmail, TEMP_AUTH0_USER_PASSWORD);
             multiOtpUser.auth0UserId = auth0User.getId();
             Persistence.otpUsers.replace(multiOtpUser.id, multiOtpUser);
-            // Use the same Auth0 user id as otpUser2 as the email address is the same.
+            // Use the same Auth0 user id as multiOtpUser as the email address is the same.
             multiAdminUser.auth0UserId = auth0User.getId();
             Persistence.adminUsers.replace(multiAdminUser.id, multiAdminUser);
-        } catch (Auth0Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -101,12 +101,13 @@ public class GetMonitoredTripsTest extends OtpMiddlewareTestEnvironment {
     public static void tearDown() {
         assumeTrue(IS_END_TO_END);
         restoreDefaultAuthDisabled();
-        soloOtpUser = Persistence.otpUsers.getById(soloOtpUser.id);
-        if (soloOtpUser != null) soloOtpUser.delete(false);
-        multiOtpUser = Persistence.otpUsers.getById(multiOtpUser.id);
-        if (multiOtpUser != null) multiOtpUser.delete(false);
         multiAdminUser = Persistence.adminUsers.getById(multiAdminUser.id);
         if (multiAdminUser != null) multiAdminUser.delete();
+        deleteOtpUser(
+            IS_END_TO_END,
+            soloOtpUser,
+            multiOtpUser
+        );
     }
 
     @AfterEach
