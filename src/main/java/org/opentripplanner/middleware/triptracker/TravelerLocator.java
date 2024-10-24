@@ -136,10 +136,7 @@ public class TravelerLocator {
         Locale locale = travelerPosition.locale;
 
         if (isApproachingEndOfLeg(travelerPosition)) {
-            if (isBusLeg(travelerPosition.nextLeg) && isWithinOperationalNotifyWindow(travelerPosition)) {
-                BusOperatorActions
-                    .getDefault()
-                    .handleSendNotificationAction(tripStatus, travelerPosition);
+            if (sendBusNotification(travelerPosition, isStartOfTrip, tripStatus)) {
                 // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
                 return new WaitForTransitInstruction(travelerPosition.nextLeg, travelerPosition.currentTime, locale);
             }
@@ -155,6 +152,32 @@ public class TravelerLocator {
             );
         }
         return null;
+    }
+
+    /**
+     * Send bus notification if the first leg is a bus leg or approaching a bus leg and within the notify window.
+     */
+    public static boolean sendBusNotification(
+        TravelerPosition travelerPosition,
+        boolean isStartOfTrip,
+        TripStatus tripStatus
+    ) {
+        if (shouldNotifyBusOperator(travelerPosition, isStartOfTrip)) {
+            BusOperatorActions
+                .getDefault()
+                .handleSendNotificationAction(tripStatus, travelerPosition);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Given the traveler's position and leg type, check if bus notification should be sent.
+     */
+    public static boolean shouldNotifyBusOperator(TravelerPosition travelerPosition, boolean isStartOfTrip) {
+        return (isStartOfTrip)
+            ? isBusLeg(travelerPosition.expectedLeg) && isWithinOperationalNotifyWindow(travelerPosition.currentTime, travelerPosition.expectedLeg)
+            : isBusLeg(travelerPosition.nextLeg) && isWithinOperationalNotifyWindow(travelerPosition);
     }
 
     /**
@@ -218,15 +241,19 @@ public class TravelerLocator {
         return getDistanceToEndOfLeg(travelerPosition) <= TRIP_INSTRUCTION_IMMEDIATE_RADIUS;
     }
 
+    public static boolean isWithinOperationalNotifyWindow(TravelerPosition travelerPosition) {
+        return isWithinOperationalNotifyWindow(travelerPosition.currentTime, travelerPosition.nextLeg);
+    }
+
     /**
      * Make sure the traveler is on schedule or ahead of schedule (but not too far) to be within an operational window
      * for the bus service.
      */
-    public static boolean isWithinOperationalNotifyWindow(TravelerPosition travelerPosition) {
-        var busDepartureTime = getBusDepartureTime(travelerPosition.nextLeg);
+    public static boolean isWithinOperationalNotifyWindow(Instant currentTime, Leg busLeg) {
+        var busDepartureTime = getBusDepartureTime(busLeg);
         return
-            (travelerPosition.currentTime.equals(busDepartureTime) || travelerPosition.currentTime.isBefore(busDepartureTime)) &&
-            ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES >= getMinutesAheadOfDeparture(travelerPosition.currentTime, busDepartureTime);
+            (currentTime.equals(busDepartureTime) || currentTime.isBefore(busDepartureTime)) &&
+            ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES >= getMinutesAheadOfDeparture(currentTime, busDepartureTime);
     }
 
     /**

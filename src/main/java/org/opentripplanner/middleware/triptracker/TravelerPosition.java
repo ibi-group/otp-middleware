@@ -79,6 +79,12 @@ public class TravelerPosition {
 
     /** Used for unit testing. */
     public TravelerPosition(Leg nextLeg, Instant currentTime) {
+        this (null, nextLeg, currentTime);
+    }
+
+    /** Used for unit testing. */
+    public TravelerPosition(Leg expectedLeg, Leg nextLeg, Instant currentTime) {
+        this.expectedLeg = expectedLeg;
         this.nextLeg = nextLeg;
         this.currentTime = currentTime;
     }
