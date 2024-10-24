@@ -242,7 +242,7 @@ public class ItineraryExistence extends Model {
         }
         if (!allMonitoredDaysAreValid(trip)) {
             this.message = String.format(
-                "The trip is not possible on the following days of the week you have selected: %s.%n%nReal-time conditions might have changed since you last planned this trip, so try returning to the trip planner, perform the itinerary search again, and save the result.",
+                "The trip is not possible on the following days of the week you have selected: %s. Real-time conditions might have changed since you last planned this trip, so try returning to the trip planner, perform the itinerary search again, and save the result.",
                 getInvalidDaysOfWeekMessage()
             );
             this.error = true;
