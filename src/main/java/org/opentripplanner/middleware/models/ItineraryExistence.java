@@ -11,6 +11,9 @@ import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
+import org.opentripplanner.middleware.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
@@ -29,6 +32,8 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  * particular day of the week.
  */
 public class ItineraryExistence extends Model {
+    private static final Logger LOG = LoggerFactory.getLogger(ItineraryExistence.class);
+
     /**
      * Initial set of requests on which to base the itinerary existence checks. We do not want these persisted.
      */
@@ -186,7 +191,9 @@ public class ItineraryExistence extends Model {
     public void checkExistence(MonitoredTrip trip) {
         // TODO: Consider multi-threading?
         // Check existence of itinerary in the response for each OTP request.
+        int index = 0;
         for (OtpRequest otpRequest : otpRequests) {
+            index++;
             boolean hasMatchingItinerary = false;
             DayOfWeek dayOfWeek = otpRequest.dateTime.getDayOfWeek();
             // Get existing result for day of week if a date for that day of week has already been processed, or create
@@ -199,31 +206,43 @@ public class ItineraryExistence extends Model {
 
             // Send off each plan query to OTP.
             OtpResponse response = this.otpResponseProvider.apply(otpRequest);
-            TripPlan plan = response.plan;
+            if (response == null) {
+                LOG.warn("Itinerary existence check failed on {} for trip {} - OTP response was null.", dayOfWeek , trip.id);
+            } else {
+                TripPlan plan = response.plan;
 
-            // Handle response if valid itineraries exist.
-            if (plan != null && plan.itineraries != null) {
-                for (Itinerary itineraryCandidate : plan.itineraries) {
-                    // If a matching itinerary on the same service day as the request date is found,
-                    // save the date with the matching itinerary.
-                    // (The matching itinerary will replace the original trip.itinerary.)
-                    if (
-                        ItineraryUtils.occursOnSameServiceDay(itineraryCandidate, otpRequest.dateTime, tripIsArriveBy) &&
-                        ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)
-                    ) {
-                        result.handleValidDate(otpRequest.dateTime, itineraryCandidate);
-                        hasMatchingItinerary = true;
+                // Handle response if valid itineraries exist.
+                if (plan != null && plan.itineraries != null) {
+                    for (Itinerary itineraryCandidate : plan.itineraries) {
+                        // If a matching itinerary on the same service day as the request date is found,
+                        // save the date with the matching itinerary.
+                        // (The matching itinerary will replace the original trip.itinerary.)
+                        if (
+                            ItineraryUtils.occursOnSameServiceDay(itineraryCandidate, otpRequest.dateTime, tripIsArriveBy) &&
+                                ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)
+                        ) {
+                            result.handleValidDate(otpRequest.dateTime, itineraryCandidate);
+                            hasMatchingItinerary = true;
+                        }
                     }
                 }
-            }
-            if (!hasMatchingItinerary) {
-                // If no match was found for the date, mark day of week as non-existent for the itinerary.
-                result.handleInvalidDate(otpRequest.dateTime);
+
+                if (!hasMatchingItinerary) {
+                    // If no match was found for the date, mark day of week as non-existent for the itinerary.
+                    result.handleInvalidDate(otpRequest.dateTime);
+
+                    // Log if the itinerary didn't exist "today"
+                    if (index == 1) {
+                        LOG.warn("Itinerary existence check failed 'today' for trip {} - params: {}", trip.id, JsonUtils.toJson(trip.otp2QueryParams));
+                        LOG.warn("Itinerary existence check failed 'today' for trip {} - saved itinerary: {}", trip.id, JsonUtils.toJson(trip.itinerary));
+                        LOG.warn("Itinerary existence check failed 'today' for trip {} - OTP itineraries: {}", trip.id, JsonUtils.toJson(plan.itineraries));
+                    }
+                }
             }
         }
         if (!allMonitoredDaysAreValid(trip)) {
             this.message = String.format(
-                "The trip is not possible on the following days of the week you have selected: %s",
+                "The trip is not possible on the following days of the week you have selected: %s. Real-time conditions might have changed since you last planned this trip, so try returning to the trip planner, perform the itinerary search again, and save the result.",
                 getInvalidDaysOfWeekMessage()
             );
             this.error = true;
