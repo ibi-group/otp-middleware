@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getOtpZoneId;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getAgencyIdFromLeg;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteIdFromLeg;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getStopIdFromPlace;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getTripIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getAgencyGtfsIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteGtfsIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getStopGtfsIdFromPlace;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getTripGtfsIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.removeAgencyPrefix;
 
 /**
@@ -81,15 +81,15 @@ public class UsRideGwinnettBusOpNotificationMessage {
     public UsRideGwinnettBusOpNotificationMessage(Instant currentTime, TravelerPosition travelerPosition) {
         var nextLeg = travelerPosition.nextLeg;
         this.timestamp = BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT.format(currentTime.atZone(ZoneOffset.UTC));
-        this.agency_id = removeAgencyPrefix(getAgencyIdFromLeg(nextLeg));
-        this.from_route_id = removeAgencyPrefix(getRouteIdFromLeg(nextLeg));
-        this.from_trip_id = removeAgencyPrefix(getTripIdFromLeg(nextLeg));
-        this.from_stop_id = removeAgencyPrefix(getStopIdFromPlace(nextLeg.from));
+        this.agency_id = removeAgencyPrefix(getAgencyGtfsIdFromLeg(nextLeg));
+        this.from_route_id = removeAgencyPrefix(getRouteGtfsIdFromLeg(nextLeg));
+        this.from_trip_id = removeAgencyPrefix(getTripGtfsIdFromLeg(nextLeg));
+        this.from_stop_id = removeAgencyPrefix(getStopGtfsIdFromPlace(nextLeg.from));
         // For now, assume one notification request is made per transit leg.
         // TODO: Determine how interlined legs should be handled.
         this.to_route_id = this.from_route_id;
         this.to_trip_id = this.from_trip_id;
-        this.to_stop_id = removeAgencyPrefix(getStopIdFromPlace(nextLeg.to));
+        this.to_stop_id = removeAgencyPrefix(getStopGtfsIdFromPlace(nextLeg.to));
         this.from_arrival_time = BUS_OPERATOR_NOTIFIER_API_TIME_FORMAT.format(
             nextLeg.getScheduledStartTime()
         );
