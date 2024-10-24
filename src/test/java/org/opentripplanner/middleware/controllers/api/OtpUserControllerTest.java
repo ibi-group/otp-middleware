@@ -76,6 +76,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     @AfterAll
     public static void tearDown() {
         deleteOtpUser(
+            IS_END_TO_END,
             otpUser,
             relatedUserOne,
             relatedUserTwo,

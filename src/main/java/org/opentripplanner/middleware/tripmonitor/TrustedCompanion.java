@@ -79,12 +79,16 @@ public class TrustedCompanion {
         return relatedUser;
     }
 
+    public static void manageAcceptDependentEmail(OtpUser dependentUser) {
+        manageAcceptDependentEmail(dependentUser, false);
+    }
+
     /**
      * When creating or updating an OTP user, extract a list of newly defined dependents and send an 'accept dependent'
      * email to each. Then update which dependents have been sent an email so subsequent updates do not trigger
      * additional emails.
      */
-    public static void manageAcceptDependentEmail(OtpUser dependentUser) {
+    public static void manageAcceptDependentEmail(OtpUser dependentUser, boolean isTest) {
         if (dependentUser.relatedUsers.isEmpty()) {
             // No related users defined by dependent.
             return;
@@ -94,8 +98,8 @@ public class TrustedCompanion {
             .stream()
             .filter(relatedUser -> !relatedUser.acceptDependentEmailSent)
             .forEach(relatedUser -> {
-                OtpUser user = Persistence.otpUsers.getById(relatedUser.userId);
-                if (user != null && sendAcceptDependentEmail(dependentUser, user)) {
+                OtpUser userToReceiveEmail = Persistence.otpUsers.getById(relatedUser.userId);
+                if (userToReceiveEmail != null && (isTest || sendAcceptDependentEmail(dependentUser, userToReceiveEmail))) {
                     relatedUser.acceptDependentEmailSent = true;
                 }
             });
@@ -114,16 +118,19 @@ public class TrustedCompanion {
         String acceptDependentUrl = getAcceptDependentUrl(dependentUser);
 
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
-        Map<String, Object> templateData = new HashMap<>(Map.of(
+        Map<String, Object> templateData = new HashMap<>(
+            Map.of(
             "acceptDependentLinkAnchorLabel", acceptDependentLinkLabel,
             "acceptDependentLinkLabelAndUrl", label(acceptDependentLinkLabel, acceptDependentUrl, locale),
             "acceptDependentUrl", getAcceptDependentUrl(dependentUser),
             "emailFooter", Message.ACCEPT_DEPENDENT_EMAIL_FOOTER.get(locale),
-            "emailGreeting", String.format("%s%s", dependentUser.email, Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale)),
-            // TODO: This is required in the `OtpUserContainer.ftl` template. Not sure what to link to so providing link back to settings.
-            "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
+                // TODO: The user's email address isn't very personal, but that is all I have to work with! Suggetions?
+                "emailGreeting", String.format("%s%s", dependentUser.email, Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale)),
+                // TODO: This is required in the `OtpUserContainer.ftl` template. Not sure what to provide. Suggestions?
+                "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
             "manageLinkText", Message.ACCEPT_DEPENDENT_EMAIL_MANAGE.get(locale)
-        ));
+            )
+        );
 
         return NotificationUtils.sendEmail(
             relatedUser,
@@ -135,7 +142,7 @@ public class TrustedCompanion {
     }
 
     private static String getAcceptDependentUrl(OtpUser dependentUser) {
-        // TODO: Is OTP_UI_URL the correct base URL to user here? If not, what?!
+        // TODO: Is OTP_UI_URL the correct base URL to user here? I'm not sure.
         return String.format("%s%s?userId=%s", OTP_UI_URL, ACCEPT_DEPENDENT_PATH, dependentUser.id);
     }
 }

@@ -104,6 +104,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         multiAdminUser = Persistence.adminUsers.getById(multiAdminUser.id);
         if (multiAdminUser != null) multiAdminUser.delete();
         deleteOtpUser(
+            IS_END_TO_END,
             soloOtpUser,
             multiOtpUser
         );
