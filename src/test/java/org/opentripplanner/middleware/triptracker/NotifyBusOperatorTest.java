@@ -155,7 +155,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("createWithinOperationalNotifyWindowTrace")
-    void isWithinOperationalNotifyWindow(boolean expected, TravelerPosition travelerPosition,String message) {
+    void isWithinOperationalNotifyWindow(boolean expected, TravelerPosition travelerPosition, String message) {
         assertEquals(expected, TravelerLocator.isWithinOperationalNotifyWindow(travelerPosition), message);
     }
 
@@ -185,6 +185,45 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
                     busDepartureTime.plusSeconds((ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES + 1) * 60)
                 ),
                 "Too far ahead of schedule to notify bus operator.")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createShouldNotifyBusOperatorTrace")
+    void shouldNotifyBusOperator(boolean expected, TravelerPosition travelerPosition, boolean isStartOfTrip, String message) {
+        assertEquals(expected, TravelerLocator.shouldNotifyBusOperator(travelerPosition, isStartOfTrip), message);
+    }
+
+    private static Stream<Arguments> createShouldNotifyBusOperatorTrace() {
+        var walkLeg = walkToBusTransition.legs.get(0);
+        var busLeg = walkToBusTransition.legs.get(1);
+        var busDepartureTime = getBusDepartureTime(busLeg);
+
+        return Stream.of(
+            Arguments.of(
+                true,
+                new TravelerPosition(busLeg, busDepartureTime),
+                false,
+                "Traveler approaching a bus leg, should notify."
+            ),
+            Arguments.of(
+                false,
+                new TravelerPosition(walkLeg, busDepartureTime),
+                false,
+                "Traveler approaching a walk leg, should not notify."
+            ),
+            Arguments.of(
+                true,
+                new TravelerPosition(busLeg, null, busDepartureTime),
+                true,
+                "Traveler at the start of a trip which starts with a bus leg, should notify."
+            ),
+            Arguments.of(
+                false,
+                new TravelerPosition(walkLeg, null, busDepartureTime),
+                true,
+                "Traveler at the start of a trip which starts with a walk leg, should not notify."
+            )
         );
     }
 
