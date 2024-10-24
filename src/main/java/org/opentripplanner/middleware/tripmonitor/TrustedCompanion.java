@@ -120,15 +120,15 @@ public class TrustedCompanion {
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
         Map<String, Object> templateData = new HashMap<>(
             Map.of(
-            "acceptDependentLinkAnchorLabel", acceptDependentLinkLabel,
-            "acceptDependentLinkLabelAndUrl", label(acceptDependentLinkLabel, acceptDependentUrl, locale),
-            "acceptDependentUrl", getAcceptDependentUrl(dependentUser),
-            "emailFooter", Message.ACCEPT_DEPENDENT_EMAIL_FOOTER.get(locale),
+                "acceptDependentLinkAnchorLabel", acceptDependentLinkLabel,
+                "acceptDependentLinkLabelAndUrl", label(acceptDependentLinkLabel, acceptDependentUrl, locale),
+                "acceptDependentUrl", getAcceptDependentUrl(dependentUser),
+                "emailFooter", Message.ACCEPT_DEPENDENT_EMAIL_FOOTER.get(locale),
                 // TODO: The user's email address isn't very personal, but that is all I have to work with! Suggetions?
                 "emailGreeting", String.format("%s%s", dependentUser.email, Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale)),
                 // TODO: This is required in the `OtpUserContainer.ftl` template. Not sure what to provide. Suggestions?
                 "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
-            "manageLinkText", Message.ACCEPT_DEPENDENT_EMAIL_MANAGE.get(locale)
+                "manageLinkText", Message.ACCEPT_DEPENDENT_EMAIL_MANAGE.get(locale)
             )
         );
 
