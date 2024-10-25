@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import static org.opentripplanner.middleware.controllers.api.ApiController.USER_ID_PARAM;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.createAndAssignAuth0User;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
@@ -37,6 +38,7 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefault
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_DEPENDENT_PATH;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.REQUESTING_USER_ID_PARAM;
 
 public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake US 555 number.
@@ -48,6 +50,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser relatedUserThree;
     private static OtpUser dependentUserThree;
     private static HashMap<String, String> relatedUserHeaders;
+    private static final String nickName = "my-trusted-companion";
 
     @BeforeAll
     public static void setUp() throws Exception {
@@ -174,11 +177,23 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canAcceptDependentRequest() {
-        dependentUserOne.relatedUsers.add(new RelatedUser(relatedUserOne.id, relatedUserOne.email, RelatedUser.RelatedUserStatus.PENDING));
+        dependentUserOne.relatedUsers.add(new RelatedUser(
+            relatedUserOne.email,
+            RelatedUser.RelatedUserStatus.PENDING,
+            nickName
+        ));
         Persistence.otpUsers.replace(dependentUserOne.id, dependentUserOne);
 
-        String path = String.format("%s?userId=%s", ACCEPT_DEPENDENT_PATH, dependentUserOne.id);
-        makeGetRequest(path, relatedUserHeaders);
+        String path = String.format(
+            "%s?%s=%s&%s=%s",
+            ACCEPT_DEPENDENT_PATH,
+            REQUESTING_USER_ID_PARAM,
+            relatedUserOne.id,
+            USER_ID_PARAM,
+            dependentUserOne.id
+        );
+        HttpResponseValues response = makeGetRequest(path, null);
+        System.out.println(response.uri);
 
         relatedUserOne = Persistence.otpUsers.getById(relatedUserOne.id);
         assertTrue(relatedUserOne.dependents.contains(dependentUserOne.id));
@@ -187,7 +202,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         List<RelatedUser> relatedUsers = dependentUserOne.relatedUsers;
         relatedUsers
             .stream()
-            .filter(user -> user.userId.equals(relatedUserOne.id))
+            .filter(user -> user.email.equals(relatedUserOne.email))
             .forEach(user -> assertEquals(RelatedUser.RelatedUserStatus.CONFIRMED, user.status));
     }
 
@@ -195,7 +210,11 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     void canInvalidateDependent() {
         relatedUserTwo.dependents.add(dependentUserTwo.id);
         Persistence.otpUsers.replace(relatedUserTwo.id, relatedUserTwo);
-        dependentUserTwo.relatedUsers.add(new RelatedUser(relatedUserTwo.id, relatedUserTwo.email, RelatedUser.RelatedUserStatus.CONFIRMED));
+        dependentUserTwo.relatedUsers.add(new RelatedUser(
+            relatedUserTwo.email,
+            RelatedUser.RelatedUserStatus.CONFIRMED,
+            nickName
+        ));
         Persistence.otpUsers.replace(dependentUserTwo.id, dependentUserTwo);
         relatedUserTwo.delete(false);
         dependentUserTwo = Persistence.otpUsers.getById(dependentUserTwo.id);
@@ -207,7 +226,11 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     void canRemoveRelatedUser() {
         relatedUserThree.dependents.add(dependentUserThree.id);
         Persistence.otpUsers.replace(relatedUserThree.id, relatedUserThree);
-        dependentUserThree.relatedUsers.add(new RelatedUser(relatedUserThree.id, relatedUserThree.email, RelatedUser.RelatedUserStatus.CONFIRMED));
+        dependentUserThree.relatedUsers.add(new RelatedUser(
+            relatedUserThree.email,
+            RelatedUser.RelatedUserStatus.CONFIRMED,
+            nickName
+        ));
         Persistence.otpUsers.replace(dependentUserThree.id, dependentUserThree);
         dependentUserThree.delete(false);
         relatedUserThree = Persistence.otpUsers.getById(relatedUserThree.id);

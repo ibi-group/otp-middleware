@@ -268,8 +268,8 @@ public class PersistenceTestUtils {
         return itinerary;
     }
 
-    public static void deleteOtpUser(boolean isEndToEnd, OtpUser... optUsers) {
-        for (OtpUser otpUser : optUsers) {
+    public static void deleteOtpUser(boolean isEndToEnd, OtpUser... otpUsers) {
+        for (OtpUser otpUser : otpUsers) {
             if (otpUser != null) {
                 OtpUser user = Persistence.otpUsers.getById(otpUser.id);
                 if (user != null) {

@@ -2877,8 +2877,6 @@ definitions:
   RelatedUser:
     type: "object"
     properties:
-      userId:
-        type: "string"
       email:
         type: "string"
       status:
@@ -2889,6 +2887,8 @@ definitions:
         - "INVALID"
       acceptDependentEmailSent:
         type: "boolean"
+      nickName:
+        type: "string"
   FareComponent:
     type: "object"
     properties:

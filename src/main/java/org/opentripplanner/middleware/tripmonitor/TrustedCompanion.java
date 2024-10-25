@@ -1,8 +1,7 @@
 package org.opentripplanner.middleware.tripmonitor;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.auth.RequestingUser;
+import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
@@ -18,6 +17,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.controllers.api.ApiController.USER_ID_PARAM;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.I18nUtils.label;
@@ -29,54 +29,74 @@ public class TrustedCompanion {
         throw new IllegalStateException("Utility class");
     }
 
+    private static final String AWS_API_SERVER = ConfigUtils.getConfigPropertyAsText("AWS_API_SERVER");
+    private static final String AWS_API_STAGE = ConfigUtils.getConfigPropertyAsText("AWS_API_STAGE");
     private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
+    private static final String TRUSTED_COMPANION_CONFIRMATION_PAGE_URL = ConfigUtils.getConfigPropertyAsText("TRUSTED_COMPANION_CONFIRMATION_PAGE_URL");
+    private static final String TRUSTED_COMPANION_ERROR_PAGE_URL = ConfigUtils.getConfigPropertyAsText("TRUSTED_COMPANION_ERROR_PAGE_URL");
+    public static final String REQUESTING_USER_ID_PARAM = "requestingUserId";
 
+    /** Note: This path is excluded from security checks, see {@link OtpMiddlewareMain#initializeHttpEndpoints()}. */
     public static final String ACCEPT_DEPENDENT_PATH = "api/secure/user/acceptdependent";
 
     /**
-     * Accept a request from another user to be their dependent. This will include both companions and observers.
+     * Accept a request from another user to be their dependent. This will include both companions and observers. If
+     * successful redirect the user to the confirmation page, else redirect to the error page with related error.
      */
     public static OtpUser acceptDependent(Request request, Response response) {
-        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(request);
-        OtpUser relatedUser = requestingUser.otpUser;
-        if (relatedUser == null) {
+        boolean accepted = false;
+        String error = "";
+        OtpUser relatedUser = getUserFromRequest(request, REQUESTING_USER_ID_PARAM);
+        OtpUser dependentUser = getUserFromRequest(request, USER_ID_PARAM);
+        if (relatedUser != null && dependentUser != null) {
+            boolean isRelated = dependentUser.relatedUsers
+                .stream()
+                .filter(related -> related.email.equals(relatedUser.email))
+                // Update related user status. This assumes a related user with "pending" status was previously added.
+                .peek(related -> related.status = RelatedUser.RelatedUserStatus.CONFIRMED)
+                .findFirst()
+                .isPresent();
+
+            if (isRelated) {
+                // Maintain a list of dependents.
+                relatedUser.dependents.add(dependentUser.id);
+                Persistence.otpUsers.replace(relatedUser.id, relatedUser);
+                // Update list of related users.
+                Persistence.otpUsers.replace(dependentUser.id, dependentUser);
+                accepted = true;
+            } else {
+                error = "Dependent did not request you as a trusted companion!";
+            }
+        } else {
+            error = "Required users do not exist!";
+        }
+
+        if (accepted) {
+            // Redirect to confirmation page and provide dependent user information.
+            response.redirect(TRUSTED_COMPANION_CONFIRMATION_PAGE_URL);
+            return dependentUser;
+        } else {
+            response.redirect(String.format("%s?error=%s", TRUSTED_COMPANION_ERROR_PAGE_URL, error));
+            return null;
+        }
+    }
+
+    /**
+     * Extract the user id from the request parameters and in-turn retrieve the matching user.
+     */
+    private static OtpUser getUserFromRequest(Request request, String parameterName) {
+        String userId = HttpUtils.getQueryParamFromRequest(request, parameterName, false);
+        if (userId.isEmpty()) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "User id not provided.");
+            return null;
+        }
+
+        OtpUser user = Persistence.otpUsers.getById(userId);
+        if (user == null) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Otp user unknown.");
             return null;
         }
-
-        String dependentUserId = HttpUtils.getQueryParamFromRequest(request, USER_ID_PARAM, false);
-        if (dependentUserId.isEmpty()) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent user id not provided.");
-            return null;
-        }
-
-        OtpUser dependentUser = Persistence.otpUsers.getById(dependentUserId);
-        if (dependentUser == null) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent user unknown!");
-            return null;
-        }
-
-        boolean isRelated = dependentUser.relatedUsers
-            .stream()
-            .filter(related -> related.userId.equals(relatedUser.id))
-            // Update related user status. This assumes a related user with "pending" status was previously added.
-            .peek(related -> related.status = RelatedUser.RelatedUserStatus.CONFIRMED)
-            .findFirst()
-            .isPresent();
-
-        if (isRelated) {
-            // Maintain a list of dependents.
-            relatedUser.dependents.add(dependentUserId);
-            Persistence.otpUsers.replace(relatedUser.id, relatedUser);
-            // Update list of related users.
-            Persistence.otpUsers.replace(dependentUser.id, dependentUser);
-        } else {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent did not request user to be related!");
-            return null;
-        }
-
-        // TODO: Not sure what is required in the response. For now, returning the updated related user.
-        return relatedUser;
+        return user;
     }
 
     public static void manageAcceptDependentEmail(OtpUser dependentUser) {
@@ -98,7 +118,7 @@ public class TrustedCompanion {
             .stream()
             .filter(relatedUser -> !relatedUser.acceptDependentEmailSent)
             .forEach(relatedUser -> {
-                OtpUser userToReceiveEmail = Persistence.otpUsers.getById(relatedUser.userId);
+                OtpUser userToReceiveEmail = Persistence.otpUsers.getOneFiltered(eq("email", relatedUser.email));
                 if (userToReceiveEmail != null && (isTest || sendAcceptDependentEmail(dependentUser, userToReceiveEmail))) {
                     relatedUser.acceptDependentEmailSent = true;
                 }
@@ -125,7 +145,7 @@ public class TrustedCompanion {
                 "acceptDependentUrl", getAcceptDependentUrl(dependentUser),
                 "emailFooter", Message.ACCEPT_DEPENDENT_EMAIL_FOOTER.get(locale),
                 // TODO: The user's email address isn't very personal, but that is all I have to work with! Suggetions?
-                "emailGreeting", String.format("%s%s", dependentUser.email, Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale)),
+                "emailGreeting", String.format("%s %s", dependentUser.email, Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale)),
                 // TODO: This is required in the `OtpUserContainer.ftl` template. Not sure what to provide. Suggestions?
                 "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
                 "manageLinkText", Message.ACCEPT_DEPENDENT_EMAIL_MANAGE.get(locale)
@@ -142,7 +162,6 @@ public class TrustedCompanion {
     }
 
     private static String getAcceptDependentUrl(OtpUser dependentUser) {
-        // TODO: Is OTP_UI_URL the correct base URL to user here? I'm not sure.
-        return String.format("%s%s?userId=%s", OTP_UI_URL, ACCEPT_DEPENDENT_PATH, dependentUser.id);
+        return String.format("%s/%s/%s?userId=%s", AWS_API_SERVER, AWS_API_STAGE, ACCEPT_DEPENDENT_PATH, dependentUser.id);
     }
 }

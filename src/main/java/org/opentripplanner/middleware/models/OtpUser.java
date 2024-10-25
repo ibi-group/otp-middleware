@@ -18,6 +18,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.mongodb.client.model.Filters.eq;
+
 /**
  * This represents a user of an OpenTripPlanner instance (typically of the standard OTP UI/otp-react-redux).
  * otp-middleware stores these users and associated information (e.g., home/work locations and other favorites). Users
@@ -124,12 +126,12 @@ public class OtpUser extends AbstractUser {
             }
         }
 
-        // If a guardian, invalidate relationship with all dependents.
-        for (String userId: dependents) {
+        // If a related user, invalidate relationship with all dependents.
+        for (String userId : dependents) {
             OtpUser dependent = Persistence.otpUsers.getById(userId);
             if (dependent != null) {
                 for (RelatedUser relatedUser : dependent.relatedUsers) {
-                    if (relatedUser.userId.equals(this.id)) {
+                    if (relatedUser.email.equals(this.email)) {
                         relatedUser.status = RelatedUser.RelatedUserStatus.INVALID;
                     }
                 }
@@ -137,12 +139,12 @@ public class OtpUser extends AbstractUser {
             }
         }
 
-        // If a dependent, remove relationship with all guardians.
+        // If a dependent, remove relationship with all related users.
         for (RelatedUser relatedUser : relatedUsers) {
-            OtpUser guardian = Persistence.otpUsers.getById(relatedUser.userId);
-            if (guardian != null) {
-                guardian.dependents.remove(this.id);
-                Persistence.otpUsers.replace(guardian.id, guardian);
+            OtpUser user = Persistence.otpUsers.getOneFiltered(eq("email", relatedUser.email));
+            if (user != null) {
+                user.dependents.remove(this.id);
+                Persistence.otpUsers.replace(user.id, user);
             }
         }
 

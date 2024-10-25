@@ -17,6 +17,7 @@ import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.dele
 public class TrustedCompanionTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser relatedUserOne;
     private static OtpUser dependentUserOne;
+    private static final String nickName = "my-trusted-companion";
 
     @BeforeAll
     public static void setUp() {
@@ -35,7 +36,11 @@ public class TrustedCompanionTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canManageAcceptDependentEmail() {
-        dependentUserOne.relatedUsers.add(new RelatedUser(relatedUserOne.id, relatedUserOne.email, RelatedUser.RelatedUserStatus.PENDING));
+        dependentUserOne.relatedUsers.add(new RelatedUser(
+            relatedUserOne.email,
+            RelatedUser.RelatedUserStatus.PENDING,
+            nickName
+        ));
         Persistence.otpUsers.replace(dependentUserOne.id, dependentUserOne);
         TrustedCompanion.manageAcceptDependentEmail(dependentUserOne, true);
         assertTrue(dependentUserOne.relatedUsers.get(0).acceptDependentEmailSent);

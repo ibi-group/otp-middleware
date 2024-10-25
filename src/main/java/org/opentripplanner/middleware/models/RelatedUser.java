@@ -6,19 +6,19 @@ public class RelatedUser {
         PENDING, CONFIRMED, INVALID
     }
 
-    public String userId;
     public String email;
-    public RelatedUserStatus status;
+    public RelatedUserStatus status = RelatedUserStatus.PENDING;
     public boolean acceptDependentEmailSent;
+    public String nickName;
 
     public RelatedUser() {
         // Required for JSON deserialization.
     }
 
-    public RelatedUser(String userId, String email, RelatedUserStatus status) {
-        this.userId = userId;
+    public RelatedUser(String email, RelatedUserStatus status, String nickName) {
         this.email = email;
         this.status = status;
+        this.nickName = nickName;
     }
 }
 

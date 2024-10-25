@@ -24,6 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.REQUESTING_USER_ID_PARAM;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.manageAcceptDependentEmail;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -87,11 +88,9 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             .get(path("/acceptdependent")
                     .withDescription("Accept a dependent request.")
                     .withResponses(SwaggerUtils.createStandardResponses(OtpUser.class))
-                    .withPathParam()
-                    .withName(USER_ID_PARAM)
-                    .withRequired(true)
-                    .withDescription("The dependent user id.")
-                    .and(),
+                    .withPathParam().withName(USER_ID_PARAM).withRequired(true).withDescription("The dependent user id.").and()
+                    .withPathParam().withName(REQUESTING_USER_ID_PARAM).withRequired(true).withDescription("The requesting user id.").and()
+                    .withResponseType(OtpUser.class),
                 TrustedCompanion::acceptDependent
             )
             .get(path(ROOT_ROUTE + String.format(VERIFY_ROUTE_TEMPLATE, ID_PARAM, VERIFY_PATH, PHONE_PARAM))
