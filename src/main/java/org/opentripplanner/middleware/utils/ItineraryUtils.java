@@ -327,37 +327,37 @@ public class ItineraryUtils {
     }
 
     /**
-     * Get the route id from leg.
+     * Get the route GTFS id from leg.
      */
-    public static String getRouteIdFromLeg(Leg leg) {
-        return (leg != null) ? leg.routeId : null;
+    public static String getRouteGtfsIdFromLeg(Leg leg) {
+        return (leg != null && leg.route != null) ? leg.route.gtfsId : null;
     }
 
     /**
-     * Get the agency id from leg.
+     * Get the agency GTFS id from leg.
      */
-    public static String getAgencyIdFromLeg(Leg leg) {
-        return (leg != null) ? leg.agencyId : null;
+    public static String getAgencyGtfsIdFromLeg(Leg leg) {
+        return (leg != null && leg.agency != null) ? leg.agency.gtfsId : null;
     }
 
     /**
-     * Get the trip id from leg.
+     * Get the trip GTFS id from leg.
      */
-    public static String getTripIdFromLeg(Leg leg) {
-        return (leg != null) ? leg.tripId : null;
+    public static String getTripGtfsIdFromLeg(Leg leg) {
+        return (leg != null && leg.trip != null) ? leg.trip.gtfsId : null;
     }
 
     /**
-     * Get the stop id from place.
+     * Get the stop GTFS id from place.
      */
-    public static String getStopIdFromPlace(Place place) {
-        return (place != null) ? place.stopId : null;
+    public static String getStopGtfsIdFromPlace(Place place) {
+        return (place != null && place.stop != null) ? place.stop.gtfsId : null;
     }
 
     /**
      * Get the route short name from leg.
      */
     public static String getRouteShortNameFromLeg(Leg leg) {
-        return leg.routeShortName;
+        return (leg != null && leg.route != null) ? leg.route.shortName : null;
     }
 }
