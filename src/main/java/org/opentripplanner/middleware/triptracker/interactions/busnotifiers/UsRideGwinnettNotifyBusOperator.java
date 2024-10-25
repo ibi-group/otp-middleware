@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteGtfsIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
 
 /**
@@ -80,7 +80,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      * Stage notification to bus operator by making sure all required conditions are met.
      */
     public void sendNotification(TripStatus tripStatus, TravelerPosition travelerPosition) {
-        var routeId = getRouteIdFromLeg(travelerPosition.nextLeg);
+        var routeId = getRouteGtfsIdFromLeg(travelerPosition.nextLeg);
         try {
             if (
                 hasNotSentNotificationForRoute(travelerPosition.trackedJourney, routeId) &&
@@ -101,7 +101,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      * Cancel a previously sent notification for the next bus leg.
      */
     public void cancelNotification(TravelerPosition travelerPosition) {
-        var routeId = getRouteIdFromLeg(travelerPosition.nextLeg);
+        var routeId = getRouteGtfsIdFromLeg(travelerPosition.nextLeg);
         try {
             if (
                 isBusLeg(travelerPosition.nextLeg) && routeId != null &&
