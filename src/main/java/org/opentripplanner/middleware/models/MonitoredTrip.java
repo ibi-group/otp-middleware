@@ -123,12 +123,6 @@ public class MonitoredTrip extends Model {
     public boolean snoozed = false;
 
     /**
-     * Query params. Query parameters influencing trip.
-     */
-    // TODO: Remove
-    public String queryParams;
-
-    /**
      * GraphQL query parameters for OTP.
      */
     public OtpGraphQLVariables otp2QueryParams = new OtpGraphQLVariables();
