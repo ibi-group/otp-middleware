@@ -102,11 +102,11 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void canGetCompletedJourneysInPast24To48Hours() {
+    void canGetCompletedJourneysInPastHour() {
         assumeTrue(IS_END_TO_END);
         createTestJourneys();
 
-        List<TrackedJourney> completedJourneys = TripSurveySenderJob.getCompletedJourneysInPast24To48Hours();
+        List<TrackedJourney> completedJourneys = TripSurveySenderJob.getCompletedJourneysInPastHour();
         assertEquals(2, completedJourneys.size());
     }
 
@@ -199,8 +199,8 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     private static void createTestJourneys() {
-        Instant threeHoursAgo = Instant.now().minus(3, ChronoUnit.HOURS);
-        Instant thirtyHoursAgo = Instant.now().minus(30, ChronoUnit.HOURS);
+        Instant threeMinutesInFuture = Instant.now().plus(3, ChronoUnit.MINUTES);
+        Instant thirtyMinutesAgo = Instant.now().minus(30, ChronoUnit.MINUTES);
         Instant threeDaysAgo = Instant.now().minus(3, ChronoUnit.DAYS);
 
         // Create journey for each trip for all users above (they will be deleted explicitly after each test).
@@ -208,17 +208,17 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
             // Ongoing journey (should not be included)
             createJourney("ongoing-journey", trip.id, null, null, 10),
 
-            // Journey completed by user 30 hours ago (should be included)
-            createJourney("user-terminated-journey", trip.id, thirtyHoursAgo, TERMINATED_BY_USER, 200),
+            // Journey completed by user 30 minutes ago (should be included)
+            createJourney("user-terminated-journey", trip.id, thirtyMinutesAgo, TERMINATED_BY_USER, 200),
 
-            // Journey terminated forcibly 30 hours ago (should be included)
-            createJourney("forcibly-terminated-journey", trip.id, thirtyHoursAgo, FORCIBLY_TERMINATED, 400),
+            // Journey terminated forcibly 30 minutes ago (should be included)
+            createJourney("forcibly-terminated-journey", trip.id, thirtyMinutesAgo, FORCIBLY_TERMINATED, 400),
 
-            // Additional journey completed over 48 hours (should not be included).
+            // Additional journey completed over an hour ago (should not be included).
             createJourney("journey-done-3-days-ago", trip.id, threeDaysAgo, TERMINATED_BY_USER, 10),
 
-            // Additional journey completed within 24 hours (should not be included).
-            createJourney("journey-done-3-hours-ago", trip.id, threeHoursAgo, TERMINATED_BY_USER, 10),
+            // Additional journey completed with bogus time in future (should not be included).
+            createJourney("journey-done-3-hours-ago", trip.id, threeMinutesInFuture, TERMINATED_BY_USER, 10),
 
             // Orphan journeys (should not be included)
             createJourney("journey-3", "other-trip", null, null, 10),

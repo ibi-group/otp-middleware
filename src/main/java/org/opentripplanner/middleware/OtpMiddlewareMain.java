@@ -86,14 +86,14 @@ public class OtpMiddlewareMain {
                 TimeUnit.MINUTES
             );
 
-            // Schedule recurring job for post-trip surveys, once every hour to catch recently completed trips.
+            // Schedule recurring job for post-trip surveys, once every half-hour to catch recently completed trips.
             // TODO: Determine whether this should go in some other process.
             TripSurveySenderJob tripSurveySenderJob = new TripSurveySenderJob();
             Scheduler.scheduleJob(
                 tripSurveySenderJob,
                 0,
-                1,
-                TimeUnit.HOURS
+                30,
+                TimeUnit.MINUTES
             );
         }
     }

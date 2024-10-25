@@ -49,7 +49,7 @@ public class TripSurveySenderJob implements Runnable {
         List<OtpUser> usersWithNotificationsOverAWeekAgo = getUsersWithNotificationsOverAWeekAgo();
 
         // Collect journeys that were completed/terminated in the past 24-48 hrs. (skip ongoing journeys).
-        List<TrackedJourney> journeysCompletedInPast24To48Hours = getCompletedJourneysInPast24To48Hours();
+        List<TrackedJourney> journeysCompletedInPast24To48Hours = getCompletedJourneysInPastHour();
 
         // Map users to journeys.
         Map<OtpUser, List<TrackedJourney>> usersToJourneys = mapJourneysToUsers(journeysCompletedInPast24To48Hours, usersWithNotificationsOverAWeekAgo);
@@ -88,14 +88,14 @@ public class TripSurveySenderJob implements Runnable {
     }
 
     /**
-     * Gets tracked journeys for all users that were completed in the past 24 hours.
+     * Gets tracked journeys for all users that were completed in the past hour.
      */
-    public static List<TrackedJourney> getCompletedJourneysInPast24To48Hours() {
-        Date twentyFourHoursAgo = Date.from(Instant.now().minus(24, ChronoUnit.HOURS));
-        Date fortyEightHoursAgo = Date.from(Instant.now().minus(48, ChronoUnit.HOURS));
+    public static List<TrackedJourney> getCompletedJourneysInPastHour() {
+        Date now = new Date();
+        Date oneHourAgo = Date.from(Instant.now().minus(1, ChronoUnit.HOURS));
         Bson dateFilter = Filters.and(
-            Filters.gte(END_TIME_FIELD_NAME, fortyEightHoursAgo),
-            Filters.lte(END_TIME_FIELD_NAME, twentyFourHoursAgo)
+            Filters.gte(END_TIME_FIELD_NAME, oneHourAgo),
+            Filters.lte(END_TIME_FIELD_NAME, now)
         );
         Bson completeFilter = Filters.eq(END_CONDITION_FIELD_NAME, TERMINATED_BY_USER);
         Bson terminatedFilter = Filters.eq(END_CONDITION_FIELD_NAME, FORCIBLY_TERMINATED);
