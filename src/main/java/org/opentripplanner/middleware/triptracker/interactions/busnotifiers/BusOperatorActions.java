@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getAgencyIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getAgencyGtfsIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.removeAgencyPrefix;
 
 /** Holds configured bus notification actions. */
@@ -49,7 +49,7 @@ public class BusOperatorActions {
      * Get the action that matches the given agency id.
      */
     public AgencyAction getAgencyAction(TravelerPosition travelerPosition) {
-        String agencyId = removeAgencyPrefix(getAgencyIdFromLeg(travelerPosition.nextLeg));
+        String agencyId = removeAgencyPrefix(getAgencyGtfsIdFromLeg(travelerPosition.nextLeg));
         if (agencyId != null) {
             for (AgencyAction agencyAction : agencyActions) {
                 if (agencyAction.agencyId.equalsIgnoreCase(agencyId)) {
@@ -73,6 +73,8 @@ public class BusOperatorActions {
                 LOG.error("Could not trigger class {} for agency {}", action.trigger, action.agencyId, e);
                 throw new RuntimeException(e);
             }
+        } else {
+            LOG.warn("No bus notification action was found for location {}.", travelerPosition.currentPosition);
         }
     }
 
