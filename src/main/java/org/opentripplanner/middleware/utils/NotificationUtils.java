@@ -93,7 +93,10 @@ public class NotificationUtils {
      * @param trip  Trip about which the survey notification is about.
      */
     public static String sendTripSurveyPush(OtpUser otpUser, MonitoredTrip trip) {
-        // If Push API/survey config properties aren't set, do nothing.
+        // Check devices first - No devices returns OK (favors E2E testing)
+        if (otpUser.pushDevices == 0) return "OK";
+
+        // If Push API/survey config properties aren't set, do nothing (will trigger warning log).
         if (PUSH_API_KEY == null || PUSH_API_URL == null || TRIP_SURVEY_ID == null) return null;
 
         Locale locale = I18nUtils.getOtpUserLocale(otpUser);
@@ -102,7 +105,7 @@ public class NotificationUtils {
             org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION.get(locale),
             tripTime
         );
-        return otpUser.pushDevices > 0 ? sendPush(otpUser, body, trip.tripName, trip.id, TRIP_SURVEY_ID) : "OK";
+        return sendPush(otpUser, body, trip.tripName, trip.id, TRIP_SURVEY_ID);
     }
 
     /**
