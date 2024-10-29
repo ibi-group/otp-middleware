@@ -79,8 +79,7 @@ public class NotificationUtils {
         if (PUSH_API_KEY == null || PUSH_API_URL == null) return null;
         try {
             String body = TemplateUtils.renderTemplate(textTemplate, templateData);
-            String toUser = otpUser.email;
-            return otpUser.pushDevices > 0 ? sendPush(toUser, body, tripName, tripId) : "OK";
+            return otpUser.pushDevices > 0 ? sendPush(otpUser, body, tripName, tripId) : "OK";
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
             // handles Bugsnag reporting/error logging, so that is not needed here.
@@ -102,26 +101,26 @@ public class NotificationUtils {
             org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION.get(locale),
             tripTime
         );
-        String toUser = otpUser.email;
-        return otpUser.pushDevices > 0 ? sendPush(toUser, body, trip.tripName, trip.id) : "OK";
+        return otpUser.pushDevices > 0 ? sendPush(otpUser, body, trip.tripName, trip.id) : "OK";
     }
 
     /**
      * Send a push notification message to the provided user
      * @param toUser    user account ID (email address)
      * @param body      message body
+     * @param tripName  Monitored trip name to show in notification title
      * @param tripId    Monitored trip ID
      * @return          "OK" if message was successful (null otherwise)
      */
-    static String sendPush(String toUser, String body, String tripName, String tripId) {
+    static String sendPush(OtpUser toUser, String body, String tripName, String tripId) {
         try {
-            NotificationInfo notifInfo = new NotificationInfo(
+            NotificationInfo notificationInfo = new NotificationInfo(
                 toUser,
                 body,
                 tripName,
                 tripId
             );
-            var jsonBody = new Gson().toJson(notifInfo);
+            var jsonBody = new Gson().toJson(notificationInfo);
             var httpResponse = HttpUtils.httpRequestRawResponse(
                 URI.create(PUSH_API_URL + "/notification/publish?api_key=" + PUSH_API_KEY),
                 1000,
@@ -414,19 +413,38 @@ public class NotificationUtils {
     }
 
     static class NotificationInfo {
+        /** In reality, the email of the desired user (the push service we use looks up users by email) */
         public final String user;
+
+        /** The Mongo ID of the desired user */
+        public final String userId;
+
+        /** The message shown in the notification body */
         public final String message;
+
+        /** The title of this notification */
         public final String title;
+
+        /** The ID of the trip associated to this notification */
         public final String tripId;
 
-        public NotificationInfo(String user, String message, String title, String tripId) {
+        /** The ID of the survey to be launched for said trip, if applicable. */
+        public final String surveyId;
+
+        public NotificationInfo(OtpUser user, String message, String title, String tripId) {
+            this(user, message, title, tripId, null);
+        }
+
+        public NotificationInfo(OtpUser user, String message, String title, String tripId, String surveyId) {
             String truncatedTitle = StringUtil.truncate(title, PUSH_TITLE_MAX_LENGTH);
             int truncatedMessageLength = PUSH_TOTAL_MAX_LENGTH - truncatedTitle.length();
 
-            this.user = user;
+            this.user = user.email;
+            this.userId = user.id;
             this.title = truncatedTitle;
             this.message = StringUtil.truncate(message, truncatedMessageLength);
             this.tripId = tripId;
+            this.surveyId = surveyId;
         }
     }
 }

@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opentripplanner.middleware.models.Device;
+import org.opentripplanner.middleware.models.OtpUser;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -85,8 +86,12 @@ class NotificationUtilsTest {
     @ParameterizedTest
     @MethodSource("createNotificationInfoCases")
     void testTruncateNotificationPayload(String originalTitle, String expectedTitle, String originalMessage, String expectedMessage, String message) {
+        OtpUser user = new OtpUser();
+        user.id = "user123u";
+        user.email = "user@example.com";
+
         NotificationUtils.NotificationInfo info = new NotificationUtils.NotificationInfo(
-            "user@example.com",
+            user,
             originalMessage,
             originalTitle,
             "trip-id"
