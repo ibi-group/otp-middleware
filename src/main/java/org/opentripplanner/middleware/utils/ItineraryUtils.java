@@ -178,7 +178,7 @@ public class ItineraryUtils {
     /**
      * Check whether a new leg of an itinerary matches the previous itinerary leg for the purposes of trip monitoring.
      */
-    private static boolean legsMatch(Leg referenceItineraryLeg, Leg candidateItineraryLeg) {
+    public static boolean legsMatch(Leg referenceItineraryLeg, Leg candidateItineraryLeg) {
         // for now don't analyze non-transit legs
         if (!referenceItineraryLeg.transitLeg) return true;
 
@@ -360,4 +360,15 @@ public class ItineraryUtils {
     public static String getRouteShortNameFromLeg(Leg leg) {
         return leg.routeShortName;
     }
+
+    /**
+     * Get the first leg in an itinerary.
+     */
+    public static Leg getFirstLeg(Itinerary itinerary) {
+        if (itinerary != null && itinerary.legs != null && !itinerary.legs.isEmpty()) {
+            return itinerary.legs.get(0);
+        }
+        return null;
+    }
+
 }

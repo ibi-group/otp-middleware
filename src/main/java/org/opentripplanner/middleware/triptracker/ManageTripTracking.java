@@ -2,6 +2,8 @@ package org.opentripplanner.middleware.triptracker;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
@@ -10,6 +12,10 @@ import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import spark.Request;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getFirstLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
@@ -145,19 +151,40 @@ public class ManageTripTracking {
             tripData.trip.journeyState.matchingItinerary,
             Persistence.otpUsers.getById(tripData.trip.userId)
         );
-        BusOperatorActions
-            .getDefault()
-            .handleCancelNotificationAction(travelerPosition);
+        cancelBusNotification(travelerPosition, tripData.trip.journeyState.matchingItinerary);
         TrackedJourney trackedJourney = travelerPosition.trackedJourney;
         trackedJourney.end(isForciblyEnded);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_TIME_FIELD_NAME, trackedJourney.endTime);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_CONDITION_FIELD_NAME, trackedJourney.endCondition);
 
-        // Provide response.
         return new EndTrackingResponse(
             TripInstruction.NO_INSTRUCTION,
             TripStatus.ENDED.name()
         );
+    }
 
+    /**
+     * Cancel bus notifications which will not be fulfilled.
+     */
+    private static void cancelBusNotification(TravelerPosition travelerPosition, Itinerary itinerary) {
+        Leg firstLegOfTrip = getFirstLeg(itinerary);
+        Leg busLeg = getLegToCancel(travelerPosition, firstLegOfTrip);
+        BusOperatorActions
+            .getDefault()
+            .handleCancelNotificationAction(travelerPosition, busLeg);
+    }
+
+    /**
+     * If the traveler is still on the first leg of their trip and bus notification has been sent, cancel notification
+     * related to this first leg. If the traveler is passed the first leg, cancel notification related to the next leg.
+     */
+    public static Leg getLegToCancel(TravelerPosition travelerPosition, Leg firstLegOfTrip) {
+        if (legsMatch(travelerPosition.expectedLeg, firstLegOfTrip) && isBusLeg(travelerPosition.expectedLeg)) {
+            var routeId = getRouteIdFromLeg(travelerPosition.expectedLeg);
+            if (routeId != null && travelerPosition.trackedJourney.busNotificationMessages.containsKey(routeId)) {
+                return firstLegOfTrip;
+            }
+        }
+        return travelerPosition.nextLeg;
     }
 }

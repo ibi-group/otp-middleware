@@ -57,20 +57,20 @@ public class TravelerLocator {
     ) {
         if (hasRequiredWalkLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
-                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, tripStatus);
+                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
                 if (tripInstruction != null) {
                     return tripInstruction.build();
                 }
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
-                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip, tripStatus);
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
                 if (tripInstruction != null) {
                     return tripInstruction.build();
                 }
             }
         } else if (hasRequiredTransitLeg(travelerPosition) && hasRequiredTripStatus(tripStatus)) {
-            TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition);
+            TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition, isStartOfTrip);
             if (tripInstruction != null) {
                 return tripInstruction.build();
             }
@@ -111,10 +111,9 @@ public class TravelerLocator {
     @Nullable
     private static TripInstruction getBackOnTrack(
         TravelerPosition travelerPosition,
-        boolean isStartOfTrip,
-        TripStatus tripStatus
+        boolean isStartOfTrip
     ) {
-        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, tripStatus);
+        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
         if (instruction != null && instruction.hasInstruction()) {
             return instruction;
         }
@@ -130,13 +129,12 @@ public class TravelerLocator {
     @Nullable
     public static TripInstruction alignTravelerToTrip(
         TravelerPosition travelerPosition,
-        boolean isStartOfTrip,
-        TripStatus tripStatus
+        boolean isStartOfTrip
     ) {
         Locale locale = travelerPosition.locale;
 
         if (isApproachingEndOfLeg(travelerPosition)) {
-            if (sendBusNotification(travelerPosition, isStartOfTrip, tripStatus)) {
+            if (sendBusNotification(travelerPosition, isStartOfTrip)) {
                 // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
                 return new WaitForTransitInstruction(travelerPosition.nextLeg, travelerPosition.currentTime, locale);
             }
@@ -159,13 +157,13 @@ public class TravelerLocator {
      */
     public static boolean sendBusNotification(
         TravelerPosition travelerPosition,
-        boolean isStartOfTrip,
-        TripStatus tripStatus
+        boolean isStartOfTrip
     ) {
-        if (shouldNotifyBusOperator(travelerPosition, isStartOfTrip)) {
+        Leg busLeg = (isStartOfTrip) ? travelerPosition.expectedLeg : travelerPosition.nextLeg;
+        if (shouldNotifyBusOperator(travelerPosition, busLeg)) {
             BusOperatorActions
                 .getDefault()
-                .handleSendNotificationAction(tripStatus, travelerPosition);
+                .handleSendNotificationAction(travelerPosition, busLeg);
             return true;
         }
         return false;
@@ -174,20 +172,36 @@ public class TravelerLocator {
     /**
      * Given the traveler's position and leg type, check if bus notification should be sent.
      */
-    public static boolean shouldNotifyBusOperator(TravelerPosition travelerPosition, boolean isStartOfTrip) {
-        return (isStartOfTrip)
-            ? isBusLeg(travelerPosition.expectedLeg) && isWithinOperationalNotifyWindow(travelerPosition.currentTime, travelerPosition.expectedLeg)
-            : isBusLeg(travelerPosition.nextLeg) && isWithinOperationalNotifyWindow(travelerPosition);
+    public static boolean shouldNotifyBusOperator(TravelerPosition travelerPosition, Leg busLeg) {
+        return isBusLeg(busLeg) && isWithinOperationalNotifyWindow(travelerPosition.currentTime, busLeg);
+    }
+
+    /**
+     * A trip which starts with a transit leg.
+     */
+    private static boolean tripStartsWithTransitLeg(TravelerPosition travelerPosition, boolean isStartOfTrip) {
+        return isStartOfTrip && travelerPosition.expectedLeg.transitLeg;
     }
 
     /**
      * Align the traveler's position to the nearest transit stop or destination.
      */
     @Nullable
-    public static TripInstruction alignTravelerToTransitTrip(TravelerPosition travelerPosition) {
+    public static TripInstruction alignTravelerToTransitTrip(
+        TravelerPosition travelerPosition,
+        boolean isStartOfTrip
+    ) {
         Locale locale = travelerPosition.locale;
         Leg expectedLeg = travelerPosition.expectedLeg;
         String finalStop = expectedLeg.to.name;
+
+        if (
+            tripStartsWithTransitLeg(travelerPosition, isStartOfTrip) &&
+            sendBusNotification(travelerPosition, isStartOfTrip)
+        ) {
+            // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
+            return new WaitForTransitInstruction(expectedLeg, travelerPosition.currentTime, locale);
+        }
 
         if (isApproachingEndOfLeg(travelerPosition)) {
             return new GetOffHereTransitInstruction(finalStop, locale);
@@ -239,10 +253,6 @@ public class TravelerLocator {
      */
     public static boolean isAtEndOfLeg(TravelerPosition travelerPosition) {
         return getDistanceToEndOfLeg(travelerPosition) <= TRIP_INSTRUCTION_IMMEDIATE_RADIUS;
-    }
-
-    public static boolean isWithinOperationalNotifyWindow(TravelerPosition travelerPosition) {
-        return isWithinOperationalNotifyWindow(travelerPosition.currentTime, travelerPosition.nextLeg);
     }
 
     /**

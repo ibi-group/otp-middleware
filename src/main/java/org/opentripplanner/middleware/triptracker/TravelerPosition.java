@@ -89,6 +89,13 @@ public class TravelerPosition {
         this.currentTime = currentTime;
     }
 
+    /** Used for unit testing. */
+    public TravelerPosition(Leg expectedLeg, Leg nextLeg, TrackedJourney trackedJourney) {
+        this.expectedLeg = expectedLeg;
+        this.nextLeg = nextLeg;
+        this.trackedJourney = trackedJourney;
+    }
+
     /** Computes the current deviation in meters from the expected itinerary. */
     public double getDeviationMeters() {
         return getDistanceFromLine(legSegmentFromPosition.start, legSegmentFromPosition.end, currentPosition);
