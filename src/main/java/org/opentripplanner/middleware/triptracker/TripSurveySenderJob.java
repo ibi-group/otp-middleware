@@ -46,7 +46,7 @@ public class TripSurveySenderJob implements Runnable {
         // Pick users for which the last survey notification was sent more than a week ago.
         List<OtpUser> usersWithNotificationsOverAWeekAgo = getUsersWithNotificationsOverAWeekAgo();
 
-        // Collect journeys that were completed/terminated in the past 24-48 hrs. (skip ongoing journeys).
+        // Collect journeys that were completed/terminated in the past hour (skip ongoing journeys).
         List<TrackedJourney> journeysCompletedInPastHour = getCompletedJourneysInPastHour();
 
         // Map users to journeys.

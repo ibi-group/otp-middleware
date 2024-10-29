@@ -44,7 +44,7 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
     public static void setUp() {
         assumeTrue(IS_END_TO_END);
 
-        // Create users. and populate the date for last trip survey notification.
+        // Create users and populate the date for last trip survey notification.
         user1notifiedNow = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-user1"));
         user2notifiedAWeekAgo = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-user2"));
         user3neverNotified = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-user3"));
