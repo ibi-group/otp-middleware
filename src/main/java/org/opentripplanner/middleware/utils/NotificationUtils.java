@@ -93,8 +93,8 @@ public class NotificationUtils {
      * @param trip  Trip about which the survey notification is about.
      */
     public static String sendTripSurveyPush(OtpUser otpUser, MonitoredTrip trip) {
-        // If Push API config properties aren't set, do nothing.
-        if (PUSH_API_KEY == null || PUSH_API_URL == null) return null;
+        // If Push API/survey config properties aren't set, do nothing.
+        if (PUSH_API_KEY == null || PUSH_API_URL == null || TRIP_SURVEY_ID == null) return null;
 
         Locale locale = I18nUtils.getOtpUserLocale(otpUser);
         String tripTime = DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale);
