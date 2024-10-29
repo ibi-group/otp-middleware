@@ -59,7 +59,8 @@ class NotificationUtilsTestCI extends OtpMiddlewareTestEnvironment {
             user,
             "Tough little ship!",
             "Titanic",
-            "trip-id"
+            "trip-id",
+            "survey-id"
         );
         LOG.info("Push notification (ret={}) sent to {}", ret, user.email);
         Assertions.assertNotNull(ret);

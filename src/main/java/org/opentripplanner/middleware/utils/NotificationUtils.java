@@ -52,6 +52,7 @@ public class NotificationUtils {
     public static final String OTP_ADMIN_DASHBOARD_FROM_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_FROM_EMAIL");
     private static final String PUSH_API_KEY = getConfigPropertyAsText("PUSH_API_KEY");
     private static final String PUSH_API_URL = getConfigPropertyAsText("PUSH_API_URL");
+    private static final String TRIP_SURVEY_ID = getConfigPropertyAsText("TRIP_SURVEY_ID");
 
     /**
      * Although SMS are 160 characters long and Twilio supports sending up to 1600 characters,
@@ -79,7 +80,7 @@ public class NotificationUtils {
         if (PUSH_API_KEY == null || PUSH_API_URL == null) return null;
         try {
             String body = TemplateUtils.renderTemplate(textTemplate, templateData);
-            return otpUser.pushDevices > 0 ? sendPush(otpUser, body, tripName, tripId) : "OK";
+            return otpUser.pushDevices > 0 ? sendPush(otpUser, body, tripName, tripId, null) : "OK";
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
             // handles Bugsnag reporting/error logging, so that is not needed here.
@@ -101,7 +102,7 @@ public class NotificationUtils {
             org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION.get(locale),
             tripTime
         );
-        return otpUser.pushDevices > 0 ? sendPush(otpUser, body, trip.tripName, trip.id) : "OK";
+        return otpUser.pushDevices > 0 ? sendPush(otpUser, body, trip.tripName, trip.id, TRIP_SURVEY_ID) : "OK";
     }
 
     /**
@@ -110,15 +111,17 @@ public class NotificationUtils {
      * @param body      message body
      * @param tripName  Monitored trip name to show in notification title
      * @param tripId    Monitored trip ID
+     * @param surveyId  Survey ID
      * @return          "OK" if message was successful (null otherwise)
      */
-    static String sendPush(OtpUser toUser, String body, String tripName, String tripId) {
+    static String sendPush(OtpUser toUser, String body, String tripName, String tripId, String surveyId) {
         try {
             NotificationInfo notificationInfo = new NotificationInfo(
                 toUser,
                 body,
                 tripName,
-                tripId
+                tripId,
+                surveyId
             );
             var jsonBody = new Gson().toJson(notificationInfo);
             var httpResponse = HttpUtils.httpRequestRawResponse(
