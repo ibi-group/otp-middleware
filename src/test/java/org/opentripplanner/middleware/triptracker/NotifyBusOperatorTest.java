@@ -113,7 +113,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
     void canGetCorrectLegToCancelNotification(Leg expected, Leg next, String message) {
         Leg first = firstLegBusTransit.legs.get(0);
         TrackedJourney journey = new TrackedJourney();
-        journey.busNotificationMessages.put("GwinnettCountyTransit:40", "{\"msg_type\": 1}");
+        journey.busNotificationMessages.put(routeId, "{\"msg_type\": 1}");
         TravelerPosition travelerPosition = new TravelerPosition(expected, next, journey);
         assertTrue(legsMatch(expected, ManageTripTracking.getLegToCancel(travelerPosition, first)), message);
     }
@@ -128,7 +128,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(
                 firstLegBusTransit.legs.get(1),
                 firstLegBusTransit.legs.get(1),
-                "Traveler is already passed the first leg, no need to cancel notification for first leg."
+                "Traveler has passed the first leg, no need to cancel notification for first leg."
             )
         );
     }

@@ -13,7 +13,7 @@ import spark.Request;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getFirstLeg;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteGtfsIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -180,7 +180,7 @@ public class ManageTripTracking {
      */
     public static Leg getLegToCancel(TravelerPosition travelerPosition, Leg firstLegOfTrip) {
         if (legsMatch(travelerPosition.expectedLeg, firstLegOfTrip) && isBusLeg(travelerPosition.expectedLeg)) {
-            var routeId = getRouteIdFromLeg(travelerPosition.expectedLeg);
+            var routeId = getRouteGtfsIdFromLeg(travelerPosition.expectedLeg);
             if (routeId != null && travelerPosition.trackedJourney.busNotificationMessages.containsKey(routeId)) {
                 return firstLegOfTrip;
             }

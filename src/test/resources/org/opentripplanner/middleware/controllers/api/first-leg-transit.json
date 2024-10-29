@@ -5,7 +5,6 @@
   "legs": [
     {
       "accessibilityScore": null,
-      "agencyId": "GwinnettCountyTransit:GCT",
       "agency": {
         "alerts": [
           {
@@ -341,12 +340,11 @@
       "realtimeState": null,
       "rentedBike": null,
       "rideHailingEstimate": null,
-      "routeId":  "GwinnettCountyTransit:40",
       "route": {
         "alerts": [],
         "color": "00BCF2",
-        "gtfsId": "GwinnettCountyTransit:20",
-        "id": "GwinnettCountyTransit:20",
+        "gtfsId": "GwinnettCountyTransit:40",
+        "id": "GwinnettCountyTransit:40",
         "longName": "Beaver Ruin - Doraville",
         "shortName": "20",
         "textColor": "000000",
