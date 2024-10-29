@@ -47,10 +47,10 @@ public class TripSurveySenderJob implements Runnable {
         List<OtpUser> usersWithNotificationsOverAWeekAgo = getUsersWithNotificationsOverAWeekAgo();
 
         // Collect journeys that were completed/terminated in the past 24-48 hrs. (skip ongoing journeys).
-        List<TrackedJourney> journeysCompletedInPast24To48Hours = getCompletedJourneysInPastHour();
+        List<TrackedJourney> journeysCompletedInPastHour = getCompletedJourneysInPastHour();
 
         // Map users to journeys.
-        Map<OtpUser, List<TrackedJourney>> usersToJourneys = mapJourneysToUsers(journeysCompletedInPast24To48Hours, usersWithNotificationsOverAWeekAgo);
+        Map<OtpUser, List<TrackedJourney>> usersToJourneys = mapJourneysToUsers(journeysCompletedInPastHour, usersWithNotificationsOverAWeekAgo);
 
         for (Map.Entry<OtpUser, List<TrackedJourney>> entry : usersToJourneys.entrySet()) {
             // Find journey with the largest total deviation.
