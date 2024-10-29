@@ -6,8 +6,6 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.I18nUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,16 +57,17 @@ public class TripSurveySenderJob implements Runnable {
             Optional<TrackedJourney> optJourney = selectMostDeviatedJourneyUsingDeviatedPoints(entry.getValue());
             if (optJourney.isPresent()) {
                 // Send push notification about that journey.
+                MonitoredTrip trip = optJourney.get().trip;
+                LOG.info("Sending survey notification for trip {}", trip.id);
                 OtpUser otpUser = entry.getKey();
-                TrackedJourney journey = optJourney.get();
-                MonitoredTrip trip = journey.trip;
-                Map<String, Object> data = Map.of(
-                    "tripTime", DateTimeUtils.formatShortDate(trip.itinerary.startTime, I18nUtils.getOtpUserLocale(otpUser))
-                );
-                NotificationUtils.sendPush(otpUser, "PostTripSurveyPush.ftl", data, trip.tripName, trip.id);
+                String pushResult = NotificationUtils.sendTripSurveyPush(otpUser, trip);
+                if (pushResult != null) {
+                    // Store time of last sent survey notification for user.
+                    Persistence.otpUsers.updateField(otpUser.id, LAST_TRIP_SURVEY_NOTIF_SENT_FIELD, new Date());
+                } else {
+                    LOG.warn("Could not send survey notification for trip {}", trip.id);
+                }
 
-                // Store time of last sent survey notification for user.
-                Persistence.otpUsers.updateField(otpUser.id, LAST_TRIP_SURVEY_NOTIF_SENT_FIELD, new Date());
             }
         }
 

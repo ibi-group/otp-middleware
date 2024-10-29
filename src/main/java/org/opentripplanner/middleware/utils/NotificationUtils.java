@@ -15,6 +15,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.Device;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -84,6 +86,24 @@ public class NotificationUtils {
             // handles Bugsnag reporting/error logging, so that is not needed here.
             return null;
         }
+    }
+
+    /**
+     * @param otpUser  target user
+     * @param trip  Trip about which the survey notification is about.
+     */
+    public static String sendTripSurveyPush(OtpUser otpUser, MonitoredTrip trip) {
+        // If Push API config properties aren't set, do nothing.
+        if (PUSH_API_KEY == null || PUSH_API_URL == null) return null;
+
+        Locale locale = I18nUtils.getOtpUserLocale(otpUser);
+        String tripTime = DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale);
+        String body = String.format(
+            org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION.get(locale),
+            tripTime
+        );
+        String toUser = otpUser.email;
+        return otpUser.pushDevices > 0 ? sendPush(toUser, body, trip.tripName, trip.id) : "OK";
     }
 
     /**
