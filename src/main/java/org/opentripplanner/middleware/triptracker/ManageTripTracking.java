@@ -164,7 +164,7 @@ public class ManageTripTracking {
     }
 
     /**
-     * Cancel bus notifications which will not be fulfilled.
+     * Cancel bus notifications which are no longer needed/relevant.
      */
     private static void cancelBusNotification(TravelerPosition travelerPosition, Itinerary itinerary) {
         Leg firstLegOfTrip = getFirstLeg(itinerary);
