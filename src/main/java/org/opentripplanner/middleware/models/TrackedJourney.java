@@ -99,16 +99,6 @@ public class TrackedJourney extends Model {
         );
     }
 
-    /** The sum of the deviations for all tracking locations that have it. */
-    public double computeTotalDeviation() {
-        if (locations == null) return -1;
-
-        return locations.stream()
-            .filter(l -> l.deviationMeters != null)
-            .map(l -> l.deviationMeters)
-            .reduce(0.0, Double::sum);
-    }
-
     /** The largest consecutive deviations for all tracking locations marked "deviated". */
     public int computeLargestConsecutiveDeviations() {
         if (locations == null) return -1;
