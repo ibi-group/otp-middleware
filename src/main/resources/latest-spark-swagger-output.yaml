@@ -3183,7 +3183,7 @@ definitions:
         type: "array"
         items:
           type: "string"
-      nickName:
+      name:
         type: "string"
   MobilityProfile:
     type: "object"
