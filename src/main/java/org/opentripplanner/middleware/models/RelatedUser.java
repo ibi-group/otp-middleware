@@ -8,7 +8,7 @@ public class RelatedUser {
 
     public String email;
     public RelatedUserStatus status = RelatedUserStatus.PENDING;
-    public boolean acceptDependentEmailSent;
+    public String acceptKey;
     public String nickName;
 
     public RelatedUser() {
@@ -19,6 +19,11 @@ public class RelatedUser {
         this.email = email;
         this.status = status;
         this.nickName = nickName;
+    }
+
+    public RelatedUser(String email, RelatedUserStatus status, String nickName, String acceptKey) {
+        this (email, status, nickName);
+        this.acceptKey = acceptKey;
     }
 }
 

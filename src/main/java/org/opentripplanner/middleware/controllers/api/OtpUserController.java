@@ -24,7 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
-import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.REQUESTING_USER_ID_PARAM;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_KEY;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.manageAcceptDependentEmail;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -63,20 +63,24 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             Auth0Connection.ensureApiUserHasApiKey(req);
             user.applicationId = requestingUser.apiUser.id;
         }
-        if (Objects.nonNull(user.mobilityProfile)) {
-            user.mobilityProfile.updateMobilityMode();
-        }
-        manageAcceptDependentEmail(user);
+        preliminaryTasks(user);
         return super.preCreateHook(user, req);
     }
 
     @Override
     OtpUser preUpdateHook(OtpUser user, OtpUser preExistingUser, Request req) {
+        preliminaryTasks(user);
+        return super.preUpdateHook(user, preExistingUser, req);
+    }
+
+    /**
+     * Tasks to be carried out before creating or updating a user.
+     */
+    private void preliminaryTasks(OtpUser user) {
         if (Objects.nonNull(user.mobilityProfile)) {
             user.mobilityProfile.updateMobilityMode();
         }
         manageAcceptDependentEmail(user);
-        return super.preUpdateHook(user, preExistingUser, req);
     }
 
     @Override
@@ -88,8 +92,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             .get(path("/acceptdependent")
                     .withDescription("Accept a dependent request.")
                     .withResponses(SwaggerUtils.createStandardResponses(OtpUser.class))
-                    .withPathParam().withName(USER_ID_PARAM).withRequired(true).withDescription("The dependent user id.").and()
-                    .withPathParam().withName(REQUESTING_USER_ID_PARAM).withRequired(true).withDescription("The requesting user id.").and()
+                    .withPathParam().withName(ACCEPT_KEY).withRequired(true).withDescription("The accept dependent unique key.").and()
                     .withResponseType(OtpUser.class),
                 TrustedCompanion::acceptDependent
             )

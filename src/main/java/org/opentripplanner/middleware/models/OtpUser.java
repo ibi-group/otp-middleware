@@ -93,6 +93,9 @@ public class OtpUser extends AbstractUser {
     /** Users that are dependent on this user. */
     public List<String> dependents = new ArrayList<>();
 
+    /** This user's name */
+    public String name;
+
     @Override
     public boolean delete() {
         return delete(true);

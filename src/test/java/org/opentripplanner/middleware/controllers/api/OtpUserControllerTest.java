@@ -15,12 +15,14 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
+import org.opentripplanner.middleware.tripmonitor.TrustedCompanion;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import static org.opentripplanner.middleware.controllers.api.ApiController.USER_ID_PARAM;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.createAndAssignAuth0User;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
@@ -37,8 +38,6 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenti
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
-import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_DEPENDENT_PATH;
-import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.REQUESTING_USER_ID_PARAM;
 
 public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake US 555 number.
@@ -177,23 +176,17 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canAcceptDependentRequest() {
+        String acceptKey = UUID.randomUUID().toString();
         dependentUserOne.relatedUsers.add(new RelatedUser(
             relatedUserOne.email,
             RelatedUser.RelatedUserStatus.PENDING,
-            nickName
+            nickName,
+            acceptKey
         ));
         Persistence.otpUsers.replace(dependentUserOne.id, dependentUserOne);
 
-        String path = String.format(
-            "%s?%s=%s&%s=%s",
-            ACCEPT_DEPENDENT_PATH,
-            REQUESTING_USER_ID_PARAM,
-            relatedUserOne.id,
-            USER_ID_PARAM,
-            dependentUserOne.id
-        );
-        HttpResponseValues response = makeGetRequest(path, null);
-        System.out.println(response.uri);
+        String path = TrustedCompanion.getAcceptDependentEndPoint(acceptKey);
+        makeGetRequest(path, null);
 
         relatedUserOne = Persistence.otpUsers.getById(relatedUserOne.id);
         assertTrue(relatedUserOne.dependents.contains(dependentUserOne.id));

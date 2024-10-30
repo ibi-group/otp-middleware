@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor;
 
+import com.mongodb.client.model.Filters;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.i18n.Message;
@@ -16,9 +17,10 @@ import spark.Response;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.controllers.api.ApiController.USER_ID_PARAM;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.I18nUtils.label;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -34,7 +36,7 @@ public class TrustedCompanion {
     private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
     private static final String TRUSTED_COMPANION_CONFIRMATION_PAGE_URL = ConfigUtils.getConfigPropertyAsText("TRUSTED_COMPANION_CONFIRMATION_PAGE_URL");
     private static final String TRUSTED_COMPANION_ERROR_PAGE_URL = ConfigUtils.getConfigPropertyAsText("TRUSTED_COMPANION_ERROR_PAGE_URL");
-    public static final String REQUESTING_USER_ID_PARAM = "requestingUserId";
+    public static final String ACCEPT_KEY = "acceptKey";
 
     /** Note: This path is excluded from security checks, see {@link OtpMiddlewareMain#initializeHttpEndpoints()}. */
     public static final String ACCEPT_DEPENDENT_PATH = "api/secure/user/acceptdependent";
@@ -44,54 +46,68 @@ public class TrustedCompanion {
      * successful redirect the user to the confirmation page, else redirect to the error page with related error.
      */
     public static OtpUser acceptDependent(Request request, Response response) {
-        boolean accepted = false;
-        String error = "";
-        OtpUser relatedUser = getUserFromRequest(request, REQUESTING_USER_ID_PARAM);
-        OtpUser dependentUser = getUserFromRequest(request, USER_ID_PARAM);
-        if (relatedUser != null && dependentUser != null) {
-            boolean isRelated = dependentUser.relatedUsers
+        String acceptKey = getAcceptKeyFromRequest(request);
+        OtpUser dependentUser = getUserFromAcceptKey(request, acceptKey);
+        OtpUser relatedUser = getRelatedUserFromEmail(dependentUser, acceptKey);
+
+        if (dependentUser != null && relatedUser != null) {
+            Optional<RelatedUser> relatedUserToUpdate = dependentUser.relatedUsers
                 .stream()
                 .filter(related -> related.email.equals(relatedUser.email))
-                // Update related user status. This assumes a related user with "pending" status was previously added.
-                .peek(related -> related.status = RelatedUser.RelatedUserStatus.CONFIRMED)
-                .findFirst()
-                .isPresent();
+                .findFirst();
+            relatedUserToUpdate.ifPresent(value -> value.status = RelatedUser.RelatedUserStatus.CONFIRMED);
 
-            if (isRelated) {
-                // Maintain a list of dependents.
-                relatedUser.dependents.add(dependentUser.id);
-                Persistence.otpUsers.replace(relatedUser.id, relatedUser);
-                // Update list of related users.
-                Persistence.otpUsers.replace(dependentUser.id, dependentUser);
-                accepted = true;
-            } else {
-                error = "Dependent did not request you as a trusted companion!";
-            }
-        } else {
-            error = "Required users do not exist!";
-        }
+            // Maintain a list of dependents.
+            relatedUser.dependents.add(dependentUser.id);
+            Persistence.otpUsers.replace(relatedUser.id, relatedUser);
+            // Update list of related users.
+            Persistence.otpUsers.replace(dependentUser.id, dependentUser);
 
-        if (accepted) {
             // Redirect to confirmation page and provide dependent user information.
             response.redirect(TRUSTED_COMPANION_CONFIRMATION_PAGE_URL);
             return dependentUser;
-        } else {
-            response.redirect(String.format("%s?error=%s", TRUSTED_COMPANION_ERROR_PAGE_URL, error));
-            return null;
         }
+
+        response.redirect(
+            String.format("%s?error=%s", TRUSTED_COMPANION_ERROR_PAGE_URL, Message.ACCEPT_DEPENDENT_ERROR.get(null))
+        );
+        return null;
     }
 
     /**
-     * Extract the user id from the request parameters and in-turn retrieve the matching user.
+     * Using the accept key, find the matching related user's email and from that return the related user.
      */
-    private static OtpUser getUserFromRequest(Request request, String parameterName) {
-        String userId = HttpUtils.getQueryParamFromRequest(request, parameterName, false);
-        if (userId.isEmpty()) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "User id not provided.");
+    private static OtpUser getRelatedUserFromEmail(OtpUser dependentUser, String acceptKey) {
+        if (dependentUser == null || acceptKey == null) {
             return null;
         }
+        Optional<RelatedUser> relatedUser = dependentUser.relatedUsers
+            .stream()
+            .filter(user -> user.acceptKey.equalsIgnoreCase(acceptKey))
+            .findFirst();
+        return relatedUser.map(user -> Persistence.otpUsers.getOneFiltered(eq("email", user.email))).orElse(null);
+    }
 
-        OtpUser user = Persistence.otpUsers.getById(userId);
+    /**
+     * Extract the accept key from the request parameters.
+     */
+    private static String getAcceptKeyFromRequest(Request request) {
+        String acceptKey = HttpUtils.getQueryParamFromRequest(request, ACCEPT_KEY, false);
+        if (acceptKey.isEmpty()) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Accept key not provided.");
+            return null;
+        }
+        return acceptKey;
+    }
+
+    /**
+     * Retrieve the dependent user matching the accept key.
+     */
+    private static OtpUser getUserFromAcceptKey(Request request, String acceptKey) {
+        if (acceptKey == null) {
+            return null;
+        }
+        OtpUser user = getUserForAcceptKey(acceptKey);
         if (user == null) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Otp user unknown.");
             return null;
@@ -116,11 +132,12 @@ public class TrustedCompanion {
 
         dependentUser.relatedUsers
             .stream()
-            .filter(relatedUser -> !relatedUser.acceptDependentEmailSent)
+            .filter(relatedUser -> relatedUser.acceptKey == null)
             .forEach(relatedUser -> {
+                String acceptKey = UUID.randomUUID().toString();
                 OtpUser userToReceiveEmail = Persistence.otpUsers.getOneFiltered(eq("email", relatedUser.email));
-                if (userToReceiveEmail != null && (isTest || sendAcceptDependentEmail(dependentUser, userToReceiveEmail))) {
-                    relatedUser.acceptDependentEmailSent = true;
+                if (userToReceiveEmail != null && (isTest || sendAcceptDependentEmail(dependentUser, userToReceiveEmail, acceptKey))) {
+                    relatedUser.acceptKey = acceptKey;
                 }
             });
 
@@ -131,22 +148,21 @@ public class TrustedCompanion {
     /**
      * Send 'accept dependent' email.
      */
-    private static boolean sendAcceptDependentEmail(OtpUser dependentUser, OtpUser relatedUser) {
+    private static boolean sendAcceptDependentEmail(OtpUser dependentUser, OtpUser relatedUser, String acceptKey) {
         Locale locale = I18nUtils.getOtpUserLocale(relatedUser);
 
         String acceptDependentLinkLabel = Message.ACCEPT_DEPENDENT_EMAIL_LINK_TEXT.get(locale);
-        String acceptDependentUrl = getAcceptDependentUrl(dependentUser);
+        String acceptDependentUrl = getAcceptDependentUrl(acceptKey);
+        String addressee = (dependentUser.name != null) ? dependentUser.name : dependentUser.email;
 
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
         Map<String, Object> templateData = new HashMap<>(
             Map.of(
                 "acceptDependentLinkAnchorLabel", acceptDependentLinkLabel,
                 "acceptDependentLinkLabelAndUrl", label(acceptDependentLinkLabel, acceptDependentUrl, locale),
-                "acceptDependentUrl", getAcceptDependentUrl(dependentUser),
+                "acceptDependentUrl", acceptDependentUrl,
                 "emailFooter", Message.ACCEPT_DEPENDENT_EMAIL_FOOTER.get(locale),
-                // TODO: The user's email address isn't very personal, but that is all I have to work with! Suggetions?
-                "emailGreeting", String.format("%s %s", dependentUser.email, Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale)),
-                // TODO: This is required in the `OtpUserContainer.ftl` template. Not sure what to provide. Suggestions?
+                "emailGreeting", String.format("%s %s", addressee, Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale)),
                 "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
                 "manageLinkText", Message.ACCEPT_DEPENDENT_EMAIL_MANAGE.get(locale)
             )
@@ -161,7 +177,19 @@ public class TrustedCompanion {
         );
     }
 
-    private static String getAcceptDependentUrl(OtpUser dependentUser) {
-        return String.format("%s/%s/%s?userId=%s", AWS_API_SERVER, AWS_API_STAGE, ACCEPT_DEPENDENT_PATH, dependentUser.id);
+    private static String getAcceptDependentUrl(String acceptKey) {
+        return String.format("%s/%s%s", AWS_API_SERVER, AWS_API_STAGE, getAcceptDependentEndPoint(acceptKey));
+    }
+
+    public static String getAcceptDependentEndPoint(String acceptKey) {
+        return String.format("/%s?%s=%s", ACCEPT_DEPENDENT_PATH, ACCEPT_KEY, acceptKey);
+    }
+
+    /**
+     * @return the {@link OtpUser} found with a {@link RelatedUser#acceptKey} in {@link OtpUser#relatedUsers} that
+     * matches the provided acceptKey.
+     */
+    private static OtpUser getUserForAcceptKey(String acceptKey) {
+        return Persistence.otpUsers.getOneFiltered(Filters.elemMatch("relatedUsers", Filters.eq(ACCEPT_KEY, acceptKey)));
     }
 }

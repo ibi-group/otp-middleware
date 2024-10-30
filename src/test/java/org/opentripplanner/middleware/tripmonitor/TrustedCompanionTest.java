@@ -10,7 +10,9 @@ import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
 
@@ -39,10 +41,11 @@ public class TrustedCompanionTest extends OtpMiddlewareTestEnvironment {
         dependentUserOne.relatedUsers.add(new RelatedUser(
             relatedUserOne.email,
             RelatedUser.RelatedUserStatus.PENDING,
-            nickName
+            nickName,
+            UUID.randomUUID().toString()
         ));
         Persistence.otpUsers.replace(dependentUserOne.id, dependentUserOne);
         TrustedCompanion.manageAcceptDependentEmail(dependentUserOne, true);
-        assertTrue(dependentUserOne.relatedUsers.get(0).acceptDependentEmailSent);
+        assertNotNull(dependentUserOne.relatedUsers.get(0).acceptKey);
     }
 }
