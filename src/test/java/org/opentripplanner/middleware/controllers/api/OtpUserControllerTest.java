@@ -20,7 +20,6 @@ import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -30,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import static org.opentripplanner.middleware.testutils.ApiTestUtils.createAndAssignAuth0User;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
@@ -48,8 +46,9 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser dependentUserTwo;
     private static OtpUser relatedUserThree;
     private static OtpUser dependentUserThree;
-    private static HashMap<String, String> relatedUserHeaders;
-    private static final String nickName = "my-trusted-companion";
+    private static OtpUser relatedUserFour;
+    private static OtpUser dependentUserFour;
+    private static final String nickname = "my-trusted-companion";
 
     @BeforeAll
     public static void setUp() throws Exception {
@@ -72,7 +71,8 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         dependentUserTwo = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-two"));
         relatedUserThree = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("related-user-three"));
         dependentUserThree = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-three"));
-        relatedUserHeaders = createAndAssignAuth0User(relatedUserOne);
+        relatedUserFour = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("related-user-four"));
+        dependentUserFour = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-four"));
     }
 
     @AfterAll
@@ -83,9 +83,11 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
             relatedUserOne,
             relatedUserTwo,
             relatedUserThree,
+            relatedUserFour,
             dependentUserOne,
             dependentUserTwo,
-            dependentUserThree
+            dependentUserThree,
+            dependentUserFour
         );
 
         // Restore original isAuthDisabled state.
@@ -180,7 +182,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         dependentUserOne.relatedUsers.add(new RelatedUser(
             relatedUserOne.email,
             RelatedUser.RelatedUserStatus.PENDING,
-            nickName,
+            nickname,
             acceptKey
         ));
         Persistence.otpUsers.replace(dependentUserOne.id, dependentUserOne);
@@ -200,13 +202,13 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void canInvalidateDependent() {
+    void canInvalidateDependentOnDelete() {
         relatedUserTwo.dependents.add(dependentUserTwo.id);
         Persistence.otpUsers.replace(relatedUserTwo.id, relatedUserTwo);
         dependentUserTwo.relatedUsers.add(new RelatedUser(
             relatedUserTwo.email,
             RelatedUser.RelatedUserStatus.CONFIRMED,
-            nickName
+            nickname
         ));
         Persistence.otpUsers.replace(dependentUserTwo.id, dependentUserTwo);
         relatedUserTwo.delete(false);
@@ -216,17 +218,59 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void canRemoveRelatedUser() {
+    void canRemoveRelatedUserOnDelete() {
         relatedUserThree.dependents.add(dependentUserThree.id);
         Persistence.otpUsers.replace(relatedUserThree.id, relatedUserThree);
         dependentUserThree.relatedUsers.add(new RelatedUser(
             relatedUserThree.email,
             RelatedUser.RelatedUserStatus.CONFIRMED,
-            nickName
+            nickname
         ));
         Persistence.otpUsers.replace(dependentUserThree.id, dependentUserThree);
         dependentUserThree.delete(false);
         relatedUserThree = Persistence.otpUsers.getById(relatedUserThree.id);
         assertFalse(relatedUserThree.dependents.contains(dependentUserThree.id));
+    }
+
+    /**
+     * Confirm that a user can be removed from a related users list, and importantly, the related user no longer lists
+     * the removed dependent.
+     */
+    @Test
+    void canRemoveUserFromRelatedUsersList() throws Exception {
+        setAuthDisabled(true);
+        relatedUserFour.dependents.add(dependentUserFour.id);
+        Persistence.otpUsers.replace(relatedUserFour.id, relatedUserFour);
+        dependentUserFour.relatedUsers.add(new RelatedUser(
+            relatedUserFour.email,
+            RelatedUser.RelatedUserStatus.CONFIRMED,
+            nickname
+        ));
+        Persistence.otpUsers.replace(dependentUserFour.id, dependentUserFour);
+
+        // Remove the first related user.
+        dependentUserFour.relatedUsers.clear();
+
+        // Add a new related user that should not be considered for integrity update.
+        dependentUserFour.relatedUsers.add(new RelatedUser(
+            relatedUserThree.email,
+            RelatedUser.RelatedUserStatus.PENDING,
+            nickname
+        ));
+
+        makeRequest(
+            String.format("api/secure/user/%s", dependentUserFour.id),
+            JsonUtils.toJson(dependentUserFour),
+            getMockHeaders(dependentUserFour),
+            HttpMethod.PUT
+        );
+
+        dependentUserFour = Persistence.otpUsers.getById(dependentUserFour.id);
+        assertFalse(dependentUserFour.relatedUsers.stream().anyMatch(u -> u.email.equalsIgnoreCase(relatedUserFour.email)));
+
+        relatedUserFour = Persistence.otpUsers.getById(relatedUserFour.id);
+        assertFalse(relatedUserFour.dependents.contains(dependentUserFour.id));
+
+        setAuthDisabled(false);
     }
 }

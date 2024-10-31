@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_KEY;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ensureRelatedUserIntegrity;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.manageAcceptDependentEmail;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -70,6 +71,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
     @Override
     OtpUser preUpdateHook(OtpUser user, OtpUser preExistingUser, Request req) {
         preliminaryTasks(user);
+        ensureRelatedUserIntegrity(user, preExistingUser);
         return super.preUpdateHook(user, preExistingUser, req);
     }
 
