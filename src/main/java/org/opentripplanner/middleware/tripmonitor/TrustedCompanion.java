@@ -105,7 +105,7 @@ public class TrustedCompanion {
     private static String getAcceptKeyFromRequest(Request request) throws IllegalArgumentException {
         // Note: optional is true so a missing accept key will be handled here.
         String acceptKey = HttpUtils.getQueryParamFromRequest(request, ACCEPT_KEY, true);
-        if (acceptKey == null || acceptKey.isEmpty()) {
+        if (Strings.isBlank(acceptKey)) {
             throw new IllegalArgumentException("Accept key not provided.");
         }
         return acceptKey;
@@ -124,7 +124,7 @@ public class TrustedCompanion {
      * Retrieve the dependent user matching the accept key.
      */
     private static OtpUser getUserFromAcceptKey(String acceptKey) throws IllegalArgumentException {
-        if (acceptKey == null) {
+        if (Strings.isBlank(acceptKey)) {
             return null;
         }
         OtpUser user = getUserForAcceptKey(acceptKey);
