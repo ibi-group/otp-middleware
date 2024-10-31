@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removeDependent;
 
 /**
  * This represents a user of an OpenTripPlanner instance (typically of the standard OTP UI/otp-react-redux).
@@ -144,13 +144,8 @@ public class OtpUser extends AbstractUser {
 
         // If a dependent, remove relationship with all related users.
         for (RelatedUser relatedUser : relatedUsers) {
-            OtpUser user = Persistence.otpUsers.getOneFiltered(eq("email", relatedUser.email));
-            if (user != null) {
-                user.dependents.remove(this.id);
-                Persistence.otpUsers.replace(user.id, user);
-            }
+            removeDependent(this, relatedUser);
         }
-
         return Persistence.otpUsers.removeById(this.id);
     }
 

@@ -21,6 +21,7 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -187,7 +188,8 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         ));
         Persistence.otpUsers.replace(dependentUserOne.id, dependentUserOne);
 
-        String path = TrustedCompanion.getAcceptDependentEndPoint(acceptKey);
+        Locale locale = new Locale("en", "GB");
+        String path = TrustedCompanion.getAcceptDependentEndPoint(acceptKey, locale);
         makeGetRequest(path, null);
 
         relatedUserOne = Persistence.otpUsers.getById(relatedUserOne.id);

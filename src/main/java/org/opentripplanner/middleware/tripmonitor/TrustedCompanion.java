@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.tripmonitor;
 
 import com.mongodb.client.model.Filters;
+import org.apache.logging.log4j.util.Strings;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -13,6 +14,7 @@ import org.opentripplanner.middleware.utils.NotificationUtils;
 import spark.Request;
 import spark.Response;
 
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -22,7 +24,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
+import static org.opentripplanner.middleware.utils.I18nUtils.getLocaleFromString;
 import static org.opentripplanner.middleware.utils.I18nUtils.label;
 
 public class TrustedCompanion {
@@ -34,8 +38,10 @@ public class TrustedCompanion {
     private static final String AWS_API_SERVER = ConfigUtils.getConfigPropertyAsText("AWS_API_SERVER");
     private static final String AWS_API_STAGE = ConfigUtils.getConfigPropertyAsText("AWS_API_STAGE");
     private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
-    private static final String TRUSTED_COMPANION_CONFIRMATION_PAGE_URL = ConfigUtils.getConfigPropertyAsText("TRUSTED_COMPANION_CONFIRMATION_PAGE_URL");
+    private static final String TRUSTED_COMPANION_CONFIRMATION_PAGE_URL =
+        ConfigUtils.getConfigPropertyAsText("TRUSTED_COMPANION_CONFIRMATION_PAGE_URL");
     public static final String ACCEPT_KEY = "acceptKey";
+    public static final String USER_LOCALE = "userLocale";
     public static final String EMAIL_FIELD_NAME = "email";
 
     /** Note: This path is excluded from security checks, see {@link OtpMiddlewareMain#initializeHttpEndpoints()}. */
@@ -46,6 +52,7 @@ public class TrustedCompanion {
      * successful redirect the user to the confirmation page, else redirect to the error page with related error.
      */
     public static OtpUser acceptDependent(Request request, Response response) {
+        Locale locale = getUserLocaleFromRequest(request);
         try {
             String acceptKey = getAcceptKeyFromRequest(request);
             OtpUser dependentUser = getUserFromAcceptKey(acceptKey);
@@ -69,9 +76,11 @@ public class TrustedCompanion {
                 return dependentUser;
             }
         } catch (IllegalArgumentException e) {
-            response.redirect(
-                String.format("%s?error=%s", TRUSTED_COMPANION_CONFIRMATION_PAGE_URL, Message.ACCEPT_DEPENDENT_ERROR.get(null))
-            );
+            response.redirect(String.format(
+                "%s?%s",
+                TRUSTED_COMPANION_CONFIRMATION_PAGE_URL,
+                URLEncoder.encode(String.format("error=%s", Message.ACCEPT_DEPENDENT_ERROR.get(locale)), UTF_8)
+            ));
         }
         return null;
     }
@@ -103,6 +112,15 @@ public class TrustedCompanion {
     }
 
     /**
+     * Extract the user's language tag from the request and return the {@link Locale} from it.
+     */
+    private static Locale getUserLocaleFromRequest(Request request) throws IllegalArgumentException {
+        // Note: optional is true so a missing locale will be handled here.
+        String languageTag = HttpUtils.getQueryParamFromRequest(request, USER_LOCALE, true);
+        return getLocaleFromString(languageTag);
+    }
+
+    /**
      * Retrieve the dependent user matching the accept key.
      */
     private static OtpUser getUserFromAcceptKey(String acceptKey) throws IllegalArgumentException {
@@ -111,7 +129,7 @@ public class TrustedCompanion {
         }
         OtpUser user = getUserForAcceptKey(acceptKey);
         if (user == null) {
-            throw new IllegalArgumentException("Otp user unknown.");
+            throw new IllegalArgumentException("OTP user unknown.");
         }
         return user;
     }
@@ -153,8 +171,8 @@ public class TrustedCompanion {
         Locale locale = I18nUtils.getOtpUserLocale(relatedUser);
 
         String acceptDependentLinkLabel = Message.ACCEPT_DEPENDENT_EMAIL_LINK_TEXT.get(locale);
-        String acceptDependentUrl = getAcceptDependentUrl(acceptKey);
-        String addressee = (dependentUser.name != null) ? dependentUser.name : dependentUser.email;
+        String acceptDependentUrl = getAcceptDependentUrl(acceptKey, locale);
+        String addressee = (Strings.isBlank(dependentUser.name)) ? dependentUser.email : dependentUser.name;
 
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
         Map<String, Object> templateData = new HashMap<>(
@@ -178,12 +196,12 @@ public class TrustedCompanion {
         );
     }
 
-    private static String getAcceptDependentUrl(String acceptKey) {
-        return String.format("%s/%s%s", AWS_API_SERVER, AWS_API_STAGE, getAcceptDependentEndPoint(acceptKey));
+    private static String getAcceptDependentUrl(String acceptKey, Locale locale) {
+        return String.format("%s/%s%s", AWS_API_SERVER, AWS_API_STAGE, getAcceptDependentEndPoint(acceptKey, locale));
     }
 
-    public static String getAcceptDependentEndPoint(String acceptKey) {
-        return String.format("/%s?%s=%s", ACCEPT_DEPENDENT_PATH, ACCEPT_KEY, acceptKey);
+    public static String getAcceptDependentEndPoint(String acceptKey, Locale locale) {
+        return String.format("/%s?%s=%s&%s=%s", ACCEPT_DEPENDENT_PATH, ACCEPT_KEY, acceptKey, USER_LOCALE, locale.toLanguageTag());
     }
 
     /**
@@ -203,11 +221,18 @@ public class TrustedCompanion {
             .filter(relatedUser -> !updatedUser.relatedUsers.contains(relatedUser))
             .collect(Collectors.toList());
         for (RelatedUser relatedUser : difference) {
-            OtpUser user = Persistence.otpUsers.getOneFiltered(eq(EMAIL_FIELD_NAME, relatedUser.email));
-            if (user != null) {
-                user.dependents.remove(updatedUser.id);
-                Persistence.otpUsers.replace(user.id, user);
-            }
+            removeDependent(updatedUser, relatedUser);
+        }
+    }
+
+    /**
+     * Remove the dependent reference from the related user.
+     */
+    public static void removeDependent(OtpUser dependent, RelatedUser relatedUser) {
+        OtpUser user = Persistence.otpUsers.getOneFiltered(eq(EMAIL_FIELD_NAME, relatedUser.email));
+        if (user != null) {
+            user.dependents.remove(dependent.id);
+            Persistence.otpUsers.replace(user.id, user);
         }
     }
 }

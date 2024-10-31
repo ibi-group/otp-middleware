@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_KEY;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.USER_LOCALE;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ensureRelatedUserIntegrity;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.manageAcceptDependentEmail;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
@@ -95,6 +96,7 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
                     .withDescription("Accept a dependent request.")
                     .withResponses(SwaggerUtils.createStandardResponses(OtpUser.class))
                     .withPathParam().withName(ACCEPT_KEY).withRequired(true).withDescription("The accept dependent unique key.").and()
+                    .withPathParam().withName(USER_LOCALE).withRequired(true).withDescription("The accepting user's locale.").and()
                     .withResponseType(OtpUser.class),
                 TrustedCompanion::acceptDependent
             )
