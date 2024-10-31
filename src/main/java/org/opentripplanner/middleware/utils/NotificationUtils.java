@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
@@ -101,10 +102,7 @@ public class NotificationUtils {
 
         Locale locale = I18nUtils.getOtpUserLocale(otpUser);
         String tripTime = DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale);
-        String body = String.format(
-            org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION.get(locale),
-            tripTime
-        );
+        String body = String.format(TRIP_SURVEY_NOTIFICATION.get(locale), tripTime);
         return sendPush(otpUser, body, trip.tripName, trip.id, TRIP_SURVEY_ID);
     }
 
