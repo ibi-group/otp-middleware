@@ -19,7 +19,6 @@ import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.I18nUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
-import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -305,9 +304,7 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         // If this point is reached, a matching itinerary was not found
-        LOG.warn("No comparison itinerary found for trip {} - params: {}", trip.id, JsonUtils.toJson(trip.otp2QueryParams));
-        LOG.warn("No comparison itinerary found for trip {} - saved itinerary: {}", trip.id, JsonUtils.toJson(trip.itinerary));
-        LOG.warn("No comparison itinerary found for trip {} - OTP itineraries: {}", trip.id, JsonUtils.toJson(otpResponse.plan.itineraries));
+        ItineraryExistence.logItineraryNotFound("No comparison itinerary found", trip, otpResponse.plan, LOG);
 
         if (hasReachedMaxItineraryChecks()) {
             // Check whether this trip should no longer ever be checked due to not having matching itineraries on any

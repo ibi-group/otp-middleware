@@ -232,10 +232,8 @@ public class ItineraryExistence extends Model {
                     result.handleInvalidDate(otpRequest.dateTime);
 
                     // Log if the itinerary didn't exist "today"
-                    if (index == 1) {
-                        LOG.warn("Itinerary existence check failed 'today' for trip {} - params: {}", trip.id, JsonUtils.toJson(trip.otp2QueryParams));
-                        LOG.warn("Itinerary existence check failed 'today' for trip {} - saved itinerary: {}", trip.id, JsonUtils.toJson(trip.itinerary));
-                        LOG.warn("Itinerary existence check failed 'today' for trip {} - OTP itineraries: {}", trip.id, JsonUtils.toJson(plan.itineraries));
+                    if (index == 1 && plan != null) {
+                        logItineraryNotFound("Itinerary existence check failed 'today'", trip, plan, LOG);
                     }
                 }
             }
@@ -247,6 +245,13 @@ public class ItineraryExistence extends Model {
             );
             this.error = true;
         }
+    }
+
+    /** Log instances of itinerary not found. */
+    public static void logItineraryNotFound(String message, MonitoredTrip trip, TripPlan plan, Logger logger) {
+        logger.warn("{} - trip {} - params: {}", message, trip.id, JsonUtils.toJson(trip.otp2QueryParams));
+        logger.warn("{} - trip {} - saved itinerary: {}", message, trip.id, JsonUtils.toJson(trip.itinerary));
+        logger.warn("{} - trip {} - OTP itineraries: {}", message, trip.id, JsonUtils.toJson(plan.itineraries));
     }
 
     private static OtpResponse getOtpResponse(OtpRequest otpRequest) {
