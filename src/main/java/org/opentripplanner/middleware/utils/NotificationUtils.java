@@ -10,6 +10,7 @@ import com.twilio.rest.verify.v2.service.VerificationCheck;
 import com.twilio.rest.verify.v2.service.VerificationCreator;
 import com.twilio.type.PhoneNumber;
 import freemarker.template.TemplateException;
+import org.apache.logging.log4j.util.Strings;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.StringUtil;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
@@ -54,6 +55,7 @@ public class NotificationUtils {
     private static final String PUSH_API_KEY = getConfigPropertyAsText("PUSH_API_KEY");
     private static final String PUSH_API_URL = getConfigPropertyAsText("PUSH_API_URL");
     private static final String TRIP_SURVEY_ID = getConfigPropertyAsText("TRIP_SURVEY_ID");
+    private static final String TRIP_SURVEY_SUBDOMAIN = getConfigPropertyAsText("TRIP_SURVEY_SUBDOMAIN");
 
     /**
      * Although SMS are 160 characters long and Twilio supports sending up to 1600 characters,
@@ -98,12 +100,19 @@ public class NotificationUtils {
         if (otpUser.pushDevices == 0) return "OK";
 
         // If Push API/survey config properties aren't set, do nothing (will trigger warning log).
-        if (PUSH_API_KEY == null || PUSH_API_URL == null || TRIP_SURVEY_ID == null) return null;
+        if (
+            Strings.isBlank(PUSH_API_KEY) ||
+            Strings.isBlank(PUSH_API_URL) ||
+            Strings.isBlank(TRIP_SURVEY_ID) ||
+            Strings.isBlank(TRIP_SURVEY_SUBDOMAIN)
+        ) {
+            return null;
+        }
 
         Locale locale = I18nUtils.getOtpUserLocale(otpUser);
         String tripTime = DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale);
         String body = String.format(TRIP_SURVEY_NOTIFICATION.get(locale), tripTime);
-        return sendPush(otpUser, body, trip.tripName, trip.id, TRIP_SURVEY_ID);
+        return sendPush(otpUser, body, trip.tripName, trip.id, TRIP_SURVEY_ID, TRIP_SURVEY_SUBDOMAIN);
     }
 
     /**
@@ -115,14 +124,15 @@ public class NotificationUtils {
      * @param surveyId  Survey ID
      * @return          "OK" if message was successful (null otherwise)
      */
-    static String sendPush(OtpUser toUser, String body, String tripName, String tripId, String surveyId) {
+    static String sendPush(OtpUser toUser, String body, String tripName, String tripId, String surveyId, String surveySubdomain) {
         try {
             NotificationInfo notificationInfo = new NotificationInfo(
                 toUser,
                 body,
                 tripName,
                 tripId,
-                surveyId
+                surveyId,
+                surveySubdomain
             );
             var jsonBody = new Gson().toJson(notificationInfo);
             var httpResponse = HttpUtils.httpRequestRawResponse(
@@ -435,11 +445,14 @@ public class NotificationUtils {
         /** The ID of the survey to be launched for said trip, if applicable. */
         public final String surveyId;
 
+        /** The subdomain of the website where the survey is administered, if applicable. */
+        public final String surveySubdomain;
+
         public NotificationInfo(OtpUser user, String message, String title, String tripId) {
-            this(user, message, title, tripId, null);
+            this(user, message, title, tripId, null, null);
         }
 
-        public NotificationInfo(OtpUser user, String message, String title, String tripId, String surveyId) {
+        public NotificationInfo(OtpUser user, String message, String title, String tripId, String surveyId, String surveySubdomain) {
             String truncatedTitle = StringUtil.truncate(title, PUSH_TITLE_MAX_LENGTH);
             int truncatedMessageLength = PUSH_TOTAL_MAX_LENGTH - truncatedTitle.length();
 
@@ -449,6 +462,7 @@ public class NotificationUtils {
             this.message = StringUtil.truncate(message, truncatedMessageLength);
             this.tripId = tripId;
             this.surveyId = surveyId;
+            this.surveySubdomain = surveySubdomain;
         }
     }
 }
