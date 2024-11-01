@@ -37,7 +37,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getBusDepartureTime;
 import static org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator.getNotificationMessage;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
 
 class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
@@ -109,26 +108,31 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
     }
 
     @ParameterizedTest
-    @MethodSource("creatGetCorrectLegToCancelNotificationTrace")
-    void canGetCorrectLegToCancelNotification(Leg expected, Leg next, String message) {
+    @MethodSource("shouldCancelBusNotificationForStartOfTripTrace")
+    void shouldCancelBusNotificationForStartOfTrip(boolean expected, Leg expectedLeg, Coordinates currentPosition, String message) {
         Leg first = firstLegBusTransit.legs.get(0);
         TrackedJourney journey = new TrackedJourney();
         journey.busNotificationMessages.put(routeId, "{\"msg_type\": 1}");
-        TravelerPosition travelerPosition = new TravelerPosition(expected, next, journey);
-        assertTrue(legsMatch(expected, ManageTripTracking.getLegToCancel(travelerPosition, first)), message);
+        TravelerPosition travelerPosition = new TravelerPosition(expectedLeg, journey, first, currentPosition);
+        assertEquals(expected, ManageTripTracking.shouldCancelBusNotificationForStartOfTrip(travelerPosition), message);
     }
 
-    private static Stream<Arguments> creatGetCorrectLegToCancelNotificationTrace() {
+    private static Stream<Arguments> shouldCancelBusNotificationForStartOfTripTrace() {
+        Leg first = firstLegBusTransit.legs.get(0);
+        Coordinates atStartOfBusJourney = new Coordinates(first.from);
+        Coordinates atEndOfBusJourney = new Coordinates(first.to);
         return Stream.of(
             Arguments.of(
+                true,
                 firstLegBusTransit.legs.get(0),
-                firstLegBusTransit.legs.get(1),
-                "Should cancel notification for first leg."
+                atStartOfBusJourney,
+                "Still waiting for bus, should cancel notification."
             ),
             Arguments.of(
+                false,
                 firstLegBusTransit.legs.get(1),
-                firstLegBusTransit.legs.get(1),
-                "Traveler has passed the first leg, no need to cancel notification for first leg."
+                atEndOfBusJourney,
+                "Already on the bus, no need to cancel notification."
             )
         );
     }
@@ -243,39 +247,24 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
     }
 
     @ParameterizedTest
-    @MethodSource("createShouldNotifyBusOperatorTrace")
-    void shouldNotifyBusOperator(boolean expected, TravelerPosition travelerPosition, Leg currentLeg, String message) {
-        assertEquals(expected, TravelerLocator.shouldNotifyBusOperator(travelerPosition, currentLeg), message);
+    @MethodSource("shouldSendBusNotificationAtStartOfTripTrace")
+    void shouldSendBusNotificationAtStartOfTrip(boolean expected, TravelerPosition travelerPosition, String message) {
+        assertEquals(expected, TravelerLocator.sendBusNotification(travelerPosition), message);
     }
 
-    private static Stream<Arguments> createShouldNotifyBusOperatorTrace() {
+    private static Stream<Arguments> shouldSendBusNotificationAtStartOfTripTrace() {
+        var busLeg = firstLegBusTransit.legs.get(0);
         var walkLeg = walkToBusTransition.legs.get(0);
-        var busLeg = walkToBusTransition.legs.get(1);
-        var busDepartureTime = getBusDepartureTime(busLeg);
 
         return Stream.of(
             Arguments.of(
                 true,
-                new TravelerPosition(busLeg, busDepartureTime),
-                busLeg,
-                "Traveler approaching a bus leg, should notify."
-            ),
-            Arguments.of(
-                false,
-                new TravelerPosition(walkLeg, busDepartureTime),
-                walkLeg,
-                "Traveler approaching a walk leg, should not notify."
-            ),
-            Arguments.of(
-                true,
-                new TravelerPosition(busLeg, null, busDepartureTime),
-                busLeg,
+                new TravelerPosition(busLeg, getBusDepartureTime(busLeg)),
                 "Traveler at the start of a trip which starts with a bus leg, should notify."
             ),
             Arguments.of(
                 false,
-                new TravelerPosition(walkLeg, null, busDepartureTime),
-                walkLeg,
+                new TravelerPosition(walkLeg, getBusDepartureTime(walkLeg)),
                 "Traveler at the start of a trip which starts with a walk leg, should not notify."
             )
         );

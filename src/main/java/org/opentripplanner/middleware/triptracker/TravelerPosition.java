@@ -14,6 +14,7 @@ import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getE
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getNextLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getFirstLeg;
 
 public class TravelerPosition {
 
@@ -44,6 +45,9 @@ public class TravelerPosition {
     /** The traveler's locale. */
     public Locale locale;
 
+    /** The first leg of the trip. **/
+    public Leg firstLegOfTrip;
+
     public TravelerPosition(TrackedJourney trackedJourney, Itinerary itinerary, OtpUser otpUser) {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
         currentTime = lastLocation.timestamp.toInstant();
@@ -61,6 +65,7 @@ public class TravelerPosition {
             }
             this.locale = I18nUtils.getOtpUserLocale(otpUser);
         }
+        firstLegOfTrip = getFirstLeg(itinerary);
     }
 
     /** Used for unit testing. */
@@ -90,10 +95,11 @@ public class TravelerPosition {
     }
 
     /** Used for unit testing. */
-    public TravelerPosition(Leg expectedLeg, Leg nextLeg, TrackedJourney trackedJourney) {
+    public TravelerPosition(Leg expectedLeg, TrackedJourney trackedJourney, Leg first, Coordinates currentPosition) {
         this.expectedLeg = expectedLeg;
-        this.nextLeg = nextLeg;
         this.trackedJourney = trackedJourney;
+        this.firstLegOfTrip = first;
+        this.currentPosition = currentPosition;
     }
 
     /** Computes the current deviation in meters from the expected itinerary. */
