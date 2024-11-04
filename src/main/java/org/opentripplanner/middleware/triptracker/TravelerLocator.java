@@ -70,10 +70,19 @@ public class TravelerLocator {
                     return tripInstruction.build();
                 }
             }
-        } else if (hasRequiredTransitLeg(travelerPosition) && hasRequiredTripStatus(tripStatus)) {
-            TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition);
-            if (tripInstruction != null) {
-                return tripInstruction.build();
+        } else if (hasRequiredTransitLeg(travelerPosition)) {
+            if (hasRequiredTripStatus(tripStatus)) {
+                TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition);
+                if (tripInstruction != null) {
+                    return tripInstruction.build();
+                }
+            }
+
+            if (tripStatus.equals(TripStatus.DEVIATED)) {
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
+                if (tripInstruction != null) {
+                    return tripInstruction.build();
+                }
             }
         }
         return NO_INSTRUCTION;
@@ -118,10 +127,32 @@ public class TravelerLocator {
         if (instruction != null && instruction.hasInstruction()) {
             return instruction;
         }
-        Step nearestStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps);
-        return (nearestStep != null)
-            ? new DeviatedInstruction(nearestStep.streetName, travelerPosition.locale)
-            : null;
+        return getDeviatedInstruction(travelerPosition);
+    }
+
+    /**
+     * If the traveler has deviated, attempt to provide instructions to get back on track.
+     */
+    @Nullable
+    private static TripInstruction getDeviatedInstruction(TravelerPosition travelerPosition) {
+        if (!isBusLeg(travelerPosition.expectedLeg)) {
+            Step nearestStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps);
+            return (nearestStep != null)
+                ? new DeviatedInstruction(nearestStep.streetName, travelerPosition.locale)
+                : null;
+        } else if (atStartOfTransitTrip(travelerPosition)) {
+            // Only provide instruction if at the start of a trip.
+            String busStopName = getBusStopName(travelerPosition.expectedLeg);
+            return (busStopName != null)
+                ? new DeviatedInstruction(busStopName, travelerPosition.locale)
+                : null;
+        }
+        return null;
+    }
+
+    @Nullable
+    private static String getBusStopName(Leg busLeg) {
+        return (busLeg.from != null && busLeg.from.name != null) ? busLeg.from.name : null;
     }
 
     /**

@@ -83,6 +83,13 @@ public class TravelerPosition {
     }
 
     /** Used for unit testing. */
+    public TravelerPosition(Leg expectedLeg, Coordinates currentPosition, Leg firstLegOfTrip) {
+        // Anywhere the speed is zero means that speed is not considered for a specific logic.
+        this(expectedLeg, currentPosition, 0);
+        this.firstLegOfTrip = firstLegOfTrip;
+    }
+
+    /** Used for unit testing. */
     public TravelerPosition(Leg nextLeg, Instant currentTime) {
         this.nextLeg = nextLeg;
         this.currentTime = currentTime;
