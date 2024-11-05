@@ -219,7 +219,7 @@ public class ItineraryExistence extends Model {
                         // (The matching itinerary will replace the original trip.itinerary.)
                         if (
                             ItineraryUtils.occursOnSameServiceDay(itineraryCandidate, otpRequest.dateTime, tripIsArriveBy) &&
-                                ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)
+                            ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)
                         ) {
                             result.handleValidDate(otpRequest.dateTime, itineraryCandidate);
                             hasMatchingItinerary = true;
@@ -231,9 +231,9 @@ public class ItineraryExistence extends Model {
                     // If no match was found for the date, mark day of week as non-existent for the itinerary.
                     result.handleInvalidDate(otpRequest.dateTime);
 
-                    // Log if the itinerary didn't exist "today"
+                    // Log if the itinerary didn't exist "today".
                     if (index == 1 && plan != null) {
-                        logItineraryNotFound("Itinerary existence check failed 'today'", trip, plan, LOG);
+                        logItineraryNotFound("Itinerary existence check failed 'today'.", trip, plan, LOG);
                     }
                 }
             }
