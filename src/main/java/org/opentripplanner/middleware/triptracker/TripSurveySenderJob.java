@@ -1,10 +1,12 @@
 package org.opentripplanner.middleware.triptracker;
 
 import com.mongodb.client.model.Filters;
+import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.models.TripSurveyNotification;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.controllers.api.ApiController.ID_FIELD_NAME;
 import static org.opentripplanner.middleware.models.MonitoredTrip.USER_ID_FIELD_NAME;
-import static org.opentripplanner.middleware.models.OtpUser.LAST_TRIP_SURVEY_NOTIF_SENT_FIELD;
+import static org.opentripplanner.middleware.models.OtpUser.TRIP_SURVEY_NOTIFICATIONS_FIELD;
 import static org.opentripplanner.middleware.models.TrackedJourney.END_CONDITION_FIELD_NAME;
 import static org.opentripplanner.middleware.models.TrackedJourney.END_TIME_FIELD_NAME;
 import static org.opentripplanner.middleware.models.TrackedJourney.FORCIBLY_TERMINATED;
@@ -63,7 +65,8 @@ public class TripSurveySenderJob implements Runnable {
                 String pushResult = NotificationUtils.sendTripSurveyPush(otpUser, trip);
                 if (pushResult != null) {
                     // Store time of last sent survey notification for user.
-                    Persistence.otpUsers.updateField(otpUser.id, LAST_TRIP_SURVEY_NOTIF_SENT_FIELD, new Date());
+                    otpUser.tripSurveyNotifications.add(new TripSurveyNotification(new Date(), optJourney.get().id));
+                    Persistence.otpUsers.updateField(otpUser.id, TRIP_SURVEY_NOTIFICATIONS_FIELD, otpUser.tripSurveyNotifications);
                 } else {
                     LOG.warn("Could not send survey notification for trip {}", trip.id);
                 }
@@ -79,8 +82,16 @@ public class TripSurveySenderJob implements Runnable {
      */
     public static List<OtpUser> getUsersWithNotificationsOverAWeekAgo() {
         Date aWeekAgo = Date.from(Instant.now().minus(7, ChronoUnit.DAYS));
-        Bson dateFilter = Filters.lte(LAST_TRIP_SURVEY_NOTIF_SENT_FIELD, aWeekAgo);
-        Bson surveyNotSentFilter = Filters.not(Filters.exists(LAST_TRIP_SURVEY_NOTIF_SENT_FIELD));
+        Bson dateFilter = Filters.all(
+            TRIP_SURVEY_NOTIFICATIONS_FIELD,
+            // Filters.elemMatch doesn't work well when all elements must match the timeSent filter.
+            new Document("$elemMatch", Filters.lte("timeSent", aWeekAgo))
+        );
+
+        Bson surveyNotSentFilter = Filters.or(
+            Filters.not(Filters.exists(TRIP_SURVEY_NOTIFICATIONS_FIELD)),
+            Filters.size(TRIP_SURVEY_NOTIFICATIONS_FIELD, 0)
+        );
         Bson overallFilter = Filters.or(dateFilter, surveyNotSentFilter);
 
         return Persistence.otpUsers.getFiltered(overallFilter).into(new ArrayList<>());

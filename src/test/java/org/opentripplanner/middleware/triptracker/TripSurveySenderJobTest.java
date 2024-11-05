@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.models.TripSurveyNotification;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
@@ -22,10 +23,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.opentripplanner.middleware.models.OtpUser.LAST_TRIP_SURVEY_NOTIF_SENT_FIELD;
+import static org.opentripplanner.middleware.models.OtpUser.TRIP_SURVEY_NOTIFICATIONS_FIELD;
 import static org.opentripplanner.middleware.models.TrackedJourney.FORCIBLY_TERMINATED;
 import static org.opentripplanner.middleware.models.TrackedJourney.TERMINATED_BY_USER;
 
@@ -39,6 +39,7 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
     private static List<TrackedJourney> journeys = List.of();
     private static MonitoredTrip trip;
     private static final Date EIGHT_DAYS_AGO = Date.from(Instant.now().minus(8, ChronoUnit.DAYS));
+    private static final TripSurveyNotification SURVEY_NOTIFICATION_EIGHT_DAYS_AGO = new TripSurveyNotification(EIGHT_DAYS_AGO, "journey-2");
 
     @BeforeAll
     public static void setUp() {
@@ -49,9 +50,8 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         user2notifiedAWeekAgo = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-user2"));
         user3neverNotified = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-user3"));
 
-        user1notifiedNow.lastTripSurveyNotificationSent = new Date();
-        user2notifiedAWeekAgo.lastTripSurveyNotificationSent = EIGHT_DAYS_AGO;
-        user3neverNotified.lastTripSurveyNotificationSent = null;
+        user1notifiedNow.tripSurveyNotifications.add(new TripSurveyNotification(new Date(), "journey-1"));
+        user2notifiedAWeekAgo.tripSurveyNotifications.add(SURVEY_NOTIFICATION_EIGHT_DAYS_AGO);
 
         otpUsers = List.of(user1notifiedNow, user2notifiedAWeekAgo, user3neverNotified);
         otpUsers.forEach(user -> Persistence.otpUsers.replace(user.id, user));
@@ -87,7 +87,11 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         }
 
         // Reset notification sent time to affected user.
-        Persistence.otpUsers.updateField(user2notifiedAWeekAgo.id, LAST_TRIP_SURVEY_NOTIF_SENT_FIELD, EIGHT_DAYS_AGO);
+        Persistence.otpUsers.updateField(
+            user2notifiedAWeekAgo.id,
+            TRIP_SURVEY_NOTIFICATIONS_FIELD,
+            List.of(SURVEY_NOTIFICATION_EIGHT_DAYS_AGO)
+        );
     }
 
     @Test
@@ -183,19 +187,19 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
 
         Date start = new Date();
         OtpUser storedUser = Persistence.otpUsers.getById(user2notifiedAWeekAgo.id);
-        assertFalse(start.before(storedUser.lastTripSurveyNotificationSent));
+        assertFalse(start.before(storedUser.findLastTripSurveyNotificationSent().get().timeSent));
 
         TripSurveySenderJob job = new TripSurveySenderJob();
         job.run();
 
         storedUser = Persistence.otpUsers.getById(user2notifiedAWeekAgo.id);
-        assertTrue(start.before(storedUser.lastTripSurveyNotificationSent));
+        assertTrue(start.before(storedUser.findLastTripSurveyNotificationSent().get().timeSent));
 
         // Other user last notification should not have changed.
         storedUser = Persistence.otpUsers.getById(user1notifiedNow.id);
-        assertFalse(start.before(storedUser.lastTripSurveyNotificationSent));
+        assertFalse(start.before(storedUser.findLastTripSurveyNotificationSent().get().timeSent));
         storedUser = Persistence.otpUsers.getById(user3neverNotified.id);
-        assertNull(storedUser.lastTripSurveyNotificationSent);
+        assertTrue(storedUser.findLastTripSurveyNotificationSent().isEmpty());
     }
 
     private static void createTestJourneys() {

@@ -26,7 +26,7 @@ public class OtpUser extends AbstractUser {
     public static final String AUTH0_SCOPE = "otp-user";
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(OtpUser.class);
-    public static final String LAST_TRIP_SURVEY_NOTIF_SENT_FIELD = "lastTripSurveyNotificationSent";
+    public static final String TRIP_SURVEY_NOTIFICATIONS_FIELD = "tripSurveyNotifications";
 
     /** Whether the user would like accessible routes by default. */
     public boolean accessibilityRoutingByDefault;
@@ -77,8 +77,8 @@ public class OtpUser extends AbstractUser {
     /** Whether to store the user's trip history (user must opt in). */
     public boolean storeTripHistory;
 
-    /** When the last post-trip survey notification was sent. */
-    public Date lastTripSurveyNotificationSent;
+    /** The trail of survey notifications sent for journeys completed by the user. */
+    public List<TripSurveyNotification> tripSurveyNotifications = new ArrayList<>();
 
     @JsonIgnore
     /** If this user was created by an {@link ApiUser}, this parameter will match the {@link ApiUser}'s id */
@@ -163,5 +163,11 @@ public class OtpUser extends AbstractUser {
                     }
                 });
         }
+    }
+
+    /** Obtains the last trip survey notification sent. */
+    public Optional<TripSurveyNotification> findLastTripSurveyNotificationSent() {
+        if (tripSurveyNotifications == null) return Optional.empty();
+        return tripSurveyNotifications.stream().max(Comparator.comparingLong(n -> n.timeSent.getTime()));
     }
 }
