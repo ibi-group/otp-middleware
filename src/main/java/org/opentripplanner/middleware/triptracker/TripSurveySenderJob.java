@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.triptracker;
 
 import com.mongodb.client.model.Filters;
-import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -32,6 +31,7 @@ import static org.opentripplanner.middleware.models.TrackedJourney.END_CONDITION
 import static org.opentripplanner.middleware.models.TrackedJourney.END_TIME_FIELD_NAME;
 import static org.opentripplanner.middleware.models.TrackedJourney.FORCIBLY_TERMINATED;
 import static org.opentripplanner.middleware.models.TrackedJourney.TERMINATED_BY_USER;
+import static org.opentripplanner.middleware.models.TripSurveyNotification.TIME_SENT_FIELD;
 import static org.opentripplanner.middleware.triptracker.ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS;
 
 /**
@@ -83,20 +83,12 @@ public class TripSurveySenderJob implements Runnable {
     public static List<OtpUser> getUsersWithNotificationsOverAWeekAgo() {
         Date aWeekAgo = Date.from(Instant.now().minus(7, ChronoUnit.DAYS));
 
-        // If TRIP_SURVEY_NOTIFICATIONS_FIELD is not empty,
-        // users notified a week ago would have at least one entry made a week ago
-        // and zero entries made less than a week ago.
+        // If TRIP_SURVEY_NOTIFICATIONS_FIELD is not empty, users notified a week ago would have:
+        // - at least one entry made a week ago, and
+        // - zero entries made less than a week ago.
         Bson dateFilter = Filters.and(
-            Filters.all(
-                TRIP_SURVEY_NOTIFICATIONS_FIELD,
-                new Document("$elemMatch", Filters.lte("timeSent", aWeekAgo))
-            ),
-            Filters.not(
-                Filters.all(
-                    TRIP_SURVEY_NOTIFICATIONS_FIELD,
-                    new Document("$elemMatch", Filters.gt("timeSent", aWeekAgo))
-                )
-            )
+            Filters.elemMatch(TRIP_SURVEY_NOTIFICATIONS_FIELD, Filters.lte(TIME_SENT_FIELD, aWeekAgo)),
+            Filters.not(Filters.elemMatch(TRIP_SURVEY_NOTIFICATIONS_FIELD, Filters.gt(TIME_SENT_FIELD, aWeekAgo)))
         );
 
         Bson surveyNotSentFilter = Filters.or(

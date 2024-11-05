@@ -5,6 +5,9 @@ import java.util.UUID;
 
 /** Contains information regarding survey notifications sent after a trip is completed. */
 public class TripSurveyNotification {
+
+    public static final String TIME_SENT_FIELD = "timeSent";
+
     /**
      * Unique ID to link a survey entry to the corresponding notification
      * (and to find which notifications were dismissed without opening the survey)
