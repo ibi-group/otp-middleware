@@ -365,10 +365,10 @@ public class ItineraryUtils {
      * Get the first leg in an itinerary.
      */
     public static Leg getFirstLeg(Itinerary itinerary) {
-        if (itinerary != null && itinerary.legs != null && !itinerary.legs.isEmpty()) {
-            return itinerary.legs.get(0);
-        }
-        return null;
+        return Optional
+            .ofNullable(itinerary)
+            .map(itin -> itin.legs)
+            .map(legs -> legs.get(0))
+            .orElse(null);
     }
-
 }

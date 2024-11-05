@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
@@ -150,9 +151,16 @@ public class TravelerLocator {
         return null;
     }
 
+    /**
+     * Get the bus stop name from the 'from' place name if available.
+     */
     @Nullable
     private static String getBusStopName(Leg busLeg) {
-        return (busLeg.from != null && busLeg.from.name != null) ? busLeg.from.name : null;
+        return Optional
+            .ofNullable(busLeg)
+            .map(leg -> leg.from)
+            .map(place -> place.name)
+            .orElse(null);
     }
 
     /**
