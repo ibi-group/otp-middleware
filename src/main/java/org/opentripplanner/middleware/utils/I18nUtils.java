@@ -4,6 +4,7 @@ import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.OtpUser;
 
 import java.util.Collection;
+import java.util.IllformedLocaleException;
 import java.util.Locale;
 
 public class I18nUtils {
@@ -31,4 +32,18 @@ public class I18nUtils {
         return Locale.forLanguageTag(user == null || user.preferredLocale == null ? "en-US" : user.preferredLocale);
     }
 
+    /**
+     * Attempt to create a {@link Locale} from the language tag.
+     */
+    public static Locale getLocaleFromString(String languageTag) {
+        Locale locale = Locale.forLanguageTag("en-US");
+        if (languageTag != null) {
+            try {
+                locale = Locale.forLanguageTag(languageTag);
+            } catch (NullPointerException | IllformedLocaleException e) {
+                // Give up and use the default!
+            }
+        }
+        return locale;
+    }
 }

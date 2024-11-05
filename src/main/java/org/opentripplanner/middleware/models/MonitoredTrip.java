@@ -25,6 +25,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -172,6 +173,10 @@ public class MonitoredTrip extends Model {
      * Whether to notify the user when the monitoring of this trip starts.
      */
     public boolean notifyAtLeadingInterval = true;
+
+    public RelatedUser primary;
+    public RelatedUser companion;
+    public List<RelatedUser> observers = new ArrayList<>();
 
     /**
      * The number of attempts made to obtain a trip's itinerary from OTP which matches this trip.
