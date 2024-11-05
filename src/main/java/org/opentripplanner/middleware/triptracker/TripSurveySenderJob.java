@@ -82,10 +82,21 @@ public class TripSurveySenderJob implements Runnable {
      */
     public static List<OtpUser> getUsersWithNotificationsOverAWeekAgo() {
         Date aWeekAgo = Date.from(Instant.now().minus(7, ChronoUnit.DAYS));
-        Bson dateFilter = Filters.all(
-            TRIP_SURVEY_NOTIFICATIONS_FIELD,
-            // Filters.elemMatch doesn't work well when all elements must match the timeSent filter.
-            new Document("$elemMatch", Filters.lte("timeSent", aWeekAgo))
+
+        // If TRIP_SURVEY_NOTIFICATIONS_FIELD is not empty,
+        // users notified a week ago would have at least one entry made a week ago
+        // and zero entries made less than a week ago.
+        Bson dateFilter = Filters.and(
+            Filters.all(
+                TRIP_SURVEY_NOTIFICATIONS_FIELD,
+                new Document("$elemMatch", Filters.lte("timeSent", aWeekAgo))
+            ),
+            Filters.not(
+                Filters.all(
+                    TRIP_SURVEY_NOTIFICATIONS_FIELD,
+                    new Document("$elemMatch", Filters.gt("timeSent", aWeekAgo))
+                )
+            )
         );
 
         Bson surveyNotSentFilter = Filters.or(

@@ -51,7 +51,11 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         user3neverNotified = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-user3"));
 
         user1notifiedNow.tripSurveyNotifications.add(new TripSurveyNotification(new Date(), "journey-1"));
+        user1notifiedNow.tripSurveyNotifications.add(SURVEY_NOTIFICATION_EIGHT_DAYS_AGO);
         user2notifiedAWeekAgo.tripSurveyNotifications.add(SURVEY_NOTIFICATION_EIGHT_DAYS_AGO);
+        user2notifiedAWeekAgo.tripSurveyNotifications.add(
+            new TripSurveyNotification(Date.from(Instant.EPOCH), "journey-1")
+        );
 
         otpUsers = List.of(user1notifiedNow, user2notifiedAWeekAgo, user3neverNotified);
         otpUsers.forEach(user -> Persistence.otpUsers.replace(user.id, user));
