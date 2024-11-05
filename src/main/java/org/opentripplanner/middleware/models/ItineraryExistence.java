@@ -249,9 +249,14 @@ public class ItineraryExistence extends Model {
 
     /** Log instances of itinerary not found. */
     public static void logItineraryNotFound(String message, MonitoredTrip trip, TripPlan plan, Logger logger) {
-        logger.warn("{} - trip {} - params: {}", message, trip.id, JsonUtils.toJson(trip.otp2QueryParams));
-        logger.warn("{} - trip {} - saved itinerary: {}", message, trip.id, JsonUtils.toJson(trip.itinerary));
-        logger.warn("{} - trip {} - OTP itineraries: {}", message, trip.id, JsonUtils.toJson(plan.itineraries));
+        logger.warn(
+            "{} - Trip {} - Params: {} - Saved itinerary: {} - OTP itineraries: {}",
+            message,
+            trip.id,
+            JsonUtils.toJson(trip.otp2QueryParams),
+            JsonUtils.toJson(trip.itinerary),
+            JsonUtils.toJson(plan.itineraries)
+        );
     }
 
     private static OtpResponse getOtpResponse(OtpRequest otpRequest) {
