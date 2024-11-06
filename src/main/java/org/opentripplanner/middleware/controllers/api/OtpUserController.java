@@ -1,17 +1,18 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import io.github.manusant.ss.ApiEndpoint;
 import com.twilio.rest.verify.v2.service.Verification;
 import com.twilio.rest.verify.v2.service.VerificationCheck;
+import io.github.manusant.ss.ApiEndpoint;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
-import org.opentripplanner.middleware.models.MobilityProfile;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.tripmonitor.TrustedCompanion;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
+import org.opentripplanner.middleware.utils.SwaggerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -23,6 +24,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_KEY;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.USER_LOCALE;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ensureRelatedUserIntegrity;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.manageAcceptDependentEmail;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -33,11 +38,18 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
     private static final Logger LOG = LoggerFactory.getLogger(OtpUserController.class);
 
     private static final String CODE_PARAM = "code";
+
     private static final String PHONE_PARAM = "phoneNumber";
+
     private static final String VERIFY_PATH = "verify_sms";
+
     public static final String OTP_USER_PATH = "secure/user";
+
     private static final String VERIFY_ROUTE_TEMPLATE = "/:%s/%s/:%s";
-    /** Regex to check E.164 phone number format per https://www.twilio.com/docs/glossary/what-e164 */
+
+    /**
+     * Regex to check E.164 phone number format per https://www.twilio.com/docs/glossary/what-e164
+     */
     private static final Pattern PHONE_E164_PATTERN = Pattern.compile("^\\+[1-9]\\d{1,14}$");
 
     public OtpUserController(String apiPrefix) {
@@ -53,18 +65,25 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             Auth0Connection.ensureApiUserHasApiKey(req);
             user.applicationId = requestingUser.apiUser.id;
         }
-        if (Objects.nonNull(user.mobilityProfile)) {
-            user.mobilityProfile.updateMobilityMode();
-        }
+        preliminaryTasks(user);
         return super.preCreateHook(user, req);
     }
 
     @Override
     OtpUser preUpdateHook(OtpUser user, OtpUser preExistingUser, Request req) {
+        preliminaryTasks(user);
+        ensureRelatedUserIntegrity(user, preExistingUser);
+        return super.preUpdateHook(user, preExistingUser, req);
+    }
+
+    /**
+     * Tasks to be carried out before creating or updating a user.
+     */
+    private void preliminaryTasks(OtpUser user) {
         if (Objects.nonNull(user.mobilityProfile)) {
             user.mobilityProfile.updateMobilityMode();
         }
-        return super.preUpdateHook(user, preExistingUser, req);
+        manageAcceptDependentEmail(user);
     }
 
     @Override
@@ -73,6 +92,14 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
 
         // Add the api key route BEFORE the regular CRUD methods
         ApiEndpoint modifiedEndpoint = baseEndpoint
+            .get(path("/acceptdependent")
+                    .withDescription("Accept a dependent request.")
+                    .withResponses(SwaggerUtils.createStandardResponses(OtpUser.class))
+                    .withPathParam().withName(ACCEPT_KEY).withRequired(true).withDescription("The accept dependent unique key.").and()
+                    .withPathParam().withName(USER_LOCALE).withRequired(true).withDescription("The accepting user's locale.").and()
+                    .withResponseType(OtpUser.class),
+                TrustedCompanion::acceptDependent
+            )
             .get(path(ROOT_ROUTE + String.format(VERIFY_ROUTE_TEMPLATE, ID_PARAM, VERIFY_PATH, PHONE_PARAM))
                     .withDescription("Request an SMS verification to be sent to an OtpUser's phone number.")
                     .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the OtpUser.").and()

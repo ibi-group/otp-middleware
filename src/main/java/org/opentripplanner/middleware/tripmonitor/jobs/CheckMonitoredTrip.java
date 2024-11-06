@@ -57,11 +57,11 @@ public class CheckMonitoredTrip implements Runnable {
     public static final int MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS =
         ConfigUtils.getConfigPropertyAsInt("MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS", 3);
 
-    private final String ACCOUNT_PATH = "/#/account";
+    public static final String ACCOUNT_PATH = "/#/account";
 
     private final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
 
-    private final String SETTINGS_PATH = ACCOUNT_PATH + "/settings";
+    public static final String SETTINGS_PATH = ACCOUNT_PATH + "/settings";
 
     public final MonitoredTrip trip;
 
@@ -259,7 +259,10 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private boolean makeOTPRequestAndUpdateMatchingItineraryInternal() {
         OtpResponse otpResponse = otpResponseProvider.get();
-        if (otpResponse == null) return false;
+        if (otpResponse == null) {
+            LOG.warn("No comparison itinerary found for trip {} - OTP response was null.", trip.id);
+            return false;
+        }
         for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
             Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
             if (ItineraryUtils.itinerariesMatch(trip.itinerary, candidateItinerary)) {
@@ -301,7 +304,7 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         // If this point is reached, a matching itinerary was not found
-        LOG.warn("No comparison itinerary found in otp response for trip");
+        ItineraryExistence.logItineraryNotFound("No comparison itinerary found", trip, otpResponse.plan, LOG);
 
         if (hasReachedMaxItineraryChecks()) {
             // Check whether this trip should no longer ever be checked due to not having matching itineraries on any

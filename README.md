@@ -303,6 +303,7 @@ The special E2E client settings should be defined in `env.yml`:
 | TRIP_SURVEY_ID | string | Optional | abcdef123y | The ID of a survey (on the platform of your choice) for trip-related feedback. |
 | TRIP_SURVEY_SUBDOMAIN | string | Optional | abcabc12a | The subdomain of a website where the trip-related surveys are administered. |
 | TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |
+| TRUSTED_COMPANION_CONFIRMATION_PAGE_URL | string | Optional | https://otp-server.example.com/trusted/confirmation | URL to the trusted companion confirmation page. This page should support handling an error URL parameter. |
 | TWILIO_AUTH_TOKEN | string | Optional | your-auth-token | Twilio settings available at: https://twilio.com/user/account |
 | US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_URL | string | Optional | http://host.example.com | US RideGwinnett bus notifier API. |
 | US_RIDE_GWINNETT_BUS_OPERATOR_NOTIFIER_API_KEY | string | Optional | your-api-key | API key for the US RideGwinnett bus notifier API. |

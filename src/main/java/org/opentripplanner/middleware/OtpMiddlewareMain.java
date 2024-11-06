@@ -42,6 +42,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.bugsnag.BugsnagWebhook.processWebHookDelivery;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.AUTHENTICATE_PATH;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_DEPENDENT_PATH;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -183,7 +184,11 @@ public class OtpMiddlewareMain {
         // Security checks for admin and /secure/ endpoints. Excluding /authenticate so that API users can obtain a
         // bearer token to authenticate against all other /secure/ endpoints.
         spark.before(API_PREFIX + "/secure/*", ((request, response) -> {
-            if (!request.requestMethod().equals("OPTIONS") && !request.pathInfo().endsWith(API_USER_PATH + AUTHENTICATE_PATH)) {
+            if (
+                !request.requestMethod().equals("OPTIONS") &&
+                !request.pathInfo().endsWith(API_USER_PATH + AUTHENTICATE_PATH) &&
+                !request.pathInfo().endsWith(ACCEPT_DEPENDENT_PATH)
+            ) {
                 Auth0Connection.checkUser(request);
             }
         }));
