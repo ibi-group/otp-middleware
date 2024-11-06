@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -62,10 +63,11 @@ public class TripSurveySenderJob implements Runnable {
                 MonitoredTrip trip = optJourney.get().trip;
                 LOG.info("Sending survey notification for trip {}", trip.id);
                 OtpUser otpUser = entry.getKey();
-                String pushResult = NotificationUtils.sendTripSurveyPush(otpUser, trip);
+                String notificationId = UUID.randomUUID().toString();
+                String pushResult = NotificationUtils.sendTripSurveyPush(otpUser, trip, notificationId);
                 if (pushResult != null) {
                     // Store time of last sent survey notification for user.
-                    otpUser.tripSurveyNotifications.add(new TripSurveyNotification(new Date(), optJourney.get().id));
+                    otpUser.tripSurveyNotifications.add(new TripSurveyNotification(notificationId, new Date(), optJourney.get().id));
                     Persistence.otpUsers.updateField(otpUser.id, TRIP_SURVEY_NOTIFICATIONS_FIELD, otpUser.tripSurveyNotifications);
                 } else {
                     LOG.warn("Could not send survey notification for trip {}", trip.id);

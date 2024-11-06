@@ -91,6 +91,7 @@ class NotificationUtilsTest {
         user.email = "user@example.com";
 
         NotificationUtils.NotificationInfo info = new NotificationUtils.NotificationInfo(
+            "notification-id",
             user,
             originalMessage,
             originalTitle,

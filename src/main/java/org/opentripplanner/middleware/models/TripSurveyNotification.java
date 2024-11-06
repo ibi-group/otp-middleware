@@ -12,7 +12,7 @@ public class TripSurveyNotification {
      * Unique ID to link a survey entry to the corresponding notification
      * (and to find which notifications were dismissed without opening the survey)
      */
-    public String id = UUID.randomUUID().toString();
+    public String id;
 
     /** Date/time when the trip survey notification was sent. */
     public Date timeSent;
@@ -24,7 +24,8 @@ public class TripSurveyNotification {
         // Default constructor for deserialization
     }
 
-    public TripSurveyNotification(Date timeSent, String journeyId) {
+    public TripSurveyNotification(String id, Date timeSent, String journeyId) {
+        this.id = id;
         this.timeSent = timeSent;
         this.journeyId = journeyId;
     }

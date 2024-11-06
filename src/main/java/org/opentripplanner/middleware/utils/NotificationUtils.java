@@ -83,7 +83,7 @@ public class NotificationUtils {
         if (PUSH_API_KEY == null || PUSH_API_URL == null) return null;
         try {
             String body = TemplateUtils.renderTemplate(textTemplate, templateData);
-            return otpUser.pushDevices > 0 ? sendPush(otpUser, body, tripName, tripId, null) : "OK";
+            return otpUser.pushDevices > 0 ? sendPush(otpUser, body, tripName, tripId, null, null, null) : "OK";
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
             // handles Bugsnag reporting/error logging, so that is not needed here.
@@ -94,8 +94,9 @@ public class NotificationUtils {
     /**
      * @param otpUser  target user
      * @param trip  Trip about which the survey notification is about.
+     * @param notificationId  Notification ID
      */
-    public static String sendTripSurveyPush(OtpUser otpUser, MonitoredTrip trip) {
+    public static String sendTripSurveyPush(OtpUser otpUser, MonitoredTrip trip, String notificationId) {
         // Check devices first - No devices returns OK (favors E2E testing)
         if (otpUser.pushDevices == 0) return "OK";
 
@@ -112,7 +113,7 @@ public class NotificationUtils {
         Locale locale = I18nUtils.getOtpUserLocale(otpUser);
         String tripTime = DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale);
         String body = String.format(TRIP_SURVEY_NOTIFICATION.get(locale), tripTime);
-        return sendPush(otpUser, body, trip.tripName, trip.id, TRIP_SURVEY_ID, TRIP_SURVEY_SUBDOMAIN);
+        return sendPush(otpUser, body, trip.tripName, trip.id, TRIP_SURVEY_ID, TRIP_SURVEY_SUBDOMAIN, notificationId);
     }
 
     /**
@@ -122,11 +123,21 @@ public class NotificationUtils {
      * @param tripName  Monitored trip name to show in notification title
      * @param tripId    Monitored trip ID
      * @param surveyId  Survey ID
+     * @param notificationId  Notification ID
      * @return          "OK" if message was successful (null otherwise)
      */
-    static String sendPush(OtpUser toUser, String body, String tripName, String tripId, String surveyId, String surveySubdomain) {
+    static String sendPush(
+        OtpUser toUser,
+        String body,
+        String tripName,
+        String tripId,
+        String surveyId,
+        String surveySubdomain,
+        String notificationId
+    ) {
         try {
             NotificationInfo notificationInfo = new NotificationInfo(
+                notificationId,
                 toUser,
                 body,
                 tripName,
@@ -427,6 +438,9 @@ public class NotificationUtils {
     }
 
     static class NotificationInfo {
+        /** ID for tracking notifications and survey responses. */
+        public final String notificationId;
+
         /** In reality, the email of the desired user (the push service we use looks up users by email) */
         public final String user;
 
@@ -448,14 +462,23 @@ public class NotificationUtils {
         /** The subdomain of the website where the survey is administered, if applicable. */
         public final String surveySubdomain;
 
-        public NotificationInfo(OtpUser user, String message, String title, String tripId) {
-            this(user, message, title, tripId, null, null);
+        public NotificationInfo(String notificationId, OtpUser user, String message, String title, String tripId) {
+            this(notificationId, user, message, title, tripId, null, null);
         }
 
-        public NotificationInfo(OtpUser user, String message, String title, String tripId, String surveyId, String surveySubdomain) {
+        public NotificationInfo(
+            String notificationId,
+            OtpUser user,
+            String message,
+            String title,
+            String tripId,
+            String surveyId,
+            String surveySubdomain
+        ) {
             String truncatedTitle = StringUtil.truncate(title, PUSH_TITLE_MAX_LENGTH);
             int truncatedMessageLength = PUSH_TOTAL_MAX_LENGTH - truncatedTitle.length();
 
+            this.notificationId = notificationId;
             this.user = user.email;
             this.userId = user.id;
             this.title = truncatedTitle;
