@@ -1651,9 +1651,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          schema:
-            $ref: "#/definitions/OtpUser"
           responseSchema:
+            $ref: "#/definitions/OtpUser"
+          schema:
             $ref: "#/definitions/OtpUser"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -3173,9 +3173,10 @@ definitions:
           $ref: "#/definitions/UserLocation"
       storeTripHistory:
         type: "boolean"
-      lastTripSurveyNotificationSent:
-        type: "string"
-        format: "date"
+      tripSurveyNotifications:
+        type: "array"
+        items:
+          $ref: "#/definitions/TripSurveyNotification"
       applicationId:
         type: "string"
       relatedUsers:
@@ -3205,6 +3206,16 @@ definitions:
         - "LEGALLY_BLIND"
         - "LOW_VISION"
         - "NONE"
+  TripSurveyNotification:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      timeSent:
+        type: "string"
+        format: "date"
+      journeyId:
+        type: "string"
   GetUsageResult:
     type: "object"
     properties:
