@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.triptracker;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
@@ -9,7 +10,11 @@ import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import spark.Request;
 
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.isAtStartOfLeg;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteGtfsIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
@@ -145,9 +150,7 @@ public class ManageTripTracking {
             tripData.trip.journeyState.matchingItinerary,
             Persistence.otpUsers.getById(tripData.trip.userId)
         );
-        BusOperatorActions
-            .getDefault()
-            .handleCancelNotificationAction(travelerPosition);
+        cancelBusNotification(travelerPosition);
         TrackedJourney trackedJourney = travelerPosition.trackedJourney;
         trackedJourney.end(isForciblyEnded);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_TIME_FIELD_NAME, trackedJourney.endTime);
@@ -159,11 +162,47 @@ public class ManageTripTracking {
             trackedJourney.longestConsecutiveDeviatedPoints
         );
 
-        // Provide response.
         return new EndTrackingResponse(
             TripInstruction.NO_INSTRUCTION,
             TripStatus.ENDED.name()
         );
+    }
 
+    /**
+     * Cancel bus notifications which are no longer needed/relevant.
+     */
+    private static void cancelBusNotification(TravelerPosition travelerPosition) {
+        Leg busLeg = travelerPosition.nextLeg;
+        if (shouldCancelBusNotificationForStartOfTrip(travelerPosition)) {
+            busLeg = travelerPosition.expectedLeg;
+        }
+        BusOperatorActions
+            .getDefault()
+            .handleCancelNotificationAction(travelerPosition, busLeg);
+    }
+
+    /**
+     * Traveler is still waiting to board the bus at the start of a trip and notification has been sent.
+     */
+    public static boolean shouldCancelBusNotificationForStartOfTrip(TravelerPosition travelerPosition) {
+        return hasSentBusNotificationForStartOfTrip(travelerPosition) && isWaitingForBusAtStartOfTrip(travelerPosition);
+    }
+
+    /**
+     * Bus notification has been sent for the start of the trip.
+     */
+    private static boolean hasSentBusNotificationForStartOfTrip(TravelerPosition travelerPosition) {
+        var routeId = getRouteGtfsIdFromLeg(travelerPosition.expectedLeg);
+        return routeId != null && travelerPosition.trackedJourney.busNotificationMessages.containsKey(routeId);
+    }
+
+    /**
+     * Traveler is waiting for a bus at the start of a trip.
+     */
+    private static boolean isWaitingForBusAtStartOfTrip(TravelerPosition travelerPosition) {
+        return
+            legsMatch(travelerPosition.expectedLeg, travelerPosition.firstLegOfTrip) &&
+            isBusLeg(travelerPosition.expectedLeg) &&
+            isAtStartOfLeg(travelerPosition);
     }
 }
