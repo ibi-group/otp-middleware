@@ -2,8 +2,10 @@ package org.opentripplanner.middleware.tripmonitor;
 
 import com.mongodb.client.model.Filters;
 import org.apache.logging.log4j.util.Strings;
+import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.i18n.Message;
+import org.opentripplanner.middleware.models.MobilityProfile;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -28,6 +30,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.I18nUtils.getLocaleFromString;
 import static org.opentripplanner.middleware.utils.I18nUtils.label;
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class TrustedCompanion {
 
@@ -42,10 +45,11 @@ public class TrustedCompanion {
         ConfigUtils.getConfigPropertyAsText("TRUSTED_COMPANION_CONFIRMATION_PAGE_URL");
     public static final String ACCEPT_KEY = "acceptKey";
     public static final String USER_LOCALE = "userLocale";
-    public static final String EMAIL_FIELD_NAME = "email";
+    public static final String EMAIL_PARAM = "email";
 
     /** Note: This path is excluded from security checks, see {@link OtpMiddlewareMain#initializeHttpEndpoints()}. */
     public static final String ACCEPT_DEPENDENT_PATH = "api/secure/user/acceptdependent";
+    public static final String GET_DEPENDENT_MOBILITY_PROFILE_PATH = "/:%s/getdependentmobilityprofile";
 
     /**
      * Accept a request from another user to be their dependent. This will include both companions and observers. If
@@ -96,7 +100,7 @@ public class TrustedCompanion {
             .stream()
             .filter(user -> user.acceptKey.equalsIgnoreCase(acceptKey))
             .findFirst();
-        return relatedUser.map(user -> Persistence.otpUsers.getOneFiltered(eq(EMAIL_FIELD_NAME, user.email))).orElse(null);
+        return relatedUser.map(user -> Persistence.otpUsers.getOneFiltered(eq(EMAIL_PARAM, user.email))).orElse(null);
     }
 
     /**
@@ -154,7 +158,7 @@ public class TrustedCompanion {
             .filter(relatedUser -> relatedUser.acceptKey == null)
             .forEach(relatedUser -> {
                 String acceptKey = UUID.randomUUID().toString();
-                OtpUser userToReceiveEmail = Persistence.otpUsers.getOneFiltered(eq(EMAIL_FIELD_NAME, relatedUser.email));
+                OtpUser userToReceiveEmail = Persistence.otpUsers.getOneFiltered(eq(EMAIL_PARAM, relatedUser.email));
                 if (userToReceiveEmail != null && (isTest || sendAcceptDependentEmail(dependentUser, userToReceiveEmail, acceptKey))) {
                     relatedUser.acceptKey = acceptKey;
                 }
@@ -229,10 +233,42 @@ public class TrustedCompanion {
      * Remove the dependent reference from the related user.
      */
     public static void removeDependent(OtpUser dependent, RelatedUser relatedUser) {
-        OtpUser user = Persistence.otpUsers.getOneFiltered(eq(EMAIL_FIELD_NAME, relatedUser.email));
+        OtpUser user = Persistence.otpUsers.getOneFiltered(eq(EMAIL_PARAM, relatedUser.email));
         if (user != null) {
             user.dependents.remove(dependent.id);
             Persistence.otpUsers.replace(user.id, user);
         }
+    }
+
+    /**
+     * Retrieve the mobility profile for a dependent providing the requesting user is a trusted companion.
+     */
+    public static MobilityProfile getDependentMobilityProfile(Request request, Response response, OtpUser relatedUser) {
+        if (relatedUser == null) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Related user not provided or unknown.");
+        }
+
+        var dependentEmail = HttpUtils.getQueryParamFromRequest(request, EMAIL_PARAM, false);
+        if (dependentEmail == null) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Required dependent email address not provided.");
+        }
+
+        var dependentUser = Persistence.otpUsers.getOneFiltered(eq(EMAIL_PARAM, dependentEmail));
+        if (dependentUser == null) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent user unknown.");
+        }
+
+        if (relatedUser != null && dependentUser != null) {
+            if (!relatedUser.dependents.contains(dependentUser.id)) {
+                logMessageAndHalt(
+                    request,
+                    HttpStatus.FORBIDDEN_403,
+                    String.format("Related user is not a trusted companion for %s!", dependentEmail)
+                );
+            } else {
+                return dependentUser.mobilityProfile;
+            }
+        }
+        return null;
     }
 }

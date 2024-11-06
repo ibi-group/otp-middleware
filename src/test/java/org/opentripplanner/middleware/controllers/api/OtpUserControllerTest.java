@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.models.MobilityProfile;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -22,6 +23,7 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -29,13 +31,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
+import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
+import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
-import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
-import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
 
 public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
@@ -241,14 +242,8 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canRemoveUserFromRelatedUsersList() throws Exception {
         setAuthDisabled(true);
-        relatedUserFour.dependents.add(dependentUserFour.id);
-        Persistence.otpUsers.replace(relatedUserFour.id, relatedUserFour);
-        dependentUserFour.relatedUsers.add(new RelatedUser(
-            relatedUserFour.email,
-            RelatedUser.RelatedUserStatus.CONFIRMED,
-            nickname
-        ));
-        Persistence.otpUsers.replace(dependentUserFour.id, dependentUserFour);
+
+        createTrustedCompanionship(relatedUserFour, dependentUserFour);
 
         // Remove the first related user.
         dependentUserFour.relatedUsers.clear();
@@ -274,5 +269,46 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         assertFalse(relatedUserFour.dependents.contains(dependentUserFour.id));
 
         setAuthDisabled(false);
+    }
+
+    @Test
+    void canGetDependentMobilityProfile() throws Exception {
+        setAuthDisabled(true);
+
+        String path = String.format(
+            "api/secure/user/%s/getdependentmobilityprofile?email=%s",
+            relatedUserFour.id,
+            dependentUserFour.email
+        );
+
+        HttpResponseValues responseValues = makeGetRequest(path, getMockHeaders(relatedUserFour));
+        assertEquals(HttpStatus.FORBIDDEN_403, responseValues.status);
+
+        var mobilityProfile = new MobilityProfile();
+        mobilityProfile.mobilityDevices = Set.of("service animal", "electric wheelchair", "white cane");
+        mobilityProfile.updateMobilityMode();
+        dependentUserFour.mobilityProfile = mobilityProfile;
+
+        createTrustedCompanionship(relatedUserFour, dependentUserFour);
+
+        responseValues = makeGetRequest(path, getMockHeaders(relatedUserFour));
+        assertEquals(HttpStatus.OK_200, responseValues.status);
+        assertEquals(JsonUtils.toJson(mobilityProfile), responseValues.responseBody);
+
+        setAuthDisabled(false);
+    }
+
+    /**
+     * Create trusted companion relationship.
+     */
+    private static void createTrustedCompanionship(OtpUser relatedUser, OtpUser dependentUser) {
+        relatedUser.dependents.add(dependentUser.id);
+        Persistence.otpUsers.replace(relatedUser.id, relatedUser);
+        dependentUser.relatedUsers.add(new RelatedUser(
+            relatedUser.email,
+            RelatedUser.RelatedUserStatus.CONFIRMED,
+            nickname
+        ));
+        Persistence.otpUsers.replace(dependentUser.id, dependentUser);
     }
 }
