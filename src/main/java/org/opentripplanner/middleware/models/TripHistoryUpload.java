@@ -8,17 +8,14 @@ import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadSta
 import org.opentripplanner.middleware.persistence.Persistence;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 /**
  * A trip history upload represents an historic hour when trip history was or is planned to be uploaded to S3. If the
  * status is 'pending' the trip history is waiting to be uploaded. If the status is 'complete' the trip history has been
  * uploaded.
  */
-public class TripHistoryUpload extends Model {
+public class TripHistoryUpload extends IntervalUpload {
 
-    public LocalDateTime uploadHour;
-    public String status = TripHistoryUploadStatus.PENDING.getValue();
     public int numTripRequestsUploaded = 0;
 
     /** This no-arg constructor exists to make MongoDB happy. */
@@ -26,8 +23,7 @@ public class TripHistoryUpload extends Model {
     }
 
     public TripHistoryUpload(LocalDateTime uploadHour) {
-        this.uploadHour = uploadHour;
-        this.status = TripHistoryUploadStatus.PENDING.getValue();
+        super(uploadHour);
     }
 
     /**
@@ -57,19 +53,5 @@ public class TripHistoryUpload extends Model {
             ),
             sortBy
         );
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        TripHistoryUpload that = (TripHistoryUpload) o;
-        return Objects.equals(uploadHour, that.uploadHour) && Objects.equals(status, that.status);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), uploadHour, status);
     }
 }
