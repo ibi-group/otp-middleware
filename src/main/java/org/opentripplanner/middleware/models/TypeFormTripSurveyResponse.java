@@ -2,17 +2,19 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /** Data structure for TypeForm survey responses. Only including relevant fields. */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TypeFormTripSurveyResponse {
+    public String response_id;
+
     public String response_type;
 
-    public Date landed_at;
+    public String landed_at;
 
-    public Date submitted_at;
+    public String submitted_at;
 
     public Hidden hidden;
 
@@ -44,6 +46,15 @@ public class TypeFormTripSurveyResponse {
         public Choice choice;
 
         public Choices choices;
+
+        public String toCsvContent() {
+            if ("choices".equals(type) && choices != null && choices.labels != null) {
+                return String.join(";", choices.labels);
+            } else if ("choice".equals(type) && choice != null && choice.label != null) {
+                return choice.label;
+            }
+            return "";
+        }
     }
 
     /** Relevant choice fields in surveys. */
@@ -59,7 +70,18 @@ public class TypeFormTripSurveyResponse {
     }
 
     public String toCsvRow() {
-        return "";
+        // id, type/state, landed, submitted, hidden fields, textual responses in order they appear.
+        return String.join(
+            ",",
+            response_id,
+            response_type,
+            landed_at,
+            submitted_at,
+            hidden.notification_id,
+            hidden.trip_id,
+            hidden.user_id,
+            answers.stream().map(Answer::toCsvContent).collect(Collectors.joining(","))
+        );
     }
 }
 
