@@ -7,8 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TypeFormTripSurveyResponseTest {
 
+    public static final String EXPECTED_CSV_ROW = "response-id-0,completed,2024-10-25T15:37:42Z,2024-10-25T15:46:27Z,notification-id-1,trip-id-2,user-id-3,Field1 choice,Field2 ChoiceA;Field2 ChoiceB";
+
     @Test
     void toCsvRow() {
+        TypeFormTripSurveyResponse response = makeResponse();
+        assertEquals(EXPECTED_CSV_ROW, response.toCsvRow());
+    }
+
+    public static TypeFormTripSurveyResponse makeResponse() {
         TypeFormTripSurveyResponse response = new TypeFormTripSurveyResponse();
         response.landed_at = "2024-10-25T15:37:42Z";
         response.submitted_at = "2024-10-25T15:46:27Z";
@@ -34,7 +41,6 @@ class TypeFormTripSurveyResponseTest {
         answer2.field.id = "field-id-2";
 
         response.answers = List.of(answer1, answer2);
-
-        assertEquals("response-id-0,completed,2024-10-25T15:37:42Z,2024-10-25T15:46:27Z,notification-id-1,trip-id-2,user-id-3,Field1 choice,Field2 ChoiceA;Field2 ChoiceB", response.toCsvRow());
+        return response;
     }
 }
