@@ -31,6 +31,7 @@ public abstract class IntervalUploadJob implements Runnable {
     protected abstract IntervalUpload getLastUploadCreated();
 
     public void run() {
+        logger.info("{} started", this.getClass().getSimpleName());
         if (isDaily) {
             stageUploadDays();
         } else {

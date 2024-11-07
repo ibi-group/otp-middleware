@@ -34,7 +34,7 @@ public class TripHistoryUploadJob extends IntervalUploadJob {
 
     @Override
     protected IntervalUpload getLastUploadCreated() {
-        return null;
+        return TripHistoryUpload.getLastCreated();
     }
 
     /**
