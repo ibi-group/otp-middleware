@@ -146,7 +146,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     void canStageFirstUpload() {
-        TripHistoryUploadJob.stageUploadHours();
+        TripHistoryUploadJob job = new TripHistoryUploadJob();
+        job.stageUploadHours();
         TripHistoryUpload tripHistoryUpload = TripHistoryUpload.getFirst();
         assertNotNull(tripHistoryUpload);
         assertTrue(PREVIOUS_WHOLE_HOUR_FROM_NOW.isEqual(tripHistoryUpload.uploadHour));
@@ -165,7 +166,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         String batchId = "783726";
         tripRequest = PersistenceTestUtils.createTripRequest(userId, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequest.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        TripHistoryUploadJob.stageUploadHours();
+        TripHistoryUploadJob job = new TripHistoryUploadJob();
+        job.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
@@ -209,7 +211,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         String batchId = "783726";
         tripRequest = PersistenceTestUtils.createTripRequest(userId, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         tripSummary = PersistenceTestUtils.createTripSummaryWithError(tripRequest.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        TripHistoryUploadJob.stageUploadHours();
+        TripHistoryUploadJob job = new TripHistoryUploadJob();
+        job.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
@@ -255,7 +258,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripRequests.add(tripRequestOne);
         tripRequests.add(tripRequestTwo);
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        TripHistoryUploadJob.stageUploadHours();
+        TripHistoryUploadJob job = new TripHistoryUploadJob();
+        job.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
@@ -294,7 +298,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripRequests.add(tripRequestOne);
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchIdTwo, PREVIOUS_WHOLE_HOUR_FROM_NOW);
 
-        TripHistoryUploadJob.stageUploadHours();
+        TripHistoryUploadJob job = new TripHistoryUploadJob();
+        job.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
@@ -334,7 +339,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         LocalDateTime sevenHoursAgo = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(7);
         List<LocalDateTime> betweenHours = DateTimeUtils.getHoursBetween(sevenHoursAgo, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         createTripHistoryUpload(sevenHoursAgo, TripHistoryUploadStatus.PENDING);
-        TripHistoryUploadJob.stageUploadHours();
+        TripHistoryUploadJob job = new TripHistoryUploadJob();
+        job.stageUploadHours();
         assertEquals(
             betweenHours.size() + 1, // plus one for an hour ago.
             Persistence.tripHistoryUploads.getCountFiltered(Filters.gt("uploadHour", sevenHoursAgo))
@@ -349,7 +355,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     void canCorrectlyStageDays() {
         LocalDateTime fourDaysAgo = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(4);
         createTripHistoryUpload(fourDaysAgo, TripHistoryUploadStatus.PENDING);
-        TripHistoryUploadJob.stageUploadDays();
+        TripHistoryUploadJob job = new TripHistoryUploadJob();
+        job.stageUploadDays();
         assertEquals(
             1, // If system is down, it will only upload the previous day.
             Persistence.tripHistoryUploads.getCountFiltered(Filters.gt("uploadHour", fourDaysAgo))
@@ -564,7 +571,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestOne.id, batchId);
         Persistence.tripSummaries.create(tripSummary);
 
-        TripHistoryUploadJob.stageUploadHours();
+        TripHistoryUploadJob job = new TripHistoryUploadJob();
+        job.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
@@ -601,7 +609,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripRequests.clear();
         tripRequests.add(tripRequestOne);
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        TripHistoryUploadJob.stageUploadHours();
+        TripHistoryUploadJob job = new TripHistoryUploadJob();
+        job.stageUploadHours();
         TripHistoryUploadJob.processTripHistory(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(

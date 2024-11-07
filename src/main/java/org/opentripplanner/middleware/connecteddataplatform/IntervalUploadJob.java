@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.connecteddataplatform;
 import org.opentripplanner.middleware.models.IntervalUpload;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -15,12 +14,13 @@ import java.util.List;
  */
 public abstract class IntervalUploadJob implements Runnable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(IntervalUploadJob.class);
     private static final int HISTORIC_UPLOAD_HOURS_BACK_STOP = 24;
 
-    protected boolean isDaily;
+    private final boolean isDaily;
+    private final Logger logger;
 
-    protected IntervalUploadJob(boolean isDaily) {
+    protected IntervalUploadJob(Logger logger, boolean isDaily) {
+        this.logger = logger;
         this.isDaily = isDaily;
     }
 
@@ -67,7 +67,7 @@ public abstract class IntervalUploadJob implements Runnable {
         if (lastCreated == null) {
             // Stage first ever upload hour/day (will use 'hour' throughout whether referring to hours or days).
             createUpload(previousTime);
-            LOG.debug("Staging first ever upload hour: {}.", previousTime);
+            logger.debug("Staging first ever upload hour: {}.", previousTime);
             return;
         }
         // Stage all time between the last time uploaded and an hour/day ago.
@@ -78,7 +78,7 @@ public abstract class IntervalUploadJob implements Runnable {
         );
         intermediateTimes.forEach(uploadHour -> {
             if (uploadHour.isAfter(getHistoricDateTimeBackStop())) {
-                LOG.debug(
+                logger.debug(
                     "Staging hour: {} that is between last created: {} and the previous whole hour: {}",
                     lastCreated,
                     previousTime,
@@ -90,7 +90,7 @@ public abstract class IntervalUploadJob implements Runnable {
         if (!lastCreated.uploadHour.isEqual(previousTime)) {
             // Last created is not the latest upload hour, so stage an hour ago.
             createUpload(previousTime);
-            LOG.debug("Last created {} is older than the latest {}, so staging.", lastCreated, previousTime);
+            logger.debug("Last created {} is older than the latest {}, so staging.", lastCreated, previousTime);
         }
     }
 

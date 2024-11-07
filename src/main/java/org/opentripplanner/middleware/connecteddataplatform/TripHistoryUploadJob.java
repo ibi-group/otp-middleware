@@ -1,13 +1,12 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
+import org.opentripplanner.middleware.models.IntervalUpload;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -15,82 +14,27 @@ import java.util.Map;
  * This job is responsible for keeping the trip history held on s3 up-to-date by defining the hours which should be
  * uploaded and triggering the upload process.
  */
-public class TripHistoryUploadJob implements Runnable {
+public class TripHistoryUploadJob extends IntervalUploadJob {
 
     private static final Logger LOG = LoggerFactory.getLogger(TripHistoryUploadJob.class);
-    private static final int HISTORIC_UPLOAD_HOURS_BACK_STOP = 24;
 
-    public void run() {
-        if (ConnectedDataManager.isReportingDaily()) {
-            stageUploadDays();
-        } else {
-            stageUploadHours();
-        }
+    public TripHistoryUploadJob() {
+        super(LOG, ConnectedDataManager.isReportingDaily());
+    }
+
+    @Override
+    protected void runInnerLogic() {
         processTripHistory(ConnectedDataManager.CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL, null);
     }
 
-    /**
-     * Add to the trip history upload list any hours between the previous whole hour and the last created (pending or
-     * completed) trip history upload. This will cover any hours missed due to downtime and add the latest upload hour
-     * if not already accounted for.
-     */
-    public static void stageUploadHours() {
-        stageUploadTimes(DateTimeUtils.getPreviousWholeHourFrom(LocalDateTime.now()), ChronoUnit.HOURS);
+    @Override
+    protected void createUpload(LocalDateTime time) {
+        Persistence.tripHistoryUploads.create(new TripHistoryUpload(time));
     }
 
-    /**
-     * Add to the trip history upload list any days between the previous day and the last created (pending or
-     * completed) trip history upload. This will cover any days missed due to downtime and add the latest upload day
-     * if not already accounted for.
-     */
-    public static void stageUploadDays() {
-        stageUploadTimes(DateTimeUtils.getPreviousDayFrom(LocalDateTime.now()), ChronoUnit.DAYS);
-    }
-
-    /**
-     * Add to the trip history upload list any hours/days between the previous whole hour/day and the last created
-     * (pending or completed) trip history upload. This will cover any hours/days missed due to downtime,
-     * up to HISTORIC_UPLOAD_HOURS_BACK_STOP hours, and add the latest upload hour/day if not already accounted for.
-     */
-    private static void stageUploadTimes(LocalDateTime previousTime, ChronoUnit chronoUnit) {
-        TripHistoryUpload lastCreated = TripHistoryUpload.getLastCreated();
-        if (lastCreated == null) {
-            // Stage first ever upload hour.
-            Persistence.tripHistoryUploads.create(new TripHistoryUpload(previousTime));
-            LOG.debug("Staging first ever upload hour: {}.", previousTime);
-            return;
-        }
-        // Stage all time between the last time uploaded and an hour/day ago.
-        List<LocalDateTime> intermediateTimes = DateTimeUtils.getTimeUnitsBetween(
-            lastCreated.uploadHour,
-            previousTime,
-            chronoUnit
-        );
-        intermediateTimes.forEach(uploadHour -> {
-            if (uploadHour.isAfter(getHistoricDateTimeBackStop())) {
-                LOG.debug(
-                    "Staging hour: {} that is between last created: {} and the previous whole hour: {}",
-                    lastCreated,
-                    previousTime,
-                    uploadHour
-                );
-                Persistence.tripHistoryUploads.create(new TripHistoryUpload(uploadHour));
-            }
-        });
-        if (!lastCreated.uploadHour.isEqual(previousTime)) {
-            // Last created is not the latest upload hour, so stage an hour ago.
-            Persistence.tripHistoryUploads.create(new TripHistoryUpload(previousTime));
-            LOG.debug("Last created {} is older than the latest {}, so staging.", lastCreated, previousTime);
-        }
-    }
-
-    /**
-     * This is the absolute historic date/time which trip history will be uploaded. This assumes that the service will
-     * not be offline longer than this period, but if it is, it will prevent potentially a lot of data being uploaded on
-     * start-up which will impact performance.
-     */
-    private static LocalDateTime getHistoricDateTimeBackStop() {
-        return LocalDateTime.now().minusHours(HISTORIC_UPLOAD_HOURS_BACK_STOP);
+    @Override
+    protected IntervalUpload getLastUploadCreated() {
+        return null;
     }
 
     /**
