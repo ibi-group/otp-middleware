@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.tripmonitor;
 
 import com.mongodb.client.model.Filters;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
@@ -28,6 +29,8 @@ import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.commons.lang3.ObjectUtils.isEmpty;
+import static org.apache.commons.lang3.ObjectUtils.isNotEmpty;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.I18nUtils.getLocaleFromString;
 import static org.opentripplanner.middleware.utils.I18nUtils.label;
@@ -247,21 +250,21 @@ public class TrustedCompanion {
     public static MobilityProfile getDependentMobilityProfile(Request request, Response response) {
         var relatedUser = Auth0Connection.getUserFromRequest(request).otpUser;
 
-        if (relatedUser == null) {
+        if (isEmpty(relatedUser)) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Related user not provided or unknown.");
         }
 
         var dependentUserId = HttpUtils.getQueryParamFromRequest(request, DEPENDENT_USER_ID, false);
-        if (dependentUserId == null) {
+        if (isEmpty(dependentUserId)) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Required dependent's user id not provided.");
         }
 
         var dependentUser = Persistence.otpUsers.getById(dependentUserId);
-        if (dependentUser == null) {
+        if (isEmpty(dependentUser)) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent user unknown.");
         }
 
-        if (relatedUser != null && dependentUser != null) {
+        if (isNotEmpty(relatedUser) && isNotEmpty(dependentUser)) {
             if (!relatedUser.dependents.contains(dependentUser.id)) {
                 logMessageAndHalt(
                     request,
