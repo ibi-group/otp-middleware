@@ -26,8 +26,7 @@ import java.util.regex.Pattern;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_KEY;
-import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.EMAIL_PARAM;
-import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.GET_DEPENDENT_MOBILITY_PROFILE_PATH;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.DEPENDENT_USER_ID;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.USER_LOCALE;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ensureRelatedUserIntegrity;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.manageAcceptDependentEmail;
@@ -103,13 +102,12 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
                     .withResponseType(OtpUser.class),
                 TrustedCompanion::acceptDependent
             )
-            .get(path(ROOT_ROUTE + String.format(GET_DEPENDENT_MOBILITY_PROFILE_PATH, ID_PARAM))
+            .get(path(ROOT_ROUTE + "/getdependentmobilityprofile")
                     .withDescription("Retrieve a dependent's mobility profile.")
                     .withResponses(SwaggerUtils.createStandardResponses(MobilityProfile.class))
-                    .withPathParam().withName(ID_PARAM).withRequired(true).withDescription("The id of the related user.").and()
-                    .withPathParam().withName(EMAIL_PARAM).withRequired(true).withDescription("The dependent's email address.").and()
+                    .withPathParam().withName(DEPENDENT_USER_ID).withRequired(true).withDescription("A dependent's user id.").and()
                     .withResponseType(MobilityProfile.class),
-                this::getDependentMobilityProfile, JsonUtils::toJson
+                TrustedCompanion::getDependentMobilityProfile, JsonUtils::toJson
             )
             .get(path(ROOT_ROUTE + String.format(VERIFY_ROUTE_TEMPLATE, ID_PARAM, VERIFY_PATH, PHONE_PARAM))
                     .withDescription("Request an SMS verification to be sent to an OtpUser's phone number.")
@@ -137,14 +135,6 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
             NotificationUtils.updatePushDevices(otpUser);
         }
         return otpUser;
-    }
-
-    /**
-     * Extract the related user from the request and return a dependent's mobility profile if the right conditions
-     * are met.
-     */
-    private MobilityProfile getDependentMobilityProfile(Request request, Response response) {
-        return TrustedCompanion.getDependentMobilityProfile(request, response, getEntityForId(request, response));
     }
 
     /**

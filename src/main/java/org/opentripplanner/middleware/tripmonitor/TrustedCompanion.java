@@ -4,6 +4,7 @@ import com.mongodb.client.model.Filters;
 import org.apache.logging.log4j.util.Strings;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
+import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.MobilityProfile;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -46,10 +47,10 @@ public class TrustedCompanion {
     public static final String ACCEPT_KEY = "acceptKey";
     public static final String USER_LOCALE = "userLocale";
     public static final String EMAIL_PARAM = "email";
+    public static final String DEPENDENT_USER_ID = "dependentuserid";
 
     /** Note: This path is excluded from security checks, see {@link OtpMiddlewareMain#initializeHttpEndpoints()}. */
     public static final String ACCEPT_DEPENDENT_PATH = "api/secure/user/acceptdependent";
-    public static final String GET_DEPENDENT_MOBILITY_PROFILE_PATH = "/:%s/getdependentmobilityprofile";
 
     /**
      * Accept a request from another user to be their dependent. This will include both companions and observers. If
@@ -243,17 +244,19 @@ public class TrustedCompanion {
     /**
      * Retrieve the mobility profile for a dependent providing the requesting user is a trusted companion.
      */
-    public static MobilityProfile getDependentMobilityProfile(Request request, Response response, OtpUser relatedUser) {
+    public static MobilityProfile getDependentMobilityProfile(Request request, Response response) {
+        OtpUser relatedUser = Auth0Connection.getUserFromRequest(request).otpUser;
+
         if (relatedUser == null) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Related user not provided or unknown.");
         }
 
-        var dependentEmail = HttpUtils.getQueryParamFromRequest(request, EMAIL_PARAM, false);
-        if (dependentEmail == null) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Required dependent email address not provided.");
+        var dependentUserId = HttpUtils.getQueryParamFromRequest(request, DEPENDENT_USER_ID, false);
+        if (dependentUserId == null) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Required dependent id not provided.");
         }
 
-        var dependentUser = Persistence.otpUsers.getOneFiltered(eq(EMAIL_PARAM, dependentEmail));
+        var dependentUser = Persistence.otpUsers.getById(dependentUserId);
         if (dependentUser == null) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Dependent user unknown.");
         }
@@ -263,7 +266,7 @@ public class TrustedCompanion {
                 logMessageAndHalt(
                     request,
                     HttpStatus.FORBIDDEN_403,
-                    String.format("Related user is not a trusted companion for %s!", dependentEmail)
+                    String.format("Related user is not a trusted companion for dependent with id: %s!", dependentUserId)
                 );
             } else {
                 return dependentUser.mobilityProfile;

@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.auth0.json.mgmt.users.User;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
@@ -33,11 +34,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
+import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.DEPENDENT_USER_ID;
 
 public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake US 555 number.
@@ -73,7 +77,13 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         dependentUserTwo = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-two"));
         relatedUserThree = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("related-user-three"));
         dependentUserThree = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-three"));
+
         relatedUserFour = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("related-user-four"));
+
+        User auth0User = createAuth0UserForEmail(relatedUserFour.email, TEMP_AUTH0_USER_PASSWORD);
+        relatedUserFour.auth0UserId = auth0User.getId();
+        Persistence.otpUsers.replace(relatedUserFour.id, relatedUserFour);
+
         dependentUserFour = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-four"));
     }
 
@@ -273,12 +283,10 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canGetDependentMobilityProfile() throws Exception {
-        setAuthDisabled(true);
-
         String path = String.format(
-            "api/secure/user/%s/getdependentmobilityprofile?email=%s",
-            relatedUserFour.id,
-            dependentUserFour.email
+            "api/secure/user/getdependentmobilityprofile?%s=%s",
+            DEPENDENT_USER_ID,
+            dependentUserFour.id
         );
 
         HttpResponseValues responseValues = makeGetRequest(path, getMockHeaders(relatedUserFour));
@@ -295,7 +303,6 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(HttpStatus.OK_200, responseValues.status);
         assertEquals(JsonUtils.toJson(mobilityProfile), responseValues.responseBody);
 
-        setAuthDisabled(false);
     }
 
     /**

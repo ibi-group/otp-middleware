@@ -1675,17 +1675,12 @@ paths:
           description: "An error occurred while performing the request. Contact an\
             \ API administrator for more information."
           examples: {}
-  /api/secure/user/{id}/getdependentmobilityprofile:
+  /api/secure/user/getdependentmobilityprofile:
     get:
       tags:
       - "api/secure/user"
       description: "Retrieve a dependent's mobility profile."
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The id of the related user."
-        required: true
-        type: "string"
+      parameters: []
       responses:
         "200":
           description: "Successful operation"
