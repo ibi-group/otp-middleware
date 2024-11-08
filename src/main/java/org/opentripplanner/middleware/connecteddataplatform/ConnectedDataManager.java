@@ -481,6 +481,17 @@ public class ConnectedDataManager {
         return tripHistoryUploads.into(new ArrayList<>());
     }
 
+    // TODO: Seems only used in tests - move there?
+    public static String getDailyFileName(LocalDateTime date, String fileNameSuffix) {
+        final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
+        return String.format(
+            "%s-%s",
+            getStringFromDate(date, DEFAULT_DATE_FORMAT_PATTERN),
+            fileNameSuffix
+        );
+    }
+
+    // TODO: Seems only used in tests - move there?
     public static String getHourlyFileName(LocalDateTime date, String fileNameSuffix) {
         final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd-HH";
         return String.format(
