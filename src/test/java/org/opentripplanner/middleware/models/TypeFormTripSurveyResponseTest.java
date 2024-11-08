@@ -5,7 +5,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class TypeFormTripSurveyResponseTest {
+public class TypeFormTripSurveyResponseTest {
 
     public static final String EXPECTED_CSV_ROW = "response-id-0,completed,2024-10-25T15:37:42Z,2024-10-25T15:46:27Z,notification-id-1,trip-id-2,user-id-3,Field1 choice,Field2 ChoiceA;Field2 ChoiceB";
 

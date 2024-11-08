@@ -8,7 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
 import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
 import org.opentripplanner.middleware.models.TripSurveyUpload;
+import org.opentripplanner.middleware.models.TypeFormTripSurveyApiResponse;
 import org.opentripplanner.middleware.models.TypeFormTripSurveyApiResponseTest;
+import org.opentripplanner.middleware.models.TypeFormTripSurveyResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -25,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.getDailyFileName;
+import static org.opentripplanner.middleware.models.TypeFormTripSurveyResponseTest.makeResponse;
 import static org.opentripplanner.middleware.utils.FileUtils.getContentsOfFileInZip;
 
 class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
@@ -142,11 +145,14 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
     void canCreateZipFileWithContent() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        String csvContent = TypeFormTripSurveyApiResponseTest.getExpectedCsv();
+        TypeFormTripSurveyResponse response1 = makeResponse();
+        TypeFormTripSurveyResponse response2 = makeResponse();
+        TypeFormTripSurveyApiResponse apiResponse = new TypeFormTripSurveyApiResponse();
+        apiResponse.items = List.of(response1, response2);
 
         TripSurveyUploadJob job = new TripSurveyUploadJob();
         job.stageUploadDays();
-        job.processSurveyHistory(csvContent, true);
+        job.processSurveyHistory(TripSurveyUpload.getLastCreated(), apiResponse, true);
         zipFileName = getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
@@ -157,7 +163,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
             tempFile,
             getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_PREFIX + ".csv")
         );
-        assertEquals(csvContent, fileContents);
+        assertEquals(TypeFormTripSurveyApiResponseTest.getExpectedCsv(), fileContents);
     }
 }
 

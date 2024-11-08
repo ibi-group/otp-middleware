@@ -9,7 +9,7 @@ import java.util.List;
 public class TypeFormTripSurveyApiResponse {
     public List<TypeFormTripSurveyResponse> items;
 
-    public String toCsvRow() {
+    public String toCsv() {
         StringBuilder builder = new StringBuilder();
         builder.append("id,status,started,completed,notification_id,trip_id,user_id,field1,field2");
         builder.append(System.lineSeparator());

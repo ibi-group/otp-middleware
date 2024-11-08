@@ -60,13 +60,12 @@ public class TripSurveyUploadJob extends IntervalUploadJob {
 
             // Get access token
             if (!Strings.isBlank(TRIP_SURVEY_API_TOKEN)) {
-                TypeFormTripSurveyApiResponse responses = downloadSurveyResponses(upload.uploadHour);
+                TypeFormTripSurveyApiResponse apiResponse = downloadSurveyResponses(upload.uploadHour);
 
-                // Dump responses to temp CSV file
+                // Dump responses to temp CSV/Zip file and upload to S3.
+                processSurveyHistory(upload, apiResponse, false);
 
-
-
-                success = responses != null;
+                success = apiResponse != null;
             } else {
                 LOG.warn("Survey response token was not provided.");
             }
@@ -147,64 +146,48 @@ public class TripSurveyUploadJob extends IntervalUploadJob {
         );
     }
 
-    public void processSurveyHistory(String csvContent, boolean isTest) {
-        List<TripSurveyUpload> incompleteUploads = getIncompleteUploads();
-        incompleteUploads.forEach(upload -> {
-            // Dump CSV content to file
-            String filePrefix = getFilePrefix(upload.uploadHour, SURVEY_ZIP_FILE_PREFIX);
-            String zipFileName = String.join(".", filePrefix, ZIP_FILE_EXTENSION);
-            String tempFileFolder = FileUtils.getTempDirectory().getAbsolutePath();
-            String tempZipFile = String.join(File.separator, tempFileFolder, filePrefix + ".zip");
-            String tempDataFile = String.join(File.separator, tempFileFolder, filePrefix + ".csv");
+    public void processSurveyHistory(TripSurveyUpload upload, TypeFormTripSurveyApiResponse response, boolean isTest) {
+        // Dump CSV content to file
+        String filePrefix = getFilePrefix(upload.uploadHour, SURVEY_ZIP_FILE_PREFIX);
+        String zipFileName = String.join(".", filePrefix, ZIP_FILE_EXTENSION);
+        String tempFileFolder = FileUtils.getTempDirectory().getAbsolutePath();
+        String tempZipFile = String.join(File.separator, tempFileFolder, filePrefix + ".zip");
+        String tempDataFile = String.join(File.separator, tempFileFolder, filePrefix + ".csv");
 
+        try {
+            FileUtils.writeToFile(tempDataFile, false, response.toCsv());
+
+            // Upload the file if records were written or config setting requires uploading blank files.
+            FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
+            S3Utils.putObject(
+                CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
+                String.format(
+                    "%s/%s",
+                    "trip-survey-responses",
+                    zipFileName
+                ),
+                new File(tempZipFile)
+            );
+        } catch (Exception e) {
+            BugsnagReporter.reportErrorToBugsnag(
+                String.format("Failed to write survey data for (%s)", upload.uploadHour),
+                e
+            );
+        } finally {
+            // Delete the temporary files. This is done here in case the S3 upload fails.
             try {
-                FileUtils.writeToFile(tempDataFile, false, csvContent);
-
-                // Upload the file if records were written or config setting requires uploading blank files.
-                FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
-                S3Utils.putObject(
-                    CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
-                    String.format(
-                        "%s/%s",
-                        "trip-survey-responses",
-                        zipFileName
-                    ),
-                    new File(tempZipFile)
-                );
-            } catch (Exception e) {
-                BugsnagReporter.reportErrorToBugsnag(
-                    String.format("Failed to write survey data for (%s)", upload.uploadHour),
-                    e
-                );
-            } finally {
-                // Delete the temporary files. This is done here in case the S3 upload fails.
-                try {
-                    LOG.error("Deleting CDP zip file {} as an error occurred while processing the data it was supposed to contain.", tempZipFile);
-                    FileUtils.deleteFile(tempDataFile);
-                    if (!isTest) {
-                        FileUtils.deleteFile(tempZipFile);
-                    } else {
-                        LOG.warn("In test mode, temp zip file {} not deleted. This is expected to be deleted by the calling test.",
-                            tempZipFile
-                        );
-                    }
-                } catch (IOException e) {
-                    LOG.error("Failed to delete temp files", e);
+                LOG.error("Deleting CDP zip file {} as an error occurred while processing the data it was supposed to contain.", tempZipFile);
+                FileUtils.deleteFile(tempDataFile);
+                if (!isTest) {
+                    FileUtils.deleteFile(tempZipFile);
+                } else {
+                    LOG.warn("In test mode, temp zip file {} not deleted. This is expected to be deleted by the calling test.",
+                        tempZipFile
+                    );
                 }
+            } catch (IOException e) {
+                LOG.error("Failed to delete temp files", e);
             }
-
-            /*
-            boolean success = true;
-            if (success) {
-                // If successfully compiled and updated, update the status to 'completed' and record the number of trip
-                // requests uploaded (if any).
-                upload.status = TripHistoryUploadStatus.COMPLETED.getValue();
-                Persistence.tripSurveyUploads.replace(upload.id, upload);
-            }
-
-
-             */
-
-        });
+        }
     }
 }

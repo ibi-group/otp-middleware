@@ -19,7 +19,7 @@ public class TypeFormTripSurveyApiResponseTest {
         TypeFormTripSurveyApiResponse apiResponse = new TypeFormTripSurveyApiResponse();
         apiResponse.items = List.of(response1, response2);
 
-        assertEquals(getExpectedCsv(), apiResponse.toCsvRow());
+        assertEquals(getExpectedCsv(), apiResponse.toCsv());
     }
 
     public static String getExpectedCsv() {
