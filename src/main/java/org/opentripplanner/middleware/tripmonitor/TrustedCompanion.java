@@ -46,7 +46,7 @@ public class TrustedCompanion {
         ConfigUtils.getConfigPropertyAsText("TRUSTED_COMPANION_CONFIRMATION_PAGE_URL");
     public static final String ACCEPT_KEY = "acceptKey";
     public static final String USER_LOCALE = "userLocale";
-    public static final String EMAIL_PARAM = "email";
+    public static final String EMAIL_FIELD_NAME = "email";
     public static final String DEPENDENT_USER_ID = "dependentuserid";
 
     /** Note: This path is excluded from security checks, see {@link OtpMiddlewareMain#initializeHttpEndpoints()}. */
@@ -101,7 +101,7 @@ public class TrustedCompanion {
             .stream()
             .filter(user -> user.acceptKey.equalsIgnoreCase(acceptKey))
             .findFirst();
-        return relatedUser.map(user -> Persistence.otpUsers.getOneFiltered(eq(EMAIL_PARAM, user.email))).orElse(null);
+        return relatedUser.map(user -> Persistence.otpUsers.getOneFiltered(eq(EMAIL_FIELD_NAME, user.email))).orElse(null);
     }
 
     /**
@@ -159,7 +159,7 @@ public class TrustedCompanion {
             .filter(relatedUser -> relatedUser.acceptKey == null)
             .forEach(relatedUser -> {
                 String acceptKey = UUID.randomUUID().toString();
-                OtpUser userToReceiveEmail = Persistence.otpUsers.getOneFiltered(eq(EMAIL_PARAM, relatedUser.email));
+                OtpUser userToReceiveEmail = Persistence.otpUsers.getOneFiltered(eq(EMAIL_FIELD_NAME, relatedUser.email));
                 if (userToReceiveEmail != null && (isTest || sendAcceptDependentEmail(dependentUser, userToReceiveEmail, acceptKey))) {
                     relatedUser.acceptKey = acceptKey;
                 }
@@ -234,7 +234,7 @@ public class TrustedCompanion {
      * Remove the dependent reference from the related user.
      */
     public static void removeDependent(OtpUser dependent, RelatedUser relatedUser) {
-        OtpUser user = Persistence.otpUsers.getOneFiltered(eq(EMAIL_PARAM, relatedUser.email));
+        OtpUser user = Persistence.otpUsers.getOneFiltered(eq(EMAIL_FIELD_NAME, relatedUser.email));
         if (user != null) {
             user.dependents.remove(dependent.id);
             Persistence.otpUsers.replace(user.id, user);
@@ -245,7 +245,7 @@ public class TrustedCompanion {
      * Retrieve the mobility profile for a dependent providing the requesting user is a trusted companion.
      */
     public static MobilityProfile getDependentMobilityProfile(Request request, Response response) {
-        OtpUser relatedUser = Auth0Connection.getUserFromRequest(request).otpUser;
+        var relatedUser = Auth0Connection.getUserFromRequest(request).otpUser;
 
         if (relatedUser == null) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Related user not provided or unknown.");
@@ -253,7 +253,7 @@ public class TrustedCompanion {
 
         var dependentUserId = HttpUtils.getQueryParamFromRequest(request, DEPENDENT_USER_ID, false);
         if (dependentUserId == null) {
-            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Required dependent id not provided.");
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Required dependent's user id not provided.");
         }
 
         var dependentUser = Persistence.otpUsers.getById(dependentUserId);
@@ -266,7 +266,7 @@ public class TrustedCompanion {
                 logMessageAndHalt(
                     request,
                     HttpStatus.FORBIDDEN_403,
-                    String.format("Related user is not a trusted companion for dependent with id: %s!", dependentUserId)
+                    String.format("Related user is not a trusted companion for dependent with user id: %s!", dependentUserId)
                 );
             } else {
                 return dependentUser.mobilityProfile;
