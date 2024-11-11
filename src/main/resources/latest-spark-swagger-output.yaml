@@ -1679,16 +1679,17 @@ paths:
     get:
       tags:
       - "api/secure/user"
-      description: "Retrieve a dependent's mobility profile."
+      description: "Retrieve the mobility profile for each valid dependent user id\
+        \ provided."
       parameters: []
       responses:
         "200":
           description: "Successful operation"
           examples: {}
           schema:
-            $ref: "#/definitions/MobilityProfile"
+            $ref: "#/definitions/MobilityProfileLite"
           responseSchema:
-            $ref: "#/definitions/MobilityProfile"
+            $ref: "#/definitions/MobilityProfileLite"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
             \ may be missing). See the details of the returned response to determine\

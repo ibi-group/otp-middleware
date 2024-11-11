@@ -11,6 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.MobilityProfile;
+import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -41,7 +42,7 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetReque
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
-import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.DEPENDENT_USER_ID;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.DEPENDENT_USER_IDS;
 
 public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake US 555 number.
@@ -284,8 +285,9 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canGetDependentMobilityProfile() throws Exception {
         String path = String.format(
-            "api/secure/user/getdependentmobilityprofile?%s=%s",
-            DEPENDENT_USER_ID,
+            "api/secure/user/getdependentmobilityprofile?%s=%s,%s",
+            DEPENDENT_USER_IDS,
+            dependentUserThree.id,
             dependentUserFour.id
         );
 
@@ -296,13 +298,15 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         mobilityProfile.mobilityDevices = Set.of("service animal", "electric wheelchair", "white cane");
         mobilityProfile.updateMobilityMode();
         dependentUserFour.mobilityProfile = mobilityProfile;
+        dependentUserFour.name = "dependent-user-four-name";
 
         createTrustedCompanionship(relatedUserFour, dependentUserFour);
 
         responseValues = makeGetRequest(path, getMockHeaders(relatedUserFour));
         assertEquals(HttpStatus.OK_200, responseValues.status);
-        assertEquals(JsonUtils.toJson(mobilityProfile), responseValues.responseBody);
-
+        List<MobilityProfileLite> mobilityProfileLites = JsonUtils.getPOJOFromJSONAsList(responseValues.responseBody, MobilityProfileLite.class);
+        assert mobilityProfileLites != null;
+        assertEquals(new MobilityProfileLite(dependentUserFour), mobilityProfileLites.get(0));
     }
 
     /**
