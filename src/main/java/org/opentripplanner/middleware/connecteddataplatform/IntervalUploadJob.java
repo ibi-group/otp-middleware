@@ -26,7 +26,7 @@ public abstract class IntervalUploadJob<T extends IntervalUpload> implements Run
     private static final int HISTORIC_UPLOAD_HOURS_BACK_STOP = 24;
     public static final String STATUS_FIELD_NAME = "status";
 
-    private final ReportingInterval reportingInterval;
+    protected final ReportingInterval reportingInterval;
     private final Logger logger;
     private final TypedPersistence<T> persistence;
 
@@ -36,7 +36,7 @@ public abstract class IntervalUploadJob<T extends IntervalUpload> implements Run
         this.persistence = persistence;
     }
 
-    protected abstract void runInnerLogic();
+    protected abstract void processInterval(T intervalUpload);
 
     protected abstract void createUpload(LocalDateTime time);
 
@@ -48,6 +48,10 @@ public abstract class IntervalUploadJob<T extends IntervalUpload> implements Run
             stageUploadHours();
         }
         runInnerLogic();
+    }
+
+    public void runInnerLogic() {
+        getIncompleteUploads().forEach(this::processInterval);
     }
 
     /**

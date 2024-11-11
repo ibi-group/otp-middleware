@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.function.Function;
-import java.util.List;
 import java.util.Map;
 
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME;
@@ -59,21 +58,18 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
     }
 
     @Override
-    protected void runInnerLogic() {
-        List<TripSurveyUpload> incompleteUploads = getIncompleteUploads();
-        incompleteUploads.forEach(upload -> {
-            TypeFormTripSurveyApiResponse apiResponse = surveyApiResponseProvider.apply(upload.uploadHour);
+    protected void processInterval(TripSurveyUpload upload) {
+        TypeFormTripSurveyApiResponse apiResponse = surveyApiResponseProvider.apply(upload.uploadHour);
 
-            if (apiResponse != null) {
-                // Dump responses to temp CSV/Zip file and upload to S3.
-                processSurveyHistory(upload, apiResponse);
+        if (apiResponse != null) {
+            // Dump responses to temp CSV/Zip file and upload to S3.
+            processSurveyHistory(upload, apiResponse);
 
-                // If successfully compiled and updated, update the status to 'completed' and record the number of trip
-                // requests uploaded (if any).
-                upload.status = TripHistoryUploadStatus.COMPLETED.getValue();
-                Persistence.tripSurveyUploads.replace(upload.id, upload);
-            }
-        });
+            // If successfully compiled and updated, update the status to 'completed' and record the number of trip
+            // requests uploaded (if any).
+            upload.status = TripHistoryUploadStatus.COMPLETED.getValue();
+            Persistence.tripSurveyUploads.replace(upload.id, upload);
+        }
     }
 
     @Override

@@ -474,7 +474,7 @@ public class ConnectedDataManager {
     /**
      * Get all incomplete trip history uploads.
      */
-    public static List<TripHistoryUpload> getIncompleteUploads() {
+    private static List<TripHistoryUpload> getIncompleteUploads() {
         FindIterable<TripHistoryUpload> tripHistoryUploads = Persistence.tripHistoryUploads.getFiltered(
             Filters.ne("status", TripHistoryUploadStatus.COMPLETED.getValue())
         );
