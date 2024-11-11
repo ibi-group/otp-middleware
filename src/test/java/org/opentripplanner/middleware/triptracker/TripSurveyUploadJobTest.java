@@ -116,9 +116,8 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
         // After running the job, assuming that API calls were successful,
         // the upload records should be updated.
 
-        TripSurveyUploadJob job = new TripSurveyUploadJob();
+        TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> createSurveyApiResponse());
         job.run();
-
 
         TripSurveyUpload upload = TripSurveyUpload.getLastCreated();
         assertNotNull(upload);
@@ -145,14 +144,11 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
     void canCreateZipFileWithContent() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        TypeFormTripSurveyResponse response1 = makeResponse();
-        TypeFormTripSurveyResponse response2 = makeResponse();
-        TypeFormTripSurveyApiResponse apiResponse = new TypeFormTripSurveyApiResponse();
-        apiResponse.items = List.of(response1, response2);
+        TypeFormTripSurveyApiResponse apiResponse = createSurveyApiResponse();
 
-        TripSurveyUploadJob job = new TripSurveyUploadJob();
+        TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> apiResponse);
         job.stageUploadDays();
-        job.processSurveyHistory(TripSurveyUpload.getLastCreated(), apiResponse, true);
+        job.processSurveyHistory(TripSurveyUpload.getLastCreated(), apiResponse);
         zipFileName = getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
@@ -164,6 +160,15 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
             getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_PREFIX + ".csv")
         );
         assertEquals(TypeFormTripSurveyApiResponseTest.getExpectedCsv(), fileContents);
+    }
+
+    private static TypeFormTripSurveyApiResponse createSurveyApiResponse() {
+        TypeFormTripSurveyResponse response1 = makeResponse();
+        TypeFormTripSurveyResponse response2 = makeResponse();
+        TypeFormTripSurveyApiResponse apiResponse = new TypeFormTripSurveyApiResponse();
+        apiResponse.items = List.of(response1, response2);
+        apiResponse.isTest = true;
+        return apiResponse;
     }
 }
 

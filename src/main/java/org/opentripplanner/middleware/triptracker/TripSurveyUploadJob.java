@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.function.Function;
 import java.util.List;
 import java.util.Map;
 
@@ -48,31 +49,29 @@ public class TripSurveyUploadJob extends IntervalUploadJob {
 
     public static final String SURVEY_ZIP_FILE_NAME = SURVEY_ZIP_FILE_PREFIX + ".zip";
 
+    private final Function<LocalDateTime, TypeFormTripSurveyApiResponse> surveyApiResponseProvider;
+
     public TripSurveyUploadJob() {
         super(LOG, true);
+        this.surveyApiResponseProvider = this::downloadSurveyResponses;
+    }
+
+    /** Used for tests. */
+    public TripSurveyUploadJob(Function<LocalDateTime, TypeFormTripSurveyApiResponse> surveyApiResponseProvider) {
+        super(LOG, true);
+        this.surveyApiResponseProvider = surveyApiResponseProvider;
     }
 
     @Override
     protected void runInnerLogic() {
         List<TripSurveyUpload> incompleteUploads = getIncompleteUploads();
         incompleteUploads.forEach(upload -> {
-            boolean success = true;
+            TypeFormTripSurveyApiResponse apiResponse = surveyApiResponseProvider.apply(upload.uploadHour);
 
-            // Get access token
-            if (!Strings.isBlank(TRIP_SURVEY_API_TOKEN)) {
-                TypeFormTripSurveyApiResponse apiResponse = downloadSurveyResponses(upload.uploadHour);
-
+            if (apiResponse != null) {
                 // Dump responses to temp CSV/Zip file and upload to S3.
-                processSurveyHistory(upload, apiResponse, false);
+                processSurveyHistory(upload, apiResponse);
 
-                success = apiResponse != null;
-            } else {
-                LOG.warn("Survey response token was not provided.");
-            }
-
-            // Download survey responses for the indicated day
-
-            if (success) {
                 // If successfully compiled and updated, update the status to 'completed' and record the number of trip
                 // requests uploaded (if any).
                 upload.status = TripHistoryUploadStatus.COMPLETED.getValue();
@@ -103,24 +102,28 @@ public class TripSurveyUploadJob extends IntervalUploadJob {
     }
 
     private TypeFormTripSurveyApiResponse downloadSurveyResponses(LocalDateTime day) {
-        HttpResponseValues response = HttpUtils.httpRequestRawResponse(
-            URI.create(makeSurveyResponseUrl(TRIP_SURVEY_ID, day)),
-            30,
-            HttpMethod.GET,
-            Map.of("Authorization", String.format("Bearer %s", TRIP_SURVEY_API_TOKEN)),
-            null
-        );
+        if (!Strings.isBlank(TRIP_SURVEY_API_TOKEN) && !Strings.isBlank(TRIP_SURVEY_ID)) {
+            HttpResponseValues response = HttpUtils.httpRequestRawResponse(
+                URI.create(makeSurveyResponseUrl(TRIP_SURVEY_ID, day)),
+                30,
+                HttpMethod.GET,
+                Map.of("Authorization", String.format("Bearer %s", TRIP_SURVEY_API_TOKEN)),
+                null
+            );
 
-        if (response.status == HttpStatus.OK_200) {
-            try {
-                return JsonUtils.getPOJOFromJSON(response.responseBody, TypeFormTripSurveyApiResponse.class);
-            } catch (JsonProcessingException e) {
-                LOG.warn("Error parsing survey responses: {}", e);
-                return null;
+            if (response.status == HttpStatus.OK_200) {
+                try {
+                    return JsonUtils.getPOJOFromJSON(response.responseBody, TypeFormTripSurveyApiResponse.class);
+                } catch (JsonProcessingException e) {
+                    LOG.warn("Error parsing survey responses: {}", e);
+                }
             }
+
+            LOG.warn("Error getting survey responses - code: {}, message: {}", response.status, response.responseBody);
+        } else {
+            LOG.warn("Survey ID or survey response API token was not provided.");
         }
 
-        LOG.warn("Error getting survey responses - code: {}, message: {}", response.status, response.responseBody);
         return null;
     }
 
@@ -146,7 +149,7 @@ public class TripSurveyUploadJob extends IntervalUploadJob {
         );
     }
 
-    public void processSurveyHistory(TripSurveyUpload upload, TypeFormTripSurveyApiResponse response, boolean isTest) {
+    public void processSurveyHistory(TripSurveyUpload upload, TypeFormTripSurveyApiResponse response) {
         // Dump CSV content to file
         String filePrefix = getFilePrefix(upload.uploadHour, SURVEY_ZIP_FILE_PREFIX);
         String zipFileName = String.join(".", filePrefix, ZIP_FILE_EXTENSION);
@@ -178,7 +181,7 @@ public class TripSurveyUploadJob extends IntervalUploadJob {
             try {
                 LOG.error("Deleting CDP zip file {} as an error occurred while processing the data it was supposed to contain.", tempZipFile);
                 FileUtils.deleteFile(tempDataFile);
-                if (!isTest) {
+                if (!response.isTest) {
                     FileUtils.deleteFile(tempZipFile);
                 } else {
                     LOG.warn("In test mode, temp zip file {} not deleted. This is expected to be deleted by the calling test.",
