@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.isReportingDaily;
+
 /**
  * This job is responsible for keeping the uploads held on S3 up-to-date by defining the hours/days which should be
  * uploaded and triggering the upload process.
@@ -16,12 +18,12 @@ public abstract class IntervalUploadJob implements Runnable {
 
     private static final int HISTORIC_UPLOAD_HOURS_BACK_STOP = 24;
 
-    private final boolean isDaily;
+    private final ReportingInterval reportingInterval;
     private final Logger logger;
 
-    protected IntervalUploadJob(Logger logger, boolean isDaily) {
+    protected IntervalUploadJob(Logger logger, ReportingInterval reportingInterval) {
         this.logger = logger;
-        this.isDaily = isDaily;
+        this.reportingInterval = reportingInterval;
     }
 
     protected abstract void runInnerLogic();
@@ -32,7 +34,7 @@ public abstract class IntervalUploadJob implements Runnable {
 
     public void run() {
         logger.info("{} started", this.getClass().getSimpleName());
-        if (isDaily) {
+        if (isReportingDaily(reportingInterval)) {
             stageUploadDays();
         } else {
             stageUploadHours();
@@ -102,5 +104,12 @@ public abstract class IntervalUploadJob implements Runnable {
      */
     private static LocalDateTime getHistoricDateTimeBackStop() {
         return LocalDateTime.now().minusHours(HISTORIC_UPLOAD_HOURS_BACK_STOP);
+    }
+
+    /**
+     * Produce file name without path or extension, depending on whether reporting is hourly or daily.
+     */
+    public String getFilePrefix(LocalDateTime date, String entityName) {
+        return ConnectedDataManager.getFilePrefix(reportingInterval, date, entityName);
     }
 }

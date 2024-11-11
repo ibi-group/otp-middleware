@@ -8,6 +8,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadJob;
+import org.opentripplanner.middleware.connecteddataplatform.ReportingInterval;
 import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
 import org.opentripplanner.middleware.models.IntervalUpload;
 import org.opentripplanner.middleware.models.TripSurveyUpload;
@@ -33,7 +34,6 @@ import java.util.Map;
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME;
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.ZIP_FILE_EXTENSION;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDate;
 
 /**
  * This job will analyze completed trips with deviations and send survey notifications about select trips.
@@ -52,13 +52,13 @@ public class TripSurveyUploadJob extends IntervalUploadJob {
     private final Function<LocalDateTime, TypeFormTripSurveyApiResponse> surveyApiResponseProvider;
 
     public TripSurveyUploadJob() {
-        super(LOG, true);
+        super(LOG, ReportingInterval.DAILY);
         this.surveyApiResponseProvider = this::downloadSurveyResponses;
     }
 
     /** Used for tests. */
     public TripSurveyUploadJob(Function<LocalDateTime, TypeFormTripSurveyApiResponse> surveyApiResponseProvider) {
-        super(LOG, true);
+        super(LOG, ReportingInterval.DAILY);
         this.surveyApiResponseProvider = surveyApiResponseProvider;
     }
 
@@ -133,19 +133,6 @@ public class TripSurveyUploadJob extends IntervalUploadJob {
             surveyId,
             day,
             day.plusDays(1).minusSeconds(1)
-        );
-    }
-
-    /**
-     * Produce file name without path or extension.
-     * TODO: reuse
-     */
-    public static String getFilePrefix(LocalDateTime date, String entityName) {
-        final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
-        return String.format(
-            "%s-%s",
-            getStringFromDate(date, DEFAULT_DATE_FORMAT_PATTERN),
-            entityName
         );
     }
 

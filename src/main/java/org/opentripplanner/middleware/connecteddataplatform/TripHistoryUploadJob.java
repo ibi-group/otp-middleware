@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL;
+
 /**
  * This job is responsible for keeping the trip history held on s3 up-to-date by defining the hours which should be
  * uploaded and triggering the upload process.
@@ -19,12 +21,12 @@ public class TripHistoryUploadJob extends IntervalUploadJob {
     private static final Logger LOG = LoggerFactory.getLogger(TripHistoryUploadJob.class);
 
     public TripHistoryUploadJob() {
-        super(LOG, ConnectedDataManager.isReportingDaily());
+        super(LOG, CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL);
     }
 
     @Override
     protected void runInnerLogic() {
-        processTripHistory(ConnectedDataManager.CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL, null);
+        processTripHistory(CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL, null);
     }
 
     @Override
