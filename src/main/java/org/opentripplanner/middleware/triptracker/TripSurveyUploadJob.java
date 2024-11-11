@@ -1,8 +1,6 @@
 package org.opentripplanner.middleware.triptracker;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.model.Filters;
 import org.apache.logging.log4j.util.Strings;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -10,7 +8,6 @@ import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadJob;
 import org.opentripplanner.middleware.connecteddataplatform.ReportingInterval;
 import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
-import org.opentripplanner.middleware.models.IntervalUpload;
 import org.opentripplanner.middleware.models.TripSurveyUpload;
 import org.opentripplanner.middleware.models.TypeFormTripSurveyApiResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -26,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.function.Function;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +34,7 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 /**
  * This job will analyze completed trips with deviations and send survey notifications about select trips.
  */
-public class TripSurveyUploadJob extends IntervalUploadJob {
+public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
     private static final Logger LOG = LoggerFactory.getLogger(TripSurveyUploadJob.class);
 
     private static final String TRIP_SURVEY_API_TOKEN = getConfigPropertyAsText("TRIP_SURVEY_API_TOKEN");
@@ -52,13 +48,13 @@ public class TripSurveyUploadJob extends IntervalUploadJob {
     private final Function<LocalDateTime, TypeFormTripSurveyApiResponse> surveyApiResponseProvider;
 
     public TripSurveyUploadJob() {
-        super(LOG, ReportingInterval.DAILY);
+        super(LOG, ReportingInterval.DAILY, Persistence.tripSurveyUploads);
         this.surveyApiResponseProvider = this::downloadSurveyResponses;
     }
 
     /** Used for tests. */
     public TripSurveyUploadJob(Function<LocalDateTime, TypeFormTripSurveyApiResponse> surveyApiResponseProvider) {
-        super(LOG, ReportingInterval.DAILY);
+        super(LOG, ReportingInterval.DAILY, Persistence.tripSurveyUploads);
         this.surveyApiResponseProvider = surveyApiResponseProvider;
     }
 
@@ -83,22 +79,6 @@ public class TripSurveyUploadJob extends IntervalUploadJob {
     @Override
     protected void createUpload(LocalDateTime time) {
         Persistence.tripSurveyUploads.create(new TripSurveyUpload(time));
-    }
-
-    @Override
-    protected IntervalUpload getLastUploadCreated() {
-        return TripSurveyUpload.getLastCreated();
-    }
-
-    /**
-     * Get all incomplete trip survey uploads.
-     * TODO: Deduplicate
-     */
-    public static List<TripSurveyUpload> getIncompleteUploads() {
-        FindIterable<TripSurveyUpload> incompleteUploads = Persistence.tripSurveyUploads.getFiltered(
-            Filters.ne("status", TripHistoryUploadStatus.COMPLETED.getValue())
-        );
-        return incompleteUploads.into(new ArrayList<>());
     }
 
     private TypeFormTripSurveyApiResponse downloadSurveyResponses(LocalDateTime day) {

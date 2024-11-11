@@ -16,12 +16,12 @@ import static org.opentripplanner.middleware.connecteddataplatform.ConnectedData
  * This job is responsible for keeping the trip history held on s3 up-to-date by defining the hours which should be
  * uploaded and triggering the upload process.
  */
-public class TripHistoryUploadJob extends IntervalUploadJob {
+public class TripHistoryUploadJob extends IntervalUploadJob<TripHistoryUpload> {
 
     private static final Logger LOG = LoggerFactory.getLogger(TripHistoryUploadJob.class);
 
     public TripHistoryUploadJob() {
-        super(LOG, CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL);
+        super(LOG, CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL, Persistence.tripHistoryUploads);
     }
 
     @Override
@@ -32,11 +32,6 @@ public class TripHistoryUploadJob extends IntervalUploadJob {
     @Override
     protected void createUpload(LocalDateTime time) {
         Persistence.tripHistoryUploads.create(new TripHistoryUpload(time));
-    }
-
-    @Override
-    protected IntervalUpload getLastUploadCreated() {
-        return TripHistoryUpload.getLastCreated();
     }
 
     /**

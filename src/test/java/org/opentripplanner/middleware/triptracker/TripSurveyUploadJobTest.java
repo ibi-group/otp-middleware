@@ -104,7 +104,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
     void canStageFirstUpload() {
         TripSurveyUploadJob job = new TripSurveyUploadJob();
         job.stageUploadDays();
-        TripSurveyUpload upload = TripSurveyUpload.getFirst();
+        TripSurveyUpload upload = job.getFirstUpload();
         assertNotNull(upload);
         assertTrue(PREVIOUS_WHOLE_DAY_FROM_NOW.isEqual(upload.uploadHour));
     }
@@ -119,7 +119,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
         TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> createSurveyApiResponse());
         job.run();
 
-        TripSurveyUpload upload = TripSurveyUpload.getLastCreated();
+        TripSurveyUpload upload = job.getLastUploadCreated();
         assertNotNull(upload);
         assertTrue(PREVIOUS_WHOLE_DAY_FROM_NOW.isEqual(upload.uploadHour));
         assertEquals(TripHistoryUploadStatus.COMPLETED.toString(), upload.status);
@@ -148,7 +148,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
 
         TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> apiResponse);
         job.stageUploadDays();
-        job.processSurveyHistory(TripSurveyUpload.getLastCreated(), apiResponse);
+        job.processSurveyHistory(job.getLastUploadCreated(), apiResponse);
         zipFileName = getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",

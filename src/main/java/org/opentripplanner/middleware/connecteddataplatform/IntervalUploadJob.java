@@ -1,11 +1,18 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Sorts;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
+import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.models.IntervalUpload;
+import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.isReportingDaily;
@@ -14,23 +21,24 @@ import static org.opentripplanner.middleware.connecteddataplatform.ConnectedData
  * This job is responsible for keeping the uploads held on S3 up-to-date by defining the hours/days which should be
  * uploaded and triggering the upload process.
  */
-public abstract class IntervalUploadJob implements Runnable {
+public abstract class IntervalUploadJob<T extends IntervalUpload> implements Runnable {
 
     private static final int HISTORIC_UPLOAD_HOURS_BACK_STOP = 24;
+    public static final String STATUS_FIELD_NAME = "status";
 
     private final ReportingInterval reportingInterval;
     private final Logger logger;
+    private final TypedPersistence<T> persistence;
 
-    protected IntervalUploadJob(Logger logger, ReportingInterval reportingInterval) {
+    protected IntervalUploadJob(Logger logger, ReportingInterval reportingInterval, TypedPersistence<T> persistence) {
         this.logger = logger;
         this.reportingInterval = reportingInterval;
+        this.persistence = persistence;
     }
 
     protected abstract void runInnerLogic();
 
     protected abstract void createUpload(LocalDateTime time);
-
-    protected abstract IntervalUpload getLastUploadCreated();
 
     public void run() {
         logger.info("{} started", this.getClass().getSimpleName());
@@ -111,5 +119,44 @@ public abstract class IntervalUploadJob implements Runnable {
      */
     public String getFilePrefix(LocalDateTime date, String entityName) {
         return ConnectedDataManager.getFilePrefix(reportingInterval, date, entityName);
+    }
+
+    /**
+     * Get all incomplete uploads.
+     */
+    public List<T> getIncompleteUploads() {
+        FindIterable<T> incompleteUploads = persistence.getFiltered(
+            Filters.ne(STATUS_FIELD_NAME, TripHistoryUploadStatus.COMPLETED.getValue())
+        );
+        return incompleteUploads.into(new ArrayList<>());
+    }
+
+    /**
+     * Get the last created trip history upload regardless of status.
+     */
+    @BsonIgnore
+    public T getLastUploadCreated() {
+        return getOneOrdered(Sorts.descending("dateCreated"));
+    }
+
+    /**
+     * Get the first created trip history upload regardless of status.
+     */
+    @BsonIgnore
+    public T getFirstUpload() {
+        return getOneOrdered(Sorts.ascending("dateCreated"));
+    }
+
+    /**
+     * Get one upload based on the sort order.
+     */
+    private T getOneOrdered(Bson sortBy) {
+        return persistence.getOneFiltered(
+            Filters.or(
+                Filters.eq(STATUS_FIELD_NAME, TripHistoryUploadStatus.COMPLETED.getValue()),
+                Filters.eq(STATUS_FIELD_NAME, TripHistoryUploadStatus.PENDING.getValue())
+            ),
+            sortBy
+        );
     }
 }

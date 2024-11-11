@@ -1,11 +1,6 @@
 package org.opentripplanner.middleware.models;
 
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Sorts;
-import org.bson.codecs.pojo.annotations.BsonIgnore;
-import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
-import org.opentripplanner.middleware.persistence.Persistence;
 
 import java.time.LocalDateTime;
 
@@ -29,34 +24,5 @@ public class TripSurveyUpload extends IntervalUpload {
         this.id = id;
         this.uploadHour = uploadHour;
         this.status = status.toString();
-    }
-
-    /**
-     * Get the last created survey upload regardless of status.
-     */
-    @BsonIgnore
-    public static TripSurveyUpload getLastCreated() {
-        return getOneOrdered(Sorts.descending("dateCreated"));
-    }
-
-    /**
-     * Get the first created survey upload regardless of status.
-     */
-    @BsonIgnore
-    public static TripSurveyUpload getFirst() {
-        return getOneOrdered(Sorts.ascending("dateCreated"));
-    }
-
-    /**
-     * Get one upload based on the sort order.
-     */
-    private static TripSurveyUpload getOneOrdered(Bson sortBy) {
-        return Persistence.tripSurveyUploads.getOneFiltered(
-            Filters.or(
-                Filters.eq("status", TripHistoryUploadStatus.COMPLETED.getValue()),
-                Filters.eq("status", TripHistoryUploadStatus.PENDING.getValue())
-            ),
-            sortBy
-        );
     }
 }
