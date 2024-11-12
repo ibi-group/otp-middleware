@@ -132,7 +132,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
         String s = TripSurveyUploadJob.makeSurveyResponseUrl("survey-id", date);
 
         // All times in the time zone of this server instance.
-        assertEquals("https://api.typeform.com/forms/survey-id/responses?page_size=1000&since=2024-10-25T00:00&until=2024-10-25T23:59:59", s);
+        assertEquals("https://api.typeform.com/forms/survey-id/responses?page_size=1000&since=2024-10-25T00:00:00&until=2024-10-25T23:59:59", s);
     }
 
     /**

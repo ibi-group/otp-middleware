@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
 import java.util.Map;
 
@@ -107,8 +108,8 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
         return String.format(
             "https://api.typeform.com/forms/%s/responses?page_size=1000&since=%s&until=%s",
             surveyId,
-            day,
-            day.plusDays(1).minusSeconds(1)
+            day.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            day.plusDays(1).minusSeconds(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         );
     }
 
