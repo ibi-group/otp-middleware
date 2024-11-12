@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -285,19 +286,19 @@ public class TrustedCompanion {
     /**
      * From the list of dependent user ids, extract all that have the related user as their trusted companion.
      */
-    private static List<String> getValidDependents(OtpUser relatedUser, String dependentUserIds) {
+    private static Set<String> getValidDependents(OtpUser relatedUser, String dependentUserIds) {
         // In case only one user id is provided with no comma.
-        String[] userIds = (dependentUserIds.contains(","))
+        String[] userIds = dependentUserIds.contains(",")
             ? dependentUserIds.split(",")
-            : new String[]{dependentUserIds};
+            : new String[] { dependentUserIds };
 
         if (isEmpty(userIds)) {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
 
         return Arrays
             .stream(userIds)
             .filter(userId -> relatedUser.dependents.contains(userId))
-            .collect(Collectors.toList());
+            .collect(Collectors.toSet());
     }
 }
