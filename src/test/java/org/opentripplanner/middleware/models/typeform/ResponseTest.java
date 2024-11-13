@@ -8,7 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ResponseTest {
 
-    public static final String EXPECTED_CSV_ROW = "response-id-0,completed,2024-10-25T15:37:42Z,2024-10-25T15:46:27Z,notification-id-1,trip-id-2,user-id-3,Field1 choice,Field2 ChoiceA;Field2 ChoiceB";
+    public static final String EXPECTED_CSV_ROW = "response-id-0,completed,2024-10-25T15:37:42Z,2024-10-25T15:46:27Z,notification-id-1,trip-id-2,user-id-3,\"Field1 choice\",\"Field2, ChoiceA;Field2, ChoiceB\"";
+
 
     @Test
     void toCsvRow() {
@@ -36,7 +37,7 @@ public class ResponseTest {
         Response.Answer answer2 = new Response.Answer();
         answer2.type = "choices";
         answer2.choices = new Response.Choices();
-        answer2.choices.labels = List.of("Field2 ChoiceA", "Field2 ChoiceB");
+        answer2.choices.labels = List.of("Field2, ChoiceA", "Field2, ChoiceB"); // Answers can include commas
         answer2.field = new Field("field-id-2");
 
         response.answers = List.of(answer1, answer2);

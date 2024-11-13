@@ -42,10 +42,11 @@ public class Response {
         public Choices choices;
 
         public String toCsvContent() {
+            // Surround answers with quotes as answers may contain commas.
             if ("choices".equals(type) && choices != null && choices.labels != null) {
-                return String.join(";", choices.labels);
+                return String.format("\"%s\"", String.join(";", choices.labels));
             } else if ("choice".equals(type) && choice != null && choice.label != null) {
-                return choice.label;
+                return String.format("\"%s\"", choice.label);
             }
             return "";
         }
