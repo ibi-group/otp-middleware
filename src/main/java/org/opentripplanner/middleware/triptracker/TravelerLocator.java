@@ -4,6 +4,7 @@ import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffHereTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffNextStopTransitInstruction;
@@ -27,7 +28,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import static org.apache.commons.lang3.ObjectUtils.isNotEmpty;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_IMMEDIATE_RADIUS;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
@@ -59,7 +62,7 @@ public class TravelerLocator {
     ) {
         if (hasRequiredWalkLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
-                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
+                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, false);
                 if (tripInstruction != null) {
                     return tripInstruction.build();
                 }
@@ -124,7 +127,7 @@ public class TravelerLocator {
         TravelerPosition travelerPosition,
         boolean isStartOfTrip
     ) {
-        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip);
+        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, true);
         if (instruction != null && instruction.hasInstruction()) {
             return instruction;
         }
@@ -169,7 +172,8 @@ public class TravelerLocator {
     @Nullable
     public static TripInstruction alignTravelerToTrip(
         TravelerPosition travelerPosition,
-        boolean isStartOfTrip
+        boolean isStartOfTrip,
+        boolean travelerHasDeviated
     ) {
         Locale locale = travelerPosition.locale;
 
@@ -182,14 +186,53 @@ public class TravelerLocator {
         }
 
         Step nextStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps);
+        TripInstruction tripInstruction = null;
         if (nextStep != null && (!isPositionPastStep(travelerPosition, nextStep) || isStartOfTrip)) {
-            return new OnTrackInstruction(
+            tripInstruction = new OnTrackInstruction(
                 getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
                 nextStep,
                 locale
             );
         }
+        return (travelerHasDeviated || (isNotEmpty(tripInstruction) && tripInstruction.hasInstruction()))
+            ? tripInstruction
+            : getContinueInstruction(travelerPosition, nextStep, locale);
+    }
+
+    /**
+     * Traveler is on track, but no immediate instruction is available. Provide a "continue on street" reassurance
+     * instruction providing they are on a walk leg. This will be based on the current or previous step depending on the
+     * traveler's relative position to the next leg.
+     */
+    private static ContinueInstruction getContinueInstruction(
+        TravelerPosition travelerPosition,
+        Step nextStep,
+        Locale locale
+    ) {
+        if (!travelerPosition.expectedLeg.transitLeg && nextStep != null) {
+            Step currentStep = isPositionPastStep(travelerPosition, nextStep)
+                ? nextStep :
+                getPreviousStep(travelerPosition.expectedLeg.steps, nextStep);
+            if (currentStep != null) {
+                return new ContinueInstruction(currentStep, locale);
+            }
+        }
         return null;
+    }
+
+    /**
+     * Get the step prior to the next step provided.
+     */
+    private static Step getPreviousStep(List<Step> steps, Step nextStep) {
+        if (steps.get(0).equals(nextStep)) {
+            return null;
+        }
+        Optional<Step> previousStep = IntStream
+            .range(0, steps.size())
+            .filter(i -> steps.get(i).equals(nextStep))
+            .mapToObj(i -> steps.get(i - 1))
+            .findFirst();
+        return previousStep.orElse(null);
     }
 
     /**

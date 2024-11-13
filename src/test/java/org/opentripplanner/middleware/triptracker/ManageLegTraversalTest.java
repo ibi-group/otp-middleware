@@ -15,6 +15,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.utils.ConfigUtils;
@@ -270,9 +271,9 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     createPoint(virginiaCircleNortheastCoords, 12, SOUTH_WEST_BEARING),
-                    NO_INSTRUCTION,
+                    new ContinueInstruction(ponceDeLeonPlaceNortheastStep, locale).build(),
                     false,
-                    "On track approaching second step, but not close enough for instruction."
+                    "On track approaching second step, provide continue instruction."
                 )
             ),
             Arguments.of(
@@ -336,9 +337,9 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     createPoint(pointAfterTurn, 0, calculateBearing(pointAfterTurn, virginiaAvenuePoint)),
-                    NO_INSTRUCTION,
+                    new ContinueInstruction(virginiaAvenueNortheastStep, locale).build(),
                     false,
-                    "After turn left on to Virginia Avenue should not produce turn instruction."
+                    "After turn left on to Virginia Avenue should provide continue instruction."
                 )
             ),
             Arguments.of(
