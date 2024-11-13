@@ -155,6 +155,12 @@ public class ManageTripTracking {
         trackedJourney.end(isForciblyEnded);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_TIME_FIELD_NAME, trackedJourney.endTime);
         Persistence.trackedJourneys.updateField(trackedJourney.id, TrackedJourney.END_CONDITION_FIELD_NAME, trackedJourney.endCondition);
+        trackedJourney.longestConsecutiveDeviatedPoints = trackedJourney.computeLargestConsecutiveDeviations();
+        Persistence.trackedJourneys.updateField(
+            trackedJourney.id,
+            TrackedJourney.LONGEST_CONSECUTIVE_DEVIATED_POINTS_FIELD_NAME,
+            trackedJourney.longestConsecutiveDeviatedPoints
+        );
 
         return new EndTrackingResponse(
             TripInstruction.NO_INSTRUCTION,
