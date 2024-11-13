@@ -85,7 +85,7 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
     }
 
     private static Responses downloadSurveyResponses(LocalDateTime day) {
-        if (!Strings.isBlank(TRIP_SURVEY_API_TOKEN) && !Strings.isBlank(TRIP_SURVEY_ID)) {
+        if (checkSurveyIdAndToken()) {
             HttpResponseValues response = HttpUtils.httpRequestRawResponse(
                 URI.create(makeSurveyResponseUrl(TRIP_SURVEY_ID, day)),
                 30,
@@ -103,16 +103,13 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
             }
 
             LOG.warn("Error getting survey responses - code: {}, message: {}", response.status, response.responseBody);
-        } else {
-            LOG.warn("Survey ID or survey response API token was not provided.");
         }
 
         return null;
     }
 
     private static String downloadSurveyHeaders() {
-        // TODO: Refactor condition
-        if (!Strings.isBlank(TRIP_SURVEY_API_TOKEN) && !Strings.isBlank(TRIP_SURVEY_ID)) {
+        if (checkSurveyIdAndToken()) {
             HttpResponseValues response = HttpUtils.httpRequestRawResponse(
                 URI.create(makeSurveyFormUrl(TRIP_SURVEY_ID)),
                 30,
@@ -131,11 +128,17 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
             }
 
             LOG.warn("Error getting survey headers - code: {}, message: {}", response.status, response.responseBody);
-        } else {
-            LOG.warn("Survey ID or survey response API token was not provided.");
         }
 
         return null;
+    }
+
+    public static boolean checkSurveyIdAndToken() {
+        boolean idAndTokenPresent = !Strings.isBlank(TRIP_SURVEY_API_TOKEN) && !Strings.isBlank(TRIP_SURVEY_ID);
+        if (!idAndTokenPresent) {
+            LOG.warn("Survey ID or survey response API token was not provided.");
+        }
+        return idAndTokenPresent;
     }
 
     public static String makeSurveyResponseUrl(String surveyId, LocalDateTime day) {
