@@ -41,14 +41,22 @@ public class Response {
 
         public Choices choices;
 
-        public String toCsvContent() {
-            // Surround answers with quotes as answers may contain commas.
+        public String text;
+
+        public String toRawContent() {
             if ("choices".equals(type) && choices != null && choices.labels != null) {
-                return String.format("\"%s\"", String.join(";", choices.labels));
+                return String.join(";", choices.labels);
             } else if ("choice".equals(type) && choice != null && choice.label != null) {
-                return String.format("\"%s\"", choice.label);
+                return choice.label;
+            } else if ("text".equals(type) && text != null) {
+                return text;
             }
             return "";
+        }
+
+        public String toCsvContent() {
+            // Surround answers with quotes as answers may contain commas.
+            return String.format("\"%s\"", toRawContent());
         }
     }
 
