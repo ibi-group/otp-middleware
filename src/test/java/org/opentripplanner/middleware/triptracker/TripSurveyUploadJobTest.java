@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
 import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
 import org.opentripplanner.middleware.models.TripSurveyUpload;
-import org.opentripplanner.middleware.models.TypeFormTripSurveyApiResponse;
-import org.opentripplanner.middleware.models.TypeFormTripSurveyApiResponseTest;
-import org.opentripplanner.middleware.models.TypeFormTripSurveyResponse;
+import org.opentripplanner.middleware.models.typeform.Responses;
+import org.opentripplanner.middleware.models.typeform.ResponsesTest;
+import org.opentripplanner.middleware.models.typeform.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -27,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.getDailyFileName;
-import static org.opentripplanner.middleware.models.TypeFormTripSurveyResponseTest.makeResponse;
+import static org.opentripplanner.middleware.models.typeform.ResponseTest.makeResponse;
+import static org.opentripplanner.middleware.models.typeform.ResponsesTest.EXPECTED_HEADER;
 import static org.opentripplanner.middleware.utils.FileUtils.getContentsOfFileInZip;
 
 class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
@@ -116,7 +117,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
         // After running the job, assuming that API calls were successful,
         // the upload records should be updated.
 
-        TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> createSurveyApiResponse());
+        TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> createSurveyApiResponse(), () -> EXPECTED_HEADER);
         job.run();
 
         TripSurveyUpload upload = job.getLastUploadCreated();
@@ -144,9 +145,9 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
     void canCreateZipFileWithContent() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        TypeFormTripSurveyApiResponse apiResponse = createSurveyApiResponse();
+        Responses apiResponse = createSurveyApiResponse();
 
-        TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> apiResponse);
+        TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> apiResponse, () -> EXPECTED_HEADER);
         job.stageUploadDays();
         job.processSurveyHistory(job.getLastUploadCreated(), apiResponse);
         zipFileName = getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_NAME);
@@ -159,13 +160,13 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
             tempFile,
             getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_PREFIX + ".csv")
         );
-        assertEquals(TypeFormTripSurveyApiResponseTest.getExpectedCsv(), fileContents);
+        assertEquals(ResponsesTest.getExpectedCsv(), fileContents);
     }
 
-    private static TypeFormTripSurveyApiResponse createSurveyApiResponse() {
-        TypeFormTripSurveyResponse response1 = makeResponse();
-        TypeFormTripSurveyResponse response2 = makeResponse();
-        TypeFormTripSurveyApiResponse apiResponse = new TypeFormTripSurveyApiResponse();
+    private static Responses createSurveyApiResponse() {
+        Response response1 = makeResponse();
+        Response response2 = makeResponse();
+        Responses apiResponse = new Responses();
         apiResponse.items = List.of(response1, response2);
         apiResponse.isTest = true;
         return apiResponse;

@@ -9,7 +9,8 @@ import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadJob;
 import org.opentripplanner.middleware.connecteddataplatform.ReportingInterval;
 import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
 import org.opentripplanner.middleware.models.TripSurveyUpload;
-import org.opentripplanner.middleware.models.TypeFormTripSurveyApiResponse;
+import org.opentripplanner.middleware.models.typeform.Responses;
+import org.opentripplanner.middleware.models.typeform.Form;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME;
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.ZIP_FILE_EXTENSION;
@@ -37,30 +39,34 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
     private static final Logger LOG = LoggerFactory.getLogger(TripSurveyUploadJob.class);
 
-    private static final String TRIP_SURVEY_API_TOKEN = getConfigPropertyAsText("TRIP_SURVEY_API_TOKEN");
+    public static final String TRIP_SURVEY_API_TOKEN = getConfigPropertyAsText("TRIP_SURVEY_API_TOKEN");
 
-    private static final String TRIP_SURVEY_ID = getConfigPropertyAsText("TRIP_SURVEY_ID");
+    public static final String TRIP_SURVEY_ID = getConfigPropertyAsText("TRIP_SURVEY_ID");
 
     public static final String SURVEY_ZIP_FILE_PREFIX = "merged";
 
     public static final String SURVEY_ZIP_FILE_NAME = SURVEY_ZIP_FILE_PREFIX + ".zip";
 
-    private final Function<LocalDateTime, TypeFormTripSurveyApiResponse> surveyApiResponseProvider;
+    private final Function<LocalDateTime, Responses> surveyApiResponseProvider;
+
+    private final String csvHeaders;
 
     public TripSurveyUploadJob() {
-        super(LOG, ReportingInterval.DAILY, Persistence.tripSurveyUploads);
-        this.surveyApiResponseProvider = this::downloadSurveyResponses;
+        this(TripSurveyUploadJob::downloadSurveyResponses, TripSurveyUploadJob::downloadSurveyHeaders);
     }
 
-    /** Used for tests. */
-    public TripSurveyUploadJob(Function<LocalDateTime, TypeFormTripSurveyApiResponse> surveyApiResponseProvider) {
+    public TripSurveyUploadJob(
+        Function<LocalDateTime, Responses> surveyApiResponseProvider,
+        Supplier<String> surveyCsvHeaderProvider
+    ) {
         super(LOG, ReportingInterval.DAILY, Persistence.tripSurveyUploads);
         this.surveyApiResponseProvider = surveyApiResponseProvider;
+        this.csvHeaders = surveyCsvHeaderProvider.get();
     }
 
     @Override
     protected void processInterval(TripSurveyUpload upload) {
-        TypeFormTripSurveyApiResponse apiResponse = surveyApiResponseProvider.apply(upload.uploadHour);
+        Responses apiResponse = surveyApiResponseProvider.apply(upload.uploadHour);
 
         if (apiResponse != null) {
             // Dump responses to temp CSV/Zip file and upload to S3.
@@ -78,7 +84,7 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
         Persistence.tripSurveyUploads.create(new TripSurveyUpload(time));
     }
 
-    private TypeFormTripSurveyApiResponse downloadSurveyResponses(LocalDateTime day) {
+    private static Responses downloadSurveyResponses(LocalDateTime day) {
         if (!Strings.isBlank(TRIP_SURVEY_API_TOKEN) && !Strings.isBlank(TRIP_SURVEY_ID)) {
             HttpResponseValues response = HttpUtils.httpRequestRawResponse(
                 URI.create(makeSurveyResponseUrl(TRIP_SURVEY_ID, day)),
@@ -90,9 +96,9 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
 
             if (response.status == HttpStatus.OK_200) {
                 try {
-                    return JsonUtils.getPOJOFromJSON(response.responseBody, TypeFormTripSurveyApiResponse.class);
+                    return JsonUtils.getPOJOFromJSON(response.responseBody, Responses.class);
                 } catch (JsonProcessingException e) {
-                    LOG.warn("Error parsing survey responses: {}", e);
+                    LOG.warn("Error parsing survey responses", e);
                 }
             }
 
@@ -104,16 +110,48 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
         return null;
     }
 
+    private static String downloadSurveyHeaders() {
+        // TODO: Refactor condition
+        if (!Strings.isBlank(TRIP_SURVEY_API_TOKEN) && !Strings.isBlank(TRIP_SURVEY_ID)) {
+            HttpResponseValues response = HttpUtils.httpRequestRawResponse(
+                URI.create(makeSurveyFormUrl(TRIP_SURVEY_ID)),
+                30,
+                HttpMethod.GET,
+                Map.of("Authorization", String.format("Bearer %s", TRIP_SURVEY_API_TOKEN)),
+                null
+            );
+
+            if (response.status == HttpStatus.OK_200) {
+                try {
+                    Form form = JsonUtils.getPOJOFromJSON(response.responseBody, Form.class);
+                    return form.toCsvHeader();
+                } catch (JsonProcessingException e) {
+                    LOG.warn("Error parsing survey headers", e);
+                }
+            }
+
+            LOG.warn("Error getting survey headers - code: {}, message: {}", response.status, response.responseBody);
+        } else {
+            LOG.warn("Survey ID or survey response API token was not provided.");
+        }
+
+        return null;
+    }
+
     public static String makeSurveyResponseUrl(String surveyId, LocalDateTime day) {
         return String.format(
-            "https://api.typeform.com/forms/%s/responses?page_size=1000&since=%s&until=%s",
-            surveyId,
+            "%s/responses?page_size=1000&since=%s&until=%s",
+            makeSurveyFormUrl(surveyId),
             day.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
             day.plusDays(1).minusSeconds(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         );
     }
 
-    public void processSurveyHistory(TripSurveyUpload upload, TypeFormTripSurveyApiResponse response) {
+    private static String makeSurveyFormUrl(String surveyId) {
+        return String.format("https://api.typeform.com/forms/%s", surveyId);
+    }
+
+    public void processSurveyHistory(TripSurveyUpload upload, Responses response) {
         // Dump CSV content to file
         String filePrefix = getFilePrefix(upload.uploadHour, SURVEY_ZIP_FILE_PREFIX);
         String zipFileName = String.join(".", filePrefix, ZIP_FILE_EXTENSION);
@@ -122,7 +160,7 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
         String tempDataFile = String.join(File.separator, tempFileFolder, filePrefix + ".csv");
 
         try {
-            FileUtils.writeToFile(tempDataFile, false, response.toCsv());
+            FileUtils.writeToFile(tempDataFile, false, response.toCsv(csvHeaders));
 
             // Upload the file if records were written or config setting requires uploading blank files.
             FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
