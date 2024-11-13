@@ -13,6 +13,10 @@ public class Field {
         // Empty constructor for deserialization
     }
 
+    public Field(String id) {
+        this.id = id;
+    }
+
     public Field(String id, String title) {
         this.id = id;
         this.title = title;

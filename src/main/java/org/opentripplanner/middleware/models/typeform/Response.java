@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.models;
+package org.opentripplanner.middleware.models.typeform;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 /** Data structure for TypeForm survey responses. Only including relevant fields. */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TypeFormTripSurveyResponse {
+public class Response {
     public String response_id;
 
     public String response_type;
@@ -28,12 +28,6 @@ public class TypeFormTripSurveyResponse {
         public String user_id;
 
         public String trip_id;
-    }
-
-    /** Relevant fields info in surveys. */
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Field {
-        public String id;
     }
 
     /** Relevant answer fields in surveys. */

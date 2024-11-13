@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.models;
+package org.opentripplanner.middleware.models.typeform;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -6,18 +6,18 @@ import java.util.List;
 
 /** Data structure for TypeForm survey API response. */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TypeFormTripSurveyApiResponse {
-    public List<TypeFormTripSurveyResponse> items;
+public class Responses {
+    public List<Response> items;
 
     /** Populated in tests only */
     public boolean isTest;
 
-    public String toCsv() {
+    public String toCsv(String headers) {
         StringBuilder builder = new StringBuilder();
-        builder.append("id,status,started,completed,notification_id,trip_id,user_id,field1,field2");
+        builder.append(headers);
         builder.append(System.lineSeparator());
         if (items != null) {
-            for (TypeFormTripSurveyResponse response : items) {
+            for (Response response : items) {
                 builder.append(response.toCsvRow());
                 builder.append(System.lineSeparator());
             }
