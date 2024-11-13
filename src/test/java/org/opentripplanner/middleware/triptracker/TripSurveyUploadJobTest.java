@@ -130,10 +130,10 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
     void canMakeSurveyResponseURL() {
         LocalDateTime date = LocalDateTime.of(2024, 10, 25, 0, 0);
 
-        String s = TripSurveyUploadJob.makeSurveyResponseUrl("survey-id", date);
+        String s = TripSurveyUploadJob.responsesParams(date);
 
         // All times in the time zone of this server instance.
-        assertEquals("https://api.typeform.com/forms/survey-id/responses?page_size=1000&since=2024-10-25T00:00:00&until=2024-10-25T23:59:59", s);
+        assertEquals("?page_size=1000&since=2024-10-25T00:00:00&until=2024-10-25T23:59:59", s);
     }
 
     /**
@@ -149,7 +149,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
 
         TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> apiResponse, () -> EXPECTED_HEADER);
         job.stageUploadDays();
-        job.processSurveyHistory(job.getLastUploadCreated(), apiResponse);
+        assertTrue(job.processSurveyHistory(job.getLastUploadCreated(), apiResponse));
         zipFileName = getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
