@@ -124,7 +124,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
         TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> createSurveyApiResponse(), () -> EXPECTED_HEADER);
         job.run();
 
-        TripSurveyUpload upload = IntervalUpload.getLastUploadCreated(Persistence.tripSurveyUploads);
+        TripSurveyUpload upload = job.getLastUploadCreated();
         assertNotNull(upload);
         assertTrue(PREVIOUS_WHOLE_DAY_FROM_NOW.isEqual(upload.uploadHour));
         assertEquals(IntervalUploadStatus.COMPLETED, upload.status);
@@ -143,7 +143,6 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
     /**
      * Confirm that a single zip file is created which contains the compiled survey responses (CSV). Also confirm that the contents
      * written to the CSV file is correct and covers a single day's worth of responses.
-     * TODO: Try to combine code from ConnectedDataPlatformTest
      */
     @Test
     void canCreateZipFileWithContent() throws Exception {
@@ -153,9 +152,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
 
         TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> apiResponse, () -> EXPECTED_HEADER);
         job.stageUploadDays();
-        assertTrue(
-            job.processSurveyHistory(IntervalUpload.getLastUploadCreated(Persistence.tripSurveyUploads), apiResponse)
-        );
+        assertTrue(job.processSurveyHistory(job.getLastUploadCreated(), apiResponse));
         zipFileName = getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",

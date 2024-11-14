@@ -71,7 +71,7 @@ public abstract class IntervalUploadJob<T extends IntervalUpload> implements Run
      * up to HISTORIC_UPLOAD_HOURS_BACK_STOP hours, and add the latest upload hour/day if not already accounted for.
      */
     private void stageUploadTimes(LocalDateTime previousTime, ChronoUnit chronoUnit) {
-        IntervalUpload lastCreated = IntervalUpload.getLastUploadCreated(persistence);
+        IntervalUpload lastCreated = getLastUploadCreated();
         if (lastCreated == null) {
             // Stage first ever upload hour/day (will use 'hour' throughout whether referring to hours or days).
             createUpload(previousTime);
@@ -100,6 +100,10 @@ public abstract class IntervalUploadJob<T extends IntervalUpload> implements Run
             createUpload(previousTime);
             logger.debug("Last created {} is older than the latest {}, so staging.", lastCreated, previousTime);
         }
+    }
+
+    public T getLastUploadCreated() {
+        return IntervalUpload.getLastUploadCreated(persistence);
     }
 
     /**

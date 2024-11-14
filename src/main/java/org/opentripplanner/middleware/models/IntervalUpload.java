@@ -49,7 +49,7 @@ public class IntervalUpload extends Model {
     }
 
     /**
-     * Get the last created trip history upload regardless of status.
+     * Get the last created upload regardless of status.
      */
     @BsonIgnore
     public static <U extends IntervalUpload> U getLastUploadCreated(TypedPersistence<U> persistence) {
@@ -57,7 +57,7 @@ public class IntervalUpload extends Model {
     }
 
     /**
-     * Get the first created trip history upload regardless of status.
+     * Get the first created upload regardless of status.
      */
     @BsonIgnore
     public static <U extends IntervalUpload> U getFirstUpload(TypedPersistence<U> persistence) {
