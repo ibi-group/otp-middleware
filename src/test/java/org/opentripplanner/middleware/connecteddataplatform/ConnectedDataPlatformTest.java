@@ -457,14 +457,14 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         );
         job.runInnerLogic();
 
-        String tripFileName = ConnectedDataManager.getFilePrefix(ReportingInterval.DAILY, PREVIOUS_DAY, "TripRequest");
+        String tripFileName = ConnectedDataManager.getDailyFileName(PREVIOUS_DAY, "TripRequest");
         zipFileName = String.join(".", tripFileName, ZIP_FILE_EXTENSION);
         tempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
 
         String fileContents = getContentsOfFileInZip(tempFile, String.join(".", tripFileName, JSON_FILE_EXTENSION));
         MatcherAssert.assertThat(fileContents, matchesSnapshot());
 
-        String summaryFileName = ConnectedDataManager.getFilePrefix(ReportingInterval.DAILY, PREVIOUS_DAY, "TripSummary");
+        String summaryFileName = ConnectedDataManager.getDailyFileName(PREVIOUS_DAY, "TripSummary");
         summaryZipFileName = String.join(".", summaryFileName, ZIP_FILE_EXTENSION);
         summaryTempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), summaryZipFileName);
 
@@ -495,13 +495,13 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         );
         job.runInnerLogic();
 
-        String tripFileName = ConnectedDataManager.getFilePrefix(ReportingInterval.DAILY, PREVIOUS_DAY, "TripRequest");
+        String tripFileName = ConnectedDataManager.getDailyFileName(PREVIOUS_DAY, "TripRequest");
         zipFileName = String.join(".", tripFileName, ZIP_FILE_EXTENSION);
         tempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
         // Trips file should not exist because trips are not requested in the report for this test.
         assertFalse(new File(tempFile).exists());
 
-        String summaryFileName = ConnectedDataManager.getFilePrefix(ReportingInterval.DAILY, PREVIOUS_DAY, "TripSummary");
+        String summaryFileName = ConnectedDataManager.getDailyFileName(PREVIOUS_DAY, "TripSummary");
         summaryZipFileName = String.join(".", summaryFileName, ZIP_FILE_EXTENSION);
         summaryTempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), summaryZipFileName);
 

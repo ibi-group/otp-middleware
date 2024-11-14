@@ -446,9 +446,9 @@ public class ConnectedDataManager {
                 );
                 return Integer.MIN_VALUE;
             } finally {
-                // Delete the temporary files. This is done here in case the S3 upload fails.
+                // Delete the temporary files here, to cover S3 upload success or failure.
                 try {
-                    LOG.error("Deleting CDP zip file {} as an error occurred while processing the data it was supposed to contain.", tempZipFile);
+                    LOG.error("Deleting CDP zip file {}.", tempZipFile);
                     FileUtils.deleteFile(tempDataFile);
                     if (!isTest) {
                         FileUtils.deleteFile(tempZipFile);
@@ -481,38 +481,25 @@ public class ConnectedDataManager {
         return tripHistoryUploads.into(new ArrayList<>());
     }
 
-    // TODO: Seems only used in tests - move there?
     public static String getDailyFileName(LocalDateTime date, String fileNameSuffix) {
-        final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
-        return String.format(
-            "%s-%s",
-            getStringFromDate(date, DEFAULT_DATE_FORMAT_PATTERN),
-            fileNameSuffix
-        );
+        return formatFileName(date, "yyyy-MM-dd", fileNameSuffix);
     }
 
-    // TODO: Seems only used in tests - move there?
     public static String getHourlyFileName(LocalDateTime date, String fileNameSuffix) {
-        final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd-HH";
-        return String.format(
-            "%s-%s",
-            getStringFromDate(date, DEFAULT_DATE_FORMAT_PATTERN),
-            fileNameSuffix
-        );
+        return formatFileName(date, "yyyy-MM-dd-HH", fileNameSuffix);
     }
 
     /**
      * Produce file name without path or extension.
      */
     public static String getFilePrefix(ReportingInterval reportingInterval, LocalDateTime date, String entityName) {
-        final String DEFAULT_DATE_FORMAT_PATTERN = isReportingDaily(reportingInterval)
-            ? "yyyy-MM-dd"
-            : "yyyy-MM-dd-HH";
-        return String.format(
-            "%s-%s",
-            getStringFromDate(date, DEFAULT_DATE_FORMAT_PATTERN),
-            entityName
-        );
+        return isReportingDaily(reportingInterval)
+            ? getDailyFileName(date, entityName)
+            : getHourlyFileName(date, entityName);
+    }
+
+    public static String formatFileName(LocalDateTime date, String datePattern, String suffix) {
+        return String.format("%s-%s", getStringFromDate(date, datePattern), suffix);
     }
 
     /**
