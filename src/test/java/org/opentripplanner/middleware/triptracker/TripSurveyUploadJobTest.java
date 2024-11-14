@@ -153,7 +153,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
         TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> apiResponse, () -> EXPECTED_HEADER);
         job.stageUploadDays();
         assertTrue(job.processSurveyHistory(job.getLastUploadCreated(), apiResponse));
-        zipFileName = getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_NAME);
+        zipFileName = getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_PREFIX + ".zip");
         tempFile = String.join(
             "/",
             FileUtils.getTempDirectory().getAbsolutePath(),

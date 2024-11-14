@@ -114,4 +114,10 @@ public abstract class IntervalUploadJob<T extends IntervalUpload> implements Run
     private static LocalDateTime getHistoricDateTimeBackStop() {
         return LocalDateTime.now().minusHours(HISTORIC_UPLOAD_HOURS_BACK_STOP);
     }
+
+    /** Marks an upload record as completed. */
+    protected void markAsCompleted(T upload) {
+        upload.status = IntervalUploadStatus.COMPLETED;
+        persistence.replace(upload.id, upload);
+    }
 }
