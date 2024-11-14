@@ -12,7 +12,6 @@ import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -25,7 +24,7 @@ import static org.opentripplanner.middleware.utils.NotificationUtils.OTP_ADMIN_D
  * Note: these tests require the environment variables RUN_E2E=true and valid values for TEST_TO_EMAIL, TEST_TO_PHONE,
  * and TEST_TO_PUSH. Furthermore, TEST_TO_PHONE must be a verified phone number in a valid Twilio account.
  */
-public class NotificationUtilsTestCI extends OtpMiddlewareTestEnvironment {
+class NotificationUtilsTestCI extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationUtilsTestCI.class);
     private static OtpUser user;
 
@@ -36,16 +35,15 @@ public class NotificationUtilsTestCI extends OtpMiddlewareTestEnvironment {
     private static final String email = System.getenv("TEST_TO_EMAIL");
     /** Phone must be in the form "+15551234" and must be verified first in order to send notifications */
     private static final String phone = System.getenv("TEST_TO_PHONE");
-    /** Push notification is conventionally a user.email value and must be known to the mobile team's push API */
-    private static final String push = System.getenv("TEST_TO_PUSH");
+
     /**
      * Currently, since these tests require target email/SMS values, these tests should not run on CI.
      */
     private static final boolean shouldTestsRun =
-            !isRunningCi && IS_END_TO_END && email != null && phone != null && push != null;
+            !isRunningCi && IS_END_TO_END && email != null && phone != null;
 
     @BeforeAll
-    public static void setup() throws IOException {
+    public static void setup() {
         assumeTrue(shouldTestsRun);
         user = createUser(email, phone);
     }
@@ -56,20 +54,20 @@ public class NotificationUtilsTestCI extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    public void canSendPushNotification() {
+    void canSendPushNotification() {
         String ret = NotificationUtils.sendPush(
-            // Conventionally user.email
-            push,
+            user,
             "Tough little ship!",
             "Titanic",
-            "trip-id"
+            "trip-id",
+            "survey-id"
         );
-        LOG.info("Push notification (ret={}) sent to {}", ret, push);
+        LOG.info("Push notification (ret={}) sent to {}", ret, user.email);
         Assertions.assertNotNull(ret);
     }
 
     @Test
-    public void canSendSparkpostEmailNotification() {
+    void canSendSparkpostEmailNotification() {
         boolean success = NotificationUtils.sendEmailViaSparkpost(
             OTP_ADMIN_DASHBOARD_FROM_EMAIL,
             user.email,
@@ -81,7 +79,7 @@ public class NotificationUtilsTestCI extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    public void canSendSmsNotification() {
+    void canSendSmsNotification() {
         // Note: toPhone must be verified.
         String messageId = NotificationUtils.sendSMS(
             // Note: phone number is configured in setup method above.
@@ -96,7 +94,7 @@ public class NotificationUtilsTestCI extends OtpMiddlewareTestEnvironment {
      * Tests whether a verification code can be sent to a phone number.
      */
     @Test
-    public void canSendTwilioVerificationText() {
+    void canSendTwilioVerificationText() {
         Assertions.assertNull(user.smsConsentDate);
         Date beforeVerificationDate = new Date();
         Verification verification = NotificationUtils.sendVerificationText(
@@ -117,7 +115,7 @@ public class NotificationUtilsTestCI extends OtpMiddlewareTestEnvironment {
      * your phone can be used below (in place of 123456) to generate an "approved" status.
      */
     @Test
-    public void canCheckSmsVerificationCode() {
+    void canCheckSmsVerificationCode() {
         VerificationCheck check = NotificationUtils.checkSmsVerificationCode(
             // Note: phone number is configured in setup method above.
             user.phoneNumber,
