@@ -15,6 +15,7 @@ import static org.opentripplanner.middleware.connecteddataplatform.ConnectedData
 
 /**
  * Helper class for upload job file handling.
+ * When used in try-with-resource blocks, temp files will be automatically deleted.
  */
 public class IntervalUploadFiles implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(IntervalUploadFiles.class);
@@ -48,11 +49,7 @@ public class IntervalUploadFiles implements AutoCloseable {
         try {
             S3Utils.putObject(
                 CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
-                String.format(
-                    "%s/%s",
-                    folder,
-                    zipFileName
-                ),
+                String.format("%s/%s", folder, zipFileName),
                 new File(tempZipFile)
             );
         } catch (S3Exception e) {
