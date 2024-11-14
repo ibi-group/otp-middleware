@@ -11,10 +11,12 @@ import org.slf4j.LoggerFactory;
 
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,6 +35,7 @@ public class OtpUser extends AbstractUser {
     public static final String AUTH0_SCOPE = "otp-user";
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(OtpUser.class);
+    public static final String TRIP_SURVEY_NOTIFICATIONS_FIELD = "tripSurveyNotifications";
 
     /** Whether the user would like accessible routes by default. */
     public boolean accessibilityRoutingByDefault;
@@ -82,6 +85,9 @@ public class OtpUser extends AbstractUser {
 
     /** Whether to store the user's trip history (user must opt in). */
     public boolean storeTripHistory;
+
+    /** The trail of survey notifications sent for journeys completed by the user. */
+    public List<TripSurveyNotification> tripSurveyNotifications = new ArrayList<>();
 
     @JsonIgnore
     /** If this user was created by an {@link ApiUser}, this parameter will match the {@link ApiUser}'s id */
@@ -192,5 +198,11 @@ public class OtpUser extends AbstractUser {
                     }
                 });
         }
+    }
+
+    /** Obtains the last trip survey notification sent. */
+    public Optional<TripSurveyNotification> findLastTripSurveyNotificationSent() {
+        if (tripSurveyNotifications == null) return Optional.empty();
+        return tripSurveyNotifications.stream().max(Comparator.comparingLong(n -> n.timeSent.getTime()));
     }
 }

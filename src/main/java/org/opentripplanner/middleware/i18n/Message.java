@@ -46,7 +46,8 @@ public enum Message {
     TRIP_DELAY_MINUTES,
     TRIP_NOT_FOUND_NOTIFICATION,
     TRIP_NO_LONGER_POSSIBLE_NOTIFICATION,
-    TRIP_REMINDER_NOTIFICATION;
+    TRIP_REMINDER_NOTIFICATION,
+    TRIP_SURVEY_NOTIFICATION;
 
     private static final Logger LOG = LoggerFactory.getLogger(Message.class);
 
