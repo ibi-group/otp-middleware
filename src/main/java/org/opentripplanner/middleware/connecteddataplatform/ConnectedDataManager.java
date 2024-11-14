@@ -448,7 +448,7 @@ public class ConnectedDataManager {
             } finally {
                 // Delete the temporary files here, to cover S3 upload success or failure.
                 try {
-                    LOG.error("Deleting CDP zip file {}.", tempZipFile);
+                    LOG.info("Deleting CDP zip file {}.", tempZipFile);
                     FileUtils.deleteFile(tempDataFile);
                     if (!isTest) {
                         FileUtils.deleteFile(tempZipFile);

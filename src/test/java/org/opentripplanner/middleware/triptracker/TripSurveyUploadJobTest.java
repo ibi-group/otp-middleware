@@ -127,13 +127,13 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void canMakeSurveyResponseURL() {
+    void canMakeResponsesParams() {
         LocalDateTime date = LocalDateTime.of(2024, 10, 25, 0, 0);
 
         String s = TripSurveyUploadJob.responsesParams(date);
 
-        // All times in the time zone of this server instance.
-        assertEquals("?page_size=1000&since=2024-10-25T00:00:00&until=2024-10-25T23:59:59", s);
+        // Using epoch timestamps to avoid conversions from local to UTC time which TypeForm requires.
+        assertEquals("?page_size=1000&since=1729839600&until=1729925999", s);
     }
 
     /**

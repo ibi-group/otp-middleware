@@ -12,6 +12,7 @@ import org.opentripplanner.middleware.models.TripSurveyUpload;
 import org.opentripplanner.middleware.models.typeform.Responses;
 import org.opentripplanner.middleware.models.typeform.Form;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -24,7 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.function.Function;
 import java.util.Map;
@@ -96,7 +97,7 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
     private static HttpResponseValues apiRequest(HttpMethod method, String subPath, String queryParams, String topic) {
         if (checkSurveyIdAndToken()) {
             HttpResponseValues response = HttpUtils.httpRequestRawResponse(
-                URI.create(String.format("%s%s%s", makeSurveyFormUrl(TRIP_SURVEY_ID), subPath, queryParams)),
+                URI.create(String.format("https://api.typeform.com/forms/%s%s%s", TRIP_SURVEY_ID, subPath, queryParams)),
                 30,
                 method,
                 Map.of("Authorization", String.format("Bearer %s", TRIP_SURVEY_API_TOKEN)),
@@ -155,15 +156,12 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
     }
 
     public static String responsesParams(LocalDateTime day) {
+        ZonedDateTime zonedDay = day.atZone(DateTimeUtils.getOtpZoneId());
         return String.format(
-            "?page_size=1000&since=%s&until=%s",
-            day.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-            day.plusDays(1).minusSeconds(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            "?page_size=1000&since=%d&until=%d",
+            zonedDay.toEpochSecond(),
+            zonedDay.plusDays(1).minusSeconds(1).toEpochSecond()
         );
-    }
-
-    private static String makeSurveyFormUrl(String surveyId) {
-        return String.format("https://api.typeform.com/forms/%s", surveyId);
     }
 
     public boolean processSurveyHistory(TripSurveyUpload upload, Responses response) {
@@ -195,9 +193,9 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
             );
             return false;
         } finally {
-            // Delete the temporary files. This is done here in case the S3 upload fails.
+            // Delete the temporary files here, to cover S3 upload success or failure.
             try {
-                LOG.error("Deleting CDP zip file {} as an error occurred while processing the data it was supposed to contain.", tempZipFile);
+                LOG.info("Deleting survey zip file {}.", tempZipFile);
                 FileUtils.deleteFile(tempDataFile);
                 if (!response.isTest) {
                     FileUtils.deleteFile(tempZipFile);
