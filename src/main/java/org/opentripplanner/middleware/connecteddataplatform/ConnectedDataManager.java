@@ -382,7 +382,7 @@ public class ConnectedDataManager {
             // Not null because ReportedEntities only contains entries that correspond to persistenceMap.
             TypedPersistence<?> typedPersistence = ReportedEntities.persistenceMap.get(entityName);
             String coreFileName = entityName;
-            boolean anonymize = ConnectedDataManager.isAnonymizedInterval(reportingMode);
+            boolean anonymize = isAnonymizedInterval(reportingMode);
             boolean isTripRequest = "TripRequest".equals(entityName);
             if (isTripRequest && anonymize) {
                 // Anonymized trip requests are stored under a special file name.
@@ -390,8 +390,8 @@ public class ConnectedDataManager {
             }
 
             IntervalUploadFiles uploadFiles = new IntervalUploadFiles(
-                ConnectedDataManager.getFilePrefix(reportingInterval, periodStart, coreFileName),
-                ConnectedDataManager.JSON_FILE_EXTENSION,
+                getFilePrefix(reportingInterval, periodStart, coreFileName),
+                JSON_FILE_EXTENSION,
                 isTest
             );
 
