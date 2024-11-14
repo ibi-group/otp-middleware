@@ -55,9 +55,8 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
 
         surveyUploads = Lists.newArrayList(surveyUploadTwoDaysAgo, surveyUploadThreeDaysAgo);
 
-        // TODO: Add logic to avoid these previous uploads
-        // Persistence.tripSurveyUploads.create(surveyUploadTwoDaysAgo);
-        // Persistence.tripSurveyUploads.create(surveyUploadThreeDaysAgo);
+        Persistence.tripSurveyUploads.create(surveyUploadTwoDaysAgo);
+        Persistence.tripSurveyUploads.create(surveyUploadThreeDaysAgo);
     }
 
     @AfterAll
@@ -103,6 +102,10 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     void canStageFirstUpload() {
+        // Just for this test, delete the previous days.
+        Persistence.tripSurveyUploads.removeById(surveyUploadTwoDaysAgo.id);
+        Persistence.tripSurveyUploads.removeById(surveyUploadThreeDaysAgo.id);
+
         TripSurveyUploadJob job = new TripSurveyUploadJob();
         job.stageUploadDays();
         TripSurveyUpload upload = job.getFirstUpload();
