@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.logging.log4j.util.Strings;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
 import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadFiles;
 import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadJob;
 import org.opentripplanner.middleware.connecteddataplatform.ReportingInterval;
@@ -92,7 +93,7 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
 
     public boolean processSurveyHistory(TripSurveyUpload upload, Responses responses) {
         IntervalUploadFiles uploadFiles = new IntervalUploadFiles(
-            getFilePrefix(upload.uploadHour, SURVEY_ZIP_FILE_PREFIX),
+            ConnectedDataManager.getFilePrefix(reportingInterval, upload.uploadHour, SURVEY_ZIP_FILE_PREFIX),
             "csv",
             responses.isTest
         );

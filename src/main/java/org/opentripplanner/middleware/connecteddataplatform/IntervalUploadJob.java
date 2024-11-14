@@ -119,13 +119,6 @@ public abstract class IntervalUploadJob<T extends IntervalUpload> implements Run
     }
 
     /**
-     * Produce file name without path or extension, depending on whether reporting is hourly or daily.
-     */
-    public String getFilePrefix(LocalDateTime date, String entityName) {
-        return ConnectedDataManager.getFilePrefix(reportingInterval, date, entityName);
-    }
-
-    /**
      * Get all incomplete uploads.
      */
     public List<T> getIncompleteUploads() {
