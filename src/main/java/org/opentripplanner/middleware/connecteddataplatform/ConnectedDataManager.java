@@ -19,12 +19,10 @@ import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.opentripplanner.middleware.utils.S3Utils;
 import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -383,26 +381,25 @@ public class ConnectedDataManager {
 
             // Not null because ReportedEntities only contains entries that correspond to persistenceMap.
             TypedPersistence<?> typedPersistence = ReportedEntities.persistenceMap.get(entityName);
-            String filePrefix = getFilePrefix(reportingInterval, periodStart, entityName);
-            String tempFileFolder = FileUtils.getTempDirectory().getAbsolutePath();
+            String coreFileName = entityName;
+            boolean anonymize = ConnectedDataManager.isAnonymizedInterval(reportingMode);
+            boolean isTripRequest = "TripRequest".equals(entityName);
+            if (isTripRequest && anonymize) {
+                // Anonymized trip requests are stored under a special file name.
+                coreFileName = ANON_TRIP_FILE_NAME;
+            }
 
-            String zipFileName = String.join(".", filePrefix, ZIP_FILE_EXTENSION);
-            String tempZipFile = String.join(File.separator, tempFileFolder, zipFileName);
+            IntervalUploadFiles uploadFiles = new IntervalUploadFiles(
+                ConnectedDataManager.getFilePrefix(reportingInterval, periodStart, coreFileName),
+                ConnectedDataManager.JSON_FILE_EXTENSION,
+                isTest
+            );
 
-            String jsonFileName = String.join(".", filePrefix, JSON_FILE_EXTENSION);
-            String tempDataFile = String.join(File.separator, tempFileFolder, jsonFileName);
-
-            try {
+            try (uploadFiles) {
+                String tempDataFile = uploadFiles.getTempDataFile();
                 int recordsWritten = Integer.MIN_VALUE;
 
-                if ("TripRequest".equals(entityName)) {
-                    // Anonymized trip requests are stored under a special file name.
-                    boolean anonymize = isAnonymizedInterval(reportingMode);
-                    if (anonymize) {
-                        tempDataFile = tempDataFile.replace("TripRequest.json", ANON_TRIP_JSON_FILE_NAME);
-                        tempZipFile = tempZipFile.replace("TripRequest.zip", ANON_TRIP_ZIP_FILE_NAME);
-                    }
-
+                if (isTripRequest) {
                     // TripRequests must be processed separately because they must be combined, one per batchId.
                     // Note: Anonymized trips include TripRequest and TripSummary in the same entity.
                     recordsWritten = streamTripsToFile(tempDataFile, periodStart, reportingInterval, anonymize);
@@ -423,43 +420,19 @@ public class ConnectedDataManager {
 
                 if (recordsWritten > 0 || "true".equals(CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES)) {
                     // Upload the file if records were written or config setting requires uploading blank files.
-                    FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
-                    S3Utils.putObject(
-                        CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
-                        String.format(
-                            "%s/%s",
-                            getUploadFolderName(
-                                CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME,
-                                CONNECTED_DATA_PLATFORM_FOLDER_GROUPING,
-                                periodStart.toLocalDate()
-                            ),
-                            zipFileName
-                        ),
-                        new File(tempZipFile)
-                    );
+                    uploadFiles.compressAndUpload(getUploadFolderName(
+                        CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME,
+                        CONNECTED_DATA_PLATFORM_FOLDER_GROUPING,
+                        periodStart.toLocalDate()
+                    ));
                 }
                 allRecordsWritten += recordsWritten;
-            } catch (Exception e) {
+            } catch (IOException e) {
                 BugsnagReporter.reportErrorToBugsnag(
-                    String.format("Failed to process trip data for (%s)", periodStart),
+                    String.format("Failed to write trip data for (%s)", periodStart),
                     e
                 );
                 return Integer.MIN_VALUE;
-            } finally {
-                // Delete the temporary files here, to cover S3 upload success or failure.
-                try {
-                    LOG.info("Deleting CDP zip file {}.", tempZipFile);
-                    FileUtils.deleteFile(tempDataFile);
-                    if (!isTest) {
-                        FileUtils.deleteFile(tempZipFile);
-                    } else {
-                        LOG.warn("In test mode, temp zip file {} not deleted. This is expected to be deleted by the calling test.",
-                            tempZipFile
-                        );
-                    }
-                } catch (IOException e) {
-                    LOG.error("Failed to delete temp files", e);
-                }
             }
         }
 

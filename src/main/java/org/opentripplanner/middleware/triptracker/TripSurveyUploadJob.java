@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.logging.log4j.util.Strings;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadFiles;
 import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadJob;
 import org.opentripplanner.middleware.connecteddataplatform.ReportingInterval;
 import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
@@ -17,11 +17,9 @@ import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.opentripplanner.middleware.utils.S3Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
@@ -34,8 +32,6 @@ import java.util.stream.Collectors;
 
 import static org.eclipse.jetty.http.HttpMethod.DELETE;
 import static org.eclipse.jetty.http.HttpMethod.GET;
-import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME;
-import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.ZIP_FILE_EXTENSION;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
@@ -92,6 +88,25 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
     @Override
     protected void createUpload(LocalDateTime time) {
         Persistence.tripSurveyUploads.create(new TripSurveyUpload(time));
+    }
+
+    public boolean processSurveyHistory(TripSurveyUpload upload, Responses responses) {
+        IntervalUploadFiles uploadFiles = new IntervalUploadFiles(
+            getFilePrefix(upload.uploadHour, SURVEY_ZIP_FILE_PREFIX),
+            "csv",
+            responses.isTest
+        );
+
+        // Dump CSV content to file
+        String tempDataFile = uploadFiles.getTempDataFile();
+        try (uploadFiles) {
+            FileUtils.writeToFile(tempDataFile, false, responses.toCsv(csvHeaders));
+            uploadFiles.compressAndUpload("trip-survey-responses");
+            return true;
+        } catch (IOException e) {
+            LOG.warn("Error writing survey results to {}", tempDataFile);
+            return false;
+        }
     }
 
     private static HttpResponseValues apiRequest(HttpMethod method, String subPath, String queryParams, String topic) {
@@ -162,53 +177,5 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
             zonedDay.toEpochSecond(),
             zonedDay.plusDays(1).minusSeconds(1).toEpochSecond()
         );
-    }
-
-    public boolean processSurveyHistory(TripSurveyUpload upload, Responses response) {
-        // Dump CSV content to file
-        String filePrefix = getFilePrefix(upload.uploadHour, SURVEY_ZIP_FILE_PREFIX);
-        String zipFileName = String.join(".", filePrefix, ZIP_FILE_EXTENSION);
-        String tempFileFolder = FileUtils.getTempDirectory().getAbsolutePath();
-        String tempZipFile = String.join(File.separator, tempFileFolder, filePrefix + ".zip");
-        String tempDataFile = String.join(File.separator, tempFileFolder, filePrefix + ".csv");
-
-        try {
-            FileUtils.writeToFile(tempDataFile, false, response.toCsv(csvHeaders));
-
-            // Upload the file if records were written or config setting requires uploading blank files.
-            FileUtils.addSingleFileToZip(tempDataFile, tempZipFile);
-            S3Utils.putObject(
-                CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME,
-                String.format(
-                    "%s/%s",
-                    "trip-survey-responses",
-                    zipFileName
-                ),
-                new File(tempZipFile)
-            );
-        } catch (Exception e) {
-            BugsnagReporter.reportErrorToBugsnag(
-                String.format("Failed to write survey data for (%s)", upload.uploadHour),
-                e
-            );
-            return false;
-        } finally {
-            // Delete the temporary files here, to cover S3 upload success or failure.
-            try {
-                LOG.info("Deleting survey zip file {}.", tempZipFile);
-                FileUtils.deleteFile(tempDataFile);
-                if (!response.isTest) {
-                    FileUtils.deleteFile(tempZipFile);
-                } else {
-                    LOG.warn("In test mode, temp zip file {} not deleted. This is expected to be deleted by the calling test.",
-                        tempZipFile
-                    );
-                }
-            } catch (IOException e) {
-                LOG.error("Failed to delete temp files", e);
-            }
-        }
-
-        return true;
     }
 }
