@@ -60,7 +60,7 @@ public class IntervalUpload extends Model {
      * Get the first created upload regardless of status.
      */
     @BsonIgnore
-    public static <U extends IntervalUpload> U getFirstUpload(TypedPersistence<U> persistence) {
+    public static <U extends IntervalUpload> U getFirst(TypedPersistence<U> persistence) {
         return getOneOrdered(persistence, Sorts.ascending("dateCreated"));
     }
 

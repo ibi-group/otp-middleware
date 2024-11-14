@@ -109,7 +109,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
 
         TripSurveyUploadJob job = new TripSurveyUploadJob();
         job.stageUploadDays();
-        TripSurveyUpload upload = IntervalUpload.getFirstUpload(Persistence.tripSurveyUploads);
+        TripSurveyUpload upload = IntervalUpload.getFirst(Persistence.tripSurveyUploads);
         assertNotNull(upload);
         assertTrue(PREVIOUS_WHOLE_DAY_FROM_NOW.isEqual(upload.uploadHour));
     }
