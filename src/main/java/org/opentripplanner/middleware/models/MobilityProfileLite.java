@@ -2,18 +2,21 @@ package org.opentripplanner.middleware.models;
 
 import java.util.Objects;
 
+import static org.apache.commons.lang3.ObjectUtils.isNotEmpty;
+
 public class MobilityProfileLite {
     public String userId;
     public String mobilityMode;
     public String email;
     public String name;
 
+    /** This no-arg constructor exists to make MongoDB happy. */
     public MobilityProfileLite() {
     }
 
     public MobilityProfileLite(OtpUser user) {
         this.userId = user.id;
-        this.mobilityMode = (user.mobilityProfile != null) ? user.mobilityProfile.mobilityMode : null;
+        this.mobilityMode = isNotEmpty(user.mobilityProfile) ? user.mobilityProfile.mobilityMode : null;
         this.email = user.email;
         this.name = user.name;
     }
