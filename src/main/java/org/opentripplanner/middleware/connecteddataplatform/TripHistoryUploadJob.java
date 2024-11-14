@@ -40,7 +40,7 @@ public class TripHistoryUploadJob extends IntervalUploadJob<TripHistoryUpload> {
         if (numRecordsToUpload != Integer.MIN_VALUE) {
             // If successfully compiled and updated, update the status to 'completed' and record the number of trip
             // requests uploaded (if any).
-            upload.status = TripHistoryUploadStatus.COMPLETED.getValue();
+            upload.status = IntervalUploadStatus.COMPLETED;
             upload.numTripRequestsUploaded = numRecordsToUpload;
             Persistence.tripHistoryUploads.replace(upload.id, upload);
         }

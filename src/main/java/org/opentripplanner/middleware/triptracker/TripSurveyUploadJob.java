@@ -8,7 +8,7 @@ import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager
 import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadFiles;
 import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadJob;
 import org.opentripplanner.middleware.connecteddataplatform.ReportingInterval;
-import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
+import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadStatus;
 import org.opentripplanner.middleware.models.TripSurveyUpload;
 import org.opentripplanner.middleware.models.typeform.Responses;
 import org.opentripplanner.middleware.models.typeform.Form;
@@ -76,7 +76,7 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
 
             if (success) {
                 // If successfully compiled and updated, update the status to 'completed'.
-                upload.status = TripHistoryUploadStatus.COMPLETED.getValue();
+                upload.status = IntervalUploadStatus.COMPLETED;
                 Persistence.tripSurveyUploads.replace(upload.id, upload);
 
                 // Attempt to delete the responses that were downloaded above

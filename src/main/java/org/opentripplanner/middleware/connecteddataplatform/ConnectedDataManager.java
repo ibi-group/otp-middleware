@@ -9,6 +9,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
+import org.opentripplanner.middleware.models.IntervalUpload;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
@@ -27,7 +28,6 @@ import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -131,7 +131,9 @@ public class ConnectedDataManager {
         }
         // Get all hourly windows that have already been earmarked for uploading.
         Set<LocalDateTime> incompleteUploadHours = new HashSet<>();
-        getIncompleteUploads().forEach(tripHistoryUpload -> incompleteUploadHours.add(tripHistoryUpload.uploadHour));
+        IntervalUpload
+            .getIncompleteUploads(Persistence.tripHistoryUploads)
+            .forEach(tripHistoryUpload -> incompleteUploadHours.add(tripHistoryUpload.uploadHour));
         // Save all new hourly windows for uploading.
         Set<LocalDateTime> newHourlyWindows = Sets.difference(userTripHourlyWindows, incompleteUploadHours);
         TripHistoryUpload first = TripHistoryUpload.getFirst();
@@ -442,16 +444,6 @@ public class ConnectedDataManager {
     public static boolean isAnonymizedInterval(String reportingMode) {
         List<String> reportingModes = List.of(reportingMode.split(" "));
         return reportingModes.contains("interval") && reportingModes.contains("anonymized");
-    }
-
-    /**
-     * Get all incomplete trip history uploads.
-     */
-    private static List<TripHistoryUpload> getIncompleteUploads() {
-        FindIterable<TripHistoryUpload> tripHistoryUploads = Persistence.tripHistoryUploads.getFiltered(
-            Filters.ne("status", TripHistoryUploadStatus.COMPLETED.getValue())
-        );
-        return tripHistoryUploads.into(new ArrayList<>());
     }
 
     public static String getDailyFileName(LocalDateTime date, String fileNameSuffix) {

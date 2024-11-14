@@ -4,7 +4,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.conversions.Bson;
-import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
+import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadStatus;
 import org.opentripplanner.middleware.persistence.Persistence;
 
 import java.time.LocalDateTime;
@@ -27,14 +27,6 @@ public class TripHistoryUpload extends IntervalUpload {
     }
 
     /**
-     * Get the last created trip history upload regardless of status.
-     */
-    @BsonIgnore
-    public static TripHistoryUpload getLastCreated() {
-        return getOneOrdered(Sorts.descending("dateCreated"));
-    }
-
-    /**
      * Get the first created trip history upload regardless of status.
      */
     @BsonIgnore
@@ -48,8 +40,8 @@ public class TripHistoryUpload extends IntervalUpload {
     private static TripHistoryUpload getOneOrdered(Bson sortBy) {
         return Persistence.tripHistoryUploads.getOneFiltered(
             Filters.or(
-                Filters.eq("status", TripHistoryUploadStatus.COMPLETED.getValue()),
-                Filters.eq("status", TripHistoryUploadStatus.PENDING.getValue())
+                Filters.eq("status", IntervalUploadStatus.COMPLETED.getValue()),
+                Filters.eq("status", IntervalUploadStatus.PENDING.getValue())
             ),
             sortBy
         );

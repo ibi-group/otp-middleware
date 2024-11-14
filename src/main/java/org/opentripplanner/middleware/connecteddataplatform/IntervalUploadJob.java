@@ -1,10 +1,5 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Sorts;
-import org.bson.codecs.pojo.annotations.BsonIgnore;
-import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.models.IntervalUpload;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -12,7 +7,6 @@ import org.slf4j.Logger;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.isReportingDaily;
@@ -24,7 +18,6 @@ import static org.opentripplanner.middleware.connecteddataplatform.ConnectedData
 public abstract class IntervalUploadJob<T extends IntervalUpload> implements Runnable {
 
     private static final int HISTORIC_UPLOAD_HOURS_BACK_STOP = 24;
-    public static final String STATUS_FIELD_NAME = "status";
 
     protected final ReportingInterval reportingInterval;
     private final Logger logger;
@@ -51,7 +44,7 @@ public abstract class IntervalUploadJob<T extends IntervalUpload> implements Run
     }
 
     public void runInnerLogic() {
-        getIncompleteUploads().forEach(this::processInterval);
+        IntervalUpload.getIncompleteUploads(persistence).forEach(this::processInterval);
     }
 
     /**
@@ -78,7 +71,7 @@ public abstract class IntervalUploadJob<T extends IntervalUpload> implements Run
      * up to HISTORIC_UPLOAD_HOURS_BACK_STOP hours, and add the latest upload hour/day if not already accounted for.
      */
     private void stageUploadTimes(LocalDateTime previousTime, ChronoUnit chronoUnit) {
-        IntervalUpload lastCreated = getLastUploadCreated();
+        IntervalUpload lastCreated = IntervalUpload.getLastUploadCreated(persistence);
         if (lastCreated == null) {
             // Stage first ever upload hour/day (will use 'hour' throughout whether referring to hours or days).
             createUpload(previousTime);
@@ -116,44 +109,5 @@ public abstract class IntervalUploadJob<T extends IntervalUpload> implements Run
      */
     private static LocalDateTime getHistoricDateTimeBackStop() {
         return LocalDateTime.now().minusHours(HISTORIC_UPLOAD_HOURS_BACK_STOP);
-    }
-
-    /**
-     * Get all incomplete uploads.
-     */
-    public List<T> getIncompleteUploads() {
-        FindIterable<T> incompleteUploads = persistence.getFiltered(
-            Filters.ne(STATUS_FIELD_NAME, TripHistoryUploadStatus.COMPLETED.getValue())
-        );
-        return incompleteUploads.into(new ArrayList<>());
-    }
-
-    /**
-     * Get the last created trip history upload regardless of status.
-     */
-    @BsonIgnore
-    public T getLastUploadCreated() {
-        return getOneOrdered(Sorts.descending("dateCreated"));
-    }
-
-    /**
-     * Get the first created trip history upload regardless of status.
-     */
-    @BsonIgnore
-    public T getFirstUpload() {
-        return getOneOrdered(Sorts.ascending("dateCreated"));
-    }
-
-    /**
-     * Get one upload based on the sort order.
-     */
-    private T getOneOrdered(Bson sortBy) {
-        return persistence.getOneFiltered(
-            Filters.or(
-                Filters.eq(STATUS_FIELD_NAME, TripHistoryUploadStatus.COMPLETED.getValue()),
-                Filters.eq(STATUS_FIELD_NAME, TripHistoryUploadStatus.PENDING.getValue())
-            ),
-            sortBy
-        );
     }
 }

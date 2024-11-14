@@ -340,7 +340,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     void canCorrectlyStageHours() {
         LocalDateTime sevenHoursAgo = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(7);
         List<LocalDateTime> betweenHours = DateTimeUtils.getHoursBetween(sevenHoursAgo, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        createTripHistoryUpload(sevenHoursAgo, TripHistoryUploadStatus.PENDING);
+        createTripHistoryUpload(sevenHoursAgo, IntervalUploadStatus.PENDING);
         TripHistoryUploadJob job = new TripHistoryUploadJob();
         job.stageUploadHours();
         assertEquals(
@@ -356,7 +356,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canCorrectlyStageDays() {
         LocalDateTime fourDaysAgo = LocalDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(4);
-        createTripHistoryUpload(fourDaysAgo, TripHistoryUploadStatus.PENDING);
+        createTripHistoryUpload(fourDaysAgo, IntervalUploadStatus.PENDING);
         TripHistoryUploadJob job = new TripHistoryUploadJob();
         job.stageUploadDays();
         assertEquals(
@@ -377,7 +377,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         // Set backstop. This allows dates after this to trigger an upload.
         createTripHistoryUpload(
             LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(20),
-            TripHistoryUploadStatus.COMPLETED
+            IntervalUploadStatus.COMPLETED
         );
 
         // Create OTP user and trip data.
@@ -412,11 +412,11 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         // Set backstop. This allows dates after this to trigger an upload.
         createTripHistoryUpload(
             LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).minusHours(20),
-            TripHistoryUploadStatus.COMPLETED
+            IntervalUploadStatus.COMPLETED
         );
 
         // Create trip history upload for required date.
-        createTripHistoryUpload(PREVIOUS_WHOLE_HOUR_FROM_NOW, TripHistoryUploadStatus.PENDING);
+        createTripHistoryUpload(PREVIOUS_WHOLE_HOUR_FROM_NOW, IntervalUploadStatus.PENDING);
 
         TripHistoryUploadJob job = new TripHistoryUploadJob(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
         job.runInnerLogic();
@@ -446,10 +446,10 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         // Set backstop. This allows dates after this to trigger an upload.
         createTripHistoryUpload(
             LocalDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(2),
-            TripHistoryUploadStatus.COMPLETED
+            IntervalUploadStatus.COMPLETED
         );
         // Create trip history upload for required date.
-        createTripHistoryUpload(PREVIOUS_DAY, TripHistoryUploadStatus.PENDING);
+        createTripHistoryUpload(PREVIOUS_DAY, IntervalUploadStatus.PENDING);
 
         TripHistoryUploadJob job = new TripHistoryUploadJob(
             ReportingInterval.DAILY,
@@ -484,10 +484,10 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         // Set backstop. This allows dates after this to trigger an upload.
         createTripHistoryUpload(
             LocalDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(2),
-            TripHistoryUploadStatus.COMPLETED
+            IntervalUploadStatus.COMPLETED
         );
         // Create trip history upload for required date.
-        createTripHistoryUpload(PREVIOUS_DAY, TripHistoryUploadStatus.PENDING);
+        createTripHistoryUpload(PREVIOUS_DAY, IntervalUploadStatus.PENDING);
 
         TripHistoryUploadJob job = new TripHistoryUploadJob(
             ReportingInterval.DAILY,
@@ -512,9 +512,9 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     }
 
     /** Create trip history upload for required date. */
-     private static void createTripHistoryUpload(LocalDateTime time, TripHistoryUploadStatus status) {
+     private static void createTripHistoryUpload(LocalDateTime time, IntervalUploadStatus status) {
         TripHistoryUpload upload = new TripHistoryUpload(time);
-        upload.status = status.getValue();
+        upload.status = status;
         Persistence.tripHistoryUploads.create(upload);
     }
 

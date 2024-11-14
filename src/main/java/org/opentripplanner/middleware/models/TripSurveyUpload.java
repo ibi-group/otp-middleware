@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.models;
 
-import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
+import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadStatus;
 
 import java.time.LocalDateTime;
 
@@ -19,10 +19,10 @@ public class TripSurveyUpload extends IntervalUpload {
         super(uploadHour);
     }
 
-    public TripSurveyUpload(String id, LocalDateTime uploadHour, TripHistoryUploadStatus status) {
+    public TripSurveyUpload(String id, LocalDateTime uploadHour, IntervalUploadStatus status) {
         super(uploadHour);
         this.id = id;
         this.uploadHour = uploadHour;
-        this.status = status.toString();
+        this.status = status;
     }
 }

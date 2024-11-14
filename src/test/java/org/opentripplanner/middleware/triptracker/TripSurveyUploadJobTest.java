@@ -6,7 +6,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
-import org.opentripplanner.middleware.connecteddataplatform.TripHistoryUploadStatus;
+import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadStatus;
+import org.opentripplanner.middleware.models.IntervalUpload;
 import org.opentripplanner.middleware.models.TripSurveyUpload;
 import org.opentripplanner.middleware.models.typeform.Responses;
 import org.opentripplanner.middleware.models.typeform.ResponsesTest;
@@ -50,8 +51,8 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
         LocalDateTime twoDaysAgo = LocalDateTime.ofInstant(Instant.now().minus(2, ChronoUnit.DAYS), DateTimeUtils.getOtpZoneId());
         LocalDateTime threeDaysAgo = LocalDateTime.ofInstant(Instant.now().minus(3, ChronoUnit.DAYS), DateTimeUtils.getOtpZoneId());
 
-        surveyUploadTwoDaysAgo = new TripSurveyUpload("upload-2", twoDaysAgo, TripHistoryUploadStatus.PENDING);
-        surveyUploadThreeDaysAgo = new TripSurveyUpload("upload-3", threeDaysAgo, TripHistoryUploadStatus.COMPLETED);
+        surveyUploadTwoDaysAgo = new TripSurveyUpload("upload-2", twoDaysAgo, IntervalUploadStatus.PENDING);
+        surveyUploadThreeDaysAgo = new TripSurveyUpload("upload-3", threeDaysAgo, IntervalUploadStatus.COMPLETED);
 
         surveyUploads = Lists.newArrayList(surveyUploadTwoDaysAgo, surveyUploadThreeDaysAgo);
 
@@ -108,7 +109,7 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
 
         TripSurveyUploadJob job = new TripSurveyUploadJob();
         job.stageUploadDays();
-        TripSurveyUpload upload = job.getFirstUpload();
+        TripSurveyUpload upload = IntervalUpload.getFirstUpload(Persistence.tripSurveyUploads);
         assertNotNull(upload);
         assertTrue(PREVIOUS_WHOLE_DAY_FROM_NOW.isEqual(upload.uploadHour));
     }
@@ -123,10 +124,10 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
         TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> createSurveyApiResponse(), () -> EXPECTED_HEADER);
         job.run();
 
-        TripSurveyUpload upload = job.getLastUploadCreated();
+        TripSurveyUpload upload = IntervalUpload.getLastUploadCreated(Persistence.tripSurveyUploads);
         assertNotNull(upload);
         assertTrue(PREVIOUS_WHOLE_DAY_FROM_NOW.isEqual(upload.uploadHour));
-        assertEquals(TripHistoryUploadStatus.COMPLETED.toString(), upload.status);
+        assertEquals(IntervalUploadStatus.COMPLETED, upload.status);
     }
 
     @Test
@@ -152,7 +153,9 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
 
         TripSurveyUploadJob job = new TripSurveyUploadJob(localDateTime -> apiResponse, () -> EXPECTED_HEADER);
         job.stageUploadDays();
-        assertTrue(job.processSurveyHistory(job.getLastUploadCreated(), apiResponse));
+        assertTrue(
+            job.processSurveyHistory(IntervalUpload.getLastUploadCreated(Persistence.tripSurveyUploads), apiResponse)
+        );
         zipFileName = getDailyFileName(PREVIOUS_WHOLE_DAY_FROM_NOW, TripSurveyUploadJob.SURVEY_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
