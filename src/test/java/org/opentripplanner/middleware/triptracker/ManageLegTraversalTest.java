@@ -49,6 +49,7 @@ public class ManageLegTraversalTest {
     private static Itinerary adairAvenueToMonroeDriveItinerary;
     private static Itinerary midtownToAnsleyItinerary;
     private static List<Place> midtownToAnsleyIntermediateStops;
+    private static Itinerary firstLegBusTransit;
 
     private static final Locale locale = Locale.US;
 
@@ -71,6 +72,10 @@ public class ManageLegTraversalTest {
         );
         midtownToAnsleyItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/27nb-midtown-to-ansley.json"),
+            Itinerary.class
+        );
+        firstLegBusTransit = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/first-leg-transit.json"),
             Itinerary.class
         );
         // Hold on to the original list of intermediate stops (some tests will overwrite it)
@@ -166,10 +171,8 @@ public class ManageLegTraversalTest {
 
     @ParameterizedTest
     @MethodSource("createTurnByTurnTrace")
-    void canTrackTurnByTurn(TraceData traceData) {
-        Itinerary itinerary = adairAvenueToMonroeDriveItinerary;
-        Leg walkLeg = itinerary.legs.get(0);
-        TravelerPosition travelerPosition = new TravelerPosition(walkLeg, traceData.position);
+    void canTrackTurnByTurn(Leg firstLeg, TraceData traceData) {
+        TravelerPosition travelerPosition = new TravelerPosition(firstLeg, traceData.position, firstLeg);
         TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, traceData.message);
     }
@@ -185,6 +188,8 @@ public class ManageLegTraversalTest {
         List<Step> walkSteps = adairAvenueToMonroeDriveLeg.steps;
         String destinationName = adairAvenueToMonroeDriveLeg.to.name;
 
+        Leg walkLeg = adairAvenueToMonroeDriveItinerary.legs.get(0);
+
         Step adairAvenueNortheastStep = walkSteps.get(0);
         Step virginiaCircleNortheastStep = walkSteps.get(1);
         Step ponceDeLeonPlaceNortheastStep = walkSteps.get(2);
@@ -199,8 +204,23 @@ public class ManageLegTraversalTest {
         Coordinates pointBeforeTurn = new Coordinates(33.78151,-84.36481);
         Coordinates pointAfterTurn = new Coordinates(33.78165, -84.36484);
 
+        Leg firstBusLeg = firstLegBusTransit.legs.get(0);
+        Coordinates busStopCoords = new Coordinates(firstBusLeg.from);
+        String busStopName = firstBusLeg.from.name;
+
         return Stream.of(
             Arguments.of(
+                firstBusLeg,
+                new TraceData(
+                    TripStatus.DEVIATED,
+                    createPoint(busStopCoords, 12, NORTH_WEST_BEARING),
+                    new DeviatedInstruction(busStopName, locale).build(),
+                    true,
+                    "Deviated from the start of a trip which starts with a bus leg. Suggest path to head towards."
+                )
+            ),
+            Arguments.of(
+                walkLeg,
                 new TraceData(
                     originCoords,
                     new OnTrackInstruction(10, adairAvenueNortheastStep, locale).build(),
@@ -209,6 +229,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     originCoords,
                     new OnTrackInstruction(10, adairAvenueNortheastStep, locale).build(),
@@ -217,6 +238,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     adairAvenueNortheastCoords,
                     new OnTrackInstruction(2, adairAvenueNortheastStep, locale).build(),
@@ -225,6 +247,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, NORTH_WEST_BEARING),
@@ -234,6 +257,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, SOUTH_WEST_BEARING),
@@ -243,6 +267,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     createPoint(virginiaCircleNortheastCoords, 12, SOUTH_WEST_BEARING),
                     NO_INSTRUCTION,
@@ -251,6 +276,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING),
@@ -260,6 +286,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     virginiaCircleNortheastCoords,
                     new OnTrackInstruction(0, virginiaCircleNortheastStep, locale).build(),
@@ -268,6 +295,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(ponceDeLeonPlaceNortheastCoords, 10, NORTH_WEST_BEARING),
@@ -277,6 +305,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(ponceDeLeonPlaceNortheastCoords, 10, NORTH_EAST_BEARING),
@@ -286,6 +315,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
                     new OnTrackInstruction(10, virginiaAvenueNortheastStep, locale).build(),
@@ -294,6 +324,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     createPoint(pointBeforeTurn, 17, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
                     new OnTrackInstruction(2, virginiaAvenueNortheastStep, locale).build(),
@@ -302,6 +333,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     createPoint(pointAfterTurn, 0, calculateBearing(pointAfterTurn, virginiaAvenuePoint)),
                     NO_INSTRUCTION,
@@ -310,6 +342,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     createPoint(destinationCoords, 8, SOUTH_BEARING),
                     new OnTrackInstruction(10, destinationName, locale).build(),
@@ -318,6 +351,7 @@ public class ManageLegTraversalTest {
                 )
             ),
             Arguments.of(
+                walkLeg,
                 new TraceData(
                     destinationCoords,
                     new OnTrackInstruction(2, destinationName, locale).build(),

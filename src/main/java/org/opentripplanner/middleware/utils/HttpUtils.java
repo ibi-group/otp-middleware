@@ -41,6 +41,14 @@ public class HttpUtils {
     private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
 
     /**
+     * A constant for headers used when producing or consuming application/json.
+     */
+    public static final Map<String, String> HEADERS_JSON = Map.of(
+        "Accept", APPLICATION_JSON,
+        "Content-Type", APPLICATION_JSON
+    );
+
+    /**
      * A constant for a list of MIME types containing application/json only.
      */
     public static final List<String> JSON_ONLY = List.of(APPLICATION_JSON);
@@ -219,8 +227,8 @@ public class HttpUtils {
             localDate = DateTimeUtils.getDateFromParam(paramName, paramValue, DEFAULT_DATE_FORMAT_PATTERN);
         } catch (DateTimeParseException e) {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400,
-                String.format("%s value: %s is not a valid date. Must be in the format: %s", paramName, paramValue,
-                    DEFAULT_DATE_FORMAT_PATTERN
+                String.format("%s value: %s is not a valid date. Must be in the format: %s",
+                    paramName, paramValue, DEFAULT_DATE_FORMAT_PATTERN
                 ));
         }
 

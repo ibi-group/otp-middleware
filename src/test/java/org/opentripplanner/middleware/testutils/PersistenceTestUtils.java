@@ -214,7 +214,7 @@ public class PersistenceTestUtils {
         boolean persist,
         JourneyState journeyState
     ) throws Exception {
-        MonitoredTrip monitoredTrip = new MonitoredTrip(otpDispatcherResponse);
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.getSampleQueryParams(), otpDispatcherResponse);
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "test trip";
         monitoredTrip.leadTimeInMinutes = 240;
@@ -266,5 +266,16 @@ public class PersistenceTestUtils {
         legs.add(leg);
         itinerary.legs = legs;
         return itinerary;
+    }
+
+    public static void deleteOtpUser(boolean isEndToEnd, OtpUser... otpUsers) {
+        for (OtpUser otpUser : otpUsers) {
+            if (otpUser != null) {
+                OtpUser user = Persistence.otpUsers.getById(otpUser.id);
+                if (user != null) {
+                    user.delete(isEndToEnd);
+                }
+            }
+        }
     }
 }

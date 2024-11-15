@@ -12,6 +12,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.opentripplanner.middleware.controllers.api.ApiController.ID_FIELD_NAME;
+
 /**
  * This job will analyze applicable monitored trips and create further individual tasks to analyze each individual trip.
  */
@@ -55,7 +57,7 @@ public class MonitorAllTripsJob implements Runnable {
             // This saves bandwidth and memory, as only the ID field is used to set up this job.
             // The full data for each trip will be fetched at the time the actual analysis takes place.
             List<String> allTripIds = Persistence.monitoredTrips.getDistinctFieldValues(
-                "_id",
+                ID_FIELD_NAME,
                 makeTripFilter(),
                 String.class
             ).into(new ArrayList<>());

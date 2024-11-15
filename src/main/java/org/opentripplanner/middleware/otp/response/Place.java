@@ -23,6 +23,7 @@ public class Place implements ConvertsToCoordinates, Cloneable {
     public String vertexType;
     public String stopId;
     public Date arrival;
+    public Stop stop;
     public Integer stopIndex;
     public Integer stopSequence;
     public String stopCode;

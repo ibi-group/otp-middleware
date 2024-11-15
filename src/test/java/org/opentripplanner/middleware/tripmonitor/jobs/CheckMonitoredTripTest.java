@@ -47,6 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
+import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.setRecurringTodayAndTomorrow;
 
@@ -87,7 +89,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     public OtpResponse mockOtpPlanResponse() {
         try {
             // Setup an OTP mock response in order to trigger some of the monitor checks.
-            return OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+            return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -101,7 +103,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     void canMonitorTrip() throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
             false,
             OtpTestUtils.createDefaultJourneyState()
         );
@@ -227,7 +229,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     private static CheckMonitoredTrip createCheckMonitoredTrip(JourneyState journeyState, Supplier<OtpResponse> otpResponseProvider) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
             false,
             journeyState
         );
@@ -257,7 +259,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // - Return true for weekend trip when current time is on a weekday.
         MonitoredTrip weekendTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
             true,
             OtpTestUtils.createDefaultJourneyState()
         );
@@ -408,7 +410,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // verify that status is active
         assertEquals(
-            TripStatus.TRIP_ACTIVE,
+            TRIP_ACTIVE,
             updatedTrip.journeyState.tripStatus,
             "updated trips status should be active"
         );
@@ -473,7 +475,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // verify that status is active
         assertEquals(
-            TripStatus.NEXT_TRIP_NOT_POSSIBLE,
+            NEXT_TRIP_NOT_POSSIBLE,
             updatedTrip.journeyState.tripStatus,
             "updated trips status should indicate trip is not possible this day"
         );
@@ -550,7 +552,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // fetch updated trip from persistence
         MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(mockTrip.id);
 
-        // verify that status is active
+        // verify that trip status is no longer possible
         assertEquals(
             TripStatus.NO_LONGER_POSSIBLE,
             updatedTrip.journeyState.tripStatus,
@@ -580,7 +582,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     void shouldReportOneTimeTripInPastAsCompleted() throws CloneNotSupportedException {
         MonitoredTrip trip = makeMonitoredTripFromNow(-900, -300);
         trip.journeyState.matchingItinerary = trip.itinerary;
-        trip.journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
+        trip.journeyState.tripStatus = TRIP_ACTIVE;
 
         new CheckMonitoredTrip(trip, this::mockOtpPlanResponse).checkOtpAndUpdateTripStatus();
         assertEquals(TripStatus.PAST_TRIP, trip.journeyState.tripStatus);
@@ -591,7 +593,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip trip = createPastActiveTripWithTrackedJourney();
 
         new CheckMonitoredTrip(trip, this::mockOtpPlanResponse).checkOtpAndUpdateTripStatus();
-        assertEquals(TripStatus.TRIP_ACTIVE, trip.journeyState.tripStatus);
+        assertEquals(TRIP_ACTIVE, trip.journeyState.tripStatus);
     }
 
     private static MonitoredTrip createPastActiveTripWithTrackedJourney() {
@@ -614,7 +616,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         trip.userId = user.id;
         trip.journeyState.matchingItinerary = trip.itinerary;
         trip.journeyState.targetDate = todayFormatted;
-        trip.journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
+        trip.journeyState.tripStatus = TRIP_ACTIVE;
         Persistence.monitoredTrips.create(trip);
         return trip;
     }
@@ -647,7 +649,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         check.shouldSkipMonitoredTripCheck(false);
         check.checkOtpAndUpdateTripStatus();
         // Trip should remain active, and the target date should still be "today".
-        assertEquals(TripStatus.TRIP_ACTIVE, trip.journeyState.tripStatus);
+        assertEquals(TRIP_ACTIVE, trip.journeyState.tripStatus);
         assertEquals(todayFormatted, trip.journeyState.targetDate);
     }
 
@@ -655,5 +657,93 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         Instant startInstant = startTime.toInstant();
         Date nextDayStart = Date.from(startInstant.plus(dayShift, ChronoUnit.DAYS));
         return DateTimeUtils.makeOtpZonedDateTime(nextDayStart).format(DateTimeFormatter.ISO_LOCAL_DATE);
+    }
+
+    @Test
+    void canBeTolerantWithItineraryChecks() throws Exception {
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            false,
+            OtpTestUtils.createDefaultJourneyState()
+        );
+        monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        Persistence.monitoredTrips.create(monitoredTrip);
+
+        OtpResponse expectedResponse = getMockOtpResponse();
+        OtpResponse unexpectedResponse = getMockOtpResponse();
+        // Remove the final itinerary leg so that the matching itineraries check fails.
+        unexpectedResponse.plan.itineraries.get(0).legs.remove(2);
+
+        // Mock the current time to be 8:45am on Monday, June 15, 2020.
+        DateTimeUtils.useFixedClockAt(
+            noonMonday8June2020
+                .withDayOfMonth(15)
+                .withHour(8)
+                .withMinute(45)
+        );
+
+        // Match on first attempts.
+        assertCheckMonitoredTrip(monitoredTrip, expectedResponse, true, 0, TRIP_ACTIVE);
+        assertCheckMonitoredTrip(monitoredTrip, expectedResponse, false, 0, TRIP_ACTIVE);
+
+        // Fail on first attempt.
+        assertCheckMonitoredTrip(monitoredTrip, unexpectedResponse, false, 0, NEXT_TRIP_NOT_POSSIBLE);
+
+        // Reactivate trip.
+        monitoredTrip.journeyState.tripStatus = TRIP_ACTIVE;
+        Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
+
+        // Match on second attempt.
+        assertCheckMonitoredTrip(monitoredTrip, unexpectedResponse, true, 1, TRIP_ACTIVE);
+        assertCheckMonitoredTrip(monitoredTrip, expectedResponse, true, 0, TRIP_ACTIVE);
+
+        // Match on third attempt.
+        for (int i = 1; i <= 3; i++) {
+            int expectedAttempts = (i < 3) ? i : 0;
+            OtpResponse response = (i < 3) ? unexpectedResponse : expectedResponse;
+            assertCheckMonitoredTrip(monitoredTrip, response, true, expectedAttempts, TRIP_ACTIVE);
+        }
+
+        int maxChecks = CheckMonitoredTrip.MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS;
+
+        // Fail after maximum checks have been reached.
+        for (int i = 1; i <= maxChecks; i++) {
+            TripStatus tripStatus = (i < maxChecks) ? TRIP_ACTIVE : NEXT_TRIP_NOT_POSSIBLE;
+            assertCheckMonitoredTrip(monitoredTrip, unexpectedResponse, true, i, tripStatus);
+        }
+
+        // Clear the created trip.
+        PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
+    }
+
+    /**
+     * Create mock OTP response and set the base times of the first itinerary to Monday, June 15, 2020.
+     */
+    private OtpResponse getMockOtpResponse() {
+        OtpResponse mockResponse = mockOtpPlanResponse();
+        Itinerary mockMondayJune15Itinerary = mockResponse.plan.itineraries.get(0);
+        OtpTestUtils.updateBaseItineraryTime(
+            mockMondayJune15Itinerary,
+            DateTimeUtils.makeOtpZonedDateTime(mockMondayJune15Itinerary.startTime)
+                .withDayOfMonth(15)
+        );
+        return mockResponse;
+    }
+
+    /**
+     * Run check on monitored trip and confirm expected state.
+     */
+    private void assertCheckMonitoredTrip(
+        MonitoredTrip monitoredTrip,
+        OtpResponse mockResponse,
+        boolean hasTolerantItineraryCheck,
+        int expectedAttempts,
+        TripStatus expectedTripStatus
+    ) throws CloneNotSupportedException {
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse, hasTolerantItineraryCheck);
+        checkMonitoredTrip.run();
+        assertEquals(expectedAttempts, monitoredTrip.attemptsToGetMatchingItinerary);
+        assertEquals(expectedTripStatus, monitoredTrip.journeyState.tripStatus);
     }
 }

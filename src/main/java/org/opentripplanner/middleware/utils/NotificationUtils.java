@@ -10,11 +10,13 @@ import com.twilio.rest.verify.v2.service.VerificationCheck;
 import com.twilio.rest.verify.v2.service.VerificationCreator;
 import com.twilio.type.PhoneNumber;
 import freemarker.template.TemplateException;
+import org.apache.logging.log4j.util.Strings;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.StringUtil;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.Device;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
@@ -24,11 +26,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
@@ -50,6 +54,8 @@ public class NotificationUtils {
     public static final String OTP_ADMIN_DASHBOARD_FROM_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_FROM_EMAIL");
     private static final String PUSH_API_KEY = getConfigPropertyAsText("PUSH_API_KEY");
     private static final String PUSH_API_URL = getConfigPropertyAsText("PUSH_API_URL");
+    private static final String TRIP_SURVEY_ID = getConfigPropertyAsText("TRIP_SURVEY_ID");
+    private static final String TRIP_SURVEY_SUBDOMAIN = getConfigPropertyAsText("TRIP_SURVEY_SUBDOMAIN");
 
     /**
      * Although SMS are 160 characters long and Twilio supports sending up to 1600 characters,
@@ -77,8 +83,7 @@ public class NotificationUtils {
         if (PUSH_API_KEY == null || PUSH_API_URL == null) return null;
         try {
             String body = TemplateUtils.renderTemplate(textTemplate, templateData);
-            String toUser = otpUser.email;
-            return otpUser.pushDevices > 0 ? sendPush(toUser, body, tripName, tripId) : "OK";
+            return otpUser.pushDevices > 0 ? sendPush(otpUser, body, tripName, tripId, null, null, null) : "OK";
         } catch (TemplateException | IOException e) {
             // This catch indicates there was an error rendering the template. Note: TemplateUtils#renderTemplate
             // handles Bugsnag reporting/error logging, so that is not needed here.
@@ -87,30 +92,65 @@ public class NotificationUtils {
     }
 
     /**
+     * @param otpUser  target user
+     * @param trip  Trip about which the survey notification is about.
+     * @param notificationId  Notification ID
+     */
+    public static String sendTripSurveyPush(OtpUser otpUser, MonitoredTrip trip, String notificationId) {
+        // Check devices first - No devices returns OK (favors E2E testing)
+        if (otpUser.pushDevices == 0) return "OK";
+
+        // If Push API/survey config properties aren't set, do nothing (will trigger warning log).
+        if (
+            Strings.isBlank(PUSH_API_KEY) ||
+            Strings.isBlank(PUSH_API_URL) ||
+            Strings.isBlank(TRIP_SURVEY_ID) ||
+            Strings.isBlank(TRIP_SURVEY_SUBDOMAIN)
+        ) {
+            return null;
+        }
+
+        Locale locale = I18nUtils.getOtpUserLocale(otpUser);
+        String tripTime = DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale);
+        String body = String.format(TRIP_SURVEY_NOTIFICATION.get(locale), tripTime);
+        return sendPush(otpUser, body, trip.tripName, trip.id, TRIP_SURVEY_ID, TRIP_SURVEY_SUBDOMAIN, notificationId);
+    }
+
+    /**
      * Send a push notification message to the provided user
      * @param toUser    user account ID (email address)
      * @param body      message body
+     * @param tripName  Monitored trip name to show in notification title
      * @param tripId    Monitored trip ID
+     * @param surveyId  Survey ID
+     * @param notificationId  Notification ID
      * @return          "OK" if message was successful (null otherwise)
      */
-    static String sendPush(String toUser, String body, String tripName, String tripId) {
+    static String sendPush(
+        OtpUser toUser,
+        String body,
+        String tripName,
+        String tripId,
+        String surveyId,
+        String surveySubdomain,
+        String notificationId
+    ) {
         try {
-            NotificationInfo notifInfo = new NotificationInfo(
+            NotificationInfo notificationInfo = new NotificationInfo(
+                notificationId,
                 toUser,
                 body,
                 tripName,
-                tripId
+                tripId,
+                surveyId,
+                surveySubdomain
             );
-            var jsonBody = new Gson().toJson(notifInfo);
-            Map<String, String> headers = Map.of(
-                "Accept", "application/json",
-                "Content-Type", "application/json"
-            );
+            var jsonBody = new Gson().toJson(notificationInfo);
             var httpResponse = HttpUtils.httpRequestRawResponse(
                 URI.create(PUSH_API_URL + "/notification/publish?api_key=" + PUSH_API_KEY),
                 1000,
                 HttpMethod.POST,
-                headers,
+                HttpUtils.HEADERS_JSON,
                 jsonBody
             );
             if (httpResponse.status == 200) {
@@ -398,19 +438,54 @@ public class NotificationUtils {
     }
 
     static class NotificationInfo {
+        /** ID for tracking notifications and survey responses. */
+        public final String notificationId;
+
+        /** In reality, the email of the desired user (the push service we use looks up users by email) */
         public final String user;
+
+        /** The Mongo ID of the desired user */
+        public final String userId;
+
+        /** The message shown in the notification body */
         public final String message;
+
+        /** The title of this notification */
         public final String title;
+
+        /** The ID of the trip associated to this notification */
         public final String tripId;
 
-        public NotificationInfo(String user, String message, String title, String tripId) {
+        /** The ID of the survey to be launched for said trip, if applicable. */
+        public final String surveyId;
+
+        /** The subdomain of the website where the survey is administered, if applicable. */
+        public final String surveySubdomain;
+
+        public NotificationInfo(String notificationId, OtpUser user, String message, String title, String tripId) {
+            this(notificationId, user, message, title, tripId, null, null);
+        }
+
+        public NotificationInfo(
+            String notificationId,
+            OtpUser user,
+            String message,
+            String title,
+            String tripId,
+            String surveyId,
+            String surveySubdomain
+        ) {
             String truncatedTitle = StringUtil.truncate(title, PUSH_TITLE_MAX_LENGTH);
             int truncatedMessageLength = PUSH_TOTAL_MAX_LENGTH - truncatedTitle.length();
 
-            this.user = user;
+            this.notificationId = notificationId;
+            this.user = user.email;
+            this.userId = user.id;
             this.title = truncatedTitle;
             this.message = StringUtil.truncate(message, truncatedMessageLength);
             this.tripId = tripId;
+            this.surveyId = surveyId;
+            this.surveySubdomain = surveySubdomain;
         }
     }
 }

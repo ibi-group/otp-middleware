@@ -23,6 +23,7 @@ import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitorAllTripsJob;
+import org.opentripplanner.middleware.triptracker.TripSurveySenderJob;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.Scheduler;
@@ -41,6 +42,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.bugsnag.BugsnagWebhook.processWebHookDelivery;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.AUTHENTICATE_PATH;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_DEPENDENT_PATH;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -84,6 +86,16 @@ public class OtpMiddlewareMain {
                 1,
                 TimeUnit.MINUTES
             );
+
+            // Schedule recurring job for post-trip surveys, once every half-hour to catch recently completed trips.
+            // TODO: Determine whether this should go in some other process.
+            TripSurveySenderJob tripSurveySenderJob = new TripSurveySenderJob();
+            Scheduler.scheduleJob(
+                tripSurveySenderJob,
+                0,
+                30,
+                TimeUnit.MINUTES
+            );
         }
     }
 
@@ -106,7 +118,7 @@ public class OtpMiddlewareMain {
                     new LogController(API_PREFIX),
                     new ErrorEventsController(API_PREFIX),
                     new CDPFilesController(API_PREFIX),
-                    new OtpRequestProcessor("/otp", OtpVersion.OTP1),
+                    new OtpRequestProcessor("/otp", OtpVersion.OTP2),
                     new OtpRequestProcessor("/otp2", OtpVersion.OTP2)
                     // TODO Add other models.
                 ))
@@ -172,7 +184,11 @@ public class OtpMiddlewareMain {
         // Security checks for admin and /secure/ endpoints. Excluding /authenticate so that API users can obtain a
         // bearer token to authenticate against all other /secure/ endpoints.
         spark.before(API_PREFIX + "/secure/*", ((request, response) -> {
-            if (!request.requestMethod().equals("OPTIONS") && !request.pathInfo().endsWith(API_USER_PATH + AUTHENTICATE_PATH)) {
+            if (
+                !request.requestMethod().equals("OPTIONS") &&
+                !request.pathInfo().endsWith(API_USER_PATH + AUTHENTICATE_PATH) &&
+                !request.pathInfo().endsWith(ACCEPT_DEPENDENT_PATH)
+            ) {
                 Auth0Connection.checkUser(request);
             }
         }));

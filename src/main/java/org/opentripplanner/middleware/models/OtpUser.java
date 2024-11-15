@@ -9,9 +9,18 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removeDependent;
 
 /**
  * This represents a user of an OpenTripPlanner instance (typically of the standard OTP UI/otp-react-redux).
@@ -26,6 +35,7 @@ public class OtpUser extends AbstractUser {
     public static final String AUTH0_SCOPE = "otp-user";
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(OtpUser.class);
+    public static final String TRIP_SURVEY_NOTIFICATIONS_FIELD = "tripSurveyNotifications";
 
     /** Whether the user would like accessible routes by default. */
     public boolean accessibilityRoutingByDefault;
@@ -43,7 +53,7 @@ public class OtpUser extends AbstractUser {
      * Notification preferences for this user
      * (EMAIL and/or SMS and/or PUSH).
      */
-    public EnumSet<OtpUser.Notification> notificationChannel = EnumSet.noneOf(OtpUser.Notification.class);
+    public EnumSet<Notification> notificationChannel = EnumSet.noneOf(OtpUser.Notification.class);
 
     /**
      * Verified phone number for SMS notifications, in +15551234 format (E.164 format, includes country code, no spaces).
@@ -76,9 +86,21 @@ public class OtpUser extends AbstractUser {
     /** Whether to store the user's trip history (user must opt in). */
     public boolean storeTripHistory;
 
+    /** The trail of survey notifications sent for journeys completed by the user. */
+    public List<TripSurveyNotification> tripSurveyNotifications = new ArrayList<>();
+
     @JsonIgnore
     /** If this user was created by an {@link ApiUser}, this parameter will match the {@link ApiUser}'s id */
     public String applicationId;
+
+    /** Companions and observers of this user. */
+    public List<RelatedUser> relatedUsers = new ArrayList<>();
+
+    /** Users that are dependent on this user. */
+    public List<String> dependents = new ArrayList<>();
+
+    /** This user's name */
+    public String name;
 
     @Override
     public boolean delete() {
@@ -113,6 +135,23 @@ public class OtpUser extends AbstractUser {
             }
         }
 
+        // If a related user, invalidate relationship with all dependents.
+        for (String userId : dependents) {
+            OtpUser dependent = Persistence.otpUsers.getById(userId);
+            if (dependent != null) {
+                for (RelatedUser relatedUser : dependent.relatedUsers) {
+                    if (relatedUser.email.equals(this.email)) {
+                        relatedUser.status = RelatedUser.RelatedUserStatus.INVALID;
+                    }
+                }
+                Persistence.otpUsers.replace(dependent.id, dependent);
+            }
+        }
+
+        // If a dependent, remove relationship with all related users.
+        for (RelatedUser relatedUser : relatedUsers) {
+            removeDependent(this, relatedUser);
+        }
         return Persistence.otpUsers.removeById(this.id);
     }
 
@@ -159,5 +198,11 @@ public class OtpUser extends AbstractUser {
                     }
                 });
         }
+    }
+
+    /** Obtains the last trip survey notification sent. */
+    public Optional<TripSurveyNotification> findLastTripSurveyNotificationSent() {
+        if (tripSurveyNotifications == null) return Optional.empty();
+        return tripSurveyNotifications.stream().max(Comparator.comparingLong(n -> n.timeSent.getTime()));
     }
 }

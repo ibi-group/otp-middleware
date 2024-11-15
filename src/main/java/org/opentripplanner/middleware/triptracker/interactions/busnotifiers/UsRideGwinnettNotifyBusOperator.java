@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
-import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteGtfsIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
 
 /**
@@ -79,8 +79,8 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
     /**
      * Stage notification to bus operator by making sure all required conditions are met.
      */
-    public void sendNotification(TripStatus tripStatus, TravelerPosition travelerPosition) {
-        var routeId = getRouteIdFromLeg(travelerPosition.nextLeg);
+    public void sendNotification(TravelerPosition travelerPosition, Leg busLeg) {
+        var routeId = getRouteGtfsIdFromLeg(busLeg);
         try {
             if (
                 hasNotSentNotificationForRoute(travelerPosition.trackedJourney, routeId) &&
@@ -98,13 +98,13 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
     }
 
     /**
-     * Cancel a previously sent notification for the next bus leg.
+     * Cancel a previously sent notification for the expected or next leg.
      */
-    public void cancelNotification(TravelerPosition travelerPosition) {
-        var routeId = getRouteIdFromLeg(travelerPosition.nextLeg);
+    public void cancelNotification(TravelerPosition travelerPosition, Leg busLeg) {
+        var routeId = getRouteGtfsIdFromLeg(busLeg);
         try {
             if (
-                isBusLeg(travelerPosition.nextLeg) && routeId != null &&
+                isBusLeg(busLeg) && routeId != null &&
                 hasNotCanceledNotificationForRoute(travelerPosition.trackedJourney, routeId)
             ) {
                 Map<String, String> busNotificationRequests = travelerPosition.trackedJourney.busNotificationMessages;
@@ -128,6 +128,8 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      * Makes a call to the bus driver notification API, followed by a call to the bus priority API.
      */
     private static void makeApiRequests(TravelerPosition travelerPosition, String body, String routeId, String action) {
+        LOG.info("Sending bus operator/priority requests: {}", body);
+
         var httpStatus = postBusDriverNotification(body);
         if (httpStatus == HttpStatus.OK_200) {
             travelerPosition.trackedJourney.updateNotificationMessage(routeId, body);

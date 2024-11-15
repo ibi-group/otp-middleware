@@ -38,9 +38,14 @@
           "lat": 33.78645,
           "departure": 1718295483000,
           "vertexType": "TRANSIT",
-          "stopId": "MARTA:69356",
-          "arrival": 1718295183000,
-          "stopCode": "902581"
+          "stop": {
+            "id": "WEFU311FTYPS",
+            "gtfsId": "MARTA:69356",
+            "code": "902581",
+            "lon": -84.381713,
+            "lat": 33.78645
+          },
+          "arrival": 1718295183000
         },
         "legGeometry": {
           "points": "a|emE`t_bO?B@l@?`A?`@I?",
@@ -79,11 +84,14 @@
           "lat": 33.78645,
           "departure": 1718295483000,
           "vertexType": "TRANSIT",
-          "stopId": "MARTA:69356",
-          "arrival": 1718295183000,
-          "stopIndex": 3,
-          "stopSequence": 4,
-          "stopCode": "902581"
+          "stop": {
+            "id": "WEFU311FTYPS",
+            "gtfsId": "MARTA:69356",
+            "code": "902581",
+            "lon": -84.381713,
+            "lat": 33.78645
+          },
+          "arrival": 1718295183000
         },
         "to": {
           "name": "Piedmont Ave NE at Monroe Dr",
@@ -91,11 +99,14 @@
           "lat": 33.795571,
           "departure": 1718295780000,
           "vertexType": "TRANSIT",
-          "stopId": "MARTA:99973628",
-          "arrival": 1718295780000,
-          "stopIndex": 11,
-          "stopSequence": 12,
-          "stopCode": "213258"
+          "stop": {
+            "id": "GRWORJF55FD7",
+            "gtfsId": "MARTA:99973628",
+            "code": "213258",
+            "lon": -84.370392,
+            "lat": 33.795571
+          },
+          "arrival": 1718295780000
         },
         "legGeometry": {
           "points": "q|emEvx_bO?o@?a@DqJ??@eA?e@C_DS?gBA??C?_AA_@Iq@c@e@g@OQSQEG??SWeBoB_@c@k@o@??IMm@q@{@_AiCsBeFuD??MKWWm@c@_C{BoAkA??QQ_C{Bk@m@{AuAA???cC}BqAsA",
@@ -110,11 +121,14 @@
             "lat": 33.786415,
             "departure": 1718295521000,
             "vertexType": "TRANSIT",
-            "stopId": "MARTA:99972303",
-            "arrival": 1718295521000,
-            "stopIndex": 4,
-            "stopSequence": 5,
-            "stopCode": "211955"
+            "stop": {
+              "id": "WEFAETHHHDEE",
+              "gtfsId": "MARTA:99972303",
+              "code": "211955",
+              "lon": -84.379461,
+              "lat": 33.786415
+            },
+            "arrival": 1718295521000
           },
           {
             "name": "Piedmont Ave NE at 14th St NE",
@@ -122,11 +136,14 @@
             "lat": 33.78709,
             "departure": 1718295556000,
             "vertexType": "TRANSIT",
-            "stopId": "MARTA:69325",
-            "arrival": 1718295556000,
-            "stopIndex": 5,
-            "stopSequence": 6,
-            "stopCode": "902521"
+            "stop": {
+              "id": "REEGAKEI3432",
+              "gtfsId": "MARTA:69325",
+              "code": "902521",
+              "lon": -84.37807,
+              "lat": 33.78709
+            },
+            "arrival": 1718295556000
           },
           {
             "name": "Piedmont Ave NE at 15th St NE",
@@ -134,11 +151,14 @@
             "lat": 33.788224,
             "departure": 1718295583000,
             "vertexType": "TRANSIT",
-            "stopId": "MARTA:69326",
-            "arrival": 1718295583000,
-            "stopIndex": 6,
-            "stopSequence": 7,
-            "stopCode": "902522"
+            "stop": {
+              "id": "DET6UI8DSHU",
+              "gtfsId": "MARTA:69326",
+              "code": "902522",
+              "lon": -84.377418,
+              "lat": 33.788224
+            },
+            "arrival": 1718295583000
           },
           {
             "name": "Piedmont Ave NE at Prado",
@@ -146,11 +166,14 @@
             "lat": 33.7892,
             "departure": 1718295610000,
             "vertexType": "TRANSIT",
-            "stopId": "MARTA:69328",
-            "arrival": 1718295610000,
-            "stopIndex": 7,
-            "stopSequence": 8,
-            "stopCode": "902523"
+            "stop": {
+              "id": "EWWRTG82FRRHS",
+              "gtfsId": "MARTA:69328",
+              "code": "902523",
+              "lon": -84.376309,
+              "lat": 33.7892
+            },
+            "arrival": 1718295610000
           },
           {
             "name": "Piedmont Ave NE at The Prado",
@@ -158,11 +181,14 @@
             "lat": 33.791636,
             "departure": 1718295672000,
             "vertexType": "TRANSIT",
-            "stopId": "MARTA:69330",
-            "arrival": 1718295672000,
-            "stopIndex": 8,
-            "stopSequence": 9,
-            "stopCode": "902524"
+            "stop": {
+              "id": "HEATTTQE11FRBG",
+              "gtfsId": "MARTA:69330",
+              "code": "902524",
+              "lon": -84.374179,
+              "lat": 33.791636
+            },
+            "arrival": 1718295672000
           },
           {
             "name": "Piedmont Ave NE at Westminster Dr NE",
@@ -170,11 +196,14 @@
             "lat": 33.793095,
             "departure": 1718295710000,
             "vertexType": "TRANSIT",
-            "stopId": "MARTA:69332",
-            "arrival": 1718295710000,
-            "stopIndex": 9,
-            "stopSequence": 10,
-            "stopCode": "902528"
+            "stop": {
+              "id": "RRHSRG3122HSW",
+              "gtfsId": "MARTA:69332",
+              "code": "902528",
+              "lon": -84.37282,
+              "lat": 33.793095
+            },
+            "arrival": 1718295710000
           },
           {
             "name": "Piedmont Ave NE at Avery Dr NE",
@@ -182,26 +211,38 @@
             "lat": 33.79451,
             "departure": 1718295747000,
             "vertexType": "TRANSIT",
-            "stopId": "MARTA:69334",
-            "arrival": 1718295747000,
-            "stopIndex": 10,
-            "stopSequence": 11,
-            "stopCode": "902529"
+            "stop": {
+              "id": "TUU78KIEGSH33",
+              "gtfsId": "MARTA:69334",
+              "code": "902529",
+              "lon": -84.371451,
+              "lat": 33.79451
+            },
+            "arrival": 1718295747000
           }
         ],
         "steps": [],
-        "agencyName": "Metropolitan Atlanta Rapid Transit Authority",
-        "agencyUrl": "https://www.itsmarta.com",
-        "routeType": 3,
-        "routeId": "MARTA:21634",
-        "agencyId": "MARTA:MARTA",
-        "tripBlockId": "1153735",
-        "tripId": "MARTA:9101693",
+        "agency": {
+          "id": "KEJA42D21ERT",
+          "gtfsId": "MARTA:MARTA",
+          "name": "Metropolitan Atlanta Rapid Transit Authority",
+          "url": "https://www.itsmarta.com"
+        },
+        "route": {
+          "color": "FF0080",
+          "id": "UWRFADT5DS23",
+          "gtfsId": "MARTA:21634",
+          "longName": "Cheshire Bridge Road",
+          "shortName": "27",
+          "textColor": "000000",
+          "type": 3
+        },
+        "trip": {
+          "id": "HIENA23DAJM1Q",
+          "gtfsId": "MARTA:9101693",
+          "blockId": "1153735"
+        },
         "serviceDate": "2024-06-13",
-        "routeShortName": "27",
-        "routeLongName": "Cheshire Bridge Road",
-        "routeColor": "FF0080",
-        "routeTextColor": "000000",
         "headsign": "Lenox Station"
       },
       {
@@ -220,9 +261,14 @@
           "lat": 33.795571,
           "departure": 1718295780000,
           "vertexType": "TRANSIT",
-          "stopId": "MARTA:99973628",
-          "arrival": 1718295780000,
-          "stopCode": "213258"
+          "stop": {
+            "id": "GRWORJF55FD7",
+            "gtfsId": "MARTA:99973628",
+            "code": "213258",
+            "lon": -84.370392,
+            "lat": 33.795571
+          },
+          "arrival": 1718295780000
         },
         "to": {
           "name": "Ansley Mall Pet Shop",

@@ -54,6 +54,9 @@ public class Leg implements Cloneable {
     public String routeTextColor;
     public List<LocalizedAlert> alerts = null;
     public String headsign;
+    public Agency agency;
+    public Route route;
+    public Trip trip;
 
     /**
      * Gets the scheduled start time of this itinerary in the OTP timezone.

@@ -43,6 +43,8 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     private static Itinerary walkToBusTransition;
 
+    private static Itinerary firstLegBusTransit;
+
     private static TrackedJourney trackedJourney;
 
     private static final String routeId = "GwinnettCountyTransit:40";
@@ -55,9 +57,13 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     @BeforeAll
     public static void setUp() throws IOException {
-        // This itinerary is from OTP2 and has been modified to work with OTP1 to avoid breaking changes.
+        // These itineraries are from OTP2 and have been modified to work with OTP1 to avoid breaking changes.
         walkToBusTransition = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-transition.json"),
+            Itinerary.class
+        );
+        firstLegBusTransit = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/first-leg-transit.json"),
             Itinerary.class
         );
         UsRideGwinnettNotifyBusOperator.IS_TEST = true;
@@ -71,20 +77,65 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         }
     }
 
-    @Test
-    void canNotifyBusOperatorForScheduledDeparture() {
-        Leg busLeg = walkToBusTransition.legs.get(1);
+    @ParameterizedTest
+    @MethodSource("creatNotifyBusOperatorForScheduledDepartureTrace")
+    void canNotifyBusOperatorForScheduledDeparture(Leg busLeg, Itinerary itinerary, boolean isStartOfTrip, String message) {
+        Coordinates startOfTransitCoordinates = new Coordinates(busLeg.from);
         Instant busDepartureTime = getBusDepartureTime(busLeg);
-        trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates(), busDepartureTime);
-        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
-
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
-        assertNotNull(tripInstruction);
-
+        trackedJourney = createAndPersistTrackedJourney(startOfTransitCoordinates, busDepartureTime);
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, isStartOfTrip);
         TripInstruction expectInstruction = new WaitForTransitInstruction(busLeg, busDepartureTime, locale);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(routeId));
-        assertEquals(expectInstruction.build(), tripInstruction.build());
+        assertEquals(expectInstruction.build(), tripInstruction.build(), message);
+    }
+
+    private static Stream<Arguments> creatNotifyBusOperatorForScheduledDepartureTrace() {
+        return Stream.of(
+            Arguments.of(
+                firstLegBusTransit.legs.get(0),
+                firstLegBusTransit,
+                true,
+                "Can notify bus operator when the first leg is transit."
+            ),
+            Arguments.of(
+                walkToBusTransition.legs.get(1),
+                walkToBusTransition,
+                false,
+                "Can notify bus operator when the next leg is transit."
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("shouldCancelBusNotificationForStartOfTripTrace")
+    void shouldCancelBusNotificationForStartOfTrip(boolean expected, Leg expectedLeg, Coordinates currentPosition, String message) {
+        Leg first = firstLegBusTransit.legs.get(0);
+        TrackedJourney journey = new TrackedJourney();
+        journey.busNotificationMessages.put(routeId, "{\"msg_type\": 1}");
+        TravelerPosition travelerPosition = new TravelerPosition(expectedLeg, journey, first, currentPosition);
+        assertEquals(expected, ManageTripTracking.shouldCancelBusNotificationForStartOfTrip(travelerPosition), message);
+    }
+
+    private static Stream<Arguments> shouldCancelBusNotificationForStartOfTripTrace() {
+        Leg first = firstLegBusTransit.legs.get(0);
+        Coordinates atStartOfBusJourney = new Coordinates(first.from);
+        Coordinates atEndOfBusJourney = new Coordinates(first.to);
+        return Stream.of(
+            Arguments.of(
+                true,
+                firstLegBusTransit.legs.get(0),
+                atStartOfBusJourney,
+                "Still waiting for bus, should cancel notification."
+            ),
+            Arguments.of(
+                false,
+                firstLegBusTransit.legs.get(1),
+                atEndOfBusJourney,
+                "Already on the bus, no need to cancel notification."
+            )
+        );
     }
 
     @Test
@@ -112,12 +163,12 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates());
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
 
-        busOperatorActions.handleSendNotificationAction(TripStatus.ON_SCHEDULE, travelerPosition);
+        busOperatorActions.handleSendNotificationAction(travelerPosition, travelerPosition.nextLeg);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(routeId));
         assertEquals(1, getMessage(updated).msg_type);
 
-        busOperatorActions.handleCancelNotificationAction(travelerPosition);
+        busOperatorActions.handleCancelNotificationAction(travelerPosition, travelerPosition.nextLeg);
         UsRideGwinnettBusOpNotificationMessage cancelMessage1 = getMessage(
             Persistence.trackedJourneys.getById(trackedJourney.id)
         );
@@ -126,7 +177,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
         // A second request to cancel should not touch the previous request.
         Thread.sleep(20);
-        busOperatorActions.handleCancelNotificationAction(travelerPosition);
+        busOperatorActions.handleCancelNotificationAction(travelerPosition, travelerPosition.nextLeg);
         UsRideGwinnettBusOpNotificationMessage cancelMessage2 = getMessage(
             Persistence.trackedJourneys.getById(trackedJourney.id)
         );
@@ -144,7 +195,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates());
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
 
-        busOperatorActions.handleSendNotificationAction(TripStatus.ON_SCHEDULE, travelerPosition);
+        busOperatorActions.handleSendNotificationAction(travelerPosition, travelerPosition.nextLeg);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(routeId));
         assertFalse(UsRideGwinnettNotifyBusOperator.hasNotSentNotificationForRoute(updated, routeId));
@@ -152,7 +203,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
         // A second request to notify the operator should not touch the previous request.
         Thread.sleep(20);
-        busOperatorActions.handleSendNotificationAction(TripStatus.ON_SCHEDULE, travelerPosition);
+        busOperatorActions.handleSendNotificationAction(travelerPosition, travelerPosition.nextLeg);
         TrackedJourney updated2 = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertFalse(UsRideGwinnettNotifyBusOperator.hasNotSentNotificationForRoute(updated2, routeId));
         assertEquals(notifyMessage.timestamp, getMessage(updated2).timestamp);
@@ -160,8 +211,12 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("createWithinOperationalNotifyWindowTrace")
-    void isWithinOperationalNotifyWindow(boolean expected, TravelerPosition travelerPosition,String message) {
-        assertEquals(expected, TravelerLocator.isWithinOperationalNotifyWindow(travelerPosition), message);
+    void isWithinOperationalNotifyWindow(boolean expected, TravelerPosition travelerPosition, String message) {
+        assertEquals(
+            expected,
+            TravelerLocator.isWithinOperationalNotifyWindow(travelerPosition.currentTime, travelerPosition.nextLeg),
+            message
+        );
     }
 
     private static Stream<Arguments> createWithinOperationalNotifyWindowTrace() {
@@ -190,6 +245,30 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
                     busDepartureTime.plusSeconds((ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES + 1) * 60)
                 ),
                 "Too far ahead of schedule to notify bus operator.")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("shouldSendBusNotificationAtStartOfTripTrace")
+    void shouldSendBusNotificationAtStartOfTrip(boolean expected, TravelerPosition travelerPosition, String message) {
+        assertEquals(expected, TravelerLocator.sendBusNotification(travelerPosition), message);
+    }
+
+    private static Stream<Arguments> shouldSendBusNotificationAtStartOfTripTrace() {
+        var busLeg = firstLegBusTransit.legs.get(0);
+        var walkLeg = walkToBusTransition.legs.get(0);
+
+        return Stream.of(
+            Arguments.of(
+                true,
+                new TravelerPosition(busLeg, getBusDepartureTime(busLeg)),
+                "Traveler at the start of a trip which starts with a bus leg, should notify."
+            ),
+            Arguments.of(
+                false,
+                new TravelerPosition(walkLeg, getBusDepartureTime(walkLeg)),
+                "Traveler at the start of a trip which starts with a walk leg, should not notify."
+            )
         );
     }
 

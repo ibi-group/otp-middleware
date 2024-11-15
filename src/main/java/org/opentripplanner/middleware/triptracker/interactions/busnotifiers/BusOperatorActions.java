@@ -1,8 +1,8 @@
 package org.opentripplanner.middleware.triptracker.interactions.busnotifiers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
-import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.YamlUtils;
 import org.slf4j.Logger;
@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getAgencyIdFromLeg;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getAgencyGtfsIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.removeAgencyPrefix;
 
 /** Holds configured bus notification actions. */
@@ -48,8 +48,8 @@ public class BusOperatorActions {
     /**
      * Get the action that matches the given agency id.
      */
-    public AgencyAction getAgencyAction(TravelerPosition travelerPosition) {
-        String agencyId = removeAgencyPrefix(getAgencyIdFromLeg(travelerPosition.nextLeg));
+    public AgencyAction getAgencyAction(Leg busLeg) {
+        String agencyId = removeAgencyPrefix(getAgencyGtfsIdFromLeg(busLeg));
         if (agencyId != null) {
             for (AgencyAction agencyAction : agencyActions) {
                 if (agencyAction.agencyId.equalsIgnoreCase(agencyId)) {
@@ -63,28 +63,30 @@ public class BusOperatorActions {
     /**
      * Get the correct action for agency and send notification.
      */
-    public void handleSendNotificationAction(TripStatus tripStatus, TravelerPosition travelerPosition) {
-        AgencyAction action = getAgencyAction(travelerPosition);
+    public void handleSendNotificationAction(TravelerPosition travelerPosition, Leg busLeg) {
+        AgencyAction action = getAgencyAction(busLeg);
         if (action != null) {
             BusOperatorInteraction interaction = getBusOperatorInteraction(action);
             try {
-                interaction.sendNotification(tripStatus, travelerPosition);
+                interaction.sendNotification(travelerPosition, busLeg);
             } catch (Exception e) {
                 LOG.error("Could not trigger class {} for agency {}", action.trigger, action.agencyId, e);
                 throw new RuntimeException(e);
             }
+        } else {
+            LOG.warn("No bus notification action was found for location {}.", travelerPosition.currentPosition);
         }
     }
 
     /**
      * Get the correct action for agency and cancel notification.
      */
-    public void handleCancelNotificationAction(TravelerPosition travelerPosition) {
-        AgencyAction action = getAgencyAction(travelerPosition);
+    public void handleCancelNotificationAction(TravelerPosition travelerPosition, Leg busLeg) {
+        AgencyAction action = getAgencyAction(busLeg);
         if (action != null) {
             BusOperatorInteraction interaction = getBusOperatorInteraction(action);
             try {
-                interaction.cancelNotification(travelerPosition);
+                interaction.cancelNotification(travelerPosition, busLeg);
             } catch (Exception e) {
                 LOG.error("Could not trigger class {} for agency {}", action.trigger, action.agencyId, e);
                 throw new RuntimeException(e);

@@ -554,7 +554,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripRequests.clear();
         tripRequests.add(tripRequestOne);
 
-        OtpResponse planResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_RESPONSE.getResponse();
+        OtpResponse planResponse = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
         for (Itinerary itinerary : planResponse.plan.itineraries) {
             for (Leg leg : itinerary.legs) {
                 // Set all legs to transit so that the coordinates are extracted.
