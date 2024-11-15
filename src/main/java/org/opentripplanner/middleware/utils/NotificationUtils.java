@@ -420,7 +420,7 @@ public class NotificationUtils {
             Map<String, String> headers = Map.of("Accept", "application/json");
             var httpResponse = HttpUtils.httpRequestRawResponse(
                 URI.create(getPushDevicesUrl(String.format(
-                    "%s/devices/get?api_key=%s&user=",
+                    "%s/device/deregister?api_key=%s&user=",
                     PUSH_API_URL,
                     PUSH_API_KEY
                 ), toUser)),
