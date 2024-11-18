@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.auth0.json.mgmt.users.User;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
@@ -9,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.models.MobilityProfile;
+import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -22,6 +25,7 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -29,14 +33,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
+import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
+import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
+import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
-import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
-import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.DEPENDENT_USER_IDS;
 
 public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String INITIAL_PHONE_NUMBER = "+15555550222"; // Fake US 555 number.
@@ -72,7 +78,13 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         dependentUserTwo = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-two"));
         relatedUserThree = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("related-user-three"));
         dependentUserThree = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-three"));
+
         relatedUserFour = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("related-user-four"));
+
+        User auth0User = createAuth0UserForEmail(relatedUserFour.email, TEMP_AUTH0_USER_PASSWORD);
+        relatedUserFour.auth0UserId = auth0User.getId();
+        Persistence.otpUsers.replace(relatedUserFour.id, relatedUserFour);
+
         dependentUserFour = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-four"));
     }
 
@@ -241,14 +253,8 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canRemoveUserFromRelatedUsersList() throws Exception {
         setAuthDisabled(true);
-        relatedUserFour.dependents.add(dependentUserFour.id);
-        Persistence.otpUsers.replace(relatedUserFour.id, relatedUserFour);
-        dependentUserFour.relatedUsers.add(new RelatedUser(
-            relatedUserFour.email,
-            RelatedUser.RelatedUserStatus.CONFIRMED,
-            nickname
-        ));
-        Persistence.otpUsers.replace(dependentUserFour.id, dependentUserFour);
+
+        createTrustedCompanionship(relatedUserFour, dependentUserFour);
 
         // Remove the first related user.
         dependentUserFour.relatedUsers.clear();
@@ -274,5 +280,46 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         assertFalse(relatedUserFour.dependents.contains(dependentUserFour.id));
 
         setAuthDisabled(false);
+    }
+
+    @Test
+    void canGetDependentMobilityProfile() throws Exception {
+        String path = String.format(
+            "api/secure/user/getdependentmobilityprofile?%s=%s,%s",
+            DEPENDENT_USER_IDS,
+            dependentUserThree.id,
+            dependentUserFour.id
+        );
+
+        HttpResponseValues responseValues = makeGetRequest(path, getMockHeaders(relatedUserFour));
+        assertEquals(HttpStatus.FORBIDDEN_403, responseValues.status);
+
+        var mobilityProfile = new MobilityProfile();
+        mobilityProfile.mobilityDevices = Set.of("service animal", "electric wheelchair", "white cane");
+        mobilityProfile.updateMobilityMode();
+        dependentUserFour.mobilityProfile = mobilityProfile;
+        dependentUserFour.name = "dependent-user-four-name";
+
+        createTrustedCompanionship(relatedUserFour, dependentUserFour);
+
+        responseValues = makeGetRequest(path, getMockHeaders(relatedUserFour));
+        assertEquals(HttpStatus.OK_200, responseValues.status);
+        List<MobilityProfileLite> mobilityProfileLites = JsonUtils.getPOJOFromJSONAsList(responseValues.responseBody, MobilityProfileLite.class);
+        assert mobilityProfileLites != null;
+        assertEquals(new MobilityProfileLite(dependentUserFour), mobilityProfileLites.get(0));
+    }
+
+    /**
+     * Create trusted companion relationship.
+     */
+    private static void createTrustedCompanionship(OtpUser relatedUser, OtpUser dependentUser) {
+        relatedUser.dependents.add(dependentUser.id);
+        Persistence.otpUsers.replace(relatedUser.id, relatedUser);
+        dependentUser.relatedUsers.add(new RelatedUser(
+            relatedUser.email,
+            RelatedUser.RelatedUserStatus.CONFIRMED,
+            nickname
+        ));
+        Persistence.otpUsers.replace(dependentUser.id, dependentUser);
     }
 }
