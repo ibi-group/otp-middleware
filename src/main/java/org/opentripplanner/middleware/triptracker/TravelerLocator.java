@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.apache.commons.lang3.ObjectUtils.isNotEmpty;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_IMMEDIATE_RADIUS;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
@@ -194,30 +193,47 @@ public class TravelerLocator {
                 locale
             );
         }
-        return (travelerHasDeviated || (isNotEmpty(tripInstruction) && tripInstruction.hasInstruction()))
+        return (travelerHasDeviated || (tripInstruction != null && tripInstruction.hasInstruction()))
             ? tripInstruction
             : getContinueInstruction(travelerPosition, nextStep, locale);
     }
 
     /**
      * Traveler is on track, but no immediate instruction is available. Provide a "continue on street" reassurance
-     * instruction providing they are on a walk leg. This will be based on the current or previous step depending on the
-     * traveler's relative position to the next leg.
+     * instruction if the traveler is on a walk leg. This will be based on the next or previous step depending on the
+     * traveler's relative position to both.
      */
     private static ContinueInstruction getContinueInstruction(
         TravelerPosition travelerPosition,
         Step nextStep,
         Locale locale
     ) {
-        if (!travelerPosition.expectedLeg.transitLeg && nextStep != null) {
-            Step currentStep = isPositionPastStep(travelerPosition, nextStep)
-                ? nextStep :
-                getPreviousStep(travelerPosition.expectedLeg.steps, nextStep);
-            if (currentStep != null) {
-                return new ContinueInstruction(currentStep, locale);
+        if (
+            Boolean.TRUE.equals(!travelerPosition.expectedLeg.transitLeg) &&
+            travelerPosition.expectedLeg.steps != null &&
+            !travelerPosition.expectedLeg.steps.isEmpty()
+        ) {
+            Step previousStep = getPreviousStep(travelerPosition.expectedLeg.steps, nextStep);
+            if (previousStep != null) {
+                boolean travelerBetweenSteps = isPointBetween(previousStep.toCoordinates(), nextStep.toCoordinates(), travelerPosition.currentPosition);
+                if (travelerBetweenSteps) {
+                    return new ContinueInstruction(previousStep, locale);
+                } else if (isWithinStepRange(travelerPosition, previousStep)) {
+                    return new ContinueInstruction(previousStep, locale);
+                } else if (isWithinStepRange(travelerPosition, nextStep)) {
+                    return new ContinueInstruction(nextStep, locale);
+                }
             }
         }
         return null;
+    }
+
+    /**
+     * The traveler is still with the provided step range.
+     */
+    private static boolean isWithinStepRange(TravelerPosition travelerPosition, Step step) {
+        double distanceFromTravelerToStep = getDistance(travelerPosition.currentPosition, step.toCoordinates());
+        return distanceFromTravelerToStep < step.distance;
     }
 
     /**

@@ -125,13 +125,6 @@
             <version>2.7</version>
         </dependency>
 
-        <!-- Use for better object state checking. -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.17.0</version>
-        </dependency>
-
         <!-- Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>

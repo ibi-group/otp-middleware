@@ -51,6 +51,7 @@ public class ManageLegTraversalTest {
     private static Itinerary midtownToAnsleyItinerary;
     private static List<Place> midtownToAnsleyIntermediateStops;
     private static Itinerary firstLegBusTransit;
+    private static Itinerary baptistChurchToEastCroganStreetIntinerary;
 
     private static final Locale locale = Locale.US;
 
@@ -77,6 +78,10 @@ public class ManageLegTraversalTest {
         );
         firstLegBusTransit = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/first-leg-transit.json"),
+            Itinerary.class
+        );
+        baptistChurchToEastCroganStreetIntinerary = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/baptist-church-to-east-crogan-street.json"),
             Itinerary.class
         );
         // Hold on to the original list of intermediate stops (some tests will overwrite it)
@@ -209,6 +214,11 @@ public class ManageLegTraversalTest {
         Coordinates busStopCoords = new Coordinates(firstBusLeg.from);
         String busStopName = firstBusLeg.from.name;
 
+        Leg toEastCroganFirstLeg = baptistChurchToEastCroganStreetIntinerary.legs.get(0);
+        Step southClaytonSt = toEastCroganFirstLeg.steps.get(1);
+        Step eastCroganSt = toEastCroganFirstLeg.steps.get(2);
+        Coordinates pointOnSouthClaytonSt = new Coordinates(33.955561, -83.988204);
+
         return Stream.of(
             Arguments.of(
                 firstBusLeg,
@@ -271,7 +281,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     createPoint(virginiaCircleNortheastCoords, 12, SOUTH_WEST_BEARING),
-                    new ContinueInstruction(ponceDeLeonPlaceNortheastStep, locale).build(),
+                    new ContinueInstruction(virginiaCircleNortheastStep, locale).build(),
                     false,
                     "On track approaching second step, provide continue instruction."
                 )
@@ -358,6 +368,33 @@ public class ManageLegTraversalTest {
                     new OnTrackInstruction(2, destinationName, locale).build(),
                     false,
                     "On destination instruction."
+                )
+            ),
+            Arguments.of(
+                toEastCroganFirstLeg,
+                new TraceData(
+                    pointOnSouthClaytonSt,
+                    new ContinueInstruction(southClaytonSt, locale).build(),
+                    false,
+                    "On track passed second step and not near to next step, provide continue instruction for second step."
+                )
+            ),
+            Arguments.of(
+                toEastCroganFirstLeg,
+                new TraceData(
+                    createPoint(pointOnSouthClaytonSt, 12, NORTH_WEST_BEARING),
+                    new ContinueInstruction(southClaytonSt, locale).build(),
+                    false,
+                    "On track a bit near to the next step, provide continue instruction for second step."
+                )
+            ),
+            Arguments.of(
+                toEastCroganFirstLeg,
+                new TraceData(
+                    createPoint(pointOnSouthClaytonSt, 72, NORTH_BEARING),
+                    new ContinueInstruction(eastCroganSt, locale).build(),
+                    false,
+                    "On track passed next step, provide continue instruction for next step."
                 )
             )
         );

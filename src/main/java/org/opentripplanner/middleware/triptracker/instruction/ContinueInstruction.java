@@ -1,10 +1,9 @@
 package org.opentripplanner.middleware.triptracker.instruction;
 
+import org.apache.logging.log4j.util.Strings;
 import org.opentripplanner.middleware.otp.response.Step;
 
 import java.util.Locale;
-
-import static org.apache.commons.lang3.ObjectUtils.isNotEmpty;
 
 public class ContinueInstruction extends SelfLegInstruction {
     public ContinueInstruction(Step legStep, Locale locale) {
@@ -14,7 +13,7 @@ public class ContinueInstruction extends SelfLegInstruction {
 
     @Override
     public String build() {
-        if (isNotEmpty(legStep) && isNotEmpty(legStep.streetName)) {
+        if (legStep != null && !Strings.isBlank(legStep.streetName)) {
             // TODO: i18n
             return String.format("Continue on %s", legStep.streetName);
         }
