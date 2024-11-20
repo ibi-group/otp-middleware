@@ -77,6 +77,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         Bson finalFilter = Filters.or(
             Filters.eq(USER_ID_PARAM, userId),
             Filters.eq("primary.userId", userId),
+            Filters.eq("companion.email", requestingUser.otpUser.email),
             Filters.eq("observers.email", requestingUser.otpUser.email)
         );
         return persistence.getResponseList(finalFilter, offset, limit);
