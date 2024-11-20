@@ -5,11 +5,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.auth.Auth0Connection;
+import org.opentripplanner.middleware.auth.RequestingUser;
+import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
+import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.SwaggerUtils;
@@ -43,6 +47,17 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     protected void buildEndpoint(ApiEndpoint baseEndpoint) {
         // Add the api key route BEFORE the regular CRUD methods
         ApiEndpoint modifiedEndpoint = baseEndpoint
+            // Get all trips, including shared trips created by others.
+            .get(path(ROOT_ROUTE + "/gettrips")
+                    .withDescription(
+                        "Gets a paginated list of trips created by the current user and shared trips created by others where the current user is the primary traveler or a companion or an observer."
+                    )
+                    .withQueryParam(LIMIT)
+                    .withQueryParam(OFFSET)
+                    .withProduces(HttpUtils.JSON_ONLY)
+                    .withResponseType(ResponseList.class),
+                this::getTrips, JsonUtils::toJson
+            )
             .post(path("/checkitinerary")
                     .withDescription("Returns the itinerary existence check results for a monitored trip.")
                     .withRequestType(MonitoredTrip.class)
@@ -51,6 +66,20 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 MonitoredTripController::checkItinerary, JsonUtils::toJson);
         // Add the regular CRUD methods after defining the controller-specific routes.
         super.buildEndpoint(modifiedEndpoint);
+    }
+
+    private ResponseList<MonitoredTrip> getTrips(Request req, Response res) {
+        int limit = HttpUtils.getQueryParamFromRequest(req, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);
+        int offset = HttpUtils.getQueryParamFromRequest(req, OFFSET_PARAM, 0, DEFAULT_OFFSET);
+        RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
+
+        String userId = requestingUser.otpUser.id;
+        Bson finalFilter = Filters.or(
+            Filters.eq(USER_ID_PARAM, userId),
+            Filters.eq("primary.userId", userId),
+            Filters.eq("observers.email", requestingUser.otpUser.email)
+        );
+        return persistence.getResponseList(finalFilter, offset, limit);
     }
 
     /**
