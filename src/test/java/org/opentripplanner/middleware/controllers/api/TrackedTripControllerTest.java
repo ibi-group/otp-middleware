@@ -351,7 +351,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(
                 monitoredTrip,
                 createPoint(firstStepCoords, 20, WEST_BEARING),
-                new ContinueInstruction(virginiaCircleNortheastStep, locale).build(),
+                new ContinueInstruction(adairAvenueNortheastStep, locale).build(),
                 TripStatus.ON_SCHEDULE,
                 "Coords along a step should produce a continue on street instruction"
             ),
