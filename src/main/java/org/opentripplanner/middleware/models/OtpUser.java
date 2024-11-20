@@ -96,7 +96,7 @@ public class OtpUser extends AbstractUser {
     /** Companions and observers of this user. */
     public List<RelatedUser> relatedUsers = new ArrayList<>();
 
-    /** Users that are dependent on this user. */
+    /** A list of users (their ids only) that are dependent on this user. */
     public List<String> dependents = new ArrayList<>();
 
     /** This user's name */

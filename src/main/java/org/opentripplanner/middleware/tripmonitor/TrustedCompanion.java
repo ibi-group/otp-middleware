@@ -1,9 +1,13 @@
 package org.opentripplanner.middleware.tripmonitor;
 
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Filters;
 import org.apache.logging.log4j.util.Strings;
+import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
+import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.i18n.Message;
+import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -15,19 +19,26 @@ import spark.Request;
 import spark.Response;
 
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.commons.lang3.ObjectUtils.isEmpty;
+import static org.apache.commons.lang3.ObjectUtils.isNotEmpty;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.I18nUtils.getLocaleFromString;
 import static org.opentripplanner.middleware.utils.I18nUtils.label;
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class TrustedCompanion {
 
@@ -43,6 +54,7 @@ public class TrustedCompanion {
     public static final String ACCEPT_KEY = "acceptKey";
     public static final String USER_LOCALE = "userLocale";
     public static final String EMAIL_FIELD_NAME = "email";
+    public static final String DEPENDENT_USER_IDS = "dependentuserids";
 
     /** Note: This path is excluded from security checks, see {@link OtpMiddlewareMain#initializeHttpEndpoints()}. */
     public static final String ACCEPT_DEPENDENT_PATH = "api/secure/user/acceptdependent";
@@ -234,5 +246,59 @@ public class TrustedCompanion {
             user.dependents.remove(dependent.id);
             Persistence.otpUsers.replace(user.id, user);
         }
+    }
+
+    /**
+     * Retrieve the mobility profile for a dependent providing the requesting user is a trusted companion.
+     */
+    public static List<MobilityProfileLite> getDependentMobilityProfile(Request request, Response response) {
+        var relatedUser = Auth0Connection.getUserFromRequest(request).otpUser;
+
+        if (isEmpty(relatedUser)) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Related user not provided or unknown.");
+        }
+
+        var dependentUserIds = HttpUtils.getQueryParamFromRequest(request, DEPENDENT_USER_IDS, false);
+        if (isEmpty(dependentUserIds)) {
+            logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Required list of dependent user ids not provided.");
+        }
+
+        var validDependentUserIds = getValidDependents(relatedUser, dependentUserIds);
+        if (validDependentUserIds.isEmpty()) {
+            logMessageAndHalt(
+                request,
+                HttpStatus.FORBIDDEN_403,
+                "Related user is not a trusted companion of any provided dependents!"
+            );
+        }
+
+        if (isNotEmpty(relatedUser) && !validDependentUserIds.isEmpty()) {
+            List<MobilityProfileLite> profiles = new ArrayList<>();
+            FindIterable<OtpUser> validDependentUsers = Persistence
+                .otpUsers
+                .getFiltered(Filters.in("_id", validDependentUserIds));
+            validDependentUsers.forEach(user -> profiles.add(new MobilityProfileLite(user)));
+            return profiles;
+        }
+        return Collections.emptyList();
+    }
+
+    /**
+     * From the list of dependent user ids, extract all that have the related user as their trusted companion.
+     */
+    private static Set<String> getValidDependents(OtpUser relatedUser, String dependentUserIds) {
+        // In case only one user id is provided with no comma.
+        String[] userIds = dependentUserIds.contains(",")
+            ? dependentUserIds.split(",")
+            : new String[] { dependentUserIds };
+
+        if (isEmpty(userIds)) {
+            return Collections.emptySet();
+        }
+
+        return Arrays
+            .stream(userIds)
+            .filter(userId -> relatedUser.dependents.contains(userId))
+            .collect(Collectors.toSet());
     }
 }
