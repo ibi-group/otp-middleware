@@ -1031,35 +1031,6 @@ paths:
           description: "An error occurred while performing the request. Contact an\
             \ API administrator for more information."
           examples: {}
-  /api/secure/monitoredtrip/gettrips:
-    get:
-      tags:
-      - "api/secure/monitoredtrip"
-      description: "Gets a paginated list of trips created by the current user and\
-        \ shared trips created by others where the current user is the primary traveler\
-        \ or a companion or an observer."
-      produces:
-      - "application/json"
-      parameters:
-      - name: "limit"
-        in: "query"
-        description: "If specified, the maximum number of items to return."
-        required: false
-        type: "string"
-        default: "10"
-      - name: "offset"
-        in: "query"
-        description: "If specified, the number of records to skip/offset."
-        required: false
-        type: "string"
-        default: "0"
-      responses:
-        "200":
-          description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
-          schema:
-            $ref: "#/definitions/ResponseList"
   /api/secure/monitoredtrip/checkitinerary:
     post:
       tags:
