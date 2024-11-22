@@ -27,8 +27,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -62,6 +64,9 @@ public class ConnectedDataManager {
 
     private static final int CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES =
         getConfigPropertyAsInt("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES", 5);
+
+    private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME =
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME", "03:00");
 
     private static final Logger LOG = LoggerFactory.getLogger(ConnectedDataManager.class);
 
@@ -110,11 +115,18 @@ public class ConnectedDataManager {
 
     public static void scheduleTripHistoryUploadJob() {
         if (canScheduleUploads()) {
-            LOG.info("Scheduling trip history upload for every {} minute(s)",
-                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES);
+            LOG.info("Scheduling trip history upload for every {} minute(s) starting at {}",
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
+
+            var now = DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId());
+            var timeOfDay = LocalTime.parse(CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
+            var startAt = DateTimeUtils.getNextTimeFrom(timeOfDay, now);
+            long initialDelayMinutes = Duration.between(now, startAt).toMinutes();
+
             Scheduler.scheduleJob(
                 new TripHistoryUploadJob(),
-                0,
+                initialDelayMinutes,
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
                 TimeUnit.MINUTES);
         }
