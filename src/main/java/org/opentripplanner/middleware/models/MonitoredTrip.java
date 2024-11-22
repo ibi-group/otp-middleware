@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import spark.Request;
@@ -29,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
+import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.ACCOUNT_PATH;
+
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
  * change.
@@ -37,6 +40,10 @@ import java.util.function.Function;
 public class MonitoredTrip extends Model {
 
     public static final String USER_ID_FIELD_NAME = "userId";
+
+    private final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
+
+    private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
 
     /**
      * Mongo Id of the {@link OtpUser} who owns this monitored trip.
@@ -426,5 +433,11 @@ public class MonitoredTrip extends Model {
     @BsonIgnore
     public boolean isOneTime() {
         return !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday;
+    }
+
+    @JsonIgnore
+    @BsonIgnore
+    public String getTripUrl() {
+        return String.format("%s%s/%s", OTP_UI_URL, TRIPS_PATH, id);
     }
 }

@@ -59,8 +59,6 @@ public class CheckMonitoredTrip implements Runnable {
 
     public static final String ACCOUNT_PATH = "/#/account";
 
-    private final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
-
     public static final String SETTINGS_PATH = ACCOUNT_PATH + "/settings";
 
     public final MonitoredTrip trip;
@@ -530,7 +528,7 @@ public class CheckMonitoredTrip implements Runnable {
 
         Locale locale = getOtpUserLocale();
         String tripLinkLabel = Message.TRIP_LINK_TEXT.get(locale);
-        String tripUrl = getTripUrl();
+        String tripUrl = trip.getTripUrl();
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
         Map<String, Object> templateData = new HashMap<>(Map.of(
             "emailGreeting", Message.TRIP_EMAIL_GREETING.get(locale),
@@ -924,9 +922,5 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private Locale getOtpUserLocale() {
         return I18nUtils.getOtpUserLocale(getOtpUser());
-    }
-
-    private String getTripUrl() {
-        return String.format("%s%s/%s", OTP_UI_URL, TRIPS_PATH, trip.id);
     }
 }

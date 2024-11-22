@@ -5,26 +5,37 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.opentripplanner.middleware.utils.SwaggerUtils;
 import spark.Request;
 import spark.Response;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.models.MonitoredTrip.USER_ID_FIELD_NAME;
+import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
+import static org.opentripplanner.middleware.utils.I18nUtils.getOtpUserLocale;
+import static org.opentripplanner.middleware.utils.I18nUtils.label;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -35,6 +46,10 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public class MonitoredTripController extends ApiController<MonitoredTrip> {
     private static final int MAXIMUM_PERMITTED_MONITORED_TRIPS
         = getConfigPropertyAsInt("MAXIMUM_PERMITTED_MONITORED_TRIPS", 5);
+
+    private final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
+
+    private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
 
     public MonitoredTripController(String apiPrefix) {
         super(apiPrefix, Persistence.monitoredTrips, "secure/monitoredtrip");
@@ -90,6 +105,8 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             }
         }
 
+        notifyTripCompanionsAndObservers(monitoredTrip, null);
+
         return monitoredTrip;
     }
 
@@ -126,6 +143,74 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     private void preCreateOrUpdateChecks(MonitoredTrip monitoredTrip, Request req) {
         checkTripCanBeMonitored(monitoredTrip, req);
         processTripQueryParams(monitoredTrip, req);
+    }
+
+    /** Notify users added as companions or observers to a trip. (Removed users won't get notified.) */
+    private void notifyTripCompanionsAndObservers(MonitoredTrip monitoredTrip, MonitoredTrip originalTrip) {
+        RelatedUser addedCompanion = null;
+        List<RelatedUser> addedObservers = new ArrayList<>();
+        if (monitoredTrip.companion != null) {
+            if (originalTrip == null || originalTrip.companion == null) {
+                // notify everyone
+                addedCompanion = monitoredTrip.companion;
+            } else {
+                // notify added companions
+                if (!originalTrip.companion.email.equals(monitoredTrip.companion.email)) {
+                    addedCompanion = monitoredTrip.companion;
+                }
+            }
+        }
+
+        if (monitoredTrip.observers != null) {
+            if (originalTrip == null || originalTrip.observers == null) {
+                // notify everyone
+                addedObservers.addAll(monitoredTrip.observers);
+            } else {
+                // notify added observers
+                Set<String> existingObserverEmails = originalTrip.observers.stream()
+                    .map(obs -> obs.email)
+                    .collect(Collectors.toSet());
+                monitoredTrip.observers.forEach(obs -> {
+                    if (!existingObserverEmails.contains(obs.email)) {
+                        addedObservers.add(obs);
+                    }
+                });
+            }
+        }
+
+        if (addedCompanion != null) {
+            OtpUser companionUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", addedCompanion.email));
+            if (companionUser != null) {
+                Locale locale = getOtpUserLocale(companionUser);
+                String tripLinkLabel = Message.TRIP_LINK_TEXT.get(locale);
+                String tripUrl = monitoredTrip.getTripUrl();
+
+                OtpUser tripCreator = Persistence.otpUsers.getById(monitoredTrip.userId);
+
+                // TODO: finish i18n
+                // TODO: Refactor common email data.
+                NotificationUtils.sendEmail(
+                    companionUser,
+                    String.format("%s: %s shared a trip with you.", OTP_UI_NAME, tripCreator.email),
+                    "ShareTripText.ftl",
+                    "ShareTripHtml.ftl",
+                    Map.of(
+                        "emailGreeting", String.format(
+                            "You are a companion for %s on a trip from %s to %s.",
+                            tripCreator.email,
+                            monitoredTrip.from.name,
+                            monitoredTrip.to.name
+                        ),
+                        "tripUrl", tripUrl,
+                        "tripLinkAnchorLabel", tripLinkLabel,
+                        "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
+                        "emailFooter", String.format(Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
+                        "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
+                        "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH)
+                    )
+                );
+            }
+        }
     }
 
     /**
@@ -171,6 +256,9 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             // perform the database update here before releasing the lock to be sure that the record is updated in the
             // database before a CheckMonitoredTripJob analyzes the data
             Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
+
+            notifyTripCompanionsAndObservers(monitoredTrip, preExisting);
+
             return runCheckMonitoredTrip(monitoredTrip);
         } catch (Exception e) {
             // FIXME: an error happened while updating the trip, but the trip might have been saved to the DB, so return
