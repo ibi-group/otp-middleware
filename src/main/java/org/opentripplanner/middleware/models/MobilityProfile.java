@@ -85,10 +85,11 @@ public class MobilityProfile implements Serializable {
             if (mobilityDevices.contains("manual wheelchair")) {
                 mModeTemp = "WChairM";
             }
+        }
 
-            if ("None".equals(mModeTemp) && isMobilityLimited) {
-                mModeTemp = "Some";
-            }
+        // Adjust mobility limitations if the person has other impairments that don't require mobility devices.
+        if ("None".equals(mModeTemp) && isMobilityLimited) {
+            mModeTemp = "Some";
         }
 
         if (MobilityProfile.VisionLimitation.LOW_VISION == visionLimitation) {

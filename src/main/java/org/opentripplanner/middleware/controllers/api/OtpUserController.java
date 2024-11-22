@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
+import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.TrustedCompanion;
@@ -25,6 +26,7 @@ import java.util.regex.Pattern;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_KEY;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.DEPENDENT_USER_IDS;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.USER_LOCALE;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ensureRelatedUserIntegrity;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.manageAcceptDependentEmail;
@@ -99,6 +101,13 @@ public class OtpUserController extends AbstractUserController<OtpUser> {
                     .withPathParam().withName(USER_LOCALE).withRequired(true).withDescription("The accepting user's locale.").and()
                     .withResponseType(OtpUser.class),
                 TrustedCompanion::acceptDependent
+            )
+            .get(path(ROOT_ROUTE + "/getdependentmobilityprofile")
+                    .withDescription("Retrieve the mobility profile for each valid dependent user id provided.")
+                    .withResponses(SwaggerUtils.createStandardResponses(MobilityProfileLite.class))
+                    .withPathParam().withName(DEPENDENT_USER_IDS).withRequired(true).withDescription("A comma separated list of dependent user ids.").and()
+                    .withResponseAsCollection(MobilityProfileLite.class),
+                TrustedCompanion::getDependentMobilityProfile, JsonUtils::toJson
             )
             .get(path(ROOT_ROUTE + String.format(VERIFY_ROUTE_TEMPLATE, ID_PARAM, VERIFY_PATH, PHONE_PARAM))
                     .withDescription("Request an SMS verification to be sent to an OtpUser's phone number.")

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +97,7 @@ public class OtpUser extends AbstractUser {
     /** Companions and observers of this user. */
     public List<RelatedUser> relatedUsers = new ArrayList<>();
 
-    /** Users that are dependent on this user. */
+    /** A list of users (their ids only) that are dependent on this user. */
     public List<String> dependents = new ArrayList<>();
 
     /** This user's name */
@@ -134,6 +135,10 @@ public class OtpUser extends AbstractUser {
                 return false;
             }
         }
+
+        // Delete push devices
+        NotificationUtils.deletePushDevices(email);
+
 
         // If a related user, invalidate relationship with all dependents.
         for (String userId : dependents) {

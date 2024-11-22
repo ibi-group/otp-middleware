@@ -409,6 +409,35 @@ public class NotificationUtils {
     }
 
     /**
+     * Deletes devices registered for push notifications, typically when a user deletes their account.
+     * Calls Push API's <code>DELETE</code> endpoint.
+     * @param toUser  email address of user for which to delete device registration.
+     */
+    public static void deletePushDevices(String toUser) {
+        // If Push API config properties aren't set, no info can be obtained.
+        if (PUSH_API_KEY == null || PUSH_API_URL == null) return;
+        try {
+            Map<String, String> headers = Map.of("Accept", "application/json");
+            var httpResponse = HttpUtils.httpRequestRawResponse(
+                URI.create(getPushDevicesUrl(String.format(
+                    "%s/device/deregister?api_key=%s&user=",
+                    PUSH_API_URL,
+                    PUSH_API_KEY
+                ), toUser)),
+                1000,
+                HttpMethod.DELETE,
+                headers,
+                null
+            );
+            if (httpResponse.status != 200) {
+                LOG.error("Error {} deleting push notification devices for {}", httpResponse.status, toUser);
+            }
+        } catch (Exception e) {
+            LOG.error("Error deleting push notification devices for {}", toUser, e);
+        }
+    }
+
+    /**
      * Return the number of unique, non null, device names.
      */
     public static int getNumberOfUniqueDevices(List<Device> devices) {
