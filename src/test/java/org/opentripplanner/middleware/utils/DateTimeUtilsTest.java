@@ -6,6 +6,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.stream.Stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.text.MatchesPattern.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getDaysBetween;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getHoursBetween;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getPreviousDayFrom;
@@ -44,6 +46,14 @@ class DateTimeUtilsTest {
             Arguments.of("ru", "17:44"),
             Arguments.of("tl", "5:44[\\u202f ]PM")
         );
+    }
+
+    @Test
+    void canGetNextTimeFrom() {
+        var zdt = ZonedDateTime.of(2024, 11, 11, 15, 34, 17, 0, DateTimeUtils.getOtpZoneId());
+        var timeOfDay = LocalTime.parse("05:15");
+        var zdtNext = DateTimeUtils.getNextTimeFrom(timeOfDay, zdt);
+        assertTrue(zdtNext.isAfter(zdt));
     }
 
     @Test

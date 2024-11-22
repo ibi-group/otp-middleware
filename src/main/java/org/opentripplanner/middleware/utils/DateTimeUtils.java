@@ -313,6 +313,21 @@ public class DateTimeUtils {
     }
 
     /**
+     * Given a date/timestamp, find the next occurrence of a specified time of day.
+     * This could be the same day as the timestamp, or the next day.  Only the hours
+     * and minutes precision are recognized in the time of day value, so for example
+     * {@code LocalTime.parse("08:15")} would work as a time of day.
+     * @param timeOfDay time of day that we want to find the next occurrence of
+     * @param zonedDateTime the date/timestamp to start from
+     */
+    public static ZonedDateTime getNextTimeFrom(LocalTime timeOfDay, ZonedDateTime zonedDateTime) {
+        var nextDateTime = zonedDateTime.truncatedTo(ChronoUnit.DAYS)
+            .plusHours(timeOfDay.getHour())
+            .plusMinutes(timeOfDay.getMinute());
+        return nextDateTime.isAfter(zonedDateTime) ? nextDateTime : nextDateTime.plusDays(1);
+    }
+
+    /**
      * Return the previous whole hour from a given date. E.g. If the time is 07:30, return 06:00.
      */
     public static LocalDateTime getPreviousWholeHourFrom(LocalDateTime dateTime) {
