@@ -448,30 +448,25 @@ public class MonitoredTrip extends Model {
      */
     public static TripUsers getAddedUsers(MonitoredTrip monitoredTrip, MonitoredTrip originalTrip) {
         RelatedUser addedCompanion = null;
-        if (monitoredTrip.companion != null && monitoredTrip.companion.isConfirmed()) {
-            if (originalTrip == null || originalTrip.companion == null) {
-                // notify added companion if creating trip or setting companion for the first time
-                addedCompanion = monitoredTrip.companion;
-            } else {
-                // notify added companion but not the previous one.
-                if (!originalTrip.companion.email.equals(monitoredTrip.companion.email)) {
-                    addedCompanion = monitoredTrip.companion;
-                }
-            }
+        if (monitoredTrip.companion != null && monitoredTrip.companion.isConfirmed() && (
+            originalTrip == null ||
+            originalTrip.companion == null ||
+            !originalTrip.companion.email.equals(monitoredTrip.companion.email)
+        )) {
+            // notify added companion if creating trip or setting companion for the first time,
+            // or setting a different companion.
+            addedCompanion = monitoredTrip.companion;
         }
 
         MobilityProfileLite addedPrimaryTraveler = null;
-        if (monitoredTrip.primary != null) {
-            if (originalTrip == null || originalTrip.primary == null) {
-                // notify everyone
-                addedPrimaryTraveler = monitoredTrip.primary;
-            } else {
-                // notify added traveler
-                // email could be used too be primary travelers
-                if (!originalTrip.primary.userId.equals(monitoredTrip.primary.userId)) {
-                    addedPrimaryTraveler = monitoredTrip.primary;
-                }
-            }
+        if (monitoredTrip.primary != null && (
+            originalTrip == null ||
+            originalTrip.primary == null ||
+            !originalTrip.primary.userId.equals(monitoredTrip.primary.userId)
+        )) {
+            // notify added primary traveler if creating trip or setting primary traveler for the first time,
+            // or setting a different primary traveler.
+            addedPrimaryTraveler = monitoredTrip.primary;
         }
 
         List<RelatedUser> addedObservers = new ArrayList<>();
