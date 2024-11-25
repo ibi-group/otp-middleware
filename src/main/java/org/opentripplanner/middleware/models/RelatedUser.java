@@ -15,6 +15,10 @@ public class RelatedUser {
         // Required for JSON deserialization.
     }
 
+    public RelatedUser(String email, RelatedUserStatus status) {
+        this(email, status, null);
+    }
+
     public RelatedUser(String email, RelatedUserStatus status, String nickname) {
         this.email = email;
         this.status = status;

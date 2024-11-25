@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.opentripplanner.middleware.models.RelatedUser.RelatedUserStatus.CONFIRMED;
+import static org.opentripplanner.middleware.models.RelatedUser.RelatedUserStatus.PENDING;
 
 class MonitoredTripTest {
     @Test
@@ -79,30 +81,13 @@ class MonitoredTripTest {
         MobilityProfileLite newPrimary = new MobilityProfileLite();
         primary.userId = "new-primary-user-id";
 
-        RelatedUser companion = new RelatedUser();
-        companion.email = "companion@example.com";
-        companion.status = RelatedUser.RelatedUserStatus.CONFIRMED;
+        RelatedUser companion = new RelatedUser("companion@example.com", CONFIRMED);
+        RelatedUser newCompanion = new RelatedUser("new-companion@example.com", CONFIRMED);
+        RelatedUser unconfirmedCompanion = new RelatedUser("unconfirmed-companion@example.com", PENDING);
 
-        RelatedUser newCompanion = new RelatedUser();
-        newCompanion.email = "new-companion@example.com";
-        newCompanion.status = RelatedUser.RelatedUserStatus.CONFIRMED;
-
-
-        RelatedUser unconfirmedCompanion = new RelatedUser();
-        unconfirmedCompanion.email = "unconfirmed-companion@example.com";
-        unconfirmedCompanion.status = RelatedUser.RelatedUserStatus.PENDING;
-
-        RelatedUser observer1 = new RelatedUser();
-        observer1.email = "observer1@example.com";
-        observer1.status = RelatedUser.RelatedUserStatus.CONFIRMED;
-
-        RelatedUser observer2 = new RelatedUser();
-        observer2.email = "observer2@example.com";
-        observer2.status = RelatedUser.RelatedUserStatus.CONFIRMED;
-
-        RelatedUser observer3 = new RelatedUser();
-        observer3.email = "observer3@example.com";
-        observer3.status = RelatedUser.RelatedUserStatus.CONFIRMED;
+        RelatedUser observer1 = new RelatedUser("observer1@example.com", CONFIRMED);
+        RelatedUser observer2 = new RelatedUser("observer2@example.com", CONFIRMED);
+        RelatedUser observer3 = new RelatedUser("observer3@example.com", CONFIRMED);
 
         List<RelatedUser> observers = List.of(observer1, observer2);
 
