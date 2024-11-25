@@ -32,6 +32,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_SUBJECT;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_SUBJECT_FOR_USER;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
@@ -435,6 +437,12 @@ public class NotificationUtils {
             otpUser.pushDevices = numPushDevices;
             Persistence.otpUsers.replace(otpUser.id, otpUser);
       	}
+    }
+
+    public static String getTripEmailSubject(OtpUser otpUser, Locale locale, MonitoredTrip trip) {
+        return trip.tripName != null
+            ? String.format(TRIP_EMAIL_SUBJECT.get(locale), trip.tripName)
+            : String.format(TRIP_EMAIL_SUBJECT_FOR_USER.get(locale), otpUser.email);
     }
 
     static class NotificationInfo {

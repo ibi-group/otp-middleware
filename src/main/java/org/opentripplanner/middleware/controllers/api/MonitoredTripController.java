@@ -199,7 +199,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             NotificationUtils.sendEmail(
                 companionUser,
                 // TODO: Set the sender as the user who added you to their trip (like GitHub, Jira, etc)
-                monitoredTrip.tripName + " Notification", // TODO: Reuse trip monitor notification subject
+                NotificationUtils.getTripEmailSubject(companionUser, locale, monitoredTrip),
                 "ShareTripText.ftl", // TODO: See if msg body can be reused
                 "ShareTripHtml.ftl",
                 Map.of(

@@ -586,9 +586,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private boolean sendEmail(OtpUser otpUser, Map<String, Object> data) {
         Locale locale = getOtpUserLocale();
-        String subject = trip.tripName != null
-            ? String.format(Message.TRIP_EMAIL_SUBJECT.get(locale), trip.tripName)
-            : String.format(Message.TRIP_EMAIL_SUBJECT_FOR_USER.get(locale), otpUser.email);
+        String subject = NotificationUtils.getTripEmailSubject(otpUser, locale, trip);
         return NotificationUtils.sendEmail(
             otpUser,
             subject,
