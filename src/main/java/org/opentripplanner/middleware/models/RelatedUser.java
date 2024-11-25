@@ -29,5 +29,9 @@ public class RelatedUser {
         this (email, status, nickname);
         this.acceptKey = acceptKey;
     }
+
+    public boolean isConfirmed() {
+        return status == RelatedUserStatus.CONFIRMED;
+    }
 }
 

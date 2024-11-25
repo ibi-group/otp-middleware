@@ -448,7 +448,7 @@ public class MonitoredTrip extends Model {
      */
     public static TripUsers getAddedUsers(MonitoredTrip monitoredTrip, MonitoredTrip originalTrip) {
         RelatedUser addedCompanion = null;
-        if (monitoredTrip.companion != null && monitoredTrip.companion.status == RelatedUser.RelatedUserStatus.CONFIRMED) {
+        if (monitoredTrip.companion != null && monitoredTrip.companion.isConfirmed()) {
             if (originalTrip == null || originalTrip.companion == null) {
                 // notify added companion if creating trip or setting companion for the first time
                 addedCompanion = monitoredTrip.companion;
@@ -477,7 +477,7 @@ public class MonitoredTrip extends Model {
         List<RelatedUser> addedObservers = new ArrayList<>();
         if (monitoredTrip.observers != null) {
             List<RelatedUser> confirmedObservers = monitoredTrip.observers.stream()
-                .filter(o -> o.status == RelatedUser.RelatedUserStatus.CONFIRMED)
+                .filter(RelatedUser::isConfirmed)
                 .collect(Collectors.toList());
             if (originalTrip == null || originalTrip.observers == null) {
                 // notify everyone
