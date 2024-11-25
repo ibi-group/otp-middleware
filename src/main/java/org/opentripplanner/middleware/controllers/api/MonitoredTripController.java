@@ -21,8 +21,6 @@ import org.opentripplanner.middleware.utils.SwaggerUtils;
 import spark.Request;
 import spark.Response;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +29,7 @@ import java.util.stream.Collectors;
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.models.MonitoredTrip.USER_ID_FIELD_NAME;
+import static org.opentripplanner.middleware.models.MonitoredTrip.getAddedUsers;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
@@ -50,6 +49,12 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     private final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
 
     private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
+
+    private enum UserType {
+        COMPANION,
+        OBSERVER,
+        PRIMARY_TRAVELER
+    }
 
     public MonitoredTripController(String apiPrefix) {
         super(apiPrefix, Persistence.monitoredTrips, "secure/monitoredtrip");
@@ -147,69 +152,69 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     /** Notify users added as companions or observers to a trip. (Removed users won't get notified.) */
     private void notifyTripCompanionsAndObservers(MonitoredTrip monitoredTrip, MonitoredTrip originalTrip) {
-        RelatedUser addedCompanion = null;
-        List<RelatedUser> addedObservers = new ArrayList<>();
-        if (monitoredTrip.companion != null) {
-            if (originalTrip == null || originalTrip.companion == null) {
-                // notify everyone
-                addedCompanion = monitoredTrip.companion;
-            } else {
-                // notify added companions
-                if (!originalTrip.companion.email.equals(monitoredTrip.companion.email)) {
-                    addedCompanion = monitoredTrip.companion;
-                }
-            }
+        MonitoredTrip.TripUsers usersToNotify = getAddedUsers(monitoredTrip, originalTrip);
+
+        if (usersToNotify.companion != null) {
+            OtpUser companionUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", usersToNotify.companion.email));
+            notifyCompanion(monitoredTrip, companionUser, UserType.COMPANION);
         }
 
-        if (monitoredTrip.observers != null) {
-            if (originalTrip == null || originalTrip.observers == null) {
-                // notify everyone
-                addedObservers.addAll(monitoredTrip.observers);
-            } else {
-                // notify added observers
-                Set<String> existingObserverEmails = originalTrip.observers.stream()
-                    .map(obs -> obs.email)
-                    .collect(Collectors.toSet());
-                monitoredTrip.observers.forEach(obs -> {
-                    if (!existingObserverEmails.contains(obs.email)) {
-                        addedObservers.add(obs);
-                    }
-                });
-            }
+        if (usersToNotify.primary != null) {
+            // email could be used too for primary users
+            OtpUser primaryUser = Persistence.otpUsers.getById(usersToNotify.primary.userId);
+            notifyCompanion(monitoredTrip, primaryUser, UserType.PRIMARY_TRAVELER);
         }
 
-        if (addedCompanion != null) {
-            OtpUser companionUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", addedCompanion.email));
-            if (companionUser != null) {
-                Locale locale = getOtpUserLocale(companionUser);
-                String tripLinkLabel = Message.TRIP_LINK_TEXT.get(locale);
-                String tripUrl = monitoredTrip.getTripUrl();
-
-                OtpUser tripCreator = Persistence.otpUsers.getById(monitoredTrip.userId);
-
-                // TODO: finish i18n
-                // TODO: Refactor common email data.
-                NotificationUtils.sendEmail(
-                    companionUser,
-                    String.format("%s: %s shared a trip with you.", OTP_UI_NAME, tripCreator.email),
-                    "ShareTripText.ftl",
-                    "ShareTripHtml.ftl",
-                    Map.of(
-                        "emailGreeting", String.format(
-                            "You are a companion for %s on a trip from %s to %s.",
-                            tripCreator.email,
-                            monitoredTrip.from.name,
-                            monitoredTrip.to.name
-                        ),
-                        "tripUrl", tripUrl,
-                        "tripLinkAnchorLabel", tripLinkLabel,
-                        "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
-                        "emailFooter", String.format(Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
-                        "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
-                        "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH)
-                    )
-                );
+        if (!usersToNotify.observers.isEmpty()) {
+            for (RelatedUser observer : usersToNotify.observers) {
+                OtpUser observerUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", observer.email));
+                notifyCompanion(monitoredTrip, observerUser, UserType.OBSERVER);
             }
+        }
+    }
+
+    private void notifyCompanion(MonitoredTrip monitoredTrip, OtpUser companionUser, UserType userType) {
+        if (companionUser != null) {
+            Locale locale = getOtpUserLocale(companionUser);
+            String tripLinkLabel = Message.TRIP_LINK_TEXT.get(locale);
+            String tripUrl = monitoredTrip.getTripUrl();
+
+            OtpUser tripCreator = Persistence.otpUsers.getById(monitoredTrip.userId);
+
+            String greeting;
+            switch (userType) {
+                case COMPANION:
+                    greeting = "%s added you as a companion on their trip:";
+                    break;
+                case PRIMARY_TRAVELER:
+                    greeting = "%s made you the primary traveler on this trip:";
+                    break;
+                case OBSERVER:
+                default:
+                    greeting = "%s added you as an observer for their trip:";
+                    break;
+            }
+
+            // TODO: finish i18n
+            NotificationUtils.sendEmail(
+                companionUser,
+                // TODO: Set the sender as the user who added you to their trip (like GitHub, Jira, etc)
+                monitoredTrip.tripName + " Notification", // TODO: Reuse trip monitor notification subject
+                "ShareTripText.ftl", // TODO: See if msg body can be reused
+                "ShareTripHtml.ftl",
+                Map.of(
+                    "emailGreeting", String.format(
+                        greeting,
+                        tripCreator.email
+                    ),
+                    "tripUrl", tripUrl,
+                    "tripLinkAnchorLabel", tripLinkLabel,
+                    "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
+                    "emailFooter", String.format(Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
+                    "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
+                    "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH)
+                )
+            );
         }
     }
 

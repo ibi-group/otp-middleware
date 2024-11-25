@@ -28,7 +28,9 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.ACCOUNT_PATH;
 
@@ -439,5 +441,72 @@ public class MonitoredTrip extends Model {
     @BsonIgnore
     public String getTripUrl() {
         return String.format("%s%s/%s", OTP_UI_URL, TRIPS_PATH, id);
+    }
+
+    /**
+     * Gets users not previously involved (as primary traveler, companion, or observer) in a trip.
+     */
+    public static TripUsers getAddedUsers(MonitoredTrip monitoredTrip, MonitoredTrip originalTrip) {
+        RelatedUser addedCompanion = null;
+        if (monitoredTrip.companion != null && monitoredTrip.companion.status == RelatedUser.RelatedUserStatus.CONFIRMED) {
+            if (originalTrip == null || originalTrip.companion == null) {
+                // notify added companion if creating trip or setting companion for the first time
+                addedCompanion = monitoredTrip.companion;
+            } else {
+                // notify added companion but not the previous one.
+                if (!originalTrip.companion.email.equals(monitoredTrip.companion.email)) {
+                    addedCompanion = monitoredTrip.companion;
+                }
+            }
+        }
+
+        MobilityProfileLite addedPrimaryTraveler = null;
+        if (monitoredTrip.primary != null) {
+            if (originalTrip == null || originalTrip.primary == null) {
+                // notify everyone
+                addedPrimaryTraveler = monitoredTrip.primary;
+            } else {
+                // notify added traveler
+                // email could be used too be primary travelers
+                if (!originalTrip.primary.userId.equals(monitoredTrip.primary.userId)) {
+                    addedPrimaryTraveler = monitoredTrip.primary;
+                }
+            }
+        }
+
+        List<RelatedUser> addedObservers = new ArrayList<>();
+        if (monitoredTrip.observers != null) {
+            List<RelatedUser> confirmedObservers = monitoredTrip.observers.stream()
+                .filter(o -> o.status == RelatedUser.RelatedUserStatus.CONFIRMED)
+                .collect(Collectors.toList());
+            if (originalTrip == null || originalTrip.observers == null) {
+                // notify everyone
+                addedObservers.addAll(confirmedObservers);
+            } else {
+                // notify added observers
+                Set<String> existingObserverEmails = originalTrip.observers.stream()
+                    .map(obs -> obs.email)
+                    .collect(Collectors.toSet());
+                confirmedObservers.forEach(obs -> {
+                    if (!existingObserverEmails.contains(obs.email)) {
+                        addedObservers.add(obs);
+                    }
+                });
+            }
+        }
+
+        return new TripUsers(addedPrimaryTraveler, addedCompanion, addedObservers);
+    }
+
+    public static class TripUsers {
+        public final RelatedUser companion;
+        public final List<RelatedUser> observers;
+        public final MobilityProfileLite primary;
+
+        public TripUsers(MobilityProfileLite primary, RelatedUser companion, List<RelatedUser> observers) {
+            this.primary = primary;
+            this.companion = companion;
+            this.observers = observers;
+        }
     }
 }
