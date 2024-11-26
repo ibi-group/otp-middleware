@@ -37,9 +37,6 @@ import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_FOOTER;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_SUBJECT;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_SUBJECT_FOR_USER;
-import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_COMPANION;
-import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_OBSERVER;
-import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_PRIMARY_TRAVELER;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_LINK_TEXT;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.ACCOUNT_PATH;
@@ -72,12 +69,6 @@ public class NotificationUtils {
     private static final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
     private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
     private static final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
-
-    public enum UserType {
-        COMPANION,
-        OBSERVER,
-        PRIMARY_TRAVELER
-    }
 
     /**
      * Although SMS are 160 characters long and Twilio supports sending up to 1600 characters,
@@ -485,23 +476,15 @@ public class NotificationUtils {
     /**
      * Sends a notification to a specified companion user.
      */
-    public static void notifyCompanion(MonitoredTrip monitoredTrip, OtpUser tripCreator, OtpUser companionUser, UserType userType) {
+    public static void notifyCompanion(
+        MonitoredTrip monitoredTrip,
+        OtpUser tripCreator,
+        OtpUser companionUser,
+        org.opentripplanner.middleware.i18n.Message message
+    ) {
         if (companionUser != null) {
             Locale locale = getOtpUserLocale(companionUser);
-
-            String greeting;
-            switch (userType) {
-                case COMPANION:
-                    greeting = TRIP_INVITE_COMPANION.get(locale);
-                    break;
-                case PRIMARY_TRAVELER:
-                    greeting = TRIP_INVITE_PRIMARY_TRAVELER.get(locale);
-                    break;
-                case OBSERVER:
-                default:
-                    greeting = TRIP_INVITE_OBSERVER.get(locale);
-                    break;
-            }
+            String greeting = message.get(locale);
 
             // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
             Map<String, Object> templateData = new HashMap<>();

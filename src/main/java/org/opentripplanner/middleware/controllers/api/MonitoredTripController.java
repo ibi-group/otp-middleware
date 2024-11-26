@@ -24,12 +24,16 @@ import java.util.stream.Collectors;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_COMPANION;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_OBSERVER;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_PRIMARY_TRAVELER;
 import static org.opentripplanner.middleware.models.MonitoredTrip.USER_ID_FIELD_NAME;
 import static org.opentripplanner.middleware.models.MonitoredTrip.getAddedUsers;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
+
 
 /**
  * Implementation of the {@link ApiController} abstract class for managing {@link MonitoredTrip} entities. This
@@ -140,19 +144,19 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
         if (usersToNotify.companion != null) {
             OtpUser companionUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", usersToNotify.companion.email));
-            NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, companionUser, NotificationUtils.UserType.COMPANION);
+            NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, companionUser, TRIP_INVITE_COMPANION);
         }
 
         if (usersToNotify.primary != null) {
             // email could be used too for primary users
             OtpUser primaryUser = Persistence.otpUsers.getById(usersToNotify.primary.userId);
-            NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, primaryUser, NotificationUtils.UserType.PRIMARY_TRAVELER);
+            NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, primaryUser, TRIP_INVITE_PRIMARY_TRAVELER);
         }
 
         if (!usersToNotify.observers.isEmpty()) {
             for (RelatedUser observer : usersToNotify.observers) {
                 OtpUser observerUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", observer.email));
-                NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, observerUser, NotificationUtils.UserType.OBSERVER);
+                NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, observerUser, TRIP_INVITE_OBSERVER);
             }
         }
     }
