@@ -162,8 +162,8 @@ class NotificationUtilsTest {
         String emailAlias = "<rideguide@agency.example.com>";
 
         return Stream.of(
-            Arguments.of(emailAlias, user1, user1.email),
-            Arguments.of(null, user1, user1.email),
+            Arguments.of(emailAlias, user1, "user1 at example.com"),
+            Arguments.of(null, user1, null),
             Arguments.of(emailAlias, user2, user2.name)
         );
     }
