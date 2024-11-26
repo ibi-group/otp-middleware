@@ -136,22 +136,23 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     /** Notify users added as companions or observers to a trip. (Removed users won't get notified.) */
     private void notifyTripCompanionsAndObservers(MonitoredTrip monitoredTrip, MonitoredTrip originalTrip) {
         MonitoredTrip.TripUsers usersToNotify = getAddedUsers(monitoredTrip, originalTrip);
+        OtpUser tripCreator = Persistence.otpUsers.getById(monitoredTrip.userId);
 
         if (usersToNotify.companion != null) {
             OtpUser companionUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", usersToNotify.companion.email));
-            NotificationUtils.notifyCompanion(monitoredTrip, companionUser, NotificationUtils.UserType.COMPANION);
+            NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, companionUser, NotificationUtils.UserType.COMPANION);
         }
 
         if (usersToNotify.primary != null) {
             // email could be used too for primary users
             OtpUser primaryUser = Persistence.otpUsers.getById(usersToNotify.primary.userId);
-            NotificationUtils.notifyCompanion(monitoredTrip, primaryUser, NotificationUtils.UserType.PRIMARY_TRAVELER);
+            NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, primaryUser, NotificationUtils.UserType.PRIMARY_TRAVELER);
         }
 
         if (!usersToNotify.observers.isEmpty()) {
             for (RelatedUser observer : usersToNotify.observers) {
                 OtpUser observerUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", observer.email));
-                NotificationUtils.notifyCompanion(monitoredTrip, observerUser, NotificationUtils.UserType.OBSERVER);
+                NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, observerUser, NotificationUtils.UserType.OBSERVER);
             }
         }
     }

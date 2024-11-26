@@ -480,13 +480,11 @@ public class NotificationUtils {
     /**
      * Sends a notification to a specified companion user.
      */
-    public static void notifyCompanion(MonitoredTrip monitoredTrip, OtpUser companionUser, UserType userType) {
+    public static void notifyCompanion(MonitoredTrip monitoredTrip, OtpUser tripCreator, OtpUser companionUser, UserType userType) {
         if (companionUser != null) {
             Locale locale = getOtpUserLocale(companionUser);
             String tripLinkLabel = TRIP_LINK_TEXT.get(locale);
             String tripUrl = monitoredTrip.getTripUrl();
-
-            OtpUser tripCreator = Persistence.otpUsers.getById(monitoredTrip.userId);
 
             String greeting;
             switch (userType) {
@@ -506,7 +504,7 @@ public class NotificationUtils {
                 replaceUserNameInFromEmail(FROM_EMAIL, tripCreator),
                 companionUser.email,
                 getTripEmailSubject(companionUser, locale, monitoredTrip),
-                "ShareTripText.ftl", // TODO: See if msg body can be reused
+                "ShareTripText.ftl",
                 "ShareTripHtml.ftl",
                 Map.of(
                     "emailGreeting", String.format(
