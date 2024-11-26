@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 /**
  * This class contains tests of selected scenarios in {@link MobilityProfile}.
  */
-public class MobilityProfileTest {
+class MobilityProfileTest {
     // The mobility modes tested are tightly coupled with algorithms in the
     // Georgia Tech Mobility Profile Configuration / Logical Flow document, as
     // implemented in the MobilityProfile#updateMobilityMode() method.  Changes
@@ -20,21 +20,26 @@ public class MobilityProfileTest {
 
     private static Stream<Arguments> provideModes() {
         return Stream.of(
-            Arguments.of(Set.of("service animal", "crutches"), "Device"),
-            Arguments.of(Set.of("service animal", "electric wheelchair"), "WChairE"),
-            Arguments.of(Set.of("service animal", "electric wheelchair", "white cane"), "WChairE-Blind"),
-            Arguments.of(Set.of("manual wheelchair", "electric wheelchair", "white cane"), "WChairM-Blind"),
-            Arguments.of(Collections.EMPTY_SET, "None"),
-            Arguments.of(Set.of("cardboard transmogrifier"), "None"), // Unknown/invalid device
-            Arguments.of(Set.of("cane", "none", "service animal"), "None") // Devices include "none" poison pill
+            Arguments.of(Set.of("service animal", "crutches"), false, "Device"),
+            Arguments.of(Set.of("service animal", "crutches"), true, "Device"),
+            Arguments.of(Set.of("service animal", "electric wheelchair"), false, "WChairE"),
+            Arguments.of(Set.of("service animal", "electric wheelchair", "white cane"), false, "WChairE-Blind"),
+            Arguments.of(Set.of("manual wheelchair", "electric wheelchair", "white cane"), false, "WChairM-Blind"),
+            Arguments.of(Collections.EMPTY_SET, false, "None"),
+            Arguments.of(Collections.EMPTY_SET, true, "Some"),
+            Arguments.of(Set.of("cardboard transmogrifier"), false, "None"), // Unknown/invalid device
+            Arguments.of(Set.of("cane", "none", "service animal"), false, "None"), // Devices include "none" poison pill
+            Arguments.of(Set.of("none"), false, "None"), // Devices include "none" poison pill
+            Arguments.of(Set.of("none"), true, "Some") // Devices include "none" poison pill
         );
     }
 
     @ParameterizedTest
     @MethodSource("provideModes")
-    public void testModes(Set<String> devices, String mode) {
+    void testModes(Set<String> devices, boolean isMobilityLimited, String mode) {
         var prof = new MobilityProfile();
         prof.mobilityDevices = devices;
+        prof.isMobilityLimited = isMobilityLimited;
         prof.updateMobilityMode();
         Assertions.assertEquals(mode, prof.mobilityMode);
     }
@@ -50,7 +55,7 @@ public class MobilityProfileTest {
 
     @ParameterizedTest
     @MethodSource("provideModesVision")
-    public void testModesVision(MobilityProfile.VisionLimitation limitation, Set<String> devices, String mode) {
+    void testModesVision(MobilityProfile.VisionLimitation limitation, Set<String> devices, String mode) {
         var prof = new MobilityProfile();
         prof.mobilityDevices = devices;
         prof.visionLimitation = limitation;
