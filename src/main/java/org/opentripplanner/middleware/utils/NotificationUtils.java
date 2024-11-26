@@ -32,8 +32,14 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_FOOTER;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_SUBJECT;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_SUBJECT_FOR_USER;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_COMPANION;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_OBSERVER;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_PRIMARY_TRAVELER;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_LINK_TEXT;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
@@ -463,16 +469,21 @@ public class NotificationUtils {
      * Replaces the sender display name with the specified user's name (fallback to the user's email).
      */
     public static String replaceUserNameInFromEmail(String fromEmail, OtpUser otpUser) {
+        if (Strings.isBlank(fromEmail)) return fromEmail;
+
         int firstBracketIndex = fromEmail.indexOf('<');
         int lastBracketIndex = fromEmail.indexOf('>');
         String displayedName = Strings.isBlank(otpUser.name) ? otpUser.email : otpUser.name;
         return String.format("%s %s", displayedName, fromEmail.substring(firstBracketIndex, lastBracketIndex + 1));
     }
 
+    /**
+     * Sends a notification to a specified companion user.
+     */
     public static void notifyCompanion(MonitoredTrip monitoredTrip, OtpUser companionUser, UserType userType) {
         if (companionUser != null) {
             Locale locale = getOtpUserLocale(companionUser);
-            String tripLinkLabel = org.opentripplanner.middleware.i18n.Message.TRIP_LINK_TEXT.get(locale);
+            String tripLinkLabel = TRIP_LINK_TEXT.get(locale);
             String tripUrl = monitoredTrip.getTripUrl();
 
             OtpUser tripCreator = Persistence.otpUsers.getById(monitoredTrip.userId);
@@ -480,20 +491,19 @@ public class NotificationUtils {
             String greeting;
             switch (userType) {
                 case COMPANION:
-                    greeting = "%s added you as a companion on their trip:";
+                    greeting = TRIP_INVITE_COMPANION.get(locale);
                     break;
                 case PRIMARY_TRAVELER:
-                    greeting = "%s made you the primary traveler on this trip:";
+                    greeting = TRIP_INVITE_PRIMARY_TRAVELER.get(locale);
                     break;
                 case OBSERVER:
                 default:
-                    greeting = "%s added you as an observer for their trip:";
+                    greeting = TRIP_INVITE_OBSERVER.get(locale);
                     break;
             }
 
-            // TODO: finish i18n
             sendEmail(
-                replaceUserNameInFromEmail(FROM_EMAIL, Persistence.otpUsers.getById(monitoredTrip.userId)),
+                replaceUserNameInFromEmail(FROM_EMAIL, tripCreator),
                 companionUser.email,
                 getTripEmailSubject(companionUser, locale, monitoredTrip),
                 "ShareTripText.ftl", // TODO: See if msg body can be reused
@@ -506,8 +516,8 @@ public class NotificationUtils {
                     "tripUrl", tripUrl,
                     "tripLinkAnchorLabel", tripLinkLabel,
                     "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
-                    "emailFooter", String.format(org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
-                    "manageLinkText", org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
+                    "emailFooter", String.format(TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
+                    "manageLinkText", TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
                     "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH)
                 )
             );

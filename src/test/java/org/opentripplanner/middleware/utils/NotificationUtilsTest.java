@@ -145,10 +145,10 @@ class NotificationUtilsTest {
 
     @ParameterizedTest
     @MethodSource("createCanReplaceUserNameInFromEmailCases")
-    void canReplaceUserNameInFromEmail(OtpUser user, String expectedPrefix) {
-        final String emailAlias = "<rideguide@agency.example.com>";
-        String configuredFromEmail = String.format("RideGuide %s", emailAlias);
-        assertEquals(String.format("%s %s", expectedPrefix, emailAlias), NotificationUtils.replaceUserNameInFromEmail(configuredFromEmail, user));
+    void canReplaceUserNameInFromEmail(String emailAlias, OtpUser user, String expectedPrefix) {
+        String fromEmail = emailAlias != null ? String.format("RideGuide %s", emailAlias) : null;
+        String expected = fromEmail != null ? fromEmail.replace("RideGuide", expectedPrefix) : null;
+        assertEquals(expected, NotificationUtils.replaceUserNameInFromEmail(fromEmail, user));
     }
 
     private static Stream<Arguments> createCanReplaceUserNameInFromEmailCases() {
@@ -159,9 +159,12 @@ class NotificationUtilsTest {
         user2.email = "user2@example.com";
         user2.name = "Joan Smith";
 
+        String emailAlias = "<rideguide@agency.example.com>";
+
         return Stream.of(
-            Arguments.of(user1, user1.email),
-            Arguments.of(user2, user2.name)
+            Arguments.of(emailAlias, user1, user1.email),
+            Arguments.of(null, user1, user1.email),
+            Arguments.of(emailAlias, user2, user2.name)
         );
     }
 }
