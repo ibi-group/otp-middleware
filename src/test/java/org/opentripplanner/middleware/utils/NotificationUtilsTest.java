@@ -142,4 +142,26 @@ class NotificationUtilsTest {
             )
         );
     }
+
+    @ParameterizedTest
+    @MethodSource("createCanReplaceUserNameInFromEmailCases")
+    void canReplaceUserNameInFromEmail(OtpUser user, String expectedPrefix) {
+        final String emailAlias = "<rideguide@agency.example.com>";
+        String configuredFromEmail = String.format("RideGuide %s", emailAlias);
+        assertEquals(String.format("%s %s", expectedPrefix, emailAlias), NotificationUtils.replaceUserNameInFromEmail(configuredFromEmail, user));
+    }
+
+    private static Stream<Arguments> createCanReplaceUserNameInFromEmailCases() {
+        OtpUser user1 = new OtpUser();
+        user1.email = "user1@example.com";
+
+        OtpUser user2 = new OtpUser();
+        user2.email = "user2@example.com";
+        user2.name = "Joan Smith";
+
+        return Stream.of(
+            Arguments.of(user1, user1.email),
+            Arguments.of(user2, user2.name)
+        );
+    }
 }

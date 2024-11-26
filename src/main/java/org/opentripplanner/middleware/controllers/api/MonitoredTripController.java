@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
-import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -13,7 +12,6 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
-import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
@@ -21,8 +19,6 @@ import org.opentripplanner.middleware.utils.SwaggerUtils;
 import spark.Request;
 import spark.Response;
 
-import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,11 +26,8 @@ import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.models.MonitoredTrip.USER_ID_FIELD_NAME;
 import static org.opentripplanner.middleware.models.MonitoredTrip.getAddedUsers;
-import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
-import static org.opentripplanner.middleware.utils.I18nUtils.getOtpUserLocale;
-import static org.opentripplanner.middleware.utils.I18nUtils.label;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
@@ -45,16 +38,6 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 public class MonitoredTripController extends ApiController<MonitoredTrip> {
     private static final int MAXIMUM_PERMITTED_MONITORED_TRIPS
         = getConfigPropertyAsInt("MAXIMUM_PERMITTED_MONITORED_TRIPS", 5);
-
-    private final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
-
-    private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
-
-    private enum UserType {
-        COMPANION,
-        OBSERVER,
-        PRIMARY_TRAVELER
-    }
 
     public MonitoredTripController(String apiPrefix) {
         super(apiPrefix, Persistence.monitoredTrips, "secure/monitoredtrip");
@@ -156,65 +139,20 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
         if (usersToNotify.companion != null) {
             OtpUser companionUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", usersToNotify.companion.email));
-            notifyCompanion(monitoredTrip, companionUser, UserType.COMPANION);
+            NotificationUtils.notifyCompanion(monitoredTrip, companionUser, NotificationUtils.UserType.COMPANION);
         }
 
         if (usersToNotify.primary != null) {
             // email could be used too for primary users
             OtpUser primaryUser = Persistence.otpUsers.getById(usersToNotify.primary.userId);
-            notifyCompanion(monitoredTrip, primaryUser, UserType.PRIMARY_TRAVELER);
+            NotificationUtils.notifyCompanion(monitoredTrip, primaryUser, NotificationUtils.UserType.PRIMARY_TRAVELER);
         }
 
         if (!usersToNotify.observers.isEmpty()) {
             for (RelatedUser observer : usersToNotify.observers) {
                 OtpUser observerUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", observer.email));
-                notifyCompanion(monitoredTrip, observerUser, UserType.OBSERVER);
+                NotificationUtils.notifyCompanion(monitoredTrip, observerUser, NotificationUtils.UserType.OBSERVER);
             }
-        }
-    }
-
-    private void notifyCompanion(MonitoredTrip monitoredTrip, OtpUser companionUser, UserType userType) {
-        if (companionUser != null) {
-            Locale locale = getOtpUserLocale(companionUser);
-            String tripLinkLabel = Message.TRIP_LINK_TEXT.get(locale);
-            String tripUrl = monitoredTrip.getTripUrl();
-
-            OtpUser tripCreator = Persistence.otpUsers.getById(monitoredTrip.userId);
-
-            String greeting;
-            switch (userType) {
-                case COMPANION:
-                    greeting = "%s added you as a companion on their trip:";
-                    break;
-                case PRIMARY_TRAVELER:
-                    greeting = "%s made you the primary traveler on this trip:";
-                    break;
-                case OBSERVER:
-                default:
-                    greeting = "%s added you as an observer for their trip:";
-                    break;
-            }
-
-            // TODO: finish i18n
-            NotificationUtils.sendEmail(
-                companionUser,
-                // TODO: Set the sender as the user who added you to their trip (like GitHub, Jira, etc)
-                NotificationUtils.getTripEmailSubject(companionUser, locale, monitoredTrip),
-                "ShareTripText.ftl", // TODO: See if msg body can be reused
-                "ShareTripHtml.ftl",
-                Map.of(
-                    "emailGreeting", String.format(
-                        greeting,
-                        tripCreator.email
-                    ),
-                    "tripUrl", tripUrl,
-                    "tripLinkAnchorLabel", tripLinkLabel,
-                    "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
-                    "emailFooter", String.format(Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
-                    "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
-                    "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH)
-                )
-            );
         }
     }
 

@@ -35,7 +35,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_SUBJECT;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_SUBJECT_FOR_USER;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION;
+import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.I18nUtils.getOtpUserLocale;
+import static org.opentripplanner.middleware.utils.I18nUtils.label;
 
 /**
  * This class contains utils for sending SMS, email, and push notifications.
@@ -58,6 +61,14 @@ public class NotificationUtils {
     private static final String PUSH_API_URL = getConfigPropertyAsText("PUSH_API_URL");
     private static final String TRIP_SURVEY_ID = getConfigPropertyAsText("TRIP_SURVEY_ID");
     private static final String TRIP_SURVEY_SUBDOMAIN = getConfigPropertyAsText("TRIP_SURVEY_SUBDOMAIN");
+    private static final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
+    private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
+
+    public enum UserType {
+        COMPANION,
+        OBSERVER,
+        PRIMARY_TRAVELER
+    }
 
     /**
      * Although SMS are 160 characters long and Twilio supports sending up to 1600 characters,
@@ -439,10 +450,68 @@ public class NotificationUtils {
       	}
     }
 
+    /**
+     * Gets the localized subject line for a trip notification.
+     */
     public static String getTripEmailSubject(OtpUser otpUser, Locale locale, MonitoredTrip trip) {
         return trip.tripName != null
             ? String.format(TRIP_EMAIL_SUBJECT.get(locale), trip.tripName)
             : String.format(TRIP_EMAIL_SUBJECT_FOR_USER.get(locale), otpUser.email);
+    }
+
+    /**
+     * Replaces the sender display name with the specified user's name (fallback to the user's email).
+     */
+    public static String replaceUserNameInFromEmail(String fromEmail, OtpUser otpUser) {
+        int firstBracketIndex = fromEmail.indexOf('<');
+        int lastBracketIndex = fromEmail.indexOf('>');
+        String displayedName = Strings.isBlank(otpUser.name) ? otpUser.email : otpUser.name;
+        return String.format("%s %s", displayedName, fromEmail.substring(firstBracketIndex, lastBracketIndex + 1));
+    }
+
+    public static void notifyCompanion(MonitoredTrip monitoredTrip, OtpUser companionUser, UserType userType) {
+        if (companionUser != null) {
+            Locale locale = getOtpUserLocale(companionUser);
+            String tripLinkLabel = org.opentripplanner.middleware.i18n.Message.TRIP_LINK_TEXT.get(locale);
+            String tripUrl = monitoredTrip.getTripUrl();
+
+            OtpUser tripCreator = Persistence.otpUsers.getById(monitoredTrip.userId);
+
+            String greeting;
+            switch (userType) {
+                case COMPANION:
+                    greeting = "%s added you as a companion on their trip:";
+                    break;
+                case PRIMARY_TRAVELER:
+                    greeting = "%s made you the primary traveler on this trip:";
+                    break;
+                case OBSERVER:
+                default:
+                    greeting = "%s added you as an observer for their trip:";
+                    break;
+            }
+
+            // TODO: finish i18n
+            sendEmail(
+                replaceUserNameInFromEmail(FROM_EMAIL, Persistence.otpUsers.getById(monitoredTrip.userId)),
+                companionUser.email,
+                getTripEmailSubject(companionUser, locale, monitoredTrip),
+                "ShareTripText.ftl", // TODO: See if msg body can be reused
+                "ShareTripHtml.ftl",
+                Map.of(
+                    "emailGreeting", String.format(
+                        greeting,
+                        tripCreator.email
+                    ),
+                    "tripUrl", tripUrl,
+                    "tripLinkAnchorLabel", tripLinkLabel,
+                    "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
+                    "emailFooter", String.format(org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
+                    "manageLinkText", org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
+                    "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH)
+                )
+            );
+        }
     }
 
     static class NotificationInfo {
