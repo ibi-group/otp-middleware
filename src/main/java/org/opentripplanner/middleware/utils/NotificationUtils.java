@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,6 +42,7 @@ import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_OBSERVER;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_PRIMARY_TRAVELER;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_LINK_TEXT;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION;
+import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.ACCOUNT_PATH;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.I18nUtils.getOtpUserLocale;
@@ -69,6 +71,7 @@ public class NotificationUtils {
     private static final String TRIP_SURVEY_SUBDOMAIN = getConfigPropertyAsText("TRIP_SURVEY_SUBDOMAIN");
     private static final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
     private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
+    private static final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
 
     public enum UserType {
         COMPANION,
@@ -483,8 +486,6 @@ public class NotificationUtils {
     public static void notifyCompanion(MonitoredTrip monitoredTrip, OtpUser tripCreator, OtpUser companionUser, UserType userType) {
         if (companionUser != null) {
             Locale locale = getOtpUserLocale(companionUser);
-            String tripLinkLabel = TRIP_LINK_TEXT.get(locale);
-            String tripUrl = monitoredTrip.getTripUrl();
 
             String greeting;
             switch (userType) {
@@ -500,26 +501,34 @@ public class NotificationUtils {
                     break;
             }
 
+            // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
+            Map<String, Object> templateData = new HashMap<>();
+            templateData.put("emailGreeting", String.format(greeting, tripCreator.email));
+            templateData.putAll(getTripNotificationFields(monitoredTrip, locale));
+
             sendEmail(
                 replaceUserNameInFromEmail(FROM_EMAIL, tripCreator),
                 companionUser.email,
                 getTripEmailSubject(companionUser, locale, monitoredTrip),
                 "ShareTripText.ftl",
                 "ShareTripHtml.ftl",
-                Map.of(
-                    "emailGreeting", String.format(
-                        greeting,
-                        tripCreator.email
-                    ),
-                    "tripUrl", tripUrl,
-                    "tripLinkAnchorLabel", tripLinkLabel,
-                    "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
-                    "emailFooter", String.format(TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
-                    "manageLinkText", TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
-                    "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH)
-                )
+                templateData
             );
         }
+    }
+
+    public static Map<String, Object> getTripNotificationFields(MonitoredTrip monitoredTrip, Locale locale) {
+        String tripLinkLabel = TRIP_LINK_TEXT.get(locale);
+        String tripUrl = String.format("%s%s/%s", OTP_UI_URL, TRIPS_PATH, monitoredTrip.id);
+
+        return Map.of(
+            "tripUrl", tripUrl,
+            "tripLinkAnchorLabel", tripLinkLabel,
+            "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
+            "emailFooter", String.format(TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
+            "manageLinkText", TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
+            "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH)
+        );
     }
 
     static class NotificationInfo {

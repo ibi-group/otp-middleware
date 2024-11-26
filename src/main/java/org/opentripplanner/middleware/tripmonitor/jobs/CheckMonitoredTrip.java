@@ -527,21 +527,15 @@ public class CheckMonitoredTrip implements Runnable {
         String tripNameOrReminder = hasInitialReminder ? initialReminderNotification.body : trip.tripName;
 
         Locale locale = getOtpUserLocale();
-        String tripLinkLabel = Message.TRIP_LINK_TEXT.get(locale);
-        String tripUrl = trip.getTripUrl();
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
-        Map<String, Object> templateData = new HashMap<>(Map.of(
+        Map<String, Object> templateData = new HashMap<>();
+        templateData.putAll(Map.of(
             "emailGreeting", Message.TRIP_EMAIL_GREETING.get(locale),
             "tripNameOrReminder", tripNameOrReminder,
-            "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
-            "tripLinkAnchorLabel", tripLinkLabel,
-            "tripUrl", tripUrl,
-            "emailFooter", String.format(Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
-            "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
-            "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
             "notifications", new ArrayList<>(notifications),
             "smsFooter", Message.SMS_STOP_NOTIFICATIONS.get(locale)
         ));
+        templateData.putAll(NotificationUtils.getTripNotificationFields(trip, locale));
         if (hasInitialReminder) {
             templateData.put("initialReminder", initialReminderNotification);
         }
