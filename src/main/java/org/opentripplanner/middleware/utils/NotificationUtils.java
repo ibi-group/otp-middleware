@@ -502,9 +502,13 @@ public class NotificationUtils {
         }
     }
 
+    private static String getTripUrl(MonitoredTrip trip) {
+        return String.format("%s%s/%s", OTP_UI_URL, TRIPS_PATH, trip.id);
+    }
+
     public static Map<String, Object> getTripNotificationFields(MonitoredTrip monitoredTrip, Locale locale) {
         String tripLinkLabel = TRIP_LINK_TEXT.get(locale);
-        String tripUrl = String.format("%s%s/%s", OTP_UI_URL, TRIPS_PATH, monitoredTrip.id);
+        String tripUrl = getTripUrl(monitoredTrip);
 
         return Map.of(
             "tripUrl", tripUrl,

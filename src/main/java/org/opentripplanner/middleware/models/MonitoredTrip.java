@@ -440,7 +440,7 @@ public class MonitoredTrip extends Model {
             originalTrip.companion == null ||
             !originalTrip.companion.email.equals(monitoredTrip.companion.email)
         )) {
-            // notify added companion if creating trip or setting companion for the first time,
+            // Include the companion if creating trip or setting companion for the first time,
             // or setting a different companion.
             addedCompanion = monitoredTrip.companion;
         }
@@ -451,7 +451,7 @@ public class MonitoredTrip extends Model {
             originalTrip.primary == null ||
             !originalTrip.primary.userId.equals(monitoredTrip.primary.userId)
         )) {
-            // notify added primary traveler if creating trip or setting primary traveler for the first time,
+            // Include the primary traveler if creating trip or setting primary traveler for the first time,
             // or setting a different primary traveler.
             addedPrimaryTraveler = monitoredTrip.primary;
         }
@@ -462,10 +462,10 @@ public class MonitoredTrip extends Model {
                 .filter(RelatedUser::isConfirmed)
                 .collect(Collectors.toList());
             if (originalTrip == null || originalTrip.observers == null) {
-                // notify everyone
+                // Include all observers if creating trip or setting observers for the first time.
                 addedObservers.addAll(confirmedObservers);
             } else {
-                // notify added observers
+                // If observers have been set before, include observers not previously present.
                 Set<String> existingObserverEmails = originalTrip.observers.stream()
                     .map(obs -> obs.email)
                     .collect(Collectors.toSet());
