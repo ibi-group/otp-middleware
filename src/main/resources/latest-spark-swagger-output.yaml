@@ -2589,8 +2589,6 @@ definitions:
   MonitoredTrip:
     type: "object"
     properties:
-      TRIPS_PATH:
-        type: "string"
       userId:
         type: "string"
       tripName:
