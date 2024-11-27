@@ -746,4 +746,57 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         assertEquals(expectedAttempts, monitoredTrip.attemptsToGetMatchingItinerary);
         assertEquals(expectedTripStatus, monitoredTrip.journeyState.tripStatus);
     }
+
+    @ParameterizedTest
+    @MethodSource("createCanUnsnoozeTripCases")
+    void canUnsnoozeTrip(ZonedDateTime time, boolean shouldUnsnooze) throws Exception {
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            false,
+            OtpTestUtils.createDefaultJourneyState()
+        );
+        monitoredTrip.id = UUID.randomUUID().toString();
+        // Mark trip as snoozed
+        monitoredTrip.snoozed = true;
+        Persistence.monitoredTrips.create(monitoredTrip);
+
+        // Mock the current time
+        DateTimeUtils.useFixedClockAt(time);
+
+        // After snoozed trip is over, trip checks on that trip should not be skipped
+        CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+
+        // Add artifacts of prior monitoring (e.g. monitoring was active until a few minutes before trip start)
+        JourneyState journeyState = monitoredTrip.journeyState;
+        journeyState.targetDate = "2020-06-09";
+        journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
+        journeyState.lastCheckedEpochMillis = Instant
+            .ofEpochMilli(monitoredTrip.itinerary.startTime.getTime())
+            .minus(10, ChronoUnit.MINUTES)
+            .toEpochMilli();
+        journeyState.matchingItinerary = monitoredTrip.itinerary;
+        check.previousJourneyState = journeyState;
+        check.previousMatchingItinerary = monitoredTrip.itinerary;
+
+        assertEquals(shouldUnsnooze, check.shouldUnsnoozeTrip());
+        check.shouldSkipMonitoredTripCheck();
+
+        MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
+        assertEquals(!shouldUnsnooze, modifiedTrip.snoozed);
+
+        // Clear the created trip.
+        PersistenceTestUtils.deleteMonitoredTrip(modifiedTrip);
+    }
+
+    private static Stream<Arguments> createCanUnsnoozeTripCases() {
+        // (Trips from above response above starts on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
+        return Stream.of(
+            // At 9:00am on Tuesday, June 9, 2020 (right after trip ends), snoozed trip should remain snoozed.
+            Arguments.of(noonMonday8June2020.withDayOfMonth(9).withHour(9).withMinute(0), false),
+            // At 00:00am on Wednesday, June 10, 2020, snoozed trip should be unsnoozed
+            // but it is too early for the trip to be analyzed again.
+            Arguments.of(noonMonday8June2020.withDayOfMonth(10).withHour(0).withMinute(0), true)
+        );
+    }
 }

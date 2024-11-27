@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -670,17 +671,23 @@ public class CheckMonitoredTrip implements Runnable {
             return true;
         }
 
+        // For trips that are snoozed, see if they should be unsnoozed first.
+        if (trip.snoozed) {
+            if (shouldUnsnoozeTrip()) {
+                // Clear previous journey state and matching itinerary as we want to start afresh.
+                // This will let
+                previousMatchingItinerary = null;
+            } else {
+                LOG.info("Skipping: Trip is snoozed.");
+                return true;
+            }
+        }
+
         if (isPrevMatchingItineraryNotConcluded()) {
             // Skip checking the trip the rest of the time that it is active if the trip was deemed not possible for the
             // next possible time during a previous query to find candidate itinerary matches.
             if (previousJourneyState.tripStatus == TripStatus.NEXT_TRIP_NOT_POSSIBLE) {
                 LOG.info("Skipping: Next trip is not possible.");
-                return true;
-            }
-
-            // skip checking the trip if it has been snoozed
-            if (trip.snoozed) {
-                LOG.info("Skipping: Trip is snoozed.");
                 return true;
             }
 
@@ -928,5 +935,23 @@ public class CheckMonitoredTrip implements Runnable {
 
     private String getTripUrl() {
         return String.format("%s%s/%s", OTP_UI_URL, TRIPS_PATH, trip.id);
+    }
+
+    /**
+     * Whether a trip should be unsnoozed and monitoring should resume.
+     * @return true if the current time is after the calendar day (midnight) after the matching trip start day, false otherwise.
+     */
+    public boolean shouldUnsnoozeTrip() {
+        ZoneId otpZoneId = DateTimeUtils.getOtpZoneId();
+        var midnightAfterPreviousTrip = ZonedDateTime
+            .ofInstant(
+                previousJourneyState.matchingItinerary.startTime.toInstant().plus(1, ChronoUnit.DAYS),
+                otpZoneId
+            )
+            .withHour(0)
+            .withMinute(0)
+            .withSecond(0);
+
+        return DateTimeUtils.nowAsZonedDateTime(otpZoneId).isAfter(midnightAfterPreviousTrip);
     }
 }
