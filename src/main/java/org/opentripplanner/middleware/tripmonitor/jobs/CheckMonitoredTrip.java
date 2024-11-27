@@ -674,8 +674,8 @@ public class CheckMonitoredTrip implements Runnable {
         // For trips that are snoozed, see if they should be unsnoozed first.
         if (trip.snoozed) {
             if (shouldUnsnoozeTrip()) {
-                // Clear previous journey state and matching itinerary as we want to start afresh.
-                // This will let
+                // Clear previous matching itinerary as we want to start afresh.
+                // The snoozed state will be updated later in the process.
                 previousMatchingItinerary = null;
             } else {
                 LOG.info("Skipping: Trip is snoozed.");
