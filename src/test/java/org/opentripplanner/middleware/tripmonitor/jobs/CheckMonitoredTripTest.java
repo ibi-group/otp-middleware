@@ -749,7 +749,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("createCanUnsnoozeTripCases")
-    void canUnsnoozeTrip(ZonedDateTime time, boolean shouldUnsnooze) throws Exception {
+    void canUnsnoozeTrip(ZonedDateTime lastCheckedTime, ZonedDateTime clockTime, boolean shouldUnsnooze) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
             OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
@@ -759,10 +759,14 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.id = UUID.randomUUID().toString();
         // Mark trip as snoozed
         monitoredTrip.snoozed = true;
+        // Set monitored days to Tuesday only.
+        monitoredTrip.monday = false;
+        monitoredTrip.tuesday = true;
+
         Persistence.monitoredTrips.create(monitoredTrip);
 
         // Mock the current time
-        DateTimeUtils.useFixedClockAt(time);
+        DateTimeUtils.useFixedClockAt(clockTime);
 
         // After snoozed trip is over, trip checks on that trip should not be skipped
         CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
@@ -771,10 +775,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         JourneyState journeyState = monitoredTrip.journeyState;
         journeyState.targetDate = "2020-06-09";
         journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
-        journeyState.lastCheckedEpochMillis = Instant
-            .ofEpochMilli(monitoredTrip.itinerary.startTime.getTime())
-            .minus(10, ChronoUnit.MINUTES)
-            .toEpochMilli();
+        // Set last-checked-time
+        journeyState.lastCheckedEpochMillis = lastCheckedTime.toInstant().toEpochMilli();
         journeyState.matchingItinerary = monitoredTrip.itinerary;
         check.previousJourneyState = journeyState;
         check.previousMatchingItinerary = monitoredTrip.itinerary;
@@ -791,12 +793,18 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     private static Stream<Arguments> createCanUnsnoozeTripCases() {
         // (Trips from above response above starts on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
+        ZonedDateTime tuesday = noonMonday8June2020.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
+        ZonedDateTime wednesday = tuesday.withDayOfMonth(10);
+
         return Stream.of(
-            // At 9:00am on Tuesday, June 9, 2020 (right after trip ends), snoozed trip should remain snoozed.
-            Arguments.of(noonMonday8June2020.withDayOfMonth(9).withHour(9).withMinute(0), false),
-            // At 00:00am on Wednesday, June 10, 2020, snoozed trip should be unsnoozed
+            // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should remain snoozed right after trip ends at 9:00am.
+            Arguments.of(tuesday.withHour(8), tuesday.withHour(9), false),
+            // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should unsnooze at 00:00am on Wednesday, June 10, 2020,
             // but it is too early for the trip to be analyzed again.
-            Arguments.of(noonMonday8June2020.withDayOfMonth(10).withHour(0).withMinute(0), true)
+            Arguments.of(tuesday.withHour(8), wednesday, true),
+            // Trip snoozed on Monday, June 8, 2020 (a day before the trip starts), should unsnooze at 00:00 on
+            // Tuesday, June 9, 2020.
+            Arguments.of(noonMonday8June2020, tuesday, true)
         );
     }
 }

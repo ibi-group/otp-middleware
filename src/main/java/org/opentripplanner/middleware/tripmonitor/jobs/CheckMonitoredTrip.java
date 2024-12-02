@@ -939,19 +939,22 @@ public class CheckMonitoredTrip implements Runnable {
 
     /**
      * Whether a trip should be unsnoozed and monitoring should resume.
-     * @return true if the current time is after the calendar day (midnight) after the matching trip start day, false otherwise.
+     * @return true if the current time is after the calendar day (on or after midnight)
+     * after the matching trip start day, false otherwise.
      */
     public boolean shouldUnsnoozeTrip() {
         ZoneId otpZoneId = DateTimeUtils.getOtpZoneId();
-        var midnightAfterPreviousTrip = ZonedDateTime
+        var midnightAfterLastChecked = ZonedDateTime
             .ofInstant(
-                previousJourneyState.matchingItinerary.startTime.toInstant().plus(1, ChronoUnit.DAYS),
+                Instant.ofEpochMilli(previousJourneyState.lastCheckedEpochMillis).plus(1, ChronoUnit.DAYS),
                 otpZoneId
             )
             .withHour(0)
             .withMinute(0)
             .withSecond(0);
 
-        return DateTimeUtils.nowAsZonedDateTime(otpZoneId).isAfter(midnightAfterPreviousTrip);
+        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(otpZoneId);
+        // Include equal or after midnight as true.
+        return !now.isBefore(midnightAfterLastChecked);
     }
 }
