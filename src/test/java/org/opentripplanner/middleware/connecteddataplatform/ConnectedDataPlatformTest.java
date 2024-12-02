@@ -260,7 +260,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripSummary = PersistenceTestUtils.createTripSummary(tripRequestOne.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         TripHistoryUploadJob job = new TripHistoryUploadJob(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
         job.stageUploadHours();
-       job.runInnerLogic();
+        job.runInnerLogic();
         zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
         tempFile = String.join(
             "/",
