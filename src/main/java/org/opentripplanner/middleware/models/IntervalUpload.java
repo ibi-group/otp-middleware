@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A interval upload represents an historic interval (e.g. hour, day) when data was or is planned to be uploaded.
+ * An interval upload represents an historic interval (e.g. hour, day) when data was or is planned to be uploaded.
  * If the status is 'pending', the data is waiting to be uploaded. If the status is 'complete' the data has been
  * uploaded.
  */
