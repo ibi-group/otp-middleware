@@ -771,7 +771,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // After snoozed trip is over, trip checks on that trip should not be skipped
         CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
 
-        // Add artifacts of prior monitoring (e.g. monitoring was active until a few minutes before trip start)
+        // Add artifacts of prior monitoring (e.g. monitoring was active until a few minutes before trip snooze)
         JourneyState journeyState = monitoredTrip.journeyState;
         journeyState.targetDate = "2020-06-09";
         journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
