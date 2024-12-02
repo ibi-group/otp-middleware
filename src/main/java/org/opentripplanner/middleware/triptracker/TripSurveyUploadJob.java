@@ -163,8 +163,12 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
         return idAndTokenPresent;
     }
 
+    /** Assembles the query params for retrieving TypeForm survey responses. */
     public static String responsesParams(LocalDateTime day) {
         ZonedDateTime zonedDay = day.atZone(DateTimeUtils.getOtpZoneId());
+        // The page_size param needs to be passed. Without it, only up to 25 responses are returned by TypeForm.
+        // TypeForm can return up to 1000 responses in one query, see
+        // https://www.typeform.com/developers/responses/reference/retrieve-responses/.
         return String.format(
             "?page_size=1000&since=%d&until=%d",
             zonedDay.toEpochSecond(),
