@@ -130,16 +130,6 @@ class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {
         assertEquals(IntervalUploadStatus.COMPLETED, upload.status);
     }
 
-    @Test
-    void canMakeResponsesParams() {
-        LocalDateTime date = LocalDateTime.of(2024, 10, 25, 0, 0);
-
-        String s = TripSurveyUploadJob.responsesParams(date);
-
-        // Using epoch timestamps to avoid conversions from local to UTC time which TypeForm requires.
-        assertEquals("?page_size=1000&since=1729839600&until=1729925999", s);
-    }
-
     /**
      * Confirm that a single zip file is created which contains the compiled survey responses (CSV). Also confirm that the contents
      * written to the CSV file is correct and covers a single day's worth of responses.

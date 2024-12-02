@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware;
 
 import io.github.manusant.ss.SparkSwagger;
-import org.apache.logging.log4j.util.Strings;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
@@ -42,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.opentripplanner.middleware.bugsnag.BugsnagWebhook.processWebHookDelivery;
-import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.API_USER_PATH;
 import static org.opentripplanner.middleware.controllers.api.ApiUserController.AUTHENTICATE_PATH;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.ACCEPT_DEPENDENT_PATH;
@@ -99,7 +97,7 @@ public class OtpMiddlewareMain {
                 TimeUnit.MINUTES
             );
 
-            if (TripSurveyUploadJob.checkSurveyIdAndToken() && !Strings.isBlank(CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME)) {
+            if (TripSurveyUploadJob.isConfigured()) {
                 LOG.info("Scheduling trip survey upload every day");
                 TripSurveyUploadJob tripSurveyUploadJob = new TripSurveyUploadJob();
                 Scheduler.scheduleJob(
