@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.models.typeform;
+package org.opentripplanner.middleware.typeform;
 
 import org.junit.jupiter.api.Test;
 

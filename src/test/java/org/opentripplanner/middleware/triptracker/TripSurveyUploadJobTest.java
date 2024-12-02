@@ -9,9 +9,9 @@ import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager
 import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadStatus;
 import org.opentripplanner.middleware.models.IntervalUpload;
 import org.opentripplanner.middleware.models.TripSurveyUpload;
-import org.opentripplanner.middleware.models.typeform.Responses;
-import org.opentripplanner.middleware.models.typeform.ResponsesTest;
-import org.opentripplanner.middleware.models.typeform.Response;
+import org.opentripplanner.middleware.typeform.Responses;
+import org.opentripplanner.middleware.typeform.ResponsesTest;
+import org.opentripplanner.middleware.typeform.Response;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -28,8 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.getDailyFileName;
-import static org.opentripplanner.middleware.models.typeform.ResponseTest.makeResponse;
-import static org.opentripplanner.middleware.models.typeform.ResponsesTest.EXPECTED_HEADER;
+import static org.opentripplanner.middleware.typeform.ResponseTest.makeResponse;
+import static org.opentripplanner.middleware.typeform.ResponsesTest.EXPECTED_HEADER;
 import static org.opentripplanner.middleware.utils.FileUtils.getContentsOfFileInZip;
 
 class TripSurveyUploadJobTest extends OtpMiddlewareTestEnvironment {

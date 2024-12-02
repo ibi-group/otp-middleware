@@ -1,12 +1,12 @@
-package org.opentripplanner.middleware.models.typeform;
+package org.opentripplanner.middleware.typeform;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.opentripplanner.middleware.models.typeform.ResponseTest.EXPECTED_CSV_ROW;
-import static org.opentripplanner.middleware.models.typeform.ResponseTest.makeResponse;
+import static org.opentripplanner.middleware.typeform.ResponseTest.EXPECTED_CSV_ROW;
+import static org.opentripplanner.middleware.typeform.ResponseTest.makeResponse;
 
 public class ResponsesTest {
 
