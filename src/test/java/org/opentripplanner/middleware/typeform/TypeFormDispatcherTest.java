@@ -10,6 +10,9 @@ class TypeFormDispatcherTest {
 
     @Test
     void canMakeResponsesParams() {
+        // October 25, 2024 00:00, US Pacific Daylight Time
+        // CI sets OTP-middleware in that timezone.
+        // The timestamps in the expected string below correspond to 00:00 and 23:59, also in that timezone.
         LocalDateTime date = LocalDateTime.of(2024, 10, 25, 0, 0);
 
         String s = TypeFormDispatcher.responsesParams(date);
