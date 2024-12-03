@@ -52,6 +52,7 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
         Responses apiResponse = surveyApiResponseProvider.apply(upload.uploadHour);
 
         // Dump responses to temp CSV/Zip file and upload to S3.
+        // TODO: Add support if more than 1000 responses are submitted the same day.
         if (apiResponse != null && processSurveyHistory(upload, apiResponse)) {
             // If successfully compiled and updated, update the status to 'completed'.
             markAsCompleted(upload);
