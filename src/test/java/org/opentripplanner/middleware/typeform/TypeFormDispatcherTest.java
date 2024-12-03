@@ -1,13 +1,13 @@
 package org.opentripplanner.middleware.typeform;
 
 import org.junit.jupiter.api.Test;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class TypeFormDispatcherTest {
-
+class TypeFormDispatcherTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canMakeResponsesParams() {
         // October 25, 2024 00:00, US Pacific Daylight Time
@@ -21,4 +21,3 @@ class TypeFormDispatcherTest {
         assertEquals("?page_size=1000&since=1729839600&until=1729925999", s);
     }
 }
-
