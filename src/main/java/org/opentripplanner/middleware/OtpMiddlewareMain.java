@@ -24,6 +24,7 @@ import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitorAllTripsJob;
 import org.opentripplanner.middleware.triptracker.TripSurveySenderJob;
+import org.opentripplanner.middleware.triptracker.TripSurveyUploadJob;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.Scheduler;
@@ -54,7 +55,7 @@ public class OtpMiddlewareMain {
     public static final String API_PREFIX = "/api/";
     public static boolean inTestEnvironment = false;
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException {
         // Load configuration.
         ConfigUtils.loadConfig(args);
 
@@ -77,8 +78,9 @@ public class OtpMiddlewareMain {
             // Schedule trip history uploads.
             ConnectedDataManager.scheduleTripHistoryUploadJob();
 
-            // Schedule recurring Monitor All Trips Job.
+            // Schedule recurring jobs.
             // TODO: Determine whether this should go in some other process.
+
             MonitorAllTripsJob monitorAllTripsJob = new MonitorAllTripsJob();
             Scheduler.scheduleJob(
                 monitorAllTripsJob,
@@ -87,8 +89,6 @@ public class OtpMiddlewareMain {
                 TimeUnit.MINUTES
             );
 
-            // Schedule recurring job for post-trip surveys, once every half-hour to catch recently completed trips.
-            // TODO: Determine whether this should go in some other process.
             TripSurveySenderJob tripSurveySenderJob = new TripSurveySenderJob();
             Scheduler.scheduleJob(
                 tripSurveySenderJob,
@@ -96,10 +96,21 @@ public class OtpMiddlewareMain {
                 30,
                 TimeUnit.MINUTES
             );
+
+            if (TripSurveyUploadJob.isConfigured()) {
+                LOG.info("Scheduling trip survey upload every day");
+                TripSurveyUploadJob tripSurveyUploadJob = new TripSurveyUploadJob();
+                Scheduler.scheduleJob(
+                    tripSurveyUploadJob,
+                    0,
+                    1,
+                    TimeUnit.DAYS
+                );
+            }
         }
     }
 
-    private static void initializeHttpEndpoints() throws IOException, InterruptedException {
+    private static void initializeHttpEndpoints() throws IOException {
         // Must start spark explicitly to use spark-swagger.
         // https://github.com/manusant/spark-swagger#endpoints-binding
         Service spark = Service.ignite().port(Service.SPARK_DEFAULT_PORT);
@@ -120,7 +131,7 @@ public class OtpMiddlewareMain {
                     new CDPFilesController(API_PREFIX),
                     new OtpRequestProcessor("/otp", OtpVersion.OTP2),
                     new OtpRequestProcessor("/otp2", OtpVersion.OTP2)
-                    // TODO Add other models.
+                    // Add other endpoints as needed.
                 ))
                 // Spark-swagger auto-generates a swagger document at localhost:4567/doc.yaml.
                 // (That path is not configurable.)
@@ -138,7 +149,7 @@ public class OtpMiddlewareMain {
             return Files.readString(publicDocPath);
         });
 
-        /**
+        /*
          * End point to receive project errors as soon as they are processed by Bugsnag. Information on Bugsnag's
          * webhook can be found here: https://docs.bugsnag.com/product/integrations/data-forwarding/webhook/
          *
@@ -153,7 +164,7 @@ public class OtpMiddlewareMain {
             return "";
         });
 
-        /**
+        /*
          * End point to handle redirecting to the correct registration page from Auth0 as described here:
          *
          * https://auth0.com/docs/auth0-email-services/customize-email-templates#dynamic-redirect-to-urls
