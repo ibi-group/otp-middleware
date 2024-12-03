@@ -792,18 +792,18 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     private static Stream<Arguments> createCanUnsnoozeTripCases() {
-        // (Trips from above response above starts on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
+        // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
         ZonedDateTime tuesday = noonMonday8June2020.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
         ZonedDateTime wednesday = tuesday.withDayOfMonth(10);
 
         return Stream.of(
             // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should remain snoozed right after trip ends at 9:00am.
             Arguments.of(tuesday.withHour(8), tuesday.withHour(9), false),
-            // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should unsnooze at 00:00am on Wednesday, June 10, 2020,
-            // but it is too early for the trip to be analyzed again.
+            // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should unsnooze at 12:00am (midnight) on
+            // Wednesday, June 10, 2020, but it is too early for the trip to be analyzed again.
             Arguments.of(tuesday.withHour(8), wednesday, true),
-            // Trip snoozed on Monday, June 8, 2020 (a day before the trip starts), should unsnooze at 00:00 on
-            // Tuesday, June 9, 2020.
+            // Trip snoozed on Monday, June 8, 2020 (a day before the trip starts), should unsnooze at 12:00am (midnight)
+            // on Tuesday, June 9, 2020.
             Arguments.of(noonMonday8June2020, tuesday, true)
         );
     }
