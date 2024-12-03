@@ -570,7 +570,7 @@ public class CheckMonitoredTrip implements Runnable {
             .findFirst()
             .orElse(-1);
 
-        if (majorChangeIndex == -1 || majorChangeIndex < nextLegIndex) {
+        if (majorChangeIndex == -1 || majorChangeIndex <= (nextLegIndex - 1)) {
             // No major changes or the traveler has already passed them.
             return null;
         }
