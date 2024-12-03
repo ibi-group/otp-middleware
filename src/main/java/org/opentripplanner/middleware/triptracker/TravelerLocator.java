@@ -4,6 +4,7 @@ import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffHereTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffNextStopTransitInstruction;
@@ -16,6 +17,8 @@ import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusO
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -40,6 +43,8 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
  * Locate the traveler in relation to the nearest step or destination and provide the appropriate instructions.
  */
 public class TravelerLocator {
+
+    private static final Logger LOG = LoggerFactory.getLogger(TravelerLocator.class);
 
     public static final int ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES = 15;
 
@@ -85,6 +90,12 @@ public class TravelerLocator {
                     return tripInstruction.build();
                 }
             }
+        }
+
+        try {
+            new CheckMonitoredTrip(travelerPosition.trip).checkForMajorTripChanges(travelerPosition.nextLeg);
+        } catch (Exception e) {
+            LOG.error("Error encountered while checking for major trip changes.", e);
         }
         return NO_INSTRUCTION;
     }

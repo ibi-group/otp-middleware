@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
+import com.mongodb.lang.Nullable;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -7,6 +8,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -33,11 +35,13 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import static org.opentripplanner.middleware.utils.I18nUtils.label;
 
@@ -246,6 +250,53 @@ public class CheckMonitoredTrip implements Runnable {
 
     private boolean isTrackingOngoing() {
         return trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && TripTrackingData.getOngoingTrackedJourney(trip.id) != null;
+    }
+
+    /**
+     * Whilst a trip is ongoing check for upcoming major changes and notify the traveler. These checks are specifically
+     * looking for individual differences between the trip itinerary and the latest OTP response itinerary.
+     */
+    public void checkForMajorTripChanges(Leg nextLeg) {
+        var otpResponse = getOtpResponse();
+        int nextLegIndex = getLegIndex(nextLeg);
+        if (
+            otpResponse == null ||
+            nextLegIndex == -1 ||
+            (!trip.isOneTime() && !isTrackingOngoing() && trip.journeyState.matchingItinerary.hasEnded())
+        ) {
+            // Required criteria to check for major changes not met.
+            return;
+        }
+
+        if (!hasMatchingItinerary(otpResponse)) {
+            // There is a change, workout if it is one of the major changes.
+            enqueueNotification(
+                checkTripForMajorChange(NotificationType.MODE_CHANGE, otpResponse, nextLegIndex),
+                checkTripForMajorChange(NotificationType.ORIGIN_CHANGE, otpResponse, nextLegIndex),
+                checkTripForMajorChange(NotificationType.DESTINATION_CHANGE, otpResponse, nextLegIndex)
+            );
+        }
+        sendNotifications();
+    }
+
+    /**
+     * Get the position of the next leg within the itinerary.
+     */
+    private int getLegIndex(Leg nextLeg) {
+        return IntStream
+            .range(0, trip.itinerary.legs.size())
+            .filter(i -> ItineraryUtils.legsMatch(nextLeg, trip.itinerary.legs.get(i)))
+            .findFirst()
+            .orElse(-1);
+    }
+
+    /**
+     * Confirm that the OTP response contains an itinerary that matches the trip itinerary.
+     */
+    private boolean hasMatchingItinerary(OtpResponse otpResponse) {
+        return otpResponse.plan.itineraries
+            .stream()
+            .anyMatch(i -> ItineraryUtils.itinerariesMatch(trip.itinerary, i));
     }
 
     /**
@@ -496,6 +547,99 @@ public class CheckMonitoredTrip implements Runnable {
             );
         }
         return null;
+    }
+
+    /**
+     * Check for major upcoming change and notify the traveler.
+     */
+    @Nullable
+    public TripMonitorNotification checkTripForMajorChange(
+        NotificationType delayType,
+        OtpResponse otpResponse,
+        int nextLegIndex
+    ) {
+        var itineraryToCheck = getMatchingItinerary(delayType, otpResponse);
+        if (itineraryToCheck == null) {
+            // Can not find a match with either narrow or wide exceptions.
+            return null;
+        }
+
+        int majorChangeIndex = IntStream
+            .range(0, itineraryToCheck.legs.size())
+            .filter(i -> hasMajorChange(i, delayType, itineraryToCheck))
+            .findFirst()
+            .orElse(-1);
+
+        if (majorChangeIndex == -1 || majorChangeIndex < nextLegIndex) {
+            // No major changes or the traveler has already passed them.
+            return null;
+        }
+
+        // Found a major change.
+        switch (delayType) {
+            case MODE_CHANGE:
+                return TripMonitorNotification.createModeChangeNotification(
+                    trip.itinerary.legs.get(majorChangeIndex),
+                    itineraryToCheck.legs.get(majorChangeIndex),
+                    getOtpUserLocale()
+                );
+            case ORIGIN_CHANGE:
+            case DESTINATION_CHANGE:
+                return TripMonitorNotification.createStopChangeNotification(
+                    delayType,
+                    trip.itinerary.legs.get(majorChangeIndex),
+                    itineraryToCheck.legs.get(majorChangeIndex),
+                    getOtpUserLocale()
+                );
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Check the appropriate leg for a major change based on the provided exception.
+     */
+    private boolean hasMajorChange(int index, NotificationType exception, Itinerary itineraryToCheck) {
+        if (exception == NotificationType.MODE_CHANGE) {
+            return !ItineraryUtils.legsModeMatches(trip.itinerary.legs.get(index), itineraryToCheck.legs.get(index));
+        } else if (exception == NotificationType.ORIGIN_CHANGE){
+            return !ItineraryUtils.stopsMatch(trip.itinerary.legs.get(index).from, itineraryToCheck.legs.get(index).from);
+        } else if (exception == NotificationType.DESTINATION_CHANGE){
+            return !ItineraryUtils.stopsMatch(trip.itinerary.legs.get(index).to, itineraryToCheck.legs.get(index).to);
+        }
+        return false;
+    }
+
+    /**
+     * A list of all notification types that are classed as major changes to an itinerary.
+     */
+    private List<NotificationType> getAllMajorChangeNotificationTypes() {
+        return List.of(NotificationType.MODE_CHANGE, NotificationType.ORIGIN_CHANGE, NotificationType.DESTINATION_CHANGE);
+    }
+
+    /**
+     * Attempt to match on just a single exception, else use the wider exception criteria.
+     */
+    @Nullable
+    private Itinerary getMatchingItinerary(NotificationType delayType, OtpResponse otpResponse) {
+        Itinerary matchingWithModeException = getMatchingItineraryWithExceptions(otpResponse, List.of(delayType));
+
+        Itinerary matchingWithAllExceptions = getMatchingItineraryWithExceptions(
+            otpResponse,
+            getAllMajorChangeNotificationTypes()
+        );
+        return (matchingWithModeException != null) ? matchingWithModeException : matchingWithAllExceptions;
+    }
+
+    /**
+     * Get the first matching itinerary ignoring exceptions.
+     */
+    private Itinerary getMatchingItineraryWithExceptions(OtpResponse otpResponse, List<NotificationType> exceptions) {
+        return otpResponse.plan.itineraries
+            .stream()
+            .filter(i -> ItineraryUtils.itinerariesMatch(trip.itinerary, i, exceptions))
+            .findFirst()
+            .orElse(null);
     }
 
     /**

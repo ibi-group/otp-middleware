@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.triptracker;
 
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -47,6 +48,14 @@ public class TravelerPosition {
 
     /** The first leg of the trip. **/
     public Leg firstLegOfTrip;
+
+    /** The trip related to the traveler's position */
+    public MonitoredTrip trip;
+
+    public TravelerPosition(TrackedJourney trackedJourney, Itinerary itinerary, OtpUser otpUser, MonitoredTrip trip) {
+        this(trackedJourney, itinerary, otpUser);
+        this.trip = trip;
+    }
 
     public TravelerPosition(TrackedJourney trackedJourney, Itinerary itinerary, OtpUser otpUser) {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);

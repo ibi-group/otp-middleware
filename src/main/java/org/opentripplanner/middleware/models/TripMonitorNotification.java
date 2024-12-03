@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.i18n.Message;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
@@ -109,5 +110,48 @@ public class TripMonitorNotification extends Model {
                 DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale)
             )
         );
+    }
+
+    /**
+     * Creates a notification that the leg has changed mode.
+     */
+    public static TripMonitorNotification createModeChangeNotification(Leg expectedLeg, Leg changedLeg, Locale locale) {
+        return new TripMonitorNotification(
+            NotificationType.MODE_CHANGE,
+            String.format(
+                Message.MODE_CHANGE_NOTIFICATION.get(locale),
+                expectedLeg.mode,
+                changedLeg.mode,
+                expectedLeg.from.name
+            )
+        );
+    }
+
+    /**
+     * Creates a notification that the origin or destination has changed.
+     */
+    public static TripMonitorNotification createStopChangeNotification(
+        NotificationType delayType,
+        Leg expectedLeg,
+        Leg changedLeg,
+        Locale locale
+    ) {
+        String message = null;
+        if (delayType == NotificationType.ORIGIN_CHANGE) {
+            message = String.format(
+                Message.ORIGIN_CHANGE_NOTIFICATION.get(locale),
+                expectedLeg.from,
+                changedLeg.from,
+                expectedLeg.from.name
+            );
+        } else if (delayType == NotificationType.DESTINATION_CHANGE) {
+            message = String.format(
+                Message.DESTINATION_CHANGE_NOTIFICATION.get(locale),
+                expectedLeg.to,
+                changedLeg.to,
+                expectedLeg.to.name
+            );
+        }
+        return (message != null) ? new TripMonitorNotification(delayType, message) : null;
     }
 }

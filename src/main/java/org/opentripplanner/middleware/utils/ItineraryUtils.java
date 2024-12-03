@@ -11,10 +11,12 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Route;
+import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -144,6 +146,25 @@ public class ItineraryUtils {
         return true;
     }
 
+    public static boolean itinerariesMatch(Itinerary referenceItinerary, Itinerary candidateItinerary, List<NotificationType> exceptions) {
+        // Make sure both itineraries are monitorable before continuing.
+        if (!referenceItinerary.canBeMonitored() || !candidateItinerary.canBeMonitored()) return false;
+
+        // make sure itineraries have same amount of legs
+        if (referenceItinerary.legs.size() != candidateItinerary.legs.size()) return false;
+
+        // make sure each leg matches
+        for (int i = 0; i < referenceItinerary.legs.size(); i++) {
+            Leg referenceItineraryLeg = referenceItinerary.legs.get(i);
+            Leg candidateItineraryLeg = candidateItinerary.legs.get(i);
+
+            if (!legsMatch(referenceItineraryLeg, candidateItineraryLeg, exceptions)) return false;
+        }
+
+        // if this point is reached, the itineraries are assumed to match
+        return true;
+    }
+
     /**
      * Checks that the specified itinerary is on the same day as the specified date/time.
      * @param itinerary the itinerary to check.
@@ -175,23 +196,27 @@ public class ItineraryUtils {
         return time.getHour() >= SERVICE_DAY_START_HOUR;
     }
 
+    public static boolean legsMatch(Leg referenceItineraryLeg, Leg candidateItineraryLeg) {
+        return legsMatch(referenceItineraryLeg, candidateItineraryLeg, Collections.emptyList());
+    }
     /**
      * Check whether a new leg of an itinerary matches the previous itinerary leg for the purposes of trip monitoring.
      */
-    public static boolean legsMatch(Leg referenceItineraryLeg, Leg candidateItineraryLeg) {
+    public static boolean legsMatch(Leg referenceItineraryLeg, Leg candidateItineraryLeg, List<NotificationType> exceptions) {
         // for now don't analyze non-transit legs
-        if (!referenceItineraryLeg.transitLeg) return true;
+        if (Boolean.FALSE.equals(referenceItineraryLeg.transitLeg)) return true;
+
+        boolean destinationMatches = exceptions.contains(NotificationType.DESTINATION_CHANGE) || stopsMatch(referenceItineraryLeg.to, candidateItineraryLeg.to);
+        boolean legModeMatches = exceptions.contains(NotificationType.MODE_CHANGE) || legsModeMatches(referenceItineraryLeg, candidateItineraryLeg);
+        boolean originMatches = exceptions.contains(NotificationType.ORIGIN_CHANGE) || stopsMatch(referenceItineraryLeg.from, candidateItineraryLeg.from);
 
         // make sure the same from/to stop are being used
-        if (
-            !stopsMatch(referenceItineraryLeg.from, candidateItineraryLeg.from) ||
-                !stopsMatch(referenceItineraryLeg.to, candidateItineraryLeg.to)
-        ) {
+        if (!originMatches || !destinationMatches) {
             return false;
         }
 
         // Make sure the transit service is the same as perceived by the customer. It is assumed that the transit
-        // service is the same expereince to a customer if the following conditions are met:
+        // service is the same experience to a customer if the following conditions are met:
         // - The modes of transportation are the same
         // - The agency name of the transit service is the same (or the reference leg had an empty agency name)
         // - The route's long name is the same (or the reference leg had an empty route long name)
@@ -199,7 +224,7 @@ public class ItineraryUtils {
         // - The headsign is the same (or the reference leg had an empty headsign)
         // - The leg has the same interlining qualities with the previous leg
         if (
-            !equalsOrReferenceWasNull(referenceItineraryLeg.mode, candidateItineraryLeg.mode) ||
+            !legModeMatches ||
             !agenciesMatch(referenceItineraryLeg.agency, candidateItineraryLeg.agency) ||
             !routesMatch(referenceItineraryLeg.route, candidateItineraryLeg.route) ||
             !equalsIgnoreCaseOrReferenceWasEmpty(referenceItineraryLeg.headsign, candidateItineraryLeg.headsign) ||
@@ -229,15 +254,22 @@ public class ItineraryUtils {
     }
 
     /**
+     * Check whether the mode of two legs match.
+     */
+    public static boolean legsModeMatches(Leg referenceItineraryLeg, Leg candidateItineraryLeg) {
+        return equalsOrReferenceWasNull(referenceItineraryLeg.mode, candidateItineraryLeg.mode);
+    }
+
+    /**
      * Checks whether two stops (OTP Places) match for the purposes of matching itineraries
      */
-    private static boolean stopsMatch(Place stopA, Place stopB) {
+    public static boolean stopsMatch(Place stopA, Place stopB) {
         // Stop names must match. It's possible in OTP to have a null place name, although it probably won't occur with
         // transit legs. But just in case this method is expanded in scope to check more stuff about a place, if both
         // are null, then assume a match.
         if (
             (stopA.name != null && !stopA.name.equalsIgnoreCase(stopB.name)) ||
-                (stopA.name == null && stopB.name != null)
+            (stopA.name == null && stopB.name != null)
         ) {
             return false;
         }

@@ -60,7 +60,8 @@ public class ManageTripTracking {
             TravelerPosition travelerPosition = new TravelerPosition(
                 trackedJourney,
                 tripData.trip.journeyState.matchingItinerary,
-                Persistence.otpUsers.getById(tripData.trip.userId)
+                Persistence.otpUsers.getById(tripData.trip.userId),
+                tripData.trip
             );
             TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
             trackedJourney.lastLocation().tripStatus = tripStatus;
@@ -148,7 +149,8 @@ public class ManageTripTracking {
         TravelerPosition travelerPosition = new TravelerPosition(
             tripData.journey,
             tripData.trip.journeyState.matchingItinerary,
-            Persistence.otpUsers.getById(tripData.trip.userId)
+            Persistence.otpUsers.getById(tripData.trip.userId),
+            tripData.trip
         );
         cancelBusNotification(travelerPosition);
         TrackedJourney trackedJourney = travelerPosition.trackedJourney;
