@@ -11,25 +11,29 @@ import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ItineraryExistence;
+import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
-import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.util.Date;
-import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -66,7 +70,6 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String UI_QUERY_PARAMS
         = "?fromPlace=fromplace%3A%3A28.556631%2C-81.411781&toPlace=toplace%3A%3A28.545925%2C-81.348609&date=2020-11-13&time=14%3A21&arriveBy=false&mode=WALK%2CBUS%2CRAIL&numItineraries=3";
     private static final String DUMMY_STRING = "ABCDxyz";
-    private static HashMap<String, String> guardianHeaders;
 
     /**
      * Create Otp and Admin user accounts. Create Auth0 account for just the Otp users. If
@@ -146,7 +149,6 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         // Multi Otp user has 'enhanced' admin credentials, still expect only 1 trip to be returned as the scope will
         // limit the requesting user to a single 'otp-user' user type.
-        // TODO: Determine if a separate admin endpoint should be maintained for getting all/combined trips.
         assertEquals(1, multiTrips.data.size());
 
         // Get trips for only the multi Otp user by specifying Otp user id.
@@ -224,5 +226,78 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.to.name = "To Place";
 
         Persistence.monitoredTrips.create(monitoredTrip);
+    }
+
+    @Test
+    void canGetSharedTrips() throws Exception {
+        MonitoredTrip ownTrip = new MonitoredTrip();
+        ownTrip.id = "shared-trips-own-trip";
+        ownTrip.userId = soloOtpUser.id;
+
+        RelatedUser companion = new RelatedUser();
+        companion.email = "companion@example.com";
+
+        RelatedUser soloAsCompanion = new RelatedUser();
+        soloAsCompanion.email = soloOtpUser.email;
+
+        MonitoredTrip ownTripWithCompanion = new MonitoredTrip();
+        ownTripWithCompanion.id = "shared-trips-own-trip-with-companion";
+        ownTripWithCompanion.companion = companion;
+        ownTripWithCompanion.userId = soloOtpUser.id;
+
+        MonitoredTrip ownTripWithObservers = new MonitoredTrip();
+        ownTripWithObservers.id = "shared-trips-own-trip-with-observers";
+        ownTripWithObservers.observers = List.of(companion);
+        ownTripWithObservers.userId = soloOtpUser.id;
+
+        MobilityProfileLite soloAsPrimary = new MobilityProfileLite();
+        soloAsPrimary.userId = soloOtpUser.id;
+
+        MobilityProfileLite otherAsPrimary = new MobilityProfileLite();
+        otherAsPrimary.userId = multiOtpUser.id;
+
+        MonitoredTrip ownTripForDependent = new MonitoredTrip();
+        ownTripForDependent.id = "shared-trips-own-trip-for-dependent";
+        ownTripForDependent.primary = otherAsPrimary;
+        ownTripForDependent.userId = soloOtpUser.id;
+
+        MonitoredTrip otherTrip = new MonitoredTrip();
+        otherTrip.id = "shared-trips-other-trip";
+        otherTrip.userId = multiOtpUser.id;
+
+        MonitoredTrip otherTripWithSoloAsDependent = new MonitoredTrip();
+        otherTripWithSoloAsDependent.id = "shared-trips-other-trip-solo-primary";
+        otherTripWithSoloAsDependent.primary = soloAsPrimary;
+        otherTripWithSoloAsDependent.userId = multiOtpUser.id;
+
+        MonitoredTrip otherTripWithSoloAsCompanion = new MonitoredTrip();
+        otherTripWithSoloAsCompanion.id = "shared-trips-other-trip-solo-companion";
+        otherTripWithSoloAsCompanion.companion = soloAsCompanion;
+        otherTripWithSoloAsCompanion.userId = multiOtpUser.id;
+
+        MonitoredTrip otherTripWithSoloAsObserver = new MonitoredTrip();
+        otherTripWithSoloAsObserver.id = "shared-trips-other-trip-solo-observer";
+        otherTripWithSoloAsObserver.observers = List.of(soloAsCompanion);
+        otherTripWithSoloAsObserver.userId = multiOtpUser.id;
+
+        List<MonitoredTrip> trips = List.of(
+            ownTrip,
+            ownTripForDependent,
+            ownTripWithCompanion,
+            ownTripWithObservers,
+            otherTrip,
+            otherTripWithSoloAsDependent,
+            otherTripWithSoloAsCompanion,
+            otherTripWithSoloAsObserver
+        );
+        trips.forEach(Persistence.monitoredTrips::create);
+
+        List<MonitoredTrip> fetchedTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, soloOtpUser).data;
+        assertEquals(trips.size() - 1, fetchedTrips.size());
+
+        Set<String> ids = trips.stream().map(t -> t.id).collect(Collectors.toSet());
+        ids.remove(otherTrip.id);
+        Set<String> fetchedIds = fetchedTrips.stream().map(t -> t.id).collect(Collectors.toSet());
+        assertTrue(ids.containsAll(fetchedIds));
     }
 }
