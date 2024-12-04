@@ -28,9 +28,10 @@ public class TripTrackingData {
     public final TrackedJourney journey;
     public final List<TrackingLocation> locations;
 
-    private TripTrackingData(MonitoredTrip trip, TrackedJourney journey, List<TrackingLocation> locations) {
+    public TripTrackingData(MonitoredTrip trip, TrackedJourney journey, List<TrackingLocation> locations) {
         this.trip = trip;
         this.journey = journey;
+        this.journey.trip = trip;
         this.locations = locations;
     }
 

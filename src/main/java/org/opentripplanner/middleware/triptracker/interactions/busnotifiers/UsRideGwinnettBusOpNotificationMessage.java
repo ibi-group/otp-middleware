@@ -96,7 +96,7 @@ public class UsRideGwinnettBusOpNotificationMessage {
         // 1 = Notify, 0 = Cancel.
         this.msg_type = 1;
         this.mobility_codes = getMobilityCode(travelerPosition.mobilityMode);
-        this.trusted_companion = false;
+        this.trusted_companion = travelerPosition.trackedJourney.trip.hasConfirmedCompanion();
     }
 
     /**
