@@ -31,7 +31,9 @@ public class TripTrackingData {
     public TripTrackingData(MonitoredTrip trip, TrackedJourney journey, List<TrackingLocation> locations) {
         this.trip = trip;
         this.journey = journey;
-        this.journey.trip = trip;
+        if (journey != null) {
+            this.journey.trip = trip;
+        }
         this.locations = locations;
     }
 
