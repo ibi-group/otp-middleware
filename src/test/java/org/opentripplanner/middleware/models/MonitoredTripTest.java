@@ -1,6 +1,9 @@
 package org.opentripplanner.middleware.models;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -40,5 +43,31 @@ class MonitoredTripTest {
 
         trip.initializeFromItineraryAndQueryParams(variables);
         assertEquals(originalModes, trip.otp2QueryParams.modes);
+    }
+
+    @ParameterizedTest
+    @MethodSource("createHasCompanionCases")
+    void testHasCompanion(RelatedUser companion, boolean expected) {
+        MonitoredTrip ownTripWithCompanion = new MonitoredTrip();
+        ownTripWithCompanion.companion = companion;
+        ownTripWithCompanion.userId = "trip-user-id";
+
+        assertEquals(expected, ownTripWithCompanion.hasConfirmedCompanion());
+    }
+
+    private static Stream<Arguments> createHasCompanionCases() {
+        RelatedUser confirmedCompanion = new RelatedUser();
+        confirmedCompanion.email = "companion@example.com";
+        confirmedCompanion.status = RelatedUser.RelatedUserStatus.CONFIRMED;
+
+        RelatedUser unconfirmedCompanion = new RelatedUser();
+        unconfirmedCompanion.email = "companion@example.com";
+        unconfirmedCompanion.status = RelatedUser.RelatedUserStatus.INVALID;
+
+        return Stream.of(
+            Arguments.of(null, false),
+            Arguments.of(confirmedCompanion, true),
+            Arguments.of(unconfirmedCompanion, false)
+        );
     }
 }

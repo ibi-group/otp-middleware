@@ -427,4 +427,11 @@ public class MonitoredTrip extends Model {
     public boolean isOneTime() {
         return !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday;
     }
+
+    /**
+     * @return true if the trip has a (confirmed) companion, false otherwise.
+     */
+    public boolean hasConfirmedCompanion() {
+        return companion != null && companion.status == RelatedUser.RelatedUserStatus.CONFIRMED;
+    }
 }
