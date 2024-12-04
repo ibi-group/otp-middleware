@@ -214,6 +214,61 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         );
     }
 
+    @ParameterizedTest
+    @MethodSource("createMajorChangeNotificationTestCases")
+    void testMajorChangeNotifications(
+        NotificationType exception,
+        String message,
+        int nextLegIndex
+    ) throws Exception {
+        CheckMonitoredTrip check = createCheckMonitoredTrip(this::mockOtpPlanResponse);
+        OtpResponse otpResponse = mockOtpPlanResponse();
+        Itinerary otpResponseItinerary = getItineraryWithMajorChangeApplied(otpResponse, exception);
+        TripMonitorNotification notification = check.checkTripForMajorChange(exception, List.of(otpResponseItinerary), nextLegIndex);
+        if (message != null) {
+            assertNotNull(notification);
+            assertEquals(message, notification.body);
+        }
+    }
+
+    private static Stream<Arguments> createMajorChangeNotificationTestCases() {
+        return Stream.of(
+            Arguments.of(
+                NotificationType.MODE_CHANGE,
+                "There has been a mode change from TRAM to BUS for the leg starting at Providence Park MAX Station.",
+                1
+            ),
+            Arguments.of(NotificationType.MODE_CHANGE, null, 2 /* Traveler already passed the mode change. */),
+            Arguments.of(
+                NotificationType.ORIGIN_CHANGE,
+                "The leg previously starting at Providence Park MAX Station will now start at Library/SW 9th Ave.",
+                1
+            ),
+            Arguments.of(
+                NotificationType.DESTINATION_CHANGE,
+                "The destination for the leg starting at Providence Park MAX Station has changed from Pioneer Square South MAX Station to Library/SW 9th Ave.",
+                1
+            )
+        );
+    }
+
+    /**
+     * Alter the itinerary to include a change which is classed as a major change.
+     */
+    private Itinerary getItineraryWithMajorChangeApplied(OtpResponse otpResponse, NotificationType exception) {
+        Itinerary otpResponseItinerary = otpResponse.plan.itineraries.get(0);
+        if (exception == NotificationType.MODE_CHANGE) {
+            otpResponseItinerary.legs.get(1).mode = "BUS";
+        }
+        if (exception == NotificationType.ORIGIN_CHANGE) {
+            otpResponseItinerary.legs.get(1).from.name = "Library/SW 9th Ave";
+        }
+        if (exception == NotificationType.DESTINATION_CHANGE) {
+            otpResponseItinerary.legs.get(1).to.name = "Library/SW 9th Ave";
+        }
+        return otpResponseItinerary;
+    }
+
     /**
      * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
      */

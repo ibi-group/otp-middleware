@@ -140,16 +140,15 @@ public class TripMonitorNotification extends Model {
         if (delayType == NotificationType.ORIGIN_CHANGE) {
             message = String.format(
                 Message.ORIGIN_CHANGE_NOTIFICATION.get(locale),
-                expectedLeg.from,
-                changedLeg.from,
-                expectedLeg.from.name
+                expectedLeg.from.name,
+                changedLeg.from.name
             );
         } else if (delayType == NotificationType.DESTINATION_CHANGE) {
             message = String.format(
                 Message.DESTINATION_CHANGE_NOTIFICATION.get(locale),
-                expectedLeg.to,
-                changedLeg.to,
-                expectedLeg.to.name
+                expectedLeg.from.name,
+                expectedLeg.to.name,
+                changedLeg.to.name
             );
         }
         return (message != null) ? new TripMonitorNotification(delayType, message) : null;

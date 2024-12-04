@@ -271,9 +271,9 @@ public class CheckMonitoredTrip implements Runnable {
         if (!hasMatchingItinerary(otpResponse)) {
             // There is a change, workout if it is one of the major changes.
             enqueueNotification(
-                checkTripForMajorChange(NotificationType.MODE_CHANGE, otpResponse, nextLegIndex),
-                checkTripForMajorChange(NotificationType.ORIGIN_CHANGE, otpResponse, nextLegIndex),
-                checkTripForMajorChange(NotificationType.DESTINATION_CHANGE, otpResponse, nextLegIndex)
+                checkTripForMajorChange(NotificationType.MODE_CHANGE, otpResponse.plan.itineraries, nextLegIndex),
+                checkTripForMajorChange(NotificationType.ORIGIN_CHANGE, otpResponse.plan.itineraries, nextLegIndex),
+                checkTripForMajorChange(NotificationType.DESTINATION_CHANGE, otpResponse.plan.itineraries, nextLegIndex)
             );
         }
         sendNotifications();
@@ -555,45 +555,43 @@ public class CheckMonitoredTrip implements Runnable {
     @Nullable
     public TripMonitorNotification checkTripForMajorChange(
         NotificationType delayType,
-        OtpResponse otpResponse,
+        List<Itinerary> itineraries,
         int nextLegIndex
     ) {
-        var itineraryToCheck = getMatchingItinerary(delayType, otpResponse);
-        if (itineraryToCheck == null) {
-            // Can not find a match with either narrow or wide exceptions.
-            return null;
-        }
+        var itineraryToCheck = getMatchingItinerary(delayType, itineraries);
+        if (itineraryToCheck != null) {
+            int majorChangeIndex = IntStream
+                .range(0, itineraryToCheck.legs.size())
+                .filter(i -> hasMajorChange(i, delayType, itineraryToCheck))
+                .findFirst()
+                .orElse(-1);
 
-        int majorChangeIndex = IntStream
-            .range(0, itineraryToCheck.legs.size())
-            .filter(i -> hasMajorChange(i, delayType, itineraryToCheck))
-            .findFirst()
-            .orElse(-1);
-
-        if (majorChangeIndex == -1 || majorChangeIndex <= (nextLegIndex - 1)) {
-            // No major changes or the traveler has already passed them.
-            return null;
-        }
-
-        // Found a major change.
-        switch (delayType) {
-            case MODE_CHANGE:
-                return TripMonitorNotification.createModeChangeNotification(
-                    trip.itinerary.legs.get(majorChangeIndex),
-                    itineraryToCheck.legs.get(majorChangeIndex),
-                    getOtpUserLocale()
-                );
-            case ORIGIN_CHANGE:
-            case DESTINATION_CHANGE:
-                return TripMonitorNotification.createStopChangeNotification(
-                    delayType,
-                    trip.itinerary.legs.get(majorChangeIndex),
-                    itineraryToCheck.legs.get(majorChangeIndex),
-                    getOtpUserLocale()
-                );
-            default:
+            if (majorChangeIndex == -1 || majorChangeIndex <= (nextLegIndex - 1)) {
+                // No major change or the traveler has already passed it.
                 return null;
+            }
+
+            // Found a major change.
+            switch (delayType) {
+                case MODE_CHANGE:
+                    return TripMonitorNotification.createModeChangeNotification(
+                        trip.itinerary.legs.get(majorChangeIndex),
+                        itineraryToCheck.legs.get(majorChangeIndex),
+                        getOtpUserLocale()
+                    );
+                case ORIGIN_CHANGE:
+                case DESTINATION_CHANGE:
+                    return TripMonitorNotification.createStopChangeNotification(
+                        delayType,
+                        trip.itinerary.legs.get(majorChangeIndex),
+                        itineraryToCheck.legs.get(majorChangeIndex),
+                        getOtpUserLocale()
+                    );
+                default:
+                    return null;
+            }
         }
+        return null;
     }
 
     /**
@@ -621,21 +619,19 @@ public class CheckMonitoredTrip implements Runnable {
      * Attempt to match on just a single exception, else use the wider exception criteria.
      */
     @Nullable
-    private Itinerary getMatchingItinerary(NotificationType delayType, OtpResponse otpResponse) {
-        Itinerary matchingWithModeException = getMatchingItineraryWithExceptions(otpResponse, List.of(delayType));
-
-        Itinerary matchingWithAllExceptions = getMatchingItineraryWithExceptions(
-            otpResponse,
-            getAllMajorChangeNotificationTypes()
-        );
-        return (matchingWithModeException != null) ? matchingWithModeException : matchingWithAllExceptions;
+    private Itinerary getMatchingItinerary(NotificationType delayType, List<Itinerary> itineraries) {
+        Itinerary matchingWithSingleException = getMatchingItineraryWithExceptions(itineraries, List.of(delayType));
+        if (matchingWithSingleException != null) {
+            return matchingWithSingleException;
+        }
+        return getMatchingItineraryWithExceptions(itineraries, getAllMajorChangeNotificationTypes());
     }
 
     /**
      * Get the first matching itinerary ignoring exceptions.
      */
-    private Itinerary getMatchingItineraryWithExceptions(OtpResponse otpResponse, List<NotificationType> exceptions) {
-        return otpResponse.plan.itineraries
+    private Itinerary getMatchingItineraryWithExceptions(List<Itinerary> itineraries, List<NotificationType> exceptions) {
+        return itineraries
             .stream()
             .filter(i -> ItineraryUtils.itinerariesMatch(trip.itinerary, i, exceptions))
             .findFirst()
