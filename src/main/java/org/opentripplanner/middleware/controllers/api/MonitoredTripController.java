@@ -7,6 +7,7 @@ import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
@@ -51,6 +52,16 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 MonitoredTripController::checkItinerary, JsonUtils::toJson);
         // Add the regular CRUD methods after defining the controller-specific routes.
         super.buildEndpoint(modifiedEndpoint);
+    }
+
+    @Override
+    protected Bson getEntityFilter(OtpUser user) {
+        return Filters.or(
+            Filters.eq(USER_ID_PARAM, user.id),
+            Filters.eq("primary.userId", user.id),
+            Filters.eq("companion.email", user.email),
+            Filters.eq("observers.email", user.email)
+        );
     }
 
     /**

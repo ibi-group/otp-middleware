@@ -176,7 +176,7 @@ public class MonitoredTrip extends Model {
      */
     public boolean notifyAtLeadingInterval = true;
 
-    public RelatedUser primary;
+    public MobilityProfileLite primary;
     public RelatedUser companion;
     public List<RelatedUser> observers = new ArrayList<>();
 

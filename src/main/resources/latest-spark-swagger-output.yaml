@@ -1686,9 +1686,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          schema:
-            $ref: "#/definitions/MobilityProfileLite"
           responseSchema:
+            $ref: "#/definitions/MobilityProfileLite"
+          schema:
             $ref: "#/definitions/MobilityProfileLite"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -2539,6 +2539,17 @@ definitions:
         $ref: "#/definitions/Fare"
       details:
         $ref: "#/definitions/FareDetails"
+  MobilityProfileLite:
+    type: "object"
+    properties:
+      userId:
+        type: "string"
+      mobilityMode:
+        type: "string"
+      email:
+        type: "string"
+      name:
+        type: "string"
   LocalizedAlert:
     type: "object"
     properties:
@@ -2639,7 +2650,7 @@ definitions:
       notifyAtLeadingInterval:
         type: "boolean"
       primary:
-        $ref: "#/definitions/RelatedUser"
+        $ref: "#/definitions/MobilityProfileLite"
       companion:
         $ref: "#/definitions/RelatedUser"
       observers:
