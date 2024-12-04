@@ -96,6 +96,7 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
                     return true;
                 } else {
                     String pathAndQuery = getUrl(signalId, crossingId, extended);
+                    LOG.info("About to trigger pedestrian call at {}", pathAndQuery);
                     var httpResponse = HttpUtils.httpRequestRawResponse(
                         URI.create(pathAndQuery),
                         30,
@@ -103,15 +104,18 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
                         getHeaders(),
                         ""
                     );
-                    if (httpResponse.status == HttpStatus.OK_200) {
-                        LOG.info("Triggered pedestrian call {}", pathAndQuery);
+                    if (httpResponse != null && httpResponse.status == HttpStatus.OK_200) {
+                        LOG.info("Triggered pedestrian call at {}", pathAndQuery);
                         return true;
+                    } else if (httpResponse == null) {
+                        LOG.error("Unable to reach Ped-X server at {}", pathAndQuery);
                     } else {
-                        LOG.error("Error {} while triggering pedestrian call {}", httpResponse.status, pathAndQuery);
+                        LOG.error("Error {} while triggering pedestrian call at {}", httpResponse.status, pathAndQuery);
                     }
                 }
             } catch (InterruptedException e) {
-                // Continue with the rest.
+                // Log and continue with the rest.
+                LOG.error("Ped-X request was interrupted: {}", e.getMessage());
             }
         }
         return false;
