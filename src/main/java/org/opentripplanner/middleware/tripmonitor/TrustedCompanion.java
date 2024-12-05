@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.MobilityProfileLite;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -245,6 +246,19 @@ public class TrustedCompanion {
         if (user != null) {
             user.dependents.remove(dependent.id);
             Persistence.otpUsers.replace(user.id, user);
+        }
+    }
+
+    /**
+     * Remove the specified user as the primary traveler from the specified trip.
+     */
+    public static void removePrimaryTraveler(OtpUser otpUser, MonitoredTrip trip) {
+        if (trip.primary != null && otpUser.id.equals(trip.primary.userId)) {
+            trip.primary = null;
+            // Recheck existence of record in Mongo in case trip got deleted since last Mongo query.
+            if (Persistence.monitoredTrips.getById(trip.id) != null) {
+                Persistence.monitoredTrips.replace(trip.id, trip);
+            }
         }
     }
 

@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.MobilityProfile;
 import org.opentripplanner.middleware.models.MobilityProfileLite;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -31,6 +32,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
@@ -241,9 +243,21 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
             nickname
         ));
         Persistence.otpUsers.replace(dependentUserThree.id, dependentUserThree);
+
+        // Create a monitored trip with dependentUserThree as primary traveler, relatedUserThree as companion.
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.id = UUID.randomUUID().toString();
+        trip.primary = new MobilityProfileLite(dependentUserThree);
+        trip.companion = new RelatedUser(relatedUserThree.email, RelatedUser.RelatedUserStatus.CONFIRMED, "nickname");
+        Persistence.monitoredTrips.create(trip);
+
         dependentUserThree.delete(false);
         relatedUserThree = Persistence.otpUsers.getById(relatedUserThree.id);
         assertFalse(relatedUserThree.dependents.contains(dependentUserThree.id));
+
+        // If a dependent user deletes their profile, delete them from any trip where they are a dependent.
+        MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(trip.id);
+        assertNull(updatedTrip.primary);
     }
 
     /**

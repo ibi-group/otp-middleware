@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.mongodb.client.model.Filters;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removeDependent;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removePrimaryTraveler;
 
 /**
  * This represents a user of an OpenTripPlanner instance (typically of the standard OTP UI/otp-react-redux).
@@ -153,10 +155,17 @@ public class OtpUser extends AbstractUser {
             }
         }
 
-        // If a dependent, remove relationship with all related users.
+        // If a dependent user, remove relationship with all related users.
         for (RelatedUser relatedUser : relatedUsers) {
             removeDependent(this, relatedUser);
         }
+
+        // If a dependent user, remove self as the primary traveler in trips created by other users.
+        // TODO: Should we alert the user who created the trip of the deletion?
+        Persistence.monitoredTrips
+            .getFiltered(Filters.eq("primary.userId", id))
+            .forEach(trip -> removePrimaryTraveler(this, trip));
+
         return Persistence.otpUsers.removeById(this.id);
     }
 
