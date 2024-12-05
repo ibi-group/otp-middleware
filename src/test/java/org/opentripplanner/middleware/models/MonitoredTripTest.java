@@ -79,7 +79,7 @@ class MonitoredTripTest {
         primary.userId = "primary-user-id";
 
         MobilityProfileLite newPrimary = new MobilityProfileLite();
-        primary.userId = "new-primary-user-id";
+        newPrimary.userId = "new-primary-user-id";
 
         RelatedUser companion = new RelatedUser("companion@example.com", CONFIRMED);
         RelatedUser newCompanion = new RelatedUser("new-companion@example.com", CONFIRMED);
