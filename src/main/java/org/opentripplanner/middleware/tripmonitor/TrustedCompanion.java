@@ -22,6 +22,7 @@ import spark.Response;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -255,11 +256,54 @@ public class TrustedCompanion {
     public static void removePrimaryTraveler(OtpUser otpUser, MonitoredTrip trip) {
         if (trip.primary != null && otpUser.id.equals(trip.primary.userId)) {
             trip.primary = null;
-            // Recheck existence of record in Mongo in case trip got deleted since last Mongo query.
-            if (Persistence.monitoredTrips.getById(trip.id) != null) {
-                Persistence.monitoredTrips.replace(trip.id, trip);
-            }
+            Persistence.monitoredTrips.replace(trip.id, trip);
         }
+    }
+
+    /**
+     * Remove the specified user as companion from the specified trip.
+     */
+    public static void removeCompanion(OtpUser otpUser, MonitoredTrip trip) {
+        if (invalidateRelatedUser(otpUser.email, trip.companion)) {
+            Persistence.monitoredTrips.replace(trip.id, trip);
+        }
+    }
+
+    /**
+     * Remove the specified user as observer from the specified trip.
+     */
+    public static void removeObserver(OtpUser otpUser, MonitoredTrip trip) {
+        if (invalidateRelatedUsers(otpUser.email, trip.observers)) {
+            Persistence.monitoredTrips.replace(trip.id, trip);
+        }
+    }
+
+    /**
+     * Helper to invalidate a RelatedUser (companion) relationship.
+     * @return true if the status changed to invalid, false otherwise.
+     */
+    public static boolean invalidateRelatedUser(String email, RelatedUser relatedUser) {
+        if (
+            relatedUser != null &&
+            email.equals(relatedUser.email) &&
+            relatedUser.status == RelatedUser.RelatedUserStatus.CONFIRMED
+        ) {
+            relatedUser.status = RelatedUser.RelatedUserStatus.INVALID;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Remove the specified user as observer from the specified trip.
+     * @return true if one or more related users gor invalidated, false otherwise.
+     */
+    public static boolean invalidateRelatedUsers(String email, Collection<RelatedUser> relatedUsers) {
+        boolean hasChanged = false;
+        for (RelatedUser relatedUser : relatedUsers) {
+            hasChanged |= invalidateRelatedUser(email, relatedUser);
+        }
+        return hasChanged;
     }
 
     /**

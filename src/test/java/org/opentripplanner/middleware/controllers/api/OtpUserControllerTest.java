@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -245,19 +246,45 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         Persistence.otpUsers.replace(dependentUserThree.id, dependentUserThree);
 
         // Create a monitored trip with dependentUserThree as primary traveler, relatedUserThree as companion.
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.id = UUID.randomUUID().toString();
-        trip.primary = new MobilityProfileLite(dependentUserThree);
-        trip.companion = new RelatedUser(relatedUserThree.email, RelatedUser.RelatedUserStatus.CONFIRMED, "nickname");
-        Persistence.monitoredTrips.create(trip);
+        MonitoredTrip tripWithPrimaryTraveler = new MonitoredTrip();
+        tripWithPrimaryTraveler.id = UUID.randomUUID().toString();
+        tripWithPrimaryTraveler.userId = relatedUserThree.id;
+        tripWithPrimaryTraveler.primary = new MobilityProfileLite(dependentUserThree);
+        tripWithPrimaryTraveler.companion = new RelatedUser(
+            relatedUserThree.email,
+            RelatedUser.RelatedUserStatus.CONFIRMED,
+            "nickname"
+        );
+        Persistence.monitoredTrips.create(tripWithPrimaryTraveler);
+
+        // Create a monitored trip with dependentUserThree as companion and observer to relatedUserThree.
+        // (In practice, a user cannot be both a companion and observer.)
+        MonitoredTrip tripWithCompanionAndObserver = new MonitoredTrip();
+        tripWithCompanionAndObserver.id = UUID.randomUUID().toString();
+        tripWithCompanionAndObserver.userId = relatedUserThree.id;
+        tripWithCompanionAndObserver.companion = new RelatedUser(
+            dependentUserThree.email,
+            RelatedUser.RelatedUserStatus.CONFIRMED,
+            "nickname"
+        );
+        tripWithCompanionAndObserver.observers.add(tripWithCompanionAndObserver.companion);
+        Persistence.monitoredTrips.create(tripWithCompanionAndObserver);
 
         dependentUserThree.delete(false);
         relatedUserThree = Persistence.otpUsers.getById(relatedUserThree.id);
         assertFalse(relatedUserThree.dependents.contains(dependentUserThree.id));
 
         // If a dependent user deletes their profile, delete them from any trip where they are a dependent.
-        MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(trip.id);
-        assertNull(updatedTrip.primary);
+        MonitoredTrip updatedTripWithPrimaryTraveler = Persistence.monitoredTrips.getById(tripWithPrimaryTraveler.id);
+        assertNull(updatedTripWithPrimaryTraveler.primary);
+
+        // If a companion on a trip deletes their profile, invalidate them from any trip where they are a companion
+        // or an observer.
+        MonitoredTrip updatedTripWithCompanionAndObserver = Persistence.monitoredTrips.getById(tripWithCompanionAndObserver.id);
+        assertNotNull(updatedTripWithCompanionAndObserver.companion);
+        assertEquals(RelatedUser.RelatedUserStatus.INVALID, updatedTripWithCompanionAndObserver.companion.status);
+        assertFalse(updatedTripWithCompanionAndObserver.observers.isEmpty());
+        assertEquals(RelatedUser.RelatedUserStatus.INVALID, updatedTripWithCompanionAndObserver.observers.get(0).status);
     }
 
     /**
