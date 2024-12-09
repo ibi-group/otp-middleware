@@ -1,0 +1,107 @@
+{
+  "duration": 478,
+  "startTime": 1731606660000,
+  "endTime": 1731607138000,
+  "walkTime": 478,
+  "transitTime": 0,
+  "waitingTime": 0,
+  "walkDistance": 0,
+  "walkLimitExceeded": false,
+  "elevationLost": 0,
+  "elevationGained": 0,
+  "transfers": 0,
+  "fare": null,
+  "legs": [
+    {
+      "startTime": 1731606660000,
+      "endTime": 1731607138000,
+      "departureDelay": 0,
+      "arrivalDelay": 0,
+      "realTime": false,
+      "distance": 636.31,
+      "mode": "WALK",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "First Baptist Church of Lawrenceville, Lawrenceville, GA, USA",
+        "lon": -83.9881534,
+        "lat": 33.9549491,
+        "vertexType": "NORMAL"
+      },
+      "to": {
+        "name": "49 East Crogan Street, Lawrenceville, GA, USA",
+        "lon": -83.9833418,
+        "lat": 33.9565218,
+        "vertexType": "NORMAL"
+      },
+      "legGeometry": {
+        "points": "myfnEz|r_OG@G?A?wBLI?I@_@?{@DG?Ek@GeBCk@G?I?I?A?AK?G?E?a@?]?AAE?G?M?M?E?EGwB?EAEAGAC?A@?@Y@[?C@@H@L@@?ACAAAKAQ?U?KAKAeA?O?K?KA]?K?KAg@?IAO?KE{B",
+        "length": 62
+      },
+      "rentedBike": false,
+      "transitLeg": false,
+      "duration": 478,
+      "steps": [
+        {
+          "distance": 10.11,
+          "relativeDirection": "DEPART",
+          "streetName": "crossing over Luckie Street☆☆☆",
+          "absoluteDirection": "NORTH",
+          "stayOn": false,
+          "area": false,
+          "lon": -83.9881362,
+          "lat": 33.9549515
+        },
+        {
+          "distance": 134.71,
+          "relativeDirection": "CONTINUE",
+          "streetName": "South Clayton Street★★★",
+          "absoluteDirection": "NORTH",
+          "stayOn": false,
+          "area": false,
+          "lon": -83.9881458,
+          "lat": 33.955042
+        },
+        {
+          "distance": 88.77,
+          "relativeDirection": "RIGHT",
+          "streetName": "East Crogan Street★★★",
+          "absoluteDirection": "EAST",
+          "stayOn": true,
+          "area": false,
+          "lon": -83.9882578,
+          "lat": 33.9562495
+        },
+        {
+          "distance": 17.43,
+          "relativeDirection": "LEFT",
+          "streetName": "crossing over East Crogan Street☆☆☆",
+          "absoluteDirection": "NORTH",
+          "stayOn": true,
+          "area": false,
+          "lon": -83.9873003,
+          "lat": 33.9563302
+        },
+        {
+          "distance": 177.64,
+          "relativeDirection": "RIGHT",
+          "streetName": "East Crogan Street★★★",
+          "absoluteDirection": "EAST",
+          "stayOn": false,
+          "area": false,
+          "lon": -83.9873097,
+          "lat": 33.9564868
+        },
+        {
+          "distance": 207.65,
+          "relativeDirection": "LEFT",
+          "streetName": "East Crogan Street★★★",
+          "absoluteDirection": "EAST",
+          "stayOn": true,
+          "area": false,
+          "lon": -83.985582,
+          "lat": 33.9564082
+        }
+      ]
+    }
+  ]
+}
