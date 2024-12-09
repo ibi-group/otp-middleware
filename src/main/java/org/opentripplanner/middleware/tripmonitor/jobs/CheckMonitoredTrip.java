@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
-import com.mongodb.lang.Nullable;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -27,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -259,26 +259,6 @@ public class CheckMonitoredTrip implements Runnable {
             enqueueNotification(createLegTransitionNotification(legTransitionType, travelerPosition));
         }
         sendNotifications();
-    }
-
-    /**
-     * Get the position of the next leg within the itinerary.
-     */
-    private int getLegIndex(Leg nextLeg) {
-        return IntStream
-            .range(0, trip.itinerary.legs.size())
-            .filter(i -> ItineraryUtils.legsMatch(nextLeg, trip.itinerary.legs.get(i)))
-            .findFirst()
-            .orElse(-1);
-    }
-
-    /**
-     * Confirm that the OTP response contains an itinerary that matches the trip itinerary.
-     */
-    private boolean hasMatchingItinerary(OtpResponse otpResponse) {
-        return otpResponse.plan.itineraries
-            .stream()
-            .anyMatch(i -> ItineraryUtils.itinerariesMatch(trip.itinerary, i));
     }
 
     /**

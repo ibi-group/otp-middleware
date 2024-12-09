@@ -1686,9 +1686,9 @@ paths:
         "200":
           description: "Successful operation"
           examples: {}
-          responseSchema:
-            $ref: "#/definitions/MobilityProfileLite"
           schema:
+            $ref: "#/definitions/MobilityProfileLite"
+          responseSchema:
             $ref: "#/definitions/MobilityProfileLite"
         "400":
           description: "The request was not formed properly (e.g., some required parameters\
@@ -2376,9 +2376,9 @@ definitions:
         - "ALERT_FOUND"
         - "ITINERARY_NOT_FOUND"
         - "INITIAL_REMINDER"
-        - "MODE_CHANGE"
-        - "ORIGIN_CHANGE"
-        - "DESTINATION_CHANGE"
+        - "MODE_CHANGE_NOTIFICATION"
+        - "DEPARTED_NOTIFICATION"
+        - "ARRIVED_NOTIFICATION"
       body:
         type: "string"
   EncodedPolyline:

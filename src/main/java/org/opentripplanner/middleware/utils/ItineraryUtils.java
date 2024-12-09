@@ -200,10 +200,10 @@ public class ItineraryUtils {
         // - The leg has the same interlining qualities with the previous leg
         if (
             !equalsOrReferenceWasNull(referenceItineraryLeg.mode, candidateItineraryLeg.mode) ||
-                !agenciesMatch(referenceItineraryLeg.agency, candidateItineraryLeg.agency) ||
-                !routesMatch(referenceItineraryLeg.route, candidateItineraryLeg.route) ||
-                !equalsIgnoreCaseOrReferenceWasEmpty(referenceItineraryLeg.headsign, candidateItineraryLeg.headsign) ||
-                (referenceItineraryLeg.interlineWithPreviousLeg != candidateItineraryLeg.interlineWithPreviousLeg)
+            !agenciesMatch(referenceItineraryLeg.agency, candidateItineraryLeg.agency) ||
+            !routesMatch(referenceItineraryLeg.route, candidateItineraryLeg.route) ||
+            !equalsIgnoreCaseOrReferenceWasEmpty(referenceItineraryLeg.headsign, candidateItineraryLeg.headsign) ||
+            (referenceItineraryLeg.interlineWithPreviousLeg != candidateItineraryLeg.interlineWithPreviousLeg)
         ) {
             return false;
         }
@@ -245,8 +245,8 @@ public class ItineraryUtils {
         // stop code must match
         if (
             stopA.stop != null &&
-                stopB.stop != null &&
-                !equalsIgnoreCaseOrReferenceWasEmpty(stopA.stop.code, stopB.stop.code)
+            stopB.stop != null &&
+            !equalsIgnoreCaseOrReferenceWasEmpty(stopA.stop.code, stopB.stop.code)
         ) {
             return false;
         }
@@ -270,8 +270,8 @@ public class ItineraryUtils {
     private static boolean agenciesMatch(Agency agencyA, Agency agencyB) {
         return (
             agencyA != null &&
-                agencyB != null &&
-                equalsIgnoreCaseOrReferenceWasEmpty(agencyA.name, agencyB.name)
+            agencyB != null &&
+            equalsIgnoreCaseOrReferenceWasEmpty(agencyA.name, agencyB.name)
         );
     }
 
@@ -281,9 +281,9 @@ public class ItineraryUtils {
     private static boolean routesMatch(Route routeA, Route routeB) {
         return (
             routeA != null &&
-                routeB != null &&
-                equalsIgnoreCaseOrReferenceWasEmpty(routeA.longName, routeB.longName) &&
-                equalsIgnoreCaseOrReferenceWasEmpty(routeA.shortName, routeB.shortName)
+            routeB != null &&
+            equalsIgnoreCaseOrReferenceWasEmpty(routeA.longName, routeB.longName) &&
+            equalsIgnoreCaseOrReferenceWasEmpty(routeA.shortName, routeB.shortName)
         );
     }
 

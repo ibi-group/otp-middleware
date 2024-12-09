@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.triptracker;
 
-import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -13,7 +12,6 @@ import java.util.Locale;
 
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getNextLeg;
-import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getPreviousLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getFirstLeg;
