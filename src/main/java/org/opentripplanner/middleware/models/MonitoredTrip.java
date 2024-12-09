@@ -27,6 +27,7 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -431,11 +432,18 @@ public class MonitoredTrip extends Model {
     }
 
     /**
+     * @return true if the trip has a (confirmed) companion, false otherwise.
+     */
+    public boolean hasConfirmedCompanion() {
+        return companion != null && companion.isConfirmed();
+    }
+
+    /**
      * Gets users not previously involved (as primary traveler, companion, or observer) in a trip.
      */
     public static TripUsers getAddedUsers(MonitoredTrip monitoredTrip, MonitoredTrip originalTrip) {
         RelatedUser addedCompanion = null;
-        if (monitoredTrip.companion != null && monitoredTrip.companion.isConfirmed() && (
+        if (monitoredTrip.hasConfirmedCompanion() && (
             originalTrip == null ||
             originalTrip.companion == null ||
             !originalTrip.companion.email.equals(monitoredTrip.companion.email)
@@ -459,6 +467,7 @@ public class MonitoredTrip extends Model {
         List<RelatedUser> addedObservers = new ArrayList<>();
         if (monitoredTrip.observers != null) {
             List<RelatedUser> confirmedObservers = monitoredTrip.observers.stream()
+                .filter(Objects::nonNull)
                 .filter(RelatedUser::isConfirmed)
                 .collect(Collectors.toList());
             if (originalTrip == null || originalTrip.observers == null) {

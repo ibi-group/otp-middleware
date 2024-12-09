@@ -49,6 +49,32 @@ class MonitoredTripTest {
     }
 
     @ParameterizedTest
+    @MethodSource("createHasCompanionCases")
+    void testHasCompanion(RelatedUser companion, boolean expected) {
+        MonitoredTrip ownTripWithCompanion = new MonitoredTrip();
+        ownTripWithCompanion.companion = companion;
+        ownTripWithCompanion.userId = "trip-user-id";
+
+        assertEquals(expected, ownTripWithCompanion.hasConfirmedCompanion());
+    }
+
+    private static Stream<Arguments> createHasCompanionCases() {
+        RelatedUser confirmedCompanion = new RelatedUser();
+        confirmedCompanion.email = "companion@example.com";
+        confirmedCompanion.status = RelatedUser.RelatedUserStatus.CONFIRMED;
+
+        RelatedUser unconfirmedCompanion = new RelatedUser();
+        unconfirmedCompanion.email = "companion@example.com";
+        unconfirmedCompanion.status = RelatedUser.RelatedUserStatus.INVALID;
+
+        return Stream.of(
+            Arguments.of(null, false),
+            Arguments.of(confirmedCompanion, true),
+            Arguments.of(unconfirmedCompanion, false)
+        );
+    }
+
+    @ParameterizedTest
     @MethodSource("createGetAddedUsersCases")
     void canGetAddedUsers(MonitoredTrip.TripUsers originalUsers, MonitoredTrip.TripUsers finalUsers, MonitoredTrip.TripUsers expected) {
         MonitoredTrip originalTrip = new MonitoredTrip();
