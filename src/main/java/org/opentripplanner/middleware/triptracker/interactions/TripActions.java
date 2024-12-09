@@ -64,8 +64,10 @@ public class TripActions {
     }
 
     public void handleSegmentAction(Segment segment, OtpUser otpUser) {
+        LOG.info("Looking for segment action: start: {}, end: {}", segment.start, segment.end);
         SegmentAction action = getSegmentAction(segment);
         if (action != null) {
+            LOG.info("Found segment action: {}", action.id);
             Interaction interaction = null;
             try {
                 Class<?> interactionClass = Class.forName(action.trigger);
@@ -84,6 +86,7 @@ public class TripActions {
 
     public void handleSegmentAction(Step step, List<Step> steps, OtpUser user) {
         int stepIndex = steps.indexOf(step);
+        LOG.info("Looking for segment actions: step {}/{}", stepIndex, steps.size());
         if (stepIndex >= 0 && stepIndex < steps.size() - 1) {
             Step stepAfter = steps.get(stepIndex + 1);
             Segment segment = new Segment(
