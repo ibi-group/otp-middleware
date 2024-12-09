@@ -1,8 +1,8 @@
 package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.i18n.Message;
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
+import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,44 +113,51 @@ public class TripMonitorNotification extends Model {
     }
 
     /**
-     * Creates a notification that the leg has changed mode.
+     * Creates a departed notification.
      */
-    public static TripMonitorNotification createModeChangeNotification(Leg expectedLeg, Leg changedLeg, Locale locale) {
+    public static TripMonitorNotification createDepartedNotification(
+        NotificationType legTransitionType,
+        TravelerPosition travelerPosition
+    ) {
         return new TripMonitorNotification(
-            NotificationType.MODE_CHANGE,
+            legTransitionType,
             String.format(
-                Message.MODE_CHANGE_NOTIFICATION.get(locale),
-                expectedLeg.mode,
-                changedLeg.mode,
-                expectedLeg.from.name
+                Message.DEPARTED_NOTIFICATION.get(travelerPosition.locale),
+                travelerPosition.expectedLeg.from.name
             )
         );
     }
 
     /**
-     * Creates a notification that the origin or destination has changed.
+     * Creates a mode change notification.
      */
-    public static TripMonitorNotification createStopChangeNotification(
-        NotificationType delayType,
-        Leg expectedLeg,
-        Leg changedLeg,
-        Locale locale
+    public static TripMonitorNotification createModeChangeNotification(
+        NotificationType legTransitionType,
+        TravelerPosition travelerPosition
     ) {
-        String message = null;
-        if (delayType == NotificationType.ORIGIN_CHANGE) {
-            message = String.format(
-                Message.ORIGIN_CHANGE_NOTIFICATION.get(locale),
-                expectedLeg.from.name,
-                changedLeg.from.name
-            );
-        } else if (delayType == NotificationType.DESTINATION_CHANGE) {
-            message = String.format(
-                Message.DESTINATION_CHANGE_NOTIFICATION.get(locale),
-                expectedLeg.from.name,
-                expectedLeg.to.name,
-                changedLeg.to.name
-            );
-        }
-        return (message != null) ? new TripMonitorNotification(delayType, message) : null;
+        return new TripMonitorNotification(
+            legTransitionType,
+            String.format(
+                Message.MODE_CHANGE_NOTIFICATION.get(travelerPosition.locale),
+                travelerPosition.expectedLeg.mode,
+                travelerPosition.nextLeg.mode
+            )
+        );
+    }
+
+    /**
+     * Creates an arrived notification.
+     */
+    public static TripMonitorNotification createArrivedNotification(
+        NotificationType legTransitionType,
+        TravelerPosition travelerPosition
+    ) {
+        return new TripMonitorNotification(
+            legTransitionType,
+            String.format(
+                Message.ARRIVED_NOTIFICATION.get(travelerPosition.locale),
+                travelerPosition.expectedLeg.to.name
+            )
+        );
     }
 }

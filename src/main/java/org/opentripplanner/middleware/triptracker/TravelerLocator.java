@@ -1,10 +1,12 @@
 package org.opentripplanner.middleware.triptracker;
 
 import io.leonard.PolylineUtils;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
+import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffHereTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffNextStopTransitInstruction;
@@ -31,6 +33,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.ARRIVED_NOTIFICATION;
+import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.MODE_CHANGE_NOTIFICATION;
+import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.DEPARTED_NOTIFICATION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_IMMEDIATE_RADIUS;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
@@ -91,13 +96,47 @@ public class TravelerLocator {
                 }
             }
         }
-
-        try {
-            new CheckMonitoredTrip(travelerPosition.trip).checkForMajorTripChanges(travelerPosition.nextLeg);
-        } catch (Exception e) {
-            LOG.error("Error encountered while checking for major trip changes.", e);
-        }
         return NO_INSTRUCTION;
+    }
+
+    public static void checkForLegTransition(TripStatus tripStatus, TravelerPosition travelerPosition, MonitoredTrip trip) {
+        if (
+            hasRequiredTripStatus(tripStatus) &&
+            (hasRequiredWalkLeg(travelerPosition) || hasRequiredTransitLeg(travelerPosition))
+        ) {
+            List<NotificationType> legTransitionTypes = getLegTransitionTypes(travelerPosition);
+            if (!legTransitionTypes.isEmpty()) {
+                try {
+                    new CheckMonitoredTrip(trip).processLegTransition(legTransitionTypes, travelerPosition);
+                } catch (CloneNotSupportedException e) {
+                    LOG.error("Error encountered while checking leg transition.", e);
+                }
+            }
+        }
+
+    }
+
+    private static List<NotificationType> getLegTransitionTypes(TravelerPosition travelerPosition) {
+        List<NotificationType> notificationTypes = new ArrayList<>();
+        if (isAtStartOfLeg(travelerPosition)) {
+            notificationTypes.add(DEPARTED_NOTIFICATION);
+        }
+        if (isAtEndOfLeg(travelerPosition)) {
+            notificationTypes.add(ARRIVED_NOTIFICATION);
+        }
+        if (hasModeChanged(travelerPosition)) {
+            notificationTypes.add(MODE_CHANGE_NOTIFICATION);
+        }
+        return notificationTypes;
+    }
+
+    /**
+     * The traveler is at the end of the current leg and the mode has changed between this and the next leg.
+     */
+    private static boolean hasModeChanged(TravelerPosition travelerPosition) {
+        Leg nextLeg = travelerPosition.nextLeg;
+        Leg expectedLeg = travelerPosition.expectedLeg;
+        return isAtEndOfLeg(travelerPosition) && nextLeg != null && !nextLeg.mode.equalsIgnoreCase(expectedLeg.mode);
     }
 
     /**

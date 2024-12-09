@@ -60,8 +60,7 @@ public class ManageTripTracking {
             TravelerPosition travelerPosition = new TravelerPosition(
                 trackedJourney,
                 tripData.trip.journeyState.matchingItinerary,
-                Persistence.otpUsers.getById(tripData.trip.userId),
-                tripData.trip
+                Persistence.otpUsers.getById(tripData.trip.userId)
             );
             TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
             trackedJourney.lastLocation().tripStatus = tripStatus;
@@ -76,6 +75,8 @@ public class ManageTripTracking {
                     trackedJourney.locations
                 );
             }
+
+            TravelerLocator.checkForLegTransition(tripStatus, travelerPosition, tripData.trip);
 
             // Provide response.
             return new TrackingResponse(
@@ -149,8 +150,7 @@ public class ManageTripTracking {
         TravelerPosition travelerPosition = new TravelerPosition(
             tripData.journey,
             tripData.trip.journeyState.matchingItinerary,
-            Persistence.otpUsers.getById(tripData.trip.userId),
-            tripData.trip
+            Persistence.otpUsers.getById(tripData.trip.userId)
         );
         cancelBusNotification(travelerPosition);
         TrackedJourney trackedJourney = travelerPosition.trackedJourney;

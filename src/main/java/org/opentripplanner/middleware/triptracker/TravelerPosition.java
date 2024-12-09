@@ -13,6 +13,7 @@ import java.util.Locale;
 
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getNextLeg;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getPreviousLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getFirstLeg;
@@ -48,14 +49,6 @@ public class TravelerPosition {
 
     /** The first leg of the trip. **/
     public Leg firstLegOfTrip;
-
-    /** The trip related to the traveler's position */
-    public MonitoredTrip trip;
-
-    public TravelerPosition(TrackedJourney trackedJourney, Itinerary itinerary, OtpUser otpUser, MonitoredTrip trip) {
-        this(trackedJourney, itinerary, otpUser);
-        this.trip = trip;
-    }
 
     public TravelerPosition(TrackedJourney trackedJourney, Itinerary itinerary, OtpUser otpUser) {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
@@ -109,6 +102,13 @@ public class TravelerPosition {
         this.expectedLeg = expectedLeg;
         this.trackedJourney = trackedJourney;
         this.firstLegOfTrip = first;
+        this.currentPosition = currentPosition;
+    }
+
+    /** Used for unit testing. */
+    public TravelerPosition(Leg expectedLeg, Leg nextLeg, Coordinates currentPosition) {
+        this.expectedLeg = expectedLeg;
+        this.nextLeg = nextLeg;
         this.currentPosition = currentPosition;
     }
 

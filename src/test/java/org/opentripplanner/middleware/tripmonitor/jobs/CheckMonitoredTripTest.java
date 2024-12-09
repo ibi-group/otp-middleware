@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
@@ -23,6 +24,8 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
+import org.opentripplanner.middleware.triptracker.TravelerPosition;
+import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.createDefaultItinerary;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
@@ -217,56 +221,42 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @ParameterizedTest
     @MethodSource("createMajorChangeNotificationTestCases")
     void testMajorChangeNotifications(
-        NotificationType exception,
+        NotificationType legTransitionType,
         String message,
-        int nextLegIndex
+        TravelerPosition travelerPosition
     ) throws Exception {
         CheckMonitoredTrip check = createCheckMonitoredTrip(this::mockOtpPlanResponse);
-        OtpResponse otpResponse = mockOtpPlanResponse();
-        Itinerary otpResponseItinerary = getItineraryWithMajorChangeApplied(otpResponse, exception);
-        TripMonitorNotification notification = check.checkTripForMajorChange(exception, List.of(otpResponseItinerary), nextLegIndex);
-        if (message != null) {
-            assertNotNull(notification);
-            assertEquals(message, notification.body);
-        }
+        TripMonitorNotification notification = check.createLegTransitionNotification(
+            legTransitionType,
+            travelerPosition
+        );
+        assertNotNull(notification);
+        assertEquals(message, notification.body);
     }
 
-    private static Stream<Arguments> createMajorChangeNotificationTestCases() {
+    private static Stream<Arguments> createMajorChangeNotificationTestCases() throws Exception {
+        Itinerary itinerary = createDefaultItinerary();
+        Leg expectedLeg = itinerary.legs.get(1);
+        Coordinates expectedLegDestinationCoords = new Coordinates(expectedLeg.to);
+        Leg nextLeg = itinerary.legs.get(2);
+        Coordinates nextLegDepartureCoords = new Coordinates(nextLeg.from);
         return Stream.of(
             Arguments.of(
-                NotificationType.MODE_CHANGE,
-                "There has been a mode change from TRAM to BUS for the leg starting at Providence Park MAX Station.",
-                1
-            ),
-            Arguments.of(NotificationType.MODE_CHANGE, null, 2 /* Traveler already passed the mode change. */),
-            Arguments.of(
-                NotificationType.ORIGIN_CHANGE,
-                "The leg previously starting at Providence Park MAX Station will now start at Library/SW 9th Ave.",
-                1
+                NotificationType.MODE_CHANGE_NOTIFICATION,
+                "The traveler has changed mode from TRAM to WALK.",
+                new TravelerPosition(expectedLeg, nextLeg, expectedLegDestinationCoords)
             ),
             Arguments.of(
-                NotificationType.DESTINATION_CHANGE,
-                "The destination for the leg starting at Providence Park MAX Station has changed from Pioneer Square South MAX Station to Library/SW 9th Ave.",
-                1
+                NotificationType.DEPARTED_NOTIFICATION,
+                "The traveler has departed Providence Park MAX Station.",
+                new TravelerPosition(expectedLeg, nextLeg, nextLegDepartureCoords)
+            ),
+            Arguments.of(
+                NotificationType.ARRIVED_NOTIFICATION,
+                "The traveler has arrived at Pioneer Square South MAX Station.",
+                new TravelerPosition(expectedLeg, nextLeg, expectedLegDestinationCoords)
             )
         );
-    }
-
-    /**
-     * Alter the itinerary to include a change which is classed as a major change.
-     */
-    private Itinerary getItineraryWithMajorChangeApplied(OtpResponse otpResponse, NotificationType exception) {
-        Itinerary otpResponseItinerary = otpResponse.plan.itineraries.get(0);
-        if (exception == NotificationType.MODE_CHANGE) {
-            otpResponseItinerary.legs.get(1).mode = "BUS";
-        }
-        if (exception == NotificationType.ORIGIN_CHANGE) {
-            otpResponseItinerary.legs.get(1).from.name = "Library/SW 9th Ave";
-        }
-        if (exception == NotificationType.DESTINATION_CHANGE) {
-            otpResponseItinerary.legs.get(1).to.name = "Library/SW 9th Ave";
-        }
-        return otpResponseItinerary;
     }
 
     /**
@@ -289,7 +279,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             journeyState
         );
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, otpResponseProvider);
-        checkMonitoredTrip.matchingItinerary = OtpTestUtils.createDefaultItinerary();
+        checkMonitoredTrip.matchingItinerary = createDefaultItinerary();
         return checkMonitoredTrip;
     }
 
