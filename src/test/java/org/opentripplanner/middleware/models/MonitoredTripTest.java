@@ -150,4 +150,36 @@ class MonitoredTripTest {
             )
         );
     }
+
+    @ParameterizedTest
+    @MethodSource("createGetPrimaryTravelerCases")
+    void canGetPrimaryTraveler(MobilityProfileLite primary, String creatorId, String expectedId, String message) {
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.userId = creatorId;
+        trip.primary = primary;
+
+        assertEquals(expectedId, trip.getPrimaryTravelerId(), message);
+    }
+
+    private static Stream<Arguments> createGetPrimaryTravelerCases() {
+        final String creatorId = "creator-user-id";
+
+        MobilityProfileLite primary = new MobilityProfileLite();
+        primary.userId = "primary-user-id";
+
+        return Stream.of(
+            Arguments.of(
+                primary,
+                creatorId,
+                primary.userId,
+                "Should return the id of primary if it was set."
+            ),
+            Arguments.of(
+                null,
+                creatorId,
+                creatorId,
+                "Should return the id of the user that created the trip if primary is null."
+            )
+        );
+    }
 }

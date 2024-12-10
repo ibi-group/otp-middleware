@@ -89,7 +89,7 @@ public class ManageTripTracking {
                 TripActions.getDefault().handleSegmentAction(
                     ((SelfLegInstruction)instruction).getLegStep(),
                     travelerPosition.expectedLeg.steps,
-                    Persistence.otpUsers.getById(tripData.trip.userId)
+                    Persistence.otpUsers.getById(tripData.trip.getPrimaryTravelerId())
                 );
             }
 
