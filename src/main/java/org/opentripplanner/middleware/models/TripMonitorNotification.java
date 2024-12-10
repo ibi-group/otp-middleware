@@ -2,7 +2,6 @@ package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
-import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,55 +107,6 @@ public class TripMonitorNotification extends Model {
             String.format(Message.TRIP_REMINDER_NOTIFICATION.get(locale),
                 trip.tripName,
                 DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale)
-            )
-        );
-    }
-
-    /**
-     * Creates a departed notification.
-     */
-    public static TripMonitorNotification createDepartedNotification(
-        NotificationType legTransitionType,
-        TravelerPosition travelerPosition
-    ) {
-        return new TripMonitorNotification(
-            legTransitionType,
-            String.format(
-                Message.DEPARTED_NOTIFICATION.get(travelerPosition.locale),
-                travelerPosition.expectedLeg.from.name
-            )
-        );
-    }
-
-    /**
-     * Creates a mode change notification.
-     */
-    public static TripMonitorNotification createModeChangeNotification(
-        NotificationType legTransitionType,
-        TravelerPosition travelerPosition
-    ) {
-        return new TripMonitorNotification(
-            legTransitionType,
-            String.format(
-                Message.MODE_CHANGE_NOTIFICATION.get(travelerPosition.locale),
-                travelerPosition.expectedLeg.mode,
-                travelerPosition.nextLeg.mode
-            )
-        );
-    }
-
-    /**
-     * Creates an arrived notification.
-     */
-    public static TripMonitorNotification createArrivedNotification(
-        NotificationType legTransitionType,
-        TravelerPosition travelerPosition
-    ) {
-        return new TripMonitorNotification(
-            legTransitionType,
-            String.format(
-                Message.ARRIVED_NOTIFICATION.get(travelerPosition.locale),
-                travelerPosition.expectedLeg.to.name
             )
         );
     }

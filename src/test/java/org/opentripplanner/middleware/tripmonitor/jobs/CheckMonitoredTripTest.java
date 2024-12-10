@@ -10,6 +10,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
+import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
@@ -37,6 +38,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -219,22 +221,27 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     @ParameterizedTest
-    @MethodSource("createMajorChangeNotificationTestCases")
-    void testMajorChangeNotifications(
+    @MethodSource("createLegTransitionNotificationTestCases")
+    void testLegTransitionNotifications(
         NotificationType legTransitionType,
-        String message,
-        TravelerPosition travelerPosition
-    ) throws Exception {
-        CheckMonitoredTrip check = createCheckMonitoredTrip(this::mockOtpPlanResponse);
-        TripMonitorNotification notification = check.createLegTransitionNotification(
-            legTransitionType,
-            travelerPosition
+        String travelerName,
+        TravelerPosition travelerPosition,
+        Locale locale,
+        String message
+    ) {
+        TripMonitorNotification[] notification = LegTransitionNotification.createLegTransitionNotifications(
+            List.of(legTransitionType),
+            travelerName,
+            travelerPosition,
+            locale
         );
-        assertNotNull(notification);
-        assertEquals(message, notification.body);
+        assertNotNull(notification[0]);
+        assertEquals(message, notification[0].body);
     }
 
-    private static Stream<Arguments> createMajorChangeNotificationTestCases() throws Exception {
+    private static Stream<Arguments> createLegTransitionNotificationTestCases() throws Exception {
+        String travelerName = "Obi-Wan";
+        Locale locale = Locale.US;
         Itinerary itinerary = createDefaultItinerary();
         Leg expectedLeg = itinerary.legs.get(1);
         Coordinates expectedLegDestinationCoords = new Coordinates(expectedLeg.to);
@@ -243,18 +250,31 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         return Stream.of(
             Arguments.of(
                 NotificationType.MODE_CHANGE_NOTIFICATION,
-                "The traveler has changed mode from TRAM to WALK.",
-                new TravelerPosition(expectedLeg, nextLeg, expectedLegDestinationCoords)
+                travelerName,
+                new TravelerPosition(expectedLeg, nextLeg, expectedLegDestinationCoords),
+                locale,
+                "Obi-Wan has changed transit from TRAM to WALK."
             ),
             Arguments.of(
                 NotificationType.DEPARTED_NOTIFICATION,
-                "The traveler has departed Providence Park MAX Station.",
-                new TravelerPosition(expectedLeg, nextLeg, nextLegDepartureCoords)
+                travelerName,
+                new TravelerPosition(expectedLeg, nextLeg, nextLegDepartureCoords),
+                locale,
+                "Obi-Wan has departed Providence Park MAX Station."
             ),
             Arguments.of(
                 NotificationType.ARRIVED_NOTIFICATION,
-                "The traveler has arrived at Pioneer Square South MAX Station.",
-                new TravelerPosition(expectedLeg, nextLeg, expectedLegDestinationCoords)
+                travelerName,
+                new TravelerPosition(expectedLeg, nextLeg, expectedLegDestinationCoords),
+                locale,
+                "Obi-Wan has arrived at Pioneer Square South MAX Station."
+            ),
+            Arguments.of(
+                NotificationType.ARRIVED_NOTIFICATION,
+                null,
+                new TravelerPosition(expectedLeg, nextLeg, expectedLegDestinationCoords),
+                locale,
+                "Traveler has arrived at Pioneer Square South MAX Station."
             )
         );
     }

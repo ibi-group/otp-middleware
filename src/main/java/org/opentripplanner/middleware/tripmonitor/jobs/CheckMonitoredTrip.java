@@ -2,12 +2,12 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
+import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -43,9 +42,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
-import static org.opentripplanner.middleware.utils.I18nUtils.label;
+import static com.mongodb.client.model.Filters.eq;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -252,11 +250,29 @@ public class CheckMonitoredTrip implements Runnable {
         return trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && TripTrackingData.getOngoingTrackedJourney(trip.id) != null;
     }
 
-    public void processLegTransition(List<NotificationType> legTransitionTypes , TravelerPosition travelerPosition) {
-        for (NotificationType legTransitionType : legTransitionTypes) {
-            enqueueNotification(createLegTransitionNotification(legTransitionType, travelerPosition));
+    /**
+     * Process leg transition notifications.
+     */
+    public void processLegTransition(List<NotificationType> legTransitionTypes, TravelerPosition travelerPosition) {
+        OtpUser otpUser = getOtpUser();
+        if (otpUser != null) {
+            otpUser.relatedUsers.forEach(relatedUser -> {
+                if (relatedUser.isConfirmed()) {
+                    OtpUser observer = Persistence.otpUsers.getOneFiltered(eq("email", relatedUser.email));
+                    if (observer != null) {
+                        enqueueNotification(
+                            LegTransitionNotification.createLegTransitionNotifications(
+                                legTransitionTypes,
+                                otpUser.name,
+                                travelerPosition,
+                                I18nUtils.getOtpUserLocale(observer)
+                            )
+                        );
+                        sendNotifications(observer);
+                    }
+                }
+            });
         }
-        sendNotifications();
     }
 
     /**
@@ -509,26 +525,8 @@ public class CheckMonitoredTrip implements Runnable {
         return null;
     }
 
-    @Nullable
-    public TripMonitorNotification createLegTransitionNotification(
-        NotificationType legTransitionType,
-        TravelerPosition travelerPosition
-    ) {
-        switch (legTransitionType) {
-            case MODE_CHANGE_NOTIFICATION:
-                return TripMonitorNotification.createModeChangeNotification(legTransitionType, travelerPosition);
-            case DEPARTED_NOTIFICATION:
-                return TripMonitorNotification.createDepartedNotification(legTransitionType, travelerPosition);
-            case ARRIVED_NOTIFICATION:
-                return TripMonitorNotification.createArrivedNotification(legTransitionType, travelerPosition);
-            default:
-                return null;
-        }
-    }
-
     /**
-     * Compose a message for any enqueued notifications and send to {@link OtpUser} based on their notification
-     * preferences.
+     * Send notification to user associated with the trip.
      */
     private void sendNotifications() {
         OtpUser otpUser = getOtpUser();
@@ -537,6 +535,14 @@ public class CheckMonitoredTrip implements Runnable {
             // TODO: Bugsnag / delete monitored trip?
             return;
         }
+        sendNotifications(otpUser);
+    }
+
+    /**
+     * Compose a message for any enqueued notifications and send to {@link OtpUser} based on their notification
+     * preferences.
+     */
+    private void sendNotifications(OtpUser otpUser) {
         // Update push notification devices count, which may change asynchronously
         NotificationUtils.updatePushDevices(otpUser);
 
@@ -554,9 +560,12 @@ public class CheckMonitoredTrip implements Runnable {
             return;
         }
 
-        String tripNameOrReminder = hasInitialReminder ? initialReminderNotification.body : trip.tripName;
-
         Locale locale = getOtpUserLocale();
+        String tripNameOrReminder = hasInitialReminder ? initialReminderNotification.body : trip.tripName;
+        if (tripNameOrReminder == null) {
+            tripNameOrReminder = Message.TRIP_NAME_UNDEFINED.get(locale);
+        }
+
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
         Map<String, Object> templateData = new HashMap<>();
         templateData.putAll(Map.of(
