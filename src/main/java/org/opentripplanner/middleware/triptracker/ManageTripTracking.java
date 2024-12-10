@@ -64,7 +64,7 @@ public class ManageTripTracking {
             TravelerPosition travelerPosition = new TravelerPosition(
                 trackedJourney,
                 tripData.trip.journeyState.matchingItinerary,
-                Persistence.otpUsers.getById(tripData.trip.userId)
+                Persistence.otpUsers.getById(tripData.trip.getPrimaryTravelerId())
             );
             TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
             trackedJourney.lastLocation().tripStatus = tripStatus;
