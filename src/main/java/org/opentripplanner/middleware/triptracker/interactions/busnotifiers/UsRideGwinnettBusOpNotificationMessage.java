@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.triptracker.interactions.busnotifiers;
 
+import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 
 import java.time.Instant;
@@ -96,7 +97,8 @@ public class UsRideGwinnettBusOpNotificationMessage {
         // 1 = Notify, 0 = Cancel.
         this.msg_type = 1;
         this.mobility_codes = getMobilityCode(travelerPosition.mobilityMode);
-        this.trusted_companion = false;
+        TrackedJourney journey = travelerPosition.trackedJourney;
+        this.trusted_companion = journey != null && journey.trip != null && journey.trip.hasConfirmedCompanion();
     }
 
     /**

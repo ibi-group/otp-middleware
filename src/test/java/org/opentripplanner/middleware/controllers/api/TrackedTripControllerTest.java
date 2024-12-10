@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
@@ -27,6 +28,10 @@ import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.triptracker.TripTrackingData;
+import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
@@ -39,10 +44,12 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -294,88 +301,105 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         final int NORTH_WEST_BEARING = 315;
         final int NORTH_EAST_BEARING = 45;
         final int WEST_BEARING = 270;
+        final Locale locale = Locale.US;
 
         Leg firstLeg = itinerary.legs.get(0);
-        Coordinates firstStepCoords = new Coordinates(firstLeg.steps.get(0));
-        Coordinates thirdStepCoords = new Coordinates(firstLeg.steps.get(2));
+        Step adairAvenueNortheastStep = firstLeg.steps.get(0);
+        Step virginiaCircleNortheastStep = firstLeg.steps.get(1);
+        Step ponceDeLeonPlaceNortheastStep = firstLeg.steps.get(2);
+        Coordinates firstStepCoords = new Coordinates(adairAvenueNortheastStep);
+        Coordinates thirdStepCoords = new Coordinates(ponceDeLeonPlaceNortheastStep);
         Coordinates destinationCoords = new Coordinates(firstLeg.to);
+        String monroeDrDestinationName = firstLeg.to.name;
 
         Leg multiItinFirstLeg = multiLegItinerary.legs.get(0);
-        Coordinates multiItinFirstLegDestCoords = new Coordinates(multiItinFirstLeg.to);
         Leg multiItinLastLeg = multiLegItinerary.legs.get(multiLegItinerary.legs.size() - 1);
+        Leg multiItinBusLeg = multiLegItinerary.legs.get(multiLegItinerary.legs.size() - 2);
+        Coordinates multiItinFirstLegDestCoords = new Coordinates(multiItinFirstLeg.to);
         Coordinates multiItinLastLegDestCoords = new Coordinates(multiItinLastLeg.to);
+        String ansleyMallPetShopDestinationName = multiItinLastLeg.to.name;
 
         return Stream.of(
             Arguments.of(
                 monitoredTrip,
                 createPoint(firstStepCoords, 1, NORTH_EAST_BEARING),
-                "IMMEDIATE: Head WEST on Adair Avenue Northeast",
+                new OnTrackInstruction(1, adairAvenueNortheastStep, locale).build(),
                 TripStatus.ON_SCHEDULE,
                 "Coords near first step should produce relevant instruction"
             ),
             Arguments.of(
                 monitoredTrip,
                 createPoint(firstStepCoords, 4, NORTH_EAST_BEARING),
-                "UPCOMING: Head WEST on Adair Avenue Northeast",
+                new OnTrackInstruction(4, adairAvenueNortheastStep, locale).build(),
                 TripStatus.DEVIATED,
                 "Coords deviated but near first step should produce relevant instruction"
             ),
             Arguments.of(
                 monitoredTrip,
                 createPoint(firstStepCoords, 30, NORTH_EAST_BEARING),
-                "Head to Adair Avenue Northeast",
+                new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale).build(),
                 TripStatus.DEVIATED,
                 "Deviated coords near first step should produce instruction to head to first step #1"
             ),
             Arguments.of(
                 monitoredTrip,
                 createPoint(firstStepCoords, 15, NORTH_WEST_BEARING),
-                "Head to Adair Avenue Northeast",
+                new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale).build(),
                 TripStatus.DEVIATED,
                 "Deviated coords near first step should produce instruction to head to first step #2"
             ),
             Arguments.of(
                 monitoredTrip,
                 createPoint(firstStepCoords, 20, WEST_BEARING),
-                NO_INSTRUCTION,
+                new ContinueInstruction(adairAvenueNortheastStep, locale).build(),
                 TripStatus.ON_SCHEDULE,
-                "Coords along a step should produce no instruction"
+                "Coords along a step should produce a continue on street instruction"
             ),
             Arguments.of(
                 monitoredTrip,
                 thirdStepCoords,
-                "IMMEDIATE: LEFT on Ponce de Leon Place Northeast",
+                new OnTrackInstruction(0, ponceDeLeonPlaceNortheastStep, locale).build(),
                 TripStatus.AHEAD_OF_SCHEDULE,
                 "Coords near a not-first step should produce relevant instruction"
             ),
             Arguments.of(
                 monitoredTrip,
                 createPoint(thirdStepCoords, 30, NORTH_WEST_BEARING),
-                "Head to Ponce de Leon Place Northeast",
+                new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale).build(),
                 TripStatus.DEVIATED,
                 "Deviated coords near a not-first step should produce instruction to head to step"
             ),
             Arguments.of(
                 monitoredTrip,
                 createPoint(destinationCoords, 1, NORTH_WEST_BEARING),
-                "ARRIVED: Monroe Dr NE at Cooledge Ave NE",
+                new OnTrackInstruction(2, monroeDrDestinationName, locale).build(),
                 TripStatus.COMPLETED,
                 "Instructions for destination coordinate"
             ),
             Arguments.of(
                 multiLegMonitoredTrip,
                 createPoint(multiItinFirstLegDestCoords, 1.5, WEST_BEARING),
-                // Time is in US Pacific time zone (instead of US Eastern) by configuration for other E2E tests.
-                "Wait 6 minutes for your bus, route 27, scheduled at 9:18 AM, on time",
+                new WaitForTransitInstruction(
+                    multiItinBusLeg,
+                    multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
+                    locale)
+                    .build(),
                 TripStatus.AHEAD_OF_SCHEDULE,
                 "Arriving ahead of schedule to a bus stop at the end of first leg."
             ),
             Arguments.of(
                 multiLegMonitoredTrip,
                 createPoint(multiItinLastLegDestCoords, 1, NORTH_WEST_BEARING),
-                "ARRIVED: Ansley Mall Pet Shop",
+                new OnTrackInstruction(1, ansleyMallPetShopDestinationName, locale).build(),
                 TripStatus.COMPLETED,
                 "Instructions for destination coordinate of multi-leg trip"
+            ),
+            Arguments.of(
+                monitoredTrip,
+                createPoint(thirdStepCoords, 1000, NORTH_WEST_BEARING),
+                NO_INSTRUCTION,
+                TripStatus.DEVIATED,
+                "Deviated significantly from nearest step should produce no instruction"
             )
         );
     }

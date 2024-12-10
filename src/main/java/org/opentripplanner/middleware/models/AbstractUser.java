@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import com.auth0.exception.Auth0Exception;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.auth.Permission;
@@ -19,6 +20,7 @@ import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
  * It provides a place to centralize common fields that all users share (e.g., email) and common methods (such as the
  * authorization check {@link #canBeManagedBy}.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class AbstractUser extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractUser.class);
     private static final long serialVersionUID = 1L;
