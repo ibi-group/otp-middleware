@@ -27,7 +27,10 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
@@ -176,7 +179,7 @@ public class MonitoredTrip extends Model {
      */
     public boolean notifyAtLeadingInterval = true;
 
-    public RelatedUser primary;
+    public MobilityProfileLite primary;
     public RelatedUser companion;
     public List<RelatedUser> observers = new ArrayList<>();
 
@@ -426,5 +429,75 @@ public class MonitoredTrip extends Model {
     @BsonIgnore
     public boolean isOneTime() {
         return !monday && !tuesday && !wednesday && !thursday && !friday && !saturday && !sunday;
+    }
+
+    /**
+     * @return true if the trip has a (confirmed) companion, false otherwise.
+     */
+    public boolean hasConfirmedCompanion() {
+        return companion != null && companion.isConfirmed();
+    }
+
+    /**
+     * Gets users not previously involved (as primary traveler, companion, or observer) in a trip.
+     */
+    public static TripUsers getAddedUsers(MonitoredTrip monitoredTrip, MonitoredTrip originalTrip) {
+        RelatedUser addedCompanion = null;
+        if (monitoredTrip.hasConfirmedCompanion() && (
+            originalTrip == null ||
+            originalTrip.companion == null ||
+            !originalTrip.companion.email.equals(monitoredTrip.companion.email)
+        )) {
+            // Include the companion if creating trip or setting companion for the first time,
+            // or setting a different companion.
+            addedCompanion = monitoredTrip.companion;
+        }
+
+        MobilityProfileLite addedPrimaryTraveler = null;
+        if (monitoredTrip.primary != null && (
+            originalTrip == null ||
+            originalTrip.primary == null ||
+            !originalTrip.primary.userId.equals(monitoredTrip.primary.userId)
+        )) {
+            // Include the primary traveler if creating trip or setting primary traveler for the first time,
+            // or setting a different primary traveler.
+            addedPrimaryTraveler = monitoredTrip.primary;
+        }
+
+        List<RelatedUser> addedObservers = new ArrayList<>();
+        if (monitoredTrip.observers != null) {
+            List<RelatedUser> confirmedObservers = monitoredTrip.observers.stream()
+                .filter(Objects::nonNull)
+                .filter(RelatedUser::isConfirmed)
+                .collect(Collectors.toList());
+            if (originalTrip == null || originalTrip.observers == null) {
+                // Include all observers if creating trip or setting observers for the first time.
+                addedObservers.addAll(confirmedObservers);
+            } else {
+                // If observers have been set before, include observers not previously present.
+                Set<String> existingObserverEmails = originalTrip.observers.stream()
+                    .map(obs -> obs.email)
+                    .collect(Collectors.toSet());
+                confirmedObservers.forEach(obs -> {
+                    if (!existingObserverEmails.contains(obs.email)) {
+                        addedObservers.add(obs);
+                    }
+                });
+            }
+        }
+
+        return new TripUsers(addedPrimaryTraveler, addedCompanion, addedObservers);
+    }
+
+    public static class TripUsers {
+        public final RelatedUser companion;
+        public final List<RelatedUser> observers;
+        public final MobilityProfileLite primary;
+
+        public TripUsers(MobilityProfileLite primary, RelatedUser companion, List<RelatedUser> observers) {
+            this.primary = primary;
+            this.companion = companion;
+            this.observers = observers;
+        }
     }
 }

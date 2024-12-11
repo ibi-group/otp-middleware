@@ -7,11 +7,14 @@ import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.opentripplanner.middleware.utils.SwaggerUtils;
 import spark.Request;
 import spark.Response;
@@ -21,11 +24,16 @@ import java.util.stream.Collectors;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_COMPANION;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_OBSERVER;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_INVITE_PRIMARY_TRAVELER;
 import static org.opentripplanner.middleware.models.MonitoredTrip.USER_ID_FIELD_NAME;
+import static org.opentripplanner.middleware.models.MonitoredTrip.getAddedUsers;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.HttpUtils.JSON_ONLY;
 import static org.opentripplanner.middleware.utils.JsonUtils.getPOJOFromRequestBody;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
+
 
 /**
  * Implementation of the {@link ApiController} abstract class for managing {@link MonitoredTrip} entities. This
@@ -53,6 +61,16 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         super.buildEndpoint(modifiedEndpoint);
     }
 
+    @Override
+    protected Bson getEntityFilter(OtpUser user) {
+        return Filters.or(
+            Filters.eq(USER_ID_PARAM, user.id),
+            Filters.eq("primary.userId", user.id),
+            Filters.eq("companion.email", user.email),
+            Filters.eq("observers.email", user.email)
+        );
+    }
+
     /**
      * Before creating a {@link MonitoredTrip}, check that the itinerary associated with the trip exists on the selected
      * days of the week. Update the itinerary if everything looks OK, otherwise halt the request.
@@ -78,6 +96,8 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 );
             }
         }
+
+        notifyTripCompanionsAndObservers(monitoredTrip, null);
 
         return monitoredTrip;
     }
@@ -115,6 +135,30 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     private void preCreateOrUpdateChecks(MonitoredTrip monitoredTrip, Request req) {
         checkTripCanBeMonitored(monitoredTrip, req);
         processTripQueryParams(monitoredTrip, req);
+    }
+
+    /** Notify users added as companions or observers to a trip. (Removed users won't get notified.) */
+    private void notifyTripCompanionsAndObservers(MonitoredTrip monitoredTrip, MonitoredTrip originalTrip) {
+        MonitoredTrip.TripUsers usersToNotify = getAddedUsers(monitoredTrip, originalTrip);
+        OtpUser tripCreator = Persistence.otpUsers.getById(monitoredTrip.userId);
+
+        if (usersToNotify.companion != null) {
+            OtpUser companionUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", usersToNotify.companion.email));
+            NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, companionUser, TRIP_INVITE_COMPANION);
+        }
+
+        if (usersToNotify.primary != null) {
+            // email could be used too for primary users
+            OtpUser primaryUser = Persistence.otpUsers.getById(usersToNotify.primary.userId);
+            NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, primaryUser, TRIP_INVITE_PRIMARY_TRAVELER);
+        }
+
+        if (!usersToNotify.observers.isEmpty()) {
+            for (RelatedUser observer : usersToNotify.observers) {
+                OtpUser observerUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", observer.email));
+                NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, observerUser, TRIP_INVITE_OBSERVER);
+            }
+        }
     }
 
     /**
@@ -160,6 +204,9 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             // perform the database update here before releasing the lock to be sure that the record is updated in the
             // database before a CheckMonitoredTripJob analyzes the data
             Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
+
+            notifyTripCompanionsAndObservers(monitoredTrip, preExisting);
+
             return runCheckMonitoredTrip(monitoredTrip);
         } catch (Exception e) {
             // FIXME: an error happened while updating the trip, but the trip might have been saved to the DB, so return

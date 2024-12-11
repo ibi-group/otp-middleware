@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -58,8 +59,6 @@ public class CheckMonitoredTrip implements Runnable {
         ConfigUtils.getConfigPropertyAsInt("MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS", 3);
 
     public static final String ACCOUNT_PATH = "/#/account";
-
-    private final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
 
     public static final String SETTINGS_PATH = ACCOUNT_PATH + "/settings";
 
@@ -529,21 +528,15 @@ public class CheckMonitoredTrip implements Runnable {
         String tripNameOrReminder = hasInitialReminder ? initialReminderNotification.body : trip.tripName;
 
         Locale locale = getOtpUserLocale();
-        String tripLinkLabel = Message.TRIP_LINK_TEXT.get(locale);
-        String tripUrl = getTripUrl();
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
-        Map<String, Object> templateData = new HashMap<>(Map.of(
+        Map<String, Object> templateData = new HashMap<>();
+        templateData.putAll(Map.of(
             "emailGreeting", Message.TRIP_EMAIL_GREETING.get(locale),
             "tripNameOrReminder", tripNameOrReminder,
-            "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
-            "tripLinkAnchorLabel", tripLinkLabel,
-            "tripUrl", tripUrl,
-            "emailFooter", String.format(Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
-            "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
-            "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
             "notifications", new ArrayList<>(notifications),
             "smsFooter", Message.SMS_STOP_NOTIFICATIONS.get(locale)
         ));
+        templateData.putAll(NotificationUtils.getTripNotificationFields(trip, locale));
         if (hasInitialReminder) {
             templateData.put("initialReminder", initialReminderNotification);
         }
@@ -588,9 +581,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private boolean sendEmail(OtpUser otpUser, Map<String, Object> data) {
         Locale locale = getOtpUserLocale();
-        String subject = trip.tripName != null
-            ? String.format(Message.TRIP_EMAIL_SUBJECT.get(locale), trip.tripName)
-            : String.format(Message.TRIP_EMAIL_SUBJECT_FOR_USER.get(locale), otpUser.email);
+        String subject = NotificationUtils.getTripEmailSubject(otpUser, locale, trip);
         return NotificationUtils.sendEmail(
             otpUser,
             subject,
@@ -670,17 +661,23 @@ public class CheckMonitoredTrip implements Runnable {
             return true;
         }
 
+        // For trips that are snoozed, see if they should be unsnoozed first.
+        if (trip.snoozed) {
+            if (shouldUnsnoozeTrip()) {
+                // Clear previous matching itinerary as we want to start afresh.
+                // The snoozed state will be updated later in the process.
+                previousMatchingItinerary = null;
+            } else {
+                LOG.info("Skipping: Trip is snoozed.");
+                return true;
+            }
+        }
+
         if (isPrevMatchingItineraryNotConcluded()) {
             // Skip checking the trip the rest of the time that it is active if the trip was deemed not possible for the
             // next possible time during a previous query to find candidate itinerary matches.
             if (previousJourneyState.tripStatus == TripStatus.NEXT_TRIP_NOT_POSSIBLE) {
                 LOG.info("Skipping: Next trip is not possible.");
-                return true;
-            }
-
-            // skip checking the trip if it has been snoozed
-            if (trip.snoozed) {
-                LOG.info("Skipping: Trip is snoozed.");
                 return true;
             }
 
@@ -926,7 +923,24 @@ public class CheckMonitoredTrip implements Runnable {
         return I18nUtils.getOtpUserLocale(getOtpUser());
     }
 
-    private String getTripUrl() {
-        return String.format("%s%s/%s", OTP_UI_URL, TRIPS_PATH, trip.id);
+    /**
+     * Whether a trip should be unsnoozed and monitoring should resume.
+     * @return true if the current time is after the calendar day (on or after midnight)
+     * after the matching trip start day, false otherwise.
+     */
+    public boolean shouldUnsnoozeTrip() {
+        ZoneId otpZoneId = DateTimeUtils.getOtpZoneId();
+        var midnightAfterLastChecked = ZonedDateTime
+            .ofInstant(
+                Instant.ofEpochMilli(previousJourneyState.lastCheckedEpochMillis).plus(1, ChronoUnit.DAYS),
+                otpZoneId
+            )
+            .withHour(0)
+            .withMinute(0)
+            .withSecond(0);
+
+        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(otpZoneId);
+        // Include equal or after midnight as true.
+        return !now.isBefore(midnightAfterLastChecked);
     }
 }

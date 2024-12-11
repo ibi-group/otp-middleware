@@ -189,6 +189,14 @@ public abstract class ApiController<T extends Model> implements Endpoint {
     }
 
     /**
+     * Provides an entity filter for requests on entities that contain a userId field,
+     * whether the request is made with the userId param or a token.
+     */
+    protected Bson getEntityFilter(OtpUser user) {
+        return Filters.eq(USER_ID_PARAM, user.id);
+    }
+
+    /**
      * HTTP endpoint to get multiple entities based on the user permissions
      */
     // FIXME Maybe better if the user check (and filtering) was done in a pre hook?
@@ -203,7 +211,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         if (userId != null) {
             OtpUser otpUser = Persistence.otpUsers.getById(userId);
             if (requestingUser.canManageEntity(otpUser)) {
-                return persistence.getResponseList(Filters.eq(USER_ID_PARAM, userId), offset, limit);
+                return persistence.getResponseList(getEntityFilter(otpUser), offset, limit);
             } else {
                 res.status(HttpStatus.FORBIDDEN_403);
                 return null;
@@ -231,7 +239,7 @@ public abstract class ApiController<T extends Model> implements Endpoint {
         } else {
             // For all other cases the assumption is that the request is being made by an Otp user and the requested
             // entities have a 'userId' parameter. Only entities that match the requesting user id are returned.
-            return persistence.getResponseList(Filters.eq(USER_ID_PARAM, requestingUser.otpUser.id), offset, limit);
+            return persistence.getResponseList(getEntityFilter(requestingUser.otpUser), offset, limit);
         }
     }
 
