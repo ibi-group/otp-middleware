@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.typeform;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /** Data structure for TypeForm survey responses. Only including relevant fields. */
@@ -83,7 +84,12 @@ public class Response {
             hidden.notification_id,
             hidden.trip_id,
             hidden.user_id,
-            answers.stream().map(Answer::toCsvContent).collect(Collectors.joining(","))
+            answers == null
+                ? ""
+                : answers.stream()
+                    .filter(Objects::nonNull)
+                    .map(Answer::toCsvContent)
+                    .collect(Collectors.joining(","))
         );
     }
 }
