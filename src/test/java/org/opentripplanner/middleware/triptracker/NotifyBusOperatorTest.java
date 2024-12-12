@@ -86,11 +86,11 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         Instant busDepartureTime = getBusDepartureTime(busLeg);
         trackedJourney = createAndPersistTrackedJourney(startOfTransitCoordinates, busDepartureTime);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
-        String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, isStartOfTrip);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, isStartOfTrip);
         TripInstruction expectInstruction = new WaitForTransitInstruction(busLeg, busDepartureTime, locale);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(ROUTE_ID));
-        assertEquals(expectInstruction.build(), tripInstruction, message);
+        assertEquals(expectInstruction.build(), tripInstruction.build(), message);
     }
 
     private static Stream<Arguments> creatNotifyBusOperatorForScheduledDepartureTrace() {
@@ -152,11 +152,12 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates(), timeAtEndOfWalkLeg);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
-        String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        assertNotNull(tripInstruction);
 
         Leg busLeg = itinerary.legs.get(1);
         TripInstruction expectInstruction = new WaitForTransitInstruction(busLeg, timeAtEndOfWalkLeg, locale);
-        assertEquals(expectInstruction.build(), tripInstruction);
+        assertEquals(expectInstruction.build(), tripInstruction.build());
     }
 
     @Test
