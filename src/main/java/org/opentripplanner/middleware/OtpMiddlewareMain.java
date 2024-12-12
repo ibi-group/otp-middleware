@@ -18,6 +18,7 @@ import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
 import org.opentripplanner.middleware.controllers.api.OtpUserController;
 import org.opentripplanner.middleware.controllers.api.TrackedTripController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
+import org.opentripplanner.middleware.controllers.api.TripSurveyController;
 import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.otp.OtpVersion;
@@ -129,6 +130,7 @@ public class OtpMiddlewareMain {
                     new LogController(API_PREFIX),
                     new ErrorEventsController(API_PREFIX),
                     new CDPFilesController(API_PREFIX),
+                    new TripSurveyController(API_PREFIX),
                     new OtpRequestProcessor("/otp", OtpVersion.OTP2),
                     new OtpRequestProcessor("/otp2", OtpVersion.OTP2)
                     // Add other endpoints as needed.
