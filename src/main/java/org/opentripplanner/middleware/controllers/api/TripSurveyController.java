@@ -2,6 +2,8 @@ package org.opentripplanner.middleware.controllers.api;
 
 import io.github.manusant.ss.SparkSwagger;
 import io.github.manusant.ss.rest.Endpoint;
+import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripSurveyNotification;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -12,9 +14,11 @@ import spark.Response;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
 
 import static io.github.manusant.ss.descriptor.EndpointDescriptor.endpointPath;
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
+import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 import static org.opentripplanner.middleware.utils.NotificationUtils.TRIP_SURVEY_ID;
 import static org.opentripplanner.middleware.utils.NotificationUtils.TRIP_SURVEY_SUBDOMAIN;
 
@@ -49,22 +53,34 @@ public class TripSurveyController implements Endpoint {
     /**
      * Check that the requested survey is valid (user, trip, and notifications point to existing data).
      */
-    private static OtpUser checkParameters(String userId, String tripId, String notificationId, Response res) {
-        // TODO
-        return Persistence.otpUsers.getById(userId);
+    private static OtpUser checkParameters(String userId, String tripId, String notificationId, Request request) {
+        OtpUser user = Persistence.otpUsers.getById(userId);
+        if (user == null) {
+            returnInvalidUrlParametersError(request);
+        } else {
+            Optional<TripSurveyNotification> notificationOpt = user.findNotification(notificationId);
+            if (notificationOpt.isEmpty()) returnInvalidUrlParametersError(request);
+
+            MonitoredTrip trip = Persistence.monitoredTrips.getById(tripId);
+            if (trip == null) returnInvalidUrlParametersError(request);
+        }
+
+        return user;
+    }
+
+    private static void returnInvalidUrlParametersError(Request request) {
+        logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Invalid URL parameters");
     }
 
     /**
      * Mark notification as opened.
      */
     private static void updateNotificationState(OtpUser user, String notificationId) {
-        for (TripSurveyNotification notification : user.tripSurveyNotifications) {
-            if (notificationId.equals(notification.id)) {
-                notification.timeOpened = Date.from(Instant.now());
-                break;
-            }
+        Optional<TripSurveyNotification> notificationOpt = user.findNotification(notificationId);
+        if (notificationOpt.isPresent()) {
+            notificationOpt.get().timeOpened = Date.from(Instant.now());
+            Persistence.otpUsers.replace(user.id, user);
         }
-        Persistence.otpUsers.replace(user.id, user);
     }
 
     public static String makeTripSurveyUrl(String subdomain, String surveyId, String userId, String tripId, String notificationId) {
@@ -84,7 +100,7 @@ public class TripSurveyController implements Endpoint {
         String tripId = req.queryParams("trip_id");
         String notificationId = req.queryParams("notification_id");
 
-        OtpUser user = checkParameters(userId, tripId, notificationId, res);
+        OtpUser user = checkParameters(userId, tripId, notificationId, req);
 
         if (user != null) {
             String surveyUrl = makeTripSurveyUrl(

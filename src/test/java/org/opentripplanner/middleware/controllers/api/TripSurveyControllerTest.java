@@ -4,7 +4,11 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
@@ -19,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,12 +47,6 @@ class TripSurveyControllerTest extends OtpMiddlewareTestEnvironment {
         trackedJourney = new TrackedJourney();
         trackedJourney.id = UUID.randomUUID().toString();
         Persistence.trackedJourneys.create(trackedJourney);
-
-        otpUser.tripSurveyNotifications = List.of(
-            new TripSurveyNotification("other-notification", Date.from(Instant.now()), "other-journey"),
-            new TripSurveyNotification(NOTIFICATION_ID, Date.from(Instant.now()), trackedJourney.id)
-        );
-        Persistence.otpUsers.replace(otpUser.id, otpUser);
     }
 
     private static MonitoredTrip createMonitoredTrip() {
@@ -67,6 +66,15 @@ class TripSurveyControllerTest extends OtpMiddlewareTestEnvironment {
         if (monitoredTrip != null) monitoredTrip.delete();
         trackedJourney = Persistence.trackedJourneys.getById(trackedJourney.id);
         if (trackedJourney != null) trackedJourney.delete();
+    }
+
+    @BeforeEach
+    void setUpTest() {
+        otpUser.tripSurveyNotifications = List.of(
+            new TripSurveyNotification("other-notification", Date.from(Instant.now()), "other-journey"),
+            new TripSurveyNotification(NOTIFICATION_ID, Date.from(Instant.now()), trackedJourney.id)
+        );
+        Persistence.otpUsers.replace(otpUser.id, otpUser);
     }
 
     @Test
@@ -106,14 +114,53 @@ class TripSurveyControllerTest extends OtpMiddlewareTestEnvironment {
         OtpUser updatedUser = Persistence.otpUsers.getById(otpUser.id);
         assertNotNull(updatedUser);
         assertEquals(otpUser.tripSurveyNotifications.size(), updatedUser.tripSurveyNotifications.size());
-        updatedUser.tripSurveyNotifications.forEach(n -> {
-            if (NOTIFICATION_ID.equals(n.id)) {
-                assertNotNull(n.timeOpened);
-                assertTrue(n.timeOpened.toInstant().isAfter(requestInstant));
-                assertTrue(n.timeOpened.toInstant().isBefore(requestCompleteInstant));
+
+        int updatedNotificationCount = 0;
+        for (TripSurveyNotification notification : updatedUser.tripSurveyNotifications) {
+            if (NOTIFICATION_ID.equals(notification.id)) {
+                assertNotNull(notification.timeOpened);
+                assertTrue(notification.timeOpened.toInstant().isAfter(requestInstant));
+                assertTrue(notification.timeOpened.toInstant().isBefore(requestCompleteInstant));
+                updatedNotificationCount++;
             } else {
-                assertNull(n.timeOpened);
+                assertNull(notification.timeOpened);
             }
-        });
+        }
+        assertEquals(1, updatedNotificationCount);
+    }
+
+    @ParameterizedTest
+    @MethodSource("createShouldRejectInvalidParamsCases")
+    void shouldRejectInvalidParams(String userId, String tripId, String notificationId) {
+        assumeTrue(IS_END_TO_END);
+
+        var response = makeRequest(
+            String.format(
+                "api/trip-survey/open?user_id=%s&trip_id=%s&notification_id=%s",
+                userId,
+                tripId,
+                notificationId
+            ),
+            "",
+            Map.of(),
+            HttpMethod.GET
+        );
+
+        assertEquals(
+            HttpStatus.BAD_REQUEST_400,
+            response.status,
+            "Invalid URL params should result in HTTP Status 400."
+        );
+    }
+
+    private static Stream<Arguments> createShouldRejectInvalidParamsCases() {
+        return Stream.of(
+            Arguments.of("invalid-user-id", monitoredTrip.id, NOTIFICATION_ID),
+            Arguments.of(null, monitoredTrip.id, NOTIFICATION_ID),
+            Arguments.of(otpUser.id, "invalid-trip-id", NOTIFICATION_ID),
+            Arguments.of(otpUser.id, null, NOTIFICATION_ID),
+            Arguments.of(otpUser.id, monitoredTrip.id, "invalid-notification-id"),
+            Arguments.of(otpUser.id, monitoredTrip.id, null)
+        );
     }
 }
