@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.models;
 
 import java.util.Date;
-import java.util.UUID;
 
 /** Contains information regarding survey notifications sent after a trip is completed. */
 public class TripSurveyNotification {
@@ -16,6 +15,9 @@ public class TripSurveyNotification {
 
     /** Date/time when the trip survey notification was sent. */
     public Date timeSent;
+
+    /** Date/time when the trip survey notification was opened. */
+    public Date timeOpened;
 
     /** The {@link TrackedJourney} (and, indirectly, the {@link MonitoredTrip}) that this notification refers to. */
     public String journeyId;

@@ -2,10 +2,16 @@ package org.opentripplanner.middleware.controllers.api;
 
 import io.github.manusant.ss.SparkSwagger;
 import io.github.manusant.ss.rest.Endpoint;
+import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TripSurveyNotification;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import spark.Request;
 import spark.Response;
+
+import java.time.Instant;
+import java.util.Date;
 
 import static io.github.manusant.ss.descriptor.EndpointDescriptor.endpointPath;
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
@@ -43,17 +49,22 @@ public class TripSurveyController implements Endpoint {
     /**
      * Check that the requested survey is valid (user, trip, and notifications point to existing data).
      */
-    private static void checkParameters(Request req, Response res) {
+    private static OtpUser checkParameters(String userId, String tripId, String notificationId, Response res) {
         // TODO
-
+        return Persistence.otpUsers.getById(userId);
     }
 
     /**
      * Mark notification as opened.
      */
-    private static void updateNotificationState(Response res) {
-        // TODO
-
+    private static void updateNotificationState(OtpUser user, String notificationId) {
+        for (TripSurveyNotification notification : user.tripSurveyNotifications) {
+            if (notificationId.equals(notification.id)) {
+                notification.timeOpened = Date.from(Instant.now());
+                break;
+            }
+        }
+        Persistence.otpUsers.replace(user.id, user);
     }
 
     public static String makeTripSurveyUrl(String subdomain, String surveyId, String userId, String tripId, String notificationId) {
@@ -69,22 +80,30 @@ public class TripSurveyController implements Endpoint {
     }
 
     private static boolean processCall(Request req, Response res) {
-        checkParameters(req, res);
+        String userId = req.queryParams("user_id");
+        String tripId = req.queryParams("trip_id");
+        String notificationId = req.queryParams("notification_id");
 
-        String surveyUrl = makeTripSurveyUrl(
-            TRIP_SURVEY_SUBDOMAIN,
-            TRIP_SURVEY_ID,
-            req.queryParams("user_id"),
-            req.queryParams("trip_id"),
-            req.queryParams("notification_id")
-        );
+        OtpUser user = checkParameters(userId, tripId, notificationId, res);
 
-        // Update notification state
-        updateNotificationState(res);
+        if (user != null) {
+            String surveyUrl = makeTripSurveyUrl(
+                TRIP_SURVEY_SUBDOMAIN,
+                TRIP_SURVEY_ID,
+                userId,
+                tripId,
+                notificationId
+            );
 
-        // Redirect
-        res.redirect(surveyUrl);
+            // Update notification state
+            updateNotificationState(user, notificationId);
 
-        return true;
+            // Redirect
+            res.redirect(surveyUrl);
+
+            return true;
+        }
+
+        return false;
     }
 }
