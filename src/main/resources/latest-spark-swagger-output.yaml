@@ -34,6 +34,9 @@ tags:
   description: "Interface for reporting and retrieving application errors using Bugsnag."
 - name: "api/secure/connected-data"
   description: "Interface for listing and downloading CDP files from S3."
+- name: "api/trip-survey"
+  description: "Interface for tracking opened trip surveys following a trip survey\
+    \ notification"
 - name: "otp"
   description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
@@ -2174,6 +2177,31 @@ paths:
             type: "array"
             items:
               $ref: "#/definitions/URL"
+  /api/trip-survey/open:
+    get:
+      tags:
+      - "api/trip-survey"
+      description: "Generates a tracking survey link for a specified user, trip, notification\
+        \ ids."
+      parameters:
+      - name: "user_id"
+        in: "query"
+        description: "The id of the OtpUser that this notification applies to."
+        required: true
+        type: "string"
+      - name: "trip_id"
+        in: "query"
+        description: "The id of the MonitoredTrip that this notification applies to."
+        required: true
+        type: "string"
+      - name: "notification_id"
+        in: "query"
+        description: "The id of the notification that this notification applies to."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
   /otp/*:
     get:
       tags:
@@ -3258,6 +3286,9 @@ definitions:
       id:
         type: "string"
       timeSent:
+        type: "string"
+        format: "date"
+      timeOpened:
         type: "string"
         format: "date"
       journeyId:
