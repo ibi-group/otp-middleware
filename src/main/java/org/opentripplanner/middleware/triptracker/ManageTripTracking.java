@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.triptracker;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -80,7 +81,7 @@ public class ManageTripTracking {
                 );
             }
 
-            TravelerLocator.checkForLegTransition(tripStatus, travelerPosition, tripData.trip);
+            LegTransitionNotification.checkForLegTransition(tripStatus, travelerPosition, tripData.trip);
 
             // Provide response.
             TripInstruction instruction = TravelerLocator.getInstruction(tripStatus, travelerPosition, create);

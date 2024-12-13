@@ -1,12 +1,9 @@
 package org.opentripplanner.middleware.triptracker;
 
 import io.leonard.PolylineUtils;
-import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
-import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
-import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffHereTransitInstruction;
@@ -20,8 +17,6 @@ import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusO
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -35,9 +30,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.ARRIVED_NOTIFICATION;
-import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.ARRIVED_AND_MODE_CHANGE_NOTIFICATION;
-import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.DEPARTED_NOTIFICATION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_IMMEDIATE_RADIUS;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
@@ -49,8 +41,6 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
  * Locate the traveler in relation to the nearest step or destination and provide the appropriate instructions.
  */
 public class TravelerLocator {
-
-    private static final Logger LOG = LoggerFactory.getLogger(TravelerLocator.class);
 
     public static final int ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES = 15;
 
@@ -93,55 +83,9 @@ public class TravelerLocator {
     }
 
     /**
-     * If a traveler is on schedule and on either a walk or transit leg check for possible leg transition notification.
-     */
-    public static void checkForLegTransition(TripStatus tripStatus, TravelerPosition travelerPosition, MonitoredTrip trip) {
-        if (
-            hasRequiredTripStatus(tripStatus) &&
-            (hasRequiredWalkLeg(travelerPosition) || hasRequiredTransitLeg(travelerPosition))
-        ) {
-            NotificationType notificationType = getLegTransitionNotificationType(travelerPosition);
-            if (notificationType != null) {
-                try {
-                    new CheckMonitoredTrip(trip).processLegTransition(notificationType, travelerPosition);
-                } catch (CloneNotSupportedException e) {
-                    LOG.error("Error encountered while checking leg transition.", e);
-                }
-            }
-        }
-    }
-
-    /**
-     * Depending on the traveler's proximity to the start/end of a leg return the appropriate notification type.
-     */
-    private static NotificationType getLegTransitionNotificationType(TravelerPosition travelerPosition) {
-        if (isAtStartOfLeg(travelerPosition)) {
-            return DEPARTED_NOTIFICATION;
-        } else if (isApproachingEndOfLeg(travelerPosition)) {
-            if (hasModeChanged(travelerPosition)) {
-                return ARRIVED_AND_MODE_CHANGE_NOTIFICATION;
-            }
-            return ARRIVED_NOTIFICATION;
-        }
-        return null;
-    }
-
-    /**
-     * The traveler is at the end of the current leg and the mode has changed between this and the next leg.
-     */
-    private static boolean hasModeChanged(TravelerPosition travelerPosition) {
-        Leg nextLeg = travelerPosition.nextLeg;
-        Leg expectedLeg = travelerPosition.expectedLeg;
-        return
-            isApproachingEndOfLeg(travelerPosition) &&
-            nextLeg != null &&
-            !nextLeg.mode.equalsIgnoreCase(expectedLeg.mode);
-    }
-
-    /**
      * Has required walk leg.
      */
-    private static boolean hasRequiredWalkLeg(TravelerPosition travelerPosition) {
+    public static boolean hasRequiredWalkLeg(TravelerPosition travelerPosition) {
         return
             travelerPosition.expectedLeg != null &&
             travelerPosition.expectedLeg.mode.equalsIgnoreCase("walk");
@@ -150,7 +94,7 @@ public class TravelerLocator {
     /**
      * Has required transit leg.
      */
-    private static boolean hasRequiredTransitLeg(TravelerPosition travelerPosition) {
+    public static boolean hasRequiredTransitLeg(TravelerPosition travelerPosition) {
         return
             travelerPosition.expectedLeg != null &&
             travelerPosition.expectedLeg.transitLeg;
@@ -159,7 +103,7 @@ public class TravelerLocator {
     /**
      * The trip instruction can only be provided if the traveler is close to the indicated route.
      */
-    private static boolean hasRequiredTripStatus(TripStatus tripStatus) {
+    public static boolean hasRequiredTripStatus(TripStatus tripStatus) {
         return !tripStatus.equals(TripStatus.DEVIATED) && !tripStatus.equals(TripStatus.ENDED);
     }
 
@@ -378,7 +322,7 @@ public class TravelerLocator {
     /**
      * Is the traveler approaching the leg destination.
      */
-    private static boolean isApproachingEndOfLeg(TravelerPosition travelerPosition) {
+    public static boolean isApproachingEndOfLeg(TravelerPosition travelerPosition) {
         return getDistanceToEndOfLeg(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
     }
 
