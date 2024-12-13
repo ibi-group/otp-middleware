@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Contains information about the type and details of messages to be sent to users about their {@link MonitoredTrip}s.
@@ -109,5 +110,18 @@ public class TripMonitorNotification extends Model {
                 DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale)
             )
         );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        TripMonitorNotification that = (TripMonitorNotification) o;
+        return type == that.type && Objects.equals(body, that.body);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), type, body);
     }
 }

@@ -36,7 +36,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -251,28 +251,24 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Process leg transition notifications.
+     * Process leg transition notification.
      */
-    public void processLegTransition(List<NotificationType> legTransitionTypes, TravelerPosition travelerPosition) {
-        OtpUser otpUser = getOtpUser();
-        if (otpUser != null) {
-            otpUser.relatedUsers.forEach(relatedUser -> {
-                if (relatedUser.isConfirmed()) {
-                    OtpUser observer = Persistence.otpUsers.getOneFiltered(eq("email", relatedUser.email));
-                    if (observer != null) {
-                        enqueueNotification(
-                            LegTransitionNotification.createLegTransitionNotifications(
-                                legTransitionTypes,
-                                otpUser.name,
-                                travelerPosition,
-                                I18nUtils.getOtpUserLocale(observer)
-                            )
-                        );
-                        sendNotifications(observer);
-                    }
-                }
-            });
-        }
+    public void processLegTransition(NotificationType notificationType, TravelerPosition travelerPosition) {
+        OtpUser tripOwner = getOtpUser();
+        Set<OtpUser> notifyUsers = getLegTransitionNotifyUsers(trip);
+        notifyUsers.forEach(observer -> {
+            if (observer != null) {
+                enqueueNotification(
+                    new LegTransitionNotification(
+                        tripOwner.getAddressee(),
+                        notificationType,
+                        travelerPosition,
+                        I18nUtils.getOtpUserLocale(observer)
+                    ).tripMonitorNotification
+                );
+                sendNotifications(observer);
+            }
+        });
     }
 
     /**
@@ -560,7 +556,7 @@ public class CheckMonitoredTrip implements Runnable {
             return;
         }
 
-        Locale locale = getOtpUserLocale();
+        Locale locale = I18nUtils.getOtpUserLocale(otpUser);
         String tripNameOrReminder = hasInitialReminder ? initialReminderNotification.body : trip.tripName;
         if (tripNameOrReminder == null) {
             tripNameOrReminder = Message.TRIP_NAME_UNDEFINED.get(locale);
@@ -585,7 +581,7 @@ public class CheckMonitoredTrip implements Runnable {
         boolean successSms = false;
 
         if (otpUser.notificationChannel.contains(OtpUser.Notification.EMAIL)) {
-            successEmail = sendEmail(otpUser, templateData);
+            successEmail = sendEmail(otpUser, templateData, locale);
         }
         if (otpUser.notificationChannel.contains(OtpUser.Notification.PUSH)) {
             successPush = sendPush(otpUser, templateData);
@@ -597,6 +593,9 @@ public class CheckMonitoredTrip implements Runnable {
         // TODO: better handle below when one of the following fails
         if (successEmail || successPush || successSms) {
             notificationTimestampMillis = DateTimeUtils.currentTimeMillis();
+            // Prevent repeated notifications by saving successfully sent notifications.
+            trip.journeyState.lastNotifications.addAll(notifications);
+            Persistence.monitoredTrips.replace(trip.id, trip);
         }
     }
 
@@ -617,8 +616,7 @@ public class CheckMonitoredTrip implements Runnable {
     /**
      * Send notification email in MonitoredTrip template.
      */
-    private boolean sendEmail(OtpUser otpUser, Map<String, Object> data) {
-        Locale locale = getOtpUserLocale();
+    private boolean sendEmail(OtpUser otpUser, Map<String, Object> data, Locale locale) {
         String subject = NotificationUtils.getTripEmailSubject(otpUser, locale, trip);
         return NotificationUtils.sendEmail(
             otpUser,

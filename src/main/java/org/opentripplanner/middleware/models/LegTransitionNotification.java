@@ -1,13 +1,16 @@
 package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.i18n.Message;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
+
+import static com.mongodb.client.model.Filters.eq;
 
 public class LegTransitionNotification {
 
@@ -34,28 +37,27 @@ public class LegTransitionNotification {
      * Create {@link TripMonitorNotification} for leg transition based on notification type.
      */
     @Nullable
-    public TripMonitorNotification createTripMonitorNotification(NotificationType notificationType) {
+    private TripMonitorNotification createTripMonitorNotification(NotificationType notificationType) {
         String body;
         switch (notificationType) {
-            case MODE_CHANGE_NOTIFICATION:
+            case ARRIVED_AND_MODE_CHANGE_NOTIFICATION:
                 body = String.format(
-                    Message.MODE_CHANGE_NOTIFICATION.get(travelerPosition.locale),
-                    getTravelerName(),
-                    travelerPosition.expectedLeg.mode,
-                    travelerPosition.nextLeg.mode
+                    Message.ARRIVED_AND_MODE_CHANGE_NOTIFICATION.get(observerLocale),
+                    travelerName,
+                    travelerPosition.expectedLeg.to.name
                 );
                 break;
             case DEPARTED_NOTIFICATION:
                 body = String.format(
                     Message.DEPARTED_NOTIFICATION.get(observerLocale),
-                    getTravelerName(),
+                    travelerName,
                     travelerPosition.expectedLeg.from.name
                 );
                 break;
             case ARRIVED_NOTIFICATION:
                 body = String.format(
-                    Message.ARRIVED_NOTIFICATION.get(travelerPosition.locale),
-                    getTravelerName(),
+                    Message.ARRIVED_NOTIFICATION.get(observerLocale),
+                    travelerName,
                     travelerPosition.expectedLeg.to.name
                 );
                 break;
@@ -66,38 +68,23 @@ public class LegTransitionNotification {
     }
 
     /**
-     * Get the traveler's name if available, if not provide a generic traveler name.
+     * Get a list of users that should be notified of a traveler's leg transition.
      */
-    private String getTravelerName() {
-        if (travelerName != null) {
-            return travelerName;
-        } else {
-            return Message.TRIP_TRAVELER_GENERIC_NAME.get(observerLocale);
-        }
-    }
+    public static Set<OtpUser> getLegTransitionNotifyUsers(MonitoredTrip trip) {
+        Set<OtpUser> notifyUsers = new HashSet<>();
 
-    /**
-     * Create locale specific notifications.
-     */
-    public static TripMonitorNotification[] createLegTransitionNotifications(
-        List<NotificationType> legTransitionTypes,
-        String travelerName,
-        TravelerPosition travelerPosition,
-        Locale observerLocale
-    ) {
-        List<TripMonitorNotification> tripMonitorNotifications = new ArrayList<>();
-        // Create locale specific notifications.
-        for (NotificationType legTransitionType : legTransitionTypes) {
-            LegTransitionNotification legTransitionNotification = new LegTransitionNotification(
-                travelerName,
-                legTransitionType,
-                travelerPosition,
-                observerLocale
-            );
-            if (legTransitionNotification.tripMonitorNotification != null) {
-                tripMonitorNotifications.add(legTransitionNotification.tripMonitorNotification);
-            }
+        if (trip.ownedByPrimary() && trip.companion != null) {
+            notifyUsers.add(Persistence.otpUsers.getOneFiltered(eq("email", trip.companion.email)));
+        } else if (trip.ownedByCompanion() && trip.primary != null) {
+            notifyUsers.add(Persistence.otpUsers.getById(trip.primary.userId));
         }
-        return tripMonitorNotifications.toArray(new TripMonitorNotification[0]);
+
+        trip.observers.forEach(observer -> {
+            if (observer.isConfirmed()) {
+                notifyUsers.add(Persistence.otpUsers.getOneFiltered(eq("email", observer.email)));
+            }
+        });
+
+        return notifyUsers;
     }
 }

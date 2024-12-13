@@ -32,6 +32,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.mongodb.client.model.Filters.eq;
+
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
  * change.
@@ -499,5 +501,20 @@ public class MonitoredTrip extends Model {
             this.companion = companion;
             this.observers = observers;
         }
+    }
+
+    /**
+     * Trip created by primary user.
+     */
+    public boolean ownedByPrimary() {
+        return primary != null && primary.userId.equalsIgnoreCase(userId);
+    }
+
+    /**
+     * Trip created by companion user.
+     */
+    public boolean ownedByCompanion() {
+        OtpUser tripOwner = Persistence.otpUsers.getById(userId);
+        return tripOwner != null && companion != null && companion.email.equalsIgnoreCase(tripOwner.email);
     }
 }

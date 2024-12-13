@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.ARRIVED_NOTIFICATION;
-import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.MODE_CHANGE_NOTIFICATION;
+import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.ARRIVED_AND_MODE_CHANGE_NOTIFICATION;
 import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.DEPARTED_NOTIFICATION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_IMMEDIATE_RADIUS;
@@ -101,35 +101,38 @@ public class TravelerLocator {
         return NO_INSTRUCTION;
     }
 
+    /**
+     * If a traveler is on schedule and on either a walk or transit leg check for possible leg transition notification.
+     */
     public static void checkForLegTransition(TripStatus tripStatus, TravelerPosition travelerPosition, MonitoredTrip trip) {
         if (
             hasRequiredTripStatus(tripStatus) &&
             (hasRequiredWalkLeg(travelerPosition) || hasRequiredTransitLeg(travelerPosition))
         ) {
-            List<NotificationType> legTransitionTypes = getLegTransitionTypes(travelerPosition);
-            if (!legTransitionTypes.isEmpty()) {
+            NotificationType notificationType = getLegTransitionNotificationType(travelerPosition);
+            if (notificationType != null) {
                 try {
-                    new CheckMonitoredTrip(trip).processLegTransition(legTransitionTypes, travelerPosition);
+                    new CheckMonitoredTrip(trip).processLegTransition(notificationType, travelerPosition);
                 } catch (CloneNotSupportedException e) {
                     LOG.error("Error encountered while checking leg transition.", e);
                 }
             }
         }
-
     }
 
-    private static List<NotificationType> getLegTransitionTypes(TravelerPosition travelerPosition) {
-        List<NotificationType> notificationTypes = new ArrayList<>();
+    /**
+     * Depending on the traveler's proximity to the start/end of a leg return the appropriate notification type.
+     */
+    private static NotificationType getLegTransitionNotificationType(TravelerPosition travelerPosition) {
         if (isAtStartOfLeg(travelerPosition)) {
-            notificationTypes.add(DEPARTED_NOTIFICATION);
+            return DEPARTED_NOTIFICATION;
+        } else if (isApproachingEndOfLeg(travelerPosition)) {
+            if (hasModeChanged(travelerPosition)) {
+                return ARRIVED_AND_MODE_CHANGE_NOTIFICATION;
+            }
+            return ARRIVED_NOTIFICATION;
         }
-        if (isAtEndOfLeg(travelerPosition)) {
-            notificationTypes.add(ARRIVED_NOTIFICATION);
-        }
-        if (hasModeChanged(travelerPosition)) {
-            notificationTypes.add(MODE_CHANGE_NOTIFICATION);
-        }
-        return notificationTypes;
+        return null;
     }
 
     /**
@@ -138,7 +141,10 @@ public class TravelerLocator {
     private static boolean hasModeChanged(TravelerPosition travelerPosition) {
         Leg nextLeg = travelerPosition.nextLeg;
         Leg expectedLeg = travelerPosition.expectedLeg;
-        return isAtEndOfLeg(travelerPosition) && nextLeg != null && !nextLeg.mode.equalsIgnoreCase(expectedLeg.mode);
+        return
+            isApproachingEndOfLeg(travelerPosition) &&
+            nextLeg != null &&
+            !nextLeg.mode.equalsIgnoreCase(expectedLeg.mode);
     }
 
     /**
