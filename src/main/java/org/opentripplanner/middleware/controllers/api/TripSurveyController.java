@@ -73,12 +73,12 @@ public class TripSurveyController implements Endpoint {
     }
 
     /**
-     * Mark notification as opened.
+     * Mark notification as opened, but if an opened date is already populated, do nothing.
      */
-    private static void updateNotificationState(OtpUser user, String notificationId) {
-        Optional<TripSurveyNotification> notificationOpt = user.findNotification(notificationId);
-        if (notificationOpt.isPresent()) {
-            notificationOpt.get().timeOpened = Date.from(Instant.now());
+    private static void updateNotificationStateIfNeeded(OtpUser user, String notificationId) {
+        TripSurveyNotification notification = user.findNotification(notificationId).orElse(null);
+        if (notification != null && notification.timeOpened == null) {
+            notification.timeOpened = Date.from(Instant.now());
             Persistence.otpUsers.replace(user.id, user);
         }
     }
@@ -112,7 +112,7 @@ public class TripSurveyController implements Endpoint {
             );
 
             // Update notification state
-            updateNotificationState(user, notificationId);
+            updateNotificationStateIfNeeded(user, notificationId);
 
             // Redirect
             res.redirect(surveyUrl);

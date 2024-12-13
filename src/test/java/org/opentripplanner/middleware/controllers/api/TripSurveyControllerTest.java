@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
+import org.opentripplanner.middleware.utils.HttpResponseValues;
 
 import java.time.Instant;
 import java.util.Date;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 
 class TripSurveyControllerTest extends OtpMiddlewareTestEnvironment {
+    public static final String SURVEY_PATH_TEMPLATE = "api/trip-survey/open?user_id=%s&trip_id=%s&notification_id=%s";
     private static OtpUser otpUser;
     private static MonitoredTrip monitoredTrip;
     private static TrackedJourney trackedJourney;
@@ -91,22 +93,10 @@ class TripSurveyControllerTest extends OtpMiddlewareTestEnvironment {
 
         OtpUser existingUser = Persistence.otpUsers.getById(otpUser.id);
         assertNotNull(existingUser);
-        existingUser.tripSurveyNotifications.forEach(n -> {
-            assertNull(n.timeOpened);
-        });
+        existingUser.tripSurveyNotifications.forEach(n -> assertNull(n.timeOpened));
 
         Instant requestInstant = Instant.now();
-        var response = makeRequest(
-            String.format(
-                "api/trip-survey/open?user_id=%s&trip_id=%s&notification_id=%s",
-                otpUser.id,
-                monitoredTrip.id,
-                NOTIFICATION_ID
-            ),
-            "",
-            Map.of(),
-            HttpMethod.GET
-        );
+        var response = invokeSurveyEndpoint(otpUser.id, monitoredTrip.id, NOTIFICATION_ID);
         Instant requestCompleteInstant = Instant.now();
 
         assertEquals(HttpStatus.OK_200, response.status);
@@ -116,17 +106,32 @@ class TripSurveyControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(otpUser.tripSurveyNotifications.size(), updatedUser.tripSurveyNotifications.size());
 
         int updatedNotificationCount = 0;
+        Date notificationTimeOpened = null;
         for (TripSurveyNotification notification : updatedUser.tripSurveyNotifications) {
             if (NOTIFICATION_ID.equals(notification.id)) {
-                assertNotNull(notification.timeOpened);
-                assertTrue(notification.timeOpened.toInstant().isAfter(requestInstant));
-                assertTrue(notification.timeOpened.toInstant().isBefore(requestCompleteInstant));
+                notificationTimeOpened = notification.timeOpened;
+                assertNotNull(notificationTimeOpened);
+                assertTrue(notificationTimeOpened.toInstant().isAfter(requestInstant));
+                assertTrue(notificationTimeOpened.toInstant().isBefore(requestCompleteInstant));
                 updatedNotificationCount++;
             } else {
                 assertNull(notification.timeOpened);
             }
         }
         assertEquals(1, updatedNotificationCount);
+        assertNotNull(notificationTimeOpened);
+
+        // A second request should not change the notification opened date.
+        var response2 = invokeSurveyEndpoint(otpUser.id, monitoredTrip.id, NOTIFICATION_ID);
+        assertEquals(HttpStatus.OK_200, response2.status);
+
+        updatedUser = Persistence.otpUsers.getById(otpUser.id);
+        assertNotNull(updatedUser);
+        for (TripSurveyNotification notification : updatedUser.tripSurveyNotifications) {
+            if (NOTIFICATION_ID.equals(notification.id)) {
+                assertEquals(notificationTimeOpened, notification.timeOpened);
+            }
+        }
     }
 
     @ParameterizedTest
@@ -134,17 +139,7 @@ class TripSurveyControllerTest extends OtpMiddlewareTestEnvironment {
     void shouldRejectInvalidParams(String userId, String tripId, String notificationId) {
         assumeTrue(IS_END_TO_END);
 
-        var response = makeRequest(
-            String.format(
-                "api/trip-survey/open?user_id=%s&trip_id=%s&notification_id=%s",
-                userId,
-                tripId,
-                notificationId
-            ),
-            "",
-            Map.of(),
-            HttpMethod.GET
-        );
+        var response = invokeSurveyEndpoint(userId, tripId, notificationId);
 
         assertEquals(
             HttpStatus.BAD_REQUEST_400,
@@ -161,6 +156,16 @@ class TripSurveyControllerTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(otpUser.id, null, NOTIFICATION_ID),
             Arguments.of(otpUser.id, monitoredTrip.id, "invalid-notification-id"),
             Arguments.of(otpUser.id, monitoredTrip.id, null)
+        );
+    }
+
+    /** Helper to invoke the survey endpoint */
+    private static HttpResponseValues invokeSurveyEndpoint(String userId, String tripId, String notificationId) {
+        return makeRequest(
+            String.format(SURVEY_PATH_TEMPLATE, userId, tripId, notificationId),
+            "",
+            Map.of(),
+            HttpMethod.GET
         );
     }
 }
