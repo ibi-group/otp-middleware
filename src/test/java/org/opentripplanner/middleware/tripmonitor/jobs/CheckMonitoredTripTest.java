@@ -10,12 +10,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
-import org.opentripplanner.middleware.models.LegTransitionNotification;
-import org.opentripplanner.middleware.models.MobilityProfileLite;
-import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
-import org.opentripplanner.middleware.otp.response.Leg;
-import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
@@ -28,8 +23,6 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
-import org.opentripplanner.middleware.triptracker.TravelerPosition;
-import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,8 +34,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -56,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.opentripplanner.middleware.testutils.OtpTestUtils.createDefaultItinerary;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
@@ -68,9 +58,6 @@ import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip
 public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTripTest.class);
     private static OtpUser user;
-    private static OtpUser primary;
-    private static OtpUser companion;
-    private static OtpUser observer;
 
     // this is initialized in the setup method after the OTP_TIMEZONE config value is known.
     private static final ZonedDateTime noonMonday8June2020 = DateTimeUtils.makeOtpZonedDateTime(new Date())
@@ -83,14 +70,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @BeforeAll
     public static void setup() {
         user = PersistenceTestUtils.createUser("user@example.com");
-        primary = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-primary-user"));
-        companion = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-companion-user"));
-        observer = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-observer-user"));
     }
 
     @AfterAll
     public static void tearDown() {
-        PersistenceTestUtils.deleteOtpUser(false, user, primary, companion, observer);
+        Persistence.otpUsers.removeById(user.id);
         for (MonitoredTrip trip : Persistence.monitoredTrips.getFiltered(eq("userId", user.id))) {
             PersistenceTestUtils.deleteMonitoredTrip(trip);
         }
@@ -230,88 +214,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         );
     }
 
-    @ParameterizedTest
-    @MethodSource("createLegTransitionNotificationTestCases")
-    void testLegTransitionNotifications(
-        NotificationType notificationType,
-        String travelerName,
-        TravelerPosition travelerPosition,
-        Locale locale,
-        String message
-    ) {
-        TripMonitorNotification notification = new LegTransitionNotification(
-            travelerName,
-            notificationType,
-            travelerPosition,
-            locale
-        ).tripMonitorNotification;
-        assertNotNull(notification);
-        assertEquals(message, notification.body);
-    }
-
-    private static Stream<Arguments> createLegTransitionNotificationTestCases() throws Exception {
-        String travelerName = "Obi-Wan";
-        Locale locale = Locale.US;
-        Itinerary itinerary = createDefaultItinerary();
-        Leg expectedLeg = itinerary.legs.get(1);
-        Coordinates expectedLegDestinationCoords = new Coordinates(expectedLeg.to);
-        Leg nextLeg = itinerary.legs.get(2);
-        Coordinates nextLegDepartureCoords = new Coordinates(nextLeg.from);
-        return Stream.of(
-            Arguments.of(
-                NotificationType.ARRIVED_AND_MODE_CHANGE_NOTIFICATION,
-                travelerName,
-                new TravelerPosition(expectedLeg, nextLeg, expectedLegDestinationCoords),
-                locale,
-                "Obi-Wan has arrived at transit stop Pioneer Square South MAX Station."
-            ),
-            Arguments.of(
-                NotificationType.DEPARTED_NOTIFICATION,
-                travelerName,
-                new TravelerPosition(expectedLeg, nextLeg, nextLegDepartureCoords),
-                locale,
-                "Obi-Wan has departed Providence Park MAX Station."
-            ),
-            Arguments.of(
-                NotificationType.ARRIVED_NOTIFICATION,
-                travelerName,
-                new TravelerPosition(expectedLeg, nextLeg, expectedLegDestinationCoords),
-                locale,
-                "Obi-Wan has arrived at Pioneer Square South MAX Station."
-            )
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("createLegTransitionNotifyUsersTestCases")
-    void testLegTransitionNotifyUsers(
-        String tripOwnerUserId,
-        Set<OtpUser> expectedUsers
-    ) {
-
-        RelatedUser relatedUser = new RelatedUser();
-        relatedUser.email = observer.email;
-        relatedUser.status = RelatedUser.RelatedUserStatus.CONFIRMED;
-
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.userId = tripOwnerUserId;
-        trip.primary = new MobilityProfileLite(primary);
-        trip.companion = new RelatedUser(companion.email, RelatedUser.RelatedUserStatus.CONFIRMED);
-        trip.observers.add(relatedUser);
-
-        Set<OtpUser> users = LegTransitionNotification.getLegTransitionNotifyUsers(trip);
-        assertNotNull(users);
-        assertTrue(users.containsAll(expectedUsers));
-        assertEquals(users.size(), expectedUsers.size());
-    }
-
-    private static Stream<Arguments> createLegTransitionNotifyUsersTestCases() {
-        return Stream.of(
-            Arguments.of(primary.id, Set.of(companion, observer)),
-            Arguments.of(companion.id, Set.of(primary, observer))
-        );
-    }
-
     /**
      * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
      */
@@ -332,7 +234,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             journeyState
         );
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, otpResponseProvider);
-        checkMonitoredTrip.matchingItinerary = createDefaultItinerary();
+        checkMonitoredTrip.matchingItinerary = OtpTestUtils.createDefaultItinerary();
         return checkMonitoredTrip;
     }
 

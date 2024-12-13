@@ -38,7 +38,6 @@ import java.util.stream.IntStream;
 import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.ARRIVED_NOTIFICATION;
 import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.ARRIVED_AND_MODE_CHANGE_NOTIFICATION;
 import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.DEPARTED_NOTIFICATION;
-import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_IMMEDIATE_RADIUS;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
@@ -64,7 +63,7 @@ public class TravelerLocator {
      * Define the instruction based on the traveler's current position compared to expected and nearest points on the
      * trip.
      */
-    public static String getInstruction(
+    public static TripInstruction getInstruction(
         TripStatus tripStatus,
         TravelerPosition travelerPosition,
         boolean isStartOfTrip
@@ -72,33 +71,25 @@ public class TravelerLocator {
         if (hasRequiredWalkLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
                 TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, false);
-                if (tripInstruction != null) {
-                    return tripInstruction.build();
-                }
+                if (tripInstruction != null) return tripInstruction;
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
                 TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
-                if (tripInstruction != null) {
-                    return tripInstruction.build();
-                }
+                if (tripInstruction != null) return tripInstruction;
             }
         } else if (hasRequiredTransitLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
                 TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition);
-                if (tripInstruction != null) {
-                    return tripInstruction.build();
-                }
+                if (tripInstruction != null) return tripInstruction;
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
                 TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
-                if (tripInstruction != null) {
-                    return tripInstruction.build();
-                }
+                if (tripInstruction != null) return tripInstruction;
             }
         }
-        return NO_INSTRUCTION;
+        return null;
     }
 
     /**

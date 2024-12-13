@@ -491,6 +491,14 @@ public class MonitoredTrip extends Model {
         return new TripUsers(addedPrimaryTraveler, addedCompanion, addedObservers);
     }
 
+    /**
+     * @return The id of the primary traveler (the primary user of a trip,
+     * or the user who created the trip if no primary user has been set).
+     */
+    public String getPrimaryTravelerId() {
+        return primary != null ? primary.userId : userId;
+    }
+
     public static class TripUsers {
         public final RelatedUser companion;
         public final List<RelatedUser> observers;
