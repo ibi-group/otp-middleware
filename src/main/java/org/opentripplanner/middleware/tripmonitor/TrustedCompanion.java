@@ -192,7 +192,7 @@ public class TrustedCompanion {
                 "acceptDependentLinkLabelAndUrl", label(acceptDependentLinkLabel, acceptDependentUrl, locale),
                 "acceptDependentUrl", acceptDependentUrl,
                 "emailFooter", Message.ACCEPT_DEPENDENT_EMAIL_FOOTER.get(locale),
-                "emailGreeting", String.format(Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale), dependentUser.getAddressee()),
+                "emailGreeting", String.format(Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale), dependentUser.getDisplayedName()),
                 "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
                 "manageLinkText", Message.ACCEPT_DEPENDENT_EMAIL_MANAGE.get(locale)
             )

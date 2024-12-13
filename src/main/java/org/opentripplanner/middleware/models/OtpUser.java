@@ -213,9 +213,9 @@ public class OtpUser extends AbstractUser {
     }
 
     /**
-     * Use name if available, if not fallback on their email (which is a required field).
+     * Use name if available, if not fallback on email (which is a required field).
      */
-    public String getAddressee() {
-        return Strings.isBlank(name) ? email : name;
+    public String getDisplayedName() {
+        return Strings.isBlank(name) ? email.replace("@", " at ") : name;
     }
 }

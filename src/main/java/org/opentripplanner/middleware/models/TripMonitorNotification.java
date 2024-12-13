@@ -17,8 +17,8 @@ public class TripMonitorNotification extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(TripMonitorNotification.class);
     public static final String STOPWATCH_ICON = "⏱";
 
-    public final NotificationType type;
-    public final String body;
+    public NotificationType type;
+    public String body;
 
     /** Getter functions are used by HTML template renderer */
     public String getBody() {
@@ -27,6 +27,12 @@ public class TripMonitorNotification extends Model {
 
     public NotificationType getType() {
         return type;
+    }
+
+    /**
+     * This no-arg constructor exists to make MongoDB happy.
+     */
+    public TripMonitorNotification() {
     }
 
     public TripMonitorNotification(NotificationType type, String body) {

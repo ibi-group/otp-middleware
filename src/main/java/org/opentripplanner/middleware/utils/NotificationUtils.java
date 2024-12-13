@@ -498,8 +498,7 @@ public class NotificationUtils {
         int lastBracketIndex = fromEmail.indexOf('>');
         // HACK: If falling back on email, replace the "@" sign so that the user's email does not override the
         // application email in brackets.
-        String displayedName = Strings.isBlank(otpUser.name) ? otpUser.email.replace("@", " at ") : otpUser.name;
-        return String.format("%s %s", displayedName, fromEmail.substring(firstBracketIndex, lastBracketIndex + 1));
+        return String.format("%s %s", otpUser.getDisplayedName(), fromEmail.substring(firstBracketIndex, lastBracketIndex + 1));
     }
 
     /**

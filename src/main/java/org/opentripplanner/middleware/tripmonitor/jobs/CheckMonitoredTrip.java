@@ -259,7 +259,7 @@ public class CheckMonitoredTrip implements Runnable {
             if (observer != null) {
                 enqueueNotification(
                     new LegTransitionNotification(
-                        tripOwner.getAddressee(),
+                        tripOwner.getDisplayedName(),
                         notificationType,
                         travelerPosition,
                         I18nUtils.getOtpUserLocale(observer)
