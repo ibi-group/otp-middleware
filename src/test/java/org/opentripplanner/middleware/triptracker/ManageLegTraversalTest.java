@@ -178,7 +178,12 @@ public class ManageLegTraversalTest {
     @ParameterizedTest
     @MethodSource("createTurnByTurnTrace")
     void canTrackTurnByTurn(Leg firstLeg, TraceData traceData) {
-        TravelerPosition travelerPosition = new TravelerPosition(firstLeg, traceData.position, firstLeg);
+        TravelerPosition travelerPosition = new TravelerPosition.Builder()
+            .setExpectedLeg(firstLeg)
+            .setCurrentPosition(traceData.position)
+            .setFirstLegOfTrip(firstLeg)
+            .setSpeed(0)
+            .build();
         TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, traceData.message);
     }
@@ -411,7 +416,11 @@ public class ManageLegTraversalTest {
             transitLeg.intermediateStops = null;
         }
 
-        TravelerPosition travelerPosition = new TravelerPosition(transitLeg, traceData.position, traceData.speed);
+        TravelerPosition travelerPosition = new TravelerPosition.Builder()
+            .setExpectedLeg(transitLeg)
+            .setCurrentPosition(traceData.position)
+            .setSpeed(traceData.speed)
+            .build();
         TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, false);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, traceData.message);
     }

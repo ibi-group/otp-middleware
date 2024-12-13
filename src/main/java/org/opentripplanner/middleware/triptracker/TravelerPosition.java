@@ -48,6 +48,20 @@ public class TravelerPosition {
     /** The first leg of the trip. **/
     public Leg firstLegOfTrip;
 
+    public TravelerPosition(Builder builder) {
+        this.expectedLeg = builder.expectedLeg;
+        this.currentPosition = builder.currentPosition;
+        this.speed = builder.speed;
+        this.firstLegOfTrip = builder.firstLegOfTrip;
+        if (expectedLeg != null && currentPosition != null) {
+            this.legSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
+        }
+        this.nextLeg = builder.nextLeg;
+        this.currentTime = builder.currentTime;
+        this.trackedJourney = builder.trackedJourney;
+
+    }
+
     public TravelerPosition(TrackedJourney trackedJourney, Itinerary itinerary, OtpUser otpUser) {
         TrackingLocation lastLocation = trackedJourney.locations.get(trackedJourney.locations.size() - 1);
         currentTime = lastLocation.timestamp.toInstant();
@@ -68,50 +82,61 @@ public class TravelerPosition {
         firstLegOfTrip = getFirstLeg(itinerary);
     }
 
-    /** Used for unit testing. */
-    public TravelerPosition(Leg expectedLeg, Coordinates currentPosition, int speed) {
-        this.expectedLeg = expectedLeg;
-        this.currentPosition = currentPosition;
-        this.speed = speed;
-        legSegmentFromPosition = getSegmentFromPosition(expectedLeg, currentPosition);
-    }
-
-    /** Used for unit testing. */
-    public TravelerPosition(Leg expectedLeg, Coordinates currentPosition) {
-        // Anywhere the speed is zero means that speed is not considered for a specific logic.
-        this(expectedLeg, currentPosition, 0);
-    }
-
-    /** Used for unit testing. */
-    public TravelerPosition(Leg expectedLeg, Coordinates currentPosition, Leg firstLegOfTrip) {
-        // Anywhere the speed is zero means that speed is not considered for a specific logic.
-        this(expectedLeg, currentPosition, 0);
-        this.firstLegOfTrip = firstLegOfTrip;
-    }
-
-    /** Used for unit testing. */
-    public TravelerPosition(Leg nextLeg, Instant currentTime) {
-        this.nextLeg = nextLeg;
-        this.currentTime = currentTime;
-    }
-
-    /** Used for unit testing. */
-    public TravelerPosition(Leg expectedLeg, TrackedJourney trackedJourney, Leg first, Coordinates currentPosition) {
-        this.expectedLeg = expectedLeg;
-        this.trackedJourney = trackedJourney;
-        this.firstLegOfTrip = first;
-        this.currentPosition = currentPosition;
-    }
-
-    /** Used for unit testing. */
-    public TravelerPosition(Leg expectedLeg, Leg nextLeg, Coordinates currentPosition) {
-        this.expectedLeg = expectedLeg;
-        this.nextLeg = nextLeg;
-        this.currentPosition = currentPosition;
-    }
-
     /** Computes the current deviation in meters from the expected itinerary. */
     public double getDeviationMeters() {
         return getDistanceFromLine(legSegmentFromPosition.start, legSegmentFromPosition.end, currentPosition);
+    }
+
+    /**
+     * Builder to handle basic unit test requirements.
+     */
+    public static final class Builder {
+
+        private Leg expectedLeg;
+        private Coordinates currentPosition;
+        private int speed;
+        private Leg firstLegOfTrip;
+        private Leg nextLeg;
+        private Instant currentTime;
+        private TrackedJourney trackedJourney;
+
+        public Builder setExpectedLeg(Leg expectedLeg) {
+            this.expectedLeg = expectedLeg;
+            return this;
+        }
+
+        public Builder setCurrentPosition(Coordinates currentPosition) {
+            this.currentPosition = currentPosition;
+            return this;
+        }
+
+        public Builder setSpeed(int speed) {
+            this.speed = speed;
+            return this;
+        }
+
+        public Builder setFirstLegOfTrip(Leg firstLegOfTrip) {
+            this.firstLegOfTrip = firstLegOfTrip;
+            return this;
+        }
+
+        public Builder setNextLeg(Leg nextLeg) {
+            this.nextLeg = nextLeg;
+            return this;
+        }
+
+        public Builder setCurrentTime(Instant currentTime) {
+            this.currentTime = currentTime;
+            return this;
+        }
+
+        public Builder setTrackedJourney(TrackedJourney trackedJourney) {
+            this.trackedJourney = trackedJourney;
+            return this;
+        }
+
+        public TravelerPosition build() {
+            return new TravelerPosition(this);
+        }
     }
 }

@@ -40,7 +40,6 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
         PersistenceTestUtils.deleteOtpUser(false, primary, companion, observer);
     }
 
-
     @ParameterizedTest
     @MethodSource("createLegTransitionNotificationTestCases")
     void testLegTransitionNotifications(
@@ -72,21 +71,33 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(
                 NotificationType.ARRIVED_AND_MODE_CHANGE_NOTIFICATION,
                 travelerName,
-                new TravelerPosition(expectedLeg, nextLeg, expectedLegDestinationCoords),
+                new TravelerPosition.Builder()
+                    .setExpectedLeg(expectedLeg)
+                    .setNextLeg(nextLeg)
+                    .setCurrentPosition(expectedLegDestinationCoords)
+                    .build(),
                 locale,
                 "Obi-Wan has arrived at transit stop Pioneer Square South MAX Station."
             ),
             Arguments.of(
                 NotificationType.DEPARTED_NOTIFICATION,
                 travelerName,
-                new TravelerPosition(expectedLeg, nextLeg, nextLegDepartureCoords),
+                new TravelerPosition.Builder()
+                    .setExpectedLeg(expectedLeg)
+                    .setNextLeg(nextLeg)
+                    .setCurrentPosition(nextLegDepartureCoords)
+                    .build(),
                 locale,
                 "Obi-Wan has departed Providence Park MAX Station."
             ),
             Arguments.of(
                 NotificationType.ARRIVED_NOTIFICATION,
                 travelerName,
-                new TravelerPosition(expectedLeg, nextLeg, expectedLegDestinationCoords),
+                new TravelerPosition.Builder()
+                    .setExpectedLeg(expectedLeg)
+                    .setNextLeg(nextLeg)
+                    .setCurrentPosition(expectedLegDestinationCoords)
+                    .build(),
                 locale,
                 "Obi-Wan has arrived at Pioneer Square South MAX Station."
             )
