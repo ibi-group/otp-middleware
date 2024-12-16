@@ -2376,7 +2376,7 @@ definitions:
         - "ALERT_FOUND"
         - "ITINERARY_NOT_FOUND"
         - "INITIAL_REMINDER"
-        - "ARRIVED_AND_MODE_CHANGE_NOTIFICATION"
+        - "MODE_CHANGE_NOTIFICATION"
         - "DEPARTED_NOTIFICATION"
         - "ARRIVED_NOTIFICATION"
       body:

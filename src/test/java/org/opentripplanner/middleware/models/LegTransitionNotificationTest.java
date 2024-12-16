@@ -29,7 +29,7 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser observer;
 
     @BeforeAll
-    public static void setup() {
+    public static void setup() throws Exception {
         primary = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-primary-user"));
         companion = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-companion-user"));
         observer = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-observer-user"));
@@ -46,14 +46,13 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
         NotificationType notificationType,
         String travelerName,
         TravelerPosition travelerPosition,
-        Locale locale,
         String message
     ) {
         TripMonitorNotification notification = new LegTransitionNotification(
             travelerName,
             notificationType,
             travelerPosition,
-            locale
+            Locale.US
         ).tripMonitorNotification;
         assertNotNull(notification);
         assertEquals(message, notification.body);
@@ -61,7 +60,6 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
 
     private static Stream<Arguments> createLegTransitionNotificationTestCases() throws Exception {
         String travelerName = "Obi-Wan";
-        Locale locale = Locale.US;
         Itinerary itinerary = createDefaultItinerary();
         Leg expectedLeg = itinerary.legs.get(1);
         Coordinates expectedLegDestinationCoords = new Coordinates(expectedLeg.to);
@@ -69,14 +67,13 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
         Coordinates nextLegDepartureCoords = new Coordinates(nextLeg.from);
         return Stream.of(
             Arguments.of(
-                NotificationType.ARRIVED_AND_MODE_CHANGE_NOTIFICATION,
+                NotificationType.MODE_CHANGE_NOTIFICATION,
                 travelerName,
                 new TravelerPosition.Builder()
                     .setExpectedLeg(expectedLeg)
                     .setNextLeg(nextLeg)
                     .setCurrentPosition(expectedLegDestinationCoords)
                     .build(),
-                locale,
                 "Obi-Wan has arrived at transit stop Pioneer Square South MAX Station."
             ),
             Arguments.of(
@@ -87,7 +84,6 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
                     .setNextLeg(nextLeg)
                     .setCurrentPosition(nextLegDepartureCoords)
                     .build(),
-                locale,
                 "Obi-Wan has departed Providence Park MAX Station."
             ),
             Arguments.of(
@@ -98,7 +94,6 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
                     .setNextLeg(nextLeg)
                     .setCurrentPosition(expectedLegDestinationCoords)
                     .build(),
-                locale,
                 "Obi-Wan has arrived at Pioneer Square South MAX Station."
             )
         );
@@ -110,16 +105,11 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
         String tripOwnerUserId,
         Set<OtpUser> expectedUsers
     ) {
-
-        RelatedUser relatedUser = new RelatedUser();
-        relatedUser.email = observer.email;
-        relatedUser.status = RelatedUser.RelatedUserStatus.CONFIRMED;
-
         MonitoredTrip trip = new MonitoredTrip();
         trip.userId = tripOwnerUserId;
         trip.primary = new MobilityProfileLite(primary);
         trip.companion = new RelatedUser(companion.email, RelatedUser.RelatedUserStatus.CONFIRMED);
-        trip.observers.add(relatedUser);
+        trip.observers.add(new RelatedUser(observer.email, RelatedUser.RelatedUserStatus.CONFIRMED));
 
         Set<OtpUser> users = LegTransitionNotification.getLegTransitionNotifyUsers(trip);
         assertNotNull(users);

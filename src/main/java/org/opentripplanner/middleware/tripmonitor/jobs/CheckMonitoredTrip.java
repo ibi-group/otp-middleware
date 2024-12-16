@@ -53,9 +53,7 @@ import static org.opentripplanner.middleware.models.LegTransitionNotification.ge
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
 
-    private final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
-
-    private final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
+    public boolean IS_TEST = false;
 
     public static final int MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS =
         ConfigUtils.getConfigPropertyAsInt("MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS", 3);
@@ -268,6 +266,8 @@ public class CheckMonitoredTrip implements Runnable {
                 sendNotifications(observer);
             }
         });
+
+        updateMonitoredTrip();
     }
 
     /**
@@ -590,11 +590,8 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         // TODO: better handle below when one of the following fails
-        if (successEmail || successPush || successSms) {
+        if (successEmail || successPush || successSms || IS_TEST) {
             notificationTimestampMillis = DateTimeUtils.currentTimeMillis();
-            // Prevent repeated notifications by saving successfully sent notifications.
-            trip.journeyState.lastNotifications.addAll(notifications);
-            Persistence.monitoredTrips.replace(trip.id, trip);
         }
     }
 
@@ -934,6 +931,8 @@ public class CheckMonitoredTrip implements Runnable {
         // Update notification time if notification successfully sent.
         if (notificationTimestampMillis != -1) {
             journeyState.lastNotificationTimeMillis = notificationTimestampMillis;
+            // Prevent repeated notifications by saving successfully sent notifications.
+            journeyState.lastNotifications.addAll(notifications);
         }
         trip.journeyState = journeyState;
         Persistence.monitoredTrips.replace(trip.id, trip);

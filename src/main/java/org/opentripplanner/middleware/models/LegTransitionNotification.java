@@ -16,7 +16,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import static com.mongodb.client.model.Filters.eq;
-import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.ARRIVED_AND_MODE_CHANGE_NOTIFICATION;
+import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.MODE_CHANGE_NOTIFICATION;
 import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.ARRIVED_NOTIFICATION;
 import static org.opentripplanner.middleware.tripmonitor.jobs.NotificationType.DEPARTED_NOTIFICATION;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.hasRequiredTransitLeg;
@@ -54,9 +54,9 @@ public class LegTransitionNotification {
     private TripMonitorNotification createTripMonitorNotification(NotificationType notificationType) {
         String body;
         switch (notificationType) {
-            case ARRIVED_AND_MODE_CHANGE_NOTIFICATION:
+            case MODE_CHANGE_NOTIFICATION:
                 body = String.format(
-                    Message.ARRIVED_AND_MODE_CHANGE_NOTIFICATION.get(observerLocale),
+                    Message.MODE_CHANGE_NOTIFICATION.get(observerLocale),
                     travelerName,
                     travelerPosition.expectedLeg.to.name
                 );
@@ -103,9 +103,13 @@ public class LegTransitionNotification {
     }
 
     /**
-     * If a traveler is on schedule and on either a walk or transit leg check for possible leg transition notification.
+     * If a traveler is on the route (not deviated), check for possible leg transition notification.
      */
-    public static void checkForLegTransition(TripStatus tripStatus, TravelerPosition travelerPosition, MonitoredTrip trip) {
+    public static void checkForLegTransition(
+        TripStatus tripStatus,
+        TravelerPosition travelerPosition,
+        MonitoredTrip trip
+    ) {
         if (
             hasRequiredTripStatus(tripStatus) &&
             (hasRequiredWalkLeg(travelerPosition) || hasRequiredTransitLeg(travelerPosition))
@@ -122,14 +126,14 @@ public class LegTransitionNotification {
     }
 
     /**
-     * Depending on the traveler's proximity to the start/end of a leg return the appropriate notification type.
+     * Depending on the traveler's proximity to the start/end of a leg, return the appropriate notification type.
      */
     private static NotificationType getLegTransitionNotificationType(TravelerPosition travelerPosition) {
         if (isAtStartOfLeg(travelerPosition)) {
             return DEPARTED_NOTIFICATION;
         } else if (isApproachingEndOfLeg(travelerPosition)) {
             if (hasModeChanged(travelerPosition)) {
-                return ARRIVED_AND_MODE_CHANGE_NOTIFICATION;
+                return MODE_CHANGE_NOTIFICATION;
             }
             return ARRIVED_NOTIFICATION;
         }

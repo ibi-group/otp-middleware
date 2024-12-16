@@ -118,16 +118,21 @@ public class TripMonitorNotification extends Model {
         );
     }
 
+    /**
+     * Checks for equality excluding the parent {@link Model} class.
+     */
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
         TripMonitorNotification that = (TripMonitorNotification) o;
         return type == that.type && Objects.equals(body, that.body);
     }
 
+    /**
+     * Creates a hash code from fields in this class only excluding fields within the parent {@link Model} class.
+     */
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), type, body);
+        return Objects.hash(type, body);
     }
 }
