@@ -248,9 +248,12 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Process leg transition notification.
+     * Process leg transition notifications by getting all qualifying users and enqueuing relevant notifications. The
+     * matching itinerary is required when updating the monitored trip. There is no requirement to match the itinerary
+     * to that returned from OTP, so the existing trip itinerary is used and therefore preserved.
      */
-    public void processLegTransition(NotificationType notificationType, TravelerPosition travelerPosition) {
+    public void processLegTransition(NotificationType notificationType, TravelerPosition travelerPosition) throws CloneNotSupportedException {
+        matchingItinerary = trip.itinerary.clone();
         OtpUser tripOwner = getOtpUser();
         Set<OtpUser> notifyUsers = getLegTransitionNotifyUsers(trip);
         notifyUsers.forEach(observer -> {
