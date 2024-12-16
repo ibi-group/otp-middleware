@@ -296,7 +296,7 @@ public class TrustedCompanion {
 
     /**
      * Remove the specified user as observer from the specified trip.
-     * @return true if one or more related users gor invalidated, false otherwise.
+     * @return true if one or more related users got invalidated, false otherwise.
      */
     public static boolean invalidateRelatedUsers(String email, Collection<RelatedUser> relatedUsers) {
         boolean hasChanged = false;
