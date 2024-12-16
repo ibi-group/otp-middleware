@@ -926,7 +926,9 @@ public class CheckMonitoredTrip implements Runnable {
             return false;
         }
         journeyState.matchingItinerary = matchingItinerary;
-        journeyState.targetDate = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
+        if (targetZonedDateTime != null) {
+            journeyState.targetDate = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
+        }
         journeyState.lastCheckedEpochMillis = DateTimeUtils.currentTimeMillis();
         // Update notification time if notification successfully sent.
         if (notificationTimestampMillis != -1) {
