@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import org.apache.logging.log4j.util.Strings;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -209,5 +210,11 @@ public class OtpUser extends AbstractUser {
     public Optional<TripSurveyNotification> findLastTripSurveyNotificationSent() {
         if (tripSurveyNotifications == null) return Optional.empty();
         return tripSurveyNotifications.stream().max(Comparator.comparingLong(n -> n.timeSent.getTime()));
+    }
+
+    /** Obtains a notification with the given id, if available. */
+    public Optional<TripSurveyNotification> findNotification(String id) {
+        if (tripSurveyNotifications == null || Strings.isBlank(id)) return Optional.empty();
+        return tripSurveyNotifications.stream().filter(n -> id.equals(n.id)).findFirst();
     }
 }
