@@ -18,31 +18,31 @@ tags:
   description: "Interface for querying and managing 'AdminUser' entities."
 - name: "api/secure/application"
   description: "Interface for querying and managing 'ApiUser' entities."
-- name: "api/secure/cdp"
-  description: "Interface for querying and managing 'CDPUser' entities."
-- name: "api/secure/monitoredtrip"
-  description: "Interface for querying and managing 'MonitoredTrip' entities."
-- name: "api/secure/triprequests"
-  description: "Interface for retrieving trip requests."
-- name: "api/secure/monitoredcomponent"
-  description: "Interface for querying and managing 'MonitoredComponent' entities."
-- name: "api/secure/user"
-  description: "Interface for querying and managing 'OtpUser' entities."
-- name: "api/secure/logs"
-  description: "Interface for retrieving API logs from AWS."
-- name: "api/admin/bugsnag/eventsummary"
-  description: "Interface for reporting and retrieving application errors using Bugsnag."
 - name: "api/secure/connected-data"
   description: "Interface for listing and downloading CDP files from S3."
-- name: "api/trip-survey"
-  description: "Interface for tracking opened trip surveys following a trip survey\
-    \ notification."
+- name: "api/secure/cdp"
+  description: "Interface for querying and managing 'CDPUser' entities."
+- name: "api/admin/bugsnag/eventsummary"
+  description: "Interface for reporting and retrieving application errors using Bugsnag."
+- name: "api/secure/logs"
+  description: "Interface for retrieving API logs from AWS."
+- name: "api/secure/monitoredcomponent"
+  description: "Interface for querying and managing 'MonitoredComponent' entities."
+- name: "api/secure/monitoredtrip"
+  description: "Interface for querying and managing 'MonitoredTrip' entities."
 - name: "otp"
   description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
 - name: "otp2"
   description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
+- name: "api/secure/user"
+  description: "Interface for querying and managing 'OtpUser' entities."
+- name: "api/secure/triprequests"
+  description: "Interface for retrieving trip requests."
+- name: "api/trip-survey"
+  description: "Interface for tracking opened trip surveys following a trip survey\
+    \ notification."
 schemes:
 - "https"
 paths:
@@ -744,6 +744,62 @@ paths:
           description: "An error occurred while performing the request. Contact an\
             \ API administrator for more information."
           examples: {}
+  /api/secure/connected-data:
+    get:
+      tags:
+      - "api/secure/connected-data"
+      description: "Gets a paginated list of CDP zip files in the configured S3 bucket."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            type: "array"
+            items:
+              $ref: "#/definitions/CDPFile"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/CDPFile"
+  /api/secure/connected-data/download:
+    get:
+      tags:
+      - "api/secure/connected-data"
+      description: "Generates a download link for a specified object within the CDP\
+        \ bucket."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "/download"
+        in: "query"
+        description: "The key of the object to generate a link for."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            type: "array"
+            items:
+              $ref: "#/definitions/URL"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/URL"
   /api/secure/cdp/fromtoken:
     get:
       tags:
@@ -1034,6 +1090,285 @@ paths:
           description: "An error occurred while performing the request. Contact an\
             \ API administrator for more information."
           examples: {}
+  /api/admin/bugsnag/eventsummary:
+    get:
+      tags:
+      - "api/admin/bugsnag/eventsummary"
+      description: "Gets a paginated list of the latest Bugsnag event summaries."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            type: "array"
+            items:
+              $ref: "#/definitions/BugsnagEvent"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/BugsnagEvent"
+  /api/secure/logs:
+    get:
+      tags:
+      - "api/secure/logs"
+      description: "Gets a list of all API usage logs."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "keyId"
+        in: "query"
+        description: "If specified, restricts the search to the specified AWS API\
+          \ key ID."
+        required: false
+        type: "string"
+      - name: "startDate"
+        in: "query"
+        description: "If specified, the earliest date (format yyyy-MM-dd) for which\
+          \ usage logs are retrieved."
+        required: false
+        type: "string"
+        default: "30 days prior to the current date"
+        pattern: "yyyy-MM-dd"
+      - name: "endDate"
+        in: "query"
+        description: "If specified, the latest date (format yyyy-MM-dd) for which\
+          \ usage logs are retrieved."
+        required: false
+        type: "string"
+        default: "The current date"
+        pattern: "yyyy-MM-dd"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            type: "array"
+            items:
+              $ref: "#/definitions/ApiUsageResult"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/ApiUsageResult"
+  /api/secure/monitoredcomponent:
+    get:
+      tags:
+      - "api/secure/monitoredcomponent"
+      description: "Gets a paginated list of all 'MonitoredComponent' entities."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/ResponseList"
+          schema:
+            $ref: "#/definitions/ResponseList"
+    post:
+      tags:
+      - "api/secure/monitoredcomponent"
+      description: "Creates a 'MonitoredComponent' entity."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredComponent"
+      responses:
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
+          schema:
+            $ref: "#/definitions/MonitoredComponent"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+  /api/secure/monitoredcomponent/{id}:
+    get:
+      tags:
+      - "api/secure/monitoredcomponent"
+      description: "Returns the 'MonitoredComponent' entity with the specified id,\
+        \ or 404 if not found."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
+          schema:
+            $ref: "#/definitions/MonitoredComponent"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+    put:
+      tags:
+      - "api/secure/monitoredcomponent"
+      description: "Updates and returns the 'MonitoredComponent' entity with the specified\
+        \ id, or 404 if not found."
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredComponent"
+      responses:
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
+          schema:
+            $ref: "#/definitions/MonitoredComponent"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
+    delete:
+      tags:
+      - "api/secure/monitoredcomponent"
+      description: "Deletes the 'MonitoredComponent' entity with the specified id\
+        \ if it exists."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "Successful operation"
+          examples: {}
+          responseSchema:
+            $ref: "#/definitions/MonitoredComponent"
+          schema:
+            $ref: "#/definitions/MonitoredComponent"
+        "400":
+          description: "The request was not formed properly (e.g., some required parameters\
+            \ may be missing). See the details of the returned response to determine\
+            \ the exact issue."
+          examples: {}
+        "401":
+          description: "The server was not able to authenticate the request. This\
+            \ can happen if authentication headers are missing or malformed, or the\
+            \ authentication server cannot be reached."
+          examples: {}
+        "403":
+          description: "The requesting user is not allowed to perform the request."
+          examples: {}
+        "404":
+          description: "The requested item was not found."
+          examples: {}
+        "500":
+          description: "An error occurred while performing the request. Contact an\
+            \ API administrator for more information."
+          examples: {}
   /api/secure/monitoredtrip/checkitinerary:
     post:
       tags:
@@ -1284,366 +1619,78 @@ paths:
           description: "An error occurred while performing the request. Contact an\
             \ API administrator for more information."
           examples: {}
-  /api/secure/monitoredtrip/starttracking:
-    post:
-      tags:
-      - "api/secure/monitoredtrip"
-      description: "Initiates the tracking of a monitored trip."
-      produces:
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Body object description"
-        required: true
-        schema:
-          $ref: "#/definitions/StartTrackingPayload"
-      responses:
-        "200":
-          description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/TrackingResponse"
-          schema:
-            $ref: "#/definitions/TrackingResponse"
-  /api/secure/monitoredtrip/updatetracking:
-    post:
-      tags:
-      - "api/secure/monitoredtrip"
-      description: "Provides tracking updates on a monitored trip."
-      produces:
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Body object description"
-        required: true
-        schema:
-          $ref: "#/definitions/UpdatedTrackingPayload"
-      responses:
-        "200":
-          description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/TrackingResponse"
-          schema:
-            $ref: "#/definitions/TrackingResponse"
-  /api/secure/monitoredtrip/track:
-    post:
-      tags:
-      - "api/secure/monitoredtrip"
-      description: "Starts or updates tracking on a monitored trip."
-      produces:
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Body object description"
-        required: true
-        schema:
-          $ref: "#/definitions/TrackPayload"
-      responses:
-        "200":
-          description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/TrackingResponse"
-          schema:
-            $ref: "#/definitions/TrackingResponse"
-  /api/secure/monitoredtrip/endtracking:
-    post:
-      tags:
-      - "api/secure/monitoredtrip"
-      description: "Terminates the tracking of a monitored trip by the user."
-      produces:
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Body object description"
-        required: true
-        schema:
-          $ref: "#/definitions/EndTrackingPayload"
-      responses:
-        "200":
-          description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/EndTrackingResponse"
-          schema:
-            $ref: "#/definitions/EndTrackingResponse"
-  /api/secure/monitoredtrip/forciblyendtracking:
-    post:
-      tags:
-      - "api/secure/monitoredtrip"
-      description: "Forcibly terminates tracking of a monitored trip by trip ID."
-      produces:
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Body object description"
-        required: true
-        schema:
-          $ref: "#/definitions/ForceEndTrackingPayload"
-      responses:
-        "200":
-          description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/EndTrackingResponse"
-          schema:
-            $ref: "#/definitions/EndTrackingResponse"
-  /api/secure/triprequests:
+  /otp/*:
     get:
       tags:
-      - "api/secure/triprequests"
-      description: "Gets a paginated list of the most recent trip requests for a user."
+      - "otp"
+      description: "Forwards any GET request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+        \ API documentation</a> for OTP's supported API resources."
+      produces:
+      - "application/json"
+      - "application/xml"
+      parameters:
+      - name: "userId"
+        in: "query"
+        description: "If a third-party application is making a trip plan request on\
+          \ behalf of an end user (OtpUser), the user id must be specified."
+        required: false
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+    post:
+      tags:
+      - "otp"
+      description: "Forwards any POST request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+        \ API documentation</a> for OTP's supported API resources."
       produces:
       - "application/json"
       parameters:
       - name: "userId"
         in: "query"
-        description: "The OTP user for which to retrieve trip requests."
-        required: true
-        type: "string"
-      - name: "limit"
-        in: "query"
-        description: "If specified, the maximum number of items to return."
+        description: "If a third-party application is making a trip plan request on\
+          \ behalf of an end user (OtpUser), the user id must be specified."
         required: false
         type: "string"
-        default: "10"
-      - name: "offset"
-        in: "query"
-        description: "If specified, the number of records to skip/offset."
-        required: false
-        type: "string"
-        default: "0"
-      - name: "fromDate"
-        in: "query"
-        description: "If specified, the earliest date (format yyyy-MM-dd) for which\
-          \ trip requests are retrieved."
-        required: false
-        type: "string"
-        default: "The current date"
-        pattern: "yyyy-MM-dd"
-      - name: "toDate"
-        in: "query"
-        description: "If specified, the latest date (format yyyy-MM-dd) for which\
-          \ trip requests are retrieved."
-        required: false
-        type: "string"
-        default: "The current date"
-        pattern: "yyyy-MM-dd"
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/TripRequest"
-          schema:
-            $ref: "#/definitions/TripRequest"
-  /api/secure/monitoredcomponent:
+  /otp2/*:
     get:
       tags:
-      - "api/secure/monitoredcomponent"
-      description: "Gets a paginated list of all 'MonitoredComponent' entities."
+      - "otp2"
+      description: "Forwards any GET request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+        \ API documentation</a> for OTP's supported API resources."
       produces:
       - "application/json"
+      - "application/xml"
       parameters:
-      - name: "limit"
-        in: "query"
-        description: "If specified, the maximum number of items to return."
-        required: false
-        type: "string"
-        default: "10"
-      - name: "offset"
-        in: "query"
-        description: "If specified, the number of records to skip/offset."
-        required: false
-        type: "string"
-        default: "0"
       - name: "userId"
         in: "query"
-        description: "If specified, the required user id."
+        description: "If a third-party application is making a trip plan request on\
+          \ behalf of an end user (OtpUser), the user id must be specified."
         required: false
         type: "string"
       responses:
         "200":
           description: "successful operation"
-          responseSchema:
-            $ref: "#/definitions/ResponseList"
-          schema:
-            $ref: "#/definitions/ResponseList"
     post:
       tags:
-      - "api/secure/monitoredcomponent"
-      description: "Creates a 'MonitoredComponent' entity."
-      consumes:
-      - "application/json"
+      - "otp2"
+      description: "Forwards any POST request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+        \ API documentation</a> for OTP's supported API resources."
       produces:
       - "application/json"
       parameters:
-      - in: "body"
-        name: "body"
-        description: "Body object description"
-        required: true
-        schema:
-          $ref: "#/definitions/MonitoredComponent"
-      responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
-          schema:
-            $ref: "#/definitions/MonitoredComponent"
-        "400":
-          description: "The request was not formed properly (e.g., some required parameters\
-            \ may be missing). See the details of the returned response to determine\
-            \ the exact issue."
-          examples: {}
-        "401":
-          description: "The server was not able to authenticate the request. This\
-            \ can happen if authentication headers are missing or malformed, or the\
-            \ authentication server cannot be reached."
-          examples: {}
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
-        "500":
-          description: "An error occurred while performing the request. Contact an\
-            \ API administrator for more information."
-          examples: {}
-  /api/secure/monitoredcomponent/{id}:
-    get:
-      tags:
-      - "api/secure/monitoredcomponent"
-      description: "Returns the 'MonitoredComponent' entity with the specified id,\
-        \ or 404 if not found."
-      produces:
-      - "application/json"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The id of the entity to search."
-        required: true
+      - name: "userId"
+        in: "query"
+        description: "If a third-party application is making a trip plan request on\
+          \ behalf of an end user (OtpUser), the user id must be specified."
+        required: false
         type: "string"
       responses:
         "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
-          schema:
-            $ref: "#/definitions/MonitoredComponent"
-        "400":
-          description: "The request was not formed properly (e.g., some required parameters\
-            \ may be missing). See the details of the returned response to determine\
-            \ the exact issue."
-          examples: {}
-        "401":
-          description: "The server was not able to authenticate the request. This\
-            \ can happen if authentication headers are missing or malformed, or the\
-            \ authentication server cannot be reached."
-          examples: {}
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
-        "500":
-          description: "An error occurred while performing the request. Contact an\
-            \ API administrator for more information."
-          examples: {}
-    put:
-      tags:
-      - "api/secure/monitoredcomponent"
-      description: "Updates and returns the 'MonitoredComponent' entity with the specified\
-        \ id, or 404 if not found."
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The id of the entity to update."
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Body object description"
-        required: true
-        schema:
-          $ref: "#/definitions/MonitoredComponent"
-      responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
-          schema:
-            $ref: "#/definitions/MonitoredComponent"
-        "400":
-          description: "The request was not formed properly (e.g., some required parameters\
-            \ may be missing). See the details of the returned response to determine\
-            \ the exact issue."
-          examples: {}
-        "401":
-          description: "The server was not able to authenticate the request. This\
-            \ can happen if authentication headers are missing or malformed, or the\
-            \ authentication server cannot be reached."
-          examples: {}
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
-        "500":
-          description: "An error occurred while performing the request. Contact an\
-            \ API administrator for more information."
-          examples: {}
-    delete:
-      tags:
-      - "api/secure/monitoredcomponent"
-      description: "Deletes the 'MonitoredComponent' entity with the specified id\
-        \ if it exists."
-      produces:
-      - "application/json"
-      parameters:
-      - name: "id"
-        in: "path"
-        description: "The id of the entity to delete."
-        required: true
-        type: "string"
-      responses:
-        "200":
-          description: "Successful operation"
-          examples: {}
-          responseSchema:
-            $ref: "#/definitions/MonitoredComponent"
-          schema:
-            $ref: "#/definitions/MonitoredComponent"
-        "400":
-          description: "The request was not formed properly (e.g., some required parameters\
-            \ may be missing). See the details of the returned response to determine\
-            \ the exact issue."
-          examples: {}
-        "401":
-          description: "The server was not able to authenticate the request. This\
-            \ can happen if authentication headers are missing or malformed, or the\
-            \ authentication server cannot be reached."
-          examples: {}
-        "403":
-          description: "The requesting user is not allowed to perform the request."
-          examples: {}
-        "404":
-          description: "The requested item was not found."
-          examples: {}
-        "500":
-          description: "An error occurred while performing the request. Contact an\
-            \ API administrator for more information."
-          examples: {}
+          description: "successful operation"
   /api/secure/user/acceptdependent:
     get:
       tags:
@@ -2049,32 +2096,148 @@ paths:
           description: "An error occurred while performing the request. Contact an\
             \ API administrator for more information."
           examples: {}
-  /api/secure/logs:
-    get:
+  /api/secure/monitoredtrip/starttracking:
+    post:
       tags:
-      - "api/secure/logs"
-      description: "Gets a list of all API usage logs."
+      - "api/secure/monitoredtrip"
+      description: "Initiates the tracking of a monitored trip."
       produces:
       - "application/json"
       parameters:
-      - name: "keyId"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/StartTrackingPayload"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/TrackingResponse"
+          schema:
+            $ref: "#/definitions/TrackingResponse"
+  /api/secure/monitoredtrip/updatetracking:
+    post:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Provides tracking updates on a monitored trip."
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/UpdatedTrackingPayload"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/TrackingResponse"
+          schema:
+            $ref: "#/definitions/TrackingResponse"
+  /api/secure/monitoredtrip/track:
+    post:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Starts or updates tracking on a monitored trip."
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/TrackPayload"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/TrackingResponse"
+          schema:
+            $ref: "#/definitions/TrackingResponse"
+  /api/secure/monitoredtrip/endtracking:
+    post:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Terminates the tracking of a monitored trip by the user."
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/EndTrackingPayload"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/EndTrackingResponse"
+          schema:
+            $ref: "#/definitions/EndTrackingResponse"
+  /api/secure/monitoredtrip/forciblyendtracking:
+    post:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Forcibly terminates tracking of a monitored trip by trip ID."
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/ForceEndTrackingPayload"
+      responses:
+        "200":
+          description: "successful operation"
+          responseSchema:
+            $ref: "#/definitions/EndTrackingResponse"
+          schema:
+            $ref: "#/definitions/EndTrackingResponse"
+  /api/secure/triprequests:
+    get:
+      tags:
+      - "api/secure/triprequests"
+      description: "Gets a paginated list of the most recent trip requests for a user."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "userId"
         in: "query"
-        description: "If specified, restricts the search to the specified AWS API\
-          \ key ID."
+        description: "The OTP user for which to retrieve trip requests."
+        required: true
+        type: "string"
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
         required: false
         type: "string"
-      - name: "startDate"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      - name: "fromDate"
         in: "query"
         description: "If specified, the earliest date (format yyyy-MM-dd) for which\
-          \ usage logs are retrieved."
+          \ trip requests are retrieved."
         required: false
         type: "string"
-        default: "30 days prior to the current date"
+        default: "The current date"
         pattern: "yyyy-MM-dd"
-      - name: "endDate"
+      - name: "toDate"
         in: "query"
         description: "If specified, the latest date (format yyyy-MM-dd) for which\
-          \ usage logs are retrieved."
+          \ trip requests are retrieved."
         required: false
         type: "string"
         default: "The current date"
@@ -2083,100 +2246,9 @@ paths:
         "200":
           description: "successful operation"
           responseSchema:
-            type: "array"
-            items:
-              $ref: "#/definitions/ApiUsageResult"
+            $ref: "#/definitions/TripRequest"
           schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/ApiUsageResult"
-  /api/admin/bugsnag/eventsummary:
-    get:
-      tags:
-      - "api/admin/bugsnag/eventsummary"
-      description: "Gets a paginated list of the latest Bugsnag event summaries."
-      produces:
-      - "application/json"
-      parameters:
-      - name: "limit"
-        in: "query"
-        description: "If specified, the maximum number of items to return."
-        required: false
-        type: "string"
-        default: "10"
-      - name: "offset"
-        in: "query"
-        description: "If specified, the number of records to skip/offset."
-        required: false
-        type: "string"
-        default: "0"
-      responses:
-        "200":
-          description: "successful operation"
-          responseSchema:
-            type: "array"
-            items:
-              $ref: "#/definitions/BugsnagEvent"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/BugsnagEvent"
-  /api/secure/connected-data:
-    get:
-      tags:
-      - "api/secure/connected-data"
-      description: "Gets a paginated list of CDP zip files in the configured S3 bucket."
-      produces:
-      - "application/json"
-      parameters:
-      - name: "limit"
-        in: "query"
-        description: "If specified, the maximum number of items to return."
-        required: false
-        type: "string"
-        default: "10"
-      - name: "offset"
-        in: "query"
-        description: "If specified, the number of records to skip/offset."
-        required: false
-        type: "string"
-        default: "0"
-      responses:
-        "200":
-          description: "successful operation"
-          responseSchema:
-            type: "array"
-            items:
-              $ref: "#/definitions/CDPFile"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/CDPFile"
-  /api/secure/connected-data/download:
-    get:
-      tags:
-      - "api/secure/connected-data"
-      description: "Generates a download link for a specified object within the CDP\
-        \ bucket."
-      produces:
-      - "application/json"
-      parameters:
-      - name: "/download"
-        in: "query"
-        description: "The key of the object to generate a link for."
-        required: true
-        type: "string"
-      responses:
-        "200":
-          description: "successful operation"
-          responseSchema:
-            type: "array"
-            items:
-              $ref: "#/definitions/URL"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/URL"
+            $ref: "#/definitions/TripRequest"
   /api/trip-survey/open:
     get:
       tags:
@@ -2198,78 +2270,6 @@ paths:
         in: "query"
         description: "The id of the notification that this notification applies to."
         required: true
-        type: "string"
-      responses:
-        "200":
-          description: "successful operation"
-  /otp/*:
-    get:
-      tags:
-      - "otp"
-      description: "Forwards any GET request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
-        \ API documentation</a> for OTP's supported API resources."
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "userId"
-        in: "query"
-        description: "If a third-party application is making a trip plan request on\
-          \ behalf of an end user (OtpUser), the user id must be specified."
-        required: false
-        type: "string"
-      responses:
-        "200":
-          description: "successful operation"
-    post:
-      tags:
-      - "otp"
-      description: "Forwards any POST request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
-        \ API documentation</a> for OTP's supported API resources."
-      produces:
-      - "application/json"
-      parameters:
-      - name: "userId"
-        in: "query"
-        description: "If a third-party application is making a trip plan request on\
-          \ behalf of an end user (OtpUser), the user id must be specified."
-        required: false
-        type: "string"
-      responses:
-        "200":
-          description: "successful operation"
-  /otp2/*:
-    get:
-      tags:
-      - "otp2"
-      description: "Forwards any GET request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
-        \ API documentation</a> for OTP's supported API resources."
-      produces:
-      - "application/json"
-      - "application/xml"
-      parameters:
-      - name: "userId"
-        in: "query"
-        description: "If a third-party application is making a trip plan request on\
-          \ behalf of an end user (OtpUser), the user id must be specified."
-        required: false
-        type: "string"
-      responses:
-        "200":
-          description: "successful operation"
-    post:
-      tags:
-      - "otp2"
-      description: "Forwards any POST request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
-        \ API documentation</a> for OTP's supported API resources."
-      produces:
-      - "application/json"
-      parameters:
-      - name: "userId"
-        in: "query"
-        description: "If a third-party application is making a trip plan request on\
-          \ behalf of an end user (OtpUser), the user id must be specified."
-        required: false
         type: "string"
       responses:
         "200":
@@ -2359,6 +2359,47 @@ definitions:
         type: "boolean"
       name:
         type: "string"
+  CDPFile:
+    type: "object"
+    properties:
+      key:
+        type: "string"
+      name:
+        type: "string"
+      size:
+        type: "integer"
+        format: "int64"
+  URL:
+    type: "object"
+    properties:
+      protocol:
+        type: "string"
+      host:
+        type: "string"
+      port:
+        type: "integer"
+        format: "int32"
+      file:
+        type: "string"
+      query:
+        type: "string"
+      authority:
+        type: "string"
+      path:
+        type: "string"
+      userInfo:
+        type: "string"
+      ref:
+        type: "string"
+      hostAddress:
+        $ref: "#/definitions/InetAddress"
+      handler:
+        $ref: "#/definitions/URLStreamHandler"
+      hashCode:
+        type: "integer"
+        format: "int32"
+      tempState:
+        $ref: "#/definitions/UrlDeserializedState"
   CDPUser:
     type: "object"
     properties:
@@ -2366,6 +2407,69 @@ definitions:
         type: "string"
       S3DownloadTimes:
         $ref: "#/definitions/Map"
+  App:
+    type: "object"
+    properties:
+      releaseStage:
+        type: "string"
+  BugsnagEvent:
+    type: "object"
+    properties:
+      eventDataId:
+        type: "string"
+      projectId:
+        type: "string"
+      errorId:
+        type: "string"
+      receivedAt:
+        type: "string"
+        format: "date"
+      exceptions:
+        type: "array"
+        items:
+          $ref: "#/definitions/EventException"
+      severity:
+        type: "string"
+      context:
+        type: "string"
+      unhandled:
+        type: "boolean"
+      app:
+        $ref: "#/definitions/App"
+  EventException:
+    type: "object"
+    properties:
+      errorClass:
+        type: "string"
+      message:
+        type: "string"
+  GetUsageResult:
+    type: "object"
+    properties:
+      usagePlanId:
+        type: "string"
+      startDate:
+        type: "string"
+      endDate:
+        type: "string"
+      position:
+        type: "string"
+      items:
+        $ref: "#/definitions/Map"
+  ApiUsageResult:
+    type: "object"
+    properties:
+      result:
+        $ref: "#/definitions/GetUsageResult"
+      apiUsers:
+        $ref: "#/definitions/Map"
+  MonitoredComponent:
+    type: "object"
+    properties:
+      bugsnagProjectId:
+        type: "string"
+      name:
+        type: "string"
   TripStop:
     type: "object"
     properties:
@@ -3019,6 +3123,113 @@ definitions:
           type: "string"
       address:
         type: "string"
+  VerificationResult:
+    type: "object"
+    properties:
+      sid:
+        type: "string"
+      status:
+        type: "string"
+      valid:
+        type: "boolean"
+  UserLocation:
+    type: "object"
+    properties:
+      address:
+        type: "string"
+      icon:
+        type: "string"
+      lat:
+        type: "number"
+        format: "double"
+      lon:
+        type: "number"
+        format: "double"
+      name:
+        type: "string"
+      type:
+        type: "string"
+  OtpUser:
+    type: "object"
+    properties:
+      accessibilityRoutingByDefault:
+        type: "boolean"
+      hasConsentedToTerms:
+        type: "boolean"
+      isPhoneNumberVerified:
+        type: "boolean"
+      mobilityProfile:
+        $ref: "#/definitions/MobilityProfile"
+      notificationChannel:
+        type: "array"
+        items:
+          type: "string"
+          enum:
+          - "EMAIL"
+          - "PUSH"
+          - "SMS"
+      phoneNumber:
+        type: "string"
+      smsConsentDate:
+        type: "string"
+        format: "date"
+      preferredLocale:
+        type: "string"
+      pushDevices:
+        type: "integer"
+        format: "int32"
+      savedLocations:
+        type: "array"
+        items:
+          $ref: "#/definitions/UserLocation"
+      storeTripHistory:
+        type: "boolean"
+      tripSurveyNotifications:
+        type: "array"
+        items:
+          $ref: "#/definitions/TripSurveyNotification"
+      applicationId:
+        type: "string"
+      relatedUsers:
+        type: "array"
+        items:
+          $ref: "#/definitions/RelatedUser"
+      dependents:
+        type: "array"
+        items:
+          type: "string"
+      name:
+        type: "string"
+  MobilityProfile:
+    type: "object"
+    properties:
+      isMobilityLimited:
+        type: "boolean"
+      mobilityDevices:
+        type: "array"
+        items:
+          type: "string"
+      mobilityMode:
+        type: "string"
+      visionLimitation:
+        type: "string"
+        enum:
+        - "LEGALLY_BLIND"
+        - "LOW_VISION"
+        - "NONE"
+  TripSurveyNotification:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      timeSent:
+        type: "string"
+        format: "date"
+      timeOpened:
+        type: "string"
+        format: "date"
+      journeyId:
+        type: "string"
   StartTrackingPayload:
     type: "object"
     properties:
@@ -3179,217 +3390,6 @@ definitions:
         type: "string"
       qualifier:
         type: "string"
-  MonitoredComponent:
-    type: "object"
-    properties:
-      bugsnagProjectId:
-        type: "string"
-      name:
-        type: "string"
-  VerificationResult:
-    type: "object"
-    properties:
-      sid:
-        type: "string"
-      status:
-        type: "string"
-      valid:
-        type: "boolean"
-  UserLocation:
-    type: "object"
-    properties:
-      address:
-        type: "string"
-      icon:
-        type: "string"
-      lat:
-        type: "number"
-        format: "double"
-      lon:
-        type: "number"
-        format: "double"
-      name:
-        type: "string"
-      type:
-        type: "string"
-  OtpUser:
-    type: "object"
-    properties:
-      accessibilityRoutingByDefault:
-        type: "boolean"
-      hasConsentedToTerms:
-        type: "boolean"
-      isPhoneNumberVerified:
-        type: "boolean"
-      mobilityProfile:
-        $ref: "#/definitions/MobilityProfile"
-      notificationChannel:
-        type: "array"
-        items:
-          type: "string"
-          enum:
-          - "EMAIL"
-          - "PUSH"
-          - "SMS"
-      phoneNumber:
-        type: "string"
-      smsConsentDate:
-        type: "string"
-        format: "date"
-      preferredLocale:
-        type: "string"
-      pushDevices:
-        type: "integer"
-        format: "int32"
-      savedLocations:
-        type: "array"
-        items:
-          $ref: "#/definitions/UserLocation"
-      storeTripHistory:
-        type: "boolean"
-      tripSurveyNotifications:
-        type: "array"
-        items:
-          $ref: "#/definitions/TripSurveyNotification"
-      applicationId:
-        type: "string"
-      relatedUsers:
-        type: "array"
-        items:
-          $ref: "#/definitions/RelatedUser"
-      dependents:
-        type: "array"
-        items:
-          type: "string"
-      name:
-        type: "string"
-  MobilityProfile:
-    type: "object"
-    properties:
-      isMobilityLimited:
-        type: "boolean"
-      mobilityDevices:
-        type: "array"
-        items:
-          type: "string"
-      mobilityMode:
-        type: "string"
-      visionLimitation:
-        type: "string"
-        enum:
-        - "LEGALLY_BLIND"
-        - "LOW_VISION"
-        - "NONE"
-  TripSurveyNotification:
-    type: "object"
-    properties:
-      id:
-        type: "string"
-      timeSent:
-        type: "string"
-        format: "date"
-      timeOpened:
-        type: "string"
-        format: "date"
-      journeyId:
-        type: "string"
-  GetUsageResult:
-    type: "object"
-    properties:
-      usagePlanId:
-        type: "string"
-      startDate:
-        type: "string"
-      endDate:
-        type: "string"
-      position:
-        type: "string"
-      items:
-        $ref: "#/definitions/Map"
-  ApiUsageResult:
-    type: "object"
-    properties:
-      result:
-        $ref: "#/definitions/GetUsageResult"
-      apiUsers:
-        $ref: "#/definitions/Map"
-  App:
-    type: "object"
-    properties:
-      releaseStage:
-        type: "string"
-  BugsnagEvent:
-    type: "object"
-    properties:
-      eventDataId:
-        type: "string"
-      projectId:
-        type: "string"
-      errorId:
-        type: "string"
-      receivedAt:
-        type: "string"
-        format: "date"
-      exceptions:
-        type: "array"
-        items:
-          $ref: "#/definitions/EventException"
-      severity:
-        type: "string"
-      context:
-        type: "string"
-      unhandled:
-        type: "boolean"
-      app:
-        $ref: "#/definitions/App"
-  EventException:
-    type: "object"
-    properties:
-      errorClass:
-        type: "string"
-      message:
-        type: "string"
-  CDPFile:
-    type: "object"
-    properties:
-      key:
-        type: "string"
-      name:
-        type: "string"
-      size:
-        type: "integer"
-        format: "int64"
-  URL:
-    type: "object"
-    properties:
-      protocol:
-        type: "string"
-      host:
-        type: "string"
-      port:
-        type: "integer"
-        format: "int32"
-      file:
-        type: "string"
-      query:
-        type: "string"
-      authority:
-        type: "string"
-      path:
-        type: "string"
-      userInfo:
-        type: "string"
-      ref:
-        type: "string"
-      hostAddress:
-        $ref: "#/definitions/InetAddress"
-      handler:
-        $ref: "#/definitions/URLStreamHandler"
-      hashCode:
-        type: "integer"
-        format: "int32"
-      tempState:
-        $ref: "#/definitions/UrlDeserializedState"
 externalDocs:
   description: ""
   url: ""

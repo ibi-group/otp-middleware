@@ -121,19 +121,18 @@ public class OtpMiddlewareMain {
                 .endpoints(() -> List.of(
                     new AdminUserController(API_PREFIX),
                     new ApiUserController(API_PREFIX),
+                    new CDPFilesController(API_PREFIX),
                     new CDPUserController(API_PREFIX),
+                    new ErrorEventsController(API_PREFIX),
+                    new LogController(API_PREFIX),
+                    new MonitoredComponentController(API_PREFIX),
                     new MonitoredTripController(API_PREFIX),
+                    new OtpRequestProcessor("/otp", OtpVersion.OTP2),
+                    new OtpRequestProcessor("/otp2", OtpVersion.OTP2),
+                    new OtpUserController(API_PREFIX),
                     new TrackedTripController(API_PREFIX),
                     new TripHistoryController(API_PREFIX),
-                    new MonitoredComponentController(API_PREFIX),
-                    new OtpUserController(API_PREFIX),
-                    new LogController(API_PREFIX),
-                    new ErrorEventsController(API_PREFIX),
-                    new CDPFilesController(API_PREFIX),
-                    new TripSurveyController(API_PREFIX),
-                    new OtpRequestProcessor("/otp", OtpVersion.OTP2),
-                    new OtpRequestProcessor("/otp2", OtpVersion.OTP2)
-                    // Add other endpoints as needed.
+                    new TripSurveyController(API_PREFIX)
                 ))
                 // Spark-swagger auto-generates a swagger document at localhost:4567/doc.yaml.
                 // (That path is not configurable.)
