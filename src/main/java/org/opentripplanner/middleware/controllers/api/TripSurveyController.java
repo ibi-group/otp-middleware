@@ -37,7 +37,7 @@ public class TripSurveyController implements Endpoint {
     @Override
     public void bind(final SparkSwagger restApi) {
         restApi.endpoint(
-            endpointPath(ROOT_ROUTE).withDescription("Interface for tracking opened trip surveys following a trip survey notification"),
+            endpointPath(ROOT_ROUTE).withDescription("Interface for tracking opened trip surveys following a trip survey notification."),
             HttpUtils.NO_FILTER
         )
         .get(

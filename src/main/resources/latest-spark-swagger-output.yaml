@@ -36,7 +36,7 @@ tags:
   description: "Interface for listing and downloading CDP files from S3."
 - name: "api/trip-survey"
   description: "Interface for tracking opened trip surveys following a trip survey\
-    \ notification"
+    \ notification."
 - name: "otp"
   description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
