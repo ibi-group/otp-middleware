@@ -218,4 +218,10 @@ public class OtpUser extends AbstractUser {
     public String getDisplayedName() {
         return Strings.isBlank(name) ? email.replace("@", " at ") : name;
     }
+
+    /** Obtains a notification with the given id, if available. */
+    public Optional<TripSurveyNotification> findNotification(String id) {
+        if (tripSurveyNotifications == null || Strings.isBlank(id)) return Optional.empty();
+        return tripSurveyNotifications.stream().filter(n -> id.equals(n.id)).findFirst();
+    }
 }
