@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import org.apache.logging.log4j.util.Strings;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -215,6 +216,8 @@ public class OtpUser extends AbstractUser {
     /**
      * Use name if available, if not fallback on email (which is a required field).
      */
+    @JsonIgnore
+    @BsonIgnore
     public String getDisplayedName() {
         return Strings.isBlank(name) ? email.replace("@", " at ") : name;
     }
