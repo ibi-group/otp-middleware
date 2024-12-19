@@ -170,8 +170,6 @@ public class OtpUser extends AbstractUser {
             .getFiltered(Filters.eq("companion.email", email))
             .forEach(trip -> removeCompanion(this, trip));
 
-        // If a companion user, invalidate relationship in trips where they are companions and observers.
-        // TODO: Should we alert the user who created the trip of the deletion?
         Persistence.monitoredTrips
             .getFiltered(Filters.eq("observers.email", email))
             .forEach(trip -> removeObserver(this, trip));
