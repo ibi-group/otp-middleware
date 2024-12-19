@@ -495,6 +495,8 @@ public class MonitoredTrip extends Model {
      * @return The id of the primary traveler (the primary user of a trip,
      * or the user who created the trip if no primary user has been set).
      */
+    @JsonIgnore
+    @BsonIgnore
     public String getPrimaryTravelerId() {
         return primary != null ? primary.userId : userId;
     }
