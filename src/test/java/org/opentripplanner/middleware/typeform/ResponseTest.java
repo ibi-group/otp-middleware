@@ -1,20 +1,33 @@
 package org.opentripplanner.middleware.typeform;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ResponseTest {
 
-    public static final String EXPECTED_CSV_ROW = "response-id-0,completed,2024-10-25T15:37:42Z,2024-10-25T15:46:27Z,notification-id-1,trip-id-2,user-id-3,\"Field1 choice\",\"Field2, ChoiceA;Field2, ChoiceB\",\"Field3 answer\"";
+    public static final String EXPECTED_CSV_BEGINNING = "response-id-0,completed,2024-10-25T15:37:42Z,2024-10-25T15:46:27Z,notification-id-1,trip-id-2,user-id-3,";
+    public static final String EXPECTED_CSV_ENDING = "\"Field1 choice\",\"Field2, ChoiceA;Field2, ChoiceB\",\"Field3 answer\"";
+    public static final String EXPECTED_CSV_ROW = EXPECTED_CSV_BEGINNING + EXPECTED_CSV_ENDING;
 
+    @ParameterizedTest
+    @MethodSource("createToCsvRowCases")
+    void toCsvRow(Response response, String expected) {
+        assertEquals(expected, response.toCsvRow());
+    }
 
-    @Test
-    void toCsvRow() {
-        Response response = makeResponse();
-        assertEquals(EXPECTED_CSV_ROW, response.toCsvRow());
+    private static Stream<Arguments> createToCsvRowCases() {
+        Response responseWithoutAnswers = makeResponse();
+        responseWithoutAnswers.answers = null;
+        return Stream.of(
+            Arguments.of(makeResponse(), EXPECTED_CSV_ROW),
+            Arguments.of(responseWithoutAnswers, EXPECTED_CSV_BEGINNING)
+        );
     }
 
     public static Response makeResponse() {

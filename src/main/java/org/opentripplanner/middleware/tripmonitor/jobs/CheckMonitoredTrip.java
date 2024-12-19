@@ -60,8 +60,6 @@ public class CheckMonitoredTrip implements Runnable {
 
     public static final String ACCOUNT_PATH = "/#/account";
 
-    private final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
-
     public static final String SETTINGS_PATH = ACCOUNT_PATH + "/settings";
 
     public final MonitoredTrip trip;
@@ -530,21 +528,15 @@ public class CheckMonitoredTrip implements Runnable {
         String tripNameOrReminder = hasInitialReminder ? initialReminderNotification.body : trip.tripName;
 
         Locale locale = getOtpUserLocale();
-        String tripLinkLabel = Message.TRIP_LINK_TEXT.get(locale);
-        String tripUrl = getTripUrl();
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
-        Map<String, Object> templateData = new HashMap<>(Map.of(
+        Map<String, Object> templateData = new HashMap<>();
+        templateData.putAll(Map.of(
             "emailGreeting", Message.TRIP_EMAIL_GREETING.get(locale),
             "tripNameOrReminder", tripNameOrReminder,
-            "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
-            "tripLinkAnchorLabel", tripLinkLabel,
-            "tripUrl", tripUrl,
-            "emailFooter", String.format(Message.TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
-            "manageLinkText", Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
-            "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
             "notifications", new ArrayList<>(notifications),
             "smsFooter", Message.SMS_STOP_NOTIFICATIONS.get(locale)
         ));
+        templateData.putAll(NotificationUtils.getTripNotificationFields(trip, locale));
         if (hasInitialReminder) {
             templateData.put("initialReminder", initialReminderNotification);
         }
@@ -589,9 +581,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private boolean sendEmail(OtpUser otpUser, Map<String, Object> data) {
         Locale locale = getOtpUserLocale();
-        String subject = trip.tripName != null
-            ? String.format(Message.TRIP_EMAIL_SUBJECT.get(locale), trip.tripName)
-            : String.format(Message.TRIP_EMAIL_SUBJECT_FOR_USER.get(locale), otpUser.email);
+        String subject = NotificationUtils.getTripEmailSubject(otpUser, locale, trip);
         return NotificationUtils.sendEmail(
             otpUser,
             subject,
@@ -931,10 +921,6 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private Locale getOtpUserLocale() {
         return I18nUtils.getOtpUserLocale(getOtpUser());
-    }
-
-    private String getTripUrl() {
-        return String.format("%s%s/%s", OTP_UI_URL, TRIPS_PATH, trip.id);
     }
 
     /**

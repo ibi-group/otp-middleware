@@ -215,7 +215,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         relatedUsers
             .stream()
             .filter(user -> user.email.equals(relatedUserOne.email))
-            .forEach(user -> assertEquals(RelatedUser.RelatedUserStatus.CONFIRMED, user.status));
+            .forEach(user -> assertTrue(user.isConfirmed()));
     }
 
     @Test

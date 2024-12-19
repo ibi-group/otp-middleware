@@ -8,7 +8,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.MobilityProfile;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
@@ -33,6 +35,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getBusDepartureTime;
@@ -46,7 +49,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     private static TrackedJourney trackedJourney;
 
-    private static final String routeId = "GwinnettCountyTransit:40";
+    private static final String ROUTE_ID = "GwinnettCountyTransit:40";
 
     private static final Locale locale = Locale.US;
 
@@ -66,7 +69,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
             Itinerary.class
         );
         UsRideGwinnettNotifyBusOperator.IS_TEST = true;
-        UsRideGwinnettNotifyBusOperator.US_RIDE_GWINNETT_QUALIFYING_BUS_NOTIFIER_ROUTES = List.of(routeId);
+        UsRideGwinnettNotifyBusOperator.US_RIDE_GWINNETT_QUALIFYING_BUS_NOTIFIER_ROUTES = List.of(ROUTE_ID);
     }
 
     @AfterEach
@@ -83,11 +86,11 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         Instant busDepartureTime = getBusDepartureTime(busLeg);
         trackedJourney = createAndPersistTrackedJourney(startOfTransitCoordinates, busDepartureTime);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
-        String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, isStartOfTrip);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, isStartOfTrip);
         TripInstruction expectInstruction = new WaitForTransitInstruction(busLeg, busDepartureTime, locale);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
-        assertTrue(updated.busNotificationMessages.containsKey(routeId));
-        assertEquals(expectInstruction.build(), tripInstruction, message);
+        assertTrue(updated.busNotificationMessages.containsKey(ROUTE_ID));
+        assertEquals(expectInstruction.build(), tripInstruction.build(), message);
     }
 
     private static Stream<Arguments> creatNotifyBusOperatorForScheduledDepartureTrace() {
@@ -112,7 +115,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
     void shouldCancelBusNotificationForStartOfTrip(boolean expected, Leg expectedLeg, Coordinates currentPosition, String message) {
         Leg first = firstLegBusTransit.legs.get(0);
         TrackedJourney journey = new TrackedJourney();
-        journey.busNotificationMessages.put(routeId, "{\"msg_type\": 1}");
+        journey.busNotificationMessages.put(ROUTE_ID, "{\"msg_type\": 1}");
         TravelerPosition travelerPosition = new TravelerPosition(expectedLeg, journey, first, currentPosition);
         assertEquals(expected, ManageTripTracking.shouldCancelBusNotificationForStartOfTrip(travelerPosition), message);
     }
@@ -149,11 +152,12 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates(), timeAtEndOfWalkLeg);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
-        String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        assertNotNull(tripInstruction);
 
         Leg busLeg = itinerary.legs.get(1);
         TripInstruction expectInstruction = new WaitForTransitInstruction(busLeg, timeAtEndOfWalkLeg, locale);
-        assertEquals(expectInstruction.build(), tripInstruction);
+        assertEquals(expectInstruction.build(), tripInstruction.build());
     }
 
     @Test
@@ -161,9 +165,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates());
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
 
-        busOperatorActions.handleSendNotificationAction(travelerPosition, travelerPosition.nextLeg);
-        TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
-        assertTrue(updated.busNotificationMessages.containsKey(routeId));
+        TrackedJourney updated = sendAndCheckInitialBusOperatorNotification(travelerPosition);
         assertEquals(1, getMessage(updated).msg_type);
 
         busOperatorActions.handleCancelNotificationAction(travelerPosition, travelerPosition.nextLeg);
@@ -184,7 +186,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
     }
 
     private static UsRideGwinnettBusOpNotificationMessage getMessage(TrackedJourney updated) throws JsonProcessingException {
-        String messageBody = updated.busNotificationMessages.get(routeId);
+        String messageBody = updated.busNotificationMessages.get(ROUTE_ID);
         return getNotificationMessage(messageBody);
     }
 
@@ -193,18 +195,41 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates());
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBusTransition, createOtpUser());
 
-        busOperatorActions.handleSendNotificationAction(travelerPosition, travelerPosition.nextLeg);
-        TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
-        assertTrue(updated.busNotificationMessages.containsKey(routeId));
-        assertFalse(UsRideGwinnettNotifyBusOperator.hasNotSentNotificationForRoute(updated, routeId));
-        UsRideGwinnettBusOpNotificationMessage notifyMessage = getMessage(updated);
+        TrackedJourney updated = sendAndCheckInitialBusOperatorNotification(travelerPosition);
 
         // A second request to notify the operator should not touch the previous request.
         Thread.sleep(20);
         busOperatorActions.handleSendNotificationAction(travelerPosition, travelerPosition.nextLeg);
         TrackedJourney updated2 = Persistence.trackedJourneys.getById(trackedJourney.id);
-        assertFalse(UsRideGwinnettNotifyBusOperator.hasNotSentNotificationForRoute(updated2, routeId));
-        assertEquals(notifyMessage.timestamp, getMessage(updated2).timestamp);
+        assertFalse(UsRideGwinnettNotifyBusOperator.hasNotSentNotificationForRoute(updated2, ROUTE_ID));
+        assertEquals(getMessage(updated).timestamp, getMessage(updated2).timestamp);
+    }
+
+    private TrackedJourney sendAndCheckInitialBusOperatorNotification(TravelerPosition travelerPosition) throws JsonProcessingException {
+        Coordinates position = travelerPosition.currentPosition;
+        MonitoredTrip trip = new MonitoredTrip();
+        // Add a confirmed companion to this trip
+        trip.companion = new RelatedUser();
+        trip.companion.status = RelatedUser.RelatedUserStatus.CONFIRMED;
+
+        // Endpoints indirectly call the TripTrackingData constructor that sets the trip field in Trackedjourney,
+        // so we add that here to replicate those steps.
+        TripTrackingData tripData = new TripTrackingData(
+            trip,
+            trackedJourney,
+            List.of(new TrackingLocation(travelerPosition.currentTime, position.lat, position.lon))
+        );
+        assertNotNull(tripData.journey.trip);
+        assertNotNull(trackedJourney.trip);
+
+        busOperatorActions.handleSendNotificationAction(travelerPosition, travelerPosition.nextLeg);
+
+        TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
+        assertTrue(updated.busNotificationMessages.containsKey(ROUTE_ID));
+        assertFalse(UsRideGwinnettNotifyBusOperator.hasNotSentNotificationForRoute(updated, ROUTE_ID));
+        assertTrue(getMessage(updated).trusted_companion);
+
+        return updated;
     }
 
     @ParameterizedTest

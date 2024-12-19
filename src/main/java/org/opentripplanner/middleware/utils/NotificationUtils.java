@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -32,8 +33,17 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_FOOTER;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_MANAGE_NOTIFICATIONS;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_SUBJECT;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_EMAIL_SUBJECT_FOR_USER;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_LINK_TEXT;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_SURVEY_NOTIFICATION;
+import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.ACCOUNT_PATH;
+import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip.SETTINGS_PATH;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.I18nUtils.getOtpUserLocale;
+import static org.opentripplanner.middleware.utils.I18nUtils.label;
 
 /**
  * This class contains utils for sending SMS, email, and push notifications.
@@ -54,8 +64,11 @@ public class NotificationUtils {
     public static final String OTP_ADMIN_DASHBOARD_FROM_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_FROM_EMAIL");
     private static final String PUSH_API_KEY = getConfigPropertyAsText("PUSH_API_KEY");
     private static final String PUSH_API_URL = getConfigPropertyAsText("PUSH_API_URL");
-    private static final String TRIP_SURVEY_ID = getConfigPropertyAsText("TRIP_SURVEY_ID");
-    private static final String TRIP_SURVEY_SUBDOMAIN = getConfigPropertyAsText("TRIP_SURVEY_SUBDOMAIN");
+    public static final String TRIP_SURVEY_ID = getConfigPropertyAsText("TRIP_SURVEY_ID");
+    public static final String TRIP_SURVEY_SUBDOMAIN = getConfigPropertyAsText("TRIP_SURVEY_SUBDOMAIN");
+    private static final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
+    private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
+    private static final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
 
     /**
      * Although SMS are 160 characters long and Twilio supports sending up to 1600 characters,
@@ -464,6 +477,76 @@ public class NotificationUtils {
             otpUser.pushDevices = numPushDevices;
             Persistence.otpUsers.replace(otpUser.id, otpUser);
       	}
+    }
+
+    /**
+     * Gets the localized subject line for a trip notification.
+     */
+    public static String getTripEmailSubject(OtpUser otpUser, Locale locale, MonitoredTrip trip) {
+        return trip.tripName != null
+            ? String.format(TRIP_EMAIL_SUBJECT.get(locale), trip.tripName)
+            : String.format(TRIP_EMAIL_SUBJECT_FOR_USER.get(locale), otpUser.email);
+    }
+
+    /**
+     * Replaces the sender display name with the specified user's name (fallback to the user's email).
+     */
+    public static String replaceUserNameInFromEmail(String fromEmail, OtpUser otpUser) {
+        if (Strings.isBlank(fromEmail)) return fromEmail;
+
+        int firstBracketIndex = fromEmail.indexOf('<');
+        int lastBracketIndex = fromEmail.indexOf('>');
+        // HACK: If falling back on email, replace the "@" sign so that the user's email does not override the
+        // application email in brackets.
+        String displayedName = Strings.isBlank(otpUser.name) ? otpUser.email.replace("@", " at ") : otpUser.name;
+        return String.format("%s %s", displayedName, fromEmail.substring(firstBracketIndex, lastBracketIndex + 1));
+    }
+
+    /**
+     * Sends a notification to a specified companion user.
+     */
+    public static void notifyCompanion(
+        MonitoredTrip monitoredTrip,
+        OtpUser tripCreator,
+        OtpUser companionUser,
+        org.opentripplanner.middleware.i18n.Message message
+    ) {
+        if (companionUser != null) {
+            Locale locale = getOtpUserLocale(companionUser);
+            String greeting = message.get(locale);
+
+            // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
+            Map<String, Object> templateData = new HashMap<>();
+            templateData.put("emailGreeting", String.format(greeting, tripCreator.email));
+            templateData.putAll(getTripNotificationFields(monitoredTrip, locale));
+
+            sendEmail(
+                replaceUserNameInFromEmail(FROM_EMAIL, tripCreator),
+                companionUser.email,
+                getTripEmailSubject(companionUser, locale, monitoredTrip),
+                "ShareTripText.ftl",
+                "ShareTripHtml.ftl",
+                templateData
+            );
+        }
+    }
+
+    private static String getTripUrl(MonitoredTrip trip) {
+        return String.format("%s%s/%s", OTP_UI_URL, TRIPS_PATH, trip.id);
+    }
+
+    public static Map<String, Object> getTripNotificationFields(MonitoredTrip monitoredTrip, Locale locale) {
+        String tripLinkLabel = TRIP_LINK_TEXT.get(locale);
+        String tripUrl = getTripUrl(monitoredTrip);
+
+        return Map.of(
+            "tripUrl", tripUrl,
+            "tripLinkAnchorLabel", tripLinkLabel,
+            "tripLinkLabelAndUrl", label(tripLinkLabel, tripUrl, locale),
+            "emailFooter", String.format(TRIP_EMAIL_FOOTER.get(locale), OTP_UI_NAME),
+            "manageLinkText", TRIP_EMAIL_MANAGE_NOTIFICATIONS.get(locale),
+            "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH)
+        );
     }
 
     static class NotificationInfo {
