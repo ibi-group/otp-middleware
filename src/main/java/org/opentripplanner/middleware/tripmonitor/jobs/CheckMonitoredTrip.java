@@ -29,14 +29,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -673,7 +666,7 @@ public class CheckMonitoredTrip implements Runnable {
             }
         }
 
-        if (isPrevMatchingItineraryNotConcluded()) {
+        if (isPrevMatchingItineraryNotConcluded() && isPrevMatchingItineraryDayValid()) {
             // Skip checking the trip the rest of the time that it is active if the trip was deemed not possible for the
             // next possible time during a previous query to find candidate itinerary matches.
             if (previousJourneyState.tripStatus == TripStatus.NEXT_TRIP_NOT_POSSIBLE) {
@@ -769,6 +762,33 @@ public class CheckMonitoredTrip implements Runnable {
         // TODO: Change log level.
         LOG.info("Trip criteria not met to check. Skipping.");
         return true;
+    }
+
+    // Check if previous matching itinerary day is still valid
+    private boolean isPrevMatchingItineraryDayValid() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(previousMatchingItinerary.startTime);
+
+        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+
+        switch (dayOfWeek) {
+            case Calendar.SUNDAY:
+                return trip.sunday;
+            case Calendar.MONDAY:
+                return trip.monday;
+            case Calendar.TUESDAY:
+                return trip.tuesday;
+            case Calendar.WEDNESDAY:
+                return trip.wednesday;
+            case Calendar.THURSDAY:
+                return trip.thursday;
+            case Calendar.FRIDAY:
+                return trip.friday;
+            case Calendar.SATURDAY:
+                return trip.saturday;
+            default:
+                return false; // This should never happen, but for safety
+        }
     }
 
     private void advanceToNextMonitoredDay() {
