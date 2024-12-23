@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Contains information about the type and details of messages to be sent to users about their {@link MonitoredTrip}s.
@@ -16,8 +17,8 @@ public class TripMonitorNotification extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(TripMonitorNotification.class);
     public static final String STOPWATCH_ICON = "⏱";
 
-    public final NotificationType type;
-    public final String body;
+    public NotificationType type;
+    public String body;
 
     /** Getter functions are used by HTML template renderer */
     public String getBody() {
@@ -26,6 +27,12 @@ public class TripMonitorNotification extends Model {
 
     public NotificationType getType() {
         return type;
+    }
+
+    /**
+     * This no-arg constructor exists to make MongoDB happy.
+     */
+    public TripMonitorNotification() {
     }
 
     public TripMonitorNotification(NotificationType type, String body) {
@@ -109,5 +116,23 @@ public class TripMonitorNotification extends Model {
                 DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale)
             )
         );
+    }
+
+    /**
+     * Checks for equality excluding the parent {@link Model} class.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        TripMonitorNotification that = (TripMonitorNotification) o;
+        return type == that.type && Objects.equals(body, that.body);
+    }
+
+    /**
+     * Creates a hash code from fields in this class only excluding fields within the parent {@link Model} class.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, body);
     }
 }

@@ -40,7 +40,6 @@ public class JourneyState implements Cloneable {
 
     /**
      * The notifications already sent.
-     * FIXME this is never set, so it has no effect.
      */
     public Set<TripMonitorNotification> lastNotifications = new HashSet<>();
 

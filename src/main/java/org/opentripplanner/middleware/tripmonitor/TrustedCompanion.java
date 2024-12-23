@@ -186,7 +186,6 @@ public class TrustedCompanion {
 
         String acceptDependentLinkLabel = Message.ACCEPT_DEPENDENT_EMAIL_LINK_TEXT.get(locale);
         String acceptDependentUrl = getAcceptDependentUrl(acceptKey, locale);
-        String addressee = (Strings.isBlank(dependentUser.name)) ? dependentUser.email : dependentUser.name;
 
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
         Map<String, Object> templateData = new HashMap<>(
@@ -195,7 +194,7 @@ public class TrustedCompanion {
                 "acceptDependentLinkLabelAndUrl", label(acceptDependentLinkLabel, acceptDependentUrl, locale),
                 "acceptDependentUrl", acceptDependentUrl,
                 "emailFooter", Message.ACCEPT_DEPENDENT_EMAIL_FOOTER.get(locale),
-                "emailGreeting", String.format(Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale), addressee),
+                "emailGreeting", String.format(Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale), dependentUser.getDisplayedName()),
                 "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
                 "manageLinkText", Message.ACCEPT_DEPENDENT_EMAIL_MANAGE.get(locale)
             )

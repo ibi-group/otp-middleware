@@ -10,7 +10,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
+import org.opentripplanner.middleware.models.MobilityProfileLite;
+import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
@@ -23,6 +27,8 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
+import org.opentripplanner.middleware.triptracker.TravelerPosition;
+import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +50,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.text.MatchesPattern.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -806,5 +813,49 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             // on Tuesday, June 9, 2020.
             Arguments.of(noonMonday8June2020, tuesday, true)
         );
+    }
+
+    @Test
+    void testDuplicateNotifications() throws Exception {
+        OtpUser observer = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-observer-user"));
+
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            true,
+            OtpTestUtils.createDefaultJourneyState()
+        );
+        monitoredTrip.primary = new MobilityProfileLite(user);
+        monitoredTrip.observers.add(new RelatedUser(observer.email, RelatedUser.RelatedUserStatus.CONFIRMED));
+        Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
+
+        Leg expectedLeg = monitoredTrip.itinerary.legs.get(1);
+        Coordinates expectedLegDestinationCoords = new Coordinates(expectedLeg.to);
+        Leg nextLeg = monitoredTrip.itinerary.legs.get(2);
+
+        TravelerPosition travelerPosition = new TravelerPosition.Builder()
+            .setExpectedLeg(expectedLeg)
+            .setNextLeg(nextLeg)
+            .setCurrentPosition(expectedLegDestinationCoords)
+            .build();
+
+        triggerCheckMonitoredTrip(monitoredTrip, travelerPosition);
+        MonitoredTrip updated = Persistence.monitoredTrips.getById(monitoredTrip.id);
+        assertNotEquals(-1, updated.journeyState.lastNotificationTimeMillis);
+        long previousLastNotificationTimeMillis = updated.journeyState.lastNotificationTimeMillis;
+
+        triggerCheckMonitoredTrip(monitoredTrip, travelerPosition);
+        updated = Persistence.monitoredTrips.getById(monitoredTrip.id);
+        assertEquals(previousLastNotificationTimeMillis, updated.journeyState.lastNotificationTimeMillis);
+
+        Persistence.monitoredTrips.removeById(monitoredTrip.id);
+        Persistence.otpUsers.removeById(observer.id);
+    }
+
+    private void triggerCheckMonitoredTrip(MonitoredTrip monitoredTrip, TravelerPosition travelerPosition) throws CloneNotSupportedException {
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+        checkMonitoredTrip.IS_TEST = true;
+        checkMonitoredTrip.targetZonedDateTime = monitoredTrip.tripZonedDateTime(DateTimeUtils.nowAsLocalDate());
+        checkMonitoredTrip.processLegTransition(NotificationType.MODE_CHANGE_NOTIFICATION, travelerPosition);
     }
 }

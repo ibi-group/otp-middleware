@@ -85,7 +85,7 @@ public class TravelerLocator {
     /**
      * Has required walk leg.
      */
-    private static boolean hasRequiredWalkLeg(TravelerPosition travelerPosition) {
+    public static boolean hasRequiredWalkLeg(TravelerPosition travelerPosition) {
         return
             travelerPosition.expectedLeg != null &&
             travelerPosition.expectedLeg.mode.equalsIgnoreCase("walk");
@@ -94,7 +94,7 @@ public class TravelerLocator {
     /**
      * Has required transit leg.
      */
-    private static boolean hasRequiredTransitLeg(TravelerPosition travelerPosition) {
+    public static boolean hasRequiredTransitLeg(TravelerPosition travelerPosition) {
         return
             travelerPosition.expectedLeg != null &&
             travelerPosition.expectedLeg.transitLeg;
@@ -103,7 +103,7 @@ public class TravelerLocator {
     /**
      * The trip instruction can only be provided if the traveler is close to the indicated route.
      */
-    private static boolean hasRequiredTripStatus(TripStatus tripStatus) {
+    public static boolean hasRequiredTripStatus(TripStatus tripStatus) {
         return !tripStatus.equals(TripStatus.DEVIATED) && !tripStatus.equals(TripStatus.ENDED);
     }
 
@@ -322,7 +322,7 @@ public class TravelerLocator {
     /**
      * Is the traveler approaching the leg destination.
      */
-    private static boolean isApproachingEndOfLeg(TravelerPosition travelerPosition) {
+    public static boolean isApproachingEndOfLeg(TravelerPosition travelerPosition) {
         return getDistanceToEndOfLeg(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
     }
 

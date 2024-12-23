@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
+import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
@@ -14,6 +15,7 @@ import org.opentripplanner.middleware.otp.response.LocalizedAlert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
+import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -40,7 +42,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static org.opentripplanner.middleware.utils.I18nUtils.label;
+import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -51,9 +53,7 @@ import static org.opentripplanner.middleware.utils.I18nUtils.label;
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
 
-    private final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
-
-    private final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
+    public boolean IS_TEST = false;
 
     public static final int MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS =
         ConfigUtils.getConfigPropertyAsInt("MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS", 3);
@@ -245,6 +245,32 @@ public class CheckMonitoredTrip implements Runnable {
 
     private boolean isTrackingOngoing() {
         return trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && TripTrackingData.getOngoingTrackedJourney(trip.id) != null;
+    }
+
+    /**
+     * Process leg transition notifications by getting all qualifying users and enqueuing relevant notifications. The
+     * matching itinerary is required when updating the monitored trip. There is no requirement to match the itinerary
+     * to that returned from OTP, so the existing trip itinerary is used and therefore preserved.
+     */
+    public void processLegTransition(NotificationType notificationType, TravelerPosition travelerPosition) throws CloneNotSupportedException {
+        matchingItinerary = trip.itinerary.clone();
+        OtpUser tripOwner = getOtpUser();
+        Set<OtpUser> notifyUsers = getLegTransitionNotifyUsers(trip);
+        notifyUsers.forEach(observer -> {
+            if (observer != null) {
+                enqueueNotification(
+                    new LegTransitionNotification(
+                        tripOwner.getDisplayedName(),
+                        notificationType,
+                        travelerPosition,
+                        I18nUtils.getOtpUserLocale(observer)
+                    ).tripMonitorNotification
+                );
+                sendNotifications(observer);
+            }
+        });
+
+        updateMonitoredTrip();
     }
 
     /**
@@ -498,8 +524,7 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Compose a message for any enqueued notifications and send to {@link OtpUser} based on their notification
-     * preferences.
+     * Send notification to user associated with the trip.
      */
     private void sendNotifications() {
         OtpUser otpUser = getOtpUser();
@@ -508,6 +533,14 @@ public class CheckMonitoredTrip implements Runnable {
             // TODO: Bugsnag / delete monitored trip?
             return;
         }
+        sendNotifications(otpUser);
+    }
+
+    /**
+     * Compose a message for any enqueued notifications and send to {@link OtpUser} based on their notification
+     * preferences.
+     */
+    private void sendNotifications(OtpUser otpUser) {
         // Update push notification devices count, which may change asynchronously
         NotificationUtils.updatePushDevices(otpUser);
 
@@ -525,9 +558,12 @@ public class CheckMonitoredTrip implements Runnable {
             return;
         }
 
+        Locale locale = I18nUtils.getOtpUserLocale(otpUser);
         String tripNameOrReminder = hasInitialReminder ? initialReminderNotification.body : trip.tripName;
+        if (tripNameOrReminder == null) {
+            tripNameOrReminder = Message.TRIP_NAME_UNDEFINED.get(locale);
+        }
 
-        Locale locale = getOtpUserLocale();
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
         Map<String, Object> templateData = new HashMap<>();
         templateData.putAll(Map.of(
@@ -547,7 +583,7 @@ public class CheckMonitoredTrip implements Runnable {
         boolean successSms = false;
 
         if (otpUser.notificationChannel.contains(OtpUser.Notification.EMAIL)) {
-            successEmail = sendEmail(otpUser, templateData);
+            successEmail = sendEmail(otpUser, templateData, locale);
         }
         if (otpUser.notificationChannel.contains(OtpUser.Notification.PUSH)) {
             successPush = sendPush(otpUser, templateData);
@@ -557,7 +593,7 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         // TODO: better handle below when one of the following fails
-        if (successEmail || successPush || successSms) {
+        if (successEmail || successPush || successSms || IS_TEST) {
             notificationTimestampMillis = DateTimeUtils.currentTimeMillis();
         }
     }
@@ -579,8 +615,7 @@ public class CheckMonitoredTrip implements Runnable {
     /**
      * Send notification email in MonitoredTrip template.
      */
-    private boolean sendEmail(OtpUser otpUser, Map<String, Object> data) {
-        Locale locale = getOtpUserLocale();
+    private boolean sendEmail(OtpUser otpUser, Map<String, Object> data, Locale locale) {
         String subject = NotificationUtils.getTripEmailSubject(otpUser, locale, trip);
         return NotificationUtils.sendEmail(
             otpUser,
@@ -894,11 +929,15 @@ public class CheckMonitoredTrip implements Runnable {
             return false;
         }
         journeyState.matchingItinerary = matchingItinerary;
-        journeyState.targetDate = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
+        if (targetZonedDateTime != null) {
+            journeyState.targetDate = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
+        }
         journeyState.lastCheckedEpochMillis = DateTimeUtils.currentTimeMillis();
         // Update notification time if notification successfully sent.
         if (notificationTimestampMillis != -1) {
             journeyState.lastNotificationTimeMillis = notificationTimestampMillis;
+            // Prevent repeated notifications by saving successfully sent notifications.
+            journeyState.lastNotifications.addAll(notifications);
         }
         trip.journeyState = journeyState;
         Persistence.monitoredTrips.replace(trip.id, trip);
