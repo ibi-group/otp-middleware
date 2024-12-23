@@ -174,7 +174,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         };
         String[] expectedPatterns = new String[] { expectedDeparturePattern, expectedArrivalPattern };
         for (int i = 0; i < notificationTypes.length; i++) {
-            TripMonitorNotification notification = check.checkTripForDelay(notificationTypes[i]);
+            TripMonitorNotification notification = check.checkTripForDelays();
             String expectedNotificationPattern = expectedPatterns[i];
             if (expectedNotificationPattern == null) {
                 assertNull(notification, message);
