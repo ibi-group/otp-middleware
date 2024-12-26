@@ -29,7 +29,15 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -764,14 +772,13 @@ public class CheckMonitoredTrip implements Runnable {
         return true;
     }
 
-    // Check if previous matching itinerary day is still valid
+    /** Check if previous matching itinerary day is still valid */
+
     private boolean isPrevMatchingItineraryDayValid() {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(previousMatchingItinerary.startTime);
 
-        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
-
-        switch (dayOfWeek) {
+        switch (calendar.get(Calendar.DAY_OF_WEEK)) {
             case Calendar.SUNDAY:
                 return trip.sunday;
             case Calendar.MONDAY:
