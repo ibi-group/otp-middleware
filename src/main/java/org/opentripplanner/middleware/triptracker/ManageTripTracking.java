@@ -1,15 +1,20 @@
 package org.opentripplanner.middleware.triptracker;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.triptracker.instruction.SelfLegInstruction;
+import org.opentripplanner.middleware.triptracker.interactions.TripActions;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import spark.Request;
 
+import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
+import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isAtStartOfLeg;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteGtfsIdFromLeg;
@@ -60,7 +65,7 @@ public class ManageTripTracking {
             TravelerPosition travelerPosition = new TravelerPosition(
                 trackedJourney,
                 tripData.trip.journeyState.matchingItinerary,
-                Persistence.otpUsers.getById(tripData.trip.userId)
+                Persistence.otpUsers.getById(tripData.trip.getPrimaryTravelerId())
             );
             TripStatus tripStatus = TripStatus.getTripStatus(travelerPosition);
             trackedJourney.lastLocation().tripStatus = tripStatus;
@@ -76,10 +81,24 @@ public class ManageTripTracking {
                 );
             }
 
+            LegTransitionNotification.checkForLegTransition(tripStatus, travelerPosition, tripData.trip);
+
             // Provide response.
+            TripInstruction instruction = TravelerLocator.getInstruction(tripStatus, travelerPosition, create);
+
+            // Perform interactions such as triggering traffic signals when approaching segments so configured.
+            // It is assumed to be ok to repeatedly perform the interaction.
+            if (instruction instanceof SelfLegInstruction && instruction.distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
+                TripActions.getDefault().handleSegmentAction(
+                    ((SelfLegInstruction)instruction).getLegStep(),
+                    travelerPosition.expectedLeg.steps,
+                    Persistence.otpUsers.getById(tripData.trip.getPrimaryTravelerId())
+                );
+            }
+
             return new TrackingResponse(
                 TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
-                TravelerLocator.getInstruction(tripStatus, travelerPosition, create),
+                instruction != null ? instruction.build() : NO_INSTRUCTION,
                 trackedJourney.id,
                 tripStatus.name()
             );
@@ -163,7 +182,7 @@ public class ManageTripTracking {
         );
 
         return new EndTrackingResponse(
-            TripInstruction.NO_INSTRUCTION,
+            NO_INSTRUCTION,
             TripStatus.ENDED.name()
         );
     }

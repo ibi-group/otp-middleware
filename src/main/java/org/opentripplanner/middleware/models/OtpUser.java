@@ -3,6 +3,9 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.mongodb.client.model.Filters;
+import org.apache.logging.log4j.util.Strings;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -21,7 +24,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.invalidateRelatedUsers;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removeCompanion;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removeDependent;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removeObserver;
+import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removePrimaryTraveler;
 
 /**
  * This represents a user of an OpenTripPlanner instance (typically of the standard OTP UI/otp-react-redux).
@@ -143,20 +150,32 @@ public class OtpUser extends AbstractUser {
         // If a related user, invalidate relationship with all dependents.
         for (String userId : dependents) {
             OtpUser dependent = Persistence.otpUsers.getById(userId);
-            if (dependent != null) {
-                for (RelatedUser relatedUser : dependent.relatedUsers) {
-                    if (relatedUser.email.equals(this.email)) {
-                        relatedUser.status = RelatedUser.RelatedUserStatus.INVALID;
-                    }
-                }
+            if (dependent != null && invalidateRelatedUsers(email, dependent.relatedUsers)) {
                 Persistence.otpUsers.replace(dependent.id, dependent);
             }
         }
 
-        // If a dependent, remove relationship with all related users.
+        // If a dependent user, remove relationship with all related users.
         for (RelatedUser relatedUser : relatedUsers) {
             removeDependent(this, relatedUser);
         }
+
+        // If a dependent user, remove self as the primary traveler in trips created by other users.
+        // TODO: Should we alert the user who created the trip of the deletion?
+        Persistence.monitoredTrips
+            .getFiltered(Filters.eq("primary.userId", id))
+            .forEach(trip -> removePrimaryTraveler(this, trip));
+
+        // If a companion user, invalidate relationship in trips where they are companions and observers.
+        // TODO: Should we alert the user who created the trip of the deletion?
+        Persistence.monitoredTrips
+            .getFiltered(Filters.eq("companion.email", email))
+            .forEach(trip -> removeCompanion(this, trip));
+
+        Persistence.monitoredTrips
+            .getFiltered(Filters.eq("observers.email", email))
+            .forEach(trip -> removeObserver(this, trip));
+
         return Persistence.otpUsers.removeById(this.id);
     }
 
@@ -209,5 +228,20 @@ public class OtpUser extends AbstractUser {
     public Optional<TripSurveyNotification> findLastTripSurveyNotificationSent() {
         if (tripSurveyNotifications == null) return Optional.empty();
         return tripSurveyNotifications.stream().max(Comparator.comparingLong(n -> n.timeSent.getTime()));
+    }
+
+    /**
+     * Use name if available, if not fallback on email (which is a required field).
+     */
+    @JsonIgnore
+    @BsonIgnore
+    public String getDisplayedName() {
+        return Strings.isBlank(name) ? email.replace("@", " at ") : name;
+    }
+
+    /** Obtains a notification with the given id, if available. */
+    public Optional<TripSurveyNotification> findNotification(String id) {
+        if (tripSurveyNotifications == null || Strings.isBlank(id)) return Optional.empty();
+        return tripSurveyNotifications.stream().filter(n -> id.equals(n.id)).findFirst();
     }
 }

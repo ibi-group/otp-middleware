@@ -86,11 +86,11 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         Instant busDepartureTime = getBusDepartureTime(busLeg);
         trackedJourney = createAndPersistTrackedJourney(startOfTransitCoordinates, busDepartureTime);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
-        String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, isStartOfTrip);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, isStartOfTrip);
         TripInstruction expectInstruction = new WaitForTransitInstruction(busLeg, busDepartureTime, locale);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(ROUTE_ID));
-        assertEquals(expectInstruction.build(), tripInstruction, message);
+        assertEquals(expectInstruction.build(), tripInstruction.build(), message);
     }
 
     private static Stream<Arguments> creatNotifyBusOperatorForScheduledDepartureTrace() {
@@ -116,7 +116,11 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         Leg first = firstLegBusTransit.legs.get(0);
         TrackedJourney journey = new TrackedJourney();
         journey.busNotificationMessages.put(ROUTE_ID, "{\"msg_type\": 1}");
-        TravelerPosition travelerPosition = new TravelerPosition(expectedLeg, journey, first, currentPosition);
+        TravelerPosition travelerPosition = new TravelerPosition.Builder()
+            .setExpectedLeg(expectedLeg)
+            .setTrackedJourney(journey)
+            .setFirstLegOfTrip(first)
+            .setCurrentPosition(currentPosition).build();
         assertEquals(expected, ManageTripTracking.shouldCancelBusNotificationForStartOfTrip(travelerPosition), message);
     }
 
@@ -152,11 +156,12 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates(), timeAtEndOfWalkLeg);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
-        String tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        assertNotNull(tripInstruction);
 
         Leg busLeg = itinerary.legs.get(1);
         TripInstruction expectInstruction = new WaitForTransitInstruction(busLeg, timeAtEndOfWalkLeg, locale);
-        assertEquals(expectInstruction.build(), tripInstruction);
+        assertEquals(expectInstruction.build(), tripInstruction.build());
     }
 
     @Test
@@ -248,24 +253,33 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         return Stream.of(
             Arguments.of(
                 true,
-                new TravelerPosition(busLeg, busDepartureTime),
+                new TravelerPosition.Builder()
+                    .setNextLeg(busLeg)
+                    .setCurrentTime(busDepartureTime)
+                    .build(),
                 "Traveler is on schedule, notification can be sent."
             ),
             Arguments.of(
                 false,
-                new TravelerPosition(busLeg, busDepartureTime.plusSeconds(60)),
+                new TravelerPosition.Builder()
+                    .setNextLeg(busLeg)
+                    .setCurrentTime(busDepartureTime.plusSeconds(60))
+                    .build(),
                 "Traveler is behind schedule, notification can not be sent."
             ),
             Arguments.of(
                 true,
-                new TravelerPosition(busLeg, busDepartureTime.minusSeconds(60)),
+                new TravelerPosition.Builder()
+                    .setNextLeg(busLeg)
+                    .setCurrentTime(busDepartureTime.minusSeconds(60))
+                    .build(),
                 "Traveler is ahead of schedule, but within the notify window."
             ),
             Arguments.of(false,
-                new TravelerPosition(
-                    busLeg,
-                    busDepartureTime.plusSeconds((ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES + 1) * 60)
-                ),
+                new TravelerPosition.Builder()
+                    .setNextLeg(busLeg)
+                    .setCurrentTime(busDepartureTime.plusSeconds((ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES + 1) * 60))
+                    .build(),
                 "Too far ahead of schedule to notify bus operator.")
         );
     }
@@ -283,12 +297,18 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         return Stream.of(
             Arguments.of(
                 true,
-                new TravelerPosition(busLeg, getBusDepartureTime(busLeg)),
+                new TravelerPosition.Builder()
+                    .setNextLeg(busLeg)
+                    .setCurrentTime(getBusDepartureTime(busLeg))
+                    .build(),
                 "Traveler at the start of a trip which starts with a bus leg, should notify."
             ),
             Arguments.of(
                 false,
-                new TravelerPosition(walkLeg, getBusDepartureTime(walkLeg)),
+                new TravelerPosition.Builder()
+                    .setNextLeg(walkLeg)
+                    .setCurrentTime(getBusDepartureTime(walkLeg))
+                    .build(),
                 "Traveler at the start of a trip which starts with a walk leg, should not notify."
             )
         );

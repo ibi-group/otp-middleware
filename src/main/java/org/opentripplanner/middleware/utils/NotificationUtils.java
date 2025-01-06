@@ -64,8 +64,8 @@ public class NotificationUtils {
     public static final String OTP_ADMIN_DASHBOARD_FROM_EMAIL = getConfigPropertyAsText("OTP_ADMIN_DASHBOARD_FROM_EMAIL");
     private static final String PUSH_API_KEY = getConfigPropertyAsText("PUSH_API_KEY");
     private static final String PUSH_API_URL = getConfigPropertyAsText("PUSH_API_URL");
-    private static final String TRIP_SURVEY_ID = getConfigPropertyAsText("TRIP_SURVEY_ID");
-    private static final String TRIP_SURVEY_SUBDOMAIN = getConfigPropertyAsText("TRIP_SURVEY_SUBDOMAIN");
+    public static final String TRIP_SURVEY_ID = getConfigPropertyAsText("TRIP_SURVEY_ID");
+    public static final String TRIP_SURVEY_SUBDOMAIN = getConfigPropertyAsText("TRIP_SURVEY_SUBDOMAIN");
     private static final String OTP_UI_NAME = ConfigUtils.getConfigPropertyAsText("OTP_UI_NAME");
     private static final String OTP_UI_URL = ConfigUtils.getConfigPropertyAsText("OTP_UI_URL");
     private static final String TRIPS_PATH = ACCOUNT_PATH + "/trips";
@@ -498,8 +498,7 @@ public class NotificationUtils {
         int lastBracketIndex = fromEmail.indexOf('>');
         // HACK: If falling back on email, replace the "@" sign so that the user's email does not override the
         // application email in brackets.
-        String displayedName = Strings.isBlank(otpUser.name) ? otpUser.email.replace("@", " at ") : otpUser.name;
-        return String.format("%s %s", displayedName, fromEmail.substring(firstBracketIndex, lastBracketIndex + 1));
+        return String.format("%s %s", otpUser.getDisplayedName(), fromEmail.substring(firstBracketIndex, lastBracketIndex + 1));
     }
 
     /**

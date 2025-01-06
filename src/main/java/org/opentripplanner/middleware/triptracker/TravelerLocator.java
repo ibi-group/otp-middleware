@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_IMMEDIATE_RADIUS;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
@@ -54,7 +53,7 @@ public class TravelerLocator {
      * Define the instruction based on the traveler's current position compared to expected and nearest points on the
      * trip.
      */
-    public static String getInstruction(
+    public static TripInstruction getInstruction(
         TripStatus tripStatus,
         TravelerPosition travelerPosition,
         boolean isStartOfTrip
@@ -62,39 +61,31 @@ public class TravelerLocator {
         if (hasRequiredWalkLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
                 TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, false);
-                if (tripInstruction != null) {
-                    return tripInstruction.build();
-                }
+                if (tripInstruction != null) return tripInstruction;
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
                 TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
-                if (tripInstruction != null) {
-                    return tripInstruction.build();
-                }
+                if (tripInstruction != null) return tripInstruction;
             }
         } else if (hasRequiredTransitLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
                 TripInstruction tripInstruction = alignTravelerToTransitTrip(travelerPosition);
-                if (tripInstruction != null) {
-                    return tripInstruction.build();
-                }
+                if (tripInstruction != null) return tripInstruction;
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
                 TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
-                if (tripInstruction != null) {
-                    return tripInstruction.build();
-                }
+                if (tripInstruction != null) return tripInstruction;
             }
         }
-        return NO_INSTRUCTION;
+        return null;
     }
 
     /**
      * Has required walk leg.
      */
-    private static boolean hasRequiredWalkLeg(TravelerPosition travelerPosition) {
+    public static boolean hasRequiredWalkLeg(TravelerPosition travelerPosition) {
         return
             travelerPosition.expectedLeg != null &&
             travelerPosition.expectedLeg.mode.equalsIgnoreCase("walk");
@@ -103,7 +94,7 @@ public class TravelerLocator {
     /**
      * Has required transit leg.
      */
-    private static boolean hasRequiredTransitLeg(TravelerPosition travelerPosition) {
+    public static boolean hasRequiredTransitLeg(TravelerPosition travelerPosition) {
         return
             travelerPosition.expectedLeg != null &&
             travelerPosition.expectedLeg.transitLeg;
@@ -112,7 +103,7 @@ public class TravelerLocator {
     /**
      * The trip instruction can only be provided if the traveler is close to the indicated route.
      */
-    private static boolean hasRequiredTripStatus(TripStatus tripStatus) {
+    public static boolean hasRequiredTripStatus(TripStatus tripStatus) {
         return !tripStatus.equals(TripStatus.DEVIATED) && !tripStatus.equals(TripStatus.ENDED);
     }
 
@@ -331,7 +322,7 @@ public class TravelerLocator {
     /**
      * Is the traveler approaching the leg destination.
      */
-    private static boolean isApproachingEndOfLeg(TravelerPosition travelerPosition) {
+    public static boolean isApproachingEndOfLeg(TravelerPosition travelerPosition) {
         return getDistanceToEndOfLeg(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
     }
 

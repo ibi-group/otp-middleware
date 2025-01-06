@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.MobilityProfileLite;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -21,6 +22,7 @@ import spark.Response;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -184,7 +186,6 @@ public class TrustedCompanion {
 
         String acceptDependentLinkLabel = Message.ACCEPT_DEPENDENT_EMAIL_LINK_TEXT.get(locale);
         String acceptDependentUrl = getAcceptDependentUrl(acceptKey, locale);
-        String addressee = (Strings.isBlank(dependentUser.name)) ? dependentUser.email : dependentUser.name;
 
         // A HashMap is needed instead of a Map for template data to be serialized to the template renderer.
         Map<String, Object> templateData = new HashMap<>(
@@ -193,7 +194,7 @@ public class TrustedCompanion {
                 "acceptDependentLinkLabelAndUrl", label(acceptDependentLinkLabel, acceptDependentUrl, locale),
                 "acceptDependentUrl", acceptDependentUrl,
                 "emailFooter", Message.ACCEPT_DEPENDENT_EMAIL_FOOTER.get(locale),
-                "emailGreeting", String.format(Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale), addressee),
+                "emailGreeting", String.format(Message.ACCEPT_DEPENDENT_EMAIL_GREETING.get(locale), dependentUser.getDisplayedName()),
                 "manageLinkUrl", String.format("%s%s", OTP_UI_URL, SETTINGS_PATH),
                 "manageLinkText", Message.ACCEPT_DEPENDENT_EMAIL_MANAGE.get(locale)
             )
@@ -246,6 +247,62 @@ public class TrustedCompanion {
             user.dependents.remove(dependent.id);
             Persistence.otpUsers.replace(user.id, user);
         }
+    }
+
+    /**
+     * Remove the specified user as the primary traveler from the specified trip.
+     */
+    public static void removePrimaryTraveler(OtpUser otpUser, MonitoredTrip trip) {
+        if (trip.primary != null && otpUser.id.equals(trip.primary.userId)) {
+            trip.primary = null;
+            Persistence.monitoredTrips.replace(trip.id, trip);
+        }
+    }
+
+    /**
+     * Remove the specified user as companion from the specified trip.
+     */
+    public static void removeCompanion(OtpUser otpUser, MonitoredTrip trip) {
+        if (invalidateRelatedUser(otpUser.email, trip.companion)) {
+            Persistence.monitoredTrips.replace(trip.id, trip);
+        }
+    }
+
+    /**
+     * Remove the specified user as observer from the specified trip.
+     */
+    public static void removeObserver(OtpUser otpUser, MonitoredTrip trip) {
+        if (invalidateRelatedUsers(otpUser.email, trip.observers)) {
+            Persistence.monitoredTrips.replace(trip.id, trip);
+        }
+    }
+
+    /**
+     * Helper to invalidate a RelatedUser (companion) relationship.
+     * @return true if the status changed to invalid, false otherwise.
+     */
+    public static boolean invalidateRelatedUser(String email, RelatedUser relatedUser) {
+        if (
+            relatedUser != null &&
+            email.equals(relatedUser.email) &&
+            relatedUser.status == RelatedUser.RelatedUserStatus.CONFIRMED
+        ) {
+            relatedUser.status = RelatedUser.RelatedUserStatus.INVALID;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Remove the specified user as observer from the specified trip.
+     * @return true if one or more related users got invalidated, false otherwise.
+     */
+    public static boolean invalidateRelatedUsers(String email, Collection<RelatedUser> relatedUsers) {
+        boolean hasChanged = false;
+        for (RelatedUser relatedUser : relatedUsers) {
+            hasChanged |= invalidateRelatedUser(email, relatedUser);
+        }
+        return hasChanged;
     }
 
     /**
