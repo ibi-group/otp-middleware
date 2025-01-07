@@ -44,16 +44,19 @@ public class TripMonitorNotification extends Model {
      * Create a new notification about a change in the trip's arrival or departure time exceeding a threshold.
      *
      * @param delayInMinutes The delay in minutes (negative values indicate early times).
-     * @param targetDatetime The actual arrival or departure of the trip
+     * @param startTime The actual departure time of the trip
+     * @param arrivalTime The actual arrival time of the trip
      * @param delayType Whether the notification is for an arrival or departure delay
+     * @param locale The locale in which to display the message
      */
     public static TripMonitorNotification createDelayNotification(
         long delayInMinutes,
-        Date targetDatetime,
+        Date startTime,
+        Date arrivalTime,
         NotificationType delayType,
         Locale locale
     ) {
-        if (delayType != NotificationType.ARRIVAL_DELAY && delayType != NotificationType.DEPARTURE_DELAY) {
+        if (!isDelayNotification(delayType)) {
             LOG.error("Delay notification not permitted for type {}", delayType);
             return null;
         }
@@ -76,16 +79,36 @@ public class TripMonitorNotification extends Model {
 
         return new TripMonitorNotification(
             delayType,
-            String.format(
-                Message.TRIP_DELAY_NOTIFICATION.get(locale),
-                STOPWATCH_ICON,
-                delayType == NotificationType.ARRIVAL_DELAY
-                    ? Message.TRIP_DELAY_ARRIVE.get(locale)
-                    : Message.TRIP_DELAY_DEPART.get(locale),
-                delayHumanTime,
-                DateTimeUtils.formatShortDate(targetDatetime, locale)
-            )
+            delayType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY
+                ? String.format(
+                    Message.TRIP_DELAY_NOTIFICATION_LONG.get(locale),
+                    STOPWATCH_ICON,
+                    Message.TRIP_DELAY_DEPART.get(locale),
+                    delayHumanTime,
+                    DateTimeUtils.formatShortDate(startTime, locale),
+                    DateTimeUtils.formatShortDate(arrivalTime, locale)
+                )
+                : String.format(
+                    Message.TRIP_DELAY_NOTIFICATION.get(locale),
+                    STOPWATCH_ICON,
+                    delayType == NotificationType.ARRIVAL_DELAY
+                        ? Message.TRIP_DELAY_ARRIVE.get(locale)
+                        : Message.TRIP_DELAY_DEPART.get(locale),
+                    delayHumanTime,
+                    DateTimeUtils.formatShortDate(
+                        delayType == NotificationType.ARRIVAL_DELAY
+                            ? arrivalTime
+                            : startTime,
+                        locale
+                    )
+                )
         );
+    }
+
+    private static boolean isDelayNotification(NotificationType delayType) {
+        return delayType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY ||
+            delayType == NotificationType.ARRIVAL_DELAY ||
+            delayType == NotificationType.DEPARTURE_DELAY;
     }
 
     /**

@@ -41,6 +41,7 @@ class TripMonitorNotificationTest {
         TripMonitorNotification notification = TripMonitorNotification.createDelayNotification(
             10,
             trip.itinerary.startTime,
+            trip.itinerary.endTime,
             NotificationType.ARRIVAL_DELAY,
             Locale.ENGLISH
         );

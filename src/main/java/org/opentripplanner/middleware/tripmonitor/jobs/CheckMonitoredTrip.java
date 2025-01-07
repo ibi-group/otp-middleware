@@ -481,7 +481,8 @@ public class CheckMonitoredTrip implements Runnable {
             journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
             return TripMonitorNotification.createDelayNotification(
                 delayMinutes,
-                matchingItineraryTargetTime,
+                matchingItinerary.startTime,
+                matchingItinerary.endTime,
                 NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
                 getOtpUserLocale()
             );
@@ -493,7 +494,8 @@ public class CheckMonitoredTrip implements Runnable {
             journeyState.baselineDepartureTimeEpochMillis = matchingItineraryTargetTime.getTime();
             return TripMonitorNotification.createDelayNotification(
                 delayMinutes,
-                matchingItineraryTargetTime,
+                matchingItinerary.startTime,
+                matchingItinerary.endTime,
                 NotificationType.DEPARTURE_DELAY,
                 getOtpUserLocale()
             );
@@ -504,7 +506,8 @@ public class CheckMonitoredTrip implements Runnable {
             journeyState.baselineArrivalTimeEpochMillis = matchingItineraryTargetTime.getTime();
             return TripMonitorNotification.createDelayNotification(
                 delayMinutes,
-                matchingItineraryTargetTime,
+                matchingItinerary.startTime,
+                matchingItinerary.endTime,
                 NotificationType.ARRIVAL_DELAY,
                 getOtpUserLocale()
             );
