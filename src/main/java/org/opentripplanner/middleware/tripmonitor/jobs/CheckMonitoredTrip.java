@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.absoluteDiffInMinutes;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.diffInMinutes;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -470,13 +470,13 @@ public class CheckMonitoredTrip implements Runnable {
         // The scheduled target epoch millis that the trip would've started or ended at (the scheduled departure time if
         // checking for departure delay, or the scheduled arrival time if checking for arrival delay).
 
-        long departureDelay = absoluteDiffInMinutes(journeyState.baselineDepartureTimeEpochMillis, matchingItinerary.startTime.getTime());
-        long arrivalDelay = absoluteDiffInMinutes(journeyState.baselineArrivalTimeEpochMillis, matchingItinerary.endTime.getTime());
+        long departureDelay = Math.abs(diffInMinutes(journeyState.baselineDepartureTimeEpochMillis, matchingItinerary.startTime.getTime()));
+        long arrivalDelay = Math.abs(diffInMinutes(journeyState.baselineArrivalTimeEpochMillis, matchingItinerary.endTime.getTime()));
 
         if (departureDelay == arrivalDelay && (departureDelay >= trip.departureVarianceMinutesThreshold || arrivalDelay >= trip.arrivalVarianceMinutesThreshold)) {
             // Do a combined delay notification, and further combine if delays are the same.
             Date matchingItineraryTargetTime = matchingItinerary.startTime;
-            long delayMinutes = absoluteDiffInMinutes(matchingItineraryTargetTime.getTime(), journeyState.scheduledDepartureTimeEpochMillis);
+            long delayMinutes = diffInMinutes(matchingItineraryTargetTime.getTime(), journeyState.scheduledDepartureTimeEpochMillis);
             journeyState.baselineDepartureTimeEpochMillis = matchingItineraryTargetTime.getTime();
             journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
             return TripMonitorNotification.createDelayNotification(
@@ -489,7 +489,7 @@ public class CheckMonitoredTrip implements Runnable {
             // TODO: make this block a subcase of above if condition.
             // Do a departure delay notification
             Date matchingItineraryTargetTime = matchingItinerary.startTime;
-            long delayMinutes = absoluteDiffInMinutes(matchingItineraryTargetTime.getTime(), journeyState.scheduledDepartureTimeEpochMillis);
+            long delayMinutes = diffInMinutes(matchingItineraryTargetTime.getTime(), journeyState.scheduledDepartureTimeEpochMillis);
             journeyState.baselineDepartureTimeEpochMillis = matchingItineraryTargetTime.getTime();
             return TripMonitorNotification.createDelayNotification(
                 delayMinutes,
@@ -500,7 +500,7 @@ public class CheckMonitoredTrip implements Runnable {
         } else if (arrivalDelay >= trip.arrivalVarianceMinutesThreshold) {
             // Do an arrival delay notification
             Date matchingItineraryTargetTime = matchingItinerary.endTime;
-            long delayMinutes = absoluteDiffInMinutes(matchingItineraryTargetTime.getTime(), journeyState.scheduledArrivalTimeEpochMillis);
+            long delayMinutes = diffInMinutes(matchingItineraryTargetTime.getTime(), journeyState.scheduledArrivalTimeEpochMillis);
             journeyState.baselineArrivalTimeEpochMillis = matchingItineraryTargetTime.getTime();
             return TripMonitorNotification.createDelayNotification(
                 delayMinutes,

@@ -335,10 +335,10 @@ public class DateTimeUtils {
     }
 
     /**
-     * Compute the absolute diff between two times in minutes.
+     * Compute the diff, in minutes, between two timestamps.
      */
-    public static long absoluteDiffInMinutes(long millis1, long millis2) {
-        // Calculate absolute deviation of current itinerary target time from the baseline target time in minutes
-        return Math.abs(TimeUnit.MINUTES.convert(millis1 - millis2, TimeUnit.MILLISECONDS));
+    public static long diffInMinutes(long millis1, long millis2) {
+        // Calculate the deviation of current itinerary target time from the baseline target time in minutes
+        return TimeUnit.MINUTES.convert(millis1 - millis2, TimeUnit.MILLISECONDS);
     }
 }
