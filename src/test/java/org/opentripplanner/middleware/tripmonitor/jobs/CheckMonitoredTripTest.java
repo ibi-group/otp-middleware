@@ -186,7 +186,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             assertNotNull(notification);
             assertEquals(notificationType, notification.type);
             assertThat(message, notification.body, matchesPattern(expectedNotificationPattern));
-
         }
     }
 
