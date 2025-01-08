@@ -8,7 +8,9 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
+import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Locale;
 import java.util.stream.Stream;
@@ -49,7 +51,7 @@ class TripMonitorNotificationTest {
         // JDK 20 uses narrow no-break space U+202F for time format; earlier JDKs just use a space.
         assertThat(
             notification.body,
-            matchesPattern("⏱ Your trip is now predicted to arrive 10 minutes late \\(at 5:44[\\u202f ]PM\\)\\.")
+            matchesPattern("⏱ Your trip is now predicted to arrive 10 minutes late \\(at 5:54[\\u202f ]PM\\)\\.")
         );
     }
 
@@ -62,9 +64,11 @@ class TripMonitorNotificationTest {
 
         // Set a start time for the itinerary, in the ambient/default OTP zone.
         ZonedDateTime startTime = ZonedDateTime.of(2023, 2, 12, 17, 44, 0, 0, DateTimeUtils.getOtpZoneId());
+        Instant startInstant = startTime.toInstant();
 
         Itinerary itinerary = new Itinerary();
-        itinerary.startTime = Date.from(startTime.toInstant());
+        itinerary.startTime = Date.from(startInstant);
+        itinerary.endTime = Date.from(startInstant.plus(10, ChronoUnit.MINUTES));
 
         trip.itinerary = itinerary;
         return trip;
