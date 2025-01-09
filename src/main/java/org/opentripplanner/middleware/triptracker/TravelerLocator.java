@@ -206,7 +206,7 @@ public class TravelerLocator {
         ) {
             Step previousStep = getPreviousStep(travelerPosition.expectedLeg.steps, nextStep);
             if (previousStep != null) {
-                boolean travelerBetweenSteps = isPointBetween(previousStep.toCoordinates(), nextStep.toCoordinates(), travelerPosition.currentPosition);
+                boolean travelerBetweenSteps = nextStep == null || isPointBetween(previousStep.toCoordinates(), nextStep.toCoordinates(), travelerPosition.currentPosition);
                 if (travelerBetweenSteps) {
                     return new ContinueInstruction(previousStep, locale);
                 } else if (isWithinStepRange(travelerPosition, previousStep)) {
@@ -239,7 +239,7 @@ public class TravelerLocator {
             .filter(i -> steps.get(i).equals(nextStep))
             .mapToObj(i -> steps.get(i - 1))
             .findFirst();
-        return previousStep.orElse(null);
+        return previousStep.orElse(steps.get(steps.size() - 1));
     }
 
     /**

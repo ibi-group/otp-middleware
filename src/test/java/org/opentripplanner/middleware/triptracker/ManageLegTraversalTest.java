@@ -205,6 +205,7 @@ public class ManageLegTraversalTest {
         Step virginiaCircleNortheastStep = walkSteps.get(1);
         Step ponceDeLeonPlaceNortheastStep = walkSteps.get(2);
         Step virginiaAvenueNortheastStep = walkSteps.get(5);
+        Step kanugaStreetStep = walkSteps.get(7);
 
         Coordinates originCoords = new Coordinates(adairAvenueToMonroeDriveLeg.from);
         Coordinates destinationCoords = new Coordinates(adairAvenueToMonroeDriveLeg.to);
@@ -214,6 +215,7 @@ public class ManageLegTraversalTest {
         Coordinates virginiaAvenuePoint = new Coordinates(virginiaAvenueNortheastStep);
         Coordinates pointBeforeTurn = new Coordinates(33.78151,-84.36481);
         Coordinates pointAfterTurn = new Coordinates(33.78165, -84.36484);
+        Coordinates pointOnKanugaStreet = new Coordinates(33.781544, -84.367849);
 
         Leg firstBusLeg = firstLegBusTransit.legs.get(0);
         Coordinates busStopCoords = new Coordinates(firstBusLeg.from);
@@ -355,6 +357,15 @@ public class ManageLegTraversalTest {
                     new ContinueInstruction(virginiaAvenueNortheastStep, locale).build(),
                     false,
                     "After turn left on to Virginia Avenue should provide continue instruction."
+                )
+            ),
+            Arguments.of(
+                walkLeg,
+                new TraceData(
+                    createPoint(pointOnKanugaStreet, 0, NORTH_WEST_BEARING),
+                    new ContinueInstruction(kanugaStreetStep, locale).build(),
+                    false,
+                    "After final turn on to Kanuga Street should provide continue instruction."
                 )
             ),
             Arguments.of(
