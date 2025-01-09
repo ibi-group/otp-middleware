@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opentripplanner.middleware.models.TripMonitorNotification.STOPWATCH_ICON;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
@@ -206,28 +207,32 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 20,
                 0,
                 NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
-                "⏱ Your trip is now predicted to depart 20 minutes late at 9:00[\\u202f ]AM \\(Now arriving at 9:18[\\u202f ]AM\\)\\.",
+                STOPWATCH_ICON +
+                " Your trip is now predicted to depart 20 minutes late at 9:00[\\u202f ]AM \\(Now arriving at 9:18[\\u202f ]AM\\)\\.",
                 "20m-late trip previously on-time => show dep/arr delay notifications"
             ),
             Arguments.of(
                 20,
                 0,
                 NotificationType.DEPARTURE_DELAY,
-                "⏱ Your trip is now predicted to depart 20 minutes late \\(at 9:00[\\u202f ]AM\\)\\.",
+                STOPWATCH_ICON +
+                " Your trip is now predicted to depart 20 minutes late \\(at 9:00[\\u202f ]AM\\)\\.",
                 "20m-late departure previously on-time, but still arriving on-time => show departure-only delay notifications"
             ),
             Arguments.of(
                 20,
                 0,
                 NotificationType.ARRIVAL_DELAY,
-                "⏱ Your trip is now predicted to arrive 20 minutes late \\(at 9:18[\\u202f ]AM\\)\\.",
+                STOPWATCH_ICON +
+                " Your trip is now predicted to arrive 20 minutes late \\(at 9:18[\\u202f ]AM\\)\\.",
                 "20m-late arrival previously on-time, but still departing on-time => show arrival-only delay notifications"
             ),
             Arguments.of(
                 -18,
                 0,
                 NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
-                "⏱ Your trip is now predicted to depart 18 minutes early at 8:22[\\u202f ]AM \\(Now arriving at 8:40[\\u202f ]AM\\)\\.",
+                STOPWATCH_ICON +
+                " Your trip is now predicted to depart 18 minutes early at 8:22[\\u202f ]AM \\(Now arriving at 8:40[\\u202f ]AM\\)\\.",
                 "18m-early trip previously on-time => show delay (early) notifications"
             ),
             Arguments.of(
@@ -241,7 +246,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 0,
                 15,
                 NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
-                "⏱ Your trip is now predicted to depart about on time at 8:40[\\u202f ]AM \\(Now arriving at 8:58[\\u202f ]AM\\)\\.",
+                STOPWATCH_ICON +
+                " Your trip is now predicted to depart about on time at 8:40[\\u202f ]AM \\(Now arriving at 8:58[\\u202f ]AM\\)\\.",
                 "On-time trip previously late => show on-time notifications"
             )
         );
