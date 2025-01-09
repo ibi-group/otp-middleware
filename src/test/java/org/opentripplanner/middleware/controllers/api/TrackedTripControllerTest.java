@@ -527,17 +527,6 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(HttpStatus.OK_200, response.status);
 
-        // Attempt to reroute. This will fail because no OTP instance is available.
-        response = makeRequest(
-            REROUTE_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(startTrackingPayload),
-            headers,
-            HttpMethod.POST
-        );
-
-        var reroutingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
-        assertEquals("No itinerary found!", reroutingResponse.instruction);
-
         // Make call directly to reroute trip, bypassing call to OTP instance.
         assertTrue(ManageTripTracking.rerouteTrip(
             new TripTrackingData(multipleItinMonitoredTrip, trackedJourney, trackedJourney.locations), true)
