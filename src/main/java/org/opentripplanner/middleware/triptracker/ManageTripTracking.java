@@ -28,7 +28,6 @@ import static org.opentripplanner.middleware.triptracker.instruction.TripInstruc
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isAtStartOfLeg;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getTimeNowAsString;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.getLastLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteGtfsIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
