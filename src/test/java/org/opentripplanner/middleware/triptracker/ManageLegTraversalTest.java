@@ -232,7 +232,7 @@ public class ManageLegTraversalTest {
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(busStopCoords, 12, NORTH_WEST_BEARING),
-                    new DeviatedInstruction(busStopName, locale).build(),
+                    new DeviatedInstruction(busStopName, locale),
                     true,
                     "Deviated from the start of a trip which starts with a bus leg. Suggest path to head towards."
                 )
@@ -241,7 +241,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     originCoords,
-                    new OnTrackInstruction(10, adairAvenueNortheastStep, locale).build(),
+                    new OnTrackInstruction(10, adairAvenueNortheastStep, locale),
                     true,
                     "Just started the trip and near to the instruction for the first step. "
                 )
@@ -250,7 +250,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     originCoords,
-                    new OnTrackInstruction(10, adairAvenueNortheastStep, locale).build(),
+                    new OnTrackInstruction(10, adairAvenueNortheastStep, locale),
                     false,
                     "Coming up on first instruction."
                 )
@@ -259,7 +259,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     adairAvenueNortheastCoords,
-                    new OnTrackInstruction(2, adairAvenueNortheastStep, locale).build(),
+                    new OnTrackInstruction(2, adairAvenueNortheastStep, locale),
                     false,
                     "On first instruction."
                 )
@@ -269,7 +269,7 @@ public class ManageLegTraversalTest {
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, NORTH_WEST_BEARING),
-                    new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale).build(),
+                    new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale),
                     false,
                     "Deviated to the north of east to west path. Suggest path to head towards."
                 )
@@ -279,7 +279,7 @@ public class ManageLegTraversalTest {
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(adairAvenueNortheastCoords, 12, SOUTH_WEST_BEARING),
-                    new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale).build(),
+                    new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale),
                     false,
                     "Deviated to the south of east to west path. Suggest path to head towards."
                 )
@@ -288,7 +288,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     createPoint(virginiaCircleNortheastCoords, 12, SOUTH_WEST_BEARING),
-                    new ContinueInstruction(virginiaCircleNortheastStep, locale).build(),
+                    new ContinueInstruction(virginiaCircleNortheastStep, locale),
                     false,
                     "On track approaching second step, provide continue instruction."
                 )
@@ -298,7 +298,7 @@ public class ManageLegTraversalTest {
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING),
-                    new OnTrackInstruction(9, virginiaCircleNortheastStep, locale).build(),
+                    new OnTrackInstruction(9, virginiaCircleNortheastStep, locale),
                     false,
                     "Deviated from path, but within the upcoming radius of second instruction."
                 )
@@ -307,7 +307,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     virginiaCircleNortheastCoords,
-                    new OnTrackInstruction(0, virginiaCircleNortheastStep, locale).build(),
+                    new OnTrackInstruction(0, virginiaCircleNortheastStep, locale),
                     false,
                     "On second instruction."
                 )
@@ -317,7 +317,7 @@ public class ManageLegTraversalTest {
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(ponceDeLeonPlaceNortheastCoords, 10, NORTH_WEST_BEARING),
-                    new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale).build(),
+                    new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale),
                     false,
                     "Deviated to the west of south to north path. Suggest path to head towards."
                 )
@@ -327,7 +327,7 @@ public class ManageLegTraversalTest {
                 new TraceData(
                     TripStatus.DEVIATED,
                     createPoint(ponceDeLeonPlaceNortheastCoords, 10, NORTH_EAST_BEARING),
-                    new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale).build(),
+                    new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale),
                     false,
                     "Deviated to the east of south to north path. Suggest path to head towards."
                 )
@@ -336,7 +336,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new OnTrackInstruction(10, virginiaAvenueNortheastStep, locale).build(),
+                    new OnTrackInstruction(10, virginiaAvenueNortheastStep, locale),
                     false,
                     "Approaching left turn on Virginia Avenue (Test to make sure turn is not missed)."
                 )
@@ -345,7 +345,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     createPoint(pointBeforeTurn, 17, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new OnTrackInstruction(2, virginiaAvenueNortheastStep, locale).build(),
+                    new OnTrackInstruction(2, virginiaAvenueNortheastStep, locale),
                     false,
                     "Turn left on to Virginia Avenue (Test to make sure turn is not missed)."
                 )
@@ -354,7 +354,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     createPoint(pointAfterTurn, 0, calculateBearing(pointAfterTurn, virginiaAvenuePoint)),
-                    new ContinueInstruction(virginiaAvenueNortheastStep, locale).build(),
+                    new ContinueInstruction(virginiaAvenueNortheastStep, locale),
                     false,
                     "After turn left on to Virginia Avenue should provide continue instruction."
                 )
@@ -363,7 +363,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     createPoint(pointOnKanugaStreet, 0, NORTH_WEST_BEARING),
-                    new ContinueInstruction(kanugaStreetStep, locale).build(),
+                    new ContinueInstruction(kanugaStreetStep, locale),
                     false,
                     "After final turn on to Kanuga Street should provide continue instruction."
                 )
@@ -372,7 +372,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     createPoint(destinationCoords, 8, SOUTH_BEARING),
-                    new OnTrackInstruction(10, destinationName, locale).build(),
+                    new OnTrackInstruction(10, destinationName, locale),
                     false,
                     "Coming up on destination instruction."
                 )
@@ -381,7 +381,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     destinationCoords,
-                    new OnTrackInstruction(2, destinationName, locale).build(),
+                    new OnTrackInstruction(2, destinationName, locale),
                     false,
                     "On destination instruction."
                 )
@@ -390,7 +390,7 @@ public class ManageLegTraversalTest {
                 toEastCroganFirstLeg,
                 new TraceData(
                     pointOnSouthClaytonSt,
-                    new ContinueInstruction(southClaytonSt, locale).build(),
+                    new ContinueInstruction(southClaytonSt, locale),
                     false,
                     "On track passed second step and not near to next step, provide continue instruction for second step."
                 )
@@ -399,7 +399,7 @@ public class ManageLegTraversalTest {
                 toEastCroganFirstLeg,
                 new TraceData(
                     createPoint(pointOnSouthClaytonSt, 12, NORTH_WEST_BEARING),
-                    new ContinueInstruction(southClaytonSt, locale).build(),
+                    new ContinueInstruction(southClaytonSt, locale),
                     false,
                     "On track a bit near to the next step, provide continue instruction for second step."
                 )
@@ -408,7 +408,7 @@ public class ManageLegTraversalTest {
                 toEastCroganFirstLeg,
                 new TraceData(
                     createPoint(pointOnSouthClaytonSt, 72, NORTH_BEARING),
-                    new ContinueInstruction(eastCroganSt, locale).build(),
+                    new ContinueInstruction(eastCroganSt, locale),
                     false,
                     "On track passed next step, provide continue instruction for next step."
                 )
@@ -624,13 +624,17 @@ public class ManageLegTraversalTest {
             this.message = message;
         }
 
+        public TraceData(Coordinates position, TripInstruction expectedInstruction, boolean isStartOfTrip, String message) {
+            this(position, expectedInstruction.build(), isStartOfTrip, message);
+        }
+
         public TraceData(Coordinates position, String expectedInstruction, String message) {
             this(position, expectedInstruction, false, message);
         }
 
         public TraceData(Coordinates position, String expectedInstruction, String message, boolean dismissIntermediateStops) {
             this(position, expectedInstruction, false, message);
-            this.dismissIntermediateStops = true;
+            this.dismissIntermediateStops = dismissIntermediateStops;
         }
 
         public TraceData(Coordinates position, int speed, String expectedInstruction, String message) {
@@ -644,6 +648,10 @@ public class ManageLegTraversalTest {
             this.expectedInstruction = expectedInstruction;
             this.isStartOfTrip = isStartOfTrip;
             this.message = message;
+        }
+
+        public TraceData(TripStatus tripStatus, Coordinates position, TripInstruction expectedInstruction, boolean isStartOfTrip, String message) {
+            this(tripStatus, position, expectedInstruction.build(), isStartOfTrip, message);
         }
 
         public TraceData(TripStatus tripStatus, Coordinates position, String expectedInstruction, String message) {
