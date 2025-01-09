@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -850,6 +851,51 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         Persistence.monitoredTrips.removeById(monitoredTrip.id);
         Persistence.otpUsers.removeById(observer.id);
+    }
+
+    @Test
+    void testCheckMonitoredTripWhenUTCIsNextDay() throws Exception {
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+                user.id,
+                OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+                false,
+                OtpTestUtils.createDefaultJourneyState()
+        );
+        monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        Persistence.monitoredTrips.create(monitoredTrip);
+        LOG.info("Created trip {}", monitoredTrip.id);
+
+        // Setup an OTP mock response in order to trigger some of the monitor checks.
+        OtpResponse mockResponse = mockOtpPlanResponse();
+        Itinerary mockItinerary = mockResponse.plan.itineraries.get(0);
+
+        // parse original itinerary date/time and then update mock itinerary to occur at 6:15PM CST (this is
+        OtpTestUtils.updateBaseItineraryTime(
+                mockItinerary,
+                DateTimeUtils.makeOtpZonedDateTime(mockItinerary.startTime)
+                        .withHour(18)
+                        .withMinute(15)
+        );
+
+        // Add fake alerts to simulated itinerary.
+        ArrayList<LocalizedAlert> fakeAlerts = new ArrayList<>();
+        fakeAlerts.add(new LocalizedAlert());
+        mockItinerary.legs.get(1).alerts = fakeAlerts;
+
+        // mock the current time to be 5:45pm on Monday, June 15
+        DateTimeUtils.useFixedClockAt(
+                noonMonday8June2020
+                        .withHour(17)
+                        .withMinute(45)
+        );
+
+        // Next, run a monitor trip check from the new monitored trip using the simulated response.
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        checkMonitoredTrip.run();
+        // Assert that there is one notification generated during check.
+        Assertions.assertEquals(1, checkMonitoredTrip.notifications.size());
+        // Clear the created trip.
+        PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
     }
 
     private void triggerCheckMonitoredTrip(MonitoredTrip monitoredTrip, TravelerPosition travelerPosition) throws CloneNotSupportedException {
