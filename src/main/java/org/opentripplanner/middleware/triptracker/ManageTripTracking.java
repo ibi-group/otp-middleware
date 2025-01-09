@@ -241,28 +241,23 @@ public class ManageTripTracking {
      * Get the itinerary with the shortest duration returned from OTP using the new start location and current time.
      */
     private static Itinerary getItineraryFromOtpResponse(TrackedJourney trackedJourney) {
-        Itinerary matchingItinerary = trackedJourney.trip.journeyState.matchingItinerary;
         if (IS_TEST) {
             // return the original trip itinerary which for testing purposes will differ from the matching itinerary.
             return trackedJourney.trip.itinerary;
         }
         try {
-            Leg lastLeg = getLastLeg(matchingItinerary);
-            if (lastLeg != null) {
-                OtpGraphQLVariables query = trackedJourney.trip.otp2QueryParams;
-                query.fromPlace = new Coordinates(trackedJourney.lastLocation()).getCoordinates();
-                query.time = getTimeNowAsString();
-                OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(
-                    OtpVersion.OTP2,
-                    trackedJourney.trip.otp2QueryParams
-                );
-                TripPlan plan = response.getOtp2Response().plan;
-                return plan == null ? null : getShortestDuration(plan.itineraries);
-            }
+            OtpGraphQLVariables query = trackedJourney.trip.otp2QueryParams;
+            query.fromPlace = new Coordinates(trackedJourney.lastLocation()).getCoordinates();
+            query.time = getTimeNowAsString();
+            OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(
+                OtpVersion.OTP2,
+                trackedJourney.trip.otp2QueryParams
+            );
+            TripPlan plan = response.getOtp2Response().plan;
+            return plan == null ? null : getShortestDuration(plan.itineraries);
         } catch (Exception e) {
             return null;
         }
-        return null;
     }
 
     /**
