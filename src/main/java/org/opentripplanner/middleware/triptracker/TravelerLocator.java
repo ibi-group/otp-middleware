@@ -199,14 +199,15 @@ public class TravelerLocator {
         Step nextStep,
         Locale locale
     ) {
-        if (
-            Boolean.TRUE.equals(!travelerPosition.expectedLeg.transitLeg) &&
-            travelerPosition.expectedLeg.steps != null &&
-            !travelerPosition.expectedLeg.steps.isEmpty()
-        ) {
-            Step previousStep = getPreviousStep(travelerPosition.expectedLeg.steps, nextStep);
+        List<Step> steps = travelerPosition.expectedLeg.steps;
+        if (Boolean.TRUE.equals(!travelerPosition.expectedLeg.transitLeg) && steps != null && !steps.isEmpty()) {
+            Step previousStep = getPreviousStep(steps, nextStep);
             if (previousStep != null) {
-                boolean travelerBetweenSteps = nextStep == null || isPointBetween(previousStep.toCoordinates(), nextStep.toCoordinates(), travelerPosition.currentPosition);
+                boolean travelerBetweenSteps = nextStep == null || isPointBetween(
+                    previousStep.toCoordinates(),
+                    nextStep.toCoordinates(),
+                    travelerPosition.currentPosition
+                );
                 if (travelerBetweenSteps) {
                     return new ContinueInstruction(previousStep, locale);
                 } else if (isWithinStepRange(travelerPosition, previousStep)) {
