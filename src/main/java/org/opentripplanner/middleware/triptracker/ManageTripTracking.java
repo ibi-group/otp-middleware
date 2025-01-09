@@ -3,7 +3,13 @@ package org.opentripplanner.middleware.triptracker;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.OtpDispatcher;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.OtpVersion;
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.instruction.SelfLegInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.TripActions;
@@ -11,12 +17,18 @@ import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
+import org.opentripplanner.middleware.utils.Coordinates;
 import spark.Request;
 
+import java.time.LocalDateTime;
+
+import static org.opentripplanner.middleware.otp.response.Itinerary.getShortestDuration;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isAtStartOfLeg;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getTimeNowAsString;
+import static org.opentripplanner.middleware.utils.ItineraryUtils.getLastLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteGtfsIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
@@ -26,6 +38,8 @@ public class ManageTripTracking {
 
     private ManageTripTracking() {
     }
+
+    public static boolean IS_TEST = false;
 
     public static final int TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS
         = getConfigPropertyAsInt("TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS", 5);
@@ -155,6 +169,98 @@ public class ManageTripTracking {
                 logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Journey for provided trip id does not exist!");
                 return null;
             }
+        }
+        return null;
+    }
+
+    /**
+     * Attempt to reroute trip and provide appropriate response.
+     */
+    public static TrackingResponse rerouteTracking(Request request) {
+        TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
+        if (tripData != null) {
+            var trackedJourney = tripData.journey;
+            if (trackedJourney != null) {
+                if (rerouteTrip(tripData, false)) {
+                    return doUpdateTracking(request, tripData, false);
+                } else {
+                    return new TrackingResponse(
+                        TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
+                        "No itinerary found!",
+                        trackedJourney.id,
+                        TripStatus.DEVIATED.name()
+                    );
+                }
+            } else {
+                logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Journey for provided trip id does not exist!");
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Attempt to reroute from the traveler's current location to the trip's original destination.
+     */
+    public static boolean rerouteTrip(TripTrackingData tripData, boolean isTest) {
+        IS_TEST = isTest;
+        if (tripData != null) {
+            var trackedJourney = tripData.journey;
+            return trackedJourney != null && updateTripWithNewItinerary(trackedJourney);
+        }
+        return false;
+    }
+
+    /**
+     * Record the location and time (as Strings to appease Mongo) a trip was rerouted and reset deviations.
+     */
+    private static void registerRerouting(TrackedJourney trackedJourney) {
+        trackedJourney.longestConsecutiveDeviatedPoints = -1;
+        trackedJourney.reroutings.put(
+            new Coordinates(trackedJourney.lastLocation()).getCoordinates(),
+            LocalDateTime.now().toString()
+        );
+        Persistence.trackedJourneys.replace(trackedJourney.id, trackedJourney);
+    }
+
+    /**
+     * Retrieve a new itinerary from OTP and update the associated trip's matching itinerary.
+     */
+    private static boolean updateTripWithNewItinerary(TrackedJourney trackedJourney) {
+        Itinerary itinerary = getItineraryFromOtpResponse(trackedJourney);
+        if (itinerary != null) {
+            trackedJourney.trip.journeyState.matchingItinerary = itinerary;
+            Persistence.monitoredTrips.replace(trackedJourney.trip.id, trackedJourney.trip);
+            registerRerouting(trackedJourney);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Get the itinerary with the shortest duration returned from OTP using the new start location and current time.
+     */
+    private static Itinerary getItineraryFromOtpResponse(TrackedJourney trackedJourney) {
+        Itinerary matchingItinerary = trackedJourney.trip.journeyState.matchingItinerary;
+        if (IS_TEST) {
+            // return the original trip itinerary which for testing purposes will differ from the matching itinerary.
+            return trackedJourney.trip.itinerary;
+        }
+        try {
+            Leg lastLeg = getLastLeg(matchingItinerary);
+            if (lastLeg != null) {
+                OtpGraphQLVariables query = trackedJourney.trip.otp2QueryParams;
+                query.fromPlace = new Coordinates(trackedJourney.lastLocation()).getCoordinates();
+                query.time = getTimeNowAsString();
+                OtpDispatcherResponse response = OtpDispatcher.sendOtpPlanRequest(
+                    OtpVersion.OTP2,
+                    trackedJourney.trip.otp2QueryParams
+                );
+                TripPlan plan = response.getOtp2Response().plan;
+                return plan == null ? null : getShortestDuration(plan.itineraries);
+            }
+        } catch (Exception e) {
+            return null;
         }
         return null;
     }

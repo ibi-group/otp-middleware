@@ -72,6 +72,12 @@ public class TrackedTripController implements Endpoint {
                     .withProduces(JSON_ONLY)
                     .withRequestType(ForceEndTrackingPayload.class)
                     .withResponseType(EndTrackingResponse.class),
-                (request, response) -> ManageTripTracking.forciblyEndTracking(request), JsonUtils::toJson);
+                (request, response) -> ManageTripTracking.forciblyEndTracking(request), JsonUtils::toJson)
+            .post(path("/reroute")
+                    .withDescription("Reroute from the traveler's current location to the original trip destination.")
+                    .withProduces(JSON_ONLY)
+                    .withRequestType(UpdatedTrackingPayload.class)
+                    .withResponseType(TrackingResponse.class),
+                (request, response) -> ManageTripTracking.rerouteTracking(request), JsonUtils::toJson);
     }
 }

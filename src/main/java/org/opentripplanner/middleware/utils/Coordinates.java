@@ -43,6 +43,10 @@ public class Coordinates {
         this.lon = place.lon;
     }
 
+    public String getCoordinates() {
+        return String.format("%s,%s", lat, lon);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

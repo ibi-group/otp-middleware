@@ -2201,6 +2201,28 @@ paths:
             $ref: "#/definitions/EndTrackingResponse"
           responseSchema:
             $ref: "#/definitions/EndTrackingResponse"
+  /api/secure/monitoredtrip/reroute:
+    post:
+      tags:
+      - "api/secure/monitoredtrip"
+      description: "Reroute from the traveler's current location to the original trip\
+        \ destination."
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/UpdatedTrackingPayload"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/TrackingResponse"
+          responseSchema:
+            $ref: "#/definitions/TrackingResponse"
   /api/secure/triprequests:
     get:
       tags:

@@ -371,4 +371,15 @@ public class ItineraryUtils {
             .map(legs -> legs.get(0))
             .orElse(null);
     }
+
+    /**
+     * Get the last leg in an itinerary.
+     */
+    public static Leg getLastLeg(Itinerary itinerary) {
+        return Optional
+            .ofNullable(itinerary)
+            .map(itin -> itin.legs)
+            .map(legs -> legs.get(legs.size()-1))
+            .orElse(null);
+    }
 }

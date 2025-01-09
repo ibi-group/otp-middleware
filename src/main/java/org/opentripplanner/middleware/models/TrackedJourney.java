@@ -31,6 +31,9 @@ public class TrackedJourney extends Model {
 
     public transient MonitoredTrip trip;
 
+    /** Holds the location and time a trip was rerouted. */
+    public Map<String, String> reroutings = new HashMap<>();
+
     public static final String TRIP_ID_FIELD_NAME = "tripId";
 
     public static final String LOCATIONS_FIELD_NAME = "locations";
