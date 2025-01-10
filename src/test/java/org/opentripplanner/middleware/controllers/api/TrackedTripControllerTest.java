@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
@@ -16,6 +17,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
@@ -50,6 +52,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,6 +64,7 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefault
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.models.TrackedJourney.FORCIBLY_TERMINATED;
 import static org.opentripplanner.middleware.models.TrackedJourney.TERMINATED_BY_USER;
+import static org.opentripplanner.middleware.otp.response.Itinerary.getShortestDuration;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
@@ -72,7 +76,6 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser soloOtpUser;
     private static MonitoredTrip monitoredTrip;
     private static MonitoredTrip multiLegMonitoredTrip;
-    private static MonitoredTrip multipleItinMonitoredTrip;
     private static TrackedJourney trackedJourney;
     private static Itinerary itinerary;
     private static Itinerary multiLegItinerary;
@@ -83,7 +86,6 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String TRACK_TRIP_PATH = ROUTE_PATH + "track";
     private static final String END_TRACKING_TRIP_PATH = ROUTE_PATH + "endtracking";
     private static final String FORCIBLY_END_TRACKING_TRIP_PATH = ROUTE_PATH + "forciblyendtracking";
-    private static final String REROUTE_TRACKING_TRIP_PATH = ROUTE_PATH + "reroute";
     private static HashMap<String, String> headers;
 
     @BeforeAll
@@ -113,17 +115,16 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             throw new RuntimeException(e);
         }
 
-        monitoredTrip = createMonitoredTrip(itinerary, null);
-        multiLegMonitoredTrip = createMonitoredTrip(multiLegItinerary, null);
-        multipleItinMonitoredTrip = createMonitoredTrip(multiLegItinerary, itinerary);
+        monitoredTrip = createMonitoredTrip(itinerary);
+        multiLegMonitoredTrip = createMonitoredTrip(multiLegItinerary);
     }
 
-    private static MonitoredTrip createMonitoredTrip(Itinerary itin, Itinerary matching) {
+    private static MonitoredTrip createMonitoredTrip(Itinerary itin) {
         MonitoredTrip trip = new MonitoredTrip();
         trip.userId = soloOtpUser.id;
         trip.itinerary = itin;
         trip.journeyState = new JourneyState();
-        trip.journeyState.matchingItinerary = matching == null ? itin : matching;
+        trip.journeyState.matchingItinerary = itin;
         Persistence.monitoredTrips.create(trip);
         return trip;
     }
@@ -138,8 +139,6 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         if (monitoredTrip != null) monitoredTrip.delete();
         multiLegMonitoredTrip = Persistence.monitoredTrips.getById(multiLegMonitoredTrip.id);
         if (multiLegMonitoredTrip != null) multiLegMonitoredTrip.delete();
-        multipleItinMonitoredTrip = Persistence.monitoredTrips.getById(multipleItinMonitoredTrip.id);
-        if (multipleItinMonitoredTrip != null) multipleItinMonitoredTrip.delete();
     }
 
     @AfterEach
@@ -513,7 +512,11 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     void canRerouteTrip() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        StartTrackingPayload startTrackingPayload = createStartTrackingPayload(multipleItinMonitoredTrip.id);
+        StartTrackingPayload startTrackingPayload = createStartTrackingPayload(monitoredTrip.id);
+        Supplier<OtpResponse> mockOtpResponse = mockOtpPlanResponse();
+        Itinerary reroutedItinerary = getShortestDuration(mockOtpResponse.get().plan.itineraries);
+        ManageTripTracking.otpResponseProviderOverride = mockOtpResponse;
+        var reroutingPoint = new Coordinates(reroutedItinerary.legs.get(0).from);
 
         // Start tracking.
         var response = makeRequest(
@@ -527,27 +530,40 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(HttpStatus.OK_200, response.status);
 
-        // Make call directly to reroute trip, bypassing call to OTP instance.
+        // Make call directly to reroute trip.
         assertTrue(ManageTripTracking.rerouteTrip(
-            new TripTrackingData(multipleItinMonitoredTrip, trackedJourney, trackedJourney.locations), true)
+            new TripTrackingData(monitoredTrip, trackedJourney, trackedJourney.locations))
         );
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertEquals(1, updated.reroutings.size());
-        assertEquals(-1, updated.longestConsecutiveDeviatedPoints);
+        assertEquals(trackedJourney.longestConsecutiveDeviatedPoints, updated.longestConsecutiveDeviatedPoints);
 
-        MonitoredTrip trip = Persistence.monitoredTrips.getById(multipleItinMonitoredTrip.id);
-        assertEquals(trip.itinerary.duration, trip.journeyState.matchingItinerary.duration);
-        assertEquals(trip.itinerary.legs.size(), trip.journeyState.matchingItinerary.legs.size());
+        MonitoredTrip trip = Persistence.monitoredTrips.getById(monitoredTrip.id);
+        assertEquals(reroutedItinerary.duration, trip.journeyState.matchingItinerary.duration);
+        assertEquals(reroutedItinerary.legs.size(), trip.journeyState.matchingItinerary.legs.size());
 
         // Reroute again from a different location.
         trackedJourney.locations.clear();
-        trackedJourney.locations.add(new TrackingLocation(180, 28.45119,-81.36818, 3, getDateAndConvertToSeconds()));
+        trackedJourney.locations.add(new TrackingLocation(180, reroutingPoint.lat,reroutingPoint.lon, 3, getDateAndConvertToSeconds()));
         assertTrue(ManageTripTracking.rerouteTrip(
-            new TripTrackingData(multipleItinMonitoredTrip, trackedJourney, trackedJourney.locations), true)
+            new TripTrackingData(monitoredTrip, trackedJourney, trackedJourney.locations))
         );
         updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertEquals(2, updated.reroutings.size());
-        assertEquals(-1, updated.longestConsecutiveDeviatedPoints);
+        assertEquals(trackedJourney.longestConsecutiveDeviatedPoints, updated.longestConsecutiveDeviatedPoints);
+        assertEquals(new Coordinates(updated.lastLocation()), reroutingPoint);
+    }
+
+    /** Provides a mock OTP 'plan' response */
+    public Supplier<OtpResponse> mockOtpPlanResponse() {
+        // Setup an OTP mock response in order to trigger some of the monitor checks.
+        return () -> {
+            try {
+                return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 
     private StartTrackingPayload createStartTrackingPayload() {
