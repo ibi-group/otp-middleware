@@ -38,6 +38,7 @@ import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getS
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextWayPoint;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithinExclusionZone;
+import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
@@ -52,6 +53,7 @@ public class ManageLegTraversalTest {
     private static List<Place> midtownToAnsleyIntermediateStops;
     private static Itinerary firstLegBusTransit;
     private static Itinerary baptistChurchToEastCroganStreetIntinerary;
+    private static Itinerary destinationAwayFromSidewalk;
 
     private static final Locale locale = Locale.US;
 
@@ -82,6 +84,10 @@ public class ManageLegTraversalTest {
         );
         baptistChurchToEastCroganStreetIntinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/baptist-church-to-east-crogan-street.json"),
+            Itinerary.class
+        );
+        destinationAwayFromSidewalk = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/destination-away-from-sidewalk.json"),
             Itinerary.class
         );
         // Hold on to the original list of intermediate stops (some tests will overwrite it)
@@ -225,6 +231,9 @@ public class ManageLegTraversalTest {
         Step southClaytonSt = toEastCroganFirstLeg.steps.get(1);
         Step eastCroganSt = toEastCroganFirstLeg.steps.get(2);
         Coordinates pointOnSouthClaytonSt = new Coordinates(33.955561, -83.988204);
+
+        Leg legToDestinationAwayFromSidewalk = destinationAwayFromSidewalk.legs.get(0);
+        Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
 
         return Stream.of(
             Arguments.of(
@@ -411,6 +420,14 @@ public class ManageLegTraversalTest {
                     new ContinueInstruction(eastCroganSt, locale),
                     false,
                     "On track passed next step, provide continue instruction for next step."
+                )
+            ),
+            Arguments.of(
+                legToDestinationAwayFromSidewalk,
+                new TraceData(
+                    pointNearEndOfSidewalk,
+                     TRIP_INSTRUCTION_END_OF_ROUTING,
+                    "Provide instruction for reaching destination if it is not near end of shape of walk leg."
                 )
             )
         );

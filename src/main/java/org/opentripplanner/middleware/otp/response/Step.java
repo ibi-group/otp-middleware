@@ -12,6 +12,9 @@ import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Step implements ConvertsToCoordinates, Cloneable {
 
+    public static final String DEPART = "DEPART";
+    public static final String END_OF_ROUTING = "END_OF_ROUTING";
+
     public Double distance;
     public String relativeDirection;
     public String streetName;
