@@ -10,6 +10,11 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
 
+import static org.opentripplanner.middleware.i18n.Message.TRIP_DELAY_ARRIVE;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_DELAY_DEPART;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_DELAY_EARLY;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_DELAY_LATE;
+
 /**
  * Contains information about the type and details of messages to be sent to users about their {@link MonitoredTrip}s.
  */
@@ -44,48 +49,67 @@ public class TripMonitorNotification extends Model {
      * Create a new notification about a change in the trip's arrival or departure time exceeding a threshold.
      *
      * @param delayInMinutes The delay in minutes (negative values indicate early times).
-     * @param targetDatetime The actual arrival or departure of the trip
+     * @param startTime The actual departure time of the trip
+     * @param arrivalTime The actual arrival time of the trip
      * @param delayType Whether the notification is for an arrival or departure delay
+     * @param locale The locale in which to display the message
      */
     public static TripMonitorNotification createDelayNotification(
         long delayInMinutes,
-        Date targetDatetime,
+        Date startTime,
+        Date arrivalTime,
         NotificationType delayType,
         Locale locale
     ) {
-        if (delayType != NotificationType.ARRIVAL_DELAY && delayType != NotificationType.DEPARTURE_DELAY) {
+        if (!delayType.isDelayNotification()) {
             LOG.error("Delay notification not permitted for type {}", delayType);
             return null;
         }
-        String delayHumanTime;
-        long absoluteMinutes = Math.abs(delayInMinutes);
-        if (absoluteMinutes <= 1) {
-            delayHumanTime = Message.TRIP_DELAY_ON_TIME.get(locale);
-        } else {
-            // Delays start at two minutes (plural form).
-            String minutesString = String.format(
-                Message.TRIP_DELAY_MINUTES.get(locale),
-                absoluteMinutes
+
+        String delayHumanTime = getTimeAdherenceText(delayInMinutes, locale);
+
+        if (delayType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY) {
+            return new TripMonitorNotification(
+                delayType,
+                String.format(
+                    Message.TRIP_DELAY_NOTIFICATION_LONG.get(locale),
+                    STOPWATCH_ICON,
+                    TRIP_DELAY_DEPART.get(locale),
+                    delayHumanTime,
+                    DateTimeUtils.formatShortDate(startTime, locale),
+                    DateTimeUtils.formatShortDate(arrivalTime, locale)
+                )
             );
-            if (delayInMinutes > 0) {
-                delayHumanTime = String.format(Message.TRIP_DELAY_LATE.get(locale), minutesString);
-            } else {
-                delayHumanTime = String.format(Message.TRIP_DELAY_EARLY.get(locale), minutesString);
-            }
         }
 
+        boolean isArrivalDelay = delayType == NotificationType.ARRIVAL_DELAY;
         return new TripMonitorNotification(
             delayType,
             String.format(
                 Message.TRIP_DELAY_NOTIFICATION.get(locale),
                 STOPWATCH_ICON,
-                delayType == NotificationType.ARRIVAL_DELAY
-                    ? Message.TRIP_DELAY_ARRIVE.get(locale)
-                    : Message.TRIP_DELAY_DEPART.get(locale),
+                (isArrivalDelay ? TRIP_DELAY_ARRIVE : TRIP_DELAY_DEPART).get(locale),
                 delayHumanTime,
-                DateTimeUtils.formatShortDate(targetDatetime, locale)
+                DateTimeUtils.formatShortDate(isArrivalDelay ? arrivalTime : startTime, locale)
             )
         );
+    }
+
+    /**
+     * @return A string describing time adherence (e.g. "about on time", "2 minutes early", "5 minutes late").
+     */
+    private static String getTimeAdherenceText(long delayInMinutes, Locale locale) {
+        long absoluteMinutes = Math.abs(delayInMinutes);
+        if (absoluteMinutes <= 1) {
+            return Message.TRIP_DELAY_ON_TIME.get(locale);
+        } else {
+            // Delays start at two minutes (plural form).
+            String minutesString = String.format(Message.TRIP_DELAY_MINUTES.get(locale), absoluteMinutes);
+            return String.format(
+                (delayInMinutes > 0 ? TRIP_DELAY_LATE : TRIP_DELAY_EARLY).get(locale),
+                minutesString
+            );
+        }
     }
 
     /**

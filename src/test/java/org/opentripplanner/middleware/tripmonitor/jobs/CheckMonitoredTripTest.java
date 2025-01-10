@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opentripplanner.middleware.models.TripMonitorNotification.STOPWATCH_ICON;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
@@ -156,35 +157,36 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     void testDelayNotifications(
         int minutesLate,
         int previousMinutesLate,
-        String expectedDeparturePattern,
-        String expectedArrivalPattern,
+        NotificationType notificationType,
+        String expectedNotificationPattern,
         String message
     ) throws Exception {
         long previousDelayMillis = TimeUnit.MILLISECONDS.convert(previousMinutesLate, TimeUnit.MINUTES);
         JourneyState journeyState = OtpTestUtils.createDefaultJourneyState();
-        journeyState.baselineDepartureTimeEpochMillis += previousDelayMillis;
-        journeyState.baselineArrivalTimeEpochMillis += previousDelayMillis;
+
+        if (notificationType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY || notificationType == NotificationType.DEPARTURE_DELAY) {
+            journeyState.baselineDepartureTimeEpochMillis += previousDelayMillis;
+        }
+        if (notificationType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY || notificationType == NotificationType.ARRIVAL_DELAY) {
+            journeyState.baselineArrivalTimeEpochMillis += previousDelayMillis;
+        }
 
         CheckMonitoredTrip check = createCheckMonitoredTrip(journeyState, this::mockOtpPlanResponse);
-        check.matchingItinerary.offsetTimes(TimeUnit.MILLISECONDS.convert(minutesLate, TimeUnit.MINUTES));
 
-        NotificationType[] notificationTypes = new NotificationType[] {
-            NotificationType.DEPARTURE_DELAY,
-            NotificationType.ARRIVAL_DELAY
-        };
-        String[] expectedPatterns = new String[] { expectedDeparturePattern, expectedArrivalPattern };
-        for (int i = 0; i < notificationTypes.length; i++) {
-            TripMonitorNotification notification = check.checkTripForDelay(notificationTypes[i]);
-            String expectedNotificationPattern = expectedPatterns[i];
-            if (expectedNotificationPattern == null) {
-                assertNull(notification, message);
-            } else {
-                assertNotNull(
-                    notification,
-                    String.format("Expected %s notification for test case: %s", notificationTypes[i], message)
-                );
-                assertThat(message, notification.body, matchesPattern(expectedNotificationPattern));
-            }
+        if (notificationType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY || notificationType == NotificationType.DEPARTURE_DELAY) {
+            check.matchingItinerary.offsetStart(TimeUnit.MILLISECONDS.convert(minutesLate, TimeUnit.MINUTES));
+        }
+        if (notificationType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY || notificationType == NotificationType.ARRIVAL_DELAY) {
+            check.matchingItinerary.offsetEnd(TimeUnit.MILLISECONDS.convert(minutesLate, TimeUnit.MINUTES));
+        }
+
+        TripMonitorNotification notification = check.checkTripForDelays();
+        if (expectedNotificationPattern == null) {
+            assertNull(notification, message);
+        } else {
+            assertNotNull(notification);
+            assertEquals(notificationType, notification.type);
+            assertThat(message, notification.body, matchesPattern(expectedNotificationPattern));
         }
     }
 
@@ -194,28 +196,58 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Note on patterns in the cases below:
         // JDK 20 uses narrow no-break space U+202F before "PM" for time format; earlier JDKs just use a space.
         return Stream.of(
-            Arguments.of(0, 0, null, null, "On-time trip previously on-time => no delay notification"),
-            // 20m late trip, prev. on-time => produce delay/arrival notifications
+            Arguments.of(
+                0,
+                0,
+                NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
+                null,
+                "On-time trip previously on-time => no delay notification"
+            ),
             Arguments.of(
                 20,
                 0,
-                "⏱ Your trip is now predicted to depart 20 minutes late \\(at 9:00[\\u202f ]AM\\)\\.",
-                "⏱ Your trip is now predicted to arrive 20 minutes late \\(at 9:18[\\u202f ]AM\\)\\.",
-                "20m-late trip previously on-time => show delay notifications"
+                NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
+                STOPWATCH_ICON +
+                " Your trip is now predicted to depart 20 minutes late at 9:00[\\u202f ]AM \\(Now arriving at 9:18[\\u202f ]AM\\)\\.",
+                "20m-late trip previously on-time => show dep/arr delay notifications"
+            ),
+            Arguments.of(
+                20,
+                0,
+                NotificationType.DEPARTURE_DELAY,
+                STOPWATCH_ICON +
+                " Your trip is now predicted to depart 20 minutes late \\(at 9:00[\\u202f ]AM\\)\\.",
+                "20m-late departure previously on-time, but still arriving on-time => show departure-only delay notifications"
+            ),
+            Arguments.of(
+                20,
+                0,
+                NotificationType.ARRIVAL_DELAY,
+                STOPWATCH_ICON +
+                " Your trip is now predicted to arrive 20 minutes late \\(at 9:18[\\u202f ]AM\\)\\.",
+                "20m-late arrival previously on-time, but still departing on-time => show arrival-only delay notifications"
             ),
             Arguments.of(
                 -18,
                 0,
-                "⏱ Your trip is now predicted to depart 18 minutes early \\(at 8:22[\\u202f ]AM\\)\\.",
-                "⏱ Your trip is now predicted to arrive 18 minutes early \\(at 8:40[\\u202f ]AM\\)\\.",
+                NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
+                STOPWATCH_ICON +
+                " Your trip is now predicted to depart 18 minutes early at 8:22[\\u202f ]AM \\(Now arriving at 8:40[\\u202f ]AM\\)\\.",
                 "18m-early trip previously on-time => show delay (early) notifications"
             ),
-            Arguments.of(20, 15, null, null, "Trip previously 15m late, now 20m late => no notification"),
+            Arguments.of(
+                20,
+                15,
+                NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
+                null,
+                "Trip previously 15m late, now 20m late => no notification"
+            ),
             Arguments.of(
                 0,
                 15,
-                "⏱ Your trip is now predicted to depart about on time \\(at 8:40[\\u202f ]AM\\)\\.",
-                "⏱ Your trip is now predicted to arrive about on time \\(at 8:58[\\u202f ]AM\\)\\.",
+                NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
+                STOPWATCH_ICON +
+                " Your trip is now predicted to depart about on time at 8:40[\\u202f ]AM \\(Now arriving at 8:58[\\u202f ]AM\\)\\.",
                 "On-time trip previously late => show on-time notifications"
             )
         );
