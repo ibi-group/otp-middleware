@@ -1,7 +1,9 @@
 package org.opentripplanner.middleware.otp.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
 
@@ -36,5 +38,11 @@ public class Step implements ConvertsToCoordinates, Cloneable {
 
     public Coordinates toCoordinates() {
         return new Coordinates(lat, lon);
+    }
+
+    @JsonIgnore
+    @BsonIgnore
+    public boolean isEndOfRouting() {
+        return END_OF_ROUTING.equals(relativeDirection);
     }
 }

@@ -65,13 +65,12 @@ public class OnTrackInstruction extends SelfLegInstruction {
     public String build() {
         if (hasInstruction()) {
             if (legStep != null) {
-                String relativeDirection = legStep.relativeDirection;
-                if (relativeDirection.equals(Step.END_OF_ROUTING)) {
+                if (legStep.isEndOfRouting()) {
                     return TRIP_INSTRUCTION_END_OF_ROUTING;
                 } else {
-                    String instruction = relativeDirection.equals(Step.DEPART)
+                    String instruction = legStep.relativeDirection.equals(Step.DEPART)
                         ? "Head " + legStep.absoluteDirection
-                        : relativeDirection;
+                        : legStep.relativeDirection;
                     return String.format("%s%s on %s", prefix, instruction, legStep.streetName);
                 }
             } else if (locationName != null) {

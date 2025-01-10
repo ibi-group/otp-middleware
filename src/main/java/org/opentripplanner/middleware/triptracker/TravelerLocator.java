@@ -131,7 +131,7 @@ public class TravelerLocator {
     private static TripInstruction getDeviatedInstruction(TravelerPosition travelerPosition) {
         if (!isBusLeg(travelerPosition.expectedLeg)) {
             Step nearestStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps);
-            return (nearestStep != null)
+            return (nearestStep != null && !nearestStep.isEndOfRouting())
                 ? new DeviatedInstruction(nearestStep.streetName, travelerPosition.locale)
                 : null;
         } else if (atStartOfTransitTrip(travelerPosition)) {
