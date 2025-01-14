@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -336,5 +337,13 @@ public class DateTimeUtils {
      */
     public static Date convertDateFromSecondsToMillis(Date date) {
         return Date.from(Instant.ofEpochSecond(date.getTime()));
+    }
+
+    /**
+     * Compute the diff, in minutes, between two timestamps.
+     */
+    public static long diffInMinutes(long millis1, long millis2) {
+        // Calculate the deviation of current itinerary target time from the baseline target time in minutes
+        return TimeUnit.MINUTES.convert(millis1 - millis2, TimeUnit.MILLISECONDS);
     }
 }

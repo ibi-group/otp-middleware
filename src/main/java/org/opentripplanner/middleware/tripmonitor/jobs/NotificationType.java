@@ -14,5 +14,15 @@ public enum NotificationType {
     INITIAL_REMINDER,
     MODE_CHANGE_NOTIFICATION,
     DEPARTED_NOTIFICATION,
-    ARRIVED_NOTIFICATION
+    ARRIVED_NOTIFICATION,
+    DEPARTURE_AND_ARRIVAL_DELAY;
+
+    /**
+     * @return true if notification type corresponds to a delay notification, false otherwise.
+     */
+    public boolean isDelayNotification() {
+        return this == DEPARTURE_AND_ARRIVAL_DELAY ||
+            this == ARRIVAL_DELAY ||
+            this == DEPARTURE_DELAY;
+    }
 }
