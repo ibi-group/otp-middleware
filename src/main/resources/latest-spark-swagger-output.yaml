@@ -2215,7 +2215,7 @@ paths:
         description: "Body object description"
         required: true
         schema:
-          $ref: "#/definitions/UpdatedTrackingPayload"
+          $ref: "#/definitions/TrackPayload"
       responses:
         "200":
           description: "successful operation"
