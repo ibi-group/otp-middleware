@@ -8,10 +8,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RerouteResponse extends TrackingResponse {
 
-    Itinerary itinerary;
-
-    public RerouteResponse() {
-    }
+    public final Itinerary itinerary;
 
     public RerouteResponse(int frequencySeconds, String instruction, String journeyId, String tripStatus, Itinerary itinerary) {
         super(frequencySeconds, instruction, journeyId, tripStatus);

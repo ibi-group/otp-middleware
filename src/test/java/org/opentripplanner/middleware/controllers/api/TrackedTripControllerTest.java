@@ -58,7 +58,6 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -76,9 +75,11 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser soloOtpUser;
     private static MonitoredTrip monitoredTrip;
     private static MonitoredTrip multiLegMonitoredTrip;
+    private static MonitoredTrip rerouteMonitoredTrip;
     private static TrackedJourney trackedJourney;
     private static Itinerary itinerary;
     private static Itinerary multiLegItinerary;
+    private static Itinerary walkToVoterRegCenterItinerary;
 
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
@@ -102,6 +103,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             CommonTestUtils.getTestResourceAsString("controllers/api/27nb-midtown-to-ansley.json"),
             Itinerary.class
         );
+        walkToVoterRegCenterItinerary = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-voter-reg-center.json"),
+            Itinerary.class
+        );
 
         soloOtpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
         try {
@@ -117,6 +122,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         monitoredTrip = createMonitoredTrip(itinerary);
         multiLegMonitoredTrip = createMonitoredTrip(multiLegItinerary);
+        rerouteMonitoredTrip = createMonitoredTrip(walkToVoterRegCenterItinerary);
     }
 
     private static MonitoredTrip createMonitoredTrip(Itinerary itin) {
@@ -139,6 +145,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         if (monitoredTrip != null) monitoredTrip.delete();
         multiLegMonitoredTrip = Persistence.monitoredTrips.getById(multiLegMonitoredTrip.id);
         if (multiLegMonitoredTrip != null) multiLegMonitoredTrip.delete();
+        rerouteMonitoredTrip = Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id);
+        if (rerouteMonitoredTrip != null) rerouteMonitoredTrip.delete();
     }
 
     @AfterEach
@@ -512,11 +520,13 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     void canRerouteTrip() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        var startTrackingPayload = createStartTrackingPayload(monitoredTrip.id);
+        var startTrackingPayload = createStartTrackingPayload(rerouteMonitoredTrip.id);
         var mockOtpResponse = mockOtpPlanResponse();
         var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().plan.itineraries);
         ManageTripTracking.otpResponseProviderOverride = mockOtpResponse;
-        var reroutingPoint = new Coordinates(expectedReroutedItinerary.legs.get(0).from);
+        var deviatedPosition = new TrackingLocation(Instant.now(), 33.94412, -83.98899);
+        var reroutingPoint = new Coordinates(expectedReroutedItinerary.legs.get(0).steps.get(2));
+        var reroutingPointPosition = new TrackingLocation(Instant.now(), reroutingPoint.lat,reroutingPoint.lon);
 
         // Start tracking.
         var response = makeRequest(
@@ -530,38 +540,82 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(HttpStatus.OK_200, response.status);
 
-        // Make call directly to reroute trip.
+        // Update tracking from a 'deviated' position.
+        response = makeRequest(
+            UPDATE_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createUpdateTrackingPayload(
+                trackedJourney.id,
+                List.of(deviatedPosition)
+            )),
+            headers,
+            HttpMethod.POST
+        );
+
+        // Confirm traveler is classed as 'deviated'.
+        var updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
+
+        // Reroute trip from 'deviated' position.
         var reroutedItinerary = ManageTripTracking.rerouteTrip(
-            new TripTrackingData(monitoredTrip, trackedJourney, trackedJourney.locations)
+            new TripTrackingData(rerouteMonitoredTrip, trackedJourney, List.of(deviatedPosition))
         );
         assertEquals(expectedReroutedItinerary.duration, reroutedItinerary.duration);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertEquals(1, updated.reroutings.size());
         assertEquals(trackedJourney.longestConsecutiveDeviatedPoints, updated.longestConsecutiveDeviatedPoints);
 
-        MonitoredTrip trip = Persistence.monitoredTrips.getById(monitoredTrip.id);
+        MonitoredTrip trip = Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id);
         assertEquals(expectedReroutedItinerary.duration, trip.journeyState.matchingItinerary.duration);
         assertEquals(expectedReroutedItinerary.legs.size(), trip.journeyState.matchingItinerary.legs.size());
 
+        // Update tracking from start of rerouted position.
+        response = makeRequest(
+            UPDATE_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createUpdateTrackingPayload(
+                trackedJourney.id,
+                List.of(deviatedPosition)
+            )),
+            headers,
+            HttpMethod.POST
+        );
+
+        // Confirm traveler is no longer 'deviated'.
+        updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertNotEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
+
         // Reroute again from a different location.
         trackedJourney.locations.clear();
-        trackedJourney.locations.add(new TrackingLocation(180, reroutingPoint.lat,reroutingPoint.lon, 3, getDateAndConvertToSeconds()));
+        trackedJourney.locations.add(reroutingPointPosition);
         reroutedItinerary = ManageTripTracking.rerouteTrip(
-            new TripTrackingData(monitoredTrip, trackedJourney, trackedJourney.locations)
+            new TripTrackingData(rerouteMonitoredTrip, trackedJourney, trackedJourney.locations)
         );
         assertEquals(expectedReroutedItinerary.duration, reroutedItinerary.duration);
         updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertEquals(2, updated.reroutings.size());
         assertEquals(trackedJourney.longestConsecutiveDeviatedPoints, updated.longestConsecutiveDeviatedPoints);
         assertEquals(new Coordinates(updated.lastLocation()), reroutingPoint);
+
+        // Update tracking from start of the new rerouted position.
+        response = makeRequest(
+            UPDATE_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createUpdateTrackingPayload(
+                trackedJourney.id,
+                List.of(reroutingPointPosition)
+            )),
+            headers,
+            HttpMethod.POST
+        );
+
+        // Confirm traveler is still not 'deviated'.
+        updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertNotEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
     }
 
-    /** Provides a mock OTP 'plan' response */
+    /** Provides a mock OTP 'plan' rerouted response. */
     public Supplier<OtpResponse> mockOtpPlanResponse() {
-        // Setup an OTP mock response in order to trigger some of the monitor checks.
         return () -> {
             try {
-                return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
+                return OtpTestUtils.REROUTE_PLAN_RESPONSE.getResponse();
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -591,6 +645,13 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var payload = new UpdatedTrackingPayload();
         payload.journeyId = journeyId;
         payload.locations = createTrackingLocations();
+        return payload;
+    }
+
+    private UpdatedTrackingPayload createUpdateTrackingPayload(String journeyId, List<TrackingLocation> locations) {
+        var payload = new UpdatedTrackingPayload();
+        payload.journeyId = journeyId;
+        payload.locations = locations;
         return payload;
     }
 

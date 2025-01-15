@@ -1,0 +1,182 @@
+{
+  "data": {
+    "plan": {
+      "itineraries": [
+        {
+          "accessibilityScore": null,
+          "duration": 923,
+          "endTime": 1706296943000,
+          "legs": [
+            {
+              "accessibilityScore": null,
+              "agency": null,
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 938.24,
+              "dropoffType": "SCHEDULED",
+              "duration": 923,
+              "endTime": 1706296943000,
+              "fareProducts": [],
+              "from": {
+                "lat": 33.9441166,
+                "lon": -83.9889855,
+                "name": "33.94412, -83.98899",
+                "rentalVehicle": null,
+                "stop": null,
+                "vertexType": "NORMAL"
+              },
+              "headsign": null,
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": null,
+              "legGeometry": {
+                "length": 105,
+                "points": "{udnEjbs_OC@E@C@?BBBDDLHB@BBB??@BDf@j@B?BA@AB@DDFD@@ABAD@DBD`@^DFDDVZZd@LN^^VZHFFHPLFFBBB@@???@@JN@?VVAK@KBIFIJEJGHKLINGLELCJAHEFC@EBA`@MXKH?D?HAFCBCh@_@n@o@DG@?DIFK?G?EDGBKHOBGJ]FW@EDYDY@K?KBW?Q?a@A[Gu@IsA?y@?_@Fm@Jy@PgABODS?GBm@@]?Q?E"
+              },
+              "mode": "WALK",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": false,
+              "realtimeState": null,
+              "rentedBike": false,
+              "rideHailingEstimate": null,
+              "route": null,
+              "startTime": 1706296020000,
+              "steps": [
+                {
+                  "absoluteDirection": "NORTH",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 8.6,
+                  "elevationProfile": [],
+                  "lat": 33.9441447,
+                  "lon": -83.9890118,
+                  "relativeDirection": "DEPART",
+                  "stayOn": false,
+                  "streetName": "Phillips Street★"
+                },
+                {
+                  "absoluteDirection": "WEST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 60.35,
+                  "elevationProfile": [],
+                  "lat": 33.9442166,
+                  "lon": -83.9890422,
+                  "relativeDirection": "LEFT",
+                  "stayOn": true,
+                  "streetName": "Phillips Street★"
+                },
+                {
+                  "absoluteDirection": "SOUTH",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 6.2,
+                  "elevationProfile": [],
+                  "lat": 33.9438129,
+                  "lon": -83.9894555,
+                  "relativeDirection": "LEFT",
+                  "stayOn": true,
+                  "streetName": "Scenic Highway★"
+                },
+                {
+                  "absoluteDirection": "SOUTHWEST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 189.42,
+                  "elevationProfile": [],
+                  "lat": 33.943761,
+                  "lon": -83.9894329,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": true,
+                  "streetName": "Scenic Highway★"
+                },
+                {
+                  "absoluteDirection": "WEST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 1.43,
+                  "elevationProfile": [],
+                  "lat": 33.9425404,
+                  "lon": -83.9907915,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": true,
+                  "streetName": "Gwinnett Drive★"
+                },
+                {
+                  "absoluteDirection": "SOUTHWEST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 28.39,
+                  "elevationProfile": [],
+                  "lat": 33.9425391,
+                  "lon": -83.9908069,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "crossing over Gwinnett Drive☆"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 86.67,
+                  "elevationProfile": [],
+                  "lat": 33.9423433,
+                  "lon": -83.9910044,
+                  "relativeDirection": "HARD_LEFT",
+                  "stayOn": false,
+                  "streetName": "Gwinnett Drive★"
+                },
+                {
+                  "absoluteDirection": "SOUTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 11.72,
+                  "elevationProfile": [],
+                  "lat": 33.941767,
+                  "lon": -83.9905007,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "crossing over service road☆"
+                },
+                {
+                  "absoluteDirection": "SOUTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 545.48,
+                  "elevationProfile": [],
+                  "lat": 33.94167,
+                  "lon": -83.990451,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "Gwinnett Drive☆"
+                }
+              ],
+              "to": {
+                "lat": 33.9400633,
+                "lon": -83.9854488,
+                "name": "Voter registration Center (South)",
+                "rentalVehicle": null,
+                "stop": null,
+                "vertexType": "NORMAL"
+              },
+              "transitLeg": false,
+              "trip": null
+            }
+          ],
+          "startTime": 1706296020000,
+          "transfers": 0,
+          "waitingTime": 0,
+          "walkTime": 923
+        }
+      ],
+      "routingErrors": [
+        {
+          "code": "OUTSIDE_SERVICE_PERIOD",
+          "description": "No transit times available. The date may be past or too far in the future or there may not be transit service for your trip at the time you chose.",
+          "inputField": "DATE_TIME"
+        }
+      ]
+    }
+  }
+}

@@ -69,9 +69,9 @@ public class ManageTripTracking {
     }
 
     private static TrackingResponse doUpdateTracking(
-            Request request,
-            TripTrackingData tripData,
-            boolean create
+        Request request,
+        TripTrackingData tripData,
+        boolean create
     ) {
         return doUpdateTracking(request, tripData, create, false);
     }
