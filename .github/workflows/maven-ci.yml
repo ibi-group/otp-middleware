@@ -1,0 +1,132 @@
+name: Maven CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.3.0
+        with:
+          mongodb-version: 4.2
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Setup Maven Cache
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: ~/.m2
+          key: maven-local-repo
+      - name: Add profile credentials to ~/.aws/credentials
+        run: ./scripts/add-aws-credentials.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_REGION: us-east-1
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Build with Maven (run unit tests)
+        run: mvn --no-transfer-progress package
+        env:
+          OTP_ADMIN_DASHBOARD_NAME: OTP Admin Dashboard
+          OTP_ADMIN_DASHBOARD_FROM_EMAIL: OTP Admin Dashboard <no-reply@email.com>
+          OTP_UI_NAME: Trip Planner
+          AUTH0_API_CLIENT: ${{ secrets.AUTH0_API_CLIENT }}
+          AUTH0_API_SECRET: ${{ secrets.AUTH0_API_SECRET }}
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          BUGSNAG_API_KEY: ${{ secrets.BUGSNAG_API_KEY }}
+          BUGSNAG_ORGANIZATION: ${{ secrets.BUGSNAG_ORGANIZATION }}
+          BUGSNAG_PROJECT_NOTIFIER_API_KEY: ${{ secrets.BUGSNAG_PROJECT_NOTIFIER_API_KEY }}
+          CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME: ${{ secrets.CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME }}
+          CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME: ${{ secrets.CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME }}
+          CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES: ${{ secrets.CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES }}
+          DEFAULT_USAGE_PLAN_ID: ${{ secrets.DEFAULT_USAGE_PLAN_ID }}
+          MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+          NOTIFICATION_FROM_EMAIL: ${{ secrets.NOTIFICATION_FROM_EMAIL }}
+          NOTIFICATION_FROM_PHONE: ${{ secrets.NOTIFICATION_FROM_PHONE }}
+          OTP_ADMIN_DASHBOARD_URL: ${{ secrets.OTP_ADMIN_DASHBOARD_URL }}
+          OTP_API_ROOT: ${{ secrets.OTP_API_ROOT }}
+          OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
+          OTP_TIMEZONE: ${{ secrets.OTP_TIMEZONE }}
+          OTP_UI_URL: ${{ secrets.OTP_UI_URL }}
+          SPARKPOST_KEY: ${{ secrets.SPARKPOST_KEY }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_VERIFICATION_SERVICE_SID: ${{ secrets.TWILIO_VERIFICATION_SERVICE_SID }}
+      - name: Run E2E tests
+        run: mvn --no-transfer-progress test
+        env:
+          OTP_ADMIN_DASHBOARD_NAME: OTP Admin Dashboard
+          OTP_ADMIN_DASHBOARD_FROM_EMAIL: OTP Admin Dashboard <no-reply@email.com>
+          OTP_UI_NAME: Trip Planner
+          AUTH0_API_CLIENT: ${{ secrets.AUTH0_API_CLIENT }}
+          AUTH0_API_SECRET: ${{ secrets.AUTH0_API_SECRET }}
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          AWS_PROFILE: default
+          AWS_REGION: us-east-1
+          BUGSNAG_API_KEY: ${{ secrets.BUGSNAG_API_KEY }}
+          BUGSNAG_ORGANIZATION: ${{ secrets.BUGSNAG_ORGANIZATION }}
+          BUGSNAG_PROJECT_NOTIFIER_API_KEY: ${{ secrets.BUGSNAG_PROJECT_NOTIFIER_API_KEY }}
+          CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME: ${{ secrets.CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME }}
+          CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME: ${{ secrets.CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME }}
+          CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES: ${{ secrets.CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES }}
+          DEFAULT_USAGE_PLAN_ID: ${{ secrets.DEFAULT_USAGE_PLAN_ID }}
+          MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+          NOTIFICATION_FROM_EMAIL: ${{ secrets.NOTIFICATION_FROM_EMAIL }}
+          NOTIFICATION_FROM_PHONE: ${{ secrets.NOTIFICATION_FROM_PHONE }}
+          OTP_ADMIN_DASHBOARD_URL: ${{ secrets.OTP_ADMIN_DASHBOARD_URL }}
+          OTP_API_ROOT: ${{ secrets.OTP_API_ROOT }}
+          OTP2_API_ROOT: ${{ secrets.OTP_API_ROOT }}
+          OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
+          OTP_TIMEZONE: ${{ secrets.OTP_TIMEZONE }}
+          OTP_UI_URL: ${{ secrets.OTP_UI_URL }}
+          SPARKPOST_KEY: ${{ secrets.SPARKPOST_KEY }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_VERIFICATION_SERVICE_SID: ${{ secrets.TWILIO_VERIFICATION_SERVICE_SID }}
+          RUN_E2E: true
+
+      # if this point it reached, the CI build has succeeded
+
+      # only prepare deploy files on push events to avoid duplicate pushes to s3 when a commit is
+      # pushed to a branch with an open pull request
+      - name: Prepare files for deployment to s3
+        if: github.event_name == 'push'
+        run: ./scripts/prep-for-deploy-from-github-actions.sh
+      - name: Copy deployment files to the otp-middleware-builds bucket
+        if: github.event_name == 'push'
+        run: |
+          aws s3 sync ./deploy s3://otp-middleware-builds --acl public-read
+      # Build and Publish Docker image
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: us-east-1
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Connect ECR Login to Docker
+        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/s2a5w2n9
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: public.ecr.aws/s2a5w2n9/otp-middleware:${{ github.sha }}
+      - name: Build and push with different tag
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: public.ecr.aws/s2a5w2n9/otp-middleware:latest
