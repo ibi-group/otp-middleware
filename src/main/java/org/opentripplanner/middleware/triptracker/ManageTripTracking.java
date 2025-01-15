@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.TripActions;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
+import org.opentripplanner.middleware.triptracker.response.RerouteResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import spark.Request;
@@ -67,7 +68,20 @@ public class ManageTripTracking {
         return null;
     }
 
-    private static TrackingResponse doUpdateTracking(Request request, TripTrackingData tripData, boolean create) {
+    private static TrackingResponse doUpdateTracking(
+            Request request,
+            TripTrackingData tripData,
+            boolean create
+    ) {
+        return doUpdateTracking(request, tripData, create, false);
+    }
+
+    private static TrackingResponse doUpdateTracking(
+        Request request,
+        TripTrackingData tripData,
+        boolean create,
+        boolean rerouted
+    ) {
         try {
             TrackedJourney trackedJourney;
             if (create) {
@@ -99,7 +113,11 @@ public class ManageTripTracking {
             LegTransitionNotification.checkForLegTransition(tripStatus, travelerPosition, tripData.trip);
 
             // Provide response.
-            TripInstruction instruction = TravelerLocator.getInstruction(tripStatus, travelerPosition, create);
+            TripInstruction instruction = TravelerLocator.getInstruction(
+                tripStatus,
+                travelerPosition,
+                create || rerouted
+            );
 
             // Perform interactions such as triggering traffic signals when approaching segments so configured.
             // It is assumed to be ok to repeatedly perform the interaction.
@@ -177,19 +195,24 @@ public class ManageTripTracking {
     /**
      * Attempt to reroute trip and provide appropriate response.
      */
-    public static TrackingResponse rerouteTracking(Request request) {
+    public static RerouteResponse rerouteTracking(Request request) {
         TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
         if (tripData != null) {
             var trackedJourney = tripData.journey;
             if (trackedJourney != null) {
-                if (rerouteTrip(tripData)) {
-                    return doUpdateTracking(request, tripData, false);
+                var reroutedItinerary = rerouteTrip(tripData);
+                if (reroutedItinerary != null) {
+                    return new RerouteResponse(
+                        doUpdateTracking(request, tripData, false, true),
+                        reroutedItinerary
+                    );
                 } else {
-                    return new TrackingResponse(
+                    return new RerouteResponse(
                         TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
                         "No itinerary found!",
                         trackedJourney.id,
-                        TripStatus.DEVIATED.name()
+                        TripStatus.DEVIATED.name(),
+                        null
                     );
                 }
             } else {
@@ -203,12 +226,14 @@ public class ManageTripTracking {
     /**
      * Attempt to reroute from the traveler's current location to the trip's original destination.
      */
-    public static boolean rerouteTrip(TripTrackingData tripData) {
+    public static Itinerary rerouteTrip(TripTrackingData tripData) {
         if (tripData != null) {
             var trackedJourney = tripData.journey;
-            return trackedJourney != null && updateTripWithNewItinerary(trackedJourney);
+            if (trackedJourney != null) {
+                return updateTripWithNewItinerary(trackedJourney);
+            }
         }
-        return false;
+        return null;
     }
 
     /**
@@ -225,15 +250,15 @@ public class ManageTripTracking {
     /**
      * Retrieve a new itinerary from OTP and update the associated trip's matching itinerary.
      */
-    private static boolean updateTripWithNewItinerary(TrackedJourney trackedJourney) {
+    private static Itinerary updateTripWithNewItinerary(TrackedJourney trackedJourney) {
         Itinerary itinerary = getItineraryFromOtpResponse(trackedJourney);
         if (itinerary != null) {
             trackedJourney.trip.journeyState.matchingItinerary = itinerary;
             Persistence.monitoredTrips.replace(trackedJourney.trip.id, trackedJourney.trip);
             registerRerouting(trackedJourney);
-            return true;
+            return itinerary;
         }
-        return false;
+        return null;
     }
 
     /**
@@ -243,7 +268,7 @@ public class ManageTripTracking {
         try {
             Supplier<OtpResponse> otpResponseProvider = getOtpResponseProvider();
             rerouteVariables = setOtpGraphQLVariables(
-                trackedJourney.trip.otp2QueryParams,new Coordinates(trackedJourney.lastLocation())
+                trackedJourney.trip.otp2QueryParams, new Coordinates(trackedJourney.lastLocation())
             );
             TripPlan plan = otpResponseProvider.get().plan;
             return plan == null ? null : getShortestDuration(plan.itineraries);

@@ -512,11 +512,11 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     void canRerouteTrip() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        StartTrackingPayload startTrackingPayload = createStartTrackingPayload(monitoredTrip.id);
-        Supplier<OtpResponse> mockOtpResponse = mockOtpPlanResponse();
-        Itinerary reroutedItinerary = getShortestDuration(mockOtpResponse.get().plan.itineraries);
+        var startTrackingPayload = createStartTrackingPayload(monitoredTrip.id);
+        var mockOtpResponse = mockOtpPlanResponse();
+        var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().plan.itineraries);
         ManageTripTracking.otpResponseProviderOverride = mockOtpResponse;
-        var reroutingPoint = new Coordinates(reroutedItinerary.legs.get(0).from);
+        var reroutingPoint = new Coordinates(expectedReroutedItinerary.legs.get(0).from);
 
         // Start tracking.
         var response = makeRequest(
@@ -531,23 +531,25 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(HttpStatus.OK_200, response.status);
 
         // Make call directly to reroute trip.
-        assertTrue(ManageTripTracking.rerouteTrip(
-            new TripTrackingData(monitoredTrip, trackedJourney, trackedJourney.locations))
+        var reroutedItinerary = ManageTripTracking.rerouteTrip(
+            new TripTrackingData(monitoredTrip, trackedJourney, trackedJourney.locations)
         );
+        assertEquals(expectedReroutedItinerary.duration, reroutedItinerary.duration);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertEquals(1, updated.reroutings.size());
         assertEquals(trackedJourney.longestConsecutiveDeviatedPoints, updated.longestConsecutiveDeviatedPoints);
 
         MonitoredTrip trip = Persistence.monitoredTrips.getById(monitoredTrip.id);
-        assertEquals(reroutedItinerary.duration, trip.journeyState.matchingItinerary.duration);
-        assertEquals(reroutedItinerary.legs.size(), trip.journeyState.matchingItinerary.legs.size());
+        assertEquals(expectedReroutedItinerary.duration, trip.journeyState.matchingItinerary.duration);
+        assertEquals(expectedReroutedItinerary.legs.size(), trip.journeyState.matchingItinerary.legs.size());
 
         // Reroute again from a different location.
         trackedJourney.locations.clear();
         trackedJourney.locations.add(new TrackingLocation(180, reroutingPoint.lat,reroutingPoint.lon, 3, getDateAndConvertToSeconds()));
-        assertTrue(ManageTripTracking.rerouteTrip(
-            new TripTrackingData(monitoredTrip, trackedJourney, trackedJourney.locations))
+        reroutedItinerary = ManageTripTracking.rerouteTrip(
+            new TripTrackingData(monitoredTrip, trackedJourney, trackedJourney.locations)
         );
+        assertEquals(expectedReroutedItinerary.duration, reroutedItinerary.duration);
         updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertEquals(2, updated.reroutings.size());
         assertEquals(trackedJourney.longestConsecutiveDeviatedPoints, updated.longestConsecutiveDeviatedPoints);

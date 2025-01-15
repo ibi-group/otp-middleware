@@ -254,7 +254,9 @@ public class CheckMonitoredTrip implements Runnable {
      * to that returned from OTP, so the existing trip itinerary is used and therefore preserved.
      */
     public void processLegTransition(NotificationType notificationType, TravelerPosition travelerPosition) throws CloneNotSupportedException {
-        matchingItinerary = trip.itinerary.clone();
+        if (trip.journeyState.matchingItinerary != null) {
+            matchingItinerary = trip.journeyState.matchingItinerary.clone();
+        }
         OtpUser tripOwner = getOtpUser();
         Set<OtpUser> notifyUsers = getLegTransitionNotifyUsers(trip);
         notifyUsers.forEach(observer -> {

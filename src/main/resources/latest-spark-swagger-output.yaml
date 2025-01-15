@@ -14,46 +14,46 @@ info:
 host: "localhost:4567"
 basePath: "/"
 tags:
-  - name: "api/admin/user"
-    description: "Interface for querying and managing 'AdminUser' entities."
-  - name: "api/secure/application"
-    description: "Interface for querying and managing 'ApiUser' entities."
-  - name: "api/secure/connected-data"
-    description: "Interface for listing and downloading CDP files from S3."
-  - name: "api/secure/cdp"
-    description: "Interface for querying and managing 'CDPUser' entities."
-  - name: "api/admin/bugsnag/eventsummary"
-    description: "Interface for reporting and retrieving application errors using Bugsnag."
-  - name: "api/secure/logs"
-    description: "Interface for retrieving API logs from AWS."
-  - name: "api/secure/monitoredcomponent"
-    description: "Interface for querying and managing 'MonitoredComponent' entities."
-  - name: "api/secure/monitoredtrip"
-    description: "Interface for querying and managing 'MonitoredTrip' entities."
-  - name: "otp"
-    description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+- name: "api/admin/user"
+  description: "Interface for querying and managing 'AdminUser' entities."
+- name: "api/secure/application"
+  description: "Interface for querying and managing 'ApiUser' entities."
+- name: "api/secure/connected-data"
+  description: "Interface for listing and downloading CDP files from S3."
+- name: "api/secure/cdp"
+  description: "Interface for querying and managing 'CDPUser' entities."
+- name: "api/admin/bugsnag/eventsummary"
+  description: "Interface for reporting and retrieving application errors using Bugsnag."
+- name: "api/secure/logs"
+  description: "Interface for retrieving API logs from AWS."
+- name: "api/secure/monitoredcomponent"
+  description: "Interface for querying and managing 'MonitoredComponent' entities."
+- name: "api/secure/monitoredtrip"
+  description: "Interface for querying and managing 'MonitoredTrip' entities."
+- name: "otp"
+  description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
-  - name: "otp2"
-    description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
+- name: "otp2"
+  description: "Proxy interface for OTP 2 endpoints. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
     \ API documentation</a> for OTP's supported API resources."
-  - name: "api/secure/user"
-    description: "Interface for querying and managing 'OtpUser' entities."
-  - name: "api/secure/triprequests"
-    description: "Interface for retrieving trip requests."
-  - name: "api/trip-survey"
-    description: "Interface for tracking opened trip surveys following a trip survey\
+- name: "api/secure/user"
+  description: "Interface for querying and managing 'OtpUser' entities."
+- name: "api/secure/triprequests"
+  description: "Interface for retrieving trip requests."
+- name: "api/trip-survey"
+  description: "Interface for tracking opened trip surveys following a trip survey\
     \ notification."
 schemes:
-  - "https"
+- "https"
 paths:
   /api/admin/user/fromtoken:
     get:
       tags:
-        - "api/admin/user"
+      - "api/admin/user"
       description: "Retrieves an AdminUser entity using an Auth0 access token passed\
         \ in an Authorization header."
       produces:
-        - "application/json"
+      - "application/json"
       parameters: []
       responses:
         "200":
@@ -85,7 +85,7 @@ paths:
           examples: {}
     delete:
       tags:
-        - "api/admin/user"
+      - "api/admin/user"
       description: "Deletes an AdminUser entity using an Auth0 access token passed\
         \ in an Authorization header."
       parameters: []
@@ -120,7 +120,7 @@ paths:
   /api/admin/user/verification-email:
     get:
       tags:
-        - "api/admin/user"
+      - "api/admin/user"
       description: "Triggers a job to resend the Auth0 verification email."
       parameters: []
       responses:
@@ -133,28 +133,28 @@ paths:
   /api/admin/user:
     get:
       tags:
-        - "api/admin/user"
+      - "api/admin/user"
       description: "Gets a paginated list of all 'AdminUser' entities."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "limit"
-          in: "query"
-          description: "If specified, the maximum number of items to return."
-          required: false
-          type: "string"
-          default: "10"
-        - name: "offset"
-          in: "query"
-          description: "If specified, the number of records to skip/offset."
-          required: false
-          type: "string"
-          default: "0"
-        - name: "userId"
-          in: "query"
-          description: "If specified, the required user id."
-          required: false
-          type: "string"
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -164,19 +164,19 @@ paths:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
-        - "api/admin/user"
+      - "api/admin/user"
       description: "Creates a 'AdminUser' entity."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/AdminUser"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/AdminUser"
       responses:
         "200":
           description: "Successful operation"
@@ -208,17 +208,17 @@ paths:
   /api/admin/user/{id}:
     get:
       tags:
-        - "api/admin/user"
+      - "api/admin/user"
       description: "Returns the 'AdminUser' entity with the specified id, or 404 if\
         \ not found."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to search."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -249,25 +249,25 @@ paths:
           examples: {}
     put:
       tags:
-        - "api/admin/user"
+      - "api/admin/user"
       description: "Updates and returns the 'AdminUser' entity with the specified\
         \ id, or 404 if not found."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to update."
-          required: true
-          type: "string"
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/AdminUser"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/AdminUser"
       responses:
         "200":
           description: "Successful operation"
@@ -298,16 +298,16 @@ paths:
           examples: {}
     delete:
       tags:
-        - "api/admin/user"
+      - "api/admin/user"
       description: "Deletes the 'AdminUser' entity with the specified id if it exists."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to delete."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -339,22 +339,22 @@ paths:
   /api/secure/application/{id}/apikey:
     post:
       tags:
-        - "api/secure/application"
+      - "api/secure/application"
       description: "Creates API key for ApiUser (with optional AWS API Gateway usage\
         \ plan ID)."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The user ID"
-          required: true
-          type: "string"
-        - name: "usagePlanId"
-          in: "query"
-          description: "Optional AWS API Gateway usage plan ID."
-          required: false
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The user ID"
+        required: true
+        type: "string"
+      - name: "usagePlanId"
+        in: "query"
+        description: "Optional AWS API Gateway usage plan ID."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -386,21 +386,21 @@ paths:
   /api/secure/application/{id}/apikey/{apiKeyId}:
     delete:
       tags:
-        - "api/secure/application"
+      - "api/secure/application"
       description: "Deletes API key for ApiUser."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The user ID."
-          required: true
-          type: "string"
-        - name: "apiKeyId"
-          in: "path"
-          description: "The ID of the API key."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The user ID."
+        required: true
+        type: "string"
+      - name: "apiKeyId"
+        in: "path"
+        description: "The ID of the API key."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -432,21 +432,21 @@ paths:
   /api/secure/application/authenticate:
     post:
       tags:
-        - "api/secure/application"
+      - "api/secure/application"
       description: "Authenticates ApiUser with Auth0."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "username"
-          in: "query"
-          description: "Auth0 username (usually email address)."
-          required: true
-          type: "string"
-        - name: "password"
-          in: "query"
-          description: "Auth0 password."
-          required: true
-          type: "string"
+      - name: "username"
+        in: "query"
+        description: "Auth0 username (usually email address)."
+        required: true
+        type: "string"
+      - name: "password"
+        in: "query"
+        description: "Auth0 password."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -457,11 +457,11 @@ paths:
   /api/secure/application/fromtoken:
     get:
       tags:
-        - "api/secure/application"
+      - "api/secure/application"
       description: "Retrieves an ApiUser entity using an Auth0 access token passed\
         \ in an Authorization header."
       produces:
-        - "application/json"
+      - "application/json"
       parameters: []
       responses:
         "200":
@@ -493,7 +493,7 @@ paths:
           examples: {}
     delete:
       tags:
-        - "api/secure/application"
+      - "api/secure/application"
       description: "Deletes an ApiUser entity using an Auth0 access token passed in\
         \ an Authorization header."
       parameters: []
@@ -528,7 +528,7 @@ paths:
   /api/secure/application/verification-email:
     get:
       tags:
-        - "api/secure/application"
+      - "api/secure/application"
       description: "Triggers a job to resend the Auth0 verification email."
       parameters: []
       responses:
@@ -541,28 +541,28 @@ paths:
   /api/secure/application:
     get:
       tags:
-        - "api/secure/application"
+      - "api/secure/application"
       description: "Gets a paginated list of all 'ApiUser' entities."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "limit"
-          in: "query"
-          description: "If specified, the maximum number of items to return."
-          required: false
-          type: "string"
-          default: "10"
-        - name: "offset"
-          in: "query"
-          description: "If specified, the number of records to skip/offset."
-          required: false
-          type: "string"
-          default: "0"
-        - name: "userId"
-          in: "query"
-          description: "If specified, the required user id."
-          required: false
-          type: "string"
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -572,19 +572,19 @@ paths:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
-        - "api/secure/application"
+      - "api/secure/application"
       description: "Creates a 'ApiUser' entity."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/ApiUser"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/ApiUser"
       responses:
         "200":
           description: "Successful operation"
@@ -616,17 +616,17 @@ paths:
   /api/secure/application/{id}:
     get:
       tags:
-        - "api/secure/application"
+      - "api/secure/application"
       description: "Returns the 'ApiUser' entity with the specified id, or 404 if\
         \ not found."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to search."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -657,25 +657,25 @@ paths:
           examples: {}
     put:
       tags:
-        - "api/secure/application"
+      - "api/secure/application"
       description: "Updates and returns the 'ApiUser' entity with the specified id,\
         \ or 404 if not found."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to update."
-          required: true
-          type: "string"
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/ApiUser"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/ApiUser"
       responses:
         "200":
           description: "Successful operation"
@@ -706,16 +706,16 @@ paths:
           examples: {}
     delete:
       tags:
-        - "api/secure/application"
+      - "api/secure/application"
       description: "Deletes the 'ApiUser' entity with the specified id if it exists."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to delete."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -747,23 +747,23 @@ paths:
   /api/secure/connected-data:
     get:
       tags:
-        - "api/secure/connected-data"
+      - "api/secure/connected-data"
       description: "Gets a paginated list of CDP zip files in the configured S3 bucket."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "limit"
-          in: "query"
-          description: "If specified, the maximum number of items to return."
-          required: false
-          type: "string"
-          default: "10"
-        - name: "offset"
-          in: "query"
-          description: "If specified, the number of records to skip/offset."
-          required: false
-          type: "string"
-          default: "0"
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
       responses:
         "200":
           description: "successful operation"
@@ -778,17 +778,17 @@ paths:
   /api/secure/connected-data/download:
     get:
       tags:
-        - "api/secure/connected-data"
+      - "api/secure/connected-data"
       description: "Generates a download link for a specified object within the CDP\
         \ bucket."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "/download"
-          in: "query"
-          description: "The key of the object to generate a link for."
-          required: true
-          type: "string"
+      - name: "/download"
+        in: "query"
+        description: "The key of the object to generate a link for."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -803,11 +803,11 @@ paths:
   /api/secure/cdp/fromtoken:
     get:
       tags:
-        - "api/secure/cdp"
+      - "api/secure/cdp"
       description: "Retrieves an CDPUser entity using an Auth0 access token passed\
         \ in an Authorization header."
       produces:
-        - "application/json"
+      - "application/json"
       parameters: []
       responses:
         "200":
@@ -839,7 +839,7 @@ paths:
           examples: {}
     delete:
       tags:
-        - "api/secure/cdp"
+      - "api/secure/cdp"
       description: "Deletes an CDPUser entity using an Auth0 access token passed in\
         \ an Authorization header."
       parameters: []
@@ -874,7 +874,7 @@ paths:
   /api/secure/cdp/verification-email:
     get:
       tags:
-        - "api/secure/cdp"
+      - "api/secure/cdp"
       description: "Triggers a job to resend the Auth0 verification email."
       parameters: []
       responses:
@@ -887,28 +887,28 @@ paths:
   /api/secure/cdp:
     get:
       tags:
-        - "api/secure/cdp"
+      - "api/secure/cdp"
       description: "Gets a paginated list of all 'CDPUser' entities."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "limit"
-          in: "query"
-          description: "If specified, the maximum number of items to return."
-          required: false
-          type: "string"
-          default: "10"
-        - name: "offset"
-          in: "query"
-          description: "If specified, the number of records to skip/offset."
-          required: false
-          type: "string"
-          default: "0"
-        - name: "userId"
-          in: "query"
-          description: "If specified, the required user id."
-          required: false
-          type: "string"
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -918,19 +918,19 @@ paths:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
-        - "api/secure/cdp"
+      - "api/secure/cdp"
       description: "Creates a 'CDPUser' entity."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/CDPUser"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/CDPUser"
       responses:
         "200":
           description: "Successful operation"
@@ -962,17 +962,17 @@ paths:
   /api/secure/cdp/{id}:
     get:
       tags:
-        - "api/secure/cdp"
+      - "api/secure/cdp"
       description: "Returns the 'CDPUser' entity with the specified id, or 404 if\
         \ not found."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to search."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -1003,25 +1003,25 @@ paths:
           examples: {}
     put:
       tags:
-        - "api/secure/cdp"
+      - "api/secure/cdp"
       description: "Updates and returns the 'CDPUser' entity with the specified id,\
         \ or 404 if not found."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to update."
-          required: true
-          type: "string"
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/CDPUser"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/CDPUser"
       responses:
         "200":
           description: "Successful operation"
@@ -1052,16 +1052,16 @@ paths:
           examples: {}
     delete:
       tags:
-        - "api/secure/cdp"
+      - "api/secure/cdp"
       description: "Deletes the 'CDPUser' entity with the specified id if it exists."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to delete."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -1093,23 +1093,23 @@ paths:
   /api/admin/bugsnag/eventsummary:
     get:
       tags:
-        - "api/admin/bugsnag/eventsummary"
+      - "api/admin/bugsnag/eventsummary"
       description: "Gets a paginated list of the latest Bugsnag event summaries."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "limit"
-          in: "query"
-          description: "If specified, the maximum number of items to return."
-          required: false
-          type: "string"
-          default: "10"
-        - name: "offset"
-          in: "query"
-          description: "If specified, the number of records to skip/offset."
-          required: false
-          type: "string"
-          default: "0"
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
       responses:
         "200":
           description: "successful operation"
@@ -1124,33 +1124,33 @@ paths:
   /api/secure/logs:
     get:
       tags:
-        - "api/secure/logs"
+      - "api/secure/logs"
       description: "Gets a list of all API usage logs."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "keyId"
-          in: "query"
-          description: "If specified, restricts the search to the specified AWS API\
+      - name: "keyId"
+        in: "query"
+        description: "If specified, restricts the search to the specified AWS API\
           \ key ID."
-          required: false
-          type: "string"
-        - name: "startDate"
-          in: "query"
-          description: "If specified, the earliest date (format yyyy-MM-dd) for which\
+        required: false
+        type: "string"
+      - name: "startDate"
+        in: "query"
+        description: "If specified, the earliest date (format yyyy-MM-dd) for which\
           \ usage logs are retrieved."
-          required: false
-          type: "string"
-          default: "30 days prior to the current date"
-          pattern: "yyyy-MM-dd"
-        - name: "endDate"
-          in: "query"
-          description: "If specified, the latest date (format yyyy-MM-dd) for which\
+        required: false
+        type: "string"
+        default: "30 days prior to the current date"
+        pattern: "yyyy-MM-dd"
+      - name: "endDate"
+        in: "query"
+        description: "If specified, the latest date (format yyyy-MM-dd) for which\
           \ usage logs are retrieved."
-          required: false
-          type: "string"
-          default: "The current date"
-          pattern: "yyyy-MM-dd"
+        required: false
+        type: "string"
+        default: "The current date"
+        pattern: "yyyy-MM-dd"
       responses:
         "200":
           description: "successful operation"
@@ -1165,28 +1165,28 @@ paths:
   /api/secure/monitoredcomponent:
     get:
       tags:
-        - "api/secure/monitoredcomponent"
+      - "api/secure/monitoredcomponent"
       description: "Gets a paginated list of all 'MonitoredComponent' entities."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "limit"
-          in: "query"
-          description: "If specified, the maximum number of items to return."
-          required: false
-          type: "string"
-          default: "10"
-        - name: "offset"
-          in: "query"
-          description: "If specified, the number of records to skip/offset."
-          required: false
-          type: "string"
-          default: "0"
-        - name: "userId"
-          in: "query"
-          description: "If specified, the required user id."
-          required: false
-          type: "string"
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -1196,19 +1196,19 @@ paths:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
-        - "api/secure/monitoredcomponent"
+      - "api/secure/monitoredcomponent"
       description: "Creates a 'MonitoredComponent' entity."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/MonitoredComponent"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredComponent"
       responses:
         "200":
           description: "Successful operation"
@@ -1240,17 +1240,17 @@ paths:
   /api/secure/monitoredcomponent/{id}:
     get:
       tags:
-        - "api/secure/monitoredcomponent"
+      - "api/secure/monitoredcomponent"
       description: "Returns the 'MonitoredComponent' entity with the specified id,\
         \ or 404 if not found."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to search."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -1281,25 +1281,25 @@ paths:
           examples: {}
     put:
       tags:
-        - "api/secure/monitoredcomponent"
+      - "api/secure/monitoredcomponent"
       description: "Updates and returns the 'MonitoredComponent' entity with the specified\
         \ id, or 404 if not found."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to update."
-          required: true
-          type: "string"
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/MonitoredComponent"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredComponent"
       responses:
         "200":
           description: "Successful operation"
@@ -1330,17 +1330,17 @@ paths:
           examples: {}
     delete:
       tags:
-        - "api/secure/monitoredcomponent"
+      - "api/secure/monitoredcomponent"
       description: "Deletes the 'MonitoredComponent' entity with the specified id\
         \ if it exists."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to delete."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -1372,18 +1372,18 @@ paths:
   /api/secure/monitoredtrip/checkitinerary:
     post:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Returns the itinerary existence check results for a monitored\
         \ trip."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/MonitoredTrip"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredTrip"
       responses:
         "200":
           description: "Successful operation"
@@ -1415,28 +1415,28 @@ paths:
   /api/secure/monitoredtrip:
     get:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Gets a paginated list of all 'MonitoredTrip' entities."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "limit"
-          in: "query"
-          description: "If specified, the maximum number of items to return."
-          required: false
-          type: "string"
-          default: "10"
-        - name: "offset"
-          in: "query"
-          description: "If specified, the number of records to skip/offset."
-          required: false
-          type: "string"
-          default: "0"
-        - name: "userId"
-          in: "query"
-          description: "If specified, the required user id."
-          required: false
-          type: "string"
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -1446,19 +1446,19 @@ paths:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Creates a 'MonitoredTrip' entity."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/MonitoredTrip"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredTrip"
       responses:
         "200":
           description: "Successful operation"
@@ -1490,17 +1490,17 @@ paths:
   /api/secure/monitoredtrip/{id}:
     get:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Returns the 'MonitoredTrip' entity with the specified id, or 404\
         \ if not found."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to search."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -1531,25 +1531,25 @@ paths:
           examples: {}
     put:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Updates and returns the 'MonitoredTrip' entity with the specified\
         \ id, or 404 if not found."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to update."
-          required: true
-          type: "string"
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/MonitoredTrip"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/MonitoredTrip"
       responses:
         "200":
           description: "Successful operation"
@@ -1580,17 +1580,17 @@ paths:
           examples: {}
     delete:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Deletes the 'MonitoredTrip' entity with the specified id if it\
         \ exists."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to delete."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -1622,79 +1622,79 @@ paths:
   /otp/*:
     get:
       tags:
-        - "otp"
+      - "otp"
       description: "Forwards any GET request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
       produces:
-        - "application/json"
-        - "application/xml"
+      - "application/json"
+      - "application/xml"
       parameters:
-        - name: "userId"
-          in: "query"
-          description: "If a third-party application is making a trip plan request on\
+      - name: "userId"
+        in: "query"
+        description: "If a third-party application is making a trip plan request on\
           \ behalf of an end user (OtpUser), the user id must be specified."
-          required: false
-          type: "string"
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
     post:
       tags:
-        - "otp"
+      - "otp"
       description: "Forwards any POST request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "userId"
-          in: "query"
-          description: "If a third-party application is making a trip plan request on\
+      - name: "userId"
+        in: "query"
+        description: "If a third-party application is making a trip plan request on\
           \ behalf of an end user (OtpUser), the user id must be specified."
-          required: false
-          type: "string"
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
   /otp2/*:
     get:
       tags:
-        - "otp2"
+      - "otp2"
       description: "Forwards any GET request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
       produces:
-        - "application/json"
-        - "application/xml"
+      - "application/json"
+      - "application/xml"
       parameters:
-        - name: "userId"
-          in: "query"
-          description: "If a third-party application is making a trip plan request on\
+      - name: "userId"
+        in: "query"
+        description: "If a third-party application is making a trip plan request on\
           \ behalf of an end user (OtpUser), the user id must be specified."
-          required: false
-          type: "string"
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
     post:
       tags:
-        - "otp2"
+      - "otp2"
       description: "Forwards any POST request to OTP 2. Refer to <a href='http://otp-docs.ibi-transit.com/api/index.html'>OTP's\
         \ API documentation</a> for OTP's supported API resources."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "userId"
-          in: "query"
-          description: "If a third-party application is making a trip plan request on\
+      - name: "userId"
+        in: "query"
+        description: "If a third-party application is making a trip plan request on\
           \ behalf of an end user (OtpUser), the user id must be specified."
-          required: false
-          type: "string"
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
   /api/secure/user/acceptdependent:
     get:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Accept a dependent request."
       parameters: []
       responses:
@@ -1728,7 +1728,7 @@ paths:
   /api/secure/user/getdependentmobilityprofile:
     get:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Retrieve the mobility profile for each valid dependent user id\
         \ provided."
       parameters: []
@@ -1763,19 +1763,19 @@ paths:
   /api/secure/user/{id}/verify_sms/{phoneNumber}:
     get:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Request an SMS verification to be sent to an OtpUser's phone number."
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the OtpUser."
-          required: true
-          type: "string"
-        - name: "phoneNumber"
-          in: "path"
-          description: "The phone number to validate, in E.164 format (e.g. +15555550123)."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the OtpUser."
+        required: true
+        type: "string"
+      - name: "phoneNumber"
+        in: "path"
+        description: "The phone number to validate, in E.164 format (e.g. +15555550123)."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -1786,19 +1786,19 @@ paths:
   /api/secure/user/{id}/verify_sms/{code}:
     post:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Verify an OtpUser's phone number with a verification code."
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the OtpUser."
-          required: true
-          type: "string"
-        - name: "code"
-          in: "path"
-          description: "The SMS verification code."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the OtpUser."
+        required: true
+        type: "string"
+      - name: "code"
+        in: "path"
+        description: "The SMS verification code."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -1809,11 +1809,11 @@ paths:
   /api/secure/user/fromtoken:
     get:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Retrieves an OtpUser entity using an Auth0 access token passed\
         \ in an Authorization header."
       produces:
-        - "application/json"
+      - "application/json"
       parameters: []
       responses:
         "200":
@@ -1845,7 +1845,7 @@ paths:
           examples: {}
     delete:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Deletes an OtpUser entity using an Auth0 access token passed in\
         \ an Authorization header."
       parameters: []
@@ -1880,7 +1880,7 @@ paths:
   /api/secure/user/verification-email:
     get:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Triggers a job to resend the Auth0 verification email."
       parameters: []
       responses:
@@ -1893,28 +1893,28 @@ paths:
   /api/secure/user:
     get:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Gets a paginated list of all 'OtpUser' entities."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "limit"
-          in: "query"
-          description: "If specified, the maximum number of items to return."
-          required: false
-          type: "string"
-          default: "10"
-        - name: "offset"
-          in: "query"
-          description: "If specified, the number of records to skip/offset."
-          required: false
-          type: "string"
-          default: "0"
-        - name: "userId"
-          in: "query"
-          description: "If specified, the required user id."
-          required: false
-          type: "string"
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      - name: "userId"
+        in: "query"
+        description: "If specified, the required user id."
+        required: false
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -1924,19 +1924,19 @@ paths:
             $ref: "#/definitions/ResponseList"
     post:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Creates a 'OtpUser' entity."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/OtpUser"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/OtpUser"
       responses:
         "200":
           description: "Successful operation"
@@ -1968,17 +1968,17 @@ paths:
   /api/secure/user/{id}:
     get:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Returns the 'OtpUser' entity with the specified id, or 404 if\
         \ not found."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to search."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to search."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -2009,25 +2009,25 @@ paths:
           examples: {}
     put:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Updates and returns the 'OtpUser' entity with the specified id,\
         \ or 404 if not found."
       consumes:
-        - "application/json"
+      - "application/json"
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to update."
-          required: true
-          type: "string"
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/OtpUser"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to update."
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/OtpUser"
       responses:
         "200":
           description: "Successful operation"
@@ -2058,16 +2058,16 @@ paths:
           examples: {}
     delete:
       tags:
-        - "api/secure/user"
+      - "api/secure/user"
       description: "Deletes the 'OtpUser' entity with the specified id if it exists."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "id"
-          in: "path"
-          description: "The id of the entity to delete."
-          required: true
-          type: "string"
+      - name: "id"
+        in: "path"
+        description: "The id of the entity to delete."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "Successful operation"
@@ -2099,17 +2099,17 @@ paths:
   /api/secure/monitoredtrip/starttracking:
     post:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Initiates the tracking of a monitored trip."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/StartTrackingPayload"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/StartTrackingPayload"
       responses:
         "200":
           description: "successful operation"
@@ -2120,17 +2120,17 @@ paths:
   /api/secure/monitoredtrip/updatetracking:
     post:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Provides tracking updates on a monitored trip."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/UpdatedTrackingPayload"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/UpdatedTrackingPayload"
       responses:
         "200":
           description: "successful operation"
@@ -2141,17 +2141,17 @@ paths:
   /api/secure/monitoredtrip/track:
     post:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Starts or updates tracking on a monitored trip."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/TrackPayload"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/TrackPayload"
       responses:
         "200":
           description: "successful operation"
@@ -2162,17 +2162,17 @@ paths:
   /api/secure/monitoredtrip/endtracking:
     post:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Terminates the tracking of a monitored trip by the user."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/EndTrackingPayload"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/EndTrackingPayload"
       responses:
         "200":
           description: "successful operation"
@@ -2183,17 +2183,17 @@ paths:
   /api/secure/monitoredtrip/forciblyendtracking:
     post:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Forcibly terminates tracking of a monitored trip by trip ID."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/ForceEndTrackingPayload"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/ForceEndTrackingPayload"
       responses:
         "200":
           description: "successful operation"
@@ -2204,66 +2204,66 @@ paths:
   /api/secure/monitoredtrip/reroute:
     post:
       tags:
-        - "api/secure/monitoredtrip"
+      - "api/secure/monitoredtrip"
       description: "Reroute from the traveler's current location to the original trip\
         \ destination."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - in: "body"
-          name: "body"
-          description: "Body object description"
-          required: true
-          schema:
-            $ref: "#/definitions/UpdatedTrackingPayload"
+      - in: "body"
+        name: "body"
+        description: "Body object description"
+        required: true
+        schema:
+          $ref: "#/definitions/UpdatedTrackingPayload"
       responses:
         "200":
           description: "successful operation"
           schema:
-            $ref: "#/definitions/TrackingResponse"
+            $ref: "#/definitions/RerouteResponse"
           responseSchema:
-            $ref: "#/definitions/TrackingResponse"
+            $ref: "#/definitions/RerouteResponse"
   /api/secure/triprequests:
     get:
       tags:
-        - "api/secure/triprequests"
+      - "api/secure/triprequests"
       description: "Gets a paginated list of the most recent trip requests for a user."
       produces:
-        - "application/json"
+      - "application/json"
       parameters:
-        - name: "userId"
-          in: "query"
-          description: "The OTP user for which to retrieve trip requests."
-          required: true
-          type: "string"
-        - name: "limit"
-          in: "query"
-          description: "If specified, the maximum number of items to return."
-          required: false
-          type: "string"
-          default: "10"
-        - name: "offset"
-          in: "query"
-          description: "If specified, the number of records to skip/offset."
-          required: false
-          type: "string"
-          default: "0"
-        - name: "fromDate"
-          in: "query"
-          description: "If specified, the earliest date (format yyyy-MM-dd) for which\
+      - name: "userId"
+        in: "query"
+        description: "The OTP user for which to retrieve trip requests."
+        required: true
+        type: "string"
+      - name: "limit"
+        in: "query"
+        description: "If specified, the maximum number of items to return."
+        required: false
+        type: "string"
+        default: "10"
+      - name: "offset"
+        in: "query"
+        description: "If specified, the number of records to skip/offset."
+        required: false
+        type: "string"
+        default: "0"
+      - name: "fromDate"
+        in: "query"
+        description: "If specified, the earliest date (format yyyy-MM-dd) for which\
           \ trip requests are retrieved."
-          required: false
-          type: "string"
-          default: "The current date"
-          pattern: "yyyy-MM-dd"
-        - name: "toDate"
-          in: "query"
-          description: "If specified, the latest date (format yyyy-MM-dd) for which\
+        required: false
+        type: "string"
+        default: "The current date"
+        pattern: "yyyy-MM-dd"
+      - name: "toDate"
+        in: "query"
+        description: "If specified, the latest date (format yyyy-MM-dd) for which\
           \ trip requests are retrieved."
-          required: false
-          type: "string"
-          default: "The current date"
-          pattern: "yyyy-MM-dd"
+        required: false
+        type: "string"
+        default: "The current date"
+        pattern: "yyyy-MM-dd"
       responses:
         "200":
           description: "successful operation"
@@ -2274,25 +2274,25 @@ paths:
   /api/trip-survey/open:
     get:
       tags:
-        - "api/trip-survey"
+      - "api/trip-survey"
       description: "Generates a tracking survey link for a specified user, trip, notification\
         \ ids."
       parameters:
-        - name: "user_id"
-          in: "query"
-          description: "The id of the OtpUser that this notification applies to."
-          required: true
-          type: "string"
-        - name: "trip_id"
-          in: "query"
-          description: "The id of the MonitoredTrip that this notification applies to."
-          required: true
-          type: "string"
-        - name: "notification_id"
-          in: "query"
-          description: "The id of the notification that this notification applies to."
-          required: true
-          type: "string"
+      - name: "user_id"
+        in: "query"
+        description: "The id of the OtpUser that this notification applies to."
+        required: true
+        type: "string"
+      - name: "trip_id"
+        in: "query"
+        description: "The id of the MonitoredTrip that this notification applies to."
+        required: true
+        type: "string"
+      - name: "notification_id"
+        in: "query"
+        description: "The id of the notification that this notification applies to."
+        required: true
+        type: "string"
       responses:
         "200":
           description: "successful operation"
@@ -2338,7 +2338,7 @@ definitions:
         items:
           type: "string"
           enum:
-            - "NEW_ERROR"
+          - "NEW_ERROR"
   TokenHolder:
     type: "object"
     properties:
@@ -2524,16 +2524,16 @@ definitions:
       type:
         type: "string"
         enum:
-          - "DEPARTURE_DELAY"
-          - "ARRIVAL_DELAY"
-          - "ITINERARY_CHANGED"
-          - "ALERT_FOUND"
-          - "ITINERARY_NOT_FOUND"
-          - "INITIAL_REMINDER"
-          - "MODE_CHANGE_NOTIFICATION"
-          - "DEPARTED_NOTIFICATION"
-          - "ARRIVED_NOTIFICATION"
-          - "DEPARTURE_AND_ARRIVAL_DELAY"
+        - "DEPARTURE_DELAY"
+        - "ARRIVAL_DELAY"
+        - "ITINERARY_CHANGED"
+        - "ALERT_FOUND"
+        - "ITINERARY_NOT_FOUND"
+        - "INITIAL_REMINDER"
+        - "MODE_CHANGE_NOTIFICATION"
+        - "DEPARTED_NOTIFICATION"
+        - "ARRIVED_NOTIFICATION"
+        - "DEPARTURE_AND_ARRIVAL_DELAY"
       body:
         type: "string"
   EncodedPolyline:
@@ -3071,11 +3071,11 @@ definitions:
       tripStatus:
         type: "string"
         enum:
-          - "NO_LONGER_POSSIBLE"
-          - "NEXT_TRIP_NOT_POSSIBLE"
-          - "TRIP_UPCOMING"
-          - "TRIP_ACTIVE"
-          - "PAST_TRIP"
+        - "NO_LONGER_POSSIBLE"
+        - "NEXT_TRIP_NOT_POSSIBLE"
+        - "TRIP_UPCOMING"
+        - "TRIP_ACTIVE"
+        - "PAST_TRIP"
       hasRealtimeData:
         type: "boolean"
   RelatedUser:
@@ -3086,9 +3086,9 @@ definitions:
       status:
         type: "string"
         enum:
-          - "PENDING"
-          - "CONFIRMED"
-          - "INVALID"
+        - "PENDING"
+        - "CONFIRMED"
+        - "INVALID"
       acceptKey:
         type: "string"
       nickname:
@@ -3191,9 +3191,9 @@ definitions:
         items:
           type: "string"
           enum:
-            - "EMAIL"
-            - "PUSH"
-            - "SMS"
+          - "EMAIL"
+          - "PUSH"
+          - "SMS"
       phoneNumber:
         type: "string"
       smsConsentDate:
@@ -3240,9 +3240,9 @@ definitions:
       visionLimitation:
         type: "string"
         enum:
-          - "LEGALLY_BLIND"
-          - "LOW_VISION"
-          - "NONE"
+        - "LEGALLY_BLIND"
+        - "LOW_VISION"
+        - "NONE"
   TripSurveyNotification:
     type: "object"
     properties:
@@ -3284,12 +3284,12 @@ definitions:
       tripStatus:
         type: "string"
         enum:
-          - "ON_SCHEDULE"
-          - "BEHIND_SCHEDULE"
-          - "AHEAD_OF_SCHEDULE"
-          - "ENDED"
-          - "DEVIATED"
-          - "COMPLETED"
+        - "ON_SCHEDULE"
+        - "BEHIND_SCHEDULE"
+        - "AHEAD_OF_SCHEDULE"
+        - "ENDED"
+        - "DEVIATED"
+        - "COMPLETED"
       locationAccuracy:
         type: "number"
         format: "double"
@@ -3347,6 +3347,11 @@ definitions:
     properties:
       tripId:
         type: "string"
+  RerouteResponse:
+    type: "object"
+    properties:
+      itinerary:
+        $ref: "#/definitions/Itinerary"
   TripRequest:
     type: "object"
     properties:

@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
+import org.opentripplanner.middleware.triptracker.response.RerouteResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -76,8 +77,8 @@ public class TrackedTripController implements Endpoint {
             .post(path("/reroute")
                     .withDescription("Reroute from the traveler's current location to the original trip destination.")
                     .withProduces(JSON_ONLY)
-                    .withRequestType(UpdatedTrackingPayload.class)
-                    .withResponseType(TrackingResponse.class),
+                    .withRequestType(TrackPayload.class)
+                    .withResponseType(RerouteResponse.class),
                 (request, response) -> ManageTripTracking.rerouteTracking(request), JsonUtils::toJson);
     }
 }
