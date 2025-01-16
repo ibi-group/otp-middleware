@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TrackedJourney extends Model {
@@ -32,7 +33,7 @@ public class TrackedJourney extends Model {
     public transient MonitoredTrip trip;
 
     /** Holds the location and time a trip was rerouted. */
-    public Map<String, String> reroutings = new HashMap<>();
+    public Map<String, Date> reroutings = new HashMap<>();
 
     public static final String TRIP_ID_FIELD_NAME = "tripId";
 
@@ -126,5 +127,23 @@ public class TrackedJourney extends Model {
             }
         }
         return maxCount;
+    }
+
+    /**
+     * Trip has been rerouted, at least once.
+     */
+    public boolean hasRerouted() {
+        return reroutings != null && !reroutings.isEmpty();
+    }
+
+    /**
+     * Return the coordinates associated with the latest rerouting.
+     */
+    public String getLastReroutingLocation() {
+        Optional<Map.Entry<String, Date>> latest = reroutings
+            .entrySet()
+            .stream()
+            .max(Map.Entry.comparingByValue());
+        return latest.map(Map.Entry::getKey).orElse(null);
     }
 }

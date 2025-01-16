@@ -1,10 +1,12 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
+import com.mongodb.client.model.Sorts;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
@@ -43,6 +45,7 @@ import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.diffInMinutes;
 
@@ -408,7 +411,26 @@ public class CheckMonitoredTrip implements Runnable {
     private OtpGraphQLVariables getQueryParamsForTargetZonedDateTime() {
         OtpGraphQLVariables params = trip.otp2QueryParams.clone();
         params.date = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
+        checkForRerouting(params);
         return params;
+    }
+
+    /**
+     * Get the latest tracked journey associated with this trip, if available. If rerouting has occurred as part of that
+     * tracked journey, use the last rerouting location as the 'from place' instead of the original attributed to the
+     * trip.
+     */
+    public void checkForRerouting(OtpGraphQLVariables params) {
+        TrackedJourney trackedJourney = Persistence.trackedJourneys.getOneFiltered(
+            eq("tripId", trip.id),
+            Sorts.descending("dateCreated")
+        );
+        if (trackedJourney != null && trackedJourney.hasRerouted()) {
+            String reroutingLocation = trackedJourney.getLastReroutingLocation();
+            if (reroutingLocation != null) {
+                params.fromPlace = reroutingLocation;
+            }
+        }
     }
 
     /**

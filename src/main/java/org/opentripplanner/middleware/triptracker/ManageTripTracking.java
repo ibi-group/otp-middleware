@@ -1,8 +1,12 @@
 package org.opentripplanner.middleware.triptracker;
 
+import com.mongodb.client.model.Filters;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
+import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
@@ -19,11 +23,14 @@ import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.RerouteResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.NotificationUtils;
 import spark.Request;
 
 import java.time.LocalDateTime;
 import java.util.function.Supplier;
 
+import static org.opentripplanner.middleware.i18n.Message.TRIP_REROUTED_NOTIFICATION;
 import static org.opentripplanner.middleware.otp.response.Itinerary.getShortestDuration;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isAtStartOfLeg;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
@@ -230,10 +237,34 @@ public class ManageTripTracking {
         if (tripData != null) {
             var trackedJourney = tripData.journey;
             if (trackedJourney != null) {
-                return updateTripWithNewItinerary(trackedJourney);
+                var reroutedItinerary = updateTripWithNewItinerary(trackedJourney);
+                if (reroutedItinerary != null) {
+                    notifyTripRerouting(trackedJourney);
+                    return reroutedItinerary;
+                }
             }
         }
         return null;
+    }
+
+    /**
+     * Notify companion and observers that the trip has been rerouted.
+     */
+    private static void notifyTripRerouting(TrackedJourney trackedJourney) {
+        MonitoredTrip monitoredTrip = Persistence.monitoredTrips.getById(trackedJourney.tripId);
+        OtpUser tripCreator = Persistence.otpUsers.getById(monitoredTrip.userId);
+
+        if (monitoredTrip.hasConfirmedCompanion() && monitoredTrip.companion != null) {
+            OtpUser companionUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", monitoredTrip.companion.email));
+            NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, companionUser, TRIP_REROUTED_NOTIFICATION);
+        }
+
+        for (RelatedUser observer : monitoredTrip.observers) {
+            if (observer.isConfirmed()) {
+                OtpUser observerUser = Persistence.otpUsers.getOneFiltered(Filters.eq("email", observer.email));
+                NotificationUtils.notifyCompanion(monitoredTrip, tripCreator, observerUser, TRIP_REROUTED_NOTIFICATION);
+            }
+        }
     }
 
     /**
@@ -242,7 +273,7 @@ public class ManageTripTracking {
     private static void registerRerouting(TrackedJourney trackedJourney) {
         trackedJourney.reroutings.put(
             new Coordinates(trackedJourney.lastLocation()).getCoordinates(),
-            LocalDateTime.now().toString()
+            DateTimeUtils.convertToDate(LocalDateTime.now())
         );
         Persistence.trackedJourneys.replace(trackedJourney.id, trackedJourney);
     }
