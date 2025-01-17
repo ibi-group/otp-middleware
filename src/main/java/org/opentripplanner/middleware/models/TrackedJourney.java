@@ -146,4 +146,8 @@ public class TrackedJourney extends Model {
             .max(Map.Entry.comparingByValue());
         return latest.map(Map.Entry::getKey).orElse(null);
     }
+
+    public boolean hasEnded() {
+        return endTime != null;
+    }
 }

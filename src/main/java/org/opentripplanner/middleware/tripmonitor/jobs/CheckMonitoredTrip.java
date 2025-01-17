@@ -416,16 +416,16 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Get the latest tracked journey associated with this trip, if available. If rerouting has occurred as part of that
-     * tracked journey, use the last rerouting location as the 'from place' instead of the original attributed to the
-     * trip.
+     * Get the latest tracked journey associated with this trip, if available and live. If rerouting has occurred as
+     * part of that tracked journey, use the last rerouting location as the 'from place' instead of the original
+     * attributed to the trip.
      */
     public void checkForRerouting(OtpGraphQLVariables params) {
         TrackedJourney trackedJourney = Persistence.trackedJourneys.getOneFiltered(
             eq("tripId", trip.id),
             Sorts.descending("dateCreated")
         );
-        if (trackedJourney != null && trackedJourney.hasRerouted()) {
+        if (trackedJourney != null && !trackedJourney.hasEnded() && trackedJourney.hasRerouted()) {
             String reroutingLocation = trackedJourney.getLastReroutingLocation();
             if (reroutingLocation != null) {
                 params.fromPlace = reroutingLocation;
