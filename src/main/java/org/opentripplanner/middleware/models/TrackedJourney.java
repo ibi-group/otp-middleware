@@ -130,13 +130,6 @@ public class TrackedJourney extends Model {
     }
 
     /**
-     * Trip has been rerouted, at least once.
-     */
-    public boolean hasRerouted() {
-        return reroutings != null && !reroutings.isEmpty();
-    }
-
-    /**
      * Return the coordinates associated with the latest rerouting.
      */
     public String getLastReroutingLocation() {
@@ -145,9 +138,5 @@ public class TrackedJourney extends Model {
             .stream()
             .max(Map.Entry.comparingByValue());
         return latest.map(Map.Entry::getKey).orElse(null);
-    }
-
-    public boolean hasEnded() {
-        return endTime != null;
     }
 }

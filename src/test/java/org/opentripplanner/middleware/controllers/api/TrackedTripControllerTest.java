@@ -70,6 +70,7 @@ import static org.opentripplanner.middleware.otp.response.Itinerary.getShortestD
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
+import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.triptracker.ManageTripTracking.setOtpGraphQLVariables;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
@@ -661,6 +662,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canCheckForRerouting() throws CloneNotSupportedException {
+        monitoredTrip.journeyState.tripStatus = TRIP_ACTIVE;
         Coordinates fromCoords = new Coordinates(33.94412, -83.98899);
         TrackedJourney reroutedTrackedJourney = new TrackedJourney();
         reroutedTrackedJourney.reroutings.put(fromCoords.getCoordinates(), DateTimeUtils.convertToDate(LocalDateTime.now()));

@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
-import com.mongodb.client.model.Sorts;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
@@ -45,7 +44,6 @@ import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.diffInMinutes;
 
@@ -421,14 +419,13 @@ public class CheckMonitoredTrip implements Runnable {
      * attributed to the trip.
      */
     public void checkForRerouting(OtpGraphQLVariables params) {
-        TrackedJourney trackedJourney = Persistence.trackedJourneys.getOneFiltered(
-            eq("tripId", trip.id),
-            Sorts.descending("dateCreated")
-        );
-        if (trackedJourney != null && !trackedJourney.hasEnded() && trackedJourney.hasRerouted()) {
-            String reroutingLocation = trackedJourney.getLastReroutingLocation();
-            if (reroutingLocation != null) {
-                params.fromPlace = reroutingLocation;
+        if (trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE) {
+            TrackedJourney trackedJourney = TripTrackingData.getOngoingTrackedJourney(trip.id);
+            if (trackedJourney != null) {
+                String reroutingLocation = trackedJourney.getLastReroutingLocation();
+                if (reroutingLocation != null) {
+                    params.fromPlace = reroutingLocation;
+                }
             }
         }
     }
