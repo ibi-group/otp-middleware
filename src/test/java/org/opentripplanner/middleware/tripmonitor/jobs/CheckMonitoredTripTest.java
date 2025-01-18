@@ -861,39 +861,57 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 false,
                 OtpTestUtils.createDefaultJourneyState()
         );
+
+        OtpTestUtils.updateBaseItineraryTime(
+                monitoredTrip.itinerary,
+                DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime)
+                        .withHour(19)
+                        .withMinute(15)
+        );
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.tripTime = "19:15";
+        monitoredTrip.leadTimeInMinutes = 30;
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
 
-        // Setup an OTP mock response in order to trigger some of the monitor checks.
+        // Set up an OTP mock response in order to trigger some of the monitor checks.
         OtpResponse mockResponse = mockOtpPlanResponse();
         Itinerary mockItinerary = mockResponse.plan.itineraries.get(0);
-
-        // parse original itinerary date/time and then update mock itinerary to occur at 6:15PM CST (this is
-        OtpTestUtils.updateBaseItineraryTime(
-                mockItinerary,
-                DateTimeUtils.makeOtpZonedDateTime(mockItinerary.startTime)
-                        .withHour(18)
-                        .withMinute(15)
-        );
 
         // Add fake alerts to simulated itinerary.
         ArrayList<LocalizedAlert> fakeAlerts = new ArrayList<>();
         fakeAlerts.add(new LocalizedAlert());
         mockItinerary.legs.get(1).alerts = fakeAlerts;
 
-        // mock the current time to be 5:45pm on Monday, June 15
+        // change time to be greater than 30 min lead time
         DateTimeUtils.useFixedClockAt(
                 noonMonday8June2020
+                        .withDayOfMonth(9)
                         .withHour(17)
-                        .withMinute(45)
+                        .withMinute(50)
         );
 
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
         checkMonitoredTrip.run();
+
+        Assertions.assertEquals(0, checkMonitoredTrip.notifications.size());
+
+        // change time after initial check to be within 30 min lead
+        // monitored trip now has previousMatchingItinerary
+        DateTimeUtils.useFixedClockAt(
+                noonMonday8June2020
+                        .withDayOfMonth(9)
+                        .withHour(18)
+                        .withMinute(50)
+        );
+
+        CheckMonitoredTrip checkMonitoredTripAgain = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        checkMonitoredTripAgain.run();
+
         // Assert that there is one notification generated during check.
-        Assertions.assertEquals(1, checkMonitoredTrip.notifications.size());
+        Assertions.assertEquals(1, checkMonitoredTripAgain.notifications.size());
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
     }

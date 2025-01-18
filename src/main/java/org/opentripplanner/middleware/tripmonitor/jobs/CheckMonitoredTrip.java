@@ -26,10 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -701,8 +698,8 @@ public class CheckMonitoredTrip implements Runnable {
         if (trip.snoozed) {
             if (shouldUnsnoozeTrip()) {
                 // Clear previous matching itinerary as we want to start afresh.
-                // The snoozed state will be updated later in the process.
                 previousMatchingItinerary = null;
+                trip.snoozed = false;
             } else {
                 LOG.info("Skipping: Trip is snoozed.");
                 return true;
@@ -741,7 +738,7 @@ public class CheckMonitoredTrip implements Runnable {
             targetZonedDateTime = trip.tripZonedDateTime(DateTimeUtils.nowAsLocalDate());
 
             // Attempt to advance to the next monitored day, except for one-time trips or if tracking is ongoing.
-            if (!trip.isOneTime() && !isTrackingOngoing()) {
+            if (!trip.isOneTime() && !isTrackingOngoing() && !isMatchingItineraryStartTimeValid()) {
                 advanceToNextMonitoredDay();
             }
 
@@ -807,9 +804,21 @@ public class CheckMonitoredTrip implements Runnable {
         return true;
     }
 
+    /** Check if the matching itinerary start time is in the future */
+    private boolean isMatchingItineraryStartTimeValid() {
+        // Get current time and trip time (with the time offset to today) for comparison.
+        ZoneId targetZoneId = DateTimeUtils.getOtpZoneId();
+        Instant tripStartInstant = matchingItinerary.startTime.toInstant();
+
+        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(targetZoneId);
+        Instant nowInstant = now.toInstant();
+        return tripStartInstant.isAfter(nowInstant);
+    }
+
     /** Check if previous matching itinerary day is still valid */
 
     private boolean isPrevMatchingItineraryDayValid() {
+        if (previousMatchingItinerary == null) return false;
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(previousMatchingItinerary.startTime);
 
