@@ -395,6 +395,13 @@ public class MonitoredTrip extends Model {
         return Persistence.monitoredTrips.getFiltered(TypedPersistence.filterByUserId(userId));
     }
 
+    /**
+     * Get monitored trips for the specified {@link OtpUser} primary traveler.
+     */
+    public static FindIterable<MonitoredTrip> tripsForPrimaryTraveler(String primaryUserId) {
+        return Persistence.monitoredTrips.getFiltered(eq("primary.userId", primaryUserId));
+    }
+
     @Override
     public boolean delete() {
         // TODO: Add journey state deletion.

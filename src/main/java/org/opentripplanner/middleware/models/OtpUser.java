@@ -134,11 +134,21 @@ public class OtpUser extends AbstractUser {
                 return false;
             }
         }
+
         // Delete monitored trips.
         for (MonitoredTrip trip : MonitoredTrip.tripsForUser(this.id)) {
             boolean success = trip.delete();
             if (!success) {
                 LOG.error("Error deleting user's ({}) monitored trip {}", this.id, trip.id);
+                return false;
+            }
+        }
+
+        // Delete monitored trips where the user is the primary traveler.
+        for (MonitoredTrip trip : MonitoredTrip.tripsForPrimaryTraveler(this.id)) {
+            boolean success = trip.delete();
+            if (!success) {
+                LOG.error("Error deleting primary user's ({}) monitored trip {}", this.id, trip.id);
                 return false;
             }
         }
