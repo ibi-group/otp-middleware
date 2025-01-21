@@ -694,7 +694,7 @@ public class CheckMonitoredTrip implements Runnable {
             if (shouldUnsnoozeTrip()) {
                 // Clear previous matching itinerary as we want to start afresh.
                 previousMatchingItinerary = null;
-                // snooze trip now, for cases where the next itinerary isn't calculated
+                // unsnooze trip now, for cases where the next itinerary isn't calculated
                 trip.snoozed = false;
             } else {
                 LOG.info("Skipping: Trip is snoozed.");
