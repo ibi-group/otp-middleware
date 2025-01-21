@@ -694,6 +694,7 @@ public class CheckMonitoredTrip implements Runnable {
             if (shouldUnsnoozeTrip()) {
                 // Clear previous matching itinerary as we want to start afresh.
                 previousMatchingItinerary = null;
+                // snooze trip now, for cases where the next itinerary isn't calculated
                 trip.snoozed = false;
             } else {
                 LOG.info("Skipping: Trip is snoozed.");
@@ -732,7 +733,8 @@ public class CheckMonitoredTrip implements Runnable {
             // checking today's date at the earliest in case the user has paused trip monitoring for a while
             targetZonedDateTime = trip.tripZonedDateTime(DateTimeUtils.nowAsLocalDate());
 
-            // Attempt to advance to the next monitored day, except for one-time trips or if tracking is ongoing.
+            // Attempt to advance to the next monitored day, except for one-time trips
+            // or if tracking is ongoing or if the matching itinerary is still valid.
             if (!trip.isOneTime() && !isTrackingOngoing() && !isMatchingItineraryStartTimeValid()) {
                 advanceToNextMonitoredDay();
             }

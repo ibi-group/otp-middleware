@@ -928,6 +928,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
         checkMonitoredTrip.run();
 
+        // trip should have been skipped
         Assertions.assertEquals(0, checkMonitoredTrip.notifications.size());
 
         // change time after initial check to be within 30 min lead
