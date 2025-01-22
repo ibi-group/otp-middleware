@@ -735,7 +735,7 @@ public class CheckMonitoredTrip implements Runnable {
 
             // Attempt to advance to the next monitored day, except for one-time trips
             // or if tracking is ongoing or if the matching itinerary is still valid.
-            if (!trip.isOneTime() && !isTrackingOngoing() && !isMatchingItineraryStartTimeValid()) {
+            if (!trip.isOneTime() && !isTrackingOngoing() && !isMatchingItineraryStartTimeInTheFuture()) {
                 advanceToNextMonitoredDay();
             }
 
@@ -802,18 +802,16 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /** Check if the matching itinerary start time is in the future */
-    private boolean isMatchingItineraryStartTimeValid() {
+    private boolean isMatchingItineraryStartTimeInTheFuture() {
         // Get current time and trip time (with the time offset to today) for comparison.
         ZoneId targetZoneId = DateTimeUtils.getOtpZoneId();
         Instant tripStartInstant = matchingItinerary.startTime.toInstant();
 
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(targetZoneId);
-        Instant nowInstant = now.toInstant();
-        return tripStartInstant.isAfter(nowInstant);
+        return tripStartInstant.isAfter(now.toInstant());
     }
 
     /** Check if previous matching itinerary day is still valid */
-
     private boolean isPrevMatchingItineraryDayValid() {
         if (previousMatchingItinerary == null) return false;
         Calendar calendar = Calendar.getInstance();

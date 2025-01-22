@@ -34,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -888,17 +887,17 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @Test
     void testCheckMonitoredTripWhenUTCIsNextDay() throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
-                user.id,
-                OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
-                false,
-                OtpTestUtils.createDefaultJourneyState()
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            false,
+            OtpTestUtils.createDefaultJourneyState()
         );
 
         OtpTestUtils.updateBaseItineraryTime(
-                monitoredTrip.itinerary,
-                DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime)
-                        .withHour(19)
-                        .withMinute(15)
+            monitoredTrip.itinerary,
+            DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime)
+                .withHour(19)
+                .withMinute(15)
         );
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
@@ -911,17 +910,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         OtpResponse mockResponse = mockOtpPlanResponse();
         Itinerary mockItinerary = mockResponse.plan.itineraries.get(0);
 
-        // Add fake alerts to simulated itinerary.
-        ArrayList<LocalizedAlert> fakeAlerts = new ArrayList<>();
-        fakeAlerts.add(new LocalizedAlert());
-        mockItinerary.legs.get(1).alerts = fakeAlerts;
-
         // change time to be greater than 30 min lead time
         DateTimeUtils.useFixedClockAt(
-                noonMonday8June2020
-                        .withDayOfMonth(9)
-                        .withHour(17)
-                        .withMinute(50)
+            noonMonday8June2020
+                .withDayOfMonth(9)
+                .withHour(17)
+                .withMinute(50)
         );
 
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
@@ -934,10 +928,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // change time after initial check to be within 30 min lead
         // monitored trip now has previousMatchingItinerary
         DateTimeUtils.useFixedClockAt(
-                noonMonday8June2020
-                        .withDayOfMonth(9)
-                        .withHour(18)
-                        .withMinute(50)
+            noonMonday8June2020
+                .withDayOfMonth(9)
+                .withHour(18)
+                .withMinute(50)
         );
 
         CheckMonitoredTrip checkMonitoredTripAgain = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
