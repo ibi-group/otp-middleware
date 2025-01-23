@@ -1,7 +1,9 @@
 package org.opentripplanner.middleware.otp.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
 
@@ -11,6 +13,9 @@ import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Step implements ConvertsToCoordinates, Cloneable {
+
+    public static final String DEPART = "DEPART";
+    public static final String END_OF_ROUTING = "END_OF_ROUTING";
 
     public Double distance;
     public String relativeDirection;
@@ -33,5 +38,11 @@ public class Step implements ConvertsToCoordinates, Cloneable {
 
     public Coordinates toCoordinates() {
         return new Coordinates(lat, lon);
+    }
+
+    @JsonIgnore
+    @BsonIgnore
+    public boolean isEndOfRouting() {
+        return END_OF_ROUTING.equals(relativeDirection);
     }
 }
