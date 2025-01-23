@@ -1,0 +1,95 @@
+{
+  "accessibilityScore": null,
+  "duration": 214,
+  "endTime": 1736520694000,
+  "legs": [
+    {
+      "accessibilityScore": null,
+      "agency": null,
+      "alerts": [],
+      "arrivalDelay": 0,
+      "departureDelay": 0,
+      "distance": 266.62,
+      "dropoffType": "SCHEDULED",
+      "duration": 214,
+      "endTime": 1736520694000,
+      "fareProducts": [],
+      "from": {
+        "lat": 33.9604237,
+        "lon": -84.0044676,
+        "name": "33.96042, -84.00447",
+        "rentalVehicle": null,
+        "stop": null,
+        "vertexType": "NORMAL"
+      },
+      "headsign": null,
+      "interlineWithPreviousLeg": false,
+      "intermediateStops": null,
+      "legGeometry": {
+        "length": 20,
+        "points": "{{gnEpbv_OLKTRRTBFJHd@f@j@t@BF@@@BBDR`@NTXh@V^HJFPX|@D\\"
+      },
+      "mode": "WALK",
+      "pickupBookingInfo": null,
+      "pickupType": "SCHEDULED",
+      "realTime": false,
+      "realtimeState": null,
+      "rentedBike": false,
+      "rideHailingEstimate": null,
+      "route": null,
+      "startTime": 1736520480000,
+      "steps": [
+        {
+          "absoluteDirection": "SOUTHEAST",
+          "alerts": [],
+          "area": false,
+          "distance": 9.46,
+          "elevationProfile": [],
+          "lat": 33.9604623,
+          "lon": -84.0044086,
+          "relativeDirection": "DEPART",
+          "stayOn": false,
+          "streetName": "crossing over service road☆ tmp r0.675 l9.460"
+        },
+        {
+          "absoluteDirection": "SOUTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 30.37,
+          "elevationProfile": [],
+          "lat": 33.9603955,
+          "lon": -84.0043451,
+          "relativeDirection": "RIGHT",
+          "stayOn": false,
+          "streetName": "crossing over West Pike Street☆"
+        },
+        {
+          "absoluteDirection": "SOUTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 226.8,
+          "elevationProfile": [],
+          "lat": 33.9601889,
+          "lon": -84.0045587,
+          "relativeDirection": "CONTINUE",
+          "stayOn": false,
+          "streetName": "Old Norcross Road★"
+        }
+      ],
+      "to": {
+        "lat": 33.9585118,
+        "lon": -84.0066056,
+        "name": "578 Old Norcross Road, Lawrenceville, GA, USA",
+        "rentalVehicle": null,
+        "stop": null,
+        "vertexType": "NORMAL"
+      },
+      "transitLeg": false,
+      "trip": null
+    }
+  ],
+  "startTime": 1736520480000,
+  "transfers": 0,
+  "waitingTime": 0,
+  "walkTime": 214
+}

@@ -108,7 +108,7 @@ public class TrustedCompanion {
         }
         Optional<RelatedUser> relatedUser = dependentUser.relatedUsers
             .stream()
-            .filter(user -> user.acceptKey.equalsIgnoreCase(acceptKey))
+            .filter(user -> acceptKey.equalsIgnoreCase(user.acceptKey))
             .findFirst();
         return relatedUser.map(user -> Persistence.otpUsers.getOneFiltered(eq(EMAIL_FIELD_NAME, user.email))).orElse(null);
     }

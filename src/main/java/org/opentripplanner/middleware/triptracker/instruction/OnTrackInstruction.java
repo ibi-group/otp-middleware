@@ -15,6 +15,9 @@ public class OnTrackInstruction extends SelfLegInstruction {
     /** The prefix to use when arrived at the destination. */
     public static final String TRIP_INSTRUCTION_ARRIVED_PREFIX = "ARRIVED: ";
 
+    /** Generic text when arriving at the end of routing. */
+    public static final String TRIP_INSTRUCTION_END_OF_ROUTING = "Your destination is in the vicinity.";
+
     public OnTrackInstruction(boolean isDestination, double distance, Locale locale) {
         this.distance = distance;
         this.locale = locale;
@@ -62,10 +65,14 @@ public class OnTrackInstruction extends SelfLegInstruction {
     public String build() {
         if (hasInstruction()) {
             if (legStep != null) {
-                String relativeDirection = (legStep.relativeDirection.equals("DEPART"))
-                    ? "Head " + legStep.absoluteDirection
-                    : legStep.relativeDirection;
-                return String.format("%s%s on %s", prefix, relativeDirection, legStep.streetName);
+                if (legStep.isEndOfRouting()) {
+                    return TRIP_INSTRUCTION_END_OF_ROUTING;
+                } else {
+                    String instruction = legStep.relativeDirection.equals(Step.DEPART)
+                        ? "Head " + legStep.absoluteDirection
+                        : legStep.relativeDirection;
+                    return String.format("%s%s on %s", prefix, instruction, legStep.streetName);
+                }
             } else if (locationName != null) {
                 return String.format("%s%s", prefix, locationName);
             }
