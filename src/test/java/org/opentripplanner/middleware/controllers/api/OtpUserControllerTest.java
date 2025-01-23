@@ -274,9 +274,9 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         relatedUserThree = Persistence.otpUsers.getById(relatedUserThree.id);
         assertFalse(relatedUserThree.dependents.contains(dependentUserThree.id));
 
-        // If a dependent user deletes their profile, delete them from any trip where they are a dependent.
+        // If a dependent user deletes their profile, delete trips where they are the primary traveler.
         MonitoredTrip updatedTripWithPrimaryTraveler = Persistence.monitoredTrips.getById(tripWithPrimaryTraveler.id);
-        assertNull(updatedTripWithPrimaryTraveler.primary);
+        assertNull(updatedTripWithPrimaryTraveler);
 
         // If a companion on a trip deletes their profile, invalidate them from any trip where they are a companion
         // or an observer.
