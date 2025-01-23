@@ -908,7 +908,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // Set up an OTP mock response in order to trigger some of the monitor checks.
         OtpResponse mockResponse = mockOtpPlanResponse();
-        Itinerary mockItinerary = mockResponse.plan.itineraries.get(0);
 
         // change time to be greater than 30 min lead time
         DateTimeUtils.useFixedClockAt(
@@ -919,7 +918,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         );
 
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
         checkMonitoredTrip.run();
 
         // trip should have been skipped
@@ -934,7 +933,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 .withMinute(50)
         );
 
-        CheckMonitoredTrip checkMonitoredTripAgain = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        CheckMonitoredTrip checkMonitoredTripAgain = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
         checkMonitoredTripAgain.run();
 
         // Assert that there is one notification generated during check.

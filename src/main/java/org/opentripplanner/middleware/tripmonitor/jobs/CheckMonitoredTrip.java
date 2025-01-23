@@ -803,12 +803,9 @@ public class CheckMonitoredTrip implements Runnable {
 
     /** Check if the matching itinerary start time is in the future */
     private boolean isMatchingItineraryStartTimeInTheFuture() {
-        // Get current time and trip time (with the time offset to today) for comparison.
-        ZoneId targetZoneId = DateTimeUtils.getOtpZoneId();
         Instant tripStartInstant = matchingItinerary.startTime.toInstant();
 
-        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(targetZoneId);
-        return tripStartInstant.isAfter(now.toInstant());
+        return tripStartInstant.isAfter(Instant.now());
     }
 
     /** Check if previous matching itinerary day is still valid */
