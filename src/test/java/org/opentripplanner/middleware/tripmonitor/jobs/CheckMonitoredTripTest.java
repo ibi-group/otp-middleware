@@ -884,6 +884,64 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         Persistence.otpUsers.removeById(observer.id);
     }
 
+    @Test
+    void testCheckMonitoredTripWhenUTCIsNextDay() throws Exception {
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            false,
+            OtpTestUtils.createDefaultJourneyState()
+        );
+
+        OtpTestUtils.updateBaseItineraryTime(
+            monitoredTrip.itinerary,
+            DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime)
+                .withHour(19)
+                .withMinute(15)
+        );
+        monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.tripTime = "19:15";
+        monitoredTrip.leadTimeInMinutes = 30;
+        Persistence.monitoredTrips.create(monitoredTrip);
+        LOG.info("Created trip {}", monitoredTrip.id);
+
+        // Set up an OTP mock response in order to trigger some of the monitor checks.
+        OtpResponse mockResponse = mockOtpPlanResponse();
+
+        // change time to be greater than 30 min lead time
+        DateTimeUtils.useFixedClockAt(
+            noonMonday8June2020
+                .withDayOfMonth(9)
+                .withHour(17)
+                .withMinute(50)
+        );
+
+        // Next, run a monitor trip check from the new monitored trip using the simulated response.
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+        checkMonitoredTrip.run();
+
+        // trip should have been skipped
+        Assertions.assertEquals(0, checkMonitoredTrip.notifications.size());
+
+        // change time after initial check to be within 30 min lead
+        // monitored trip now has previousMatchingItinerary
+        DateTimeUtils.useFixedClockAt(
+            noonMonday8June2020
+                .withDayOfMonth(9)
+                .withHour(18)
+                .withMinute(50)
+        );
+
+        CheckMonitoredTrip checkMonitoredTripAgain = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+        checkMonitoredTripAgain.run();
+
+        // Assert that there is one notification generated during check.
+        Assertions.assertEquals(1, checkMonitoredTripAgain.notifications.size());
+        // Clear the created trip.
+        PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
+    }
+
     private void triggerCheckMonitoredTrip(MonitoredTrip monitoredTrip, TravelerPosition travelerPosition) throws CloneNotSupportedException {
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
         checkMonitoredTrip.IS_TEST = true;
