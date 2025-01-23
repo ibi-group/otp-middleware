@@ -805,7 +805,7 @@ public class CheckMonitoredTrip implements Runnable {
     private boolean isMatchingItineraryStartTimeInTheFuture() {
         Instant tripStartInstant = matchingItinerary.startTime.toInstant();
 
-        return tripStartInstant.isAfter(Instant.now());
+        return tripStartInstant.isAfter(Instant.ofEpochMilli(DateTimeUtils.currentTimeMillis()));
     }
 
     /** Check if previous matching itinerary day is still valid */
