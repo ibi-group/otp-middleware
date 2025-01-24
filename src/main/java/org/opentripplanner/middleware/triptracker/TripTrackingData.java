@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.triptracker;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Sorts;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -72,7 +73,8 @@ public class TripTrackingData {
             Filters.and(
                 eq(TrackedJourney.TRIP_ID_FIELD_NAME, tripId),
                 eq(TrackedJourney.END_TIME_FIELD_NAME, null)
-            )
+            ),
+            Sorts.descending("dateCreated")
         );
     }
 

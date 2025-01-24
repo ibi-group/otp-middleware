@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -275,6 +276,13 @@ public class Itinerary implements Cloneable {
             leg.startTime = new Date(leg.startTime.getTime() + offsetMillis);
             leg.endTime = new Date(leg.endTime.getTime() + offsetMillis);
         }
+    }
+
+    /**
+     * Select the itinerary which has the shortest duration.
+     */
+    public static Itinerary getShortestDuration(List<Itinerary> itineraries) {
+        return itineraries.stream().min(Comparator.comparingLong(itinerary -> itinerary.duration)).orElse(null);
     }
 
     /**
