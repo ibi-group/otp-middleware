@@ -693,8 +693,9 @@ public class CheckMonitoredTrip implements Runnable {
         if (trip.snoozed) {
             if (shouldUnsnoozeTrip()) {
                 // Clear previous matching itinerary as we want to start afresh.
-                // The snoozed state will be updated later in the process.
                 previousMatchingItinerary = null;
+                // unsnooze trip now, for cases where the next itinerary isn't calculated
+                trip.snoozed = false;
             } else {
                 LOG.info("Skipping: Trip is snoozed.");
                 return true;
@@ -732,8 +733,9 @@ public class CheckMonitoredTrip implements Runnable {
             // checking today's date at the earliest in case the user has paused trip monitoring for a while
             targetZonedDateTime = trip.tripZonedDateTime(DateTimeUtils.nowAsLocalDate());
 
-            // Attempt to advance to the next monitored day, except for one-time trips or if tracking is ongoing.
-            if (!trip.isOneTime() && !isTrackingOngoing()) {
+            // Attempt to advance to the next monitored day, except for one-time trips
+            // or if tracking is ongoing or if the matching itinerary is still valid.
+            if (!trip.isOneTime() && !isTrackingOngoing() && !isMatchingItineraryStartTimeInTheFuture()) {
                 advanceToNextMonitoredDay();
             }
 
@@ -799,9 +801,16 @@ public class CheckMonitoredTrip implements Runnable {
         return true;
     }
 
-    /** Check if previous matching itinerary day is still valid */
+    /** Check if the matching itinerary start time is in the future */
+    private boolean isMatchingItineraryStartTimeInTheFuture() {
+        Instant tripStartInstant = matchingItinerary.startTime.toInstant();
 
+        return tripStartInstant.isAfter(Instant.ofEpochMilli(DateTimeUtils.currentTimeMillis()));
+    }
+
+    /** Check if previous matching itinerary day is still valid */
     private boolean isPrevMatchingItineraryDayValid() {
+        if (previousMatchingItinerary == null) return false;
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(previousMatchingItinerary.startTime);
 

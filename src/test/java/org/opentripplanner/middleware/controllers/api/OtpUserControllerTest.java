@@ -58,7 +58,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser dependentUserThree;
     private static OtpUser relatedUserFour;
     private static OtpUser dependentUserFour;
-    private static final String nickname = "my-trusted-companion";
+    private static final String NICKNAME = "my-trusted-companion";
 
     @BeforeAll
     public static void setUp() throws Exception {
@@ -195,10 +195,17 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canAcceptDependentRequest() {
         String acceptKey = UUID.randomUUID().toString();
+        // Firt, add a companion request to a user without an account (acceptKey is left null).
+        dependentUserOne.relatedUsers.add(new RelatedUser(
+            "dummy@example.com",
+            RelatedUser.RelatedUserStatus.PENDING,
+            NICKNAME
+        ));
+        // Add a companion request to an existing user.
         dependentUserOne.relatedUsers.add(new RelatedUser(
             relatedUserOne.email,
             RelatedUser.RelatedUserStatus.PENDING,
-            nickname,
+            NICKNAME,
             acceptKey
         ));
         Persistence.otpUsers.replace(dependentUserOne.id, dependentUserOne);
@@ -225,7 +232,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         dependentUserTwo.relatedUsers.add(new RelatedUser(
             relatedUserTwo.email,
             RelatedUser.RelatedUserStatus.CONFIRMED,
-            nickname
+            NICKNAME
         ));
         Persistence.otpUsers.replace(dependentUserTwo.id, dependentUserTwo);
         relatedUserTwo.delete(false);
@@ -241,7 +248,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         dependentUserThree.relatedUsers.add(new RelatedUser(
             relatedUserThree.email,
             RelatedUser.RelatedUserStatus.CONFIRMED,
-            nickname
+            NICKNAME
         ));
         Persistence.otpUsers.replace(dependentUserThree.id, dependentUserThree);
 
@@ -304,7 +311,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         dependentUserFour.relatedUsers.add(new RelatedUser(
             relatedUserThree.email,
             RelatedUser.RelatedUserStatus.PENDING,
-            nickname
+            NICKNAME
         ));
 
         makeRequest(
@@ -359,7 +366,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         dependentUser.relatedUsers.add(new RelatedUser(
             relatedUser.email,
             RelatedUser.RelatedUserStatus.CONFIRMED,
-            nickname
+            NICKNAME
         ));
         Persistence.otpUsers.replace(dependentUser.id, dependentUser);
     }
