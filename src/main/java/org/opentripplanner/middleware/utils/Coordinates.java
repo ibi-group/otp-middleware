@@ -48,7 +48,7 @@ public class Coordinates {
     @JsonIgnore
     @BsonIgnore
     public String getCoordinates() {
-        return String.format("%s,%s", lat, lon);
+        return lat + "," + lon;
     }
 
     @Override
