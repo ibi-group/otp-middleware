@@ -250,16 +250,6 @@ public class TrustedCompanion {
     }
 
     /**
-     * Remove the specified user as the primary traveler from the specified trip.
-     */
-    public static void removePrimaryTraveler(OtpUser otpUser, MonitoredTrip trip) {
-        if (trip.primary != null && otpUser.id.equals(trip.primary.userId)) {
-            trip.primary = null;
-            Persistence.monitoredTrips.replace(trip.id, trip);
-        }
-    }
-
-    /**
      * Remove the specified user as companion from the specified trip.
      */
     public static void removeCompanion(OtpUser otpUser, MonitoredTrip trip) {
