@@ -524,7 +524,7 @@ public class MonitoredTrip extends Model {
      * Trip created by primary user.
      */
     public boolean ownedByPrimary() {
-        return primary != null && primary.userId.equalsIgnoreCase(userId);
+        return primary != null && userId.equalsIgnoreCase(primary.userId);
     }
 
     /**
@@ -532,6 +532,9 @@ public class MonitoredTrip extends Model {
      */
     public boolean ownedByCompanion() {
         OtpUser tripOwner = Persistence.otpUsers.getById(userId);
-        return tripOwner != null && companion != null && companion.email.equalsIgnoreCase(tripOwner.email);
+        return tripOwner != null &&
+            tripOwner.email != null &&
+            companion != null &&
+            tripOwner.email.equalsIgnoreCase(companion.email);
     }
 }

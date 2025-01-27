@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.models;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -122,5 +123,19 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(primary.id, Set.of(companion, observer)),
             Arguments.of(companion.id, Set.of(primary, observer))
         );
+    }
+
+    @Test
+    void testLegTransitionNotifyUsersIncompleteData() {
+        MonitoredTrip trip = new MonitoredTrip();
+        // Set as owner an existing user that is not the primary or the companion user from the setup method.
+        trip.userId = observer.id;
+        trip.primary = new MobilityProfileLite();
+        trip.companion = new RelatedUser();
+        trip.observers.add(new RelatedUser());
+
+        Set<OtpUser> users = LegTransitionNotification.getLegTransitionNotifyUsers(trip);
+        assertNotNull(users);
+        assertTrue(users.isEmpty());
     }
 }
