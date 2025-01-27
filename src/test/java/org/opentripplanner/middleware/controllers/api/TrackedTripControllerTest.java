@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.exception.Auth0Exception;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
@@ -14,8 +15,10 @@ import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
@@ -24,6 +27,7 @@ import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
+import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
@@ -46,10 +50,12 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,9 +66,12 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefault
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.models.TrackedJourney.FORCIBLY_TERMINATED;
 import static org.opentripplanner.middleware.models.TrackedJourney.TERMINATED_BY_USER;
+import static org.opentripplanner.middleware.otp.response.Itinerary.getShortestDuration;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
+import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
+import static org.opentripplanner.middleware.triptracker.ManageTripTracking.setOtpGraphQLVariables;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
@@ -71,9 +80,11 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser soloOtpUser;
     private static MonitoredTrip monitoredTrip;
     private static MonitoredTrip multiLegMonitoredTrip;
+    private static MonitoredTrip rerouteMonitoredTrip;
     private static TrackedJourney trackedJourney;
     private static Itinerary itinerary;
     private static Itinerary multiLegItinerary;
+    private static Itinerary walkToVoterRegCenterItinerary;
 
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
@@ -97,6 +108,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             CommonTestUtils.getTestResourceAsString("controllers/api/27nb-midtown-to-ansley.json"),
             Itinerary.class
         );
+        walkToVoterRegCenterItinerary = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-voter-reg-center.json"),
+            Itinerary.class
+        );
 
         soloOtpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
         try {
@@ -112,6 +127,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         monitoredTrip = createMonitoredTrip(itinerary);
         multiLegMonitoredTrip = createMonitoredTrip(multiLegItinerary);
+        rerouteMonitoredTrip = createMonitoredTrip(walkToVoterRegCenterItinerary);
     }
 
     private static MonitoredTrip createMonitoredTrip(Itinerary itin) {
@@ -134,6 +150,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         if (monitoredTrip != null) monitoredTrip.delete();
         multiLegMonitoredTrip = Persistence.monitoredTrips.getById(multiLegMonitoredTrip.id);
         if (multiLegMonitoredTrip != null) multiLegMonitoredTrip.delete();
+        rerouteMonitoredTrip = Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id);
+        if (rerouteMonitoredTrip != null) rerouteMonitoredTrip.delete();
     }
 
     @AfterEach
@@ -305,7 +323,6 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         Leg firstLeg = itinerary.legs.get(0);
         Step adairAvenueNortheastStep = firstLeg.steps.get(0);
-        Step virginiaCircleNortheastStep = firstLeg.steps.get(1);
         Step ponceDeLeonPlaceNortheastStep = firstLeg.steps.get(2);
         Coordinates firstStepCoords = new Coordinates(adairAvenueNortheastStep);
         Coordinates thirdStepCoords = new Coordinates(ponceDeLeonPlaceNortheastStep);
@@ -504,6 +521,159 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(HttpStatus.BAD_REQUEST_400, response.status);
     }
 
+    @Test
+    void canRerouteTrip() throws Exception {
+        assumeTrue(IS_END_TO_END);
+
+        var startTrackingPayload = createStartTrackingPayload(rerouteMonitoredTrip.id);
+        var mockOtpResponse = mockOtpReroutedPlanResponse();
+        var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().plan.itineraries);
+        ManageTripTracking.otpResponseProviderOverride = mockOtpResponse;
+        var deviatedPosition = new TrackingLocation(Instant.now(), 33.94412, -83.98899);
+        var reroutingPoint = new Coordinates(expectedReroutedItinerary.legs.get(0).steps.get(2));
+        var reroutingPointPosition = new TrackingLocation(Instant.now(), reroutingPoint.lat,reroutingPoint.lon);
+
+        // Start tracking.
+        var response = makeRequest(
+            START_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(startTrackingPayload),
+            headers,
+            HttpMethod.POST
+        );
+
+        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+        assertEquals(HttpStatus.OK_200, response.status);
+
+        // Update tracking from a 'deviated' position.
+        response = makeRequest(
+            UPDATE_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createUpdateTrackingPayload(
+                trackedJourney.id,
+                List.of(deviatedPosition)
+            )),
+            headers,
+            HttpMethod.POST
+        );
+
+        // Confirm traveler is classed as 'deviated'.
+        var updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
+
+        // Reroute trip from 'deviated' position.
+        var reroutedItinerary = ManageTripTracking.rerouteTrip(
+            new TripTrackingData(rerouteMonitoredTrip, trackedJourney, List.of(deviatedPosition))
+        );
+        assertEquals(expectedReroutedItinerary.duration, reroutedItinerary.duration);
+        TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
+        assertEquals(1, updated.reroutings.size());
+        assertEquals(trackedJourney.longestConsecutiveDeviatedPoints, updated.longestConsecutiveDeviatedPoints);
+
+        MonitoredTrip trip = Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id);
+        assertEquals(expectedReroutedItinerary.duration, trip.journeyState.matchingItinerary.duration);
+        assertEquals(expectedReroutedItinerary.legs.size(), trip.journeyState.matchingItinerary.legs.size());
+
+        // Update tracking from start of rerouted position.
+        response = makeRequest(
+            UPDATE_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createUpdateTrackingPayload(
+                trackedJourney.id,
+                List.of(deviatedPosition)
+            )),
+            headers,
+            HttpMethod.POST
+        );
+
+        // Confirm traveler is no longer 'deviated'.
+        updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertNotEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
+
+        rerouteMonitoredTrip.tripTime = "12:31";
+        Itinerary beforeCheck = rerouteMonitoredTrip.journeyState.matchingItinerary;
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(rerouteMonitoredTrip);
+        checkMonitoredTrip.run();
+        Itinerary afterCheck = Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id).journeyState.matchingItinerary;
+        System.out.println(beforeCheck);
+        System.out.println(afterCheck);
+        assertEquals(beforeCheck.duration, afterCheck.duration);
+
+        // Reroute again from a different location.
+        trackedJourney.locations.clear();
+        trackedJourney.locations.add(reroutingPointPosition);
+        reroutedItinerary = ManageTripTracking.rerouteTrip(
+            new TripTrackingData(rerouteMonitoredTrip, trackedJourney, trackedJourney.locations)
+        );
+        assertEquals(expectedReroutedItinerary.duration, reroutedItinerary.duration);
+        updated = Persistence.trackedJourneys.getById(trackedJourney.id);
+        assertEquals(2, updated.reroutings.size());
+        assertEquals(trackedJourney.longestConsecutiveDeviatedPoints, updated.longestConsecutiveDeviatedPoints);
+        assertEquals(new Coordinates(updated.lastLocation()), reroutingPoint);
+
+        // Update tracking from start of the new rerouted position.
+        response = makeRequest(
+            UPDATE_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createUpdateTrackingPayload(
+                trackedJourney.id,
+                List.of(reroutingPointPosition)
+            )),
+            headers,
+            HttpMethod.POST
+        );
+
+        // Confirm traveler is still not 'deviated'.
+        updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertNotEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
+    }
+
+    /** Provides a mock OTP 'plan' rerouted response. */
+    public Supplier<OtpResponse> mockOtpReroutedPlanResponse() {
+        return () -> {
+            try {
+                return OtpTestUtils.REROUTE_PLAN_RESPONSE.getResponse();
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    @Test
+    void canBuildOtpGraphQLVariables() {
+        Coordinates fromCoords = new Coordinates(33.94412, -83.98899);
+        OtpGraphQLVariables originalTripVariables = new OtpGraphQLVariables();
+        originalTripVariables.mobilityProfile = "mobility-profile";
+        originalTripVariables.fromPlace = "from-place";
+        originalTripVariables.toPlace = "33.9400633, -83.9854488";
+        originalTripVariables.time = "08:36";
+        OtpGraphQLVariables rerouteVariables = setOtpGraphQLVariables(originalTripVariables, fromCoords);
+        assertEquals(originalTripVariables.mobilityProfile, rerouteVariables.mobilityProfile);
+        assertEquals(originalTripVariables.toPlace, rerouteVariables.toPlace);
+        assertEquals(fromCoords.getCoordinates(), rerouteVariables.fromPlace);
+        assertNotEquals(originalTripVariables.time, rerouteVariables.time);
+    }
+
+    @Test
+    void canGetTheLatestReroutingLocation() {
+        TrackedJourney reroutedTrackedJourney = new TrackedJourney();
+        reroutedTrackedJourney.reroutings.put("first-coords", DateTimeUtils.convertToDate(LocalDateTime.now().minusHours(1)));
+        reroutedTrackedJourney.reroutings.put("last-coords", DateTimeUtils.convertToDate(LocalDateTime.now()));
+        String lastReroutingLocation = reroutedTrackedJourney.getLastReroutingLocation();
+        assertEquals("last-coords", lastReroutingLocation);
+    }
+
+    @Test
+    void canCheckForRerouting() throws CloneNotSupportedException {
+        monitoredTrip.journeyState.tripStatus = TRIP_ACTIVE;
+        Coordinates fromCoords = new Coordinates(33.94412, -83.98899);
+        TrackedJourney reroutedTrackedJourney = new TrackedJourney();
+        reroutedTrackedJourney.reroutings.put(fromCoords.getCoordinates(), DateTimeUtils.convertToDate(LocalDateTime.now()));
+        reroutedTrackedJourney.tripId = monitoredTrip.id;
+        Persistence.trackedJourneys.create(reroutedTrackedJourney);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip);
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.fromPlace = "from-place";
+        checkMonitoredTrip.checkForRerouting(params);
+        assertEquals(fromCoords.getCoordinates(), params.fromPlace);
+    }
 
     private StartTrackingPayload createStartTrackingPayload() {
         return createStartTrackingPayload(monitoredTrip.id);
@@ -528,6 +698,13 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var payload = new UpdatedTrackingPayload();
         payload.journeyId = journeyId;
         payload.locations = createTrackingLocations();
+        return payload;
+    }
+
+    private UpdatedTrackingPayload createUpdateTrackingPayload(String journeyId, List<TrackingLocation> locations) {
+        var payload = new UpdatedTrackingPayload();
+        payload.journeyId = journeyId;
+        payload.locations = locations;
         return payload;
     }
 

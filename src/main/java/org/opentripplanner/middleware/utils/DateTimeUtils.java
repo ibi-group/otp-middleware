@@ -116,6 +116,11 @@ public class DateTimeUtils {
         return LocalDate.now(clock);
     }
 
+    public static String getTimeNowAsString() {
+        LocalTime currentTime = LocalTime.now(clock);
+        return currentTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+    }
+
     /**
      * Returns the current LocalDateTime according to the currently set Clock.
      */
@@ -131,7 +136,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the current time in milliseconds according the the current set Clock.
+     * Returns the current time in milliseconds according to the current set Clock.
      */
     public static long currentTimeMillis() {
         return clock.millis();

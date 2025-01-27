@@ -5,6 +5,7 @@ import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
@@ -254,7 +255,9 @@ public class CheckMonitoredTrip implements Runnable {
      * to that returned from OTP, so the existing trip itinerary is used and therefore preserved.
      */
     public void processLegTransition(NotificationType notificationType, TravelerPosition travelerPosition) throws CloneNotSupportedException {
-        matchingItinerary = trip.itinerary.clone();
+        if (trip.journeyState.matchingItinerary != null) {
+            matchingItinerary = trip.journeyState.matchingItinerary.clone();
+        }
         OtpUser tripOwner = getOtpUser();
         Set<OtpUser> notifyUsers = getLegTransitionNotifyUsers(trip);
         notifyUsers.forEach(observer -> {
@@ -406,7 +409,25 @@ public class CheckMonitoredTrip implements Runnable {
     private OtpGraphQLVariables getQueryParamsForTargetZonedDateTime() {
         OtpGraphQLVariables params = trip.otp2QueryParams.clone();
         params.date = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
+        checkForRerouting(params);
         return params;
+    }
+
+    /**
+     * Get the latest tracked journey associated with this trip, if available and live. If rerouting has occurred as
+     * part of that tracked journey, use the last rerouting location as the 'from place' instead of the original
+     * attributed to the trip.
+     */
+    public void checkForRerouting(OtpGraphQLVariables params) {
+        if (trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE) {
+            TrackedJourney trackedJourney = TripTrackingData.getOngoingTrackedJourney(trip.id);
+            if (trackedJourney != null) {
+                String reroutingLocation = trackedJourney.getLastReroutingLocation();
+                if (reroutingLocation != null) {
+                    params.fromPlace = reroutingLocation;
+                }
+            }
+        }
     }
 
     /**
