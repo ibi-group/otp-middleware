@@ -28,7 +28,6 @@ import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.invali
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removeCompanion;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removeDependent;
 import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removeObserver;
-import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.removePrimaryTraveler;
 
 /**
  * This represents a user of an OpenTripPlanner instance (typically of the standard OTP UI/otp-react-redux).
@@ -134,11 +133,21 @@ public class OtpUser extends AbstractUser {
                 return false;
             }
         }
+
         // Delete monitored trips.
         for (MonitoredTrip trip : MonitoredTrip.tripsForUser(this.id)) {
             boolean success = trip.delete();
             if (!success) {
                 LOG.error("Error deleting user's ({}) monitored trip {}", this.id, trip.id);
+                return false;
+            }
+        }
+
+        // Delete monitored trips where the user is the primary traveler.
+        for (MonitoredTrip trip : MonitoredTrip.tripsForPrimaryTraveler(id)) {
+            boolean success = trip.delete();
+            if (!success) {
+                LOG.error("Error deleting primary user's ({}) monitored trip {}", id, trip.id);
                 return false;
             }
         }
@@ -159,12 +168,6 @@ public class OtpUser extends AbstractUser {
         for (RelatedUser relatedUser : relatedUsers) {
             removeDependent(this, relatedUser);
         }
-
-        // If a dependent user, remove self as the primary traveler in trips created by other users.
-        // TODO: Should we alert the user who created the trip of the deletion?
-        Persistence.monitoredTrips
-            .getFiltered(Filters.eq("primary.userId", id))
-            .forEach(trip -> removePrimaryTraveler(this, trip));
 
         // If a companion user, invalidate relationship in trips where they are companions and observers.
         // TODO: Should we alert the user who created the trip of the deletion?

@@ -1,6 +1,8 @@
 package org.opentripplanner.middleware.utils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.leonard.Position;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
@@ -41,6 +43,12 @@ public class Coordinates {
     public Coordinates(Place place) {
         this.lat = place.lat;
         this.lon = place.lon;
+    }
+
+    @JsonIgnore
+    @BsonIgnore
+    public String getCoordinates() {
+        return lat + "," + lon;
     }
 
     @Override
