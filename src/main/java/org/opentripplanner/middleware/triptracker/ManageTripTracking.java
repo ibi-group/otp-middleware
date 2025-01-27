@@ -25,6 +25,8 @@ import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 
 import java.time.LocalDateTime;
@@ -43,6 +45,7 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
+    private static final Logger LOG = LoggerFactory.getLogger(ManageTripTracking.class);
 
     public static Supplier<OtpResponse> otpResponseProviderOverride = null;
     private static OtpGraphQLVariables rerouteVariables = null;
@@ -176,6 +179,7 @@ public class ManageTripTracking {
     public static EndTrackingResponse endTracking(Request request) {
         TripTrackingData tripData = TripTrackingData.fromRequestJourneyId(request);
         if (tripData != null) {
+            LOG.info("endtracking called from {} by {}", request.ip(), request.userAgent());
             return completeJourney(tripData, false);
         }
         return null;
@@ -190,6 +194,7 @@ public class ManageTripTracking {
         TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
         if (tripData != null) {
             if (tripData.journey != null) {
+                LOG.info("forciblyendtracking called from {} by {}", request.ip(), request.userAgent());
                 return completeJourney(tripData, true);
             } else {
                 logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Journey for provided trip id does not exist!");
