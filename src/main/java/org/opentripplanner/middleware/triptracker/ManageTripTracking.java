@@ -168,9 +168,28 @@ public class ManageTripTracking {
     public static TrackingResponse startOrUpdateTracking(Request request) {
         TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
         if (tripData != null) {
+            logTracking(request, "track/updatetracking");
+            // write device info to last location reported location
+            if (tripData.locations != null && !tripData.locations.isEmpty()) {
+                var lastLocation = tripData.locations.get(tripData.locations.size() - 1);
+                lastLocation.device_id = request.headers("device_id");
+                lastLocation.app_platform = request.headers("app_platform");
+                lastLocation.app_version = request.headers("app_version");
+            }
+
             return doUpdateTracking(request, tripData, tripData.journey == null);
         }
         return null;
+    }
+
+    public static void logTracking(Request request, String operation) {
+        LOG.info(
+            "{} called by device {} running {} app version {}",
+            operation,
+            request.headers("device_id"),
+            request.headers("app_platform"),
+            request.headers("app_version")
+        );
     }
 
     /**
@@ -179,7 +198,7 @@ public class ManageTripTracking {
     public static EndTrackingResponse endTracking(Request request) {
         TripTrackingData tripData = TripTrackingData.fromRequestJourneyId(request);
         if (tripData != null) {
-            LOG.info("endtracking called from {} by {}", request.ip(), request.userAgent());
+            logTracking(request, "endtracking");
             return completeJourney(tripData, false);
         }
         return null;
@@ -194,7 +213,7 @@ public class ManageTripTracking {
         TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
         if (tripData != null) {
             if (tripData.journey != null) {
-                LOG.info("forciblyendtracking called from {} by {}", request.ip(), request.userAgent());
+                logTracking(request, "forciblyendtracking");
                 return completeJourney(tripData, true);
             } else {
                 logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Journey for provided trip id does not exist!");
