@@ -103,17 +103,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         }
     }
 
-    /**
-     * To run this trip, change the env.yml config values for OTP_API_ROOT
-     * (and OTP_PLAN_ENDPOINT) to a valid OTP server.
-     */
     @Test
-    void canMonitorTrip() throws Exception {
+    void canMonitorOngoingTrip() throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
             OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
             false,
-            OtpTestUtils.createDefaultJourneyState()
+            null
         );
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         Persistence.monitoredTrips.create(monitoredTrip);
@@ -146,8 +142,68 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
         checkMonitoredTrip.run();
-        // Assert that there is one notification generated during check.
-        Assertions.assertEquals(1, checkMonitoredTrip.notifications.size());
+
+        // Assert that there is one notification generated during check and it is an alert.
+        assertEquals(1, checkMonitoredTrip.notifications.size());
+        assertEquals(NotificationType.ALERT_FOUND, checkMonitoredTrip.notifications.iterator().next().type);
+        // Clear the created trip.
+        PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
+    }
+
+    @Test
+    void canMonitorFutureTrip() throws Exception {
+        // TODO refactor with above test.
+        // Save an itinerary in the future, and run an itinerary check on it at at time before that itinerary start.
+
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            false,
+            null
+        );
+        monitoredTrip.tripTime = "08:35";
+        monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
+
+        Persistence.monitoredTrips.create(monitoredTrip);
+        LOG.info("Created trip {}", monitoredTrip.id);
+
+
+        OtpResponse mockResponse = mockOtpPlanResponse();
+        Itinerary mockTuesdayJune9Itinerary = mockResponse.plan.itineraries.get(0);
+
+        // parse original itinerary date/time and then update mock itinerary to occur on Monday June 15
+        ZonedDateTime mockItineraryDate = DateTimeUtils.makeOtpZonedDateTime(mockTuesdayJune9Itinerary.startTime)
+            .withDayOfMonth(9);
+        OtpTestUtils.updateBaseItineraryTime(
+            mockTuesdayJune9Itinerary,
+            mockItineraryDate
+        );
+
+        // Add fake alerts to simulated itinerary.
+        ArrayList<LocalizedAlert> fakeAlerts = new ArrayList<>();
+        fakeAlerts.add(new LocalizedAlert());
+        mockTuesdayJune9Itinerary.legs.get(1).alerts = fakeAlerts;
+
+        // The trip is set to be monitored Monday to Friday.
+        // Mock time to be 7:30am on Tuesday, June 9 before the trip start.
+        DateTimeUtils.useFixedClockAt(
+            noonMonday8June2020
+                .withDayOfMonth(9)
+                .withHour(7)
+                .withMinute(30)
+        );
+
+        // Next, run a monitor trip check from the new monitored trip using the simulated response.
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        checkMonitoredTrip.run();
+        // This process should initialize the scheduled departure time on the journey state
+        assertNotEquals(0, checkMonitoredTrip.trip.journeyState.scheduledDepartureTimeEpochMillis);
+
+        // No notifications in this case because the trip is next day.
+        assertEquals(1, checkMonitoredTrip.notifications.size());
+        assertEquals(NotificationType.ALERT_FOUND, checkMonitoredTrip.notifications.iterator().next().type);
+
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
     }
