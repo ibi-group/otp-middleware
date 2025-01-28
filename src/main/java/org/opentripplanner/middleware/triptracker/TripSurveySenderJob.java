@@ -34,12 +34,16 @@ import static org.opentripplanner.middleware.models.TrackedJourney.FORCIBLY_TERM
 import static org.opentripplanner.middleware.models.TrackedJourney.TERMINATED_BY_USER;
 import static org.opentripplanner.middleware.models.TripSurveyNotification.TIME_SENT_FIELD;
 import static org.opentripplanner.middleware.triptracker.ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 
 /**
  * This job will analyze completed trips with deviations and send survey notifications about select trips.
  */
 public class TripSurveySenderJob implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TripSurveySenderJob.class);
+
+    public static final int CONSECUTIVE_DEVIATIONS_WINDOW_SECONDS
+        = getConfigPropertyAsInt("CONSECUTIVE_DEVIATIONS_WINDOW_SECONDS", 30);
 
     @Override
     public void run() {
@@ -157,9 +161,10 @@ public class TripSurveySenderJob implements Runnable {
 
     public static Optional<TrackedJourney> selectMostDeviatedJourneyUsingDeviatedPoints(List<TrackedJourney> journeys) {
         if (journeys == null) return Optional.empty();
-        final double INTERVALS_IN_ONE_MINUTE = Math.ceil(60.0 / TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS);
-        return journeys.stream()
-            .filter(j -> j.longestConsecutiveDeviatedPoints >= INTERVALS_IN_ONE_MINUTE)
+        final double consecutiveDeviationsThreshold = Math.ceil((double) CONSECUTIVE_DEVIATIONS_WINDOW_SECONDS / TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS);
+        return journeys
+            .stream()
+            .filter(j -> j.longestConsecutiveDeviatedPoints >= consecutiveDeviationsThreshold)
             .max(Comparator.comparingInt(j -> j.longestConsecutiveDeviatedPoints));
     }
 }
