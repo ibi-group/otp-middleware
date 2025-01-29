@@ -660,6 +660,18 @@ public class CheckMonitoredTrip implements Runnable {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(targetZoneId);
 
         return (tripStartInstant.getEpochSecond() - now.toEpochSecond()) / 60;
+
+//        // get the configured timezone that OTP is using to parse dates and times
+//        ZoneId targetZoneId = DateTimeUtils.getOtpZoneId();
+//
+//        // Convert trip start time to the same time zone
+//        ZonedDateTime tripStartTime = matchingItinerary.startTime.toInstant().atZone(targetZoneId);
+//
+//        // Get current time in the target time zone
+//        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(targetZoneId);
+//
+//        // compute difference
+//        return Duration.between(now, tripStartTime).toMinutes();
     }
 
     /**
