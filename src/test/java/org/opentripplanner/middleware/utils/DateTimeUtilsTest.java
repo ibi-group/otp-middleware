@@ -90,8 +90,6 @@ class DateTimeUtilsTest {
 
     @Test
     void testOtpZoneIdIsSameAsSystem() {
-
         assertEquals(DateTimeUtils.getOtpZoneId(), DateTimeUtils.getSystemZoneId());
-
     }
 }
