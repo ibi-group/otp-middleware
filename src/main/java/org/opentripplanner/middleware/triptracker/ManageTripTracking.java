@@ -354,6 +354,10 @@ public class ManageTripTracking {
             trackedJourney.longestConsecutiveDeviatedPoints
         );
 
+        // Reset matching itinerary (so that trip monitoring/live tracking uses the original routing)
+        tripData.trip.journeyState.matchingItinerary = tripData.trip.itinerary;
+        Persistence.monitoredTrips.replace(tripData.trip.id, tripData.trip);
+
         return new EndTrackingResponse(
             NO_INSTRUCTION,
             TripStatus.ENDED.name()

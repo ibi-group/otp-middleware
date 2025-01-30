@@ -623,6 +623,41 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         // Confirm traveler is still not 'deviated'.
         updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertNotEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
+
+        // Stop tracking
+        // TODO refactor
+        response = makeRequest(
+            END_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createEndTrackingPayload(trackedJourney.id)),
+            headers,
+            HttpMethod.POST
+        );
+        var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
+        assertEquals(TripStatus.ENDED.name(), endTrackingResponse.tripStatus);
+        assertEquals(HttpStatus.OK_200, response.status);
+
+        // Start tracking again from the same last position above. Traveler should be deviated.
+        response = makeRequest(
+            START_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(startTrackingPayload),
+            headers,
+            HttpMethod.POST
+        );
+        startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+        assertEquals(HttpStatus.OK_200, response.status);
+
+        response = makeRequest(
+            UPDATE_TRACKING_TRIP_PATH,
+            JsonUtils.toJson(createUpdateTrackingPayload(
+                trackedJourney.id,
+                List.of(reroutingPointPosition)
+            )),
+            headers,
+            HttpMethod.POST
+        );
+        updateTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
     }
 
     /** Provides a mock OTP 'plan' rerouted response. */
