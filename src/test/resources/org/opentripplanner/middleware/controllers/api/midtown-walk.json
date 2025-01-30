@@ -1,0 +1,118 @@
+{
+    "duration": 564,
+    "startTime": 1738165800000,
+    "endTime": 1738166364000,
+    "walkTime": 564,
+    "transitTime": 0,
+    "waitingTime": 0,
+    "walkDistance": 0,
+    "walkLimitExceeded": false,
+    "elevationLost": 0,
+    "elevationGained": 0,
+    "transfers": 0,
+    "fare": null,
+    "legs": [
+        {
+            "startTime": 1738165800000,
+            "endTime": 1738166364000,
+            "departureDelay": 0,
+            "arrivalDelay": 0,
+            "realTime": false,
+            "distance": 718.75,
+            "mode": "WALK",
+            "interlineWithPreviousLeg": false,
+            "from": {
+                "name": "(Current Location)",
+                "lon": -84.3813736,
+                "lat": 33.7843782,
+                "vertexType": "NORMAL"
+            },
+            "to": {
+                "name": "1161 14th Place NE, Atlanta, GA, USA",
+                "lon": -84.3791163,
+                "lat": 33.7864105,
+                "vertexType": "NORMAL"
+            },
+            "legGeometry": {
+                "points": "ioemErv_bO?fA@nAWCwAAuAA?aC@uBBaC@mE?GBiB@E@AAAMEICA@ACCAOE_AUq@My@EA?A@??AB?P?pB?b@",
+                "length": 31
+            },
+            "rentedBike": false,
+            "transitLeg": false,
+            "duration": 564,
+            "steps": [
+                {
+                    "distance": 70.49,
+                    "relativeDirection": "DEPART",
+                    "streetName": "12th Street Northeast",
+                    "absoluteDirection": "WEST",
+                    "stayOn": false,
+                    "area": false,
+                    "lon": -84.3813737,
+                    "lat": 33.7843714
+                },
+                {
+                    "distance": 110.68,
+                    "relativeDirection": "RIGHT",
+                    "streetName": "Juniper Street Northeast",
+                    "absoluteDirection": "NORTH",
+                    "stayOn": true,
+                    "area": false,
+                    "lon": -84.3821362,
+                    "lat": 33.7843651
+                },
+                {
+                    "distance": 326.91,
+                    "relativeDirection": "RIGHT",
+                    "streetName": "13th Street Northeast",
+                    "absoluteDirection": "EAST",
+                    "stayOn": true,
+                    "area": false,
+                    "lon": -84.3820913,
+                    "lat": 33.7853585
+                },
+                {
+                    "distance": 16.76,
+                    "relativeDirection": "LEFT",
+                    "streetName": "crossing over 13th Street Northeast",
+                    "absoluteDirection": "NORTH",
+                    "stayOn": false,
+                    "area": false,
+                    "lon": -84.3785614,
+                    "lat": 33.7852777
+                },
+                {
+                    "distance": 112.73,
+                    "relativeDirection": "CONTINUE",
+                    "streetName": "Piedmont Avenue Northeast",
+                    "absoluteDirection": "NORTHEAST",
+                    "stayOn": false,
+                    "area": false,
+                    "lon": -84.378514,
+                    "lat": 33.7854188
+                },
+                {
+                    "distance": 3.08,
+                    "relativeDirection": "LEFT",
+                    "streetName": "Piedmont Avenue Northeast",
+                    "absoluteDirection": "NORTHWEST",
+                    "stayOn": true,
+                    "area": false,
+                    "lon": -84.3782455,
+                    "lat": 33.7863984
+                },
+                {
+                    "distance": 78.12,
+                    "relativeDirection": "SLIGHTLY_LEFT",
+                    "streetName": "14th Street Northeast",
+                    "absoluteDirection": "WEST",
+                    "stayOn": true,
+                    "area": false,
+                    "lon": -84.3782709,
+                    "lat": 33.7864153
+                }
+            ]
+        }
+    ],
+    "alerts": []
+}

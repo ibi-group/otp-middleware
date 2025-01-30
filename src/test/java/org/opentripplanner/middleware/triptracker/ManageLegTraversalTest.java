@@ -50,6 +50,7 @@ public class ManageLegTraversalTest {
 
     private static Itinerary adairAvenueToMonroeDriveItinerary;
     private static Itinerary midtownToAnsleyItinerary;
+    private static Itinerary midtownWalkItinerary;
     private static List<Place> midtownToAnsleyIntermediateStops;
     private static Itinerary firstLegBusTransit;
     private static Itinerary baptistChurchToEastCroganStreetIntinerary;
@@ -76,6 +77,10 @@ public class ManageLegTraversalTest {
         );
         midtownToAnsleyItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/27nb-midtown-to-ansley.json"),
+            Itinerary.class
+        );
+        midtownWalkItinerary = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/midtown-walk.json"),
             Itinerary.class
         );
         firstLegBusTransit = JsonUtils.getPOJOFromJSON(
@@ -216,6 +221,7 @@ public class ManageLegTraversalTest {
         Coordinates originCoords = new Coordinates(adairAvenueToMonroeDriveLeg.from);
         Coordinates destinationCoords = new Coordinates(adairAvenueToMonroeDriveLeg.to);
         Coordinates adairAvenueNortheastCoords = new Coordinates(adairAvenueNortheastStep);
+        Coordinates midtownWalkCoords = new Coordinates(33.784372, -84.381410); //33.784382, -84.381743);
         Coordinates virginiaCircleNortheastCoords = new Coordinates(virginiaCircleNortheastStep);
         Coordinates ponceDeLeonPlaceNortheastCoords = new Coordinates(ponceDeLeonPlaceNortheastStep);
         Coordinates virginiaAvenuePoint = new Coordinates(virginiaAvenueNortheastStep);
@@ -234,6 +240,9 @@ public class ManageLegTraversalTest {
 
         Leg legToDestinationAwayFromSidewalk = destinationAwayFromSidewalk.legs.get(0);
         Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
+
+        Leg midtownWalkLeg = midtownWalkItinerary.legs.get(0);
+        Step midtownWalkFirstStep = midtownWalkLeg.steps.get(0);
 
         return Stream.of(
             Arguments.of(
@@ -428,6 +437,15 @@ public class ManageLegTraversalTest {
                     pointNearEndOfSidewalk,
                      TRIP_INSTRUCTION_END_OF_ROUTING,
                     "Provide instruction for reaching destination if it is not near end of shape of walk leg."
+                )
+            ),
+            Arguments.of(
+                midtownWalkLeg,
+                new TraceData(
+                    midtownWalkCoords,
+                    new ContinueInstruction(midtownWalkFirstStep, locale),
+                    false,
+                    "Immediately after departure instruction. Should provide a 'Continue' instruction and not 'No instruction'."
                 )
             )
         );
