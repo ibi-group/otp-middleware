@@ -27,7 +27,10 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import spark.Request;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.i18n.Message.TRIP_REROUTED_NOTIFICATION;
@@ -355,8 +358,18 @@ public class ManageTripTracking {
         );
 
         // Reset matching itinerary (so that trip monitoring/live tracking uses the original routing)
-        tripData.trip.journeyState.matchingItinerary = tripData.trip.itinerary;
-        Persistence.monitoredTrips.replace(tripData.trip.id, tripData.trip);
+        try {
+            tripData.trip.journeyState.matchingItinerary = tripData.trip.itinerary.clone();
+            // TODO refactor same formula as in CheckMonitoredTrip
+            ZonedDateTime targetZonedDateTime = tripData.trip.tripZonedDateTime(LocalDate.parse(tripData.trip.journeyState.targetDate, DateTimeFormatter.ISO_LOCAL_DATE));
+            long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - tripData.trip.journeyState.matchingItinerary.getScheduledStartTimeEpochMillis();
+            // update overall itinerary and leg start/end times by adding offset
+            tripData.trip.journeyState.matchingItinerary.offsetTimes(offsetMillis);
+
+            Persistence.monitoredTrips.replace(tripData.trip.id, tripData.trip);
+        } catch (CloneNotSupportedException e) {
+            // Do nothing if clone was not created.
+        }
 
         return new EndTrackingResponse(
             NO_INSTRUCTION,
