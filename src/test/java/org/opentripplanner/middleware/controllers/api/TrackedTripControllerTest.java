@@ -81,7 +81,6 @@ import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     private static OtpUser soloOtpUser;
-    private MonitoredTrip monitoredTrip;
     private static TrackedJourney trackedJourney;
     private static Itinerary itinerary;
     private static Itinerary multiLegItinerary;
@@ -94,6 +93,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String END_TRACKING_TRIP_PATH = ROUTE_PATH + "endtracking";
     private static final String FORCIBLY_END_TRACKING_TRIP_PATH = ROUTE_PATH + "forciblyendtracking";
     private static HashMap<String, String> headers;
+
+    private MonitoredTrip monitoredTrip;
 
     @BeforeAll
     public static void setUp() throws Exception {
