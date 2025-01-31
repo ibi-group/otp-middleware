@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.auth;
 
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.client.mgmt.ManagementAPI;
+import com.auth0.client.mgmt.filter.DeviceCredentialsFilter;
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
@@ -74,6 +75,7 @@ public class Auth0Users {
      * Delete Auth0 user by Auth0 user ID using the Management API.
      */
     public static void deleteAuth0User(String userId) throws Auth0Exception {
+        revokeUserRefreshToken(userId);
         LOG.info("Deleting Auth0 user for {}", userId);
         getManagementAPI()
             .users()
@@ -110,6 +112,23 @@ public class Auth0Users {
             return null;
         }
         return cachedToken.tokenHolder.getAccessToken();
+    }
+
+    /**
+     * Revoke Auth0 refresh token for user. This is to prevent unwanted behaviour when an account is deleted and then
+     * recreated and an existing refresh token is incorrectly reused.
+     */
+    public static void revokeUserRefreshToken(String userId) throws Auth0Exception {
+        var deviceCredentials = getManagementAPI()
+            .deviceCredentials()
+            .list(new DeviceCredentialsFilter().withUserId(userId))
+            .execute();
+        if (deviceCredentials != null && !deviceCredentials.isEmpty()) {
+            String refreshToken = deviceCredentials.get(0).getId();
+            if (refreshToken != null) {
+                authAPI.revokeToken(refreshToken);
+            }
+        }
     }
 
     /**
