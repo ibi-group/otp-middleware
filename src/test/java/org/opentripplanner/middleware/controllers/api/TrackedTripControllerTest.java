@@ -529,8 +529,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(new Coordinates(updated.lastLocation()), reroutingPoint);
 
         // Update tracking from start of the new rerouted position.
-        UpdatedTrackingPayload reroutedPoisitonPayload = createUpdateTrackingPayload(trackedJourney.id, List.of(reroutingPointPosition));
-        updateTrackingResponse = updateTracking(reroutedPoisitonPayload, HttpStatus.OK_200);
+        updateTrackingResponse = updateTracking(
+            createUpdateTrackingPayload(trackedJourney.id, List.of(reroutingPointPosition)),
+            HttpStatus.OK_200
+        );
         // Confirm traveler is still not 'deviated'.
         assertNotEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
 
@@ -554,7 +556,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         startTrackingResponse = startTracking(startTrackingPayload, HttpStatus.OK_200);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
 
-        updateTrackingResponse = updateTracking(reroutedPoisitonPayload, HttpStatus.OK_200);
+        updateTrackingResponse = updateTracking(
+            createUpdateTrackingPayload(trackedJourney.id, List.of(reroutingPointPosition)),
+            HttpStatus.OK_200
+        );
         assertEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
     }
 
