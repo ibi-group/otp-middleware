@@ -221,7 +221,7 @@ public class ManageLegTraversalTest {
         Coordinates originCoords = new Coordinates(adairAvenueToMonroeDriveLeg.from);
         Coordinates destinationCoords = new Coordinates(adairAvenueToMonroeDriveLeg.to);
         Coordinates adairAvenueNortheastCoords = new Coordinates(adairAvenueNortheastStep);
-        Coordinates midtownWalkCoords = new Coordinates(33.784372, -84.381410); //33.784382, -84.381743);
+        Coordinates midtownWalkCoords = new Coordinates(33.784372, -84.381410);
         Coordinates virginiaCircleNortheastCoords = new Coordinates(virginiaCircleNortheastStep);
         Coordinates ponceDeLeonPlaceNortheastCoords = new Coordinates(ponceDeLeonPlaceNortheastStep);
         Coordinates virginiaAvenuePoint = new Coordinates(virginiaAvenueNortheastStep);
