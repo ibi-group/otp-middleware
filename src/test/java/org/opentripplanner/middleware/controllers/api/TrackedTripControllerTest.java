@@ -423,15 +423,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var startTrackingResponse = startTracking(createStartTrackingPayload(), HttpStatus.OK_200);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
 
-        var response = makeRequest(
+        endTracking(
             FORCIBLY_END_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createForceEndTrackingPayload(monitoredTrip.id)),
-            headers,
-            HttpMethod.POST
+            JsonUtils.toJson(createForceEndTrackingPayload(monitoredTrip.id))
         );
-        var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
-        assertEquals(TripStatus.ENDED.name(), endTrackingResponse.tripStatus);
-        assertEquals(HttpStatus.OK_200, response.status);
 
         // Check that the TrackedJourney Mongo record has been updated.
         TrackedJourney mongoTrackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
@@ -750,12 +745,11 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     private void endTracking(String journeyId) throws JsonProcessingException {
-        var response = makeRequest(
-            END_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createEndTrackingPayload(journeyId)),
-            headers,
-            HttpMethod.POST
-        );
+        endTracking(END_TRACKING_TRIP_PATH, JsonUtils.toJson(createEndTrackingPayload(journeyId)));
+    }
+
+    private static void endTracking(String path, String payload) throws JsonProcessingException {
+        var response = makeRequest(path, payload, headers, HttpMethod.POST);
         var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
         assertEquals(TripStatus.ENDED.name(), endTrackingResponse.tripStatus);
         assertEquals(HttpStatus.OK_200, response.status);
