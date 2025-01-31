@@ -172,24 +172,16 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     void canCompleteJourneyLifeCycle() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        var response = makeRequest(
-            START_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createStartTrackingPayload()),
-            headers,
-            HttpMethod.POST
-        );
-
-        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        var startTrackingResponse = startTracking(createStartTrackingPayload(), HttpStatus.OK_200);
         assertEquals(ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS, startTrackingResponse.frequencySeconds);
         assertEquals(TripStatus.DEVIATED.name(), startTrackingResponse.tripStatus);
-        assertEquals(HttpStatus.OK_200, response.status);
 
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         // A single location is submitted when starting tracking.
         assertEquals(1, trackedJourney.locations.size());
         assertEquals(TripStatus.DEVIATED, trackedJourney.lastLocation().tripStatus);
 
-        response = makeRequest(
+        var response = makeRequest(
             UPDATE_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createUpdateTrackingPayload(startTrackingResponse.journeyId)),
             headers,
@@ -228,20 +220,20 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canNotRestartAnOngoingJourney() throws Exception {
         assumeTrue(IS_END_TO_END);
-
-        String jsonPayload = JsonUtils.toJson(createStartTrackingPayload());
-
+        
         // Make two identical requests to start and update a journey. The second one should fail.
         for (int i = 0; i < 2; i++) {
-            var response = makeRequest(START_TRACKING_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
-            var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
-
+            var response = startTracking(
+                createStartTrackingPayload(),
+                i == 0 ? HttpStatus.OK_200 : HttpStatus.FORBIDDEN_403
+            );
             if (i == 0) {
-                assertEquals(HttpStatus.OK_200, response.status);
-                trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+                trackedJourney = Persistence.trackedJourneys.getById(response.journeyId);
             } else {
-                assertEquals("A journey of this trip has already been started. End the current journey before starting another.", startTrackingResponse.message);
-                assertEquals(HttpStatus.FORBIDDEN_403, response.status);
+                assertEquals(
+                    "A journey of this trip has already been started. End the current journey before starting another.",
+                    response.message
+                );
             }
         }
     }
@@ -435,18 +427,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         monitoredTrip = createMonitoredTrip(itinerary);
 
-        var response = makeRequest(
-            START_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createStartTrackingPayload()),
-            headers,
-            HttpMethod.POST
-        );
-
-        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        var startTrackingResponse = startTracking(createStartTrackingPayload(), HttpStatus.OK_200);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
-        assertEquals(HttpStatus.OK_200, response.status);
 
-        response = makeRequest(
+        var response = makeRequest(
             FORCIBLY_END_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createForceEndTrackingPayload(monitoredTrip.id)),
             headers,
@@ -461,21 +445,15 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(FORCIBLY_TERMINATED, mongoTrackedJourney.endCondition);
         assertNotEquals(-1, mongoTrackedJourney.longestConsecutiveDeviatedPoints);
     }
-
+    
     @Test
     void canNotUseUnassociatedTrip() throws Exception {
         assumeTrue(IS_END_TO_END);
-
-        HttpResponseValues response = makeRequest(
-            START_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createStartTrackingPayload("unassociated-trip-id")),
-            headers,
-            HttpMethod.POST
+        var response = startTracking(
+            createStartTrackingPayload("unassociated-trip-id"),
+            HttpStatus.FORBIDDEN_403
         );
-
-        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
-        assertEquals("Monitored trip is not associated with this user!", startTrackingResponse.message);
-        assertEquals(HttpStatus.FORBIDDEN_403, response.status);
+        assertEquals("Monitored trip is not associated with this user!", response.message);
     }
 
     @Test
@@ -498,20 +476,12 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     void canNotUpdateCompletedJourney() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        var response = makeRequest(
-            START_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createStartTrackingPayload()),
-            headers,
-            HttpMethod.POST
-        );
-
-        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        var startTrackingResponse = startTracking(createStartTrackingPayload(), HttpStatus.OK_200);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS, startTrackingResponse.frequencySeconds);
         assertEquals(TripStatus.DEVIATED.name(), startTrackingResponse.tripStatus);
-        assertEquals(HttpStatus.OK_200, response.status);
 
-        response = makeRequest(
+        var response = makeRequest(
             END_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createEndTrackingPayload(startTrackingResponse.journeyId)),
             headers,
@@ -535,9 +505,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     void canRerouteTrip() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        monitoredTrip = createMonitoredTrip(walkToVoterRegCenterItinerary);
-
-        MonitoredTrip rerouteMonitoredTrip = monitoredTrip;
+        MonitoredTrip rerouteMonitoredTrip = monitoredTrip = createMonitoredTrip(walkToVoterRegCenterItinerary);
 
         var startTrackingPayload = createStartTrackingPayload(rerouteMonitoredTrip.id);
         var mockOtpResponse = mockOtpReroutedPlanResponse();
@@ -548,19 +516,11 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var reroutingPointPosition = new TrackingLocation(Instant.now(), reroutingPoint.lat,reroutingPoint.lon);
 
         // Start tracking.
-        var response = makeRequest(
-            START_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(startTrackingPayload),
-            headers,
-            HttpMethod.POST
-        );
-
-        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        var startTrackingResponse = startTracking(startTrackingPayload, HttpStatus.OK_200);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
-        assertEquals(HttpStatus.OK_200, response.status);
 
         // Update tracking from a 'deviated' position.
-        response = makeRequest(
+        var response = makeRequest(
             UPDATE_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createUpdateTrackingPayload(
                 trackedJourney.id,
@@ -664,15 +624,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
 
         // Start tracking again from the same last position above. Traveler should be deviated.
-        response = makeRequest(
-            START_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(startTrackingPayload),
-            headers,
-            HttpMethod.POST
-        );
-        startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        startTrackingResponse = startTracking(startTrackingPayload, HttpStatus.OK_200);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
-        assertEquals(HttpStatus.OK_200, response.status);
 
         response = makeRequest(
             UPDATE_TRACKING_TRIP_PATH,
@@ -808,5 +761,13 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
      */
     private static Date getDateAndConvertToSeconds() {
         return new Date(new Date().getTime() / 1000);
+    }
+
+    private TrackingResponse startTracking(StartTrackingPayload payload, int expectedStatus) throws JsonProcessingException {
+        var response = makeRequest(START_TRACKING_TRIP_PATH, JsonUtils.toJson(payload), headers, HttpMethod.POST);
+        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertEquals(expectedStatus, response.status);
+
+        return startTrackingResponse;
     }
 }
