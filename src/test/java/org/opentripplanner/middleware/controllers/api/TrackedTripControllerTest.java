@@ -151,11 +151,13 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     @BeforeEach
     public void beforeEachTest() {
+        assumeTrue(IS_END_TO_END);
         monitoredTrip = createMonitoredTrip(itinerary);
     }
 
     @AfterEach
     public void tearDownAfterTest() {
+        assumeTrue(IS_END_TO_END);
         if (trackedJourney != null) {
             trackedJourney.delete();
             trackedJourney = null;
@@ -532,7 +534,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     void canRerouteTrip() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        monitoredTrip = createMonitoredTrip(itinerary);
+        monitoredTrip = createMonitoredTrip(walkToVoterRegCenterItinerary);
 
         MonitoredTrip rerouteMonitoredTrip = monitoredTrip;
 
