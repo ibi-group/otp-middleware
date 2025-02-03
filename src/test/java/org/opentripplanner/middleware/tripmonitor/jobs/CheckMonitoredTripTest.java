@@ -894,7 +894,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     /**
      * Edge case when UTC time is 1 day ahead of local time. If this is failing, ensure OTP_TIMEZONE is set in env.yml
-
      */
     @Test
     void testCheckMonitoredTripWhenUTCIsNextDay() throws Exception {
