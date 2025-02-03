@@ -357,24 +357,37 @@ public class ManageTripTracking {
             trackedJourney.longestConsecutiveDeviatedPoints
         );
 
-        // Reset matching itinerary (so that trip monitoring/live tracking uses the original routing)
-        try {
-            tripData.trip.journeyState.matchingItinerary = tripData.trip.itinerary.clone();
-            // TODO refactor same formula as in CheckMonitoredTrip
-            ZonedDateTime targetZonedDateTime = tripData.trip.tripZonedDateTime(LocalDate.parse(tripData.trip.journeyState.targetDate, DateTimeFormatter.ISO_LOCAL_DATE));
-            long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - tripData.trip.journeyState.matchingItinerary.getScheduledStartTimeEpochMillis();
-            // update overall itinerary and leg start/end times by adding offset
-            tripData.trip.journeyState.matchingItinerary.offsetTimes(offsetMillis);
-
-            Persistence.monitoredTrips.replace(tripData.trip.id, tripData.trip);
-        } catch (CloneNotSupportedException e) {
-            // Do nothing if clone was not created.
-        }
+        resetMatchingItineraryIfNeeded(trackedJourney);
 
         return new EndTrackingResponse(
             NO_INSTRUCTION,
             TripStatus.ENDED.name()
         );
+    }
+
+    /**
+     * If rerouting occurred, then the matching itinerary changed with a starting point different from the
+     * starting location in the original itinerary.
+     * In that case, reset the matching itinerary, so that trip monitoring/live tracking uses the original routing.
+     */
+    private static void resetMatchingItineraryIfNeeded(TrackedJourney trackedJourney) {
+        if (trackedJourney.getLastReroutingLocation() != null) {
+            try {
+                MonitoredTrip trip = trackedJourney.trip;
+
+                trip.journeyState.matchingItinerary = trip.itinerary.clone();
+
+                // TODO refactor same formula as in CheckMonitoredTrip
+                ZonedDateTime targetZonedDateTime = trip.tripZonedDateTime(LocalDate.parse(trip.journeyState.targetDate, DateTimeFormatter.ISO_LOCAL_DATE));
+                long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - trip.journeyState.matchingItinerary.getScheduledStartTimeEpochMillis();
+                // update overall itinerary and leg start/end times by adding offset
+                trip.journeyState.matchingItinerary.offsetTimes(offsetMillis);
+
+                Persistence.monitoredTrips.replace(trip.id, trip);
+            } catch (CloneNotSupportedException e) {
+                // Do nothing if clone was not created.
+            }
+        }
     }
 
     /**
