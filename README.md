@@ -332,6 +332,8 @@ The special E2E client settings should be defined in `env.yml`:
 | TRIP_SURVEY_ID | string | Optional | abcdef123y | The ID of a survey (on the platform of your choice) for trip-related feedback. |
 | TRIP_SURVEY_SUBDOMAIN | string | Optional | abcabc12a | The subdomain of a website where the trip-related surveys are administered. |
 | TRIP_SURVEY_API_TOKEN | string | Optional | abcdef123y | The token for the survey API for downloading responses. |
+| TRIP_SURVEY_RESPONSES_FILE_PREFIX | string | Optional | trip-survey-responses | The file name prefix for compiled trip survey responses. |
+| TRIP_SURVEY_RESPONSES_FOLDER | string | Optional | trip-survey-responses | The S3 folder name where compiled survey responses will be uploaded. |
 | TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |
 | TRUSTED_COMPANION_CONFIRMATION_PAGE_URL | string | Optional | https://otp-server.example.com/trusted/confirmation | URL to the trusted companion confirmation page. This page should support handling an error URL parameter. |
 | TWILIO_AUTH_TOKEN | string | Optional | your-auth-token | Twilio settings available at: https://twilio.com/user/account |

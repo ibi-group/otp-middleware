@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
  * This job will analyze completed trips with deviations and send survey notifications about select trips.
@@ -28,7 +29,10 @@ import static org.opentripplanner.middleware.connecteddataplatform.ConnectedData
 public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
     private static final Logger LOG = LoggerFactory.getLogger(TripSurveyUploadJob.class);
 
-    public static final String SURVEY_ZIP_FILE_PREFIX = "merged";
+
+    public static final String DEFAULT_TRIP_SURVEY_PREFIX = "trip-survey-responses";
+    public static final String SURVEY_ZIP_FILE_PREFIX = getConfigPropertyAsText("TRIP_SURVEY_RESPONSES_FILE_PREFIX", DEFAULT_TRIP_SURVEY_PREFIX);
+    public static final String SURVEY_FOLDER = getConfigPropertyAsText("TRIP_SURVEY_RESPONSES_FOLDER", DEFAULT_TRIP_SURVEY_PREFIX);
 
     private final Function<LocalDateTime, Responses> surveyApiResponseProvider;
 
@@ -79,7 +83,7 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
         String tempDataFile = uploadFiles.getTempDataFile();
         try (uploadFiles) {
             FileUtils.writeToFile(tempDataFile, false, responses.toCsv(csvHeaders));
-            uploadFiles.compressAndUpload("trip-survey-responses");
+            uploadFiles.compressAndUpload(SURVEY_FOLDER);
             return true;
         } catch (IOException e) {
             LOG.warn("Error writing survey results to {}", tempDataFile);
