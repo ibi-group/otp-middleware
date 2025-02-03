@@ -33,6 +33,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -890,4 +891,67 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         checkMonitoredTrip.targetZonedDateTime = monitoredTrip.tripZonedDateTime(DateTimeUtils.nowAsLocalDate());
         checkMonitoredTrip.processLegTransition(NotificationType.MODE_CHANGE_NOTIFICATION, travelerPosition);
     }
+
+    /**
+     * Edge case when UTC time is 1 day ahead of local time. If this is failing, ensure OTP_TIMEZONE is set in env.yml
+
+     */
+    @Test
+    void testCheckMonitoredTripWhenUTCIsNextDay() throws Exception {
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            false,
+            OtpTestUtils.createDefaultJourneyState()
+        );
+
+        // monitored trip start time = 1:30AM UTC or 5:30PM PST
+        OtpTestUtils.updateBaseItineraryTime(
+            monitoredTrip.itinerary,
+            DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime)
+                .withHour(17)
+                .withMinute(30)
+                .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
+        );
+        monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.tripTime = "17:30";
+        monitoredTrip.leadTimeInMinutes = 30;
+        Persistence.monitoredTrips.create(monitoredTrip);
+        LOG.info("Created trip {}", monitoredTrip.id);
+
+        // Set up an OTP mock response in order to trigger some of the monitor checks.
+        OtpResponse mockResponse = mockOtpPlanResponse();
+        Itinerary mockTuesdayJune09Itinerary = mockResponse.plan.itineraries.get(0);
+
+        // itinerary start time = 1:30AM UTC or 5:30PM PST
+        OtpTestUtils.updateBaseItineraryTime(
+            mockTuesdayJune09Itinerary,
+            DateTimeUtils.makeOtpZonedDateTime(mockTuesdayJune09Itinerary.startTime)
+                .withHour(17)
+                .withMinute(30)
+                .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
+        );
+
+        // change "now" time after initial check to be within 30 min lead
+        // 1:00AM UTC or 5:00PM PST
+        DateTimeUtils.useFixedClockAt(
+            noonMonday8June2020
+                .withDayOfMonth(9)
+                .withHour(17)
+                .withMinute(0)
+                .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
+        );
+
+        // Next, run a monitor trip check from the new monitored trip using the simulated response.
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        checkMonitoredTrip.run();
+
+        // trip should have been skipped
+        Assertions.assertEquals(DayOfWeek.TUESDAY, checkMonitoredTrip.targetZonedDateTime.getDayOfWeek());
+
+        // Clear the created trip.
+        PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
+    }
+
 }

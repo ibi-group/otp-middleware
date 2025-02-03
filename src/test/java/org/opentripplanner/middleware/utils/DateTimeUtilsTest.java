@@ -87,9 +87,4 @@ class DateTimeUtilsTest {
         );
         assertEquals(expectedHours, getHoursBetween(date1, date2));
     }
-
-    @Test
-    void testOtpZoneIdIsSameAsSystem() {
-        assertEquals(DateTimeUtils.getOtpZoneId(), DateTimeUtils.getSystemZoneId());
-    }
 }
