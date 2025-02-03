@@ -46,7 +46,6 @@ import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.time.Duration;
@@ -512,8 +511,6 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(rerouteMonitoredTrip);
         checkMonitoredTrip.run();
         Itinerary afterCheck = Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id).journeyState.matchingItinerary;
-        System.out.println(beforeCheck);
-        System.out.println(afterCheck);
         assertEquals(beforeCheck.duration, afterCheck.duration);
 
         // Reroute again from a different location.
