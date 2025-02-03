@@ -11,7 +11,7 @@ info:
   license:
     name: "MIT License"
     url: "https://opensource.org/licenses/MIT"
-host: "localhost:4567"
+host: "fe80:0:0:0:f74:9fe8:6f78:2b67%wlan0:4567"
 basePath: "/"
 tags:
 - name: "api/admin/user"
