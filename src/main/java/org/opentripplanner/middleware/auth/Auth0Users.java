@@ -115,7 +115,7 @@ public class Auth0Users {
     }
 
     /**
-     * Revoke Auth0 refresh token for user. This is to prevent unwanted behaviour when an account is deleted and then
+     * Revoke Auth0 refresh tokens for user. This is to prevent unwanted behaviour when an account is deleted, then
      * recreated and an existing refresh token is incorrectly reused.
      */
     public static void revokeUserRefreshToken(String userId) throws Auth0Exception {
@@ -123,11 +123,8 @@ public class Auth0Users {
             .deviceCredentials()
             .list(new DeviceCredentialsFilter().withUserId(userId))
             .execute();
-        if (deviceCredentials != null && !deviceCredentials.isEmpty()) {
-            String refreshToken = deviceCredentials.get(0).getId();
-            if (refreshToken != null) {
-                authAPI.revokeToken(refreshToken);
-            }
+        if (deviceCredentials != null) {
+            deviceCredentials.forEach(deviceCredential -> authAPI.revokeToken(deviceCredential.getId()));
         }
     }
 
