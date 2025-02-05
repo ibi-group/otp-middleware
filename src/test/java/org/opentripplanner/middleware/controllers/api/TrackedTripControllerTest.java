@@ -348,8 +348,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 monitoredTrip,
                 createPoint(firstStepCoords, 4, NORTH_EAST_BEARING),
                 new OnTrackInstruction(4, adairAvenueNortheastStep, locale).build(),
-                TripStatus.DEVIATED,
-                "Coords deviated but near first step should produce relevant instruction"
+                TripStatus.ON_SCHEDULE,
+                "Coords in the 'upcoming' range of first step should produce relevant instruction and deemed not deviated."
             ),
             Arguments.of(
                 monitoredTrip,
@@ -403,6 +403,17 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .build(),
                 TripStatus.AHEAD_OF_SCHEDULE,
                 "Arriving ahead of schedule to a bus stop at the end of first leg."
+            ),
+            Arguments.of(
+                multiLegMonitoredTrip,
+                createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING),
+                new WaitForTransitInstruction(
+                    multiItinBusLeg,
+                    multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
+                    locale)
+                    .build(),
+                TripStatus.AHEAD_OF_SCHEDULE,
+                "Arriving ahead of schedule near a bus stop (in 'upcoming' range) at the end of first leg."
             ),
             Arguments.of(
                 multiLegMonitoredTrip,
