@@ -215,6 +215,8 @@ public class TravelerLocator {
                 } else if (isWithinStepRange(travelerPosition, nextStep)) {
                     return new ContinueInstruction(nextStep, locale);
                 }
+            } else if (nextStep != null) {
+                return new ContinueInstruction(nextStep, locale);
             }
         }
         return null;
