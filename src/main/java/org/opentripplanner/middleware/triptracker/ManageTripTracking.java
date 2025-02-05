@@ -25,6 +25,8 @@ import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 
 import java.time.LocalDateTime;
@@ -43,6 +45,7 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
+    private static final Logger LOG = LoggerFactory.getLogger(ManageTripTracking.class);
 
     public static Supplier<OtpResponse> otpResponseProviderOverride = null;
     private static OtpGraphQLVariables rerouteVariables = null;
@@ -165,9 +168,28 @@ public class ManageTripTracking {
     public static TrackingResponse startOrUpdateTracking(Request request) {
         TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
         if (tripData != null) {
+            logTracking(request, "track/updatetracking");
+            // write device info to last location reported location
+            if (tripData.locations != null && !tripData.locations.isEmpty()) {
+                var lastLocation = tripData.locations.get(tripData.locations.size() - 1);
+                lastLocation.device_id = request.headers("device_id");
+                lastLocation.app_platform = request.headers("app_platform");
+                lastLocation.app_version = request.headers("app_version");
+            }
+
             return doUpdateTracking(request, tripData, tripData.journey == null);
         }
         return null;
+    }
+
+    public static void logTracking(Request request, String operation) {
+        LOG.info(
+            "{} called by device {} running {} app version {}",
+            operation,
+            request.headers("device_id"),
+            request.headers("app_platform"),
+            request.headers("app_version")
+        );
     }
 
     /**
@@ -176,6 +198,7 @@ public class ManageTripTracking {
     public static EndTrackingResponse endTracking(Request request) {
         TripTrackingData tripData = TripTrackingData.fromRequestJourneyId(request);
         if (tripData != null) {
+            logTracking(request, "endtracking");
             return completeJourney(tripData, false);
         }
         return null;
@@ -190,6 +213,7 @@ public class ManageTripTracking {
         TripTrackingData tripData = TripTrackingData.fromRequestTripId(request);
         if (tripData != null) {
             if (tripData.journey != null) {
+                logTracking(request, "forciblyendtracking");
                 return completeJourney(tripData, true);
             } else {
                 logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Journey for provided trip id does not exist!");
