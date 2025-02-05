@@ -29,7 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.i18n.Message.TRIP_REROUTED_NOTIFICATION;
@@ -378,10 +381,37 @@ public class ManageTripTracking {
             trackedJourney.longestConsecutiveDeviatedPoints
         );
 
+        resetMatchingItineraryIfNeeded(trackedJourney);
+
         return new EndTrackingResponse(
             NO_INSTRUCTION,
             TripStatus.ENDED.name()
         );
+    }
+
+    /**
+     * If rerouting occurred, then the matching itinerary changed with a starting point different from the
+     * starting location in the original itinerary.
+     * In that case, reset the matching itinerary, so that trip monitoring/live tracking uses the original routing.
+     */
+    private static void resetMatchingItineraryIfNeeded(TrackedJourney trackedJourney) {
+        if (trackedJourney.getLastReroutingLocation() != null) {
+            try {
+                MonitoredTrip trip = trackedJourney.trip;
+
+                trip.journeyState.matchingItinerary = trip.itinerary.clone();
+
+                // TODO refactor same formula as in CheckMonitoredTrip
+                ZonedDateTime targetZonedDateTime = trip.tripZonedDateTime(LocalDate.parse(trip.journeyState.targetDate, DateTimeFormatter.ISO_LOCAL_DATE));
+                long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - trip.journeyState.matchingItinerary.getScheduledStartTimeEpochMillis();
+                // update overall itinerary and leg start/end times by adding offset
+                trip.journeyState.matchingItinerary.offsetTimes(offsetMillis);
+
+                Persistence.monitoredTrips.replace(trip.id, trip);
+            } catch (CloneNotSupportedException e) {
+                // Do nothing if clone was not created.
+            }
+        }
     }
 
     /**
