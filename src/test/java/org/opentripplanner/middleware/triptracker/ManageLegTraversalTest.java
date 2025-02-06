@@ -465,6 +465,7 @@ public class ManageLegTraversalTest {
         TravelerPosition travelerPosition = new TravelerPosition.Builder()
             .setExpectedLeg(transitLeg)
             .setCurrentPosition(traceData.position)
+            .setCurrentTime(Instant.now())
             .setSpeed(traceData.speed)
             .build();
         TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, false);

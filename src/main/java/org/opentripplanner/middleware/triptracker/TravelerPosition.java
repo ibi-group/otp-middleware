@@ -85,13 +85,19 @@ public class TravelerPosition {
     }
 
     /**
-     * Whether someone is in 'upcoming' walking range of the origin/departure stop of a transit leg.
+     * Returns the closest transit leg in 'upcoming' radius eligible for a "Wait for transit" instruction.
      */
-    public boolean isNearTransitLegOrigin() {
+    public Leg getTransitLegWithClosestUpcomingOrigin() {
         double distance1 = distanceToTransitLegOrigin(currentPosition, expectedLeg);
         double distance2 = distanceToTransitLegOrigin(currentPosition, nextLeg);
 
-        return distance1 <= TRIP_INSTRUCTION_UPCOMING_RADIUS || distance2 <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
+        if (distance1 <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distance1 < distance2) {
+            return expectedLeg;
+        } else if (distance2 <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distance2 < distance1) {
+            return nextLeg;
+        } else {
+            return null;
+        }
     }
 
     private static double distanceToTransitLegOrigin(Coordinates position, Leg leg) {

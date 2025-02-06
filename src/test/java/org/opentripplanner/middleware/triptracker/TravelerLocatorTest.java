@@ -46,7 +46,7 @@ class TravelerLocatorTest {
 
     @ParameterizedTest
     @MethodSource("createNearTransitLegOriginCases")
-    void testIsNearTransitLegOrigin(Coordinates stopCoordinates, Coordinates userCoordinates, boolean expectedValue) {
+    void testIsNearTransitLegOrigin(Coordinates stopCoordinates, Coordinates userCoordinates, boolean expectedLeg) {
         Leg transitLeg = new Leg();
         // Populating fields to avoid null pointer exceptions, but only 'transitLeg' and 'from' matter.
         transitLeg.transitLeg = true;
@@ -72,12 +72,12 @@ class TravelerLocatorTest {
             .setCurrentTime(Instant.now())
             .setCurrentPosition(userCoordinates)
             .build();
-        assertEquals(expectedValue, position.isNearTransitLegOrigin());
+        assertEquals(expectedLeg ? transitLeg : null, position.getTransitLegWithClosestUpcomingOrigin());
 
         // Swap the two legs - result should be the same.
         position.nextLeg = transitLeg;
         position.expectedLeg = otherTransitLeg;
-        assertEquals(expectedValue, position.isNearTransitLegOrigin());
+        assertEquals(expectedLeg ? transitLeg : null, position.getTransitLegWithClosestUpcomingOrigin());
     }
 
     static Stream<Arguments> createNearTransitLegOriginCases() {
