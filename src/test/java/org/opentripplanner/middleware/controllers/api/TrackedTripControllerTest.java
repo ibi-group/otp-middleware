@@ -404,6 +404,19 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 TripStatus.AHEAD_OF_SCHEDULE,
                 "Arriving ahead of schedule to a bus stop at the end of first leg."
             ),
+            // This position overlaps with the beginning of the transit trip,
+            // but it is still within the 'upcoming' radius of the stop, so display a "wait for transit" instruction.
+            Arguments.of(
+                multiLegMonitoredTrip,
+                createPoint(multiItinFirstLegDestCoords, 1.5, NORTH_EAST_BEARING),
+                new WaitForTransitInstruction(
+                    multiItinBusLeg,
+                    multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
+                    locale)
+                    .build(),
+                TripStatus.AHEAD_OF_SCHEDULE,
+                "Arriving ahead of schedule to a bus stop at the end of first leg should produce a non-trivial instruction."
+            ),
             Arguments.of(
                 multiLegMonitoredTrip,
                 createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING),
