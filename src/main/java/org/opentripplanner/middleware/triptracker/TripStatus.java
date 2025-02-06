@@ -4,7 +4,6 @@ import java.time.Instant;
 
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isAtEndOfLeg;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
-import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
 
 
 /**
