@@ -87,9 +87,9 @@ public class TravelerPosition {
     /**
      * Whether someone is in 'upcoming' walking range of the origin/departure stop of a transit leg.
      */
-    public static boolean isNearTransitLegOrigin(TravelerPosition pos) {
-        double distance1 = distanceToTransitLegOrigin(pos.currentPosition, pos.expectedLeg);
-        double distance2 = distanceToTransitLegOrigin(pos.currentPosition, pos.nextLeg);
+    public boolean isNearTransitLegOrigin() {
+        double distance1 = distanceToTransitLegOrigin(currentPosition, expectedLeg);
+        double distance2 = distanceToTransitLegOrigin(currentPosition, nextLeg);
 
         return distance1 <= TRIP_INSTRUCTION_UPCOMING_RADIUS || distance2 <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
     }

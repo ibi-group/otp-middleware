@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.opentripplanner.middleware.triptracker.TravelerPosition.isNearTransitLegOrigin;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.stopsUntilEndOfLeg;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
@@ -73,12 +72,12 @@ class TravelerLocatorTest {
             .setCurrentTime(Instant.now())
             .setCurrentPosition(userCoordinates)
             .build();
-        assertEquals(expectedValue, isNearTransitLegOrigin(position));
+        assertEquals(expectedValue, position.isNearTransitLegOrigin());
 
         // Swap the two legs - result should be the same.
         position.nextLeg = transitLeg;
         position.expectedLeg = otherTransitLeg;
-        assertEquals(expectedValue, isNearTransitLegOrigin(position));
+        assertEquals(expectedValue, position.isNearTransitLegOrigin());
     }
 
     static Stream<Arguments> createNearTransitLegOriginCases() {
