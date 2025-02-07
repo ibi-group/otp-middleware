@@ -19,6 +19,7 @@ import org.opentripplanner.middleware.triptracker.instruction.ContinueInstructio
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -193,8 +194,10 @@ public class ManageLegTraversalTest {
             .setExpectedLeg(firstLeg)
             .setCurrentPosition(traceData.position)
             .setFirstLegOfTrip(firstLeg)
+            .setCurrentTime(firstLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES))
             .setSpeed(0)
             .build();
+        travelerPosition.locale = locale;
         TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, traceData.message);
     }
@@ -253,6 +256,26 @@ public class ManageLegTraversalTest {
                     new DeviatedInstruction(busStopName, locale),
                     true,
                     "Deviated from the start of a trip which starts with a bus leg. Suggest path to head towards."
+                )
+            ),
+            Arguments.of(
+                firstBusLeg,
+                new TraceData(
+                    TripStatus.ON_SCHEDULE,
+                    createPoint(busStopCoords, 4, NORTH_WEST_BEARING),
+                    new WaitForTransitInstruction(firstBusLeg, firstBusLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES), locale),
+                    true,
+                    "On-time and near the initial bus stop on trip which starts with a bus leg. Instructs to wait for bus."
+                )
+            ),
+            Arguments.of(
+                firstBusLeg,
+                new TraceData(
+                    TripStatus.ON_SCHEDULE,
+                    new Coordinates(33.916779, -84.226556),
+                    NO_INSTRUCTION,
+                    true,
+                    "On transit leg away from the boarding location (or walked past the bus stop). No specific instruction to give."
                 )
             ),
             Arguments.of(
