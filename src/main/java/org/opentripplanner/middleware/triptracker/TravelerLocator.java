@@ -169,10 +169,10 @@ public class TravelerLocator {
 
         if (isApproachingEndOfLeg(travelerPosition)) {
             Leg transitLeg = travelerPosition.getTransitLegWithClosestUpcomingOrigin();
-            if (transitLeg != null && shouldSendBusNotification(travelerPosition)) {
+            if (transitLeg != null && shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
                 sendBusNotifications(travelerPosition, transitLeg);
                 // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
-                return new WaitForTransitInstruction(travelerPosition.nextLeg, travelerPosition.currentTime, locale);
+                return new WaitForTransitInstruction(transitLeg, travelerPosition.currentTime, locale);
             }
             return new OnTrackInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
         }
@@ -250,10 +250,8 @@ public class TravelerLocator {
     /**
      * Whether to send a bus notification if the first leg is a bus leg or approaching a bus leg and within the notify window.
      */
-    public static boolean shouldSendBusNotification(TravelerPosition travelerPosition) {
-        // TODO: rework this condition
-        Leg busLeg = atStartOfTransitTrip(travelerPosition) || travelerPosition.expectedLeg != null && Boolean.TRUE.equals(travelerPosition.expectedLeg.transitLeg) ? travelerPosition.expectedLeg : travelerPosition.nextLeg;
-        return (isBusLeg(busLeg) && isWithinOperationalNotifyWindow(travelerPosition.currentTime, busLeg));
+    public static boolean shouldSendBusNotification(Leg leg, Instant currentTime) {
+        return (isBusLeg(leg) && isWithinOperationalNotifyWindow(currentTime, leg));
     }
 
     /**
@@ -286,10 +284,10 @@ public class TravelerLocator {
         String finalStop = expectedLeg.to.name;
 
         Leg transitLeg = travelerPosition.getTransitLegWithClosestUpcomingOrigin();
-        if (transitLeg != null && shouldSendBusNotification(travelerPosition)) {
+        if (transitLeg != null && shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
             sendBusNotifications(travelerPosition, transitLeg);
             // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
-            return new WaitForTransitInstruction(expectedLeg, travelerPosition.currentTime, locale);
+            return new WaitForTransitInstruction(transitLeg, travelerPosition.currentTime, locale);
         }
 
         if (isApproachingEndOfLeg(travelerPosition)) {
