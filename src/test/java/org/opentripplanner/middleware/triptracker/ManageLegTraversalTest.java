@@ -488,9 +488,12 @@ public class ManageLegTraversalTest {
         TravelerPosition travelerPosition = new TravelerPosition.Builder()
             .setExpectedLeg(transitLeg)
             .setCurrentPosition(traceData.position)
-            .setCurrentTime(Instant.now())
+            // Unless specified in traceData, an instant corresponding to approx the trip start time should be provided
+            // for correct instructions to be produced.
+            .setCurrentTime(traceData.instant != null ? traceData.instant : transitLeg.startTime.toInstant())
             .setSpeed(traceData.speed)
             .build();
+        travelerPosition.locale = locale;
         TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, false);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, traceData.message);
     }
@@ -508,7 +511,15 @@ public class ManageLegTraversalTest {
                 new TraceData(
                     originCoords,
                     NO_INSTRUCTION,
-                    "Just boarded the transit vehicle leg, there should not be an instruction."
+                    Instant.now(),
+                    "If present at the transit stop after the trip departure, there should not be an instruction."
+                )
+            ),
+            Arguments.of(
+                new TraceData(
+                    originCoords,
+                    new WaitForTransitInstruction(transitLeg, transitLeg.startTime.toInstant(), locale).build(),
+                    "At the bus stop, or just boarded the transit vehicle leg, it should still tell the user to board the bus."
                 )
             ),
             // This instruction can be missed if the transit vehicle is in a slow/congested area
@@ -674,6 +685,7 @@ public class ManageLegTraversalTest {
         String expectedInstruction;
         boolean isStartOfTrip;
         boolean dismissIntermediateStops;
+        Instant instant;
         String message;
 
         public TraceData(Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
@@ -689,6 +701,11 @@ public class ManageLegTraversalTest {
 
         public TraceData(Coordinates position, String expectedInstruction, String message) {
             this(position, expectedInstruction, false, message);
+        }
+
+        public TraceData(Coordinates position, String expectedInstruction, Instant instant, String message) {
+            this(position, expectedInstruction, false, message);
+            this.instant = instant;
         }
 
         public TraceData(Coordinates position, String expectedInstruction, String message, boolean dismissIntermediateStops) {
