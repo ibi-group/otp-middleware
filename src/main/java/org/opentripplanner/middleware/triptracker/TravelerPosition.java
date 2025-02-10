@@ -13,6 +13,8 @@ import java.util.Locale;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getNextLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
+import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
+import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getFirstLeg;
 
@@ -80,6 +82,28 @@ public class TravelerPosition {
             this.locale = I18nUtils.getOtpUserLocale(otpUser);
         }
         firstLegOfTrip = getFirstLeg(itinerary);
+    }
+
+    /**
+     * Returns the closest transit leg in 'upcoming' radius eligible for a "Wait for transit" instruction.
+     */
+    public Leg getTransitLegWithClosestUpcomingOrigin() {
+        double distance1 = distanceToTransitLegOrigin(currentPosition, expectedLeg);
+        double distance2 = distanceToTransitLegOrigin(currentPosition, nextLeg);
+
+        if (distance1 <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distance1 < distance2) {
+            return expectedLeg;
+        } else if (distance2 <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distance2 < distance1) {
+            return nextLeg;
+        } else {
+            return null;
+        }
+    }
+
+    private static double distanceToTransitLegOrigin(Coordinates position, Leg leg) {
+        return leg != null && leg.transitLeg && leg.from != null
+            ? getDistance(position, leg.from.toCoordinates())
+            : Double.MAX_VALUE;
     }
 
     /** Computes the current deviation in meters from the expected itinerary. */

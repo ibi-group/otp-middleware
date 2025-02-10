@@ -15,8 +15,10 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.SelfLegInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
 import org.opentripplanner.middleware.triptracker.interactions.TripActions;
 import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusOperatorActions;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
@@ -132,6 +134,13 @@ public class ManageTripTracking {
                 create || rerouted
             );
 
+            if (isDeviatedWithOnTrackInstruction(tripStatus, instruction)) {
+                // Deem traveler on track (not deviated) if they are in the 'upcoming' range of a bus stop
+                // or the departure loaction.
+                // (If near a bus stop, applicable bus notifications would have already been triggered.
+                tripStatus = TripStatus.getTimingStatus(travelerPosition);
+            }
+
             // Perform interactions such as triggering traffic signals when approaching segments so configured.
             // It is assumed to be ok to repeatedly perform the interaction.
             if (instruction instanceof SelfLegInstruction && instruction.distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
@@ -152,6 +161,15 @@ public class ManageTripTracking {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * Detect if we are deeming a traveler deviated while giving out a non-deviated instruction
+     * (to prevent, for instance, being offered rerouting while near a bus stop).
+     */
+    private static boolean isDeviatedWithOnTrackInstruction(TripStatus tripStatus, TripInstruction instruction) {
+        return tripStatus == TripStatus.DEVIATED &&
+            (instruction instanceof WaitForTransitInstruction || instruction instanceof OnTrackInstruction);
     }
 
     /**
