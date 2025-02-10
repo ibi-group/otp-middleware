@@ -37,7 +37,7 @@ public class Auth0Users {
     public static final String AUTH0_DOMAIN = getConfigPropertyAsText("AUTH0_DOMAIN");
     // This client/secret pair is for making requests for an API access token used with the Management API.
     private static final String AUTH0_API_CLIENT = getConfigPropertyAsText("AUTH0_API_CLIENT");
-    private static final String AUTH0_API_SECRET = getConfigPropertyAsText("AUTH0_API_SECRET");
+    public static final String AUTH0_API_SECRET = getConfigPropertyAsText("AUTH0_API_SECRET");
     private static final String DEFAULT_CONNECTION_TYPE = "Username-Password-Authentication";
     private static final String DEFAULT_AUDIENCE = "https://otp-middleware";
     private static final String MANAGEMENT_API_VERSION = "v2";
