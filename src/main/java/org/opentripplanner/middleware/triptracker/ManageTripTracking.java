@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
@@ -138,6 +139,11 @@ public class ManageTripTracking {
                 tripStatus = TripStatus.getTimingStatus(travelerPosition);
             }
 
+            if (isEndOfRoutingInstruction(instruction)) {
+                // Deem trip completed if issuing a "destination in vicinity" instruction.
+                tripStatus = TripStatus.COMPLETED;
+            }
+
             // Perform interactions such as triggering traffic signals when approaching segments so configured.
             // It is assumed to be ok to repeatedly perform the interaction.
             if (instruction instanceof SelfLegInstruction && instruction.distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
@@ -158,6 +164,20 @@ public class ManageTripTracking {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * Detect if the instruction is an end-of-routing instruction
+     * (to give a 'completed' status to the trip, for instance).
+     */
+    private static boolean isEndOfRoutingInstruction(TripInstruction instruction) {
+        if (instruction instanceof OnTrackInstruction) {
+            Step step = ((OnTrackInstruction) instruction).getLegStep();
+            if (step != null) {
+                return step.isEndOfRouting();
+            }
+        }
+        return false;
     }
 
     /**
