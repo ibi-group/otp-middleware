@@ -238,6 +238,8 @@ public class TravelerLocator {
      * The traveler is still with the provided step range.
      */
     private static boolean isWithinStepRange(TravelerPosition travelerPosition, Step step) {
+        if (step.isEndOfRouting()) return true;
+
         double distanceFromTravelerToStep = getDistance(travelerPosition.currentPosition, step.toCoordinates());
         return distanceFromTravelerToStep < step.distance;
     }
