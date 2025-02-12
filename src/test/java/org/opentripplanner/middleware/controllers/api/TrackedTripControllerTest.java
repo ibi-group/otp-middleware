@@ -327,6 +327,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         String ansleyMallPetShopDestinationName = multiItinLastLeg.to.name;
 
         Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
+        Coordinates pointPastEndOfSidewalk = new Coordinates(33.958917, -84.006521);
 
         return Stream.of(
             Arguments.of(
@@ -381,7 +382,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(
                 itinerary,
                 createPoint(destinationCoords, 1, NORTH_WEST_BEARING),
-                new OnTrackInstruction(2, monroeDrDestinationName, locale).build(),
+                TRIP_INSTRUCTION_END_OF_ROUTING, // Fixme new OnTrackInstruction(2, monroeDrDestinationName, locale).build(),
                 TripStatus.COMPLETED,
                 "Instructions for destination coordinate"
             ),
@@ -431,6 +432,13 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 destinationAwayFromSidewalk,
                 pointNearEndOfSidewalk,
                TRIP_INSTRUCTION_END_OF_ROUTING, // TODO: improve this with "in vicinity"
+                TripStatus.COMPLETED,
+                "Arrival instruction when destination is away from sidewalk"
+            ),
+            Arguments.of(
+                destinationAwayFromSidewalk,
+                pointPastEndOfSidewalk,
+                TRIP_INSTRUCTION_END_OF_ROUTING, // TODO: improve this with "in vicinity"
                 TripStatus.COMPLETED,
                 "Arrival instruction when destination is away from sidewalk"
             ),

@@ -167,17 +167,27 @@ public class TravelerLocator {
     ) {
         Locale locale = travelerPosition.locale;
 
-        if (isApproachingEndOfLeg(travelerPosition)) {
+        boolean approachingEndOfLeg = isApproachingEndOfLeg(travelerPosition);
+        if (approachingEndOfLeg) {
             Leg transitLeg = travelerPosition.getTransitLegWithClosestUpcomingOrigin();
             if (transitLeg != null && shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
                 sendBusNotifications(travelerPosition, transitLeg);
                 // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
                 return new WaitForTransitInstruction(transitLeg, travelerPosition.currentTime, locale);
             }
+
+            Step nextStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps);
+            if (nextStep != null && nextStep.isEndOfRouting()) {
+                return new OnTrackInstruction(
+                    getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
+                    nextStep,
+                    locale
+                );
+            }
             return new OnTrackInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
         }
 
-        Step nextStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps);
+        Step nextStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps, false, false);
         TripInstruction tripInstruction = null;
         if (nextStep != null && (!isPositionPastStep(travelerPosition, nextStep) || isStartOfTrip)) {
             tripInstruction = new OnTrackInstruction(
@@ -382,8 +392,16 @@ public class TravelerLocator {
      * Get the distance from the traveler's current position to the leg destination.
      */
     private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
+
+        List<Coordinates> legPositions = injectWaypointsIntoLegPositions(travelerPosition.expectedLeg, travelerPosition.expectedLeg.steps);
+
+        Coordinates lastShapeCoordinate = legPositions.get(legPositions.size() - 2);
+        double distance1 = getDistance(travelerPosition.currentPosition, lastShapeCoordinate);
+
         Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.to);
-        return getDistance(travelerPosition.currentPosition, legDestination);
+        double distance2 = getDistance(travelerPosition.currentPosition, legDestination);
+
+        return Math.min(distance1, distance2);
     }
 
     /**

@@ -413,7 +413,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     createPoint(destinationCoords, 8, SOUTH_BEARING),
-                    new OnTrackInstruction(10, destinationName, locale),
+                    TRIP_INSTRUCTION_END_OF_ROUTING, // new OnTrackInstruction(10, destinationName, locale),
                     false,
                     "Coming up on destination instruction."
                 )
@@ -422,7 +422,7 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData(
                     destinationCoords,
-                    new OnTrackInstruction(2, destinationName, locale),
+                    TRIP_INSTRUCTION_END_OF_ROUTING, // new OnTrackInstruction(2, destinationName, locale),
                     false,
                     "On destination instruction."
                 )
