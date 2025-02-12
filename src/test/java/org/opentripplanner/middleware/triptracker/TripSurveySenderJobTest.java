@@ -121,7 +121,15 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         assumeTrue(IS_END_TO_END);
         createTestJourneys();
 
-        List<TrackedJourney> completedJourneys = TripSurveySenderJob.getCompletedJourneysInPastHour();
+        // Remove journeys not from createTestJourneys above.
+        List<String> journeyIds = journeys.stream().map(j -> j.id).collect(Collectors.toList());
+
+        List<TrackedJourney> completedJourneys = TripSurveySenderJob.getCompletedJourneysInPastHour()
+            .stream()
+            // Remove journey ids set up above.
+            .filter(j -> journeyIds.contains(j.id))
+            .collect(Collectors.toList());
+
         assertEquals(2, completedJourneys.size());
     }
 
