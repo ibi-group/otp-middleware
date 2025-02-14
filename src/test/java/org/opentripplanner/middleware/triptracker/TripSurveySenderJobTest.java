@@ -20,6 +20,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -109,7 +110,14 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
     void canGetUsersWithNotificationsOverAWeekAgo() {
         assumeTrue(IS_END_TO_END);
 
-        List<OtpUser> usersWithNotificationsOverAWeekAgo = TripSurveySenderJob.getUsersWithNotificationsOverAWeekAgo();
+        List<OtpUser> usersWithNotificationsOverAWeekAgo = TripSurveySenderJob.getUsersWithNotificationsOverAWeekAgo()
+            .stream()
+            // Remove users not in the setup above
+            .filter(u -> u.id.equals(
+                user1notifiedNow.id) || u.id.equals(user2notifiedAWeekAgo.id) || u.id.equals(user3neverNotified.id)
+            )
+            .collect(Collectors.toList());
+
         assertEquals(2, usersWithNotificationsOverAWeekAgo.size());
         List<String> expectedUserIds = List.of(user2notifiedAWeekAgo.id, user3neverNotified.id);
         assertTrue(expectedUserIds.contains(usersWithNotificationsOverAWeekAgo.get(0).id));
@@ -121,7 +129,15 @@ class TripSurveySenderJobTest extends OtpMiddlewareTestEnvironment {
         assumeTrue(IS_END_TO_END);
         createTestJourneys();
 
-        List<TrackedJourney> completedJourneys = TripSurveySenderJob.getCompletedJourneysInPastHour();
+        // Remove journeys not from createTestJourneys above.
+        List<String> journeyIds = journeys.stream().map(j -> j.id).collect(Collectors.toList());
+
+        List<TrackedJourney> completedJourneys = TripSurveySenderJob.getCompletedJourneysInPastHour()
+            .stream()
+            // Remove journey ids set up above.
+            .filter(j -> journeyIds.contains(j.id))
+            .collect(Collectors.toList());
+
         assertEquals(2, completedJourneys.size());
     }
 
