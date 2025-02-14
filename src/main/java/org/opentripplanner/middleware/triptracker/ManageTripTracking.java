@@ -130,8 +130,8 @@ public class ManageTripTracking {
 
             if (isDeviatedWithOnTrackInstruction(tripStatus, instruction)) {
                 // Deem traveler on track (not deviated) if they are in the 'upcoming' range of a bus stop
-                // or the departure loaction.
-                // (If near a bus stop, applicable bus notifications would have already been triggered.
+                // or the departure location.
+                // (If near a bus stop, applicable bus notifications would have already been triggered.)
                 tripStatus = TripStatus.getTimingStatus(travelerPosition);
             }
 
