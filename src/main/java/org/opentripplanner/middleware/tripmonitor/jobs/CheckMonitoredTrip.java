@@ -822,13 +822,6 @@ public class CheckMonitoredTrip implements Runnable {
         return true;
     }
 
-    /** Check if the matching itinerary start time is in the future */
-    private boolean isMatchingItineraryStartTimeInTheFuture() {
-        Instant tripStartInstant = matchingItinerary.startTime.toInstant();
-
-        return tripStartInstant.isAfter(Instant.ofEpochMilli(DateTimeUtils.currentTimeMillis()));
-    }
-
     /** Check if previous matching itinerary day is still valid */
     private boolean isPrevMatchingItineraryDayValid() {
         if (previousMatchingItinerary == null) return false;

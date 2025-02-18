@@ -294,6 +294,7 @@ The special E2E client settings should be defined in `env.yml`:
 | CONNECTED_DATA_PLATFORM_REPORTED_ENTITIES | object | Optional | { "MonitoredTrip": "all", "OtpUser": "all", "TripRequest": "interval" } | Use 'all' to report all full records. Use 'interval' to report full records whose dateCreated is within a reporting interval (e.g. day, hour). For TripRequest, you can use 'all anonymized' or 'interval anonymized' to anonymize records. Omitted entities are ignored. |
 | CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES | integer | Optional | 5 | CDP trip history upload frequency. |
 | CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES | boolean | Optional | true | Whether to upload files where no records have been written. Defaults to true. |
+| CONSECUTIVE_DEVIATIONS_WINDOW_SECONDS | integer | Optional | 30 | A window used in conjunction with tracking update frequency to define a consecutive deviation threshold. |
 | DEFAULT_USAGE_PLAN_ID | string | Required | 123e45 | AWS API gateway default usage plan used when creating API keys for API users. |
 | MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS | integer | Optional | 3 | The maximum number of attempts to obtain a monitored trip itinerary. |
 | MAXIMUM_PERMITTED_MONITORED_TRIPS | integer | Optional | 5 | The maximum number of saved monitored trips. |
@@ -332,6 +333,8 @@ The special E2E client settings should be defined in `env.yml`:
 | TRIP_SURVEY_ID | string | Optional | abcdef123y | The ID of a survey (on the platform of your choice) for trip-related feedback. |
 | TRIP_SURVEY_SUBDOMAIN | string | Optional | abcabc12a | The subdomain of a website where the trip-related surveys are administered. |
 | TRIP_SURVEY_API_TOKEN | string | Optional | abcdef123y | The token for the survey API for downloading responses. |
+| TRIP_SURVEY_RESPONSES_FILE_PREFIX | string | Optional | trip-survey-responses | The file name prefix for compiled trip survey responses. |
+| TRIP_SURVEY_RESPONSES_FOLDER | string | Optional | trip-survey-responses | The S3 folder name where compiled survey responses will be uploaded. |
 | TWILIO_ACCOUNT_SID | string | Optional | your-account-sid | Twilio settings available at: https://twilio.com/user/account |
 | TRUSTED_COMPANION_CONFIRMATION_PAGE_URL | string | Optional | https://otp-server.example.com/trusted/confirmation | URL to the trusted companion confirmation page. This page should support handling an error URL parameter. |
 | TWILIO_AUTH_TOKEN | string | Optional | your-auth-token | Twilio settings available at: https://twilio.com/user/account |
