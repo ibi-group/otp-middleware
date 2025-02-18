@@ -166,9 +166,6 @@ public class CheckMonitoredTrip implements Runnable {
         try {
             if (shouldSkipMonitoredTripCheck()) {
                 LOG.debug("Skipping check for trip");
-                if (isOneTimeTripInPast()) {
-                    sendNotificationsAndUpdateTrip();
-                }
                 return;
             }
         } catch (Exception e) {
@@ -179,10 +176,6 @@ public class CheckMonitoredTrip implements Runnable {
 
         // Check monitored trip.
         runCheckLogic();
-        sendNotificationsAndUpdateTrip();
-    }
-
-    private void sendNotificationsAndUpdateTrip() {
         // Initial reminder notification, if needed, with text based on other notifications for this trip.
         addInitialReminderIfNeeded();
         // Send notifications to user. This should happen before updating the journey state so that we can check the
