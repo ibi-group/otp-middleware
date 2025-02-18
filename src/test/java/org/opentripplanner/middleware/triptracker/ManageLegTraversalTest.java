@@ -41,6 +41,7 @@ import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNext
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithinExclusionZone;
 import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
+import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
@@ -56,6 +57,7 @@ public class ManageLegTraversalTest {
     private static Itinerary firstLegBusTransit;
     private static Itinerary baptistChurchToEastCroganStreetIntinerary;
     private static Itinerary destinationAwayFromSidewalk;
+    private static Itinerary walkGjacTo1js;
 
     private static final Locale locale = Locale.US;
 
@@ -96,6 +98,11 @@ public class ManageLegTraversalTest {
             CommonTestUtils.getTestResourceAsString("controllers/api/destination-away-from-sidewalk.json"),
             Itinerary.class
         );
+        walkGjacTo1js = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-gjac-to-1js.json"),
+            Itinerary.class
+        );
+
         // Hold on to the original list of intermediate stops (some tests will overwrite it)
         midtownToAnsleyIntermediateStops = midtownToAnsleyItinerary.legs.get(1).intermediateStops;
     }
@@ -597,7 +604,7 @@ public class ManageLegTraversalTest {
     @MethodSource("createGetNearestWaypointTrace")
     void canGetNearestWaypoint(Step expectedStep, int startIndex, String message) {
         Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
-        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps);
+        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps, TRIP_INSTRUCTION_UPCOMING_RADIUS);
         assertEquals(expectedStep, getNextWayPoint(allPositions, leg.steps, startIndex), message);
     }
 
@@ -620,10 +627,31 @@ public class ManageLegTraversalTest {
     void canInjectWaypoints() {
         Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
         List<Position> legPositions = PolylineUtils.decode(leg.legGeometry.points, 5);
-        int excluded = getNumberOfExcludedPoints(legPositions, leg);
+        int excluded = getNumberOfExcludedPoints(legPositions, leg, TRIP_INSTRUCTION_UPCOMING_RADIUS);
         int expectedNumberOfPositions = (legPositions.size() - excluded) + leg.steps.size() + 2; // from and to points.
-        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps);
+        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps, TRIP_INSTRUCTION_UPCOMING_RADIUS);
         assertEquals(expectedNumberOfPositions, allPositions.size());
+    }
+
+    // Refactors:
+    // - extract the radius param in various functions (injectWaypoints...)
+    // - add test case below and its data, harden test (TODO try to parametrize)
+
+    @Test
+    void canInjectWaypoints2() {
+        // This test case previously failed when using an upcoming radius of 30 meters.
+        final int TEST_CASE_UPCOMING_RADIUS = 30;
+
+        Leg leg = walkGjacTo1js.legs.get(0);
+        List<Position> legPositions = PolylineUtils.decode(leg.legGeometry.points, 5);
+        int excluded = getNumberOfExcludedPoints(legPositions, leg, TEST_CASE_UPCOMING_RADIUS);
+        int expectedNumberOfPositions = (legPositions.size() - excluded) + leg.steps.size() + 2; // from and to points.
+        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps, TEST_CASE_UPCOMING_RADIUS);
+        assertEquals(expectedNumberOfPositions, allPositions.size());
+        // In this case, both the "to" coordinates and the last point in the shape ahould be present
+        // because they are far apart.
+        assertEquals(leg.to.toCoordinates(), allPositions.get(allPositions.size() - 1));
+        assertEquals(new Coordinates(legPositions.get(legPositions.size() - 1)), allPositions.get(allPositions.size() - 2));
     }
 
     @Test
@@ -739,17 +767,17 @@ public class ManageLegTraversalTest {
         return interpolatePoints(busStopToJusticeCenterItinerary.legs.get(0));
     }
 
-    private int getNumberOfExcludedPoints(List<Position> legPositions, Leg leg) {
+    private int getNumberOfExcludedPoints(List<Position> legPositions, Leg leg, int exclusionRadius) {
         int excluded = 0;
         for (Position position : legPositions) {
-            if (isWithinExclusionZone(new Coordinates(position), leg.steps)) {
+            if (position != legPositions.get(legPositions.size() - 2) && isWithinExclusionZone(new Coordinates(position), leg.steps, exclusionRadius)) {
                 excluded++;
             }
         }
-        if (isWithinExclusionZone(new Coordinates(leg.from), leg.steps)) {
+        if (isWithinExclusionZone(new Coordinates(leg.from), leg.steps, exclusionRadius)) {
             excluded++;
         }
-        if (isWithinExclusionZone(new Coordinates(leg.to), leg.steps)) {
+        if (isWithinExclusionZone(new Coordinates(leg.to), leg.steps, exclusionRadius)) {
             excluded++;
         }
         return excluded;
