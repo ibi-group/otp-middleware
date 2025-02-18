@@ -47,6 +47,7 @@ import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
 public class ManageLegTraversalTest {
 
+    public static final int GMAP_UPCOMING_RADIUS = 30;
     private static Itinerary busStopToJusticeCenterItinerary;
     private static Itinerary edmundParkDriveToRockSpringsItinerary;
 
@@ -625,7 +626,7 @@ public class ManageLegTraversalTest {
 
     @ParameterizedTest
     @MethodSource("createCanInjectWaypointsCases")
-    void canInjectWaypoints3(Leg leg, int radius) {
+    void canInjectWaypoints(Leg leg, int radius) {
         final int PRECISION_DIGITS = 5;
         final double DELTA = 1e-5;
 
@@ -651,7 +652,7 @@ public class ManageLegTraversalTest {
     static Stream<Arguments> createCanInjectWaypointsCases() {
         return Stream.of(
             Arguments.of(edmundParkDriveToRockSpringsItinerary.legs.get(0), TRIP_INSTRUCTION_UPCOMING_RADIUS),
-            Arguments.of(walkGjacTo1js.legs.get(0), 30)
+            Arguments.of(walkGjacTo1js.legs.get(0), GMAP_UPCOMING_RADIUS)
         );
     }
 
@@ -705,6 +706,19 @@ public class ManageLegTraversalTest {
             cumulative += legSegment.timeInSegment;
         }
         assertEquals(busStopToJusticeCenterItinerary.legs.get(0).duration, cumulative, 0.01f);
+    }
+
+    @Test
+    void testGetDistanceToEndOfLeg() {
+        // Case where distance to end of leg was previously incorrectly computed
+        // (At end of routing for walk trip to One Justice Square)
+        TrackedJourney trackedJourney = new TrackedJourney();
+        trackedJourney.locations = List.of(
+            new TrackingLocation(Instant.now(), 33.95242212998748, -83.99714406536067)
+        );
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkGjacTo1js, null);
+
+        assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, GMAP_UPCOMING_RADIUS) <= GMAP_UPCOMING_RADIUS);
     }
 
     private static class TraceData {

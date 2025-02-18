@@ -390,14 +390,18 @@ public class TravelerLocator {
         ).toInstant();
     }
 
+    private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
+        return getDistanceToEndOfLeg(travelerPosition, TRIP_INSTRUCTION_UPCOMING_RADIUS);
+    }
+
     /**
      * Get the distance from the traveler's current position to the leg destination.
      */
-    private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
+    public static double getDistanceToEndOfLeg(TravelerPosition travelerPosition, int radius) {
         List<Coordinates> legPositions = injectWaypointsIntoLegPositions(
             travelerPosition.expectedLeg,
             travelerPosition.expectedLeg.steps,
-            TRIP_INSTRUCTION_UPCOMING_RADIUS
+            radius
         );
 
         Coordinates lastShapeCoordinate = legPositions.get(legPositions.size() - 2);
