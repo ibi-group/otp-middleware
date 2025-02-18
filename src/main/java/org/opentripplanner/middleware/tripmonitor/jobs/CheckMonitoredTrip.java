@@ -756,7 +756,7 @@ public class CheckMonitoredTrip implements Runnable {
 
             // Attempt to advance to the next monitored day, except for one-time trips
             // or if tracking is ongoing or if the matching itinerary is still valid.
-            if (!trip.isOneTime() && !isTrackingOngoing() && !isMatchingItineraryStartTimeInTheFuture()) {
+            if (!trip.isOneTime() && !isTrackingOngoing()) {
                 advanceToNextMonitoredDay();
             }
 
@@ -822,13 +822,6 @@ public class CheckMonitoredTrip implements Runnable {
         return true;
     }
 
-    /** Check if the matching itinerary start time is in the future */
-    private boolean isMatchingItineraryStartTimeInTheFuture() {
-        Instant tripStartInstant = matchingItinerary.startTime.toInstant();
-
-        return tripStartInstant.isAfter(Instant.ofEpochMilli(DateTimeUtils.currentTimeMillis()));
-    }
-
     /** Check if previous matching itinerary day is still valid */
     private boolean isPrevMatchingItineraryDayValid() {
         if (previousMatchingItinerary == null) return false;
@@ -874,6 +867,13 @@ public class CheckMonitoredTrip implements Runnable {
             }
         }
 
+        initializeTargetZonedDateTime();
+
+        // advance the trip to the next active date
+        advanceToNextActiveTripDate();
+    }
+
+    private void initializeTargetZonedDateTime() {
         // Check if the CheckMonitoredTrip is being ran for the first time for this trip and if the trip's saved
         // itinerary has already ended. Additionally, make sure that the saved itinerary occurred on the same
         // service day. If both of these conditions are true, then there is no need to
@@ -885,9 +885,6 @@ public class CheckMonitoredTrip implements Runnable {
         ) {
             targetZonedDateTime = targetZonedDateTime.plusDays(1);
         }
-
-        // advance the trip to the next active date
-        advanceToNextActiveTripDate();
     }
 
     /** Check if the previous matching itinerary was null or if it has already concluded */
@@ -948,6 +945,14 @@ public class CheckMonitoredTrip implements Runnable {
 
         LOG.info("Next matching itinerary starts at {}", matchingItinerary.startTime);
 
+        resetJourneyState();
+
+        // reset the snoozed parameter to false
+        trip.snoozed = false;
+        updateTripStatus();
+    }
+
+    private void resetJourneyState() {
         // update journey state with baseline departure and arrival times which are the last known departure/arrival
         journeyState.baselineDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
         journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
@@ -960,10 +965,6 @@ public class CheckMonitoredTrip implements Runnable {
         // resent journey state's realtime data to be false as it has just been manually advanced without having checked
         // the trip planner for realtime data
         journeyState.hasRealtimeData = false;
-
-        // reset the snoozed parameter to false
-        trip.snoozed = false;
-        updateTripStatus();
     }
 
     /**
