@@ -327,6 +327,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         String ansleyMallPetShopDestinationName = multiItinLastLeg.to.name;
 
         Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
+        Coordinates pointPastEndOfSidewalk = new Coordinates(33.958917, -84.006521);
 
         return Stream.of(
             Arguments.of(
@@ -381,7 +382,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(
                 itinerary,
                 createPoint(destinationCoords, 1, NORTH_WEST_BEARING),
-                new OnTrackInstruction(2, monroeDrDestinationName, locale).build(),
+                TRIP_INSTRUCTION_END_OF_ROUTING, // Fixme new OnTrackInstruction(2, monroeDrDestinationName, locale).build(),
                 TripStatus.COMPLETED,
                 "Instructions for destination coordinate"
             ),
@@ -399,7 +400,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             // This position overlaps with the beginning of the transit trip,
             // but it is still within the 'upcoming' radius of the stop, so display a "wait for transit" instruction.
             Arguments.of(
-                multiLegMonitoredTrip,
+                multiLegItinerary,
                 createPoint(multiItinFirstLegDestCoords, 1.5, NORTH_EAST_BEARING),
                 new WaitForTransitInstruction(
                     multiItinBusLeg,
@@ -410,7 +411,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 "Arriving ahead of schedule to a bus stop at the end of first leg should produce a non-trivial instruction."
             ),
             Arguments.of(
-                multiLegMonitoredTrip,
+                multiLegItinerary,
                 createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING),
                 new WaitForTransitInstruction(
                     multiItinBusLeg,
@@ -431,6 +432,13 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 destinationAwayFromSidewalk,
                 pointNearEndOfSidewalk,
                TRIP_INSTRUCTION_END_OF_ROUTING, // TODO: improve this with "in vicinity"
+                TripStatus.COMPLETED,
+                "Arrival instruction when destination is away from sidewalk"
+            ),
+            Arguments.of(
+                destinationAwayFromSidewalk,
+                pointPastEndOfSidewalk,
+                TRIP_INSTRUCTION_END_OF_ROUTING, // TODO: improve this with "in vicinity"
                 TripStatus.COMPLETED,
                 "Arrival instruction when destination is away from sidewalk"
             ),

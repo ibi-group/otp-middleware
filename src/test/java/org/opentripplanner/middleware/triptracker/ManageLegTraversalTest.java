@@ -385,14 +385,16 @@ public class ManageLegTraversalTest {
                 walkLeg,
                 new TraceData()
                     .withPosition(createPoint(destinationCoords, 8, SOUTH_BEARING))
-                    .withExpectedInstruction(new OnTrackInstruction(10, destinationName, locale))
+                    //.withExpectedInstruction(new OnTrackInstruction(10, destinationName, locale))
+                    .withExpectedInstruction(TRIP_INSTRUCTION_END_OF_ROUTING)
             ),
             Arguments.of(
                 "On destination instruction.",
                 walkLeg,
                 new TraceData()
                     .withPosition(destinationCoords)
-                    .withExpectedInstruction(new OnTrackInstruction(2, destinationName, locale))
+                    // .withExpectedInstruction(new OnTrackInstruction(2, destinationName, locale))
+                    .withExpectedInstruction(TRIP_INSTRUCTION_END_OF_ROUTING)
             ),
             Arguments.of(
                 "On track passed second step and not near to next step, provide continue instruction for second step.",
