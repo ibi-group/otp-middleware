@@ -1,0 +1,110 @@
+{
+	"duration": 851,
+	"startTime": 1739301060000,
+	"endTime": 1739301911000,
+	"walkTime": 851,
+	"transitTime": 0,
+	"waitingTime": 0,
+	"walkDistance": 0,
+	"walkLimitExceeded": false,
+	"elevationLost": 0,
+	"elevationGained": 0,
+	"transfers": 0,
+	"fare": null,
+	"legs": [
+		{
+			"startTime": 1739301060000,
+			"endTime": 1739301911000,
+			"departureDelay": 0,
+			"arrivalDelay": 0,
+			"realTime": false,
+			"distance": 547.94,
+			"mode": "WALK",
+			"interlineWithPreviousLeg": false,
+			"from": {
+				"name": "Gwinnett Justice and Administration Center, Langley Drive, Lawrenceville, GA",
+				"lon": -83.993082,
+				"lat": 33.951519,
+				"vertexType": "NORMAL"
+			},
+			"to": {
+				"name": "One Justice Square, W Crogan St NW, Lawrenceville",
+				"lon": -83.99651,
+				"lat": 33.95207,
+				"vertexType": "NORMAL"
+			},
+			"legGeometry": {
+				"points": "sefnEvzs_Ok@EIrAIAKzAJh@IjAKb@_@`AAH?H@L@FFJEFCDCHCF?DAH@H?Fg@DMHKHQRo@x@QNC@UPMNAJFRxBzBPFXV@?",
+				"length": 37
+			},
+			"rentedBike": false,
+			"transitLeg": false,
+			"duration": 851,
+			"steps": [
+				{
+					"distance": 24.04,
+					"relativeDirection": "DEPART",
+					"streetName": "sidewalk",
+					"absoluteDirection": "NORTH",
+					"stayOn": false,
+					"area": false,
+					"lon": -83.9929196,
+					"lat": 33.9517895
+				},
+				{
+					"distance": 223.84,
+					"relativeDirection": "LEFT",
+					"streetName": "Langley Drive",
+					"absoluteDirection": "WEST",
+					"stayOn": true,
+					"area": false,
+					"lon": -83.9928848,
+					"lat": 33.9520038
+				},
+				{
+					"distance": 33.68,
+					"relativeDirection": "RIGHT",
+					"streetName": "crossing over Constitution Boulevard Southwest",
+					"absoluteDirection": "NORTHWEST",
+					"stayOn": false,
+					"area": false,
+					"lon": -83.9951267,
+					"lat": 33.9523266
+				},
+				{
+					"distance": 137.08,
+					"relativeDirection": "RIGHT",
+					"streetName": "sidewalk",
+					"absoluteDirection": "NORTH",
+					"stayOn": false,
+					"area": false,
+					"lon": -83.9954587,
+					"lat": 33.9524151
+				},
+				{
+					"distance": 109.69,
+					"relativeDirection": "LEFT",
+					"streetName": "West Crogan Street",
+					"absoluteDirection": "SOUTHWEST",
+					"stayOn": true,
+					"area": false,
+					"lon": -83.9962951,
+					"lat": 33.9533756
+				},
+				{
+					"distance": 19.59,
+					"relativeDirection": "SLIGHTLY_RIGHT",
+					"streetName": "crossing over service road",
+					"absoluteDirection": "SOUTHWEST",
+					"stayOn": false,
+					"area": false,
+					"lon": -83.9970512,
+					"lat": 33.9526332
+				}
+			],
+			"routeColor": "333333",
+			"routeTextColor": ""
+		}
+	],
+	"alerts": []
+}
