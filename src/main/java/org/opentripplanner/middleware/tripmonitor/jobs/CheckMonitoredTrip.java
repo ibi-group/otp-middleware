@@ -166,16 +166,23 @@ public class CheckMonitoredTrip implements Runnable {
         try {
             if (shouldSkipMonitoredTripCheck()) {
                 LOG.debug("Skipping check for trip");
+                if (isOneTimeTripInPast()) {
+                    sendNotificationsAndUpdateTrip();
+                }
                 return;
             }
         } catch (Exception e) {
             // TODO: report to bugsnag
-            LOG.error("Encountered an error while checking the monitored trip. error={}", e);
+            LOG.error("Encountered an error while checking the monitored trip.", e);
             return;
         }
 
         // Check monitored trip.
         runCheckLogic();
+        sendNotificationsAndUpdateTrip();
+    }
+
+    private void sendNotificationsAndUpdateTrip() {
         // Initial reminder notification, if needed, with text based on other notifications for this trip.
         addInitialReminderIfNeeded();
         // Send notifications to user. This should happen before updating the journey state so that we can check the
@@ -207,7 +214,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private boolean isFirstTimeCheckWithinLeadMonitoringTime() {
         long minutesSinceLastCheck = getMinutesSinceLastCheck();
-        long minutesUntilTrip = getMinutesUntilTrip();
+        long minutesUntilTrip = getMinutesUntilTrip(trip.isOneTime());
         return minutesUntilTrip <= trip.leadTimeInMinutes && minutesUntilTrip + minutesSinceLastCheck > trip.leadTimeInMinutes;
     }
 
@@ -652,9 +659,23 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     private long getMinutesUntilTrip() {
+        return getMinutesUntilTrip(false);
+    }
+
+    /**
+     * Define the number of minutes until the start of a trip. If dealing with a one time trip, the matching itinerary
+     * is unlikely to be defined in which case use the original trip start time instead.
+     */
+    private long getMinutesUntilTrip(boolean isOneTimeTrip) {
+        Date startTime;
+        if (isOneTimeTrip) {
+            startTime = (matchingItinerary != null) ? matchingItinerary.startTime : trip.itinerary.startTime;
+        } else {
+            startTime = matchingItinerary.startTime;
+        }
         // get the configured timezone that OTP is using to parse dates and times
         ZoneId targetZoneId = DateTimeUtils.getOtpZoneId();
-        Instant tripStartInstant = matchingItinerary.startTime.toInstant();
+        Instant tripStartInstant = startTime.toInstant();
 
         // Get current time and trip time (with the time offset to today) for comparison.
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(targetZoneId);
@@ -705,7 +726,7 @@ public class CheckMonitoredTrip implements Runnable {
         // checked here to avoid incorrectly skipping trips that are monitored on a single day of the week, but which
         // may have not had a matching itinerary on that day for one week (even though the trip could be possible the
         // next week).
-        if (trip.isOneTime() && previousJourneyState.tripStatus == TripStatus.PAST_TRIP) {
+        if (isOneTimeTripInPast()) {
             LOG.info("Skipping: One-time trip is in the past.");
             return true;
         }
@@ -820,6 +841,13 @@ public class CheckMonitoredTrip implements Runnable {
         // TODO: Change log level.
         LOG.info("Trip criteria not met to check. Skipping.");
         return true;
+    }
+
+    /**
+     * Is a one-off trip which has already happened.
+     */
+    private boolean isOneTimeTripInPast() {
+        return trip.isOneTime() && previousJourneyState.tripStatus == TripStatus.PAST_TRIP;
     }
 
     /** Check if the matching itinerary start time is in the future */
