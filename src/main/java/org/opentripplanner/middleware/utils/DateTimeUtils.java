@@ -48,7 +48,7 @@ public class DateTimeUtils {
     /**
      * These are internal variables that can be used to mock dates and times in tests
      */
-    private static Clock clock = Clock.systemDefaultZone();
+    private static Clock clock = Clock.system(getOtpZoneId());
     private static ZoneId zoneId = clock.getZone();
 
     /**
