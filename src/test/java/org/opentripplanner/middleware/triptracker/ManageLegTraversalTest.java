@@ -172,8 +172,8 @@ public class ManageLegTraversalTest {
             ),
             Arguments.of(
                 startInstant.plusSeconds((long) Math.floor(current.cumulativeTime)),
-                current.start.lat + 0.00001,
-                current.start.lon + 0.00001,
+                current.start.lat + 1e-5,
+                current.start.lon + 1e-5,
                 TripStatus.ON_SCHEDULE,
                 "The current location, with a slight deviation, is on schedule."
             ),
@@ -574,35 +574,36 @@ public class ManageLegTraversalTest {
         );
     }
 
-    @Test
-    void canInjectWaypoints() {
-        Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
-        List<Position> legPositions = PolylineUtils.decode(leg.legGeometry.points, 5);
-        int excluded = getNumberOfExcludedPoints(legPositions, leg, TRIP_INSTRUCTION_UPCOMING_RADIUS);
+    @ParameterizedTest
+    @MethodSource("createCanInjectWaypointsCases")
+    void canInjectWaypoints3(Leg leg, int radius) {
+        final int PRECISION_DIGITS = 5;
+        final double DELTA = 1e-5;
+
+        List<Position> legPositions = PolylineUtils.decode(leg.legGeometry.points, PRECISION_DIGITS);
+        int excluded = getNumberOfExcludedPoints(legPositions, leg, radius);
         int expectedNumberOfPositions = (legPositions.size() - excluded) + leg.steps.size() + 2; // from and to points.
-        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps, TRIP_INSTRUCTION_UPCOMING_RADIUS);
+        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps, radius);
         assertEquals(expectedNumberOfPositions, allPositions.size());
+        Coordinates lastPosition = allPositions.get(allPositions.size() - 1);
+        assertEquals(leg.to.lat, lastPosition.lat, DELTA);
+        assertEquals(leg.to.lon, lastPosition.lon, DELTA);
+
+        // If the last leg position is the same as the destination point, (at given precision)
+        // then skip the check because the second to last waypoint will not be related to the last leg position,
+        if (Math.abs(leg.to.lat - lastPosition.lat) > DELTA || Math.abs(leg.to.lon - lastPosition.lon) > DELTA) {
+            Coordinates secondLastPosition = allPositions.get(allPositions.size() - 2);
+            Position lastLegPosition = legPositions.get(legPositions.size() - 1);
+            assertEquals(lastLegPosition.getLatitude(), secondLastPosition.lat, DELTA);
+            assertEquals(lastLegPosition.getLongitude(), secondLastPosition.lon, DELTA);
+        }
     }
 
-    // Refactors:
-    // - extract the radius param in various functions (injectWaypoints...)
-    // - add test case below and its data, harden test (TODO try to parametrize)
-
-    @Test
-    void canInjectWaypoints2() {
-        // This test case previously failed when using an upcoming radius of 30 meters.
-        final int TEST_CASE_UPCOMING_RADIUS = 30;
-
-        Leg leg = walkGjacTo1js.legs.get(0);
-        List<Position> legPositions = PolylineUtils.decode(leg.legGeometry.points, 5);
-        int excluded = getNumberOfExcludedPoints(legPositions, leg, TEST_CASE_UPCOMING_RADIUS);
-        int expectedNumberOfPositions = (legPositions.size() - excluded) + leg.steps.size() + 2; // from and to points.
-        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps, TEST_CASE_UPCOMING_RADIUS);
-        assertEquals(expectedNumberOfPositions, allPositions.size());
-        // In this case, both the "to" coordinates and the last point in the shape ahould be present
-        // because they are far apart.
-        assertEquals(leg.to.toCoordinates(), allPositions.get(allPositions.size() - 1));
-        assertEquals(new Coordinates(legPositions.get(legPositions.size() - 1)), allPositions.get(allPositions.size() - 2));
+    static Stream<Arguments> createCanInjectWaypointsCases() {
+        return Stream.of(
+            Arguments.of(edmundParkDriveToRockSpringsItinerary.legs.get(0), TRIP_INSTRUCTION_UPCOMING_RADIUS),
+            Arguments.of(walkGjacTo1js.legs.get(0), 30)
+        );
     }
 
     @Test
