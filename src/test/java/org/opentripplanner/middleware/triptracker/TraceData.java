@@ -1,0 +1,59 @@
+package org.opentripplanner.middleware.triptracker;
+
+import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
+import org.opentripplanner.middleware.utils.Coordinates;
+
+import java.time.Instant;
+
+class TraceData {
+    TripStatus tripStatus = TripStatus.ON_SCHEDULE;
+    Coordinates position;
+    int speed;
+    String expectedInstruction;
+    boolean isStartOfTrip;
+    boolean dismissIntermediateStops;
+    Instant instant;
+
+    public TraceData withPosition(Coordinates position) {
+        this.position = position;
+        return this;
+    }
+
+    public TraceData withPosition(double lat, double lon) {
+        return withPosition(new Coordinates(lat, lon));
+    }
+
+    public TraceData withExpectedInstruction(String instruction) {
+        this.expectedInstruction = instruction;
+        return this;
+    }
+
+    public TraceData withExpectedInstruction(TripInstruction instruction) {
+        return withExpectedInstruction(instruction.build());
+    }
+
+    public TraceData withSpeed(int speed) {
+        this.speed = speed;
+        return this;
+    }
+
+    public TraceData withInstant(Instant instant) {
+        this.instant = instant;
+        return this;
+    }
+
+    public TraceData withNullIntermediateStops() {
+        this.dismissIntermediateStops = true;
+        return this;
+    }
+
+    public TraceData withStartingTrip() {
+        this.isStartOfTrip = true;
+        return this;
+    }
+
+    public TraceData withTripStatus(TripStatus tripStatus) {
+        this.tripStatus = tripStatus;
+        return this;
+    }
+}
