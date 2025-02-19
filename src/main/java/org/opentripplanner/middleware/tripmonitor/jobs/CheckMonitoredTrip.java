@@ -207,7 +207,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private boolean isFirstTimeCheckWithinLeadMonitoringTime() {
         long minutesSinceLastCheck = getMinutesSinceLastCheck();
-        long minutesUntilTrip = getMinutesUntilTrip(trip.isOneTime());
+        long minutesUntilTrip = getMinutesUntilTrip();
         return minutesUntilTrip <= trip.leadTimeInMinutes && minutesUntilTrip + minutesSinceLastCheck > trip.leadTimeInMinutes;
     }
 
@@ -308,12 +308,14 @@ public class CheckMonitoredTrip implements Runnable {
                 // set the status according to whether the current itinerary occurs in the past, present or future
                 updateTripStatus();
 
-                // update the trip's itinerary existence data so that any invalid dates are cleared (thus resulting in
-                // that day of week saying that it is a valid day of the week).
-                ItineraryExistence.ItineraryExistenceResult itinExistenceTargetDay = trip.itineraryExistence
-                    .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek());
-                itinExistenceTargetDay.invalidDates = new ArrayList<>();
-
+                if (!trip.isOneTime()) {
+                    // update the trip's itinerary existence data so that any invalid dates are cleared (thus resulting in
+                    // that day of week saying that it is a valid day of the week).
+                    ItineraryExistence.ItineraryExistenceResult itinExistenceTargetDay = trip
+                        .itineraryExistence
+                        .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek());
+                    itinExistenceTargetDay.invalidDates = new ArrayList<>();
+                }
                 // If the updated trip status is upcoming and the end time of the current matching itinerary is in the
                 // past, this means the trip has completed and the next possible time the trip occurs should be
                 // calculated
@@ -651,24 +653,14 @@ public class CheckMonitoredTrip implements Runnable {
         return TimeUnit.MILLISECONDS.toMinutes(millisSinceLastCheck);
     }
 
-    private long getMinutesUntilTrip() {
-        return getMinutesUntilTrip(false);
-    }
-
     /**
      * Define the number of minutes until the start of a trip. If dealing with a one time trip, the matching itinerary
      * is unlikely to be defined in which case use the original trip start time instead.
      */
-    private long getMinutesUntilTrip(boolean isOneTimeTrip) {
-        Date startTime;
-        if (isOneTimeTrip) {
-            startTime = (matchingItinerary != null) ? matchingItinerary.startTime : trip.itinerary.startTime;
-        } else {
-            startTime = matchingItinerary.startTime;
-        }
+    private long getMinutesUntilTrip() {
         // get the configured timezone that OTP is using to parse dates and times
         ZoneId targetZoneId = DateTimeUtils.getOtpZoneId();
-        Instant tripStartInstant = startTime.toInstant();
+        Instant tripStartInstant = matchingItinerary.startTime.toInstant();
 
         // Get current time and trip time (with the time offset to today) for comparison.
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(targetZoneId);

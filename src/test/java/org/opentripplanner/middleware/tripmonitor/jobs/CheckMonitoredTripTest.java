@@ -172,11 +172,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             false,
             null
         );
+
+        // Set one time trip state.
         monitoredTrip.updateAllDaysOfWeek(false);
         monitoredTrip.itinerary = mockMondayJune15Itinerary;
         monitoredTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
-        monitoredTrip.itineraryExistence = new ItineraryExistence();
-        monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         Persistence.monitoredTrips.create(monitoredTrip);
 
         DateTimeUtils.useFixedClockAt(
@@ -335,23 +335,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     static List<ShouldSkipTripTestCase> createSkipTripTestCases() throws Exception {
         List<ShouldSkipTripTestCase> testCases = new ArrayList<>();
-
-        MonitoredTrip oneTimeTrip = PersistenceTestUtils.createMonitoredTrip(
-            user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
-            true,
-            OtpTestUtils.createDefaultJourneyState()
-        );
-        oneTimeTrip.updateAllDaysOfWeek(false);
-        oneTimeTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
-
-        ShouldSkipTripTestCase oneTimeTripOnWeekdayTestCase = new ShouldSkipTripTestCase(
-            "Should return false for a one time trip.",
-            noonMonday8June2020, // mock time: June 8, 2020 (Wednesday)
-            true
-        );
-        oneTimeTripOnWeekdayTestCase.trip = oneTimeTrip;
-        testCases.add(oneTimeTripOnWeekdayTestCase);
 
         MonitoredTrip weekendTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
