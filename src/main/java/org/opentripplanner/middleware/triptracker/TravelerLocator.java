@@ -184,10 +184,34 @@ public class TravelerLocator {
                     locale
                 );
             }
-            return new OnTrackInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
+
+            // At this point, the traveler could be approaching the leg's destination
+            // or the end of routing, if the trip's final destination is away from the street network.
+            // TODO (perf): consolidate these calls to injectWaypointsIntoLegPositions.
+            List<Coordinates> legPositions = injectWaypointsIntoLegPositions(
+                travelerPosition.expectedLeg,
+                travelerPosition.expectedLeg.steps,
+                TRIP_INSTRUCTION_UPCOMING_RADIUS
+            );
+            Coordinates lastShapeCoordinate = legPositions.get(legPositions.size() - 2);
+            double distanceToLastShapeCoords = getDistance(travelerPosition.currentPosition, lastShapeCoordinate);
+
+            Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.to);
+            double distanceToLegDestination = getDistance(travelerPosition.currentPosition, legDestination);
+
+            if (distanceToLastShapeCoords < distanceToLegDestination) {
+                // Issue an end-of-routing step
+                Step endOfRoutingStep = createEndOfRoutingStep(legPositions);
+                return new OnTrackInstruction(
+                    getDistance(travelerPosition.currentPosition, new Coordinates(endOfRoutingStep)),
+                    endOfRoutingStep,
+                    locale
+                );
+            }
+            return new OnTrackInstruction(distanceToLegDestination, travelerPosition.expectedLeg.to.name, locale);
         }
 
-        Step nextStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps, false, false);
+        Step nextStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps, false);
         TripInstruction tripInstruction = null;
         if (nextStep != null && (!isPositionPastStep(travelerPosition, nextStep) || isStartOfTrip)) {
             tripInstruction = new OnTrackInstruction(
@@ -306,7 +330,7 @@ public class TravelerLocator {
             return new GetOffHereTransitInstruction(finalStop, locale);
         }
 
-        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true, false);
+        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
         if (nextStop != null) {
             int stopsRemaining = stopsUntilEndOfLeg(nextStop, expectedLeg);
             double distance = getDistance(travelerPosition.currentPosition, new Coordinates(nextStop));
@@ -506,20 +530,11 @@ public class TravelerLocator {
     /**
      * Align the traveler to the transit leg and provide the next waypoint from this point forward.
      */
-    private static <T extends ConvertsToCoordinates> T snapToWaypoint(TravelerPosition pos, List<T> waypoints, boolean excludeCurrent, boolean useLastShapePoint) {
+    private static <T extends ConvertsToCoordinates> T snapToWaypoint(TravelerPosition pos, List<T> waypoints, boolean excludeCurrent) {
         List<Coordinates> legPositions = injectWaypointsIntoLegPositions(pos.expectedLeg, waypoints, TRIP_INSTRUCTION_UPCOMING_RADIUS);
         int pointIndex = getNearestPointIndex(legPositions, pos.currentPosition);
         int startingIndex = excludeCurrent ? Math.min(pointIndex + 1, legPositions.size() - 1) : pointIndex;
-        List<T> finalWaypoints = waypoints;
-
-        // If directed so, add the last point of the leg shape (second to last in legPositions)
-        // for end-of-routing instructions.
-        if (useLastShapePoint && legPositions.size() > 2) {
-            finalWaypoints = new ArrayList<>(waypoints);
-            finalWaypoints.add((T) createEndOfRoutingStep(legPositions));
-        }
-
-        return pointIndex != -1 ? getNextWayPoint(legPositions, finalWaypoints, startingIndex) : null;
+        return pointIndex != -1 ? getNextWayPoint(legPositions, waypoints, startingIndex) : null;
     }
 
     /**
@@ -538,7 +553,7 @@ public class TravelerLocator {
      * Align the traveler to the transit leg and provide the next waypoint forward, excluding the current position.
      */
     private static <T extends ConvertsToCoordinates> T snapToWaypoint(TravelerPosition pos, List<T> waypoints) {
-        return snapToWaypoint(pos, waypoints, false, true);
+        return snapToWaypoint(pos, waypoints, false);
     }
 
     /**
