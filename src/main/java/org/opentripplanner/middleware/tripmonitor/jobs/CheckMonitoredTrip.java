@@ -308,14 +308,17 @@ public class CheckMonitoredTrip implements Runnable {
                 // set the status according to whether the current itinerary occurs in the past, present or future
                 updateTripStatus();
 
-                if (!trip.isOneTime()) {
-                    // update the trip's itinerary existence data so that any invalid dates are cleared (thus resulting in
-                    // that day of week saying that it is a valid day of the week).
+                if (trip.itineraryExistence != null) {
+                    // update the trip's itinerary existence data so that any invalid dates are cleared (thus resulting
+                    // in that day of week saying that it is a valid day of the week).
                     ItineraryExistence.ItineraryExistenceResult itinExistenceTargetDay = trip
                         .itineraryExistence
                         .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek());
-                    itinExistenceTargetDay.invalidDates = new ArrayList<>();
+                    if (itinExistenceTargetDay != null) {
+                        itinExistenceTargetDay.invalidDates = new ArrayList<>();
+                    }
                 }
+
                 // If the updated trip status is upcoming and the end time of the current matching itinerary is in the
                 // past, this means the trip has completed and the next possible time the trip occurs should be
                 // calculated
