@@ -382,7 +382,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(
                 itinerary,
                 createPoint(destinationCoords, 1, NORTH_WEST_BEARING),
-                TRIP_INSTRUCTION_END_OF_ROUTING, // Fixme new OnTrackInstruction(2, monroeDrDestinationName, locale).build(),
+                new OnTrackInstruction(2, monroeDrDestinationName, locale).build(),
                 TripStatus.COMPLETED,
                 "Instructions for destination coordinate"
             ),
