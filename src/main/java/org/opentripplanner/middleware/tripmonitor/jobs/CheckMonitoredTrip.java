@@ -319,6 +319,14 @@ public class CheckMonitoredTrip implements Runnable {
                     }
                 }
 
+                if (trip.isOneTime() &&
+                    (journeyState.tripStatus == TripStatus.TRIP_UPCOMING || journeyState.tripStatus == TripStatus.TRIP_ACTIVE)
+                ) {
+                    applyDelayOffset();
+                    updateMonitoredTrip();
+                    return false;
+                }
+
                 // If the updated trip status is upcoming and the end time of the current matching itinerary is in the
                 // past, this means the trip has completed and the next possible time the trip occurs should be
                 // calculated
@@ -930,9 +938,7 @@ public class CheckMonitoredTrip implements Runnable {
 
         LOG.info("Next itinerary happening on {}.", targetZonedDateTime);
 
-        // Update the matching itinerary with the expected scheduled times for when the next trip is
-        // expected to happen in a scheduled state.
-        long offsetMillis;
+        ZonedDateTime scheduledTime;
         if (trip.arriveBy) {
             // For arrive by trips, increment the matching itinerary end time as long as it does not exceed the target
             // zoned date time.
@@ -940,13 +946,12 @@ public class CheckMonitoredTrip implements Runnable {
             // Example: The new target time is June 15 at 9am and the previous matching itinerary ended on June 13 at
             // 8:50am. In this case, the matching itinerary will be incremented two days so the updated matching
             // itinerary ends at 8:50am on June 15.
-            ZonedDateTime newEndTime = DateTimeUtils.makeOtpZonedDateTime(
+            scheduledTime = DateTimeUtils.makeOtpZonedDateTime(
                 new Date(matchingItinerary.getScheduledEndTimeEpochMillis())
             );
-            while (newEndTime.plusDays(1).isBefore(targetZonedDateTime)) {
-                newEndTime = newEndTime.plusDays(1);
+            while (scheduledTime.plusDays(1).isBefore(targetZonedDateTime)) {
+                scheduledTime = scheduledTime.plusDays(1);
             }
-            offsetMillis = newEndTime.toInstant().toEpochMilli() - matchingItinerary.endTime.getTime();
         } else {
             // For depart at trips, increment the matching itinerary start time until it occurs after the target zoned
             // date time.
@@ -954,23 +959,41 @@ public class CheckMonitoredTrip implements Runnable {
             // Example: The new target time is June 15 at 5pm and the previous matching itinerary began on June 13 at
             // 5:08pm. In this case, the matching itinerary will be incremented two days so the updated matching
             // itinerary begins at 5:08pm on June 15.
-            ZonedDateTime newStartTime = DateTimeUtils.makeOtpZonedDateTime(
+            scheduledTime = DateTimeUtils.makeOtpZonedDateTime(
                 new Date(matchingItinerary.getScheduledStartTimeEpochMillis())
             );
-            while (newStartTime.isBefore(targetZonedDateTime)) {
-                newStartTime = newStartTime.plusDays(1);
+            while (scheduledTime.isBefore(targetZonedDateTime)) {
+                scheduledTime = scheduledTime.plusDays(1);
             }
-            offsetMillis = newStartTime.toInstant().toEpochMilli() - matchingItinerary.getScheduledStartTimeEpochMillis();
         }
+        applyDelayOffset(scheduledTime);
+    }
 
-        // update overall itinerary and leg start/end times by adding offset
+    /**
+     * Define default values for applying delay offset.
+     */
+    private void applyDelayOffset() {
+        ZonedDateTime scheduledTime = trip.arriveBy
+            ? DateTimeUtils.makeOtpZonedDateTime(new Date(matchingItinerary.getScheduledEndTimeEpochMillis()))
+            : DateTimeUtils.makeOtpZonedDateTime(new Date(matchingItinerary.getScheduledStartTimeEpochMillis()));
+        applyDelayOffset(scheduledTime);
+    }
+
+    /**
+     * Update the matching itinerary with the expected scheduled times for when the next trip is expected to happen in a
+     * scheduled state. This will also take into consideration any arrival or departure delays.
+     */
+    private void applyDelayOffset(ZonedDateTime scheduledTime) {
+        long offsetMillis = trip.arriveBy
+            ? scheduledTime.toInstant().toEpochMilli() - matchingItinerary.endTime.getTime()
+            : scheduledTime.toInstant().toEpochMilli() - matchingItinerary.getScheduledStartTimeEpochMillis();
+
+        // Update overall itinerary and leg start/end times by adding offset.
         matchingItinerary.offsetTimes(offsetMillis);
-
         LOG.info("Next matching itinerary starts at {}", matchingItinerary.startTime);
-
         resetJourneyState();
 
-        // reset the snoozed parameter to false
+        // Reset the snoozed parameter to false.
         trip.snoozed = false;
         updateTripStatus();
     }
