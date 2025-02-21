@@ -169,8 +169,10 @@ public class TravelerLocator {
 
         if (isApproachingEndOfLeg(travelerPosition)) {
             Leg transitLeg = travelerPosition.getTransitLegWithClosestUpcomingOrigin();
-            if (transitLeg != null && shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
-                sendBusNotifications(travelerPosition, transitLeg);
+            if (transitLeg != null) {
+                if (shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
+                    sendBusNotifications(travelerPosition, transitLeg);
+                }
                 // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
                 return new WaitForTransitInstruction(transitLeg, travelerPosition.currentTime, locale);
             }
@@ -400,7 +402,7 @@ public class TravelerLocator {
      * Get how far ahead in minutes the traveler is from the bus departure time.
      */
     public static long getMinutesAheadOfDeparture(Instant currentTime, Instant busDepartureTime) {
-        return Duration.between(busDepartureTime, currentTime).toMinutes();
+        return Duration.between(currentTime, busDepartureTime).toMinutes();
     }
 
     /**
