@@ -116,10 +116,8 @@ public class TrackedJourney extends Model {
             if (location.tripStatus != null) {
                 // Traveler must be moving (speed != 0) for a deviated location to be counted.
                 if (location.tripStatus == TripStatus.DEVIATED) {
-                    if (location.speed != 0) {
-                        count++;
-                        if (maxCount < count) maxCount = count;
-                    }
+                    count++;
+                    if (maxCount < count) maxCount = count;
                 } else {
                     // If a location has a status computed and is not deviated, reset the streak.
                     count = 0;
