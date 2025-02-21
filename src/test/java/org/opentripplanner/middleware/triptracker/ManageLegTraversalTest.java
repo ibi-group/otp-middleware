@@ -471,6 +471,17 @@ public class ManageLegTraversalTest {
                     .withExpectedInstruction(NO_INSTRUCTION)
             ),
             Arguments.of(
+                "Start live tracking well after bus departure. Issue wait instruction (indicate past departure).",
+                firstLegBusTransit,
+                0,
+                new TraceData()
+                    .withPosition(busStopCoords)
+                    .withStartingTrip()
+                    .withTripStatus(TripStatus.BEHIND_SCHEDULE)
+                    .withInstant(Instant.now())
+                    .withExpectedInstruction("Wait for your bus, route 20, scheduled at 7:58 AM (That time has passed)")
+            ),
+            Arguments.of(
                 "Arrive at bus stop well after the bus departure (indicates past departure).",
                 walkToBusTransition,
                 0,
@@ -478,9 +489,7 @@ public class ManageLegTraversalTest {
                     .withPosition(walkToBusTransition.legs.get(0).to.toCoordinates())
                     .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
-                    .withExpectedInstruction(
-                        "Wait for your bus, route 40, scheduled at 6:41 AM (That time has passed)"
-                    )
+                    .withExpectedInstruction("Wait for your bus, route 40, scheduled at 6:41 AM (That time has passed)")
             ),
             Arguments.of(
                 "Arrive at bus stop well in advance.",
@@ -490,9 +499,7 @@ public class ManageLegTraversalTest {
                     .withPosition(walkToBusTransition.legs.get(0).to.toCoordinates())
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
                     .withInstant(walkToBusTransition.legs.get(1).startTime.toInstant().minus(40, ChronoUnit.MINUTES))
-                    .withExpectedInstruction(
-                        "Wait 40 minutes for your bus, route 40, scheduled at 6:41 AM, on time"
-                    )
+                    .withExpectedInstruction("Wait 40 minutes for your bus, route 40, scheduled at 6:41 AM, on time")
             )
         );
     }
@@ -534,7 +541,7 @@ public class ManageLegTraversalTest {
                 "If present at the transit stop after the trip departure, there should not be an instruction.",
                 new TraceData()
                     .withPosition(originCoords)
-                    .withExpectedInstruction(NO_INSTRUCTION)
+                    .withExpectedInstruction("Wait for your bus, route 27, scheduled at 9:18 AM (That time has passed)")
                     .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
             ),

@@ -321,8 +321,10 @@ public class TravelerLocator {
         String finalStop = expectedLeg.to.name;
 
         Leg transitLeg = travelerPosition.getTransitLegWithClosestUpcomingOrigin();
-        if (transitLeg != null && shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
-            sendBusNotifications(travelerPosition, transitLeg);
+        if (transitLeg != null) {
+            if (shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
+                sendBusNotifications(travelerPosition, transitLeg);
+            }
             // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
             return new WaitForTransitInstruction(transitLeg, travelerPosition.currentTime, locale);
         }
