@@ -519,9 +519,9 @@ public class ManageLegTraversalTest {
             Arguments.of(
                 new TraceData(
                     originCoords,
-                    NO_INSTRUCTION,
+                    "Wait for your bus, route 27, scheduled at 9:18 AM, on time",
                     Instant.now(),
-                    "If present at the transit stop after the trip departure, there should not be an instruction."
+                    "If present at the transit stop after the trip departure, instruct to wait (TODO: indicate past departure)."
                 )
             ),
             Arguments.of(
