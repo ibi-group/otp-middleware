@@ -590,7 +590,7 @@ public class ManageLegTraversalTest {
         assertEquals(leg.to.lon, lastPosition.lon, DELTA);
 
         // If the last leg position is the same as the destination point, (at given precision)
-        // then skip the check because the second to last waypoint will not be related to the last leg position,
+        // then skip the check because the second to last waypoint will not be related to the last leg position.
         if (Math.abs(leg.to.lat - lastPosition.lat) > DELTA || Math.abs(leg.to.lon - lastPosition.lon) > DELTA) {
             Coordinates secondLastPosition = allPositions.get(allPositions.size() - 2);
             Position lastLegPosition = legPositions.get(legPositions.size() - 1);
