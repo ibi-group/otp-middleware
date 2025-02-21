@@ -973,9 +973,11 @@ public class CheckMonitoredTrip implements Runnable {
      * Define default values for applying delay offset.
      */
     private void applyDelayOffset() {
-        ZonedDateTime scheduledTime = trip.arriveBy
-            ? DateTimeUtils.makeOtpZonedDateTime(new Date(matchingItinerary.getScheduledEndTimeEpochMillis()))
-            : DateTimeUtils.makeOtpZonedDateTime(new Date(matchingItinerary.getScheduledStartTimeEpochMillis()));
+        ZonedDateTime scheduledTime = DateTimeUtils.makeOtpZonedDateTime(new Date(
+            trip.arriveBy
+                ? matchingItinerary.getScheduledEndTimeEpochMillis()
+                : matchingItinerary.getScheduledStartTimeEpochMillis()
+        ));
         applyDelayOffset(scheduledTime);
     }
 
@@ -984,10 +986,11 @@ public class CheckMonitoredTrip implements Runnable {
      * scheduled state. This will also take into consideration any arrival or departure delays.
      */
     private void applyDelayOffset(ZonedDateTime scheduledTime) {
-        long offsetMillis = trip.arriveBy
-            ? scheduledTime.toInstant().toEpochMilli() - matchingItinerary.endTime.getTime()
-            : scheduledTime.toInstant().toEpochMilli() - matchingItinerary.getScheduledStartTimeEpochMillis();
-
+        long offsetMillis = scheduledTime.toInstant().toEpochMilli() -
+            (trip.arriveBy
+                ? matchingItinerary.endTime.getTime()
+                : matchingItinerary.getScheduledStartTimeEpochMillis()
+            );
         // Update overall itinerary and leg start/end times by adding offset.
         matchingItinerary.offsetTimes(offsetMillis);
         LOG.info("Next matching itinerary starts at {}", matchingItinerary.startTime);
