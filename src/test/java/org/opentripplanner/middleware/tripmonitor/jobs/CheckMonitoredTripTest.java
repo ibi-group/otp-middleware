@@ -33,6 +33,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -103,17 +104,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         }
     }
 
-    /**
-     * To run this trip, change the env.yml config values for OTP_API_ROOT
-     * (and OTP_PLAN_ENDPOINT) to a valid OTP server.
-     */
     @Test
-    void canMonitorTrip() throws Exception {
+    void canMonitorOngoingTrip() throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
             OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
             false,
-            OtpTestUtils.createDefaultJourneyState()
+            null
         );
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         Persistence.monitoredTrips.create(monitoredTrip);
@@ -146,8 +143,68 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
         checkMonitoredTrip.run();
-        // Assert that there is one notification generated during check.
-        Assertions.assertEquals(1, checkMonitoredTrip.notifications.size());
+
+        // Assert that there is one notification generated during check and it is an alert.
+        assertEquals(1, checkMonitoredTrip.notifications.size());
+        assertEquals(NotificationType.ALERT_FOUND, checkMonitoredTrip.notifications.iterator().next().type);
+        // Clear the created trip.
+        PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
+    }
+
+    @Test
+    void canMonitorFutureTrip() throws Exception {
+        // TODO refactor with above test.
+        // Save an itinerary in the future, and run an itinerary check on it at at time before that itinerary start.
+
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            false,
+            null
+        );
+        monitoredTrip.tripTime = "08:35";
+        monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
+
+        Persistence.monitoredTrips.create(monitoredTrip);
+        LOG.info("Created trip {}", monitoredTrip.id);
+
+
+        OtpResponse mockResponse = mockOtpPlanResponse();
+        Itinerary mockTuesdayJune9Itinerary = mockResponse.plan.itineraries.get(0);
+
+        // parse original itinerary date/time and then update mock itinerary to occur on Monday June 15
+        ZonedDateTime mockItineraryDate = DateTimeUtils.makeOtpZonedDateTime(mockTuesdayJune9Itinerary.startTime)
+            .withDayOfMonth(9);
+        OtpTestUtils.updateBaseItineraryTime(
+            mockTuesdayJune9Itinerary,
+            mockItineraryDate
+        );
+
+        // Add fake alerts to simulated itinerary.
+        ArrayList<LocalizedAlert> fakeAlerts = new ArrayList<>();
+        fakeAlerts.add(new LocalizedAlert());
+        mockTuesdayJune9Itinerary.legs.get(1).alerts = fakeAlerts;
+
+        // The trip is set to be monitored Monday to Friday.
+        // Mock time to be 7:30am on Tuesday, June 9 before the trip start.
+        DateTimeUtils.useFixedClockAt(
+            noonMonday8June2020
+                .withDayOfMonth(9)
+                .withHour(7)
+                .withMinute(30)
+        );
+
+        // Next, run a monitor trip check from the new monitored trip using the simulated response.
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        checkMonitoredTrip.run();
+        // This process should initialize the scheduled departure time on the journey state
+        assertNotEquals(0, checkMonitoredTrip.trip.journeyState.scheduledDepartureTimeEpochMillis);
+
+        // No notifications in this case because the trip is next day.
+        assertEquals(1, checkMonitoredTrip.notifications.size());
+        assertEquals(NotificationType.ALERT_FOUND, checkMonitoredTrip.notifications.iterator().next().type);
+
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
     }
@@ -884,6 +941,16 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         Persistence.otpUsers.removeById(observer.id);
     }
 
+    private void triggerCheckMonitoredTrip(MonitoredTrip monitoredTrip, TravelerPosition travelerPosition) throws CloneNotSupportedException {
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+        checkMonitoredTrip.IS_TEST = true;
+        checkMonitoredTrip.targetZonedDateTime = monitoredTrip.tripZonedDateTime(DateTimeUtils.nowAsLocalDate());
+        checkMonitoredTrip.processLegTransition(NotificationType.MODE_CHANGE_NOTIFICATION, travelerPosition);
+    }
+
+    /**
+     * Edge case when UTC time is 1 day ahead of local time. If this is failing, ensure OTP_TIMEZONE is set in env.yml
+     */
     @Test
     void testCheckMonitoredTripWhenUTCIsNextDay() throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
@@ -893,59 +960,53 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             OtpTestUtils.createDefaultJourneyState()
         );
 
+        // monitored trip start time = 1:30AM UTC or 5:30PM PST
         OtpTestUtils.updateBaseItineraryTime(
             monitoredTrip.itinerary,
             DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime)
-                .withHour(19)
-                .withMinute(15)
+                .withHour(17)
+                .withMinute(30)
+                .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
         );
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
-        monitoredTrip.tripTime = "19:15";
+        monitoredTrip.tripTime = "17:30";
         monitoredTrip.leadTimeInMinutes = 30;
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
 
         // Set up an OTP mock response in order to trigger some of the monitor checks.
         OtpResponse mockResponse = mockOtpPlanResponse();
+        Itinerary mockTuesdayJune09Itinerary = mockResponse.plan.itineraries.get(0);
 
-        // change time to be greater than 30 min lead time
+        // itinerary start time = 1:30AM UTC or 5:30PM PST
+        OtpTestUtils.updateBaseItineraryTime(
+            mockTuesdayJune09Itinerary,
+            DateTimeUtils.makeOtpZonedDateTime(mockTuesdayJune09Itinerary.startTime)
+                .withHour(17)
+                .withMinute(30)
+                .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
+        );
+
+        // change "now" time after initial check to be within 30 min lead
+        // 1:00AM UTC or 5:00PM PST
         DateTimeUtils.useFixedClockAt(
             noonMonday8June2020
                 .withDayOfMonth(9)
                 .withHour(17)
-                .withMinute(50)
+                .withMinute(0)
+                .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
         );
 
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
         checkMonitoredTrip.run();
 
         // trip should have been skipped
-        Assertions.assertEquals(0, checkMonitoredTrip.notifications.size());
+        Assertions.assertEquals(DayOfWeek.TUESDAY, checkMonitoredTrip.targetZonedDateTime.getDayOfWeek());
 
-        // change time after initial check to be within 30 min lead
-        // monitored trip now has previousMatchingItinerary
-        DateTimeUtils.useFixedClockAt(
-            noonMonday8June2020
-                .withDayOfMonth(9)
-                .withHour(18)
-                .withMinute(50)
-        );
-
-        CheckMonitoredTrip checkMonitoredTripAgain = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
-        checkMonitoredTripAgain.run();
-
-        // Assert that there is one notification generated during check.
-        Assertions.assertEquals(1, checkMonitoredTripAgain.notifications.size());
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
     }
 
-    private void triggerCheckMonitoredTrip(MonitoredTrip monitoredTrip, TravelerPosition travelerPosition) throws CloneNotSupportedException {
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
-        checkMonitoredTrip.IS_TEST = true;
-        checkMonitoredTrip.targetZonedDateTime = monitoredTrip.tripZonedDateTime(DateTimeUtils.nowAsLocalDate());
-        checkMonitoredTrip.processLegTransition(NotificationType.MODE_CHANGE_NOTIFICATION, travelerPosition);
-    }
 }

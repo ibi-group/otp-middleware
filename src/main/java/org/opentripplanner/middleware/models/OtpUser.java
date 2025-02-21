@@ -36,7 +36,7 @@ import static org.opentripplanner.middleware.tripmonitor.TrustedCompanion.remove
  */
 public class OtpUser extends AbstractUser {
     public enum Notification {
-        EMAIL, PUSH, SMS
+        EMAIL, PUSH, SMS, HAPTIC
     }
 
     public static final String AUTH0_SCOPE = "otp-user";

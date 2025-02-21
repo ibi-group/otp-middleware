@@ -287,7 +287,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
     @ParameterizedTest
     @MethodSource("shouldSendBusNotificationAtStartOfTripTrace")
     void shouldSendBusNotificationAtStartOfTrip(boolean expected, TravelerPosition travelerPosition, String message) {
-        assertEquals(expected, TravelerLocator.sendBusNotification(travelerPosition), message);
+        assertEquals(expected, TravelerLocator.shouldSendBusNotification(travelerPosition.nextLeg, travelerPosition.currentTime), message);
     }
 
     private static Stream<Arguments> shouldSendBusNotificationAtStartOfTripTrace() {

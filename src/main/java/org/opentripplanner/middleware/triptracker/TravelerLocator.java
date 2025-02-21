@@ -168,9 +168,11 @@ public class TravelerLocator {
         Locale locale = travelerPosition.locale;
 
         if (isApproachingEndOfLeg(travelerPosition)) {
-            if (sendBusNotification(travelerPosition)) {
+            Leg transitLeg = travelerPosition.getTransitLegWithClosestUpcomingOrigin();
+            if (transitLeg != null && shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
+                sendBusNotifications(travelerPosition, transitLeg);
                 // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
-                return new WaitForTransitInstruction(travelerPosition.nextLeg, travelerPosition.currentTime, locale);
+                return new WaitForTransitInstruction(transitLeg, travelerPosition.currentTime, locale);
             }
             return new OnTrackInstruction(getDistanceToEndOfLeg(travelerPosition), travelerPosition.expectedLeg.to.name, locale);
         }
@@ -246,17 +248,19 @@ public class TravelerLocator {
     }
 
     /**
-     * Send bus notification if the first leg is a bus leg or approaching a bus leg and within the notify window.
+     * Whether to send a bus notification if the first leg is a bus leg or approaching a bus leg and within the notify window.
      */
-    public static boolean sendBusNotification(TravelerPosition travelerPosition) {
-        Leg busLeg = atStartOfTransitTrip(travelerPosition) ? travelerPosition.expectedLeg : travelerPosition.nextLeg;
-        if (isBusLeg(busLeg) && isWithinOperationalNotifyWindow(travelerPosition.currentTime, busLeg)) {
-            BusOperatorActions
-                .getDefault()
-                .handleSendNotificationAction(travelerPosition, busLeg);
-            return true;
-        }
-        return false;
+    public static boolean shouldSendBusNotification(Leg leg, Instant currentTime) {
+        return (isBusLeg(leg) && isWithinOperationalNotifyWindow(currentTime, leg));
+    }
+
+    /**
+     * Send bus notification for the corresponding leg.
+     */
+    private static void sendBusNotifications(TravelerPosition travelerPosition, Leg busLeg) {
+        BusOperatorActions
+            .getDefault()
+            .handleSendNotificationAction(travelerPosition, busLeg);
     }
 
     /**
@@ -279,9 +283,11 @@ public class TravelerLocator {
         Leg expectedLeg = travelerPosition.expectedLeg;
         String finalStop = expectedLeg.to.name;
 
-        if (sendBusNotification(travelerPosition)) {
+        Leg transitLeg = travelerPosition.getTransitLegWithClosestUpcomingOrigin();
+        if (transitLeg != null && shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
+            sendBusNotifications(travelerPosition, transitLeg);
             // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
-            return new WaitForTransitInstruction(expectedLeg, travelerPosition.currentTime, locale);
+            return new WaitForTransitInstruction(transitLeg, travelerPosition.currentTime, locale);
         }
 
         if (isApproachingEndOfLeg(travelerPosition)) {
