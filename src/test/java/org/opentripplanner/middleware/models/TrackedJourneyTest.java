@@ -31,9 +31,10 @@ class TrackedJourneyTest {
             .collect(Collectors.toList());
 
         // Insert a location where the traveler is not moving.
+        // Note: non-zero speed is no longer needed for counting deviations towards a travel survey.
         journey.locations.get(5).speed = 0;
 
         // After excluding the nulls, count the first group of consecutive ones.
-        assertEquals(4, journey.computeLargestConsecutiveDeviations());
+        assertEquals(5, journey.computeLargestConsecutiveDeviations());
     }
 }
