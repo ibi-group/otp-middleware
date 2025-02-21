@@ -167,8 +167,7 @@ public class TravelerLocator {
     ) {
         Locale locale = travelerPosition.locale;
 
-        boolean approachingEndOfLeg = isApproachingEndOfLeg(travelerPosition);
-        if (approachingEndOfLeg) {
+        if (isApproachingEndOfLeg(travelerPosition)) {
             Leg transitLeg = travelerPosition.getTransitLegWithClosestUpcomingOrigin();
             if (transitLeg != null && shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
                 sendBusNotifications(travelerPosition, transitLeg);
