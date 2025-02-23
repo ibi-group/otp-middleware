@@ -88,12 +88,12 @@ public class TravelerPosition {
      * Returns the closest transit leg in 'upcoming' radius eligible for a "Wait for transit" instruction.
      */
     public Leg getTransitLegWithClosestUpcomingOrigin() {
-        double distance1 = distanceToTransitLegOrigin(currentPosition, expectedLeg);
-        double distance2 = distanceToTransitLegOrigin(currentPosition, nextLeg);
+        double distancetoExpectedLeg = distanceToTransitLegOrigin(currentPosition, expectedLeg);
+        double distanceToNextLeg = distanceToTransitLegOrigin(currentPosition, nextLeg);
 
-        if (distance1 <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distance1 < distance2) {
+        if (distancetoExpectedLeg <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distancetoExpectedLeg < distanceToNextLeg) {
             return expectedLeg;
-        } else if (distance2 <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distance2 < distance1) {
+        } else if (distanceToNextLeg <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distanceToNextLeg < distancetoExpectedLeg) {
             return nextLeg;
         } else {
             return null;

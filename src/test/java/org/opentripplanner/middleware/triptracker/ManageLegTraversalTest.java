@@ -198,7 +198,7 @@ public class ManageLegTraversalTest {
 
     @ParameterizedTest
     @MethodSource("createTurnByTurnTrace")
-    void canTrackTurnByTurn(Leg firstLeg, TraceData traceData) {
+    void canTrackTurnByTurn(String message, Leg firstLeg, TraceData traceData) {
         TravelerPosition travelerPosition = new TravelerPosition.Builder()
             .setExpectedLeg(firstLeg)
             .setCurrentPosition(traceData.position)
@@ -208,7 +208,7 @@ public class ManageLegTraversalTest {
             .build();
         travelerPosition.locale = locale;
         TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
-        assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, traceData.message);
+        assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
     }
 
     private static Stream<Arguments> createTurnByTurnTrace() {
@@ -258,234 +258,192 @@ public class ManageLegTraversalTest {
 
         return Stream.of(
             Arguments.of(
+                "Deviated from the start of a trip which starts with a bus leg. Suggest path to head towards.",
                 firstBusLeg,
-                new TraceData(
-                    TripStatus.DEVIATED,
-                    createPoint(busStopCoords, 12, NORTH_WEST_BEARING),
-                    new DeviatedInstruction(busStopName, locale),
-                    true,
-                    "Deviated from the start of a trip which starts with a bus leg. Suggest path to head towards."
-                )
+                new TraceData()
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withPosition(createPoint(busStopCoords, 12, NORTH_WEST_BEARING))
+                    .withStartingTrip()
+                    .withExpectedInstruction(new DeviatedInstruction(busStopName, locale))
             ),
             Arguments.of(
+                "On-time and near the initial bus stop on trip which starts with a bus leg. Instructs to wait for bus.",
                 firstBusLeg,
-                new TraceData(
-                    TripStatus.ON_SCHEDULE,
-                    createPoint(busStopCoords, 4, NORTH_WEST_BEARING),
-                    new WaitForTransitInstruction(firstBusLeg, firstBusLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES), locale),
-                    true,
-                    "On-time and near the initial bus stop on trip which starts with a bus leg. Instructs to wait for bus."
-                )
+                new TraceData()
+                    .withPosition(createPoint(busStopCoords, 4, NORTH_WEST_BEARING))
+                    .withStartingTrip()
+                    .withExpectedInstruction(
+                        new WaitForTransitInstruction(firstBusLeg, firstBusLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES), locale)
+                    )
             ),
             Arguments.of(
+                "On transit leg away from the boarding location (or walked past the bus stop). No specific instruction to give.",
                 firstBusLeg,
-                new TraceData(
-                    TripStatus.ON_SCHEDULE,
-                    new Coordinates(33.916779, -84.226556),
-                    NO_INSTRUCTION,
-                    true,
-                    "On transit leg away from the boarding location (or walked past the bus stop). No specific instruction to give."
-                )
+                new TraceData()
+                    .withPosition(33.916779, -84.226556)
+                    .withStartingTrip()
+                    .withExpectedInstruction(NO_INSTRUCTION)
             ),
             Arguments.of(
+                "Just started the trip and near to the instruction for the first step.",
                 walkLeg,
-                new TraceData(
-                    originCoords,
-                    new OnTrackInstruction(10, adairAvenueNortheastStep, locale),
-                    true,
-                    "Just started the trip and near to the instruction for the first step. "
-                )
+                new TraceData()
+                    .withPosition(originCoords)
+                    .withStartingTrip()
+                    .withExpectedInstruction(new OnTrackInstruction(10, adairAvenueNortheastStep, locale))
             ),
             Arguments.of(
+                "Coming up on first walk instruction.",
                 walkLeg,
-                new TraceData(
-                    originCoords,
-                    new OnTrackInstruction(10, adairAvenueNortheastStep, locale),
-                    false,
-                    "Coming up on first instruction."
-                )
+                new TraceData()
+                    .withPosition(originCoords)
+                    .withExpectedInstruction(new OnTrackInstruction(10, adairAvenueNortheastStep, locale)),
+                    false
             ),
             Arguments.of(
+                "On first walk instruction.",
                 walkLeg,
-                new TraceData(
-                    adairAvenueNortheastCoords,
-                    new OnTrackInstruction(2, adairAvenueNortheastStep, locale),
-                    false,
-                    "On first instruction."
-                )
+                new TraceData()
+                    .withPosition(adairAvenueNortheastCoords)
+                    .withExpectedInstruction(new OnTrackInstruction(2, adairAvenueNortheastStep, locale))
             ),
             Arguments.of(
+                "Deviated to the north of east to west path. Suggest path to head towards.",
                 walkLeg,
-                new TraceData(
-                    TripStatus.DEVIATED,
-                    createPoint(adairAvenueNortheastCoords, 12, NORTH_WEST_BEARING),
-                    new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale),
-                    false,
-                    "Deviated to the north of east to west path. Suggest path to head towards."
-                )
+                new TraceData()
+                    .withPosition(createPoint(adairAvenueNortheastCoords, 12, NORTH_WEST_BEARING))
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction(new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale))
             ),
             Arguments.of(
+                "Deviated to the south of east to west path. Suggest path to head towards.",
                 walkLeg,
-                new TraceData(
-                    TripStatus.DEVIATED,
-                    createPoint(adairAvenueNortheastCoords, 12, SOUTH_WEST_BEARING),
-                    new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale),
-                    false,
-                    "Deviated to the south of east to west path. Suggest path to head towards."
-                )
+                new TraceData()
+                    .withPosition(createPoint(adairAvenueNortheastCoords, 12, SOUTH_WEST_BEARING))
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction(new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale))
             ),
             Arguments.of(
+                "On track approaching second step, provide continue instruction.",
                 walkLeg,
-                new TraceData(
-                    createPoint(virginiaCircleNortheastCoords, 12, SOUTH_WEST_BEARING),
-                    new ContinueInstruction(virginiaCircleNortheastStep, locale),
-                    false,
-                    "On track approaching second step, provide continue instruction."
-                )
+                new TraceData()
+                    .withPosition(createPoint(virginiaCircleNortheastCoords, 12, SOUTH_WEST_BEARING))
+                    .withExpectedInstruction(new ContinueInstruction(virginiaCircleNortheastStep, locale))
             ),
             Arguments.of(
+                "Deviated from path, but within the upcoming radius of second instruction.",
                 walkLeg,
-                new TraceData(
-                    TripStatus.DEVIATED,
-                    createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING),
-                    new OnTrackInstruction(9, virginiaCircleNortheastStep, locale),
-                    false,
-                    "Deviated from path, but within the upcoming radius of second instruction."
-                )
+                new TraceData()
+                    .withPosition(createPoint(virginiaCircleNortheastCoords, 8, NORTH_BEARING))
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction(new OnTrackInstruction(9, virginiaCircleNortheastStep, locale))
             ),
             Arguments.of(
+                "On second walk instruction.",
                 walkLeg,
-                new TraceData(
-                    virginiaCircleNortheastCoords,
-                    new OnTrackInstruction(0, virginiaCircleNortheastStep, locale),
-                    false,
-                    "On second instruction."
-                )
+                new TraceData()
+                    .withPosition(virginiaCircleNortheastCoords)
+                    .withExpectedInstruction(new OnTrackInstruction(0, virginiaCircleNortheastStep, locale))
             ),
             Arguments.of(
+                "Deviated to the west of south to north path. Suggest path to head towards.",
                 walkLeg,
-                new TraceData(
-                    TripStatus.DEVIATED,
-                    createPoint(ponceDeLeonPlaceNortheastCoords, 10, NORTH_WEST_BEARING),
-                    new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale),
-                    false,
-                    "Deviated to the west of south to north path. Suggest path to head towards."
-                )
+                new TraceData()
+                    .withPosition(createPoint(ponceDeLeonPlaceNortheastCoords, 10, NORTH_WEST_BEARING))
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction(new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale))
             ),
             Arguments.of(
+                "Deviated to the east of south to north path. Suggest path to head towards.",
                 walkLeg,
-                new TraceData(
-                    TripStatus.DEVIATED,
-                    createPoint(ponceDeLeonPlaceNortheastCoords, 10, NORTH_EAST_BEARING),
-                    new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale),
-                    false,
-                    "Deviated to the east of south to north path. Suggest path to head towards."
-                )
+                new TraceData()
+                    .withPosition(createPoint(ponceDeLeonPlaceNortheastCoords, 10, NORTH_EAST_BEARING))
+                    .withExpectedInstruction(new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale))
+                    .withTripStatus(TripStatus.DEVIATED)
             ),
             Arguments.of(
+                "Approaching left turn on Virginia Avenue (Test to make sure turn is not missed).",
                 walkLeg,
-                new TraceData(
-                    createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new OnTrackInstruction(10, virginiaAvenueNortheastStep, locale),
-                    false,
-                    "Approaching left turn on Virginia Avenue (Test to make sure turn is not missed)."
-                )
+                new TraceData()
+                    .withPosition(createPoint(pointBeforeTurn, 8, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)))
+                    .withExpectedInstruction(new OnTrackInstruction(10, virginiaAvenueNortheastStep, locale))
             ),
             Arguments.of(
+                "Turn left on to Virginia Avenue (Test to make sure turn is not missed).",
                 walkLeg,
-                new TraceData(
-                    createPoint(pointBeforeTurn, 17, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)),
-                    new OnTrackInstruction(2, virginiaAvenueNortheastStep, locale),
-                    false,
-                    "Turn left on to Virginia Avenue (Test to make sure turn is not missed)."
-                )
+                new TraceData()
+                    .withPosition(createPoint(pointBeforeTurn, 17, calculateBearing(pointBeforeTurn, virginiaAvenuePoint)))
+                    .withExpectedInstruction(new OnTrackInstruction(2, virginiaAvenueNortheastStep, locale))
             ),
             Arguments.of(
+                "After turn left on to Virginia Avenue should provide continue instruction.",
                 walkLeg,
-                new TraceData(
-                    createPoint(pointAfterTurn, 0, calculateBearing(pointAfterTurn, virginiaAvenuePoint)),
-                    new ContinueInstruction(virginiaAvenueNortheastStep, locale),
-                    false,
-                    "After turn left on to Virginia Avenue should provide continue instruction."
-                )
+                new TraceData()
+                    .withPosition(createPoint(pointAfterTurn, 0, calculateBearing(pointAfterTurn, virginiaAvenuePoint)))
+                    .withExpectedInstruction(new ContinueInstruction(virginiaAvenueNortheastStep, locale))
             ),
             Arguments.of(
+                "After final turn on to Kanuga Street should provide continue instruction.",
                 walkLeg,
-                new TraceData(
-                    createPoint(pointOnKanugaStreet, 0, NORTH_WEST_BEARING),
-                    new ContinueInstruction(kanugaStreetStep, locale),
-                    false,
-                    "After final turn on to Kanuga Street should provide continue instruction."
-                )
+                new TraceData()
+                    .withPosition(createPoint(pointOnKanugaStreet, 0, NORTH_WEST_BEARING))
+                    .withExpectedInstruction(new ContinueInstruction(kanugaStreetStep, locale))
             ),
             Arguments.of(
+                "Coming up on destination instruction.",
                 walkLeg,
-                new TraceData(
-                    createPoint(destinationCoords, 8, SOUTH_BEARING),
-                    new OnTrackInstruction(10, destinationName, locale),
-                    false,
-                    "Coming up on destination instruction."
-                )
+                new TraceData()
+                    .withPosition(createPoint(destinationCoords, 8, SOUTH_BEARING))
+                    .withExpectedInstruction(new OnTrackInstruction(10, destinationName, locale))
             ),
             Arguments.of(
+                "On destination instruction.",
                 walkLeg,
-                new TraceData(
-                    destinationCoords,
-                    new OnTrackInstruction(2, destinationName, locale),
-                    false,
-                    "On destination instruction."
-                )
+                new TraceData()
+                    .withPosition(destinationCoords)
+                    .withExpectedInstruction(new OnTrackInstruction(2, destinationName, locale))
             ),
             Arguments.of(
+                "On track passed second step and not near to next step, provide continue instruction for second step.",
                 toEastCroganFirstLeg,
-                new TraceData(
-                    pointOnSouthClaytonSt,
-                    new ContinueInstruction(southClaytonSt, locale),
-                    false,
-                    "On track passed second step and not near to next step, provide continue instruction for second step."
-                )
+                new TraceData()
+                    .withPosition(pointOnSouthClaytonSt)
+                    .withExpectedInstruction(new ContinueInstruction(southClaytonSt, locale))
             ),
             Arguments.of(
+                "On track a bit near to the next step, provide continue instruction for second step.",
                 toEastCroganFirstLeg,
-                new TraceData(
-                    createPoint(pointOnSouthClaytonSt, 12, NORTH_WEST_BEARING),
-                    new ContinueInstruction(southClaytonSt, locale),
-                    false,
-                    "On track a bit near to the next step, provide continue instruction for second step."
-                )
+                new TraceData()
+                    .withPosition(createPoint(pointOnSouthClaytonSt, 12, NORTH_WEST_BEARING))
+                    .withExpectedInstruction(new ContinueInstruction(southClaytonSt, locale))
             ),
             Arguments.of(
+                "On track passed next step, provide continue instruction for next step.",
                 toEastCroganFirstLeg,
-                new TraceData(
-                    createPoint(pointOnSouthClaytonSt, 72, NORTH_BEARING),
-                    new ContinueInstruction(eastCroganSt, locale),
-                    false,
-                    "On track passed next step, provide continue instruction for next step."
-                )
+                new TraceData()
+                    .withPosition(createPoint(pointOnSouthClaytonSt, 72, NORTH_BEARING))
+                    .withExpectedInstruction(new ContinueInstruction(eastCroganSt, locale))
             ),
             Arguments.of(
+                "Provide instruction for reaching destination if it is not near end of shape of walk leg.",
                 legToDestinationAwayFromSidewalk,
-                new TraceData(
-                    pointNearEndOfSidewalk,
-                     TRIP_INSTRUCTION_END_OF_ROUTING,
-                    "Provide instruction for reaching destination if it is not near end of shape of walk leg."
-                )
+                new TraceData()
+                    .withPosition(pointNearEndOfSidewalk)
+                    .withExpectedInstruction(TRIP_INSTRUCTION_END_OF_ROUTING)
             ),
             Arguments.of(
+                "Immediately after departure instruction. Should provide a 'Continue' instruction and not 'No instruction'.",
                 midtownWalkLeg,
-                new TraceData(
-                    midtownWalkCoords,
-                    new ContinueInstruction(midtownWalkFirstStep, locale),
-                    false,
-                    "Immediately after departure instruction. Should provide a 'Continue' instruction and not 'No instruction'."
-                )
+                new TraceData()
+                    .withPosition(midtownWalkCoords)
+                    .withExpectedInstruction(new ContinueInstruction(midtownWalkFirstStep, locale))
             )
         );
     }
 
     @ParameterizedTest
     @MethodSource("createTransitRideTrace")
-    void canTrackTransitRide(TraceData traceData) {
+    void canTrackTransitRide(String message, TraceData traceData) {
         Itinerary itinerary = midtownToAnsleyItinerary;
         Leg transitLeg = itinerary.legs.get(1);
 
@@ -497,14 +455,14 @@ public class ManageLegTraversalTest {
         TravelerPosition travelerPosition = new TravelerPosition.Builder()
             .setExpectedLeg(transitLeg)
             .setCurrentPosition(traceData.position)
-            // Unless specified in traceData, an instant corresponding to approx the trip start time should be provided
+            // Unless specified in traceData, an instant corresponding to around the trip start time should be provided
             // for correct instructions to be produced.
             .setCurrentTime(traceData.instant != null ? traceData.instant : transitLeg.startTime.toInstant())
             .setSpeed(traceData.speed)
             .build();
         travelerPosition.locale = locale;
         TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, false);
-        assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, traceData.message);
+        assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
     }
 
     private static Stream<Arguments> createTransitRideTrace() {
@@ -517,87 +475,78 @@ public class ManageLegTraversalTest {
 
         return Stream.of(
             Arguments.of(
-                new TraceData(
-                    originCoords,
-                    "Wait for your bus, route 27, scheduled at 9:18 AM, on time",
-                    Instant.now(),
-                    "If present at the transit stop after the trip departure, instruct to wait (TODO: indicate past departure)."
-                )
+                "If present at the transit stop after the trip departure, instruct to wait (TODO: indicate past departure).",
+                new TraceData()
+                    .withPosition(originCoords)
+                    .withExpectedInstruction("Wait for your bus, route 27, scheduled at 9:18 AM, on time")
+                    .withInstant(Instant.now())
             ),
             Arguments.of(
-                new TraceData(
-                    originCoords,
-                    new WaitForTransitInstruction(transitLeg, transitLeg.startTime.toInstant(), locale).build(),
-                    "At the bus stop, or just boarded the transit vehicle leg, it should still tell the user to board the bus."
-                )
+                "At the bus stop, or just boarded the transit vehicle leg, it should still tell the user to board the bus.",
+                new TraceData()
+                    .withPosition(originCoords)
+                    .withExpectedInstruction(
+                        new WaitForTransitInstruction(transitLeg, transitLeg.startTime.toInstant(), locale)
+                    )
             ),
             // This instruction can be missed if the transit vehicle is in a slow/congested area
             // with speeds less than 5 meters/second (11.1 mph, 18 km/h).
             Arguments.of(
-                new TraceData(
-                    new Coordinates(33.78647, -84.38041),
-                    6, // meters per second, ~13.4 mph or 21.6 km/h. The threshold is 5 meters per second.
-                    String.format("Ride 4 min / 8 stops to %s", destinationName),
-                    "Summarize the transit trip as vehicle departs."
-                )
+                "Summarize the transit trip as vehicle departs.",
+                new TraceData()
+                    .withPosition(33.78647, -84.38041)
+                    .withSpeed(6) // meters per second, ~13.4 mph or 21.6 km/h. The threshold is 5 meters per second.
+                    .withExpectedInstruction(String.format("Ride 4 min / 8 stops to %s", destinationName))
             ),
             Arguments.of(
-                new TraceData(
-                    new Coordinates(33.78792, -84.37776),
-                    NO_INSTRUCTION,
-                    "On the transit segment, but far from the arrival stop, so no instruction is given."
-                )
+                "On the transit segment, but far from the arrival stop, so no instruction is given.",
+                new TraceData()
+                    .withPosition(33.78792, -84.37776)
+                    .withExpectedInstruction(NO_INSTRUCTION)
             ),
             Arguments.of(
-                new TraceData(
-                    new Coordinates(33.79139, -84.37441),
-                    String.format("Your stop is coming up (%s)", destinationName),
-                    "Upcoming arrival stop instruction."
-                )
+                "Upcoming arrival stop instruction.",
+                new TraceData()
+                    .withPosition(33.79139, -84.37441)
+                    .withExpectedInstruction(String.format("Your stop is coming up (%s)", destinationName))
             ),
             Arguments.of(
-                new TraceData(
-                    new Coordinates(33.79362, -84.37235),
-                    String.format("Your stop is coming up (%s)", destinationName),
-                    "Between the third and second to last stop."
-                )
+                "Between the third and second to last stop.",
+                new TraceData()
+                    .withPosition(33.79362, -84.37235)
+                    .withExpectedInstruction(String.format("Your stop is coming up (%s)", destinationName))
             ),
             Arguments.of(
-                new TraceData(
-                    new Coordinates(33.79445, -84.37156),
-                    String.format("Get off at next stop (%s)", destinationName),
-                    "One-stop warning (only within 'upcoming' distance of that stop) before the stop to get off"
-                )
+                "One-stop warning (only within 'upcoming' distance of that stop) before the stop to get off",
+                new TraceData()
+                    .withPosition(33.79445, -84.37156)
+                    .withExpectedInstruction(String.format("Get off at next stop (%s)", destinationName))
             ),
             Arguments.of(
-                new TraceData(
-                    new Coordinates(33.79478, -84.37127),
-                    String.format("Get off at next stop (%s)", destinationName),
-                    "Past the one-stop warning from the stop where you should get off.",
-                    true
-                )
+                "Past the one-stop warning from the stop where you should get off.",
+                new TraceData()
+                    .withPosition(33.79478, -84.37127)
+                    .withExpectedInstruction(String.format("Get off at next stop (%s)", destinationName))
+                    .withNullIntermediateStops()
             ),
             Arguments.of(
-                new TraceData(
-                    new Coordinates(33.79489, -84.37115),
-                    String.format("Get off at next stop (%s)", destinationName),
-                    "Past the one-stop warning from the stop where you should get off (#2)."
-                )
+                "Past the one-stop warning from the stop where you should get off (#2).",
+                new TraceData()
+                    .withPosition(33.79489, -84.37115)
+                    .withExpectedInstruction(String.format("Get off at next stop (%s)", destinationName))
             ),
             Arguments.of(
-                new TraceData(
-                    createPoint(destinationCoords, 8, SOUTH_WEST_BEARING),
-                    String.format("Get off here (%s)", destinationName),
-                    "Instruction approaching or at the stop where you should get off."
-                )
+                "Instruction approaching or at the stop where you should get off.",
+                new TraceData()
+                    .withPosition(createPoint(destinationCoords, 8, SOUTH_WEST_BEARING))
+                    .withExpectedInstruction(String.format("Get off here (%s)", destinationName))
             ),
             Arguments.of(
-                new TraceData(
-                    TripStatus.DEVIATED,
-                    new Coordinates(33.79371, -84.37711),
-                    NO_INSTRUCTION,
-                    "No instruction provided besides trip status if bus is deviated or user missed their stop."
-                )
+                "No instruction provided besides trip status if bus is deviated or user missed their stop.",
+                new TraceData()
+                    .withPosition(33.79371, -84.37711)
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction(NO_INSTRUCTION)
             )
         );
     }
@@ -720,63 +669,6 @@ public class ManageLegTraversalTest {
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkGjacTo1js, null);
 
         assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, GMAP_UPCOMING_RADIUS) <= GMAP_UPCOMING_RADIUS);
-    }
-
-    private static class TraceData {
-        TripStatus tripStatus = TripStatus.ON_SCHEDULE;
-        Coordinates position;
-        int speed;
-        String expectedInstruction;
-        boolean isStartOfTrip;
-        boolean dismissIntermediateStops;
-        Instant instant;
-        String message;
-
-        public TraceData(Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
-            this.position = position;
-            this.expectedInstruction = expectedInstruction;
-            this.isStartOfTrip = isStartOfTrip;
-            this.message = message;
-        }
-
-        public TraceData(Coordinates position, TripInstruction expectedInstruction, boolean isStartOfTrip, String message) {
-            this(position, expectedInstruction.build(), isStartOfTrip, message);
-        }
-
-        public TraceData(Coordinates position, String expectedInstruction, String message) {
-            this(position, expectedInstruction, false, message);
-        }
-
-        public TraceData(Coordinates position, String expectedInstruction, Instant instant, String message) {
-            this(position, expectedInstruction, false, message);
-            this.instant = instant;
-        }
-
-        public TraceData(Coordinates position, String expectedInstruction, String message, boolean dismissIntermediateStops) {
-            this(position, expectedInstruction, false, message);
-            this.dismissIntermediateStops = dismissIntermediateStops;
-        }
-
-        public TraceData(Coordinates position, int speed, String expectedInstruction, String message) {
-            this(position, expectedInstruction, false, message);
-            this.speed = speed;
-        }
-
-        public TraceData(TripStatus tripStatus, Coordinates position, String expectedInstruction, boolean isStartOfTrip, String message) {
-            this.tripStatus = tripStatus;
-            this.position = position;
-            this.expectedInstruction = expectedInstruction;
-            this.isStartOfTrip = isStartOfTrip;
-            this.message = message;
-        }
-
-        public TraceData(TripStatus tripStatus, Coordinates position, TripInstruction expectedInstruction, boolean isStartOfTrip, String message) {
-            this(tripStatus, position, expectedInstruction.build(), isStartOfTrip, message);
-        }
-
-        public TraceData(TripStatus tripStatus, Coordinates position, String expectedInstruction, String message) {
-            this(tripStatus, position, expectedInstruction, false, message);
-        }
     }
 
     private static List<LegSegment> createSegmentsForLeg() {
