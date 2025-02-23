@@ -60,6 +60,7 @@ public class ManageLegTraversalTest {
     private static Itinerary baptistChurchToEastCroganStreetIntinerary;
     private static Itinerary destinationAwayFromSidewalk;
     private static Itinerary walkGjacTo1js;
+    private static Itinerary walkToBusTransition;
 
     private static final Locale locale = Locale.US;
 
@@ -102,6 +103,10 @@ public class ManageLegTraversalTest {
         );
         walkGjacTo1js = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-gjac-to-1js.json"),
+            Itinerary.class
+        );
+        walkToBusTransition = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-transition.json"),
             Itinerary.class
         );
 
@@ -241,10 +246,6 @@ public class ManageLegTraversalTest {
         Coordinates pointAfterTurn = new Coordinates(33.78165, -84.36484);
         Coordinates pointOnKanugaStreet = new Coordinates(33.781544, -84.367849);
 
-        Leg firstBusLeg = firstLegBusTransit.legs.get(0);
-        Coordinates busStopCoords = new Coordinates(firstBusLeg.from);
-        String busStopName = firstBusLeg.from.name;
-
         Leg toEastCroganFirstLeg = baptistChurchToEastCroganStreetIntinerary.legs.get(0);
         Step southClaytonSt = toEastCroganFirstLeg.steps.get(1);
         Step eastCroganSt = toEastCroganFirstLeg.steps.get(2);
@@ -257,33 +258,6 @@ public class ManageLegTraversalTest {
         Step midtownWalkFirstStep = midtownWalkLeg.steps.get(0);
 
         return Stream.of(
-            Arguments.of(
-                "Deviated from the start of a trip which starts with a bus leg. Suggest path to head towards.",
-                firstBusLeg,
-                new TraceData()
-                    .withTripStatus(TripStatus.DEVIATED)
-                    .withPosition(createPoint(busStopCoords, 12, NORTH_WEST_BEARING))
-                    .withStartingTrip()
-                    .withExpectedInstruction(new DeviatedInstruction(busStopName, locale))
-            ),
-            Arguments.of(
-                "On-time and near the initial bus stop on trip which starts with a bus leg. Instructs to wait for bus.",
-                firstBusLeg,
-                new TraceData()
-                    .withPosition(createPoint(busStopCoords, 4, NORTH_WEST_BEARING))
-                    .withStartingTrip()
-                    .withExpectedInstruction(
-                        new WaitForTransitInstruction(firstBusLeg, firstBusLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES), locale)
-                    )
-            ),
-            Arguments.of(
-                "On transit leg away from the boarding location (or walked past the bus stop). No specific instruction to give.",
-                firstBusLeg,
-                new TraceData()
-                    .withPosition(33.916779, -84.226556)
-                    .withStartingTrip()
-                    .withExpectedInstruction(NO_INSTRUCTION)
-            ),
             Arguments.of(
                 "Just started the trip and near to the instruction for the first step.",
                 walkLeg,
@@ -442,6 +416,95 @@ public class ManageLegTraversalTest {
     }
 
     @ParameterizedTest
+    @MethodSource("createBusStopTrace")
+    void canTrackAtBusStop(String message, Itinerary itinerary, int currentLegIndex, TraceData traceData) {
+        Leg currentLeg = itinerary.legs.get(currentLegIndex);
+        TravelerPosition travelerPosition = new TravelerPosition.Builder()
+            .setExpectedLeg(currentLeg)
+            .setCurrentPosition(traceData.position)
+            .setFirstLegOfTrip(currentLeg)
+            .setNextLeg(itinerary.legs.size() >= currentLegIndex + 2 ? itinerary.legs.get(currentLegIndex + 1) : null)
+            .setCurrentTime(traceData.instant != null ? traceData.instant : currentLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES))
+            .setSpeed(0)
+            .build();
+        travelerPosition.locale = locale;
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
+        assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
+    }
+
+    private static Stream<Arguments> createBusStopTrace() {
+        final int NORTH_WEST_BEARING = 315;
+
+        Leg transitAsFirstLeg = firstLegBusTransit.legs.get(0);
+        Coordinates busStopCoords = new Coordinates(transitAsFirstLeg.from);
+        String busStopName = transitAsFirstLeg.from.name;
+
+        return Stream.of(
+            Arguments.of(
+                "Deviated from the start of a trip which starts with a bus leg. Suggest path to head towards.",
+                firstLegBusTransit,
+                0,
+                new TraceData()
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withPosition(createPoint(busStopCoords, 12, NORTH_WEST_BEARING))
+                    .withStartingTrip()
+                    .withExpectedInstruction(new DeviatedInstruction(busStopName, locale))
+            ),
+            Arguments.of(
+                "On-time and near the initial bus stop on trip which starts with a bus leg. Instructs to wait for bus.",
+                firstLegBusTransit,
+                0,
+                new TraceData()
+                    .withPosition(createPoint(busStopCoords, 4, NORTH_WEST_BEARING))
+                    .withStartingTrip()
+                    .withExpectedInstruction(
+                        new WaitForTransitInstruction(transitAsFirstLeg, transitAsFirstLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES), locale)
+                    )
+            ),
+            Arguments.of(
+                "On transit leg away from the boarding location (or walked past the bus stop). No specific instruction to give.",
+                firstLegBusTransit,
+                0,
+                new TraceData()
+                    .withPosition(33.916779, -84.226556)
+                    .withStartingTrip()
+                    .withExpectedInstruction(NO_INSTRUCTION)
+            ),
+            Arguments.of(
+                "Start live tracking well after bus departure. Issue wait instruction (indicate past departure).",
+                firstLegBusTransit,
+                0,
+                new TraceData()
+                    .withPosition(busStopCoords)
+                    .withStartingTrip()
+                    .withTripStatus(TripStatus.BEHIND_SCHEDULE)
+                    .withInstant(Instant.now())
+                    .withExpectedInstruction("Wait for your bus, route 20, scheduled at 7:58 AM (That time has passed)")
+            ),
+            Arguments.of(
+                "Arrive at bus stop well after the bus departure (indicates past departure).",
+                walkToBusTransition,
+                0,
+                new TraceData()
+                    .withPosition(walkToBusTransition.legs.get(0).to.toCoordinates())
+                    .withTripStatus(TripStatus.BEHIND_SCHEDULE)
+                    .withInstant(Instant.now())
+                    .withExpectedInstruction("Wait for your bus, route 40, scheduled at 6:41 AM (That time has passed)")
+            ),
+            Arguments.of(
+                "Arrive at bus stop well in advance.",
+                walkToBusTransition,
+                0,
+                new TraceData()
+                    .withPosition(walkToBusTransition.legs.get(0).to.toCoordinates())
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withInstant(walkToBusTransition.legs.get(1).startTime.toInstant().minus(40, ChronoUnit.MINUTES))
+                    .withExpectedInstruction("Wait 40 minutes for your bus, route 40, scheduled at 6:41 AM, on time")
+            )
+        );
+    }
+
+    @ParameterizedTest
     @MethodSource("createTransitRideTrace")
     void canTrackTransitRide(String message, TraceData traceData) {
         Itinerary itinerary = midtownToAnsleyItinerary;
@@ -478,7 +541,8 @@ public class ManageLegTraversalTest {
                 "If present at the transit stop after the trip departure, instruct to wait (TODO: indicate past departure).",
                 new TraceData()
                     .withPosition(originCoords)
-                    .withExpectedInstruction("Wait for your bus, route 27, scheduled at 9:18 AM, on time")
+                    .withExpectedInstruction("Wait for your bus, route 27, scheduled at 9:18 AM (That time has passed)")
+                    .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
             ),
             Arguments.of(

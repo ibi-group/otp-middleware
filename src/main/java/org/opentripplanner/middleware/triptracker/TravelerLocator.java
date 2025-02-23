@@ -405,7 +405,7 @@ public class TravelerLocator {
      * Get how far ahead in minutes the traveler is from the bus departure time.
      */
     public static long getMinutesAheadOfDeparture(Instant currentTime, Instant busDepartureTime) {
-        return Duration.between(busDepartureTime, currentTime).toMinutes();
+        return Duration.between(currentTime, busDepartureTime).toMinutes();
     }
 
     /**
