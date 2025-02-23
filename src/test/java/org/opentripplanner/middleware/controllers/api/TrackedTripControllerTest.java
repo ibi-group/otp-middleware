@@ -89,6 +89,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary walkToVoterRegCenterItinerary;
     private static Itinerary destinationAwayFromSidewalk;
     private static Itinerary walkToBus20;
+    private static Itinerary arrivingOnBus40;
 
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
@@ -124,6 +125,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
         walkToBus20 = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-20.json"),
+            Itinerary.class
+        );
+        arrivingOnBus40 = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/bus-40-to-dest-away-from-sidewalk.json"),
             Itinerary.class
         );
 
@@ -463,13 +468,40 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .withExpectedInstruction(NO_INSTRUCTION)
             ),
             Arguments.of(
-                "At location where walk leg and start of transit leg overlap, should produce on-board instruction",
+                "Standing at location where walk leg and start of transit leg overlap, should produce walk instruction",
+                walkToBus20,
+                new TraceData()
+                    .withPosition(WALK_AND_TRANSIT_LEG_OVERLAP_POINT)
+                    .withSpeed(0)
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction("Head to crossing over Longmire Way")
+            ),
+            Arguments.of(
+                "Moving fast at location where walk leg and start of transit leg overlap, should produce on-board instruction",
                 walkToBus20,
                 new TraceData()
                     .withPosition(WALK_AND_TRANSIT_LEG_OVERLAP_POINT)
                     .withSpeed(8)
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
                     .withExpectedInstruction("Ride 4 min / 7 stops to Buford Hwy at Steve Dr (Accu-Car Expo)")
+            ),
+            Arguments.of(
+                "Moving at location where walk leg and end of transit leg overlap, should produce on-board instruction",
+                arrivingOnBus40,
+                new TraceData()
+                    .withPosition(new Coordinates(33.960570, -84.004603))
+                    .withSpeed(6)
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction("Get off at next stop (W Pike St & Old Norcross Rd)")
+            ),
+            Arguments.of(
+                "Moving slowly at location where walk leg and end of transit leg overlap, should produce walk instruction",
+                arrivingOnBus40,
+                new TraceData()
+                    .withPosition(new Coordinates(33.960583, -84.004595))
+                    .withSpeed(1)
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction("Continue on crossing over service road")
             )
         );
     }

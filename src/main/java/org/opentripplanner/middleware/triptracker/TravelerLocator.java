@@ -214,7 +214,7 @@ public class TravelerLocator {
 
         Step nextStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps, false);
         TripInstruction tripInstruction = null;
-        if (nextStep != null && (!isPositionPastStep(travelerPosition, nextStep) || isStartOfTrip)) {
+        if (nextStep != null && (!isPositionPastStep(travelerPosition, nextStep))) {
             tripInstruction = new OnTrackInstruction(
                 getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
                 nextStep,
