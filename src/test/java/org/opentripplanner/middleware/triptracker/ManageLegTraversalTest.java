@@ -49,6 +49,7 @@ import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 public class ManageLegTraversalTest {
 
     public static final int GMAP_UPCOMING_RADIUS = 30;
+    public static final Coordinates WALK_AND_TRANSIT_LEG_OVERLAP_POINT = new Coordinates(33.90765017135988, -84.27299581343617);
     private static Itinerary busStopToJusticeCenterItinerary;
     private static Itinerary edmundParkDriveToRockSpringsItinerary;
 
@@ -430,7 +431,7 @@ public class ManageLegTraversalTest {
             .setFirstLegOfTrip(currentLeg)
             .setNextLeg(itinerary.legs.size() >= currentLegIndex + 2 ? itinerary.legs.get(currentLegIndex + 1) : null)
             .setCurrentTime(traceData.instant != null ? traceData.instant : currentLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES))
-            .setSpeed(0)
+            .setSpeed(traceData.speed)
             .build();
         travelerPosition.locale = locale;
         TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
@@ -511,11 +512,11 @@ public class ManageLegTraversalTest {
                 walkToBus20,
                 1,
                 new TraceData()
-                    .withPosition(new Coordinates(33.90765017135988,-84.27299581343617))
+                    .withPosition(WALK_AND_TRANSIT_LEG_OVERLAP_POINT)
                     .withSpeed(8)
-                    .withTripStatus(TripStatus.BEHIND_SCHEDULE)
+                    .withTripStatus(TripStatus.ON_SCHEDULE)
                     .withInstant(Instant.ofEpochMilli(1740268915))
-                    .withExpectedInstruction(NO_INSTRUCTION)
+                    .withExpectedInstruction("Ride 4 min / 7 stops to Buford Hwy at Steve Dr (Accu-Car Expo)")
             )
         );
     }
@@ -757,7 +758,7 @@ public class ManageLegTraversalTest {
         // (Near end of walk step/beginning of bus step for walk+bus trip)
         TrackedJourney trackedJourney = new TrackedJourney();
         trackedJourney.locations = List.of(
-            new TrackingLocation(Instant.now(), 33.90765017135988, -84.27299581343617)
+            new TrackingLocation(Instant.now(), WALK_AND_TRANSIT_LEG_OVERLAP_POINT.lat, WALK_AND_TRANSIT_LEG_OVERLAP_POINT.lon)
         );
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBus20, null);
 
@@ -769,7 +770,7 @@ public class ManageLegTraversalTest {
     void canDetectTransitLeg(int speed, boolean expected) {
         TrackedJourney trackedJourney = new TrackedJourney();
         trackedJourney.locations = List.of(
-            new TrackingLocation(0, 33.90765017135988, -84.27299581343617, speed, Date.from(Instant.now()))
+            new TrackingLocation(0, WALK_AND_TRANSIT_LEG_OVERLAP_POINT.lat, WALK_AND_TRANSIT_LEG_OVERLAP_POINT.lon, speed, Date.from(Instant.now()))
         );
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBus20, null);
 
