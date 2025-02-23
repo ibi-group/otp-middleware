@@ -87,7 +87,6 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary itinerary;
     private static Itinerary multiLegItinerary;
     private static Itinerary walkToVoterRegCenterItinerary;
-    private static Itinerary destinationAwayFromSidewalk;
     private static Itinerary walkToBus20;
     private static Itinerary arrivingOnBus40;
 
@@ -117,10 +116,6 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
         walkToVoterRegCenterItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-voter-reg-center.json"),
-            Itinerary.class
-        );
-        destinationAwayFromSidewalk = JsonUtils.getPOJOFromJSON(
-            CommonTestUtils.getTestResourceAsString("controllers/api/destination-away-from-sidewalk.json"),
             Itinerary.class
         );
         walkToBus20 = JsonUtils.getPOJOFromJSON(
@@ -445,7 +440,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             ),
             Arguments.of(
                 "Arrival instruction when destination is away from sidewalk",
-                destinationAwayFromSidewalk,
+                arrivingOnBus40,
                 new TraceData()
                     .withPosition(pointNearEndOfSidewalk)
                     .withTripStatus(TripStatus.COMPLETED)
@@ -453,7 +448,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             ),
             Arguments.of(
                 "Arrival instruction when destination is away from sidewalk",
-                destinationAwayFromSidewalk,
+                arrivingOnBus40,
                 new TraceData()
                     .withPosition(pointPastEndOfSidewalk)
                     .withTripStatus(TripStatus.COMPLETED)
