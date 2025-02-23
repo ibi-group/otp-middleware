@@ -5,14 +5,14 @@ import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.time.Instant;
 
-class TraceData {
-    TripStatus tripStatus = TripStatus.ON_SCHEDULE;
-    Coordinates position;
-    int speed;
-    String expectedInstruction;
-    boolean isStartOfTrip;
-    boolean dismissIntermediateStops;
-    Instant instant;
+public class TraceData {
+    public TripStatus tripStatus = TripStatus.ON_SCHEDULE;
+    public Coordinates position;
+    public int speed;
+    public String expectedInstruction;
+    public boolean isStartOfTrip;
+    public boolean dismissIntermediateStops;
+    public Instant instant;
 
     public TraceData withPosition(Coordinates position) {
         this.position = position;
