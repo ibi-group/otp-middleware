@@ -69,7 +69,7 @@ public class TravelerPosition {
         currentTime = lastLocation.timestamp.toInstant();
         currentPosition = new Coordinates(lastLocation);
         speed = lastLocation.speed;
-        expectedLeg = getExpectedLeg(currentPosition, itinerary);
+        expectedLeg = getExpectedLeg(currentPosition, speed, itinerary);
         if (expectedLeg != null) {
             nextLeg = getNextLeg(expectedLeg, itinerary);
         }
