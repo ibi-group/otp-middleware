@@ -431,10 +431,20 @@ public class TravelerLocator {
             radius
         );
 
-        Coordinates lastShapeCoordinate = legPositions.get(legPositions.size() - 2);
-        double distanceToLastShapeCoords = getDistance(travelerPosition.currentPosition, lastShapeCoordinate);
-
+        Coordinates secondToLastCoordinate = legPositions.get(legPositions.size() - 2);
+        Coordinates lastCoordinate = legPositions.get(legPositions.size() - 1);
         Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.to);
+
+        // HACK:
+        // If the last leg position coordinate is identical to the leg destination,
+        // it probably means the destination is off the street network, so the last shape coordinate is at pos (size -2).
+        // If the last leg position coordinate differs from the leg destination,
+        // then the destination is probably on the street network, so the last shape coordinate is at pos (size - 1).
+        double distanceToLastShapeCoords = getDistance(
+            travelerPosition.currentPosition,
+            lastCoordinate.equals(legDestination) ? secondToLastCoordinate : lastCoordinate
+        );
+
         double distanceToLegDestination = getDistance(travelerPosition.currentPosition, legDestination);
 
         return Math.min(distanceToLastShapeCoords, distanceToLegDestination);
