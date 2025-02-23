@@ -300,12 +300,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertNotEquals(0, deviationMeters);
 
         // Second request to update a journey
-        response = makeRequest(
-            TRACK_TRIP_PATH,
-            jsonPayload,
-            headers,
-            HttpMethod.POST
-        );
+        response = makeRequest(TRACK_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
 
         assertEquals(HttpStatus.OK_200, response.status);
         trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
@@ -339,6 +334,11 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
         Coordinates pointPastEndOfSidewalk = new Coordinates(33.958917, -84.006521);
 
+        WaitForTransitInstruction multiItinWaitForTransitInstruction = new WaitForTransitInstruction(
+            multiItinBusLeg,
+            multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
+            locale
+        );
         return Stream.of(
             Arguments.of(
                 "Coords near first step should produce relevant instruction",
@@ -410,13 +410,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 new TraceData()
                     .withPosition(createPoint(multiItinFirstLegDestCoords, 1.5, WEST_BEARING))
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
-                    .withExpectedInstruction(
-                        new WaitForTransitInstruction(
-                            multiItinBusLeg,
-                            multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
-                            locale
-                        )
-                    )
+                    .withExpectedInstruction(multiItinWaitForTransitInstruction)
             ),
             // This position overlaps with the beginning of the transit trip,
             // but it is still within the 'upcoming' radius of the stop, so display a "wait for transit" instruction.
@@ -426,13 +420,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 new TraceData()
                     .withPosition(createPoint(multiItinFirstLegDestCoords, 1.5, NORTH_EAST_BEARING))
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
-                    .withExpectedInstruction(
-                        new WaitForTransitInstruction(
-                            multiItinBusLeg,
-                            multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
-                            locale
-                        )
-                    )
+                    .withExpectedInstruction(multiItinWaitForTransitInstruction)
             ),
             Arguments.of(
                 "Arriving ahead of schedule near a bus stop (in 'upcoming' range) at the end of first leg.",
@@ -440,13 +428,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 new TraceData()
                     .withPosition(createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING))
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
-                    .withExpectedInstruction(
-                        new WaitForTransitInstruction(
-                            multiItinBusLeg,
-                            multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
-                            locale
-                        )
-                    )
+                    .withExpectedInstruction(multiItinWaitForTransitInstruction)
             ),
             Arguments.of(
                 "Instructions for destination coordinate of multi-leg trip",
