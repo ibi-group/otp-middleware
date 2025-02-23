@@ -735,6 +735,19 @@ public class ManageLegTraversalTest {
         assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, GMAP_UPCOMING_RADIUS) <= GMAP_UPCOMING_RADIUS);
     }
 
+    @Test
+    void testGetDistanceToEndOfLeg2() {
+        // Case where distance to end of leg was previously incorrectly computed
+        // (Near end of walk step/beginning of bus step for walk+bus trip)
+        TrackedJourney trackedJourney = new TrackedJourney();
+        trackedJourney.locations = List.of(
+            new TrackingLocation(Instant.now(), 33.90765017135988, -84.27299581343617)
+        );
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBus20, null);
+
+        assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, GMAP_UPCOMING_RADIUS) > GMAP_UPCOMING_RADIUS);
+    }
+
     private static List<LegSegment> createSegmentsForLeg() {
         return interpolatePoints(busStopToJusticeCenterItinerary.legs.get(0));
     }
