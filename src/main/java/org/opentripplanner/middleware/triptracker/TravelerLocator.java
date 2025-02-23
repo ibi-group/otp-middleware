@@ -44,7 +44,7 @@ public class TravelerLocator {
 
     public static final int ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES = 15;
 
-    private static final int MIN_TRANSIT_VEHICLE_SPEED = 5; // meters per second. 11.1 mph or 18 km/h.
+    public static final int MIN_TRANSIT_VEHICLE_SPEED = 5; // meters per second. 11.1 mph or 18 km/h.
 
     private TravelerLocator() {
     }

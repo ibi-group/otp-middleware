@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.MIN_TRANSIT_VEHICLE_SPEED;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getAllLegPositions;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getLegGeoPoints;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
@@ -113,7 +114,7 @@ public class ManageLegTraversal {
             }
         }
 
-        if (speed >= 5 && nearestTransitLeg != null) {
+        if (speed >= MIN_TRANSIT_VEHICLE_SPEED && nearestTransitLeg != null) {
             return nearestTransitLeg;
         }
         return nearestLeg;
