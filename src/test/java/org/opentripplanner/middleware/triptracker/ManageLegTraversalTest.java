@@ -61,6 +61,7 @@ public class ManageLegTraversalTest {
     private static Itinerary destinationAwayFromSidewalk;
     private static Itinerary walkGjacTo1js;
     private static Itinerary walkToBusTransition;
+    private static Itinerary walkToBus20;
 
     private static final Locale locale = Locale.US;
 
@@ -107,6 +108,10 @@ public class ManageLegTraversalTest {
         );
         walkToBusTransition = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-transition.json"),
+            Itinerary.class
+        );
+        walkToBus20 = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-20.json"),
             Itinerary.class
         );
 
@@ -500,6 +505,17 @@ public class ManageLegTraversalTest {
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
                     .withInstant(walkToBusTransition.legs.get(1).startTime.toInstant().minus(40, ChronoUnit.MINUTES))
                     .withExpectedInstruction("Wait 40 minutes for your bus, route 40, scheduled at 6:41 AM, on time")
+            ),
+            Arguments.of(
+                "After boarding bus and bus starts moving, but incorrectly produced 'COMPLETED' status.",
+                walkToBus20,
+                1,
+                new TraceData()
+                    .withPosition(new Coordinates(33.90765017135988,-84.27299581343617))
+                    .withSpeed(8)
+                    .withTripStatus(TripStatus.BEHIND_SCHEDULE)
+                    .withInstant(Instant.ofEpochMilli(1740268915))
+                    .withExpectedInstruction(NO_INSTRUCTION)
             )
         );
     }
@@ -746,6 +762,26 @@ public class ManageLegTraversalTest {
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBus20, null);
 
         assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, GMAP_UPCOMING_RADIUS) > GMAP_UPCOMING_RADIUS);
+    }
+
+    @ParameterizedTest
+    @MethodSource("createDetectTransitLegCases")
+    void canDetectTransitLeg(int speed, boolean expected) {
+        TrackedJourney trackedJourney = new TrackedJourney();
+        trackedJourney.locations = List.of(
+            new TrackingLocation(0, 33.90765017135988, -84.27299581343617, speed, Date.from(Instant.now()))
+        );
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBus20, null);
+
+        assertEquals(expected ? walkToBus20.legs.get(1) : walkToBus20.legs.get(0), travelerPosition.expectedLeg);
+    }
+
+    private static Stream<Arguments> createDetectTransitLegCases() {
+        return Stream.of(
+            Arguments.of(0, false),
+            Arguments.of(4, false),
+            Arguments.of(6, true)
+        );
     }
 
     private static List<LegSegment> createSegmentsForLeg() {

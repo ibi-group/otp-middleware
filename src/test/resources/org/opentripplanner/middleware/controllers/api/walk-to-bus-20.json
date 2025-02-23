@@ -1,0 +1,361 @@
+{
+  "duration": 824,
+  "startTime": 1740268990000,
+  "endTime": 1740269814000,
+  "walkTime": 282,
+  "transitTime": 0,
+  "waitingTime": 300,
+  "walkDistance": 0,
+  "walkLimitExceeded": false,
+  "elevationLost": 0,
+  "elevationGained": 0,
+  "transfers": 0,
+  "fare": null,
+  "legs": [
+    {
+      "startTime": 1740268990000,
+      "endTime": 1740269204000,
+      "departureDelay": 0,
+      "arrivalDelay": 0,
+      "realTime": false,
+      "distance": 134.8,
+      "mode": "WALK",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "33.90687, -84.27239",
+        "lon": -84.2723856,
+        "lat": 33.906868,
+        "vertexType": "NORMAL"
+      },
+      "to": {
+        "name": "New Peachtree Rd & Longmire Way IB",
+        "lon": -84.273247,
+        "lat": 33.907441,
+        "vertexType": "TRANSIT",
+        "stopId": "GwinnettCountyTransit:567",
+        "stop": {
+          "alerts": [],
+          "code": "567",
+          "gtfsId": "GwinnettCountyTransit:567",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NTY3",
+          "lon": -84.273247,
+          "lat": 33.907441
+        },
+        "stopCode": "567"
+      },
+      "legGeometry": {
+        "points": "}l}mEhmjaOGDCBkAv@IFIFk@^HLNV@HHN?A",
+        "length": 12
+      },
+      "rentedBike": false,
+      "transitLeg": false,
+      "duration": 214,
+      "steps": [
+        {
+          "distance": 98.49,
+          "relativeDirection": "DEPART",
+          "streetName": "path",
+          "absoluteDirection": "NORTHWEST",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.2723684,
+          "lat": 33.906878
+        },
+        {
+          "distance": 23.09,
+          "relativeDirection": "LEFT",
+          "streetName": "crossing over Longmire Way",
+          "absoluteDirection": "SOUTHWEST",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.2729304,
+          "lat": 33.9076308
+        },
+        {
+          "distance": 13.22,
+          "relativeDirection": "CONTINUE",
+          "streetName": "sidewalk",
+          "absoluteDirection": "SOUTHWEST",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.2731278,
+          "lat": 33.9075031
+        }
+      ],
+      "routeColor": "333333",
+      "routeTextColor": ""
+    },
+    {
+      "startTime": 1740269504000,
+      "endTime": 1740269746000,
+      "departureDelay": 0,
+      "arrivalDelay": 0,
+      "realTime": true,
+      "distance": 2422.16,
+      "mode": "BUS",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "New Peachtree Rd & Longmire Way IB",
+        "lon": -84.273247,
+        "lat": 33.907441,
+        "vertexType": "TRANSIT",
+        "stopId": "GwinnettCountyTransit:567",
+        "stop": {
+          "alerts": [],
+          "code": "567",
+          "gtfsId": "GwinnettCountyTransit:567",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NTY3",
+          "lon": -84.273247,
+          "lat": 33.907441
+        },
+        "stopCode": "567"
+      },
+      "to": {
+        "name": "Buford Hwy at Steve Dr (Accu-Car Expo)",
+        "lon": -84.255383,
+        "lat": 33.920553,
+        "vertexType": "TRANSIT",
+        "stopId": "GwinnettCountyTransit:203",
+        "stop": {
+          "alerts": [],
+          "code": "203",
+          "gtfsId": "GwinnettCountyTransit:203",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MjAz",
+          "lon": -84.255383,
+          "lat": 33.920553
+        },
+        "stopCode": "203"
+      },
+      "legGeometry": {
+        "points": "aq}mEjsjaO?CC?{BiDqHmHcA_ByDcP??AC}AyGc@eA?G???Cw@gAe@i@Ua@Ka@FO\\k@tAqAsCoCPQAO??@ABH?FUPSQgKuJLUBGHOUF??c@JuP}O??CCwIoI??CEwG{H",
+        "length": 44
+      },
+      "transitLeg": true,
+      "duration": 242,
+      "intermediateStops": [
+        {
+          "name": "New Peachtree Rd & McElroy Rd IB",
+          "lon": -84.267697,
+          "lat": 33.910908,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NTY4",
+          "stopCode": "568"
+        },
+        {
+          "name": "New Peachtree Rd at Lazaros Auto Rep IB",
+          "lon": -84.265912,
+          "lat": 33.91154,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NTY1",
+          "stopCode": "565"
+        },
+        {
+          "name": "Buford Hwy at Tofu House IB",
+          "lon": -84.263377,
+          "lat": 33.912404,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MjUx",
+          "stopCode": "251"
+        },
+        {
+          "name": "Buford Hwy at Korean Catholic Church IB",
+          "lon": -84.261306,
+          "lat": 33.914449,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MjEz",
+          "stopCode": "213"
+        },
+        {
+          "name": "Buford Hwy at Jenny's Place IB",
+          "lon": -84.258634,
+          "lat": 33.91735,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MjI2",
+          "stopCode": "226"
+        },
+        {
+          "name": "Buford Hwy at Global Forum IB",
+          "lon": -84.256918,
+          "lat": 33.919089,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MjE2",
+          "stopCode": "216"
+        }
+      ],
+      "steps": [],
+      "agencyName": "Gwinnett County Transit",
+      "agencyUrl": "https://www.ridegwinnett.com/",
+      "routeId": "GwinnettCountyTransit:20",
+      "agencyId": "GwinnettCountyTransit:GCT",
+      "tripId": "GwinnettCountyTransit:t776-bCB-sl7",
+      "routeShortName": "20",
+      "routeLongName": "Beaver Ruin - Doraville",
+      "routeColor": "00BCF2",
+      "routeTextColor": "",
+      "headsign": "Beaver Ruin",
+      "agency": {
+        "alerts": [
+          {
+            "alertHeaderText": "Attention Route 70 Riders - Effective October 7, 2024, Route 70 will relocate bus stop # 7000 from Wisteria Drive @ Main Street to Wisteria Drive and Highway 78.  ",
+            "alertDescriptionText": "Attention Route 70 Riders - Effective October 7, 2024, Route 70 will relocate bus stop # 7000 from Wisteria Drive @ Main Street to Wisteria Drive and Highway 78.  ",
+            "alertUrl": null,
+            "effectiveStartDate": 1727136000,
+            "effectiveEndDate": null,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4MTA"
+          },
+          {
+            "alertHeaderText": "Service Alert – Route 50 riders – Due to construction in the area, stop # 5002 has been temporarily relocated along Tech Center Pwky. Please contact Customer Service for additional information.",
+            "alertDescriptionText": "Service Alert – Route 50 riders – Due to construction in the area, stop # 5002 has been temporarily relocated along Tech Center Pwky. Please contact Customer Service for additional information.",
+            "alertUrl": null,
+            "effectiveStartDate": 1737936000,
+            "effectiveEndDate": null,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4NjQ"
+          },
+          {
+            "alertHeaderText": "Service Alert - Route 30 Bus stop ID 3039 at Lawrenceville Hwy & Byson Park will be temporarily closed until further notice starting Tuesday 1/21/25 for a water line project, which is estimated to take 2-3 weeks. ",
+            "alertDescriptionText": "Service Alert - Route 30 Bus stop ID 3039 at Lawrenceville Hwy & Byson Park will be temporarily closed until further notice starting Tuesday 1/21/25 for a water line project, which is estimated to take 2-3 weeks. ",
+            "alertUrl": null,
+            "effectiveStartDate": 1737072000,
+            "effectiveEndDate": null,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4NDA"
+          },
+          {
+            "alertHeaderText": "Delay in Service - Route 25 inbound from Rockbridge Rd @ Stonebridge at 2:20pm and outbound from Gwinnett Transit Center at 4pm is delayed due to mechanical issues.  We apologize for the inconvenience and appreciate your understanding.",
+            "alertDescriptionText": "Delay in Service - Route 25 inbound from Rockbridge Rd @ Stonebridge at 2:20pm and outbound from Gwinnett Transit Center at 4pm is delayed due to mechanical issues.  We apologize for the inconvenience and appreciate your understanding.",
+            "alertUrl": null,
+            "effectiveStartDate": 1740182400,
+            "effectiveEndDate": null,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM5NjE"
+          },
+          {
+            "alertHeaderText": "Delay in Service - Route 40 outbound from Gwinnett Transit Center at 1:47pm and inbound from Sugarloaf Parkway and Five Forks Trickum at 2:47pm is delayed due to traffic.  We apologize for the inconvenience and appreciate your understanding.",
+            "alertDescriptionText": "Delay in Service - Route 40 outbound from Gwinnett Transit Center at 1:47pm and inbound from Sugarloaf Parkway and Five Forks Trickum at 2:47pm is delayed due to traffic.  We apologize for the inconvenience and appreciate your understanding.",
+            "alertUrl": null,
+            "effectiveStartDate": 1740182400,
+            "effectiveEndDate": null,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM5NjA"
+          },
+          {
+            "alertHeaderText": "Service Alert – Route 110 Riders: Bus Stop ID 211497 at N. Druid Hills @ CHOA is temporarily closed due to construction in the area. Ride Gwinnett will provide updates and notify riders when the stop reopens.  We apologize for the inconvenience.",
+            "alertDescriptionText": "Service Alert – Route 110 Riders: Bus Stop ID 211497 at N. Druid Hills @ CHOA is temporarily closed due to construction in the area. Ride Gwinnett will provide updates and notify riders when the stop reopens.  We apologize for the inconvenience.",
+            "alertUrl": null,
+            "effectiveStartDate": 1737590400,
+            "effectiveEndDate": null,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4NjA"
+          },
+          {
+            "alertHeaderText": "Delay in Service - Route 30 outbound from Gwinnett Transit Center at 8:08am and inbound from Live Oak Pkwy & Thompson Pkwy at 9:15am is delayed due to mechanical issues.  We apologize for the inconvenience and appreciate your understanding.",
+            "alertDescriptionText": "Delay in Service - Route 30 outbound from Gwinnett Transit Center at 8:08am and inbound from Live Oak Pkwy & Thompson Pkwy at 9:15am is delayed due to mechanical issues.  We apologize for the inconvenience and appreciate your understanding.",
+            "alertUrl": null,
+            "effectiveStartDate": 1740182400,
+            "effectiveEndDate": null,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM5NTk"
+          },
+          {
+            "alertHeaderText": "Route 30 will have a temporary detour from Monday, 2/17/25 to Saturday, 2/22/25, with pick-ups at Stop #3063 on Thompson Parkway. The following inbound times will be missed: Mon-Fri at 6:55 AM & 6:12 PM, and Saturday at 6:45 AM, 9:15 AM, & 11:45 AM. ",
+            "alertDescriptionText": "Route 30 will have a temporary detour from Monday, 2/17/25 to Saturday, 2/22/25, with pick-ups at Stop #3063 on Thompson Parkway. The following inbound times will be missed: Mon-Fri at 6:55 AM & 6:12 PM, and Saturday at 6:45 AM, 9:15 AM, & 11:45 AM. ",
+            "alertUrl": null,
+            "effectiveStartDate": 1739491200,
+            "effectiveEndDate": null,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM5MzY"
+          },
+          {
+            "alertHeaderText": "Delay in Service - Route 50 outbound from Sugarloaf P&R at 7:55am and inbound from Old Peachtree Rd at Publix at 9:07am is delayed due to mechanical issues.  We apologize for the inconvenience and appreciate your understanding.",
+            "alertDescriptionText": "Delay in Service - Route 50 outbound from Sugarloaf P&R at 7:55am and inbound from Old Peachtree Rd at Publix at 9:07am is delayed due to mechanical issues.  We apologize for the inconvenience and appreciate your understanding.",
+            "alertUrl": null,
+            "effectiveStartDate": 1740182400,
+            "effectiveEndDate": null,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM5NTg"
+          },
+          {
+            "alertHeaderText": "Attention Route 30 Riders - Due to safety concerns, Stop 3070 at Jimmy Carter Blvd & Britt Rd (previously Stop 397) will be moved further down Jimmy Carter Blvd. The relocation will be completed by 2/28/25. We appreciate your patience and understanding.",
+            "alertDescriptionText": "Attention Route 30 Riders - Due to safety concerns, Stop 3070 at Jimmy Carter Blvd & Britt Rd (previously Stop 397) will be moved further down Jimmy Carter Blvd. The relocation will be completed by 2/28/25. We appreciate your patience and understanding.",
+            "alertUrl": null,
+            "effectiveStartDate": 1739318400,
+            "effectiveEndDate": null,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM5MjQ"
+          }
+        ],
+        "gtfsId": "GwinnettCountyTransit:GCT",
+        "id": "GwinnettCountyTransit:GCT",
+        "name": "Gwinnett County Transit"
+      },
+      "route": {
+        "alerts": [],
+        "color": "00BCF2",
+        "gtfsId": "GwinnettCountyTransit:20",
+        "id": "GwinnettCountyTransit:20",
+        "longName": "Beaver Ruin - Doraville",
+        "shortName": "20",
+        "textColor": "",
+        "type": 3
+      },
+      "trip": {
+        "gtfsId": "GwinnettCountyTransit:t776-bCB-sl7",
+        "id": "VHJpcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6dDc3Ni1iQ0Itc2w3",
+        "departureStoptime": {
+          "stop": {
+            "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6Ng",
+            "gtfsId": "GwinnettCountyTransit:6"
+          },
+          "stopPosition": 0
+        },
+        "arrivalStoptime": {
+          "stop": {
+            "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6Nw",
+            "gtfsId": "GwinnettCountyTransit:7"
+          },
+          "stopPosition": 3180
+        }
+      }
+    },
+    {
+      "startTime": 1740269746000,
+      "endTime": 1740269814000,
+      "departureDelay": 0,
+      "arrivalDelay": 0,
+      "realTime": false,
+      "distance": 44.52,
+      "mode": "WALK",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "Buford Hwy at Steve Dr (Accu-Car Expo)",
+        "lon": -84.255383,
+        "lat": 33.920553,
+        "vertexType": "TRANSIT",
+        "stopId": "GwinnettCountyTransit:203",
+        "stop": {
+          "alerts": [],
+          "code": "203",
+          "gtfsId": "GwinnettCountyTransit:203",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MjAz",
+          "lon": -84.255383,
+          "lat": 33.920553
+        },
+        "stopCode": "203"
+      },
+      "to": {
+        "name": "7070 Buford Highway, Doraville, GA, USA",
+        "lon": -84.2549899,
+        "lat": 33.9207933,
+        "vertexType": "NORMAL"
+      },
+      "legGeometry": {
+        "points": "mb`nEdcgaO@ASUIMGGSW",
+        "length": 6
+      },
+      "rentedBike": false,
+      "transitLeg": false,
+      "duration": 68,
+      "steps": [
+        {
+          "distance": 44.52,
+          "relativeDirection": "DEPART",
+          "streetName": "Buford Highway",
+          "absoluteDirection": "NORTHEAST",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.2553752,
+          "lat": 33.9205466
+        }
+      ],
+      "routeColor": "333333",
+      "routeTextColor": ""
+    }
+  ],
+  "alerts": []
+}
