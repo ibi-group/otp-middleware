@@ -30,6 +30,7 @@ import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
+import org.opentripplanner.middleware.triptracker.TraceData;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.triptracker.TripTrackingData;
@@ -86,6 +87,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary multiLegItinerary;
     private static Itinerary walkToVoterRegCenterItinerary;
     private static Itinerary destinationAwayFromSidewalk;
+    private static Itinerary walkToBus20;
 
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
@@ -117,6 +119,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
         destinationAwayFromSidewalk = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/destination-away-from-sidewalk.json"),
+            Itinerary.class
+        );
+        walkToBus20 = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-20.json"),
             Itinerary.class
         );
 
@@ -260,18 +266,21 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     @ParameterizedTest
     @MethodSource("createInstructionAndStatusCases")
     void canGenerateInstructionAndStatus(
-        Itinerary itin,
-        Coordinates coords,
-        String instruction,
-        TripStatus status,
-        String message
+        String message,
+        Itinerary itinerary,
+        TraceData traceData
     ) throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        monitoredTrip = createMonitoredTrip(itin);
+        monitoredTrip = createMonitoredTrip(itinerary);
 
         String jsonPayload = JsonUtils.toJson(
-            createTrackPayload(monitoredTrip, coords, Date.from(Instant.ofEpochMilli(monitoredTrip.itinerary.startTime.getTime() / 1000)))
+            createTrackPayload(
+                monitoredTrip,
+                traceData.position,
+                traceData.speed,
+                Date.from(Instant.ofEpochMilli(monitoredTrip.itinerary.startTime.getTime() / 1000))
+            )
         );
 
         // Make a request to start a journey.
@@ -279,8 +288,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         assertEquals(HttpStatus.OK_200, response.status);
         var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
-        assertEquals(instruction, trackResponse.instruction, message);
-        assertEquals(status.name(), trackResponse.tripStatus);
+        assertEquals(traceData.expectedInstruction, trackResponse.instruction, message);
+        assertEquals(traceData.tripStatus.name(), trackResponse.tripStatus);
         assertNotNull(trackResponse.journeyId);
         trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
 
@@ -300,7 +309,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(HttpStatus.OK_200, response.status);
         trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
         assertNotEquals(0, trackResponse.frequencySeconds);
-        assertEquals(instruction, trackResponse.instruction, message);
+        assertEquals(traceData.expectedInstruction, trackResponse.instruction, message);
         assertNotNull(trackResponse.journeyId);
         assertEquals(trackedJourney.id, trackResponse.journeyId);
     }
@@ -331,123 +340,153 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         return Stream.of(
             Arguments.of(
+                "Coords near first step should produce relevant instruction",
                 itinerary,
-                createPoint(firstStepCoords, 1, NORTH_EAST_BEARING),
-                new OnTrackInstruction(1, adairAvenueNortheastStep, locale).build(),
-                TripStatus.ON_SCHEDULE,
-                "Coords near first step should produce relevant instruction"
+                new TraceData()
+                    .withPosition(createPoint(firstStepCoords, 1, NORTH_EAST_BEARING))
+                    .withTripStatus(TripStatus.ON_SCHEDULE)
+                    .withExpectedInstruction(new OnTrackInstruction(1, adairAvenueNortheastStep, locale))
             ),
             Arguments.of(
+                "Coords in the 'upcoming' range of first step should produce relevant instruction and deemed not deviated.",
                 itinerary,
-                createPoint(firstStepCoords, 4, NORTH_EAST_BEARING),
-                new OnTrackInstruction(4, adairAvenueNortheastStep, locale).build(),
-                TripStatus.ON_SCHEDULE,
-                "Coords in the 'upcoming' range of first step should produce relevant instruction and deemed not deviated."
+                new TraceData()
+                    .withPosition(createPoint(firstStepCoords, 4, NORTH_EAST_BEARING))
+                    .withTripStatus(TripStatus.ON_SCHEDULE)
+                    .withExpectedInstruction(new OnTrackInstruction(4, adairAvenueNortheastStep, locale))
             ),
             Arguments.of(
+                "Deviated coords near first step should produce instruction to head to first step #1",
                 itinerary,
-                createPoint(firstStepCoords, 30, NORTH_EAST_BEARING),
-                new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale).build(),
-                TripStatus.DEVIATED,
-                "Deviated coords near first step should produce instruction to head to first step #1"
+                new TraceData()
+                    .withPosition(createPoint(firstStepCoords, 30, NORTH_EAST_BEARING))
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction(new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale))
             ),
             Arguments.of(
+                "Deviated coords near first step should produce instruction to head to first step #2",
                 itinerary,
-                createPoint(firstStepCoords, 15, NORTH_WEST_BEARING),
-                new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale).build(),
-                TripStatus.DEVIATED,
-                "Deviated coords near first step should produce instruction to head to first step #2"
+                new TraceData()
+                    .withPosition(createPoint(firstStepCoords, 15, NORTH_WEST_BEARING))
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction(new DeviatedInstruction(adairAvenueNortheastStep.streetName, locale))
             ),
             Arguments.of(
+                "Coords along a step should produce a continue on street instruction",
                 itinerary,
-                createPoint(firstStepCoords, 20, WEST_BEARING),
-                new ContinueInstruction(adairAvenueNortheastStep, locale).build(),
-                TripStatus.ON_SCHEDULE,
-                "Coords along a step should produce a continue on street instruction"
+                new TraceData()
+                    .withPosition(createPoint(firstStepCoords, 20, WEST_BEARING))
+                    .withTripStatus(TripStatus.ON_SCHEDULE)
+                    .withExpectedInstruction(new ContinueInstruction(adairAvenueNortheastStep, locale))
             ),
             Arguments.of(
+                "Coords near a not-first step should produce relevant instruction",
                 itinerary,
-                thirdStepCoords,
-                new OnTrackInstruction(0, ponceDeLeonPlaceNortheastStep, locale).build(),
-                TripStatus.AHEAD_OF_SCHEDULE,
-                "Coords near a not-first step should produce relevant instruction"
+                new TraceData()
+                    .withPosition(thirdStepCoords)
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction(new OnTrackInstruction(0, ponceDeLeonPlaceNortheastStep, locale))
             ),
             Arguments.of(
+                "Deviated coords near a not-first step should produce instruction to head to step",
                 itinerary,
-                createPoint(thirdStepCoords, 30, NORTH_WEST_BEARING),
-                new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale).build(),
-                TripStatus.DEVIATED,
-                "Deviated coords near a not-first step should produce instruction to head to step"
+                new TraceData()
+                    .withPosition(createPoint(thirdStepCoords, 30, NORTH_WEST_BEARING))
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction(new DeviatedInstruction(ponceDeLeonPlaceNortheastStep.streetName, locale))
             ),
             Arguments.of(
+                "Instructions for destination coordinate",
                 itinerary,
-                createPoint(destinationCoords, 1, NORTH_WEST_BEARING),
-                new OnTrackInstruction(2, monroeDrDestinationName, locale).build(),
-                TripStatus.COMPLETED,
-                "Instructions for destination coordinate"
+                new TraceData()
+                    .withPosition(createPoint(destinationCoords, 1, NORTH_WEST_BEARING))
+                    .withTripStatus(TripStatus.COMPLETED)
+                    .withExpectedInstruction(new OnTrackInstruction(2, monroeDrDestinationName, locale))
             ),
             Arguments.of(
+                "Arriving ahead of schedule to a bus stop at the end of first leg.",
                 multiLegItinerary,
-                createPoint(multiItinFirstLegDestCoords, 1.5, WEST_BEARING),
-                new WaitForTransitInstruction(
-                    multiItinBusLeg,
-                    multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
-                    locale)
-                    .build(),
-                TripStatus.AHEAD_OF_SCHEDULE,
-                "Arriving ahead of schedule to a bus stop at the end of first leg."
+                new TraceData()
+                    .withPosition(createPoint(multiItinFirstLegDestCoords, 1.5, WEST_BEARING))
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction(
+                        new WaitForTransitInstruction(
+                            multiItinBusLeg,
+                            multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
+                            locale
+                        )
+                    )
             ),
             // This position overlaps with the beginning of the transit trip,
             // but it is still within the 'upcoming' radius of the stop, so display a "wait for transit" instruction.
             Arguments.of(
+                "Arriving ahead of schedule to a bus stop at the end of first leg should produce a non-trivial instruction.",
                 multiLegItinerary,
-                createPoint(multiItinFirstLegDestCoords, 1.5, NORTH_EAST_BEARING),
-                new WaitForTransitInstruction(
-                    multiItinBusLeg,
-                    multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
-                    locale)
-                    .build(),
-                TripStatus.AHEAD_OF_SCHEDULE,
-                "Arriving ahead of schedule to a bus stop at the end of first leg should produce a non-trivial instruction."
+                new TraceData()
+                    .withPosition(createPoint(multiItinFirstLegDestCoords, 1.5, NORTH_EAST_BEARING))
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction(
+                        new WaitForTransitInstruction(
+                            multiItinBusLeg,
+                            multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
+                            locale
+                        )
+                    )
             ),
             Arguments.of(
+                "Arriving ahead of schedule near a bus stop (in 'upcoming' range) at the end of first leg.",
                 multiLegItinerary,
-                createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING),
-                new WaitForTransitInstruction(
-                    multiItinBusLeg,
-                    multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
-                    locale)
-                    .build(),
-                TripStatus.AHEAD_OF_SCHEDULE,
-                "Arriving ahead of schedule near a bus stop (in 'upcoming' range) at the end of first leg."
+                new TraceData()
+                    .withPosition(createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING))
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction(
+                        new WaitForTransitInstruction(
+                            multiItinBusLeg,
+                            multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
+                            locale
+                        )
+                    )
             ),
             Arguments.of(
+                "Instructions for destination coordinate of multi-leg trip",
                 multiLegItinerary,
-                createPoint(multiItinLastLegDestCoords, 1, NORTH_WEST_BEARING),
-                new OnTrackInstruction(1, ansleyMallPetShopDestinationName, locale).build(),
-                TripStatus.COMPLETED,
-                "Instructions for destination coordinate of multi-leg trip"
+                new TraceData()
+                    .withPosition(createPoint(multiItinLastLegDestCoords, 1, NORTH_WEST_BEARING))
+                    .withTripStatus(TripStatus.COMPLETED)
+                    .withExpectedInstruction(new OnTrackInstruction(1, ansleyMallPetShopDestinationName, locale))
             ),
             Arguments.of(
+                "Arrival instruction when destination is away from sidewalk",
                 destinationAwayFromSidewalk,
-                pointNearEndOfSidewalk,
-               TRIP_INSTRUCTION_END_OF_ROUTING, // TODO: improve this with "in vicinity"
-                TripStatus.COMPLETED,
-                "Arrival instruction when destination is away from sidewalk"
+                new TraceData()
+                    .withPosition(pointNearEndOfSidewalk)
+                    .withTripStatus(TripStatus.COMPLETED)
+                    .withExpectedInstruction(TRIP_INSTRUCTION_END_OF_ROUTING)
             ),
             Arguments.of(
+                "Arrival instruction when destination is away from sidewalk",
                 destinationAwayFromSidewalk,
-                pointPastEndOfSidewalk,
-                TRIP_INSTRUCTION_END_OF_ROUTING, // TODO: improve this with "in vicinity"
-                TripStatus.COMPLETED,
-                "Arrival instruction when destination is away from sidewalk"
+                new TraceData()
+                    .withPosition(pointPastEndOfSidewalk)
+                    .withTripStatus(TripStatus.COMPLETED)
+                    .withExpectedInstruction(TRIP_INSTRUCTION_END_OF_ROUTING)
             ),
             Arguments.of(
+                "Deviated significantly from nearest step should produce no instruction",
                 itinerary,
-                createPoint(thirdStepCoords, 1000, NORTH_WEST_BEARING),
-                NO_INSTRUCTION,
-                TripStatus.DEVIATED,
-                "Deviated significantly from nearest step should produce no instruction"
+                new TraceData()
+                    .withPosition(createPoint(thirdStepCoords, 1000, NORTH_WEST_BEARING))
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction(NO_INSTRUCTION)
+            ),
+            Arguments.of(
+                "At location where walk leg and start of transit leg overlap, should produce on-board instruction",
+                walkToBus20,
+                new TraceData()
+                    .withPosition(33.90765017135988,-84.27299581343617)
+                    .withSpeed(8)
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction("Ride 4 min / 7 stops to Buford Hwy at Steve Dr (Accu-Car Expo)")
             )
         );
     }
@@ -705,6 +744,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords, Date date) {
         return createTrackPayload(trip, List.of(new TrackingLocation(date, coords.lat, coords.lon)));
+    }
+
+    private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords, int speed, Date date) {
+        return createTrackPayload(trip, List.of(new TrackingLocation(0, coords.lat, coords.lon, speed, date)));
     }
 
     private EndTrackingPayload createEndTrackingPayload(String journeyId) {
