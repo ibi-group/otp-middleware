@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.triptracker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.leonard.PolylineUtils;
 import io.leonard.Position;
 import org.junit.jupiter.api.BeforeAll;
@@ -15,11 +16,14 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
+import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettBusOpNotificationMessage;
+import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -35,6 +39,7 @@ import java.util.Locale;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
@@ -46,7 +51,7 @@ import static org.opentripplanner.middleware.triptracker.instruction.TripInstruc
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
-public class ManageLegTraversalTest {
+public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
 
     public static final int GMAP_UPCOMING_RADIUS = 30;
     public static final Coordinates WALK_AND_TRANSIT_LEG_OVERLAP_POINT = new Coordinates(33.90765017135988, -84.27299581343617);
@@ -70,6 +75,8 @@ public class ManageLegTraversalTest {
     public static void setUp() throws IOException {
         // Load default env.yml configuration.
         ConfigUtils.loadConfig(new String[]{});
+
+        UsRideGwinnettNotifyBusOperator.IS_TEST = true;
 
         busStopToJusticeCenterItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/bus-stop-justice-center-trip.json"),
@@ -423,7 +430,7 @@ public class ManageLegTraversalTest {
 
     @ParameterizedTest
     @MethodSource("createBusStopTrace")
-    void canTrackAtBusStop(String message, Itinerary itinerary, int currentLegIndex, TraceData traceData) {
+    void canTrackAtBusStop(String message, Itinerary itinerary, int currentLegIndex, TraceData traceData) throws JsonProcessingException {
         Leg currentLeg = itinerary.legs.get(currentLegIndex);
         TravelerPosition travelerPosition = new TravelerPosition.Builder()
             .setExpectedLeg(currentLeg)
@@ -432,10 +439,26 @@ public class ManageLegTraversalTest {
             .setNextLeg(itinerary.legs.size() >= currentLegIndex + 2 ? itinerary.legs.get(currentLegIndex + 1) : null)
             .setCurrentTime(traceData.instant != null ? traceData.instant : currentLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES))
             .setSpeed(traceData.speed)
+            .setTrackedJourney(new TrackedJourney())
             .build();
         travelerPosition.locale = locale;
         TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
+
+        // If a Gwinnett County bus notification was sent, check that the agency, route, and trip id fields are not null.
+        if (!travelerPosition.trackedJourney.busNotificationMessages.isEmpty() && currentLeg.route != null) {
+            String firstMessageJson = travelerPosition.trackedJourney.busNotificationMessages.get(currentLeg.route.id);
+
+            UsRideGwinnettBusOpNotificationMessage firstMessage = JsonUtils.getPOJOFromJSON(
+                firstMessageJson, UsRideGwinnettBusOpNotificationMessage.class
+            );
+
+            assertNotNull(firstMessage.agency_id);
+            assertNotNull(firstMessage.from_route_id);
+            assertNotNull(firstMessage.from_trip_id);
+            assertNotNull(firstMessage.to_route_id);
+            assertNotNull(firstMessage.to_trip_id);
+        }
     }
 
     private static Stream<Arguments> createBusStopTrace() {
