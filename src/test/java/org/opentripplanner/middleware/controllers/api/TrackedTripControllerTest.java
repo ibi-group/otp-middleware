@@ -74,6 +74,7 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_U
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
+import static org.opentripplanner.middleware.triptracker.ManageLegTraversalTest.WALK_AND_TRANSIT_LEG_OVERLAP_POINT;
 import static org.opentripplanner.middleware.triptracker.ManageTripTracking.setOtpGraphQLVariables;
 import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
@@ -483,7 +484,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 "At location where walk leg and start of transit leg overlap, should produce on-board instruction",
                 walkToBus20,
                 new TraceData()
-                    .withPosition(33.90765017135988,-84.27299581343617)
+                    .withPosition(WALK_AND_TRANSIT_LEG_OVERLAP_POINT)
                     .withSpeed(8)
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
                     .withExpectedInstruction("Ride 4 min / 7 stops to Buford Hwy at Steve Dr (Accu-Car Expo)")
