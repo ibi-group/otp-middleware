@@ -59,7 +59,7 @@ public class ManageLegTraversalTest {
     private static List<Place> midtownToAnsleyIntermediateStops;
     private static Itinerary firstLegBusTransit;
     private static Itinerary baptistChurchToEastCroganStreetIntinerary;
-    private static Itinerary destinationAwayFromSidewalk;
+    private static Itinerary arrivingOnBus40;
     private static Itinerary walkGjacTo1js;
     private static Itinerary walkToBusTransition;
     private static Itinerary walkToBus20;
@@ -99,8 +99,8 @@ public class ManageLegTraversalTest {
             CommonTestUtils.getTestResourceAsString("controllers/api/baptist-church-to-east-crogan-street.json"),
             Itinerary.class
         );
-        destinationAwayFromSidewalk = JsonUtils.getPOJOFromJSON(
-            CommonTestUtils.getTestResourceAsString("controllers/api/destination-away-from-sidewalk.json"),
+        arrivingOnBus40 = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/bus-40-to-dest-away-from-sidewalk.json"),
             Itinerary.class
         );
         walkGjacTo1js = JsonUtils.getPOJOFromJSON(
@@ -257,7 +257,7 @@ public class ManageLegTraversalTest {
         Step eastCroganSt = toEastCroganFirstLeg.steps.get(2);
         Coordinates pointOnSouthClaytonSt = new Coordinates(33.955561, -83.988204);
 
-        Leg legToDestinationAwayFromSidewalk = destinationAwayFromSidewalk.legs.get(0);
+        Leg legToDestinationAwayFromSidewalk = arrivingOnBus40.legs.get(2);
         Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
 
         Leg midtownWalkLeg = midtownWalkItinerary.legs.get(0);
