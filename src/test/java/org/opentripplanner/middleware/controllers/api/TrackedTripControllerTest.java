@@ -74,6 +74,7 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeade
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.triptracker.ManageTripTracking.setOtpGraphQLVariables;
+import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
@@ -84,6 +85,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary itinerary;
     private static Itinerary multiLegItinerary;
     private static Itinerary walkToVoterRegCenterItinerary;
+    private static Itinerary destinationAwayFromSidewalk;
 
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
@@ -111,6 +113,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
         walkToVoterRegCenterItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-voter-reg-center.json"),
+            Itinerary.class
+        );
+        destinationAwayFromSidewalk = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/destination-away-from-sidewalk.json"),
             Itinerary.class
         );
 
@@ -320,6 +326,9 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         Coordinates multiItinLastLegDestCoords = new Coordinates(multiItinLastLeg.to);
         String ansleyMallPetShopDestinationName = multiItinLastLeg.to.name;
 
+        Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
+        Coordinates pointPastEndOfSidewalk = new Coordinates(33.958917, -84.006521);
+
         return Stream.of(
             Arguments.of(
                 itinerary,
@@ -418,6 +427,20 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 new OnTrackInstruction(1, ansleyMallPetShopDestinationName, locale).build(),
                 TripStatus.COMPLETED,
                 "Instructions for destination coordinate of multi-leg trip"
+            ),
+            Arguments.of(
+                destinationAwayFromSidewalk,
+                pointNearEndOfSidewalk,
+               TRIP_INSTRUCTION_END_OF_ROUTING, // TODO: improve this with "in vicinity"
+                TripStatus.COMPLETED,
+                "Arrival instruction when destination is away from sidewalk"
+            ),
+            Arguments.of(
+                destinationAwayFromSidewalk,
+                pointPastEndOfSidewalk,
+                TRIP_INSTRUCTION_END_OF_ROUTING, // TODO: improve this with "in vicinity"
+                TripStatus.COMPLETED,
+                "Arrival instruction when destination is away from sidewalk"
             ),
             Arguments.of(
                 itinerary,

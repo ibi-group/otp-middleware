@@ -35,17 +35,20 @@ import java.util.Locale;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextWayPoint;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithinExclusionZone;
 import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
+import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
 public class ManageLegTraversalTest {
 
+    public static final int GMAP_UPCOMING_RADIUS = 30;
     private static Itinerary busStopToJusticeCenterItinerary;
     private static Itinerary edmundParkDriveToRockSpringsItinerary;
 
@@ -56,6 +59,7 @@ public class ManageLegTraversalTest {
     private static Itinerary firstLegBusTransit;
     private static Itinerary baptistChurchToEastCroganStreetIntinerary;
     private static Itinerary destinationAwayFromSidewalk;
+    private static Itinerary walkGjacTo1js;
 
     private static final Locale locale = Locale.US;
 
@@ -96,6 +100,11 @@ public class ManageLegTraversalTest {
             CommonTestUtils.getTestResourceAsString("controllers/api/destination-away-from-sidewalk.json"),
             Itinerary.class
         );
+        walkGjacTo1js = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-gjac-to-1js.json"),
+            Itinerary.class
+        );
+
         // Hold on to the original list of intermediate stops (some tests will overwrite it)
         midtownToAnsleyIntermediateStops = midtownToAnsleyItinerary.legs.get(1).intermediateStops;
     }
@@ -165,8 +174,8 @@ public class ManageLegTraversalTest {
             ),
             Arguments.of(
                 startInstant.plusSeconds((long) Math.floor(current.cumulativeTime)),
-                current.start.lat + 0.00001,
-                current.start.lon + 0.00001,
+                current.start.lat + 1e-5,
+                current.start.lon + 1e-5,
                 TripStatus.ON_SCHEDULE,
                 "The current location, with a slight deviation, is on schedule."
             ),
@@ -546,7 +555,7 @@ public class ManageLegTraversalTest {
     @MethodSource("createGetNearestWaypointTrace")
     void canGetNearestWaypoint(Step expectedStep, int startIndex, String message) {
         Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
-        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps);
+        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps, TRIP_INSTRUCTION_UPCOMING_RADIUS);
         assertEquals(expectedStep, getNextWayPoint(allPositions, leg.steps, startIndex), message);
     }
 
@@ -565,14 +574,36 @@ public class ManageLegTraversalTest {
         );
     }
 
-    @Test
-    void canInjectWaypoints() {
-        Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
-        List<Position> legPositions = PolylineUtils.decode(leg.legGeometry.points, 5);
-        int excluded = getNumberOfExcludedPoints(legPositions, leg);
+    @ParameterizedTest
+    @MethodSource("createCanInjectWaypointsCases")
+    void canInjectWaypoints(Leg leg, int radius) {
+        final int PRECISION_DIGITS = 5;
+        final double DELTA = 1e-5;
+
+        List<Position> legPositions = PolylineUtils.decode(leg.legGeometry.points, PRECISION_DIGITS);
+        int excluded = getNumberOfExcludedPoints(legPositions, leg, radius);
         int expectedNumberOfPositions = (legPositions.size() - excluded) + leg.steps.size() + 2; // from and to points.
-        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps);
+        List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps, radius);
         assertEquals(expectedNumberOfPositions, allPositions.size());
+        Coordinates lastPosition = allPositions.get(allPositions.size() - 1);
+        assertEquals(leg.to.lat, lastPosition.lat, DELTA);
+        assertEquals(leg.to.lon, lastPosition.lon, DELTA);
+
+        // If the last leg position is the same as the destination point, (at given precision)
+        // then skip the check because the second to last waypoint will not be related to the last leg position.
+        if (Math.abs(leg.to.lat - lastPosition.lat) > DELTA || Math.abs(leg.to.lon - lastPosition.lon) > DELTA) {
+            Coordinates secondLastPosition = allPositions.get(allPositions.size() - 2);
+            Position lastLegPosition = legPositions.get(legPositions.size() - 1);
+            assertEquals(lastLegPosition.getLatitude(), secondLastPosition.lat, DELTA);
+            assertEquals(lastLegPosition.getLongitude(), secondLastPosition.lon, DELTA);
+        }
+    }
+
+    static Stream<Arguments> createCanInjectWaypointsCases() {
+        return Stream.of(
+            Arguments.of(edmundParkDriveToRockSpringsItinerary.legs.get(0), TRIP_INSTRUCTION_UPCOMING_RADIUS),
+            Arguments.of(walkGjacTo1js.legs.get(0), GMAP_UPCOMING_RADIUS)
+        );
     }
 
     @Test
@@ -627,21 +658,34 @@ public class ManageLegTraversalTest {
         assertEquals(busStopToJusticeCenterItinerary.legs.get(0).duration, cumulative, 0.01f);
     }
 
+    @Test
+    void testGetDistanceToEndOfLeg() {
+        // Case where distance to end of leg was previously incorrectly computed
+        // (At end of routing for walk trip to One Justice Square)
+        TrackedJourney trackedJourney = new TrackedJourney();
+        trackedJourney.locations = List.of(
+            new TrackingLocation(Instant.now(), 33.95242212998748, -83.99714406536067)
+        );
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkGjacTo1js, null);
+
+        assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, GMAP_UPCOMING_RADIUS) <= GMAP_UPCOMING_RADIUS);
+    }
+    
     private static List<LegSegment> createSegmentsForLeg() {
         return interpolatePoints(busStopToJusticeCenterItinerary.legs.get(0));
     }
 
-    private int getNumberOfExcludedPoints(List<Position> legPositions, Leg leg) {
+    private int getNumberOfExcludedPoints(List<Position> legPositions, Leg leg, int exclusionRadius) {
         int excluded = 0;
         for (Position position : legPositions) {
-            if (isWithinExclusionZone(new Coordinates(position), leg.steps)) {
+            if (position != legPositions.get(legPositions.size() - 2) && isWithinExclusionZone(new Coordinates(position), leg.steps, exclusionRadius)) {
                 excluded++;
             }
         }
-        if (isWithinExclusionZone(new Coordinates(leg.from), leg.steps)) {
+        if (isWithinExclusionZone(new Coordinates(leg.from), leg.steps, exclusionRadius)) {
             excluded++;
         }
-        if (isWithinExclusionZone(new Coordinates(leg.to), leg.steps)) {
+        if (isWithinExclusionZone(new Coordinates(leg.to), leg.steps, exclusionRadius)) {
             excluded++;
         }
         return excluded;
