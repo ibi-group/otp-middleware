@@ -180,12 +180,7 @@ public class TravelerLocator {
 
             // At this point, the traveler could be approaching the leg's destination
             // or the end of routing, if the trip's final destination is away from the street network.
-            // TODO (perf): consolidate these calls to injectWaypointsIntoLegPositions.
-            List<Coordinates> legPositions = injectWaypointsIntoLegPositions(
-                travelerPosition.expectedLeg,
-                travelerPosition.expectedLeg.steps,
-                TRIP_INSTRUCTION_UPCOMING_RADIUS
-            );
+            List<Coordinates> legPositions = travelerPosition.getLegPositions();
             Coordinates lastShapeCoordinate = legPositions.get(legPositions.size() - 2);
             double distanceToLastShapeCoords = getDistance(travelerPosition.currentPosition, lastShapeCoordinate);
 
@@ -410,19 +405,13 @@ public class TravelerLocator {
     }
 
     private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
-        return getDistanceToEndOfLeg(travelerPosition, TRIP_INSTRUCTION_UPCOMING_RADIUS);
+        return getDistanceToEndOfLeg(travelerPosition, travelerPosition.getLegPositions());
     }
 
     /**
-     * Get the distance from the traveler's current position to the leg destination.
+     * Get the distance from the traveler's current position to the leg destination from given leg positions.
      */
-    public static double getDistanceToEndOfLeg(TravelerPosition travelerPosition, int radius) {
-        List<Coordinates> legPositions = injectWaypointsIntoLegPositions(
-            travelerPosition.expectedLeg,
-            travelerPosition.expectedLeg.steps,
-            radius
-        );
-
+    public static double getDistanceToEndOfLeg(TravelerPosition travelerPosition, List<Coordinates> legPositions) {
         Coordinates secondToLastCoordinate = legPositions.get(legPositions.size() - 2);
         Coordinates lastCoordinate = legPositions.get(legPositions.size() - 1);
         Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.to);
