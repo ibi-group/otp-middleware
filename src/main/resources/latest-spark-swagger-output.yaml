@@ -3194,6 +3194,7 @@ definitions:
           - "EMAIL"
           - "PUSH"
           - "SMS"
+          - "HAPTIC"
       phoneNumber:
         type: "string"
       smsConsentDate:

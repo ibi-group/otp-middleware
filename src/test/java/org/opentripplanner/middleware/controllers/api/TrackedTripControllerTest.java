@@ -74,6 +74,7 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeade
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.triptracker.ManageTripTracking.setOtpGraphQLVariables;
+import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
@@ -84,6 +85,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary itinerary;
     private static Itinerary multiLegItinerary;
     private static Itinerary walkToVoterRegCenterItinerary;
+    private static Itinerary destinationAwayFromSidewalk;
 
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
@@ -111,6 +113,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
         walkToVoterRegCenterItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-voter-reg-center.json"),
+            Itinerary.class
+        );
+        destinationAwayFromSidewalk = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/destination-away-from-sidewalk.json"),
             Itinerary.class
         );
 
@@ -320,6 +326,9 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         Coordinates multiItinLastLegDestCoords = new Coordinates(multiItinLastLeg.to);
         String ansleyMallPetShopDestinationName = multiItinLastLeg.to.name;
 
+        Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
+        Coordinates pointPastEndOfSidewalk = new Coordinates(33.958917, -84.006521);
+
         return Stream.of(
             Arguments.of(
                 itinerary,
@@ -332,8 +341,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 itinerary,
                 createPoint(firstStepCoords, 4, NORTH_EAST_BEARING),
                 new OnTrackInstruction(4, adairAvenueNortheastStep, locale).build(),
-                TripStatus.DEVIATED,
-                "Coords deviated but near first step should produce relevant instruction"
+                TripStatus.ON_SCHEDULE,
+                "Coords in the 'upcoming' range of first step should produce relevant instruction and deemed not deviated."
             ),
             Arguments.of(
                 itinerary,
@@ -388,12 +397,50 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 TripStatus.AHEAD_OF_SCHEDULE,
                 "Arriving ahead of schedule to a bus stop at the end of first leg."
             ),
+            // This position overlaps with the beginning of the transit trip,
+            // but it is still within the 'upcoming' radius of the stop, so display a "wait for transit" instruction.
+            Arguments.of(
+                multiLegItinerary,
+                createPoint(multiItinFirstLegDestCoords, 1.5, NORTH_EAST_BEARING),
+                new WaitForTransitInstruction(
+                    multiItinBusLeg,
+                    multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
+                    locale)
+                    .build(),
+                TripStatus.AHEAD_OF_SCHEDULE,
+                "Arriving ahead of schedule to a bus stop at the end of first leg should produce a non-trivial instruction."
+            ),
+            Arguments.of(
+                multiLegItinerary,
+                createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING),
+                new WaitForTransitInstruction(
+                    multiItinBusLeg,
+                    multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
+                    locale)
+                    .build(),
+                TripStatus.AHEAD_OF_SCHEDULE,
+                "Arriving ahead of schedule near a bus stop (in 'upcoming' range) at the end of first leg."
+            ),
             Arguments.of(
                 multiLegItinerary,
                 createPoint(multiItinLastLegDestCoords, 1, NORTH_WEST_BEARING),
                 new OnTrackInstruction(1, ansleyMallPetShopDestinationName, locale).build(),
                 TripStatus.COMPLETED,
                 "Instructions for destination coordinate of multi-leg trip"
+            ),
+            Arguments.of(
+                destinationAwayFromSidewalk,
+                pointNearEndOfSidewalk,
+               TRIP_INSTRUCTION_END_OF_ROUTING, // TODO: improve this with "in vicinity"
+                TripStatus.COMPLETED,
+                "Arrival instruction when destination is away from sidewalk"
+            ),
+            Arguments.of(
+                destinationAwayFromSidewalk,
+                pointPastEndOfSidewalk,
+                TRIP_INSTRUCTION_END_OF_ROUTING, // TODO: improve this with "in vicinity"
+                TripStatus.COMPLETED,
+                "Arrival instruction when destination is away from sidewalk"
             ),
             Arguments.of(
                 itinerary,
