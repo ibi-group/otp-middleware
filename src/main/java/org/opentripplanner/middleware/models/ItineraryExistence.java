@@ -20,10 +20,21 @@ import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
@@ -33,6 +44,9 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  */
 public class ItineraryExistence extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryExistence.class);
+    private static final int OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS = getConfigPropertyAsInt(
+        "OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS", 60
+    );
 
     /**
      * Initial set of requests on which to base the itinerary existence checks. We do not want these persisted.
@@ -189,7 +203,9 @@ public class ItineraryExistence extends Model {
      * Checks whether the itinerary of a trip matches any of the OTP itineraries from the trip query params.
      */
     public void checkExistence(MonitoredTrip trip) {
-        // TODO: Consider multi-threading?
+
+        Map<DayOfWeek, OtpResponse> otpResponses = getOtpResponses(otpRequests);
+
         // Check existence of itinerary in the response for each OTP request.
         int index = 0;
         for (OtpRequest otpRequest : otpRequests) {
@@ -204,8 +220,7 @@ public class ItineraryExistence extends Model {
                 setResultForDayOfWeek(result, dayOfWeek);
             }
 
-            // Send off each plan query to OTP.
-            OtpResponse response = this.otpResponseProvider.apply(otpRequest);
+            OtpResponse response = otpResponses.get(dayOfWeek);
             if (response == null) {
                 LOG.warn("Itinerary existence check failed on {} for trip {} - OTP response was null.", dayOfWeek , trip.id);
             } else {
@@ -245,6 +260,65 @@ public class ItineraryExistence extends Model {
             );
             this.error = true;
         }
+    }
+
+    /**
+     * Produce and execute OTP requests and process the responses.
+     */
+    private Map<DayOfWeek, OtpResponse> getOtpResponses(List<OtpRequest> otpRequestsToProcess) {
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        ConcurrentMap<DayOfWeek, CompletableFuture<OtpResponse>> otpRequestTasks = assignOtpRequestToDayOfWeek(
+            otpRequestsToProcess,
+            executor
+        );
+
+        Map<DayOfWeek, OtpResponse> otpRequestResponses = new EnumMap<>(DayOfWeek.class);
+
+        otpRequestTasks.forEach((dayOfWeek, future) -> {
+            OtpResponse response = null;
+            try {
+                // Wait for completion and assign response.
+                response = future.join();
+            } catch (CancellationException | CompletionException e) {
+                LOG.error("Failed to get OTP response for {}.", dayOfWeek, e);
+            }
+            otpRequestResponses.put(dayOfWeek, response);
+        });
+
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            LOG.error("OTP requests were interrupted!", e);
+            executor.shutdownNow();
+        }
+        return otpRequestResponses;
+    }
+
+    /**
+     * Assign an OTP request to a day of the week.
+     */
+    private ConcurrentMap<DayOfWeek, CompletableFuture<OtpResponse>> assignOtpRequestToDayOfWeek(
+        List<OtpRequest> otpRequests,
+        ExecutorService executor
+    ) {
+        return otpRequests
+            .stream()
+            .collect(Collectors.toConcurrentMap(
+                otpRequest -> otpRequest.dateTime.getDayOfWeek(),
+                otpRequest -> processOtpAsyncCall(otpRequest, executor))
+            );
+    }
+
+    /**
+     * Create a {@link CompletableFuture} to be completed async in the provided executor. The executor is used instead
+     * of the default (ForkJoinPool) because of unexpected behaviour with OTP responses being assigned to the wrong day
+     * of the week.
+     */
+    private CompletableFuture<OtpResponse> processOtpAsyncCall(OtpRequest otpRequest, ExecutorService executor) {
+        return CompletableFuture.supplyAsync(() -> otpResponseProvider.apply(otpRequest), executor);
     }
 
     /** Log instances of itinerary not found. */

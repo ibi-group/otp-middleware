@@ -312,6 +312,7 @@ The special E2E client settings should be defined in `env.yml`:
 | OTP_API_ROOT | string | Required | http://otp-server.example.com/otp | The URL of an operational OTP1 server. |
 | OTP2_API_ROOT | string | Optional | http://otp2-server.example.com/otp | The URL of an operational OTP2 server. |
 | OTP_PLAN_ENDPOINT | string | Optional | /routers/default/plan | The path to the OTP server trip planning endpoint. |
+| OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS | integer | Optional | 60 | The maximum time for making requests to OTP as part of itinerary existence checks. |
 | OTP_TIMEZONE | string | Required | America/Los_Angeles | The timezone identifier that OTP is using to parse dates and times. OTP will use the timezone identifier that it finds in the first available agency to parse dates and times. |
 | OTP_UI_NAME | string | Optional | Trip Planner | Config setting for linking to the OTP UI (trip planner). |
 | OTP_UI_URL | string | Optional | https://plan.example.com | Config setting for linking to the OTP UI (trip planner). |
