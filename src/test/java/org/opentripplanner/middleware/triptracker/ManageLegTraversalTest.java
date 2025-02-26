@@ -772,7 +772,13 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         );
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkGjacTo1js, null);
 
-        assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, GMAP_UPCOMING_RADIUS) <= GMAP_UPCOMING_RADIUS);
+        List<Coordinates> legPositions = TravelerLocator.injectWaypointsIntoLegPositions(
+            travelerPosition.expectedLeg,
+            travelerPosition.expectedLeg.steps,
+            GMAP_UPCOMING_RADIUS
+        );
+
+        assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, legPositions) <= GMAP_UPCOMING_RADIUS);
     }
 
     @Test
@@ -785,7 +791,13 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         );
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBus20, null);
 
-        assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, GMAP_UPCOMING_RADIUS) > GMAP_UPCOMING_RADIUS);
+        List<Coordinates> legPositions = TravelerLocator.injectWaypointsIntoLegPositions(
+            travelerPosition.expectedLeg,
+            travelerPosition.expectedLeg.steps,
+            GMAP_UPCOMING_RADIUS
+        );
+
+        assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, legPositions) > GMAP_UPCOMING_RADIUS);
     }
 
     @ParameterizedTest
