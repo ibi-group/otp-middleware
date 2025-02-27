@@ -374,8 +374,7 @@ public class TravelerLocator {
      * Is the traveler at the start of a leg.
      */
     public static boolean isAtStartOfLeg(TravelerPosition travelerPosition) {
-        Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.from);
-        return getDistance(travelerPosition.currentPosition, legDestination) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
+        return getDistanceToStartOfLeg(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
     }
 
     /**
@@ -411,6 +410,33 @@ public class TravelerLocator {
             busLeg.startTime.toInstant().plusSeconds(busLeg.departureDelay),
             DateTimeUtils.getOtpZoneId()
         ).toInstant();
+    }
+
+    private static double getDistanceToStartOfLeg(TravelerPosition travelerPosition) {
+        return getDistanceToStartOfLeg(travelerPosition, travelerPosition.getLegPositions());
+    }
+
+    /**
+     * Get the distance from the traveler's current position to the leg destination from given leg positions.
+     */
+    public static double getDistanceToStartOfLeg(TravelerPosition travelerPosition, List<Coordinates> legPositions) {
+        Coordinates secondCoordinate = legPositions.get(1);
+        Coordinates firstCoordinate = legPositions.get(0);
+        Coordinates legOrigin = new Coordinates(travelerPosition.expectedLeg.from);
+
+        // HACK:
+        // If the first leg position coordinate is identical to the leg origin,
+        // it probably means the origin is off the street network, so the first shape coordinate is at pos (1).
+        // If the first leg position coordinate differs from the leg origin,
+        // then the origin is probably on the street network, so the first shape coordinate is at pos (0).
+        double distanceToFirstShapeCoords = getDistance(
+            travelerPosition.currentPosition,
+            firstCoordinate.equals(legOrigin) ? secondCoordinate : firstCoordinate
+        );
+
+        double distanceToLegOrigin = getDistance(travelerPosition.currentPosition, legOrigin);
+
+        return Math.min(distanceToFirstShapeCoords, distanceToLegOrigin);
     }
 
     private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
