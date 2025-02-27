@@ -263,7 +263,7 @@ public class ItineraryExistence extends Model {
     }
 
     /**
-     * Produce and execute OTP requests and process the responses.
+     * Execute OTP requests and process the responses in a custom executor. Each response is assign to a day of the week.
      */
     private Map<DayOfWeek, OtpResponse> getOtpResponses(List<OtpRequest> otpRequestsToProcess) {
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -313,9 +313,7 @@ public class ItineraryExistence extends Model {
     }
 
     /**
-     * Create a {@link CompletableFuture} to be completed async in the provided executor. The executor is used instead
-     * of the default (ForkJoinPool) because of unexpected behaviour with OTP responses being assigned to the wrong day
-     * of the week.
+     * Create a {@link CompletableFuture} to be completed asynchronously in the provided executor.
      */
     private CompletableFuture<OtpResponse> processOtpAsyncCall(OtpRequest otpRequest, ExecutorService executor) {
         return CompletableFuture.supplyAsync(() -> otpResponseProvider.apply(otpRequest), executor);

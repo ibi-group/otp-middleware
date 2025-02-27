@@ -17,9 +17,32 @@ public class MockOtpResponseProvider {
     }
 
     public OtpResponse getMockResponse(OtpRequest otpRequest) {
-        // otpRequest is ignored, and the next response is given.
-        // If index is out of bounds, an error will be thrown.
-        return mockResponses.get(index++);
+        OtpResponse otpResponse = null;
+        switch (otpRequest.dateTime.getDayOfWeek()) {
+            case THURSDAY:
+                otpResponse = mockResponses.get(0);
+                break;
+            case FRIDAY:
+                otpResponse = mockResponses.get(1);
+                break;
+            case SATURDAY:
+                otpResponse = mockResponses.get(2);
+                break;
+            case SUNDAY:
+                otpResponse = mockResponses.get(3);
+                break;
+            case MONDAY:
+                otpResponse = mockResponses.get(4);
+                break;
+            case TUESDAY:
+                otpResponse = mockResponses.get(5);
+                break;
+            case WEDNESDAY:
+                otpResponse = mockResponses.get(6);
+                break;
+        }
+        index++;
+        return otpResponse;
     }
 
     public boolean areAllMocksUsed() {
