@@ -481,7 +481,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .withExpectedInstruction("Ride 4 min / 7 stops to Buford Hwy at Steve Dr (Accu-Car Expo)")
             ),
             Arguments.of(
-                "Moving at location where walk leg and end of transit leg overlap, should produce on-board instruction",
+                "Moving at location where walk leg and end of transit leg overlap, should produce instruction to get off",
                 arrivingOnBus40,
                 new TraceData()
                     .withPosition(new Coordinates(33.960570, -84.004603))
