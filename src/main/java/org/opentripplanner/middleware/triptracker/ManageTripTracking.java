@@ -86,15 +86,6 @@ public class ManageTripTracking {
         TripTrackingData tripData,
         boolean create
     ) {
-        return doUpdateTracking(request, tripData, create, false);
-    }
-
-    private static TrackingResponse doUpdateTracking(
-        Request request,
-        TripTrackingData tripData,
-        boolean create,
-        boolean rerouted
-    ) {
         try {
             TrackedJourney trackedJourney;
             if (create) {
@@ -247,7 +238,7 @@ public class ManageTripTracking {
                 var reroutedItinerary = rerouteTrip(tripData);
                 if (reroutedItinerary != null) {
                     return new RerouteResponse(
-                        doUpdateTracking(request, tripData, false, true),
+                        doUpdateTracking(request, tripData, false),
                         reroutedItinerary
                     );
                 } else {
