@@ -53,19 +53,15 @@ public class TravelerLocator {
      * Define the instruction based on the traveler's current position compared to expected and nearest points on the
      * trip.
      */
-    public static TripInstruction getInstruction(
-        TripStatus tripStatus,
-        TravelerPosition travelerPosition,
-        boolean isStartOfTrip
-    ) {
+    public static TripInstruction getInstruction(TripStatus tripStatus, TravelerPosition travelerPosition) {
         if (hasRequiredWalkLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
-                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, false);
+                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, false);
                 if (tripInstruction != null) return tripInstruction;
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
-                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition);
                 if (tripInstruction != null) return tripInstruction;
             }
         } else if (hasRequiredTransitLeg(travelerPosition)) {
@@ -75,7 +71,7 @@ public class TravelerLocator {
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
-                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition);
                 if (tripInstruction != null) return tripInstruction;
             }
         }
@@ -113,11 +109,8 @@ public class TravelerLocator {
      * else suggest the closest street to head towards.
      */
     @Nullable
-    private static TripInstruction getBackOnTrack(
-        TravelerPosition travelerPosition,
-        boolean isStartOfTrip
-    ) {
-        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, true);
+    private static TripInstruction getBackOnTrack(TravelerPosition travelerPosition) {
+        TripInstruction instruction = alignTravelerToTrip(travelerPosition, true);
         if (instruction != null && instruction.hasInstruction()) {
             return instruction;
         }
@@ -162,7 +155,6 @@ public class TravelerLocator {
     @Nullable
     public static TripInstruction alignTravelerToTrip(
         TravelerPosition travelerPosition,
-        boolean isStartOfTrip,
         boolean travelerHasDeviated
     ) {
         Locale locale = travelerPosition.locale;
