@@ -276,7 +276,6 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 walkLeg,
                 new TraceData()
                     .withPosition(originCoords)
-                    .withStartingTrip()
                     .withExpectedInstruction(new OnTrackInstruction(10, adairAvenueNortheastStep, locale))
             ),
             Arguments.of(
@@ -476,7 +475,6 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 new TraceData()
                     .withTripStatus(TripStatus.DEVIATED)
                     .withPosition(createPoint(busStopCoords, 12, NORTH_WEST_BEARING))
-                    .withStartingTrip()
                     .withExpectedInstruction(new DeviatedInstruction(busStopName, locale))
             ),
             Arguments.of(
@@ -485,7 +483,6 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 0,
                 new TraceData()
                     .withPosition(createPoint(busStopCoords, 4, NORTH_WEST_BEARING))
-                    .withStartingTrip()
                     .withExpectedInstruction(
                         new WaitForTransitInstruction(transitAsFirstLeg, transitAsFirstLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES), locale)
                     )
@@ -496,7 +493,6 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 0,
                 new TraceData()
                     .withPosition(33.916779, -84.226556)
-                    .withStartingTrip()
                     .withExpectedInstruction(NO_INSTRUCTION)
             ),
             Arguments.of(
@@ -505,7 +501,6 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 0,
                 new TraceData()
                     .withPosition(busStopCoords)
-                    .withStartingTrip()
                     .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
                     .withExpectedInstruction("Wait for your bus, route 20, scheduled at 7:58 AM (That time has passed)")

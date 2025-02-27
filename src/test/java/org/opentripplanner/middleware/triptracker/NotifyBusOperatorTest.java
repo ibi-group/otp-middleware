@@ -81,7 +81,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("creatNotifyBusOperatorForScheduledDepartureTrace")
-    void canNotifyBusOperatorForScheduledDeparture(Leg busLeg, Itinerary itinerary, boolean isStartOfTrip, String message) {
+    void canNotifyBusOperatorForScheduledDeparture(Leg busLeg, Itinerary itinerary, String message) {
         Coordinates startOfTransitCoordinates = new Coordinates(busLeg.from);
         Instant busDepartureTime = getBusDepartureTime(busLeg);
         trackedJourney = createAndPersistTrackedJourney(startOfTransitCoordinates, busDepartureTime);
@@ -98,13 +98,11 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(
                 firstLegBusTransit.legs.get(0),
                 firstLegBusTransit,
-                true,
                 "Can notify bus operator when the first leg is transit."
             ),
             Arguments.of(
                 walkToBusTransition.legs.get(1),
                 walkToBusTransition,
-                false,
                 "Can notify bus operator when the next leg is transit."
             )
         );
