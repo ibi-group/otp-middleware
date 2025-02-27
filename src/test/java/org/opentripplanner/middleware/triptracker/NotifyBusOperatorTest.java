@@ -86,7 +86,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
         Instant busDepartureTime = getBusDepartureTime(busLeg);
         trackedJourney = createAndPersistTrackedJourney(startOfTransitCoordinates, busDepartureTime);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, isStartOfTrip);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition);
         TripInstruction expectInstruction = new WaitForTransitInstruction(busLeg, busDepartureTime, locale);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(ROUTE_ID));
@@ -156,7 +156,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates(), timeAtEndOfWalkLeg);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition);
         assertNotNull(tripInstruction);
 
         Leg busLeg = itinerary.legs.get(1);

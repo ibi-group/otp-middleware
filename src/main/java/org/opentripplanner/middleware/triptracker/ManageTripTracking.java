@@ -126,11 +126,7 @@ public class ManageTripTracking {
             LegTransitionNotification.checkForLegTransition(tripStatus, travelerPosition, tripData.trip);
 
             // Provide response.
-            TripInstruction instruction = TravelerLocator.getInstruction(
-                tripStatus,
-                travelerPosition,
-                create || rerouted
-            );
+            TripInstruction instruction = TravelerLocator.getInstruction(tripStatus, travelerPosition);
 
             if (isDeviatedWithOnTrackInstruction(tripStatus, instruction)) {
                 // Deem traveler on track (not deviated) if they are in the 'upcoming' range of a bus stop

@@ -225,7 +225,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             .setSpeed(0)
             .build();
         travelerPosition.locale = locale;
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
     }
 
@@ -442,7 +442,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             .setTrackedJourney(new TrackedJourney())
             .build();
         travelerPosition.locale = locale;
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
 
         // If a Gwinnett County bus notification was sent, check that the agency, route, and trip id fields are not null.
@@ -564,7 +564,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             .setSpeed(traceData.speed)
             .build();
         travelerPosition.locale = locale;
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, false);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
     }
 
