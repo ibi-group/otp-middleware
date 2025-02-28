@@ -59,8 +59,6 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenti
  *
  * OTP_API_ROOT set to a live OTP instance (e.g. http://otp-server.example.com/otp).
  *
- * OTP_PLAN_ENDPOINT set to a live OTP plan endpoint (e.g. /routers/default/plan).
- *
  * An AWS_PROFILE is required, or AWS access has been configured for your operating environment e.g.
  * C:\Users\<username>\.aws\credentials in Windows or Mac OS equivalent.
  *
