@@ -35,6 +35,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
@@ -46,6 +47,9 @@ public class ItineraryExistence extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryExistence.class);
     private static final int OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS = getConfigPropertyAsInt(
         "OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS", 60
+    );
+    private static final String OTP_REQUESTS_THREADING_ENABLED = getConfigPropertyAsText(
+        "OTP_REQUESTS_THREADING_ENABLED", "true"
     );
 
     /**
@@ -204,7 +208,9 @@ public class ItineraryExistence extends Model {
      */
     public void checkExistence(MonitoredTrip trip) {
 
-        Map<DayOfWeek, OtpResponse> otpResponses = getOtpResponses(otpRequests);
+        long startTime = System.currentTimeMillis();
+
+        Map<DayOfWeek, OtpResponse> otpResponses = isOtpRequestThreadingEnabled() ? getOtpResponses(otpRequests) : null;
 
         // Check existence of itinerary in the response for each OTP request.
         int index = 0;
@@ -220,7 +226,9 @@ public class ItineraryExistence extends Model {
                 setResultForDayOfWeek(result, dayOfWeek);
             }
 
-            OtpResponse response = otpResponses.get(dayOfWeek);
+            OtpResponse response = isOtpRequestThreadingEnabled()
+                ? otpResponses.get(dayOfWeek)
+                : otpResponseProvider.apply(otpRequest);
             if (response == null) {
                 LOG.warn("Itinerary existence check failed on {} for trip {} - OTP response was null.", dayOfWeek , trip.id);
             } else {
@@ -260,6 +268,13 @@ public class ItineraryExistence extends Model {
             );
             this.error = true;
         }
+
+        long timeToComplete = System.currentTimeMillis() - startTime;
+        LOG.info(
+            "Time to complete itinerary existence checks: {} ms (Threaded: {})",
+            timeToComplete,
+            isOtpRequestThreadingEnabled()
+        );
     }
 
     /**
@@ -308,16 +323,14 @@ public class ItineraryExistence extends Model {
             .stream()
             .collect(Collectors.toConcurrentMap(
                 otpRequest -> otpRequest.dateTime.getDayOfWeek(),
-                otpRequest -> processOtpAsyncCall(otpRequest, executor))
+                otpRequest -> CompletableFuture.supplyAsync(() -> otpResponseProvider.apply(otpRequest), executor))
             );
     }
 
-    /**
-     * Create a {@link CompletableFuture} to be completed asynchronously in the provided executor.
-     */
-    private CompletableFuture<OtpResponse> processOtpAsyncCall(OtpRequest otpRequest, ExecutorService executor) {
-        return CompletableFuture.supplyAsync(() -> otpResponseProvider.apply(otpRequest), executor);
+    private static boolean isOtpRequestThreadingEnabled() {
+        return OTP_REQUESTS_THREADING_ENABLED.equalsIgnoreCase("true");
     }
+
 
     /** Log instances of itinerary not found. */
     public static void logItineraryNotFound(String message, MonitoredTrip trip, TripPlan plan, Logger logger) {

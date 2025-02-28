@@ -4,12 +4,13 @@ import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Provides a set of mock OTP responses in the order they are expected to be used.
  */
 public class MockOtpResponseProvider {
-    private int index = 0;
+    private AtomicInteger index = new AtomicInteger(0);
     private final List<OtpResponse> mockResponses;
 
     public MockOtpResponseProvider(List<OtpResponse> mockResponses) {
@@ -41,11 +42,11 @@ public class MockOtpResponseProvider {
                 otpResponse = mockResponses.get(6);
                 break;
         }
-        index++;
+        index.incrementAndGet();
         return otpResponse;
     }
 
     public boolean areAllMocksUsed() {
-        return index == mockResponses.size();
+        return index.get() == mockResponses.size();
     }
 }
