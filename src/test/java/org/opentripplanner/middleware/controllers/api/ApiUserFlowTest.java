@@ -14,6 +14,7 @@ import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
@@ -91,7 +92,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
     @BeforeAll
     public static void setUp() throws CreateApiKeyException {
         assumeTrue(testsShouldRun());
-        // Mock the OTP server TODO: Run a live OTP instance?
+        // Mock the OTP server
         OtpTestUtils.mockOtpServer();
         // As a pre-condition, create an API User with API key.
         apiUser = PersistenceTestUtils.createApiUser(String.format("test-%s@example.com", UUID.randomUUID().toString()));
@@ -148,7 +149,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
      *   5. Delete user and verify that their associated objects are also deleted.
      */
     @Test
-    public void canSimulateApiUserFlow() throws Exception {
+    void canSimulateApiUserFlow() throws Exception {
 
         // Define the header values to be used in requests from this point forward.
         HashMap<String, String> apiUserHeaders = new HashMap<>();
@@ -191,8 +192,8 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         OtpUser otpUserResponse = JsonUtils.getPOJOFromJSON(createUserResponse.responseBody, OtpUser.class);
 
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
-        // TODO: refactor this call
-        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.getSampleQueryParams(), OtpTestUtils.sendSamplePlanRequest());
+        OtpGraphQLVariables queryParams = OtpTestUtils.getSampleQueryParams();
+        MonitoredTrip monitoredTrip = new MonitoredTrip(queryParams, OtpTestUtils.sendSamplePlanRequest(queryParams));
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
         HttpResponseValues createTripResponseAsOtpUser = mockAuthenticatedRequest(
