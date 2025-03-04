@@ -29,11 +29,6 @@ public class OtpDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcher.class);
 
     /**
-     * Location of the OTP plan endpoint (e.g. /routers/default/plan).
-     */
-    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
-
-    /**
      * Location of the OTP GraphQL endpoint (e.g. /routers/default/index/graphql).
      */
     public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/routers/default/index/graphql");
@@ -68,14 +63,6 @@ public class OtpDispatcher {
     }
 
     /**
-     * Provides a response from the OTP server target service based on the query parameters provided.
-     */
-    public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, String query) {
-        LOG.debug("Original query string: {}", query);
-        return sendOtpRequest(buildOtpUri(version, query, OTP_PLAN_ENDPOINT));
-    }
-
-    /**
      * Provides a response from the OTP server target service based on the input {@link OtpRequest}.
      */
     public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, OtpRequest otpRequest) {
@@ -96,14 +83,6 @@ public class OtpDispatcher {
             HttpUtils.HEADERS_JSON,
             JsonUtils.toJson(query).replace("\\\\n", "\\n").replace("\\\\\"", "\"")
         );
-    }
-
-    /**
-     * Provides a response from the OTP server target service based on the query parameters provided. This is used only
-     * during testing.
-     */
-    public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, String from, String to, String time) {
-        return sendOtpPlanRequest(version, String.format("fromPlace=%s&toPlace=%s&time=%s", from, to, time));
     }
 
     /**
@@ -145,10 +124,6 @@ public class OtpDispatcher {
                 headers,
                 bodyContent);
         return new OtpDispatcherResponse(otpResponse);
-    }
-
-    public static OtpResponse sendOtpRequestWithErrorHandling(String sentParams) {
-        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP2, sentParams));
     }
 
     public static OtpResponse sendOtpRequestWithErrorHandling(OtpRequest otpRequest) {
