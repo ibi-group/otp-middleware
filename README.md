@@ -1,5 +1,5 @@
 # otp-middleware
-The otp-middleware application proxies requests from OpenTripPlanner UI to API, 
+The otp-middleware application proxies requests from OpenTripPlanner UI to API (v2.x), 
 enhancing [OpenTripPlanner](https://www.opentripplanner.org) (OTP) with user
 storage, real-time trip monitoring, and more!
 
@@ -93,7 +93,6 @@ The follow parameters are used to interact with an OTP server.
 | Parameter | Description | Example |
 | --- | --- | --- |
 | OTP_API_ROOT | This is the address of the OTP server, including the root path to the OTP API, to which all OTP related requests will be sent to. | http://otp-server.example.com/otp | 
-| OTP_PLAN_ENDPOINT | This defines the plan endpoint part of the requesting URL. If a request is made to this, the assumption is that a plan request has been made and that the response should be processed accordingly. | /plan |
 
 ### Trip Actions
 
@@ -310,8 +309,6 @@ The special E2E client settings should be defined in `env.yml`:
 | OTP_ADMIN_DASHBOARD_NAME | string | Optional | OTP Admin Dashboard | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_ADMIN_DASHBOARD_URL | string | Optional | https://admin.example.com | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_API_ROOT | string | Required | http://otp-server.example.com/otp | The URL of an operational OTP1 server. |
-| OTP2_API_ROOT | string | Optional | http://otp2-server.example.com/otp | The URL of an operational OTP2 server. |
-| OTP_PLAN_ENDPOINT | string | Optional | /routers/default/plan | The path to the OTP server trip planning endpoint. |
 | OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS | integer | Optional | 60 | The maximum time for making requests to OTP as part of itinerary existence checks. |
 | OTP_REQUESTS_THREADING_ENABLED | string | Optional | true | Use multi-threading to handle OTP requests and responses. |
 | OTP_TIMEZONE | string | Required | America/Los_Angeles | The timezone identifier that OTP is using to parse dates and times. OTP will use the timezone identifier that it finds in the first available agency to parse dates and times. |
