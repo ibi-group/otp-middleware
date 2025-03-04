@@ -20,6 +20,7 @@ import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -29,7 +30,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.time.format.DateTimeFormatter;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -51,11 +54,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     public static final List<String> MONITORED_TRIP_DATES = List.of(
         QUERY_DATE, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19"
     );
-
-    // Indexes for the days above: Thursday is 0, ..., Wednesday is 6.
-    private static final int FRIDAY_INDEX = 1;
-    private static final int MONDAY_INDEX = 4;
-    private static final int WEDNESDAY_INDEX = 6;
 
     /** Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE. */
 
@@ -106,20 +104,20 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     @MethodSource("createCheckAllItinerariesExistTestCases")
     void canCheckAllItinerariesExist(boolean insertInvalidDay, String message) throws Exception {
         MonitoredTrip trip = makeTestTrip();
-        List<OtpResponse> mockOtpResponses = getMockDatedOtpResponses(MONITORED_TRIP_DATES);
+        Map<DayOfWeek, OtpResponse> mockOtpResponses = getMockDatedOtpResponses(MONITORED_TRIP_DATES);
 
         // If needed, insert a mock invalid response for one of the monitored days.
         if (insertInvalidDay) {
-            mockOtpResponses.set(MONDAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
+            mockOtpResponses.put(DayOfWeek.MONDAY, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
         }
         // Return an erroneous response for some days that are not monitored (Wednesday, Friday).
-        mockOtpResponses.set(FRIDAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
-        mockOtpResponses.set(WEDNESDAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
+        mockOtpResponses.put(DayOfWeek.FRIDAY, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
+        mockOtpResponses.put(DayOfWeek.WEDNESDAY, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
 
         MockOtpResponseProvider mockResponses = new MockOtpResponseProvider(mockOtpResponses);
 
         // Also set trip itinerary to the template itinerary for easy/lazy match.
-        Itinerary expectedItinerary = mockOtpResponses.get(0).plan.itineraries.get(0);
+        Itinerary expectedItinerary = mockOtpResponses.get(DayOfWeek.THURSDAY).plan.itineraries.get(0);
         trip.itinerary = expectedItinerary;
 
         trip.checkItineraryExistence(false, mockResponses::getMockResponse);
@@ -180,9 +178,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      * Creates a set of mock OTP responses by making copies of #OTP_DISPATCHER_PLAN_RESPONSE,
      * each copy having the itinerary date set to one of the dates from the specified dates list.
      */
-    public static List<OtpResponse> getMockDatedOtpResponses(List<String> dates) throws Exception {
+    public static Map<DayOfWeek, OtpResponse> getMockDatedOtpResponses(List<String> dates) throws Exception {
         // Set mocks to a list of responses with itineraries, ordered by day.
-        List<OtpResponse> mockOtpResponses = new ArrayList<>();
+        Map<DayOfWeek, OtpResponse> mockOtpResponses = new EnumMap<>(DayOfWeek.class);
 
         for (String dateString : dates) {
             LocalDate monitoredDate = LocalDate.parse(dateString, DateTimeUtils.DEFAULT_DATE_FORMATTER);
@@ -195,7 +193,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
                 itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
             }
 
-            mockOtpResponses.add(resp);
+            mockOtpResponses.put(monitoredDate.getDayOfWeek(), resp);
         }
         return mockOtpResponses;
     }

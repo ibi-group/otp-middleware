@@ -21,11 +21,13 @@ import spark.Service;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_GRAPHQL_ENDPOINT;
@@ -188,7 +190,7 @@ public class OtpTestUtils {
         return params;
     }
 
-    public static List<OtpResponse> createMockOtpResponsesForTripExistence() throws Exception {
+    public static Map<DayOfWeek, OtpResponse> createMockOtpResponsesForTripExistence() throws Exception {
         // Set up monitored days and mock responses for itinerary existence check, ordered by day.
         LocalDate today = DateTimeUtils.nowAsLocalDate();
         List<String> monitoredTripDates = new ArrayList<>();
