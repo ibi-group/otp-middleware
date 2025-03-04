@@ -7,8 +7,7 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
  * and URI.
  */
 public enum OtpVersion {
-    OTP1("OTP_API_ROOT", "OTP 1"),
-    OTP2("OTP2_API_ROOT", "OTP 2");
+    OTP2("OTP_API_ROOT", "OTP 2");
 
     private final String uri;
     private final String name;
