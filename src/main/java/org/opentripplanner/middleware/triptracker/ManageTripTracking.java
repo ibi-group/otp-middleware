@@ -131,6 +131,16 @@ public class ManageTripTracking {
                 tripStatus = TripStatus.COMPLETED;
             }
 
+            if (instruction instanceof WaitForTransitInstruction) {
+                // Deem trip ahead/on-time/behind depending on departure time of transit leg.
+                TravelerPosition adjustedPosition = new TravelerPosition.Builder()
+                    .setExpectedLeg(travelerPosition.nextLeg)
+                    .setCurrentPosition(travelerPosition.currentPosition)
+                    .setCurrentTime(travelerPosition.currentTime)
+                    .build();
+                tripStatus = TripStatus.getTimingStatus(adjustedPosition);
+            }
+
             // Perform interactions such as triggering traffic signals when approaching segments so configured.
             // It is assumed to be ok to repeatedly perform the interaction.
             if (instruction instanceof SelfLegInstruction && instruction.distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS) {
