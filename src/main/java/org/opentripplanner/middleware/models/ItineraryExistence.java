@@ -19,6 +19,7 @@ import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
@@ -210,7 +211,9 @@ public class ItineraryExistence extends Model {
 
         long startTime = System.currentTimeMillis();
 
-        Map<DayOfWeek, OtpResponse> otpResponses = isOtpRequestThreadingEnabled() ? getOtpResponses(otpRequests) : null;
+        Map<DayOfWeek, OtpResponse> otpResponses = isOtpRequestThreadingEnabled()
+            ? getOtpResponses(otpRequests)
+            : Collections.emptyMap();
 
         // Check existence of itinerary in the response for each OTP request.
         int index = 0;
@@ -297,16 +300,21 @@ public class ItineraryExistence extends Model {
             } catch (CancellationException | CompletionException e) {
                 LOG.error("Failed to get OTP response for {}.", dayOfWeek, e);
             }
+            LOG.debug("OTP response for {}: {}", dayOfWeek, response);
             otpRequestResponses.put(dayOfWeek, response);
         });
 
         executor.shutdown();
         try {
             if (!executor.awaitTermination(OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                LOG.warn(
+                    "OTP requests terminated, time out reached ({} seconds). Shutting down executor.",
+                    OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS
+                );
                 executor.shutdownNow();
             }
         } catch (InterruptedException e) {
-            LOG.error("OTP requests were interrupted!", e);
+            LOG.warn("OTP requests were interrupted! Shutting down executor.", e);
             executor.shutdownNow();
         }
         return otpRequestResponses;
@@ -330,7 +338,6 @@ public class ItineraryExistence extends Model {
     private static boolean isOtpRequestThreadingEnabled() {
         return OTP_REQUESTS_THREADING_ENABLED.equalsIgnoreCase("true");
     }
-
 
     /** Log instances of itinerary not found. */
     public static void logItineraryNotFound(String message, MonitoredTrip trip, TripPlan plan, Logger logger) {
