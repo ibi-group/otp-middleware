@@ -50,7 +50,7 @@ public class ItineraryExistence extends Model {
         "OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS", 60
     );
     private static final String OTP_REQUESTS_THREADING_ENABLED = getConfigPropertyAsText(
-        "OTP_REQUESTS_THREADING_ENABLED", "false"
+        "OTP_REQUESTS_THREADING_ENABLED", "true"
     );
 
     /**
