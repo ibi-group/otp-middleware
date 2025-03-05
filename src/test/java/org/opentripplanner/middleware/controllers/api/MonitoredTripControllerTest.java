@@ -55,8 +55,6 @@ import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.dele
  *
  * OTP_API_ROOT set to a live OTP instance (e.g. http://otp-server.example.com/otp).
  *
- * OTP_PLAN_ENDPOINT set to a live OTP plan endpoint (e.g. /routers/default/plan).
- *
  * The following environment variable must be set for these tests to run: - RUN_E2E=true.
  *
  * Auth0 must be correctly configured as described here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
