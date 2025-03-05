@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.MIN_TRANSIT_VEHICLE_SPEED;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getAllLegPositions;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getLegGeoPoints;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
@@ -62,10 +63,10 @@ public class ManageLegTraversal {
      * match, return this leg, if not simply return the leg that is nearest to the current position.
      */
     @Nullable
-    public static Leg getExpectedLeg(Coordinates position, Itinerary itinerary) {
+    public static Leg getExpectedLeg(Coordinates position, int speed, Itinerary itinerary) {
         if (canUseTripLegs(itinerary)) {
             Leg leg = getContainingLeg(position, itinerary);
-            return (leg != null) ? leg : getNearestLeg(position, itinerary);
+            return (leg != null) ? leg : getNearestLeg(position, speed, itinerary);
         }
         return null;
     }
@@ -92,9 +93,12 @@ public class ManageLegTraversal {
      * identical. In this scenario it would be possible for the current position to be attributed to the exit leg,
      * therefore missing the instruction at the end of the cul-de-sac.
      */
-    private static Leg getNearestLeg(Coordinates position, Itinerary itinerary) {
-        double shortestDistance = Double.MAX_VALUE;
+    private static Leg getNearestLeg(Coordinates position, int speed, Itinerary itinerary) {
+        Leg nearestTransitLeg = null;
         Leg nearestLeg = null;
+
+        double shortestDistance = Double.MAX_VALUE;
+        double shortestTransitDistance = Double.MAX_VALUE;
         for (int i = 0; i < itinerary.legs.size(); i++) {
             Leg leg = itinerary.legs.get(i);
             for (Coordinates positionOnLeg : getAllLegPositions(leg)) {
@@ -103,7 +107,15 @@ public class ManageLegTraversal {
                     nearestLeg = leg;
                     shortestDistance = distance;
                 }
+                if (Boolean.TRUE.equals(leg.transitLeg) && distance < shortestTransitDistance) {
+                    nearestTransitLeg = leg;
+                    shortestTransitDistance = distance;
+                }
             }
+        }
+
+        if (speed >= MIN_TRANSIT_VEHICLE_SPEED && nearestTransitLeg != null) {
+            return nearestTransitLeg;
         }
         return nearestLeg;
     }
@@ -121,6 +133,7 @@ public class ManageLegTraversal {
                 }
             }
         }
+
         return null;
     }
 

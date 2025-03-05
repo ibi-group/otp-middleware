@@ -80,7 +80,9 @@ public class UsRideGwinnettBusOpNotificationMessage {
     public boolean trusted_companion;
 
     public UsRideGwinnettBusOpNotificationMessage(Instant currentTime, TravelerPosition travelerPosition) {
-        var nextLeg = travelerPosition.nextLeg;
+        var nextLeg = Boolean.TRUE.equals(travelerPosition.expectedLeg.transitLeg)
+            ? travelerPosition.expectedLeg
+            : travelerPosition.nextLeg;
         this.timestamp = BUS_OPERATOR_NOTIFIER_API_DATE_FORMAT.format(currentTime.atZone(ZoneOffset.UTC));
         this.agency_id = removeAgencyPrefix(getAgencyGtfsIdFromLeg(nextLeg));
         this.from_route_id = removeAgencyPrefix(getRouteGtfsIdFromLeg(nextLeg));
