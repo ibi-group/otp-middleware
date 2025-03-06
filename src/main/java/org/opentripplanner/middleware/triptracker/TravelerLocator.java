@@ -44,7 +44,7 @@ public class TravelerLocator {
 
     public static final int ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES = 15;
 
-    private static final int MIN_TRANSIT_VEHICLE_SPEED = 5; // meters per second. 11.1 mph or 18 km/h.
+    public static final int MIN_TRANSIT_VEHICLE_SPEED = 5; // meters per second. 11.1 mph or 18 km/h.
 
     private TravelerLocator() {
     }
@@ -53,19 +53,15 @@ public class TravelerLocator {
      * Define the instruction based on the traveler's current position compared to expected and nearest points on the
      * trip.
      */
-    public static TripInstruction getInstruction(
-        TripStatus tripStatus,
-        TravelerPosition travelerPosition,
-        boolean isStartOfTrip
-    ) {
+    public static TripInstruction getInstruction(TripStatus tripStatus, TravelerPosition travelerPosition) {
         if (hasRequiredWalkLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
-                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, false);
+                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, false);
                 if (tripInstruction != null) return tripInstruction;
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
-                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition);
                 if (tripInstruction != null) return tripInstruction;
             }
         } else if (hasRequiredTransitLeg(travelerPosition)) {
@@ -75,7 +71,7 @@ public class TravelerLocator {
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
-                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition);
                 if (tripInstruction != null) return tripInstruction;
             }
         }
@@ -113,11 +109,8 @@ public class TravelerLocator {
      * else suggest the closest street to head towards.
      */
     @Nullable
-    private static TripInstruction getBackOnTrack(
-        TravelerPosition travelerPosition,
-        boolean isStartOfTrip
-    ) {
-        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, true);
+    private static TripInstruction getBackOnTrack(TravelerPosition travelerPosition) {
+        TripInstruction instruction = alignTravelerToTrip(travelerPosition, true);
         if (instruction != null && instruction.hasInstruction()) {
             return instruction;
         }
@@ -162,15 +155,16 @@ public class TravelerLocator {
     @Nullable
     public static TripInstruction alignTravelerToTrip(
         TravelerPosition travelerPosition,
-        boolean isStartOfTrip,
         boolean travelerHasDeviated
     ) {
         Locale locale = travelerPosition.locale;
 
         if (isApproachingEndOfLeg(travelerPosition)) {
             Leg transitLeg = travelerPosition.getTransitLegWithClosestUpcomingOrigin();
-            if (transitLeg != null && shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
-                sendBusNotifications(travelerPosition, transitLeg);
+            if (transitLeg != null) {
+                if (shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
+                    sendBusNotifications(travelerPosition, transitLeg);
+                }
                 // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
                 return new WaitForTransitInstruction(transitLeg, travelerPosition.currentTime, locale);
             }
@@ -212,7 +206,7 @@ public class TravelerLocator {
 
         Step nextStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps, false);
         TripInstruction tripInstruction = null;
-        if (nextStep != null && (!isPositionPastStep(travelerPosition, nextStep) || isStartOfTrip)) {
+        if (nextStep != null && (!isPositionPastStep(travelerPosition, nextStep))) {
             tripInstruction = new OnTrackInstruction(
                 getDistance(travelerPosition.currentPosition, new Coordinates(nextStep)),
                 nextStep,
@@ -319,8 +313,10 @@ public class TravelerLocator {
         String finalStop = expectedLeg.to.name;
 
         Leg transitLeg = travelerPosition.getTransitLegWithClosestUpcomingOrigin();
-        if (transitLeg != null && shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
-            sendBusNotifications(travelerPosition, transitLeg);
+        if (transitLeg != null) {
+            if (shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
+                sendBusNotifications(travelerPosition, transitLeg);
+            }
             // Regardless of whether the notification is sent or qualifies, provide a 'wait for bus' instruction.
             return new WaitForTransitInstruction(transitLeg, travelerPosition.currentTime, locale);
         }
@@ -400,7 +396,7 @@ public class TravelerLocator {
      * Get how far ahead in minutes the traveler is from the bus departure time.
      */
     public static long getMinutesAheadOfDeparture(Instant currentTime, Instant busDepartureTime) {
-        return Duration.between(busDepartureTime, currentTime).toMinutes();
+        return Duration.between(currentTime, busDepartureTime).toMinutes();
     }
 
     /**
@@ -427,10 +423,20 @@ public class TravelerLocator {
             radius
         );
 
-        Coordinates lastShapeCoordinate = legPositions.get(legPositions.size() - 2);
-        double distanceToLastShapeCoords = getDistance(travelerPosition.currentPosition, lastShapeCoordinate);
-
+        Coordinates secondToLastCoordinate = legPositions.get(legPositions.size() - 2);
+        Coordinates lastCoordinate = legPositions.get(legPositions.size() - 1);
         Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.to);
+
+        // HACK:
+        // If the last leg position coordinate is identical to the leg destination,
+        // it probably means the destination is off the street network, so the last shape coordinate is at pos (size -2).
+        // If the last leg position coordinate differs from the leg destination,
+        // then the destination is probably on the street network, so the last shape coordinate is at pos (size - 1).
+        double distanceToLastShapeCoords = getDistance(
+            travelerPosition.currentPosition,
+            lastCoordinate.equals(legDestination) ? secondToLastCoordinate : lastCoordinate
+        );
+
         double distanceToLegDestination = getDistance(travelerPosition.currentPosition, legDestination);
 
         return Math.min(distanceToLastShapeCoords, distanceToLegDestination);

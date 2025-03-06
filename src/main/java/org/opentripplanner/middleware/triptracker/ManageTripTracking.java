@@ -86,15 +86,6 @@ public class ManageTripTracking {
         TripTrackingData tripData,
         boolean create
     ) {
-        return doUpdateTracking(request, tripData, create, false);
-    }
-
-    private static TrackingResponse doUpdateTracking(
-        Request request,
-        TripTrackingData tripData,
-        boolean create,
-        boolean rerouted
-    ) {
         try {
             TrackedJourney trackedJourney;
             if (create) {
@@ -126,11 +117,7 @@ public class ManageTripTracking {
             LegTransitionNotification.checkForLegTransition(tripStatus, travelerPosition, tripData.trip);
 
             // Provide response.
-            TripInstruction instruction = TravelerLocator.getInstruction(
-                tripStatus,
-                travelerPosition,
-                create || rerouted
-            );
+            TripInstruction instruction = TravelerLocator.getInstruction(tripStatus, travelerPosition);
 
             if (isDeviatedWithOnTrackInstruction(tripStatus, instruction)) {
                 // Deem traveler on track (not deviated) if they are in the 'upcoming' range of a bus stop
@@ -142,6 +129,16 @@ public class ManageTripTracking {
             if (isEndOfRoutingInstruction(instruction)) {
                 // Deem trip completed if issuing a "destination in vicinity" instruction.
                 tripStatus = TripStatus.COMPLETED;
+            }
+
+            if (instruction instanceof WaitForTransitInstruction) {
+                // Deem trip ahead/on-time/behind depending on departure time of transit leg.
+                TravelerPosition adjustedPosition = new TravelerPosition.Builder()
+                    .setExpectedLeg(travelerPosition.nextLeg)
+                    .setCurrentPosition(travelerPosition.currentPosition)
+                    .setCurrentTime(travelerPosition.currentTime)
+                    .build();
+                tripStatus = TripStatus.getTimingStatus(adjustedPosition);
             }
 
             // Perform interactions such as triggering traffic signals when approaching segments so configured.
@@ -251,7 +248,7 @@ public class ManageTripTracking {
                 var reroutedItinerary = rerouteTrip(tripData);
                 if (reroutedItinerary != null) {
                     return new RerouteResponse(
-                        doUpdateTracking(request, tripData, false, true),
+                        doUpdateTracking(request, tripData, false),
                         reroutedItinerary
                     );
                 } else {

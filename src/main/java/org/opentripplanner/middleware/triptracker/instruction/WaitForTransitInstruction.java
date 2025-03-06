@@ -29,16 +29,21 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
         long waitInMinutes = Duration
             .between(currentTime.atZone(DateTimeUtils.getOtpZoneId()), transitLeg.getScheduledStartTime())
             .toMinutes();
-        String delayInfo = (delayInMinutes > 0) ? "late" : "early";
-        String arrivalInfo = (absoluteMinutes <= 1)
-            ? ", on time"
-            : String.format(" now%s %s", getReadableMinutes(delayInMinutes), delayInfo);
+        String waitInfo;
+        if (waitInMinutes < -2) {
+            waitInfo = " (That time has passed)";
+        } else {
+            String delayInfo = (delayInMinutes > 0) ? "late" : "early";
+            waitInfo = (absoluteMinutes <= 1)
+                ? ", on time"
+                : String.format(" now%s %s", getReadableMinutes(delayInMinutes), delayInfo);
+        }
         return String.format(
             "Wait%s for your bus, route %s, scheduled at %s%s",
             getReadableMinutes(waitInMinutes),
             routeShortName,
             DateTimeUtils.formatShortDate(Date.from(transitLeg.getScheduledStartTime().toInstant()), locale),
-            arrivalInfo
+            waitInfo
         );
     }
 }
