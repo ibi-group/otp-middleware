@@ -54,6 +54,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -275,12 +276,19 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         monitoredTrip = createMonitoredTrip(itinerary);
 
+        // Defaults to itinerary start time, unless specified otherwise.
+        Instant instant = monitoredTrip.itinerary.startTime.toInstant();
+        if (traceData.instant != null) {
+            instant = traceData.instant;
+        }
+
         String jsonPayload = JsonUtils.toJson(
             createTrackPayload(
                 monitoredTrip,
                 traceData.position,
                 traceData.speed,
-                Date.from(Instant.ofEpochMilli(monitoredTrip.itinerary.startTime.getTime() / 1000))
+                // The timestamp has to be in seconds, hence the division by 1000.
+                Date.from(Instant.ofEpochMilli(instant.toEpochMilli() / 1000))
             )
         );
 
@@ -310,6 +318,15 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(trackedJourney.id, trackResponse.journeyId);
     }
 
+    private static WaitForTransitInstruction waitForBusIsntruction(int waitMinutes) {
+        Leg multiItinBusLeg = multiLegItinerary.legs.get(multiLegItinerary.legs.size() - 2);
+        return new WaitForTransitInstruction(
+            multiItinBusLeg,
+            multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(waitMinutes)),
+            Locale.US
+        );
+    }
+
     private static Stream<Arguments> createInstructionAndStatusCases() {
         final int NORTH_WEST_BEARING = 315;
         final int NORTH_EAST_BEARING = 45;
@@ -334,11 +351,8 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
         Coordinates pointPastEndOfSidewalk = new Coordinates(33.958917, -84.006521);
 
-        WaitForTransitInstruction multiItinWaitForTransitInstruction = new WaitForTransitInstruction(
-            multiItinBusLeg,
-            multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
-            locale
-        );
+        WaitForTransitInstruction multiItinWaitForTransitInstruction = waitForBusIsntruction(6);
+
         return Stream.of(
             Arguments.of(
                 "Coords near first step should produce relevant instruction",
@@ -421,6 +435,23 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(createPoint(multiItinFirstLegDestCoords, 1.5, NORTH_EAST_BEARING))
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
                     .withExpectedInstruction(multiItinWaitForTransitInstruction)
+            ),
+            Arguments.of(
+                "Arriving ahead of schedule near a bus stop (in 'upcoming' range) at the end of first leg.",
+                multiLegItinerary,
+                new TraceData()
+                    .withPosition(createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING))
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction(multiItinWaitForTransitInstruction)
+            ),
+            Arguments.of(
+                "Arriving at bus stop within 2 minutes of bus departure (in 'upcoming' range) should put traveler ahead of, not behind schedule.",
+                multiLegItinerary,
+                new TraceData()
+                    .withPosition(createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING))
+                    .withInstant(multiItinBusLeg.startTime.toInstant().minus(2, ChronoUnit.MINUTES))
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction(waitForBusIsntruction(2))
             ),
             Arguments.of(
                 "Arriving ahead of schedule near a bus stop (in 'upcoming' range) at the end of first leg.",

@@ -29,7 +29,6 @@ import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_GRAPHQL_ENDPOINT;
-import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 import static spark.Service.ignite;
 
@@ -104,7 +103,6 @@ public class OtpTestUtils {
         }
         Service http = ignite().port(8080);
         http.post("/otp" + OTP_GRAPHQL_ENDPOINT, OtpTestUtils::mockOtpPlanResponse);
-        http.get("/otp" + OTP_PLAN_ENDPOINT, OtpTestUtils::mockOtpPlanResponse);
         http.get("/*", (request, response) -> {
             logMessageAndHalt(
                 request,
@@ -175,15 +173,8 @@ public class OtpTestUtils {
     /**
      * Submit plan query to OTP server and return the response.
      */
-    public static OtpDispatcherResponse sendSamplePlanRequest() {
-        // Submit a query to the OTP server.
-        // From P&R to Downtown Orlando
-        return OtpDispatcher.sendOtpPlanRequest(
-            OtpVersion.OTP1,
-            "28.45119,-81.36818",
-            "28.54834,-81.37745",
-            "08:35"
-        );
+    public static OtpDispatcherResponse sendSamplePlanRequest(OtpGraphQLVariables variables) {
+        return OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP2, variables);
     }
 
     /**
