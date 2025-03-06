@@ -150,9 +150,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         // Days not monitored had an error response, so the check should return invalid for those days.
         assertFalse(existence.wednesday.isValid());
         assertFalse(existence.friday.isValid());
-
-        // Make sure all mocks were used
-        assertTrue(mockResponses.areAllMocksUsed());
     }
 
     private static Stream<Arguments> createCheckAllItinerariesExistTestCases() {

@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
@@ -46,9 +46,6 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  */
 public class ItineraryExistence extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryExistence.class);
-    private static final int OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS = getConfigPropertyAsInt(
-        "OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS", 60
-    );
     private static final String OTP_REQUESTS_THREADING_ENABLED = getConfigPropertyAsText(
         "OTP_REQUESTS_THREADING_ENABLED", "true"
     );
@@ -306,10 +303,10 @@ public class ItineraryExistence extends Model {
 
         executor.shutdown();
         try {
-            if (!executor.awaitTermination(OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+            if (!executor.awaitTermination(OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS)) {
                 LOG.warn(
                     "OTP requests terminated, time out reached ({} seconds). Shutting down executor.",
-                    OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS
+                    OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS
                 );
                 executor.shutdownNow();
             }
@@ -321,7 +318,7 @@ public class ItineraryExistence extends Model {
     }
 
     /**
-     * Assign an OTP request to a day of the week.
+     * Assign an OTP request to a day of the week and start each call async to the OTP server.
      */
     private ConcurrentMap<DayOfWeek, CompletableFuture<OtpResponse>> assignOtpRequestToDayOfWeek(
         List<OtpRequest> otpRequests,

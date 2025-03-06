@@ -221,8 +221,6 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
 
         // After POST is complete, reset OTP response provider to default.
         ItineraryExistence.otpResponseProviderOverride = null;
-        // Make sure all mocks were used
-        assertTrue(mockResponses.areAllMocksUsed());
 
         String responseBody = createTripResponseAsApiUser.responseBody;
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.status);

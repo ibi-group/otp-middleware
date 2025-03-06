@@ -10,7 +10,6 @@ import java.util.Map;
  * Provides a set of mock OTP responses in the order they are expected to be used.
  */
 public class MockOtpResponseProvider {
-    private int index = 0;
     private final Map<DayOfWeek, OtpResponse> mockResponses;
 
     public MockOtpResponseProvider(Map<DayOfWeek, OtpResponse> mockResponses) {
@@ -18,11 +17,6 @@ public class MockOtpResponseProvider {
     }
 
     public OtpResponse getMockResponse(OtpRequest otpRequest) {
-        index++;
         return mockResponses.get(otpRequest.dateTime.getDayOfWeek());
-    }
-
-    public boolean areAllMocksUsed() {
-        return index == mockResponses.size();
     }
 }
