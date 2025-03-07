@@ -430,12 +430,17 @@ public class TravelerLocator {
         return Math.min(distanceToFirstShapeCoords, distanceToLegOrigin);
     }
 
+    /**
+     * Get the distance from the traveler's current position to the leg destination.
+     */
     private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
         return getDistanceToEndOfLeg(travelerPosition, travelerPosition.getLegPositions());
     }
 
     /**
      * Get the distance from the traveler's current position to the leg destination from given leg positions.
+     * This method is used in tests when the leg positions are computed using an 'upcoming' threshold
+     * different from the default one.
      */
     public static double getDistanceToEndOfLeg(TravelerPosition travelerPosition, List<Coordinates> legPositions) {
         Coordinates secondToLastCoordinate = legPositions.get(legPositions.size() - 2);

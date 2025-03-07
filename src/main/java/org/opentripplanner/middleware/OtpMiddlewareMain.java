@@ -128,7 +128,6 @@ public class OtpMiddlewareMain {
                     new MonitoredComponentController(API_PREFIX),
                     new MonitoredTripController(API_PREFIX),
                     new OtpRequestProcessor("/otp", OtpVersion.OTP2),
-                    new OtpRequestProcessor("/otp2", OtpVersion.OTP2),
                     new OtpUserController(API_PREFIX),
                     new TrackedTripController(API_PREFIX),
                     new TripHistoryController(API_PREFIX),
