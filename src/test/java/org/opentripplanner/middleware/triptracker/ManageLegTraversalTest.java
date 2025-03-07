@@ -757,30 +757,34 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         assertEquals(busStopToJusticeCenterItinerary.legs.get(0).duration, cumulative, 0.01f);
     }
 
-    @Test
-    void testGetDistanceToEndOfLeg() {
-        // Case where distance to end of leg was previously incorrectly computed
-        // (At end of routing for walk trip to One Justice Square)
+    /**
+     * Handles cases where the distance to end of leg was previously incorrectly computed.
+     */
+    @ParameterizedTest
+    @MethodSource("createDistanceToEndOfLegCases")
+    void testGetDistanceToEndOfLeg(Itinerary itinerary, Coordinates coordinates, boolean isWithinRadius) {
         TrackedJourney trackedJourney = new TrackedJourney();
         trackedJourney.locations = List.of(
-            new TrackingLocation(Instant.now(), 33.95242212998748, -83.99714406536067)
+            new TrackingLocation(Instant.now(), coordinates.lat, coordinates.lon)
         );
-        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkGjacTo1js, null);
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, null);
 
-        assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, GMAP_UPCOMING_RADIUS) <= GMAP_UPCOMING_RADIUS);
+        List<Coordinates> legPositions = TravelerLocator.injectWaypointsIntoLegPositions(
+            travelerPosition.expectedLeg,
+            travelerPosition.expectedLeg.steps,
+            GMAP_UPCOMING_RADIUS
+        );
+
+        assertEquals(isWithinRadius, TravelerLocator.getDistanceToEndOfLeg(travelerPosition, legPositions) <= GMAP_UPCOMING_RADIUS);
     }
 
-    @Test
-    void testGetDistanceToEndOfLeg2() {
-        // Case where distance to end of leg was previously incorrectly computed
-        // (Near end of walk step/beginning of bus step for walk+bus trip)
-        TrackedJourney trackedJourney = new TrackedJourney();
-        trackedJourney.locations = List.of(
-            new TrackingLocation(Instant.now(), WALK_AND_TRANSIT_LEG_OVERLAP_POINT.lat, WALK_AND_TRANSIT_LEG_OVERLAP_POINT.lon)
+    private static Stream<Arguments> createDistanceToEndOfLegCases() {
+        return Stream.of(
+            // At end of routing for walk trip to One Justice Square
+            Arguments.of(walkGjacTo1js, new Coordinates(33.95242212998748, -83.99714406536067), true),
+            // Near end of walk step/beginning of bus step for walk+bus trip
+            Arguments.of(walkToBus20, WALK_AND_TRANSIT_LEG_OVERLAP_POINT, false)
         );
-        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBus20, null);
-
-        assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, GMAP_UPCOMING_RADIUS) > GMAP_UPCOMING_RADIUS);
     }
 
     @ParameterizedTest
