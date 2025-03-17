@@ -774,7 +774,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
     private static Stream<Arguments> createDistanceToStartOfLegCases() {
         return Stream.of(
             // Close to start of routing (outside of origin building) for walk trip to One Justice Square
-            Arguments.of( walkGjacTo1js, new Coordinates(33.951786, -83.992887), true),
+            Arguments.of(walkGjacTo1js, new Coordinates(33.951786, -83.992887), true),
             // Inside of origin building away from start of routing for walk trip to One Justice Square
             Arguments.of(walkGjacTo1js, new Coordinates(33.951563, -83.992954), false)
         );

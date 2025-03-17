@@ -522,7 +522,7 @@ public class MonitoredTrip extends Model {
 
     /**
      * Determines whether this trip was created by primary user.
-     * The primary user is either be the user denoted with userId if there are no companions (there can be observers),
+     * The primary user is either the user denoted with userId if there are no companions (there can be observers),
      * or the user denoted with the `primary` field if that field is populated.
      */
     public boolean ownedByPrimary() {

@@ -415,7 +415,6 @@ public class TravelerLocator {
         Coordinates firstCoordinate = legPositions.get(0);
         Coordinates legOrigin = new Coordinates(travelerPosition.expectedLeg.from);
 
-        // HACK:
         // If the first leg position coordinate is identical to the leg origin,
         // it probably means the origin is off the street network, so the first shape coordinate is at pos (1).
         // If the first leg position coordinate differs from the leg origin,
