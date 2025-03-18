@@ -81,12 +81,12 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("creatNotifyBusOperatorForScheduledDepartureTrace")
-    void canNotifyBusOperatorForScheduledDeparture(Leg busLeg, Itinerary itinerary, boolean isStartOfTrip, String message) {
+    void canNotifyBusOperatorForScheduledDeparture(Leg busLeg, Itinerary itinerary, String message) {
         Coordinates startOfTransitCoordinates = new Coordinates(busLeg.from);
         Instant busDepartureTime = getBusDepartureTime(busLeg);
         trackedJourney = createAndPersistTrackedJourney(startOfTransitCoordinates, busDepartureTime);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, isStartOfTrip);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition);
         TripInstruction expectInstruction = new WaitForTransitInstruction(busLeg, busDepartureTime, locale);
         TrackedJourney updated = Persistence.trackedJourneys.getById(trackedJourney.id);
         assertTrue(updated.busNotificationMessages.containsKey(ROUTE_ID));
@@ -98,13 +98,11 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(
                 firstLegBusTransit.legs.get(0),
                 firstLegBusTransit,
-                true,
                 "Can notify bus operator when the first leg is transit."
             ),
             Arguments.of(
                 walkToBusTransition.legs.get(1),
                 walkToBusTransition,
-                false,
                 "Can notify bus operator when the next leg is transit."
             )
         );
@@ -156,7 +154,7 @@ class NotifyBusOperatorTest extends OtpMiddlewareTestEnvironment {
 
         trackedJourney = createAndPersistTrackedJourney(getEndOfWalkLegCoordinates(), timeAtEndOfWalkLeg);
         TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, createOtpUser());
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition, false);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(TripStatus.ON_SCHEDULE, travelerPosition);
         assertNotNull(tripInstruction);
 
         Leg busLeg = itinerary.legs.get(1);

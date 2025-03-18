@@ -1,0 +1,484 @@
+{
+  "accessibilityScore": null,
+  "duration": 911,
+  "endTime": 1740501034000,
+  "legs": [
+    {
+      "accessibilityScore": null,
+      "agency": null,
+      "alerts": [],
+      "arrivalDelay": 0,
+      "departureDelay": 0,
+      "distance": 22.85,
+      "dropoffType": "SCHEDULED",
+      "duration": 35,
+      "endTime": 1740500158000,
+      "fareProducts": [],
+      "from": {
+        "lat": 33.9556834,
+        "lon": -83.9976597,
+        "name": "Langley Drive & Plaza Park Office, Lawrenceville, GA, USA",
+        "rentalVehicle": null,
+        "stop": null,
+        "vertexType": "NORMAL"
+      },
+      "headsign": null,
+      "interlineWithPreviousLeg": false,
+      "intermediateStops": null,
+      "legGeometry": {
+        "length": 4,
+        "points": "y}fnEhyt_O]FI@??"
+      },
+      "mode": "WALK",
+      "pickupBookingInfo": null,
+      "pickupType": "SCHEDULED",
+      "realTime": false,
+      "realtimeState": null,
+      "rentedBike": false,
+      "rideHailingEstimate": null,
+      "route": null,
+      "startTime": 1740500123000,
+      "steps": [
+        {
+          "absoluteDirection": "NORTH",
+          "alerts": [],
+          "area": false,
+          "distance": 22.85,
+          "elevationProfile": [],
+          "lat": 33.9556563,
+          "lon": -83.9978006,
+          "relativeDirection": "DEPART",
+          "stayOn": false,
+          "streetName": "Langley Drive"
+        }
+      ],
+      "to": {
+        "lat": 33.955857,
+        "lon": -83.997854,
+        "name": "Langley Dr & Plaza Park Office",
+        "rentalVehicle": null,
+        "stop": {
+          "alerts": [],
+          "code": "440",
+          "gtfsId": "GwinnettCountyTransit:440",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDQw",
+          "lat": 33.955857,
+          "lon": -83.997854
+        },
+        "vertexType": "TRANSIT"
+      },
+      "transitLeg": false,
+      "trip": null
+    },
+    {
+      "accessibilityScore": null,
+      "agency": {
+        "alerts": [
+          {
+            "alertDescriptionText": "Service Alert – Route 110 Riders: Bus Stop ID 211497 at N. Druid Hills @ CHOA is temporarily closed due to construction in the area. Ride Gwinnett will provide updates and notify riders when the stop reopens.  We apologize for the inconvenience.",
+            "alertHeaderText": "Service Alert – Route 110 Riders: Bus Stop ID 211497 at N. Druid Hills @ CHOA is temporarily closed due to construction in the area. Ride Gwinnett will provide updates and notify riders when the stop reopens.  We apologize for the inconvenience.",
+            "alertUrl": null,
+            "effectiveStartDate": 1737590400,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4NjA"
+          },
+          {
+            "alertDescriptionText": "Attention Route 70 Riders - Effective October 7, 2024, Route 70 will relocate bus stop # 7000 from Wisteria Drive @ Main Street to Wisteria Drive and Highway 78.  ",
+            "alertHeaderText": "Attention Route 70 Riders - Effective October 7, 2024, Route 70 will relocate bus stop # 7000 from Wisteria Drive @ Main Street to Wisteria Drive and Highway 78.  ",
+            "alertUrl": null,
+            "effectiveStartDate": 1727136000,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4MTA"
+          },
+          {
+            "alertDescriptionText": "Service Alert – Route 50 riders – Due to construction in the area, stop # 5002 has been temporarily relocated along Tech Center Pwky. Please contact Customer Service for additional information.",
+            "alertHeaderText": "Service Alert – Route 50 riders – Due to construction in the area, stop # 5002 has been temporarily relocated along Tech Center Pwky. Please contact Customer Service for additional information.",
+            "alertUrl": null,
+            "effectiveStartDate": 1737936000,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4NjQ"
+          },
+          {
+            "alertDescriptionText": "Service Alert - Route 30 Bus stop ID 3039 at Lawrenceville Hwy & Byson Park will be temporarily closed until further notice starting Tuesday 1/21/25 for a water line project, which is estimated to take 2-3 weeks. ",
+            "alertHeaderText": "Service Alert - Route 30 Bus stop ID 3039 at Lawrenceville Hwy & Byson Park will be temporarily closed until further notice starting Tuesday 1/21/25 for a water line project, which is estimated to take 2-3 weeks. ",
+            "alertUrl": null,
+            "effectiveStartDate": 1737072000,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4NDA"
+          },
+          {
+            "alertDescriptionText": "Attention Route 30 Riders - Due to safety concerns, Stop 3070 at Jimmy Carter Blvd & Britt Rd (previously Stop 397) will be moved further down Jimmy Carter Blvd. The relocation will be completed by 2/28/25. We appreciate your patience and understanding.",
+            "alertHeaderText": "Attention Route 30 Riders - Due to safety concerns, Stop 3070 at Jimmy Carter Blvd & Britt Rd (previously Stop 397) will be moved further down Jimmy Carter Blvd. The relocation will be completed by 2/28/25. We appreciate your patience and understanding.",
+            "alertUrl": null,
+            "effectiveStartDate": 1739318400,
+            "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM5MjQ"
+          }
+        ],
+        "gtfsId": "GwinnettCountyTransit:GCT",
+        "id": "GwinnettCountyTransit:GCT",
+        "name": "Gwinnett County Transit",
+        "timezone": "America/New_York",
+        "url": "https://www.ridegwinnett.com/"
+      },
+      "alerts": [
+        {
+          "alertDescriptionText": "Attention Route 70 Riders - Effective October 7, 2024, Route 70 will relocate bus stop # 7000 from Wisteria Drive @ Main Street to Wisteria Drive and Highway 78.  ",
+          "alertHeaderText": "Attention Route 70 Riders - Effective October 7, 2024, Route 70 will relocate bus stop # 7000 from Wisteria Drive @ Main Street to Wisteria Drive and Highway 78.  ",
+          "alertUrl": null,
+          "effectiveStartDate": 1727136000,
+          "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4MTA"
+        },
+        {
+          "alertDescriptionText": "Service Alert – Route 50 riders – Due to construction in the area, stop # 5002 has been temporarily relocated along Tech Center Pwky. Please contact Customer Service for additional information.",
+          "alertHeaderText": "Service Alert – Route 50 riders – Due to construction in the area, stop # 5002 has been temporarily relocated along Tech Center Pwky. Please contact Customer Service for additional information.",
+          "alertUrl": null,
+          "effectiveStartDate": 1737936000,
+          "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4NjQ"
+        },
+        {
+          "alertDescriptionText": "Service Alert - Route 30 Bus stop ID 3039 at Lawrenceville Hwy & Byson Park will be temporarily closed until further notice starting Tuesday 1/21/25 for a water line project, which is estimated to take 2-3 weeks. ",
+          "alertHeaderText": "Service Alert - Route 30 Bus stop ID 3039 at Lawrenceville Hwy & Byson Park will be temporarily closed until further notice starting Tuesday 1/21/25 for a water line project, which is estimated to take 2-3 weeks. ",
+          "alertUrl": null,
+          "effectiveStartDate": 1737072000,
+          "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4NDA"
+        },
+        {
+          "alertDescriptionText": "Service Alert – Route 110 Riders: Bus Stop ID 211497 at N. Druid Hills @ CHOA is temporarily closed due to construction in the area. Ride Gwinnett will provide updates and notify riders when the stop reopens.  We apologize for the inconvenience.",
+          "alertHeaderText": "Service Alert – Route 110 Riders: Bus Stop ID 211497 at N. Druid Hills @ CHOA is temporarily closed due to construction in the area. Ride Gwinnett will provide updates and notify riders when the stop reopens.  We apologize for the inconvenience.",
+          "alertUrl": null,
+          "effectiveStartDate": 1737590400,
+          "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM4NjA"
+        },
+        {
+          "alertDescriptionText": "Attention Route 30 Riders - Due to safety concerns, Stop 3070 at Jimmy Carter Blvd & Britt Rd (previously Stop 397) will be moved further down Jimmy Carter Blvd. The relocation will be completed by 2/28/25. We appreciate your patience and understanding.",
+          "alertHeaderText": "Attention Route 30 Riders - Due to safety concerns, Stop 3070 at Jimmy Carter Blvd & Britt Rd (previously Stop 397) will be moved further down Jimmy Carter Blvd. The relocation will be completed by 2/28/25. We appreciate your patience and understanding.",
+          "alertUrl": null,
+          "effectiveStartDate": 1739318400,
+          "id": "QWxlcnQ6R3dpbm5ldHRDb3VudHlUcmFuc2l0OjM5MjQ"
+        }
+      ],
+      "arrivalDelay": 0,
+      "departureDelay": 0,
+      "distance": 968.7,
+      "dropoffType": "SCHEDULED",
+      "duration": 96,
+      "endTime": 1740500554000,
+      "fareProducts": [
+        {
+          "id": "e9412f42-ea5b-33e1-aeeb-c52502144590",
+          "product": {
+            "__typename": "DefaultFareProduct",
+            "id": "atlanta:electronicSpecial",
+            "medium": null,
+            "name": "electronicSpecial",
+            "riderCategory": null,
+            "price": {
+              "amount": 0,
+              "currency": {
+                "code": "USD",
+                "digits": 2
+              }
+            }
+          }
+        },
+        {
+          "id": "f8d0c3e6-8d39-33ba-83c2-62a5c9c243d3",
+          "product": {
+            "__typename": "DefaultFareProduct",
+            "id": "atlanta:electronicYouth",
+            "medium": null,
+            "name": "electronicYouth",
+            "riderCategory": null,
+            "price": {
+              "amount": 0,
+              "currency": {
+                "code": "USD",
+                "digits": 2
+              }
+            }
+          }
+        },
+        {
+          "id": "59938229-8c4e-3190-888a-4fdc70332021",
+          "product": {
+            "__typename": "DefaultFareProduct",
+            "id": "atlanta:regular",
+            "medium": null,
+            "name": "regular",
+            "riderCategory": null,
+            "price": {
+              "amount": 0,
+              "currency": {
+                "code": "USD",
+                "digits": 2
+              }
+            }
+          }
+        },
+        {
+          "id": "6e2e8215-51eb-3a94-9206-46bf1aedc9b4",
+          "product": {
+            "__typename": "DefaultFareProduct",
+            "id": "atlanta:senior",
+            "medium": null,
+            "name": "senior",
+            "riderCategory": null,
+            "price": {
+              "amount": 0,
+              "currency": {
+                "code": "USD",
+                "digits": 2
+              }
+            }
+          }
+        },
+        {
+          "id": "3e32decf-5a38-3275-bb8e-5f2dd477b657",
+          "product": {
+            "__typename": "DefaultFareProduct",
+            "id": "atlanta:electronicSenior",
+            "medium": null,
+            "name": "electronicSenior",
+            "riderCategory": null,
+            "price": {
+              "amount": 0,
+              "currency": {
+                "code": "USD",
+                "digits": 2
+              }
+            }
+          }
+        },
+        {
+          "id": "9529ec51-1bc7-3da5-a17e-5882dcdc3835",
+          "product": {
+            "__typename": "DefaultFareProduct",
+            "id": "atlanta:electronicRegular",
+            "medium": null,
+            "name": "electronicRegular",
+            "riderCategory": null,
+            "price": {
+              "amount": 0,
+              "currency": {
+                "code": "USD",
+                "digits": 2
+              }
+            }
+          }
+        },
+        {
+          "id": "0afb612b-f6f3-325e-82e6-90a888a80e7b",
+          "product": {
+            "__typename": "DefaultFareProduct",
+            "id": "atlanta:youth",
+            "medium": null,
+            "name": "youth",
+            "riderCategory": null,
+            "price": {
+              "amount": 0,
+              "currency": {
+                "code": "USD",
+                "digits": 2
+              }
+            }
+          }
+        }
+      ],
+      "from": {
+        "lat": 33.955857,
+        "lon": -83.997854,
+        "name": "Langley Dr & Plaza Park Office",
+        "rentalVehicle": null,
+        "stop": {
+          "alerts": [],
+          "code": "440",
+          "gtfsId": "GwinnettCountyTransit:440",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDQw",
+          "lat": 33.955857,
+          "lon": -83.997854
+        },
+        "vertexType": "TRANSIT"
+      },
+      "headsign": "Transit Center",
+      "interlineWithPreviousLeg": false,
+      "intermediateStops": [
+        {
+          "lat": 33.957938,
+          "locationType": "STOP",
+          "lon": -83.999014,
+          "name": "W Pike St & Honeysuckle Ave",
+          "stopCode": "652",
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NjUy"
+        },
+        {
+          "lat": 33.95857,
+          "locationType": "STOP",
+          "lon": -84.002043,
+          "name": "W Pike St & Buchannan St (Hertz)",
+          "stopCode": "651",
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NjUx"
+        }
+      ],
+      "legGeometry": {
+        "length": 20,
+        "points": "}~fnE`zt_OE@iBAiFi@Kv@m@lE?@??m@lFa@`DUpBO|A??A@?@In@[~@{AnBuH`ICD"
+      },
+      "mode": "BUS",
+      "pickupBookingInfo": null,
+      "pickupType": "SCHEDULED",
+      "realTime": false,
+      "realtimeState": "SCHEDULED",
+      "rentedBike": null,
+      "rideHailingEstimate": null,
+      "route": {
+        "alerts": [],
+        "color": "AB0634",
+        "gtfsId": "GwinnettCountyTransit:40",
+        "id": "GwinnettCountyTransit:40",
+        "longName": "Lawrenceville - GTC - Sugarloaf Mills",
+        "shortName": "40",
+        "textColor": "FFFFFF",
+        "type": 3
+      },
+      "startTime": 1740500458000,
+      "steps": [],
+      "to": {
+        "lat": 33.960768,
+        "lon": -84.004716,
+        "name": "W Pike St & Old Norcross Rd",
+        "rentalVehicle": null,
+        "stop": {
+          "alerts": [],
+          "code": "653",
+          "gtfsId": "GwinnettCountyTransit:653",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NjUz",
+          "lat": 33.960768,
+          "lon": -84.004716
+        },
+        "vertexType": "TRANSIT"
+      },
+      "transitLeg": true,
+      "trip": {
+        "arrivalStoptime": {
+          "stop": {
+            "gtfsId": "GwinnettCountyTransit:3",
+            "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6Mw"
+          },
+          "stopPosition": 3480
+        },
+        "departureStoptime": {
+          "stop": {
+            "gtfsId": "GwinnettCountyTransit:16",
+            "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTY"
+          },
+          "stopPosition": 0
+        },
+        "gtfsId": "GwinnettCountyTransit:t44E-b12E-sl3",
+        "id": "VHJpcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6dDQ0RS1iMTJFLXNsMw"
+      }
+    },
+    {
+      "accessibilityScore": null,
+      "agency": null,
+      "alerts": [],
+      "arrivalDelay": 0,
+      "departureDelay": 0,
+      "distance": 310.89,
+      "dropoffType": "SCHEDULED",
+      "duration": 480,
+      "endTime": 1740501034000,
+      "fareProducts": [],
+      "from": {
+        "lat": 33.960768,
+        "lon": -84.004716,
+        "name": "W Pike St & Old Norcross Rd",
+        "rentalVehicle": null,
+        "stop": {
+          "alerts": [],
+          "code": "653",
+          "gtfsId": "GwinnettCountyTransit:653",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NjUz",
+          "lat": 33.960768,
+          "lon": -84.004716
+        },
+        "vertexType": "TRANSIT"
+      },
+      "headsign": null,
+      "interlineWithPreviousLeg": false,
+      "intermediateStops": null,
+      "legGeometry": {
+        "length": 24,
+        "points": "w}gnEndv_O?@NOLOVYRQTRRTBFJHd@f@j@t@BF@@@BBDR`@NTXh@V^HJFPX|@D\\"
+      },
+      "mode": "WALK",
+      "pickupBookingInfo": null,
+      "pickupType": "SCHEDULED",
+      "realTime": false,
+      "realtimeState": null,
+      "rentedBike": false,
+      "rideHailingEstimate": null,
+      "route": null,
+      "startTime": 1740500554000,
+      "steps": [
+        {
+          "absoluteDirection": "SOUTHEAST",
+          "alerts": [],
+          "area": false,
+          "distance": 21.95,
+          "elevationProfile": [],
+          "lat": 33.9607624,
+          "lon": -84.0047238,
+          "relativeDirection": "DEPART",
+          "stayOn": false,
+          "streetName": "sidewalk"
+        },
+        {
+          "absoluteDirection": "SOUTHEAST",
+          "alerts": [],
+          "area": false,
+          "distance": 31.77,
+          "elevationProfile": [],
+          "lat": 33.9606122,
+          "lon": -84.0045693,
+          "relativeDirection": "CONTINUE",
+          "stayOn": false,
+          "streetName": "crossing over service road"
+        },
+        {
+          "absoluteDirection": "SOUTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 30.37,
+          "elevationProfile": [],
+          "lat": 33.9603955,
+          "lon": -84.0043451,
+          "relativeDirection": "RIGHT",
+          "stayOn": false,
+          "streetName": "crossing over West Pike Street"
+        },
+        {
+          "absoluteDirection": "SOUTHWEST",
+          "alerts": [],
+          "area": false,
+          "distance": 226.8,
+          "elevationProfile": [],
+          "lat": 33.9601889,
+          "lon": -84.0045587,
+          "relativeDirection": "CONTINUE",
+          "stayOn": false,
+          "streetName": "Old Norcross Road"
+        }
+      ],
+      "to": {
+        "lat": 33.9586111,
+        "lon": -84.0065662,
+        "name": "578 Old Norcross Road, Lawrenceville, GA, USA",
+        "rentalVehicle": null,
+        "stop": null,
+        "vertexType": "NORMAL"
+      },
+      "transitLeg": false,
+      "trip": null
+    }
+  ],
+  "startTime": 1740500123000,
+  "transfers": 0,
+  "waitingTime": 300,
+  "walkTime": 515
+}

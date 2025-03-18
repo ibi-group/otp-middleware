@@ -8,11 +8,13 @@ import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.I18nUtils;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getExpectedLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getNextLeg;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSegmentFromPosition;
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.injectWaypointsIntoLegPositions;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistanceFromLine;
@@ -50,6 +52,9 @@ public class TravelerPosition {
     /** The first leg of the trip. **/
     public Leg firstLegOfTrip;
 
+    /** Holds waypoints to determine turn-by-turn instructions */
+    private List<Coordinates> legPositions;
+
     public TravelerPosition(Builder builder) {
         this.expectedLeg = builder.expectedLeg;
         this.currentPosition = builder.currentPosition;
@@ -69,7 +74,7 @@ public class TravelerPosition {
         currentTime = lastLocation.timestamp.toInstant();
         currentPosition = new Coordinates(lastLocation);
         speed = lastLocation.speed;
-        expectedLeg = getExpectedLeg(currentPosition, itinerary);
+        expectedLeg = getExpectedLeg(currentPosition, speed, itinerary);
         if (expectedLeg != null) {
             nextLeg = getNextLeg(expectedLeg, itinerary);
         }
@@ -109,6 +114,21 @@ public class TravelerPosition {
     /** Computes the current deviation in meters from the expected itinerary. */
     public double getDeviationMeters() {
         return getDistanceFromLine(legSegmentFromPosition.start, legSegmentFromPosition.end, currentPosition);
+    }
+
+    /**
+     * Gets a cached list of leg positions for the given leg.
+     * Not null because {@link TravelerLocator#createExclusionZone} returns at least an empty array list.
+     */
+    public List<Coordinates> getLegPositions() {
+        if (legPositions == null) {
+            legPositions = injectWaypointsIntoLegPositions(
+                expectedLeg,
+                expectedLeg.steps,
+                TRIP_INSTRUCTION_UPCOMING_RADIUS
+            );
+        }
+        return legPositions;
     }
 
     /**

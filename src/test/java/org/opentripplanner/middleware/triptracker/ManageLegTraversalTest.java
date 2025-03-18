@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.triptracker;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.leonard.PolylineUtils;
 import io.leonard.Position;
 import org.junit.jupiter.api.BeforeAll;
@@ -15,11 +16,14 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
+import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
+import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettBusOpNotificationMessage;
+import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -35,6 +39,7 @@ import java.util.Locale;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
@@ -46,9 +51,10 @@ import static org.opentripplanner.middleware.triptracker.instruction.TripInstruc
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
-public class ManageLegTraversalTest {
+public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
 
     public static final int GMAP_UPCOMING_RADIUS = 30;
+    public static final Coordinates WALK_AND_TRANSIT_LEG_OVERLAP_POINT = new Coordinates(33.90765017135988, -84.27299581343617);
     private static Itinerary busStopToJusticeCenterItinerary;
     private static Itinerary edmundParkDriveToRockSpringsItinerary;
 
@@ -58,8 +64,10 @@ public class ManageLegTraversalTest {
     private static List<Place> midtownToAnsleyIntermediateStops;
     private static Itinerary firstLegBusTransit;
     private static Itinerary baptistChurchToEastCroganStreetIntinerary;
-    private static Itinerary destinationAwayFromSidewalk;
+    private static Itinerary arrivingOnBus40;
     private static Itinerary walkGjacTo1js;
+    private static Itinerary walkToBusTransition;
+    private static Itinerary walkToBus20;
 
     private static final Locale locale = Locale.US;
 
@@ -67,6 +75,8 @@ public class ManageLegTraversalTest {
     public static void setUp() throws IOException {
         // Load default env.yml configuration.
         ConfigUtils.loadConfig(new String[]{});
+
+        UsRideGwinnettNotifyBusOperator.IS_TEST = true;
 
         busStopToJusticeCenterItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/bus-stop-justice-center-trip.json"),
@@ -96,12 +106,20 @@ public class ManageLegTraversalTest {
             CommonTestUtils.getTestResourceAsString("controllers/api/baptist-church-to-east-crogan-street.json"),
             Itinerary.class
         );
-        destinationAwayFromSidewalk = JsonUtils.getPOJOFromJSON(
-            CommonTestUtils.getTestResourceAsString("controllers/api/destination-away-from-sidewalk.json"),
+        arrivingOnBus40 = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/bus-40-to-dest-away-from-sidewalk.json"),
             Itinerary.class
         );
         walkGjacTo1js = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-gjac-to-1js.json"),
+            Itinerary.class
+        );
+        walkToBusTransition = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-transition.json"),
+            Itinerary.class
+        );
+        walkToBus20 = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-20.json"),
             Itinerary.class
         );
 
@@ -207,7 +225,7 @@ public class ManageLegTraversalTest {
             .setSpeed(0)
             .build();
         travelerPosition.locale = locale;
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
     }
 
@@ -241,16 +259,12 @@ public class ManageLegTraversalTest {
         Coordinates pointAfterTurn = new Coordinates(33.78165, -84.36484);
         Coordinates pointOnKanugaStreet = new Coordinates(33.781544, -84.367849);
 
-        Leg firstBusLeg = firstLegBusTransit.legs.get(0);
-        Coordinates busStopCoords = new Coordinates(firstBusLeg.from);
-        String busStopName = firstBusLeg.from.name;
-
         Leg toEastCroganFirstLeg = baptistChurchToEastCroganStreetIntinerary.legs.get(0);
         Step southClaytonSt = toEastCroganFirstLeg.steps.get(1);
         Step eastCroganSt = toEastCroganFirstLeg.steps.get(2);
         Coordinates pointOnSouthClaytonSt = new Coordinates(33.955561, -83.988204);
 
-        Leg legToDestinationAwayFromSidewalk = destinationAwayFromSidewalk.legs.get(0);
+        Leg legToDestinationAwayFromSidewalk = arrivingOnBus40.legs.get(2);
         Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
 
         Leg midtownWalkLeg = midtownWalkItinerary.legs.get(0);
@@ -258,38 +272,10 @@ public class ManageLegTraversalTest {
 
         return Stream.of(
             Arguments.of(
-                "Deviated from the start of a trip which starts with a bus leg. Suggest path to head towards.",
-                firstBusLeg,
-                new TraceData()
-                    .withTripStatus(TripStatus.DEVIATED)
-                    .withPosition(createPoint(busStopCoords, 12, NORTH_WEST_BEARING))
-                    .withStartingTrip()
-                    .withExpectedInstruction(new DeviatedInstruction(busStopName, locale))
-            ),
-            Arguments.of(
-                "On-time and near the initial bus stop on trip which starts with a bus leg. Instructs to wait for bus.",
-                firstBusLeg,
-                new TraceData()
-                    .withPosition(createPoint(busStopCoords, 4, NORTH_WEST_BEARING))
-                    .withStartingTrip()
-                    .withExpectedInstruction(
-                        new WaitForTransitInstruction(firstBusLeg, firstBusLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES), locale)
-                    )
-            ),
-            Arguments.of(
-                "On transit leg away from the boarding location (or walked past the bus stop). No specific instruction to give.",
-                firstBusLeg,
-                new TraceData()
-                    .withPosition(33.916779, -84.226556)
-                    .withStartingTrip()
-                    .withExpectedInstruction(NO_INSTRUCTION)
-            ),
-            Arguments.of(
                 "Just started the trip and near to the instruction for the first step.",
                 walkLeg,
                 new TraceData()
                     .withPosition(originCoords)
-                    .withStartingTrip()
                     .withExpectedInstruction(new OnTrackInstruction(10, adairAvenueNortheastStep, locale))
             ),
             Arguments.of(
@@ -442,6 +428,118 @@ public class ManageLegTraversalTest {
     }
 
     @ParameterizedTest
+    @MethodSource("createBusStopTrace")
+    void canTrackAtBusStop(String message, Itinerary itinerary, int currentLegIndex, TraceData traceData) throws JsonProcessingException {
+        Leg currentLeg = itinerary.legs.get(currentLegIndex);
+        TravelerPosition travelerPosition = new TravelerPosition.Builder()
+            .setExpectedLeg(currentLeg)
+            .setCurrentPosition(traceData.position)
+            .setFirstLegOfTrip(currentLeg)
+            .setNextLeg(itinerary.legs.size() >= currentLegIndex + 2 ? itinerary.legs.get(currentLegIndex + 1) : null)
+            .setCurrentTime(traceData.instant != null ? traceData.instant : currentLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES))
+            .setSpeed(traceData.speed)
+            .setTrackedJourney(new TrackedJourney())
+            .build();
+        travelerPosition.locale = locale;
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition);
+        assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
+
+        // If a Gwinnett County bus notification was sent, check that the agency, route, and trip id fields are not null.
+        if (!travelerPosition.trackedJourney.busNotificationMessages.isEmpty() && currentLeg.route != null) {
+            String firstMessageJson = travelerPosition.trackedJourney.busNotificationMessages.get(currentLeg.route.id);
+
+            UsRideGwinnettBusOpNotificationMessage firstMessage = JsonUtils.getPOJOFromJSON(
+                firstMessageJson, UsRideGwinnettBusOpNotificationMessage.class
+            );
+
+            assertNotNull(firstMessage.agency_id);
+            assertNotNull(firstMessage.from_route_id);
+            assertNotNull(firstMessage.from_trip_id);
+            assertNotNull(firstMessage.to_route_id);
+            assertNotNull(firstMessage.to_trip_id);
+        }
+    }
+
+    private static Stream<Arguments> createBusStopTrace() {
+        final int NORTH_WEST_BEARING = 315;
+
+        Leg transitAsFirstLeg = firstLegBusTransit.legs.get(0);
+        Coordinates busStopCoords = new Coordinates(transitAsFirstLeg.from);
+        String busStopName = transitAsFirstLeg.from.name;
+
+        return Stream.of(
+            Arguments.of(
+                "Deviated from the start of a trip which starts with a bus leg. Suggest path to head towards.",
+                firstLegBusTransit,
+                0,
+                new TraceData()
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withPosition(createPoint(busStopCoords, 12, NORTH_WEST_BEARING))
+                    .withExpectedInstruction(new DeviatedInstruction(busStopName, locale))
+            ),
+            Arguments.of(
+                "On-time and near the initial bus stop on trip which starts with a bus leg. Instructs to wait for bus.",
+                firstLegBusTransit,
+                0,
+                new TraceData()
+                    .withPosition(createPoint(busStopCoords, 4, NORTH_WEST_BEARING))
+                    .withExpectedInstruction(
+                        new WaitForTransitInstruction(transitAsFirstLeg, transitAsFirstLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES), locale)
+                    )
+            ),
+            Arguments.of(
+                "On transit leg away from the boarding location (or walked past the bus stop). No specific instruction to give.",
+                firstLegBusTransit,
+                0,
+                new TraceData()
+                    .withPosition(33.916779, -84.226556)
+                    .withExpectedInstruction(NO_INSTRUCTION)
+            ),
+            Arguments.of(
+                "Start live tracking well after bus departure. Issue wait instruction (indicate past departure).",
+                firstLegBusTransit,
+                0,
+                new TraceData()
+                    .withPosition(busStopCoords)
+                    .withTripStatus(TripStatus.BEHIND_SCHEDULE)
+                    .withInstant(Instant.now())
+                    .withExpectedInstruction("Wait for your bus, route 20, scheduled at 7:58 AM (That time has passed)")
+            ),
+            Arguments.of(
+                "Arrive at bus stop well after the bus departure (indicates past departure).",
+                walkToBusTransition,
+                0,
+                new TraceData()
+                    .withPosition(walkToBusTransition.legs.get(0).to.toCoordinates())
+                    .withTripStatus(TripStatus.BEHIND_SCHEDULE)
+                    .withInstant(Instant.now())
+                    .withExpectedInstruction("Wait for your bus, route 40, scheduled at 6:41 AM (That time has passed)")
+            ),
+            Arguments.of(
+                "Arrive at bus stop well in advance.",
+                walkToBusTransition,
+                0,
+                new TraceData()
+                    .withPosition(walkToBusTransition.legs.get(0).to.toCoordinates())
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withInstant(walkToBusTransition.legs.get(1).startTime.toInstant().minus(40, ChronoUnit.MINUTES))
+                    .withExpectedInstruction("Wait 40 minutes for your bus, route 40, scheduled at 6:41 AM, on time")
+            ),
+            Arguments.of(
+                "After boarding bus and bus starts moving, but incorrectly produced 'COMPLETED' status.",
+                walkToBus20,
+                1,
+                new TraceData()
+                    .withPosition(WALK_AND_TRANSIT_LEG_OVERLAP_POINT)
+                    .withSpeed(8)
+                    .withTripStatus(TripStatus.ON_SCHEDULE)
+                    .withInstant(Instant.ofEpochMilli(1740268915))
+                    .withExpectedInstruction("Ride 4 min / 7 stops to Buford Hwy at Steve Dr (Accu-Car Expo)")
+            )
+        );
+    }
+
+    @ParameterizedTest
     @MethodSource("createTransitRideTrace")
     void canTrackTransitRide(String message, TraceData traceData) {
         Itinerary itinerary = midtownToAnsleyItinerary;
@@ -461,7 +559,7 @@ public class ManageLegTraversalTest {
             .setSpeed(traceData.speed)
             .build();
         travelerPosition.locale = locale;
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, false);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
     }
 
@@ -478,7 +576,8 @@ public class ManageLegTraversalTest {
                 "If present at the transit stop after the trip departure, there should not be an instruction.",
                 new TraceData()
                     .withPosition(originCoords)
-                    .withExpectedInstruction(NO_INSTRUCTION)
+                    .withExpectedInstruction("Wait for your bus, route 27, scheduled at 9:18 AM (That time has passed)")
+                    .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
             ),
             Arguments.of(
@@ -658,19 +757,56 @@ public class ManageLegTraversalTest {
         assertEquals(busStopToJusticeCenterItinerary.legs.get(0).duration, cumulative, 0.01f);
     }
 
-    @Test
-    void testGetDistanceToEndOfLeg() {
-        // Case where distance to end of leg was previously incorrectly computed
-        // (At end of routing for walk trip to One Justice Square)
+    /**
+     * Handles cases where the distance to end of leg was previously incorrectly computed.
+     */
+    @ParameterizedTest
+    @MethodSource("createDistanceToEndOfLegCases")
+    void testGetDistanceToEndOfLeg(Itinerary itinerary, Coordinates coordinates, boolean isWithinRadius) {
         TrackedJourney trackedJourney = new TrackedJourney();
         trackedJourney.locations = List.of(
-            new TrackingLocation(Instant.now(), 33.95242212998748, -83.99714406536067)
+            new TrackingLocation(Instant.now(), coordinates.lat, coordinates.lon)
         );
-        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkGjacTo1js, null);
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, null);
 
-        assertTrue(TravelerLocator.getDistanceToEndOfLeg(travelerPosition, GMAP_UPCOMING_RADIUS) <= GMAP_UPCOMING_RADIUS);
+        List<Coordinates> legPositions = TravelerLocator.injectWaypointsIntoLegPositions(
+            travelerPosition.expectedLeg,
+            travelerPosition.expectedLeg.steps,
+            GMAP_UPCOMING_RADIUS
+        );
+
+        assertEquals(isWithinRadius, TravelerLocator.getDistanceToEndOfLeg(travelerPosition, legPositions) <= GMAP_UPCOMING_RADIUS);
     }
-    
+
+    private static Stream<Arguments> createDistanceToEndOfLegCases() {
+        return Stream.of(
+            // At end of routing for walk trip to One Justice Square
+            Arguments.of(walkGjacTo1js, new Coordinates(33.95242212998748, -83.99714406536067), true),
+            // Near end of walk step/beginning of bus step for walk+bus trip
+            Arguments.of(walkToBus20, WALK_AND_TRANSIT_LEG_OVERLAP_POINT, false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createDetectTransitLegCases")
+    void canDetectTransitLeg(int speed, boolean expected) {
+        TrackedJourney trackedJourney = new TrackedJourney();
+        trackedJourney.locations = List.of(
+            new TrackingLocation(0, WALK_AND_TRANSIT_LEG_OVERLAP_POINT.lat, WALK_AND_TRANSIT_LEG_OVERLAP_POINT.lon, speed, Date.from(Instant.now()))
+        );
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, walkToBus20, null);
+
+        assertEquals(expected ? walkToBus20.legs.get(1) : walkToBus20.legs.get(0), travelerPosition.expectedLeg);
+    }
+
+    private static Stream<Arguments> createDetectTransitLegCases() {
+        return Stream.of(
+            Arguments.of(0, false),
+            Arguments.of(4, false),
+            Arguments.of(6, true)
+        );
+    }
+
     private static List<LegSegment> createSegmentsForLeg() {
         return interpolatePoints(busStopToJusticeCenterItinerary.legs.get(0));
     }
