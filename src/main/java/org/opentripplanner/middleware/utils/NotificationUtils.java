@@ -373,10 +373,11 @@ public class NotificationUtils {
         try {
             Client client = new Client(SPARKPOST_KEY);
             Response response = client.sendMessage(fromEmail, toEmail, subject, text, html);
-            LOG.info("Notification sent to {} status: {}", toEmail, response.getResponseMessage());
+            LOG.info("Email notification sent to {} Status: {}", toEmail, response.getResponseMessage());
             return true;
             // TODO: Is there a more specific exception we're ok with here?
         } catch (Exception e) {
+            LOG.error("Email notification not sent to {} Status: {}", toEmail, e.getMessage());
             BugsnagReporter.reportErrorToBugsnag(
                 String.format("Could not send notification to %s", toEmail),
                 e
