@@ -16,7 +16,6 @@
     <appender name="NOTIFICATION-FILE" class="RollingFileAppender">
         <file>logs/notifications.log</file>
         <rollingPolicy class="TimeBasedRollingPolicy">
-            <!-- Default place for the current day's log file -->
             <!-- Archive logs to a folder for each day (e.g. for March 2025: logs/2025/03/14) -->
             <fileNamePattern>logs/%d{yyyy/MM/dd}/notifications.log</fileNamePattern>
             <!-- Keep about two months worth of logs -->
@@ -26,8 +25,26 @@
             <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSS z} %-5level %X{prefix} %msg%n</pattern>
         </encoder>
     </appender>
+    <appender name="GMAP-FILE" class="RollingFileAppender">
+        <file>logs/gmap.log</file>
+        <rollingPolicy class="TimeBasedRollingPolicy">
+            <!-- Archive logs to a folder for each day (e.g. for March 2025: logs/2025/03/14) -->
+            <fileNamePattern>logs/%d{yyyy/MM/dd}/gmap.log</fileNamePattern>
+            <!-- Keep about two months worth of logs -->
+            <maxHistory>62</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSS z} %-5level %X{prefix} %msg%n</pattern>
+        </encoder>
+    </appender>
     <logger name="org.opentripplanner.middleware.utils.NotificationUtils">
         <appender-ref ref="NOTIFICATION-FILE"/>
+    </logger>
+    <logger name="org.opentripplanner.middleware.triptracker.interactions.busnotifiers.UsRideGwinnettNotifyBusOperator">
+        <appender-ref ref="GMAP-FILE"/>
+    </logger>
+    <logger name="org.opentripplanner.middleware.triptracker.interactions.UsGdotGwinnettTrafficSignalNotifier">
+        <appender-ref ref="GMAP-FILE"/>
     </logger>
     <root level="info">
         <appender-ref ref="STDOUT" />
