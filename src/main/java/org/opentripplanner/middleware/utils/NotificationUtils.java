@@ -2,7 +2,9 @@ package org.opentripplanner.middleware.utils;
 
 import com.google.gson.Gson;
 import com.sparkpost.Client;
+import com.sparkpost.exception.SparkPostException;
 import com.sparkpost.model.responses.Response;
+import com.sparkpost.model.responses.ServerErrorResponse;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.rest.verify.v2.service.Verification;
@@ -375,9 +377,15 @@ public class NotificationUtils {
             Response response = client.sendMessage(fromEmail, toEmail, subject, text, html);
             LOG.info("Email notification sent to {} Status: {}", toEmail, response.getResponseMessage());
             return true;
-            // TODO: Is there a more specific exception we're ok with here?
-        } catch (Exception e) {
-            LOG.error("Email notification not sent to {} Status: {}", toEmail, e.getMessage());
+        } catch (SparkPostException e) {
+            LOG.error(
+                "Email notification not sent to {} Status: {}",
+                toEmail,
+                e.getServerErrorResponses()
+                    .getErrors()
+                    .stream()
+                    .map(ServerErrorResponse::getMessage)
+                    .collect(Collectors.joining(" + ")));
             BugsnagReporter.reportErrorToBugsnag(
                 String.format("Could not send notification to %s", toEmail),
                 e
