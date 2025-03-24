@@ -118,10 +118,13 @@ public class ConnectedDataManager {
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
 
-            var now = DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId());
-            var timeOfDay = LocalTime.parse(CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
-            var startAt = DateTimeUtils.getNextTimeFrom(timeOfDay, now);
-            long initialDelayMinutes = Duration.between(now, startAt).toMinutes();
+            long initialDelayMinutes = 0L;
+            if (isReportingDaily()) {
+                var now = DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId());
+                var timeOfDay = LocalTime.parse(CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
+                var startAt = DateTimeUtils.getNextTimeFrom(timeOfDay, now);
+                initialDelayMinutes = Duration.between(now, startAt).toMinutes();
+            }
 
             Scheduler.scheduleJob(
                 new TripHistoryUploadJob(),
