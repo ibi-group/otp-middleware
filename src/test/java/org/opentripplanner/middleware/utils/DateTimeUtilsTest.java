@@ -52,8 +52,11 @@ class DateTimeUtilsTest {
     void canGetNextTimeFrom() {
         var zdt = ZonedDateTime.of(2024, 11, 11, 15, 34, 17, 0, DateTimeUtils.getOtpZoneId());
         var timeOfDay = LocalTime.parse("05:15");
-        var zdtNext = DateTimeUtils.getNextTimeFrom(timeOfDay, zdt);
+        ZonedDateTime zdtNext = DateTimeUtils.getNextTimeFrom(timeOfDay, zdt);
         assertTrue(zdtNext.isAfter(zdt));
+        assertEquals(zdtNext.getDayOfMonth(), 12);
+        assertEquals(zdtNext.getHour(), 5);
+        assertEquals(zdtNext.getMinute(), 15);
     }
 
     @Test
