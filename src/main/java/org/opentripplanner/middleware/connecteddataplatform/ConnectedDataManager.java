@@ -26,11 +26,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.DayOfWeek;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.ArrayList;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -64,8 +62,13 @@ public class ConnectedDataManager {
     private static final int CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES =
         getConfigPropertyAsInt("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES", 5);
 
+    // This property needs to be a valid DateTimeFormatter.ISO_LOCAL_TIME specification.
+    // If it's not, this hardcoded default will be used.
+    private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT =
+        "03:00";
     private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME =
-        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME", "03:00");
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME",
+                                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
 
     private static final Logger LOG = LoggerFactory.getLogger(ConnectedDataManager.class);
 
@@ -118,19 +121,26 @@ public class ConnectedDataManager {
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
 
-            long initialDelayMinutes = 0L;
+            // There is no initial delay unless we're reporting daily
+            long initialDelayMillis = 0L;
             if (isReportingDaily()) {
-                var now = DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId());
-                var timeOfDay = LocalTime.parse(CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
-                var startAt = DateTimeUtils.getNextTimeFrom(timeOfDay, now);
-                initialDelayMinutes = Duration.between(now, startAt).toMinutes();
+                try {
+                    initialDelayMillis = Scheduler.getInitialDelayMillis(
+                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
+                } catch (DateTimeParseException e) {
+                    LOG.error("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME value \"{}\" is invalid, using default value \"{}\" instead",
+                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME,
+                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
+                    initialDelayMillis = Scheduler.getInitialDelayMillis(
+                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
+                }
             }
 
             Scheduler.scheduleJob(
                 new TripHistoryUploadJob(),
-                initialDelayMinutes,
+                initialDelayMillis,
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
-                TimeUnit.MINUTES);
+                TimeUnit.MILLISECONDS);
         }
     }
 
