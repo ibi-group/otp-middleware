@@ -1,5 +1,8 @@
 package org.opentripplanner.middleware.utils;
 
+import java.time.Duration;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -17,5 +20,20 @@ public class Scheduler {
      */
     public static void scheduleJob(Runnable job, long initialDelay, long delay, TimeUnit timeUnit) {
         schedulerService.scheduleAtFixedRate(job, initialDelay, delay, timeUnit);
+    }
+
+    /**
+     * Calcluate an initial delay in milliseconds precision, until a start time specified as text
+     * string. String must be a valid {@link java.time.format.DateTimeFormatter#ISO_LOCAL_TIME}
+     * specification, {@code "03:00"} for example.
+     * @param startTime text specification of a local time, such as {@code "03:00"}
+     * @return number of milliseconds between now and specified start time, never less than 0
+     */
+    public static long getInitialDelayMillis(String startTime) throws DateTimeParseException {
+        var timeOfDay = LocalTime.parse(startTime);
+        var now = DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId());
+        var startAt = DateTimeUtils.getNextTimeFrom(timeOfDay, now);
+        var duration = Duration.between(now, startAt);
+        return duration.isNegative() ? 0L : duration.toMillis();
     }
 }
