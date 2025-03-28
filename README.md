@@ -309,6 +309,8 @@ The special E2E client settings should be defined in `env.yml`:
 | OTP_ADMIN_DASHBOARD_NAME | string | Optional | OTP Admin Dashboard | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_ADMIN_DASHBOARD_URL | string | Optional | https://admin.example.com | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_API_ROOT | string | Required | http://otp-server.example.com/otp | The URL of an operational OTP (v2.x) server. |
+| OTP_REQUESTS_THREADING_ENABLED | string | Optional | true | Use multi-threading to handle OTP requests and responses. |
+| OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS | integer | Optional | 30 | The maximum time for making requests to OTP. |
 | OTP_TIMEZONE | string | Required | America/Los_Angeles | The timezone identifier that OTP is using to parse dates and times. OTP will use the timezone identifier that it finds in the first available agency to parse dates and times. |
 | OTP_UI_NAME | string | Optional | Trip Planner | Config setting for linking to the OTP UI (trip planner). |
 | OTP_UI_URL | string | Optional | https://plan.example.com | Config setting for linking to the OTP UI (trip planner). |
