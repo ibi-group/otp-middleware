@@ -17,6 +17,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.function.Supplier;
 
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
@@ -37,7 +38,9 @@ public class OtpDispatcher {
      * Match the OTP GraphQL request timeout defined at
      * https://github.com/opentripplanner/OpenTripPlanner/blob/176e5f51923e82f8a4c2aa2a0b8284e1497b4439/src/main/java/org/opentripplanner/apis/gtfs/GtfsGraphQLAPI.java#L54
      */
-    private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 30;
+    public static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = getConfigPropertyAsInt(
+        "OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS", 30
+    );
 
     /**
      * Provides a response from the OTP server target service based on the query parameters provided.

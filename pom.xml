@@ -10,7 +10,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson.version>2.13.5</jackson.version>
-        <awsjavasdk.version>1.11.728</awsjavasdk.version>
+        <awsjavasdk.version>1.12.261</awsjavasdk.version>
     </properties>
     <repositories>
         <!--  used for importing java projects from github -->
@@ -122,7 +122,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.7</version>
+            <version>2.15.1</version>
         </dependency>
 
         <!-- Use for better object state checking. -->

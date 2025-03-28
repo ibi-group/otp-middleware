@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextWayPoint;
@@ -755,6 +754,30 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             cumulative += legSegment.timeInSegment;
         }
         assertEquals(busStopToJusticeCenterItinerary.legs.get(0).duration, cumulative, 0.01f);
+    }
+
+    /**
+     * Handles cases where the distance to end of leg was previously incorrectly computed.
+     */
+    @ParameterizedTest
+    @MethodSource("createDistanceToStartOfLegCases")
+    void testGetDistanceToStartOfLeg(Itinerary itinerary, Coordinates coordinates, boolean isWithinRadius) {
+        TrackedJourney trackedJourney = new TrackedJourney();
+        trackedJourney.locations = List.of(
+            new TrackingLocation(Instant.now(), coordinates.lat, coordinates.lon)
+        );
+        TravelerPosition travelerPosition = new TravelerPosition(trackedJourney, itinerary, null);
+
+        assertEquals(isWithinRadius, TravelerLocator.isAtStartOfLeg(travelerPosition));
+    }
+
+    private static Stream<Arguments> createDistanceToStartOfLegCases() {
+        return Stream.of(
+            // Close to start of routing (outside of origin building) for walk trip to One Justice Square
+            Arguments.of(walkGjacTo1js, new Coordinates(33.951786, -83.992887), true),
+            // Inside of origin building away from start of routing for walk trip to One Justice Square
+            Arguments.of(walkGjacTo1js, new Coordinates(33.951563, -83.992954), false)
+        );
     }
 
     /**
