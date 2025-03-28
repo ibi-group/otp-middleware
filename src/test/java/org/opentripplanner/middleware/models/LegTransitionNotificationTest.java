@@ -108,7 +108,11 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
     ) {
         MonitoredTrip trip = new MonitoredTrip();
         trip.userId = tripOwnerUserId;
-        trip.primary = new MobilityProfileLite(primary);
+        // Most commonly, if the primary traveler is the creator of the trip and there are no companions,
+        // the `primary` field will be null, and `userId` will be considered the primary traveler.
+        if (!tripOwnerUserId.equals((primary.id))) {
+            trip.primary = new MobilityProfileLite(primary);
+        }
         trip.companion = new RelatedUser(companion.email, RelatedUser.RelatedUserStatus.CONFIRMED);
         trip.observers.add(new RelatedUser(observer.email, RelatedUser.RelatedUserStatus.CONFIRMED));
 

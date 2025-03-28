@@ -180,12 +180,7 @@ public class TravelerLocator {
 
             // At this point, the traveler could be approaching the leg's destination
             // or the end of routing, if the trip's final destination is away from the street network.
-            // TODO (perf): consolidate these calls to injectWaypointsIntoLegPositions.
-            List<Coordinates> legPositions = injectWaypointsIntoLegPositions(
-                travelerPosition.expectedLeg,
-                travelerPosition.expectedLeg.steps,
-                TRIP_INSTRUCTION_UPCOMING_RADIUS
-            );
+            List<Coordinates> legPositions = travelerPosition.getLegPositions();
             Coordinates lastShapeCoordinate = legPositions.get(legPositions.size() - 2);
             double distanceToLastShapeCoords = getDistance(travelerPosition.currentPosition, lastShapeCoordinate);
 
@@ -370,8 +365,7 @@ public class TravelerLocator {
      * Is the traveler at the start of a leg.
      */
     public static boolean isAtStartOfLeg(TravelerPosition travelerPosition) {
-        Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.from);
-        return getDistance(travelerPosition.currentPosition, legDestination) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
+        return getDistanceToStartOfLeg(travelerPosition) <= TRIP_INSTRUCTION_UPCOMING_RADIUS;
     }
 
     /**
@@ -409,20 +403,45 @@ public class TravelerLocator {
         ).toInstant();
     }
 
-    private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
-        return getDistanceToEndOfLeg(travelerPosition, TRIP_INSTRUCTION_UPCOMING_RADIUS);
+    private static double getDistanceToStartOfLeg(TravelerPosition travelerPosition) {
+        return getDistanceToStartOfLeg(travelerPosition, travelerPosition.getLegPositions());
+    }
+
+    /**
+     * Get the distance from the traveler's current position to the leg destination from given leg positions.
+     */
+    public static double getDistanceToStartOfLeg(TravelerPosition travelerPosition, List<Coordinates> legPositions) {
+        Coordinates secondCoordinate = legPositions.get(1);
+        Coordinates firstCoordinate = legPositions.get(0);
+        Coordinates legOrigin = new Coordinates(travelerPosition.expectedLeg.from);
+
+        // If the first leg position coordinate is identical to the leg origin,
+        // it probably means the origin is off the street network, so the first shape coordinate is at pos (1).
+        // If the first leg position coordinate differs from the leg origin,
+        // then the origin is probably on the street network, so the first shape coordinate is at pos (0).
+        double distanceToFirstShapeCoords = getDistance(
+            travelerPosition.currentPosition,
+            firstCoordinate.equals(legOrigin) ? secondCoordinate : firstCoordinate
+        );
+
+        double distanceToLegOrigin = getDistance(travelerPosition.currentPosition, legOrigin);
+
+        return Math.min(distanceToFirstShapeCoords, distanceToLegOrigin);
     }
 
     /**
      * Get the distance from the traveler's current position to the leg destination.
      */
-    public static double getDistanceToEndOfLeg(TravelerPosition travelerPosition, int radius) {
-        List<Coordinates> legPositions = injectWaypointsIntoLegPositions(
-            travelerPosition.expectedLeg,
-            travelerPosition.expectedLeg.steps,
-            radius
-        );
+    private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
+        return getDistanceToEndOfLeg(travelerPosition, travelerPosition.getLegPositions());
+    }
 
+    /**
+     * Get the distance from the traveler's current position to the leg destination from given leg positions.
+     * This method is used in tests when the leg positions are computed using an 'upcoming' threshold
+     * different from the default one.
+     */
+    public static double getDistanceToEndOfLeg(TravelerPosition travelerPosition, List<Coordinates> legPositions) {
         Coordinates secondToLastCoordinate = legPositions.get(legPositions.size() - 2);
         Coordinates lastCoordinate = legPositions.get(legPositions.size() - 1);
         Coordinates legDestination = new Coordinates(travelerPosition.expectedLeg.to);
