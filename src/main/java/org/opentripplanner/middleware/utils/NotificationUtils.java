@@ -169,6 +169,7 @@ public class NotificationUtils {
                 jsonBody
             );
             if (httpResponse.status == 200) {
+                LOG.info("Push notification sent");
                 return "OK";
             } else {
                 LOG.error("Error {} while trying to initiate push notification", httpResponse.status);
