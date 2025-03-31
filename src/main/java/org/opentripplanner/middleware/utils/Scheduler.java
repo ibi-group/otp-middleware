@@ -23,7 +23,7 @@ public class Scheduler {
     }
 
     /**
-     * Calcluate an initial delay in milliseconds precision, until a start time specified as text
+     * Calculate an initial delay in milliseconds precision, until a start time specified as text
      * string. String must be a valid {@link java.time.format.DateTimeFormatter#ISO_LOCAL_TIME}
      * specification, {@code "03:00"} for example.
      * @param startTime text specification of a local time, such as {@code "03:00"}
