@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -60,6 +61,14 @@ public class ConnectedDataManager {
 
     private static final int CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES =
         getConfigPropertyAsInt("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES", 5);
+
+    // This property needs to be a valid DateTimeFormatter.ISO_LOCAL_TIME specification.
+    // If it's not, this hardcoded default will be used.
+    private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT =
+        "03:00";
+    private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME =
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME",
+                                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
 
     private static final Logger LOG = LoggerFactory.getLogger(ConnectedDataManager.class);
 
@@ -108,13 +117,30 @@ public class ConnectedDataManager {
 
     public static void scheduleTripHistoryUploadJob() {
         if (canScheduleUploads()) {
-            LOG.info("Scheduling trip history upload for every {} minute(s)",
-                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES);
+            LOG.info("Scheduling trip history upload for every {} minute(s) starting at {}",
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
+
+            // There is no initial delay unless we're reporting daily
+            long initialDelayMillis = 0L;
+            if (isReportingDaily()) {
+                try {
+                    initialDelayMillis = Scheduler.getInitialDelayMillis(
+                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
+                } catch (DateTimeParseException e) {
+                    LOG.error("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME value \"{}\" is invalid, using default value \"{}\" instead",
+                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME,
+                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
+                    initialDelayMillis = Scheduler.getInitialDelayMillis(
+                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
+                }
+            }
+
             Scheduler.scheduleJob(
                 new TripHistoryUploadJob(),
-                0,
+                initialDelayMillis,
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
-                TimeUnit.MINUTES);
+                TimeUnit.MILLISECONDS);
         }
     }
 

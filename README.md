@@ -292,6 +292,7 @@ The special E2E client settings should be defined in `env.yml`:
 | CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME | string | Optional | folder-name | Specifies the S3 folder name for the CDP trip history push. |
 | CONNECTED_DATA_PLATFORM_REPORTED_ENTITIES | object | Optional | { "MonitoredTrip": "all", "OtpUser": "all", "TripRequest": "interval" } | Use 'all' to report all full records. Use 'interval' to report full records whose dateCreated is within a reporting interval (e.g. day, hour). For TripRequest, you can use 'all anonymized' or 'interval anonymized' to anonymize records. Omitted entities are ignored. |
 | CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES | integer | Optional | 5 | CDP trip history upload frequency. |
+| CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME | string | Optional | 03:30 | CDP trip history upload start time of day in HH:MM format. |
 | CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES | boolean | Optional | true | Whether to upload files where no records have been written. Defaults to true. |
 | CONSECUTIVE_DEVIATIONS_WINDOW_SECONDS | integer | Optional | 30 | A window used in conjunction with tracking update frequency to define a consecutive deviation threshold. |
 | DEFAULT_USAGE_PLAN_ID | string | Required | 123e45 | AWS API gateway default usage plan used when creating API keys for API users. |
