@@ -54,9 +54,9 @@ class DateTimeUtilsTest {
         var timeOfDay = LocalTime.parse("05:15");
         ZonedDateTime zdtNext = DateTimeUtils.getNextTimeFrom(timeOfDay, zdt);
         assertTrue(zdtNext.isAfter(zdt));
-        assertEquals(zdtNext.getDayOfMonth(), 12);
-        assertEquals(zdtNext.getHour(), 5);
-        assertEquals(zdtNext.getMinute(), 15);
+        assertEquals(12, zdtNext.getDayOfMonth());
+        assertEquals(5, zdtNext.getHour());
+        assertEquals(15, zdtNext.getMinute());
     }
 
     @Test
