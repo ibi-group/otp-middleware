@@ -169,13 +169,17 @@ public class NotificationUtils {
                 jsonBody
             );
             if (httpResponse.status == 200) {
-                LOG.info("Push notification sent");
+                LOG.info("Push notification sent to user {}", toUser.id);
                 return "OK";
             } else {
-                LOG.error("Error {} while trying to initiate push notification", httpResponse.status);
+                LOG.error(
+                    "Error {} while trying to initiate push notification to user {}",
+                    httpResponse.status,
+                    toUser.id
+                );
             }
         } catch (Exception e) {
-            LOG.error("Could not initiate push notification", e);
+            LOG.error("Could not initiate push notification to user {}", toUser.id , e);
         }
         return null;
     }
