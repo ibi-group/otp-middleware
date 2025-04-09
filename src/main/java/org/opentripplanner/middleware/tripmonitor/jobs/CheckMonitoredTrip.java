@@ -333,8 +333,15 @@ public class CheckMonitoredTrip implements Runnable {
                 // If the matching itinerary is in the future,
                 // make sure that the target date reflects that.
                 if (journeyState.tripStatus == TripStatus.TRIP_UPCOMING && (!matchingItinerary.isActive())) {
-                    LOG.info("Matching Itinerary has concluded, advancing to next possible trip date.");
-                    targetZonedDateTime = targetZonedDateTime.plusDays(1);
+                    if (matchingItinerary.hasEnded()) {
+                        // Trip has ended. Find the next target date starting from "tomorrow".
+                        LOG.info("Matching itinerary has concluded, advancing to next possible trip date.");
+                        targetZonedDateTime = targetZonedDateTime.plusDays(1);
+                    } else {
+                        // Trip has not begun. Reset the target date to start of itinerary.
+                        LOG.info("Matching itinerary has not started, finding the next possible trip date.");
+                        targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime);
+                    }
                     advanceToNextActiveTripDate();
                     updateMonitoredTrip();
 
