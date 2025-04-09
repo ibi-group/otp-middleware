@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.models.TripMonitorNotification.STOPWATCH_ICON;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
+import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_UPCOMING;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.setRecurringTodayAndTomorrow;
 
@@ -710,6 +711,72 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             "Your itinerary is no longer possible on any monitored day of the week. Please plan and save a new trip.",
             mockCheckMonitoredTrip.notifications.iterator().next().body,
             "The notification should have the appropriate message when the trip is no longer possible"
+        );
+    }
+
+    /**
+     * Tests whether the journey state is updated after monitored days are changed.
+     */
+    @Test
+    void canUpdateJourneyStateAfterChangingMonitoredDays() throws Exception {
+        // create an OTP mock to return
+        OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
+        // Create a mock monitored trip and CheckMonitorTrip instance.
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
+        CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
+        MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
+
+        // All days are initially monitored, remove Tuesday.
+        mockTrip.tuesday = false;
+
+        // Create mock itinerary existence for trip, with trip existing Monday and Tuesday.
+        mockTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        mockTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
+
+        // Use a previously computed trip status to be upcoming on Monday.
+        mockTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
+        mockTrip.journeyState.targetDate = "2020-06-08";
+
+        // update the target date to be an upcoming Monday within the CheckMonitoredTrip
+        mockCheckMonitoredTrip.targetZonedDateTime = noonMonday8June2020
+            .withDayOfMonth(8)
+            .withHour(8)
+            .withMinute(35);
+/*
+        Itinerary mockMondayJune15Itinerary = mockWeekdayResponse.plan.itineraries.get(0);
+        // parse original itinerary date/time and then update mock itinerary to occur on Monday June 15
+        OtpTestUtils.updateBaseItineraryTime(
+            mockMondayJune15Itinerary,
+            DateTimeUtils.makeOtpZonedDateTime(mockMondayJune15Itinerary.startTime).withDayOfMonth(15)
+        );
+*/
+        Persistence.monitoredTrips.create(mockTrip);
+
+        // mock the current time to be 8:45am on Monday, June 8, 2020
+        DateTimeUtils.useFixedClockAt(
+            noonMonday8June2020
+                .withDayOfMonth(8)
+                .withHour(8)
+                .withMinute(30)
+        );
+
+        // execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome
+        // (should hit the "no additional checks needed" because the next trip is in the future.)
+        assertFalse(mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
+
+        // fetch updated trip from persistence
+        MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(mockTrip.id);
+
+        assertEquals(
+            TRIP_UPCOMING,
+            updatedTrip.journeyState.tripStatus,
+            "Trip state should remain in future and active."
+        );
+
+        assertEquals(
+            "2020-06-10",
+            updatedTrip.journeyState.targetDate,
+            "Trip target date should have been changed according to monitored days."
         );
     }
 
