@@ -340,13 +340,24 @@ public class CheckMonitoredTrip implements Runnable {
                     } else {
                         // Trip has not begun. Reset the target date to start of itinerary.
                         LOG.info("Matching itinerary has not started, finding the next possible trip date.");
-                        targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime);
+                        ZonedDateTime itinStart = ZonedDateTime.ofInstant(
+                            matchingItinerary.startTime.toInstant(),
+                            DateTimeUtils.getOtpZoneId()
+                        );
+                        targetZonedDateTime = DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId())
+                            .withHour(itinStart.getHour())
+                            .withMinute(itinStart.getMinute())
+                            .withSecond(itinStart.getSecond());
                     }
+
                     advanceToNextActiveTripDate();
                     updateMonitoredTrip();
 
-                    // return false to indicate that no further checks for delays/alerts/etc should occur
-                    return false;
+                    if (matchingItinerary.hasEnded()) {
+                        // If today's itinerary has ended, return false to indicate that no further checks
+                        // for delays/alerts/etc should occur for today.
+                        return false;
+                    }
                 }
 
                 LOG.info("Trip status set to {}", journeyState.tripStatus);
