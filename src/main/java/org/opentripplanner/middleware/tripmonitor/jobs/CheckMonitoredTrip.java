@@ -329,8 +329,10 @@ public class CheckMonitoredTrip implements Runnable {
 
                 // If the updated trip status is upcoming and the end time of the current matching itinerary is in the
                 // past, this means the trip has completed and the next possible time the trip occurs should be
-                // calculated
-                if (journeyState.tripStatus == TripStatus.TRIP_UPCOMING && matchingItinerary.hasEnded()) {
+                // calculated.
+                // If the matching itinerary is in the future,
+                // make sure that the target date reflects that.
+                if (journeyState.tripStatus == TripStatus.TRIP_UPCOMING && (!matchingItinerary.isActive())) {
                     LOG.info("Matching Itinerary has concluded, advancing to next possible trip date.");
                     targetZonedDateTime = targetZonedDateTime.plusDays(1);
                     advanceToNextActiveTripDate();
