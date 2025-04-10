@@ -817,8 +817,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         mockTrip.itineraryExistence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
 
         // Use a previously computed trip status to be active on Monday.
+        // Copy those journey state params to the CheckMonitoredTrip object too.
         mockTrip.journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
         mockTrip.journeyState.targetDate = "2020-06-08";
+        mockCheckMonitoredTrip.previousJourneyState = new JourneyState();
+        mockCheckMonitoredTrip.previousJourneyState.targetDate = mockTrip.journeyState.targetDate;
+        mockCheckMonitoredTrip.previousJourneyState.tripStatus = mockTrip.journeyState.tripStatus;
 
         // update the target date to be an upcoming Monday within the CheckMonitoredTrip
         mockCheckMonitoredTrip.targetZonedDateTime = noonMonday8June2020
@@ -835,6 +839,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 .withHour(8)
                 .withMinute(50)
         );
+
+        // Perform the skip check (this populates some internal states)
+        assertTrue(mockCheckMonitoredTrip.shouldSkipMonitoredTripCheck());
 
         // execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome
         assertTrue(mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
@@ -879,9 +886,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         mockTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         mockTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
 
-        // Use a previously computed trip status to be upcoming on Monday.
+        // Use a previously computed trip status to be upcoming on Tuesday.
+        // Copy those journey state params to the CheckMonitoredTrip object too.
         mockTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
         mockTrip.journeyState.targetDate = "2020-06-09";
+        mockCheckMonitoredTrip.previousJourneyState = new JourneyState();
+        mockCheckMonitoredTrip.previousJourneyState.targetDate = mockTrip.journeyState.targetDate;
+        mockCheckMonitoredTrip.previousJourneyState.tripStatus = mockTrip.journeyState.tripStatus;
 
         // update the target date to be an upcoming Tuesday within the CheckMonitoredTrip
         mockCheckMonitoredTrip.targetZonedDateTime = noonMonday8June2020
@@ -898,6 +909,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 .withHour(8)
                 .withMinute(30)
         );
+
+        // Perform the skip check (this populates some internal states)
+        assertTrue(mockCheckMonitoredTrip.shouldSkipMonitoredTripCheck());
 
         // execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome
         // (should hit the "no additional checks needed" because the next trip is in the future.)
