@@ -793,7 +793,7 @@ public class CheckMonitoredTrip implements Runnable {
 
             // Attempt to advance to the next monitored day, except for one-time trips
             // or if tracking is ongoing or if the matching itinerary is still valid.
-            if (!trip.isOneTime() && !isTrackingOngoing()) {
+            if (!trip.isOneTime() && trip.journeyState.tripStatus != TripStatus.TRIP_ACTIVE && !isTrackingOngoing()) {
                 advanceToNextMonitoredDay();
             }
 
