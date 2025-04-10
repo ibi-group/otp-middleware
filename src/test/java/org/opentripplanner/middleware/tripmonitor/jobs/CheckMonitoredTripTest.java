@@ -355,7 +355,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
      */
     private static CheckMonitoredTrip createCheckMonitoredTrip(Supplier<OtpResponse> otpResponseProvider) throws Exception {
-        return createCheckMonitoredTrip(OtpTestUtils.createDefaultJourneyState(), otpResponseProvider);
+        return createCheckMonitoredTrip(OtpTestUtils.createDefaultJourneyState(otpResponseProvider), otpResponseProvider);
     }
 
     /**
@@ -743,8 +743,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         mockTrip.itineraryExistence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
 
         // Use a previously computed trip status to be upcoming on Monday.
+        // Copy those journey state params to the CheckMonitoredTrip object too.
         mockTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
         mockTrip.journeyState.targetDate = "2020-06-08";
+        mockCheckMonitoredTrip.previousJourneyState = new JourneyState();
+        mockCheckMonitoredTrip.previousJourneyState.targetDate = mockTrip.journeyState.targetDate;
+        mockCheckMonitoredTrip.previousJourneyState.tripStatus = mockTrip.journeyState.tripStatus;
 
         // update the target date to be an upcoming Monday within the CheckMonitoredTrip
         mockCheckMonitoredTrip.targetZonedDateTime = noonMonday8June2020
@@ -754,13 +758,16 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         Persistence.monitoredTrips.create(mockTrip);
 
-        // mock the current time same day of itinerary but after it's end time (8:58 am Pacific).
+        // mock the current time same day of itinerary just before the start time.
         DateTimeUtils.useFixedClockAt(
             noonMonday8June2020
                 .withDayOfMonth(8)
-                .withHour(9)
-                .withMinute(45)
+                .withHour(8)
+                .withMinute(30)
         );
+
+        // Perform the skip check (this populates some internal states)
+        assertTrue(mockCheckMonitoredTrip.shouldSkipMonitoredTripCheck());
 
         // execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome
         assertTrue(mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
