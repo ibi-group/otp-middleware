@@ -26,6 +26,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_GRAPHQL_ENDPOINT;
@@ -225,6 +226,16 @@ public class OtpTestUtils {
     public static JourneyState createDefaultJourneyState() throws Exception {
         JourneyState journeyState = new JourneyState();
         Itinerary defaultItinerary = createDefaultItinerary();
+        journeyState.scheduledArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
+        journeyState.scheduledDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
+        journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
+        journeyState.baselineDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
+        return journeyState;
+    }
+
+    public static JourneyState createDefaultJourneyState(Supplier<OtpResponse> otpResponseProvider) {
+        JourneyState journeyState = new JourneyState();
+        Itinerary defaultItinerary = otpResponseProvider.get().plan.itineraries.get(0);
         journeyState.scheduledArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
         journeyState.scheduledDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
         journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
