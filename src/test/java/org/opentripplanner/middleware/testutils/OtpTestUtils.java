@@ -212,23 +212,24 @@ public class OtpTestUtils {
         );
     }
 
+    private static Itinerary getFirstItinerary(OtpResponse response) {
+        return response.plan.itineraries.get(0);
+    }
+
     public static Itinerary createDefaultItinerary() throws Exception {
-        return OTP2_DISPATCHER_PLAN_RESPONSE.clone().getResponse().plan.itineraries.get(0);
+        return getFirstItinerary(OTP2_DISPATCHER_PLAN_RESPONSE.clone().getResponse());
     }
 
     public static JourneyState createDefaultJourneyState() throws Exception {
-        JourneyState journeyState = new JourneyState();
-        Itinerary defaultItinerary = createDefaultItinerary();
-        journeyState.scheduledArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
-        journeyState.scheduledDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
-        journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
-        journeyState.baselineDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
-        return journeyState;
+        return  createDefaultJourneyState(createDefaultItinerary());
     }
 
     public static JourneyState createDefaultJourneyState(Supplier<OtpResponse> otpResponseProvider) {
+        return createDefaultJourneyState(getFirstItinerary(otpResponseProvider.get()));
+    }
+
+    private static JourneyState createDefaultJourneyState(Itinerary defaultItinerary) {
         JourneyState journeyState = new JourneyState();
-        Itinerary defaultItinerary = otpResponseProvider.get().plan.itineraries.get(0);
         journeyState.scheduledArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
         journeyState.scheduledDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
         journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
