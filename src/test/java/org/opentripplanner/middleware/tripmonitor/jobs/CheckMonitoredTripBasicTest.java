@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
@@ -11,6 +12,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
@@ -120,5 +122,20 @@ class CheckMonitoredTripBasicTest {
         trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(start).format(DateTimeFormatter.ISO_LOCAL_TIME);
         trip.leadTimeInMinutes = 30;
         return trip;
+    }
+
+    @Test
+    void canFindEarliestTargetDate() {
+        // Wednesday, April 9, 2025
+        ZonedDateTime fromDateTime = ZonedDateTime.of(2025, 4, 9, 10, 25, 0, 0, DateTimeUtils.getOtpZoneId());
+
+        // Monday, April 14, 2025
+        ZonedDateTime expectedDateTime = fromDateTime.plusDays(5);
+
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.updateAllDaysOfWeek(false);
+        trip.monday = true;
+
+        assertEquals(expectedDateTime, CheckMonitoredTrip.findEarliestTargetDate(trip, fromDateTime));
     }
 }
