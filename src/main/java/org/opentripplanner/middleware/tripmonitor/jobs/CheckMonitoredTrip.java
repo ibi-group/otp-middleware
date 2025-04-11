@@ -29,7 +29,6 @@ import org.slf4j.MDC;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -47,6 +46,7 @@ import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.diffInMinutes;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.makeOtpZonedDateTime;
 
 /**
  * This job handles the primary functions for checking a {@link MonitoredTrip}, including:
@@ -865,30 +865,31 @@ public class CheckMonitoredTrip implements Runnable {
      * (Itinerary existence is not being checked, assuming that clients prevent monitoring days when a trip doesn't exist.)
      */
     public static ZonedDateTime findEarliestTargetDate(MonitoredTrip trip, ZonedDateTime fromDateTime) {
-        ZoneId zoneId = DateTimeUtils.getOtpZoneId();
-        ZonedDateTime itineraryEndTimeToday = ZonedDateTime.of(
-            fromDateTime.toLocalDate(),
-            LocalTime.ofInstant(trip.itinerary.endTime.toInstant(), zoneId),
-            zoneId
+        ZonedDateTime itineraryEndTimeToday = makeOtpZonedDateTime(
+            fromDateTime,
+            trip.itinerary.endTime.toInstant()
         );
 
         int daysToAdd = fromDateTime.toInstant().isAfter(itineraryEndTimeToday.toInstant()) ? 1 : 0;
 
-        ZonedDateTime nextStartDay = ZonedDateTime.of(
-            fromDateTime.toLocalDate().plusDays(daysToAdd),
-            LocalTime.ofInstant(trip.itinerary.startTime.toInstant(), zoneId),
-            zoneId
+        ZonedDateTime nextStartDay = makeOtpZonedDateTime(
+            fromDateTime.plusDays(daysToAdd),
+            trip.itinerary.startTime.toInstant()
         );
 
+        return findNextMonitoredDay(trip, nextStartDay);
+    }
+
+    private static ZonedDateTime findNextMonitoredDay(MonitoredTrip trip, ZonedDateTime startingDay) {
         // Advance the target date/time until a day is found when the trip is active.
-        // TODO: refactpr this while loop (with advance...)
+        ZonedDateTime nextMonitoredDay = startingDay;
         if (!trip.isOneTime()) {
-            while (!trip.isActiveOnDate(nextStartDay)) {
-                nextStartDay = nextStartDay.plusDays(1);
+            while (!trip.isActiveOnDate(nextMonitoredDay)) {
+                nextMonitoredDay = nextMonitoredDay.plusDays(1);
             }
         }
 
-        return nextStartDay;
+        return nextMonitoredDay;
     }
 
     /**
@@ -971,47 +972,25 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Advance the journey state data to point to the next actively monitored date and time that the scheduled itinerary
-     * could occur. This does not make a request to the trip planner, instead it will offset the matching itinerary and
-     * journey state data the appropriate number of days and then recalculate the new scheduled time based on the
-     * updated time in the updated itinerary.
+     * Advance (or set) the journey state data to point to the next actively monitored date and time that the scheduled
+     * itinerary could occur. This does not make a request to the trip planner, instead it will offset the matching
+     * itinerary and journey state data the appropriate number of days and then recalculate the new scheduled time
+     * based on the updated time in the updated itinerary.
      */
     private void advanceToNextActiveTripDate() {
-        // Advance the target date/time until a day is found when the trip is active.
-        while (!trip.isOneTime() && !trip.isActiveOnDate(targetZonedDateTime)) {
-            targetZonedDateTime = targetZonedDateTime.plusDays(1);
-        }
+        targetZonedDateTime = findNextMonitoredDay(trip, targetZonedDateTime);
 
         LOG.info("Next itinerary happening on {}.", targetZonedDateTime);
 
-        ZonedDateTime scheduledTime;
-        if (trip.arriveBy) {
-            // For arrive by trips, increment the matching itinerary end time as long as it does not exceed the target
-            // zoned date time.
-            //
-            // Example: The new target time is June 15 at 9am and the previous matching itinerary ended on June 13 at
-            // 8:50am. In this case, the matching itinerary will be incremented two days so the updated matching
-            // itinerary ends at 8:50am on June 15.
-            scheduledTime = DateTimeUtils.makeOtpZonedDateTime(
-                new Date(matchingItinerary.getScheduledEndTimeEpochMillis())
-            );
-            while (scheduledTime.plusDays(1).isBefore(targetZonedDateTime)) {
-                scheduledTime = scheduledTime.plusDays(1);
-            }
-        } else {
-            // For depart at trips, increment the matching itinerary start time until it occurs after the target zoned
-            // date time.
-            //
-            // Example: The new target time is June 15 at 5pm and the previous matching itinerary began on June 13 at
-            // 5:08pm. In this case, the matching itinerary will be incremented two days so the updated matching
-            // itinerary begins at 5:08pm on June 15.
-            scheduledTime = DateTimeUtils.makeOtpZonedDateTime(
-                new Date(matchingItinerary.getScheduledStartTimeEpochMillis())
-            );
-            while (scheduledTime.isBefore(targetZonedDateTime)) {
-                scheduledTime = scheduledTime.plusDays(1);
-            }
-        }
+        ZonedDateTime scheduledTime = makeOtpZonedDateTime(
+            targetZonedDateTime,
+            Instant.ofEpochMilli(
+                trip.arriveBy
+                    ? matchingItinerary.getScheduledEndTimeEpochMillis()
+                    : matchingItinerary.getScheduledStartTimeEpochMillis()
+            )
+        );
+
         applyDelayOffset(scheduledTime);
     }
 

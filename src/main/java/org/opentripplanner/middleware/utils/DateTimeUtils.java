@@ -229,6 +229,19 @@ public class DateTimeUtils {
         );
     }
 
+    /**
+     * Makes a {@link ZonedDateTime} object from a {@link ZonedDateTime} for the date portion,
+     * and a {@link Instant} for the time portion. The result is expressed in the configured OTP time zone.
+     */
+    public static ZonedDateTime makeOtpZonedDateTime(ZonedDateTime datePortion, Instant timePortion) {
+        ZoneId zoneId = getOtpZoneId();
+        return ZonedDateTime.of(
+            datePortion.toLocalDate(),
+            LocalTime.ofInstant(timePortion, zoneId),
+            zoneId
+        );
+    }
+
     public static ZonedDateTime makeOtpZonedDateTime(Date date) {
         return ZonedDateTime.ofInstant(date.toInstant(), getOtpZoneId());
     }
