@@ -860,17 +860,29 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
+     * Find, starting from the given date, the earliest target date for a monitored trip using monitored days.
+     * (Itinerary existence is not being checked, assuming that clients prevent monitoring days when a trip deosn't exist.)
+     */
+    public static ZonedDateTime findEarliestTargetDate(MonitoredTrip trip, ZonedDateTime fromDateTime) {
+        // TODO refactor zoneid in this call
+        ZonedDateTime nextStartDay = fromDateTime; // DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId());
+
+        // Advance the target date/time until a day is found when the trip is active.
+        // TODO: refactpr this while loop (with advance...)
+        if (!trip.isOneTime()) {
+            while (!trip.isActiveOnDate(nextStartDay)) {
+                nextStartDay = nextStartDay.plusDays(1);
+            }
+        }
+
+        return nextStartDay;
+    }
+
+    /**
      * Is a one-off trip which has already happened.
      */
     private boolean isOneTimeTripInPast() {
         return trip.isOneTime() && previousJourneyState.tripStatus == TripStatus.PAST_TRIP;
-    }
-
-    /** Check if the matching itinerary start time is in the future */
-    private boolean isMatchingItineraryStartTimeInTheFuture() {
-        Instant tripStartInstant = matchingItinerary.startTime.toInstant();
-
-        return tripStartInstant.isAfter(Instant.ofEpochMilli(DateTimeUtils.currentTimeMillis()));
     }
 
     /** Check if previous matching itinerary day is still valid */
