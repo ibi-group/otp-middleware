@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -12,6 +12,8 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
@@ -124,18 +126,36 @@ class CheckMonitoredTripBasicTest {
         return trip;
     }
 
-    @Test
-    void canFindEarliestTargetDate() {
-        // Wednesday, April 9, 2025
-        ZonedDateTime fromDateTime = ZonedDateTime.of(2025, 4, 9, 10, 25, 0, 0, DateTimeUtils.getOtpZoneId());
+    @ParameterizedTest
+    @MethodSource("createFindEarliestTargetDateTime")
+    void canFindEarliestTargetDateTime(int fromDay, int expectedDay, String message) {
+        ZoneId zoneId = DateTimeUtils.getOtpZoneId();
+        ZonedDateTime fromDateTime = ZonedDateTime.of(2025, 4, fromDay, 10, 25, 0, 0, zoneId);
+        // Simulate a matching itinerary on a different day
+        Instant itineraryStartInstant = fromDateTime.plusDays(1).withHour(9).withMinute(0).toInstant();
 
         // Monday, April 14, 2025
-        ZonedDateTime expectedDateTime = fromDateTime.plusDays(5);
+        LocalDate expectedDate = fromDateTime.withDayOfMonth(expectedDay).toLocalDate();
 
-        MonitoredTrip trip = new MonitoredTrip();
+        MonitoredTrip trip = makeMonitoredTripFromNow(300, 600);
+        // Set the itinerary start time to be before the 'from' time above.
+        trip.tripTime = "09:00";
+        trip.itinerary.startTime = Date.from(itineraryStartInstant);
+        trip.itinerary.endTime = Date.from(itineraryStartInstant.plusSeconds(300));
         trip.updateAllDaysOfWeek(false);
         trip.monday = true;
 
-        assertEquals(expectedDateTime, CheckMonitoredTrip.findEarliestTargetDate(trip, fromDateTime));
+        assertEquals(
+            ZonedDateTime.of(expectedDate, LocalTime.parse(trip.tripTime, DateTimeFormatter.ISO_LOCAL_TIME), zoneId),
+            CheckMonitoredTrip.findEarliestTargetDate(trip, fromDateTime),
+            message
+        );
+    }
+
+    private static Stream<Arguments> createFindEarliestTargetDateTime() {
+        return Stream.of(
+            Arguments.of(9, 14, "Wed Apr 9, 2025 should result in Monday Apr 14"),
+            Arguments.of(14, 21, "Mon Apr 14, 2025 10am is after the trip and should result in next Monday")
+        );
     }
 }
