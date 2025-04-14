@@ -341,7 +341,7 @@ public class CheckMonitoredTrip implements Runnable {
                         // Trip has not begun. Reset the target date to the start time of itinerary "today".
                         LOG.info("Matching itinerary has not started, finding the next possible trip date.");
                         targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(
-                            DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId()),
+                            DateTimeUtils.nowAsZonedDateTime(),
                             matchingItinerary.startTime.toInstant()
                         );
                     }
@@ -685,18 +685,15 @@ public class CheckMonitoredTrip implements Runnable {
      * is unlikely to be defined in which case use the original trip start time instead.
      */
     private long getMinutesUntilTrip() {
-        // get the configured timezone that OTP is using to parse dates and times
-        ZoneId targetZoneId = DateTimeUtils.getOtpZoneId();
+        // Get current time and trip time (with the time offset to today) for comparison.
+        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
 
         Instant tripStartInstant;
         if (!trip.isOneTime() && !isPreviousTripOngoing()) {
-            tripStartInstant = findEarliestTargetDate(trip, DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId())).toInstant();
+            tripStartInstant = findEarliestTargetDate(trip, now).toInstant();
         } else {
             tripStartInstant = matchingItinerary.startTime.toInstant();
         }
-
-        // Get current time and trip time (with the time offset to today) for comparison.
-        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(targetZoneId);
 
         return (tripStartInstant.getEpochSecond() - now.toEpochSecond()) / 60;
     }
@@ -1098,7 +1095,7 @@ public class CheckMonitoredTrip implements Runnable {
             .withMinute(0)
             .withSecond(0);
 
-        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime(otpZoneId);
+        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
         // Include equal or after midnight as true.
         return !now.isBefore(midnightAfterLastChecked);
     }

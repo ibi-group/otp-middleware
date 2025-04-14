@@ -136,6 +136,13 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns the current time as a ZonedDateTime instance in the configured timezone
+     */
+    public static ZonedDateTime nowAsZonedDateTime() {
+        return ZonedDateTime.now(clock);
+    }
+
+    /**
      * Returns the current time in milliseconds according to the current set Clock.
      */
     public static long currentTimeMillis() {

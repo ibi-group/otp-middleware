@@ -31,7 +31,7 @@ public class Scheduler {
      */
     public static long getInitialDelayMillis(String startTime) throws DateTimeParseException {
         var timeOfDay = LocalTime.parse(startTime);
-        var now = DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId());
+        var now = DateTimeUtils.nowAsZonedDateTime();
         var startAt = DateTimeUtils.getNextTimeFrom(timeOfDay, now);
         var duration = Duration.between(now, startAt);
         return duration.isNegative() ? 0L : duration.toMillis();
