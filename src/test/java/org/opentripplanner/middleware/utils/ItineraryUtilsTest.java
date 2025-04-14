@@ -37,6 +37,8 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.createDefaultItinerary;
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.firstItinerary;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
 
 public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
@@ -94,11 +96,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         2020, 8, 14, 3, 0, 0
     );
 
-    /** Contains the verified itinerary set for a trip upon persisting. */
-    public static Itinerary getDefaultItinerary() throws Exception {
-        return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse().plan.itineraries.get(0);
-    }
-
     /**
      * Test that itineraries exist and result.allCheckedDatesAreValid are as expected.
      */
@@ -119,7 +116,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         MockOtpResponseProvider mockResponses = new MockOtpResponseProvider(mockOtpResponses);
 
         // Also set trip itinerary to the template itinerary for easy/lazy match.
-        Itinerary expectedItinerary = mockOtpResponses.get(0).plan.itineraries.get(0);
+        Itinerary expectedItinerary = firstItinerary(mockOtpResponses.get(DayOfWeek.THURSDAY));
         trip.itinerary = expectedItinerary;
 
         trip.checkItineraryExistence(false, mockResponses::getMockResponse);
@@ -256,7 +253,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         testCases.add(
             new ItineraryMatchTestCase(
                 "Should be equal with same data",
-                getDefaultItinerary().clone(),
+                createDefaultItinerary(),
                 true
             )
         );
@@ -264,7 +261,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         // should not be equal with a different amount of legs
         Leg extraBikeLeg = new Leg();
         extraBikeLeg.mode = "BICYCLE";
-        Itinerary itineraryWithMoreLegs = getDefaultItinerary().clone();
+        Itinerary itineraryWithMoreLegs = createDefaultItinerary();
         itineraryWithMoreLegs.legs.add(extraBikeLeg);
         testCases.add(
             new ItineraryMatchTestCase(
@@ -275,7 +272,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         );
 
         // should be equal with realtime data on transit leg (same day)
-        Itinerary itineraryWithRealtimeTransit = getDefaultItinerary().clone();
+        Itinerary itineraryWithRealtimeTransit = createDefaultItinerary();
         Leg transitLeg = itineraryWithRealtimeTransit.legs.get(1);
         int secondsOfDelay = 120;
         transitLeg.startTime = new Date(transitLeg.startTime.getTime() + secondsOfDelay * 1000);
@@ -291,7 +288,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         );
 
         // should be equal with scheduled data on transit leg (future date)
-        Itinerary itineraryOnFutureDate = getDefaultItinerary().clone();
+        Itinerary itineraryOnFutureDate = createDefaultItinerary();
         Leg transitLeg2 = itineraryOnFutureDate.legs.get(1);
         transitLeg2.startTime = Date.from(transitLeg2.startTime.toInstant().plus(7, ChronoUnit.DAYS));
         transitLeg2.endTime = Date.from(transitLeg2.endTime.toInstant().plus(7, ChronoUnit.DAYS));
@@ -392,7 +389,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             if (previousItinerary != null) {
                 this.previousItinerary = previousItinerary;
             } else {
-                this.previousItinerary = getDefaultItinerary();
+                this.previousItinerary = createDefaultItinerary();
             }
             this.newItinerary = newItinerary;
             this.shouldMatch = shouldMatch;
