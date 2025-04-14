@@ -56,7 +56,14 @@ jobs:
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
           TWILIO_VERIFICATION_SERVICE_SID: ${{ secrets.TWILIO_VERIFICATION_SERVICE_SID }}
       - name: Run E2E tests
-        run: mvn --no-transfer-progress test
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          # Retry once after waiting 5 mins if this step fails (e.g. because of a "Rate limit exceeded" or similar error)
+          max_attempts: 2
+          retry_on: error
+          retry_wait_seconds: 300
+          command: mvn --no-transfer-progress test
         env:
           OTP_ADMIN_DASHBOARD_NAME: OTP Admin Dashboard
           OTP_ADMIN_DASHBOARD_FROM_EMAIL: OTP Admin Dashboard <no-reply@email.com>
