@@ -130,21 +130,19 @@ class CheckMonitoredTripBasicTest {
     @MethodSource("createFindEarliestTargetDateTime")
     void canFindEarliestTargetDateTime(int fromDay, int expectedDay, String message) {
         ZoneId zoneId = DateTimeUtils.getOtpZoneId();
+        // 10:25 am on some specified day in April 2025.
         ZonedDateTime fromDateTime = ZonedDateTime.of(2025, 4, fromDay, 10, 25, 0, 0, zoneId);
-        // Simulate a matching itinerary on a different day
-        Instant itineraryStartInstant = fromDateTime.plusDays(1).withHour(9).withMinute(0).toInstant();
-
-        // Monday, April 14, 2025
-        LocalDate expectedDate = fromDateTime.withDayOfMonth(expectedDay).toLocalDate();
 
         MonitoredTrip trip = makeMonitoredTripFromNow(300, 600);
-        // Set the itinerary start time to be before the 'from' time above.
+        // Set the itinerary start time to 09:00 am, before the 'from' time above, on a different day (e.g. fromDay + 1).
+        Instant itineraryStartInstant = fromDateTime.plusDays(1).withHour(9).withMinute(0).toInstant();
         trip.tripTime = "09:00";
         trip.itinerary.startTime = Date.from(itineraryStartInstant);
         trip.itinerary.endTime = Date.from(itineraryStartInstant.plusSeconds(300));
         trip.updateAllDaysOfWeek(false);
         trip.monday = true;
 
+        LocalDate expectedDate = fromDateTime.withDayOfMonth(expectedDay).toLocalDate();
         assertEquals(
             ZonedDateTime.of(expectedDate, LocalTime.parse(trip.tripTime, DateTimeFormatter.ISO_LOCAL_TIME), zoneId),
             CheckMonitoredTrip.findEarliestTargetDate(trip, fromDateTime),
