@@ -72,12 +72,17 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser user;
 
     // this is initialized in the setup method after the OTP_TIMEZONE config value is known.
-    private static final ZonedDateTime noonMonday8June2020 = DateTimeUtils.makeOtpZonedDateTime(new Date())
+    private static final ZonedDateTime MONDAY_20200608_NOON = DateTimeUtils.makeOtpZonedDateTime(new Date())
         .withYear(2020)
         .withMonth(6)
         .withDayOfMonth(8)
         .withHour(12)
         .withMinute(0);
+    private static final ZonedDateTime MONDAY_20200615_0845 = MONDAY_20200608_NOON
+        .withDayOfMonth(15)
+        .withHour(8)
+        .withMinute(45);
+    private static final ZonedDateTime MONDAY_20200615_0835 = MONDAY_20200615_0845.withMinute(35);
 
     @BeforeAll
     public static void setup() {
@@ -128,12 +133,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         firstItinerary(mockResponse).legs.get(1).alerts = fakeAlerts;
 
         // mock the current time to be 8:45am on Monday, June 15
-        DateTimeUtils.useFixedClockAt(
-            noonMonday8June2020
-                .withDayOfMonth(15)
-                .withHour(8)
-                .withMinute(45)
-        );
+        DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
 
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
@@ -175,7 +175,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // The trip is set to be monitored Monday to Friday.
         // Mock time to be 7:30am on Tuesday, June 9 before the trip start.
         DateTimeUtils.useFixedClockAt(
-            noonMonday8June2020
+            MONDAY_20200608_NOON
                 .withDayOfMonth(9)
                 .withHour(7)
                 .withMinute(30)
@@ -209,12 +209,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
         Persistence.monitoredTrips.create(monitoredTrip);
 
-        DateTimeUtils.useFixedClockAt(
-            noonMonday8June2020
-                .withDayOfMonth(15)
-                .withHour(8)
-                .withMinute(45)
-        );
+        DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
 
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::getMockOtpResponseJune15);
         checkMonitoredTrip.run();
@@ -378,7 +373,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         ShouldSkipTripTestCase weekendTripOnWeekdayTestCase = new ShouldSkipTripTestCase(
             "should return true for a weekend trip when current time is on a weekday",
-            noonMonday8June2020, // mock time: June 8, 2020 (Wednesday)
+            MONDAY_20200608_NOON,
             true
         );
         weekendTripOnWeekdayTestCase.trip = weekendTrip;
@@ -387,81 +382,81 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // - Return true for weekday trip when current time is on a weekend.
         testCases.add(new ShouldSkipTripTestCase(
             "should return true for weekday trip when current time is on a weekend",
-            noonMonday8June2020.withDayOfMonth(6), // mock time: June 6, 2020 (Saturday)
+            MONDAY_20200608_NOON.withDayOfMonth(6), // mock time: June 6, 2020 (Saturday)
             true
         ));
 
         // - Return true if trip is starting today, but before lead time
         ShouldSkipTripTestCase weekdayTripBeforeLeadTimeTestCase = new ShouldSkipTripTestCase(
             "should return true if trip is starting today, but current time is before lead time",
-            noonMonday8June2020.withHour(3).withMinute(0), // mock time: 3am,
+            MONDAY_20200608_NOON.withHour(3).withMinute(0), // mock time: 3am,
             true
         );
-        weekdayTripBeforeLeadTimeTestCase.lastCheckedTime = noonMonday8June2020.withHour(2).withMinute(0);
+        weekdayTripBeforeLeadTimeTestCase.lastCheckedTime = MONDAY_20200608_NOON.withHour(2).withMinute(0);
         testCases.add(weekdayTripBeforeLeadTimeTestCase);
 
         // - Return false if trip is starting in greater than 1 hr, but the last time checked was 2 hours ago
         ShouldSkipTripTestCase weekdayTripChecked2HoursAgoTestCase = new ShouldSkipTripTestCase(
             "should return false if trip is starting in greater than 1 hr, but the last time checked was 2 hours ago",
-            noonMonday8June2020.withHour(6).withMinute(0), // mock time: 6am
+            MONDAY_20200608_NOON.withHour(6).withMinute(0), // mock time: 6am
             false
         );
-        weekdayTripChecked2HoursAgoTestCase.lastCheckedTime = noonMonday8June2020.withHour(4).withMinute(0);
+        weekdayTripChecked2HoursAgoTestCase.lastCheckedTime = MONDAY_20200608_NOON.withHour(4).withMinute(0);
         testCases.add(weekdayTripChecked2HoursAgoTestCase);
 
         // - Return true if trip is starting in greater than 1 hr, but the last time checked was 2 minutes ago
         ShouldSkipTripTestCase weekdayTripIn1HourChecked2MinutesAgoTestCase = new ShouldSkipTripTestCase(
             "should return true if trip is starting in greater than 1 hr, but the last time checked was 2 minutes ago",
-            noonMonday8June2020.withHour(3).withMinute(0), // mock time: 3am
+            MONDAY_20200608_NOON.withHour(3).withMinute(0), // mock time: 3am
             true
         );
-        weekdayTripIn1HourChecked2MinutesAgoTestCase.lastCheckedTime = noonMonday8June2020.withHour(2).withMinute(58);
+        weekdayTripIn1HourChecked2MinutesAgoTestCase.lastCheckedTime = MONDAY_20200608_NOON.withHour(2).withMinute(58);
         testCases.add(weekdayTripIn1HourChecked2MinutesAgoTestCase);
 
         // - Return false if trip is starting in 45 minutes and the last time checked was 20 minutes ago
         ShouldSkipTripTestCase weekdayTripIn45MinutesChecked20MinutesAgoTestCase = new ShouldSkipTripTestCase(
             "should return false if trip is starting in 45 minutes and the last time checked was 20 minutes ago",
-            noonMonday8June2020.withHour(7).withMinute(55), // mock time: 7:55am
+            MONDAY_20200608_NOON.withHour(7).withMinute(55), // mock time: 7:55am
             false
         );
-        weekdayTripIn45MinutesChecked20MinutesAgoTestCase.lastCheckedTime = noonMonday8June2020.withHour(7).withMinute(35);
+        weekdayTripIn45MinutesChecked20MinutesAgoTestCase.lastCheckedTime = MONDAY_20200608_NOON.withHour(7).withMinute(35);
         testCases.add(weekdayTripIn45MinutesChecked20MinutesAgoTestCase);
 
         // - Return true if trip is starting in 45 minutes and the last time checked was 2 minutes ago
         ShouldSkipTripTestCase weekdayTripIn45MinutesChecked2MinutesAgoTestCase = new ShouldSkipTripTestCase(
             "should return true if trip is starting in 45 minutes and the last time checked was 2 minutes ago",
-            noonMonday8June2020.withHour(7).withMinute(55), // mock time: 7:55am
+            MONDAY_20200608_NOON.withHour(7).withMinute(55), // mock time: 7:55am
             true
         );
-        weekdayTripIn45MinutesChecked2MinutesAgoTestCase.lastCheckedTime = noonMonday8June2020.withHour(7).withMinute(53);
+        weekdayTripIn45MinutesChecked2MinutesAgoTestCase.lastCheckedTime = MONDAY_20200608_NOON.withHour(7).withMinute(53);
         testCases.add(weekdayTripIn45MinutesChecked2MinutesAgoTestCase);
 
         // - Return false if trip is starting in 10 minutes and the last time checked was 2 minutes ago
         ShouldSkipTripTestCase weekdayTripIn10MinutesChecked2MinutesAgoTestCase = new ShouldSkipTripTestCase(
             "should return false if trip is starting in 10 minutes and the last time checked was 2 minutes ago",
-            noonMonday8June2020.withHour(8).withMinute(30), // mock time: 8:30am
+            MONDAY_20200608_NOON.withHour(8).withMinute(30), // mock time: 8:30am
             false
         );
-        weekdayTripIn10MinutesChecked2MinutesAgoTestCase.lastCheckedTime = noonMonday8June2020.withHour(8).withMinute(28);
+        weekdayTripIn10MinutesChecked2MinutesAgoTestCase.lastCheckedTime = MONDAY_20200608_NOON.withHour(8).withMinute(28);
         testCases.add(weekdayTripIn10MinutesChecked2MinutesAgoTestCase);
 
         // - Returns false if trip still hadn't ended prior to the last checked time even though the current time is
         //   after the last known end time of the trip
         ShouldSkipTripTestCase weekdayTripNotYetEndedTestCase = new ShouldSkipTripTestCase(
             "should return false if trip hadn't ended the last time it was checked despite it being after the last known end time",
-            noonMonday8June2020.withHour(8).withMinute(59), // mock time: 8:59am
+            MONDAY_20200608_NOON.withHour(8).withMinute(59), // mock time: 8:59am
             false
         );
-        weekdayTripNotYetEndedTestCase.lastCheckedTime = noonMonday8June2020.withHour(8).withMinute(58).withSecond(0);
+        weekdayTripNotYetEndedTestCase.lastCheckedTime = MONDAY_20200608_NOON.withHour(8).withMinute(58).withSecond(0);
         testCases.add(weekdayTripNotYetEndedTestCase);
 
         // - Return true if trip has ended as of the last check 3 minutes ago
         ShouldSkipTripTestCase weekdayTripEndedTestCase = new ShouldSkipTripTestCase(
             "should return true if trip has ended as of the last check",
-            noonMonday8June2020.withHour(9).withMinute(0), // mock time: 9:00am
+            MONDAY_20200608_NOON.withHour(9).withMinute(0), // mock time: 9:00am
             true
         );
-        weekdayTripEndedTestCase.lastCheckedTime = noonMonday8June2020.withHour(8).withMinute(59);
+        weekdayTripEndedTestCase.lastCheckedTime = MONDAY_20200608_NOON.withHour(8).withMinute(59);
         testCases.add(weekdayTripEndedTestCase);
 
         return testCases;
@@ -488,18 +483,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         mockTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
 
         // update the target date to be an upcoming Monday within the CheckMonitoredTrip
-        mockCheckMonitoredTrip.targetZonedDateTime = noonMonday8June2020
-            .withDayOfMonth(15)
-            .withHour(8)
-            .withMinute(35);
+        mockCheckMonitoredTrip.targetZonedDateTime = MONDAY_20200615_0835;
 
         // mock the current time to be 8:45am on Monday, June 15
-        DateTimeUtils.useFixedClockAt(
-            noonMonday8June2020
-                .withDayOfMonth(15)
-                .withHour(8)
-                .withMinute(45)
-        );
+        DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
 
         // execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome
         assertTrue(mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
@@ -543,10 +530,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         mockTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
 
         // update the target date to be an upcoming Monday within the CheckMonitoredTrip
-        mockCheckMonitoredTrip.targetZonedDateTime = noonMonday8June2020
-            .withDayOfMonth(15)
-            .withHour(8)
-            .withMinute(35);
+        mockCheckMonitoredTrip.targetZonedDateTime = MONDAY_20200615_0835;
 
         Itinerary mockMondayJune15Itinerary = firstItinerary(mockWeekdayResponse);
         // parse original itinerary date/time and then update mock itinerary to occur on Monday June 15, but at a time
@@ -559,12 +543,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         );
 
         // mock the current time to be 8:45am on Monday, June 15
-        DateTimeUtils.useFixedClockAt(
-            noonMonday8June2020
-                .withDayOfMonth(15)
-                .withHour(8)
-                .withMinute(45)
-        );
+        DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
 
         // execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome
         assertFalse(mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
@@ -622,10 +601,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         mockTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
 
         // update the target date to be an upcoming Monday within the CheckMonitoredTrip
-        mockCheckMonitoredTrip.targetZonedDateTime = noonMonday8June2020
-            .withDayOfMonth(15)
-            .withHour(8)
-            .withMinute(35);
+        mockCheckMonitoredTrip.targetZonedDateTime = MONDAY_20200615_0835;
 
         Itinerary mockMondayJune15Itinerary = firstItinerary(mockWeekdayResponse);
         // parse original itinerary date/time and then update mock itinerary to occur on Monday June 15, but at a time
@@ -638,12 +614,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         );
 
         // mock the current time to be 8:45am on Monday, June 15
-        DateTimeUtils.useFixedClockAt(
-            noonMonday8June2020
-                .withDayOfMonth(15)
-                .withHour(8)
-                .withMinute(45)
-        );
+        DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
 
         // execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome
         assertFalse(mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
@@ -736,10 +707,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         mockCheckMonitoredTrip.previousMatchingItinerary = mockPreviousItinerary;
 
         // Set the current target date/time.
-        mockCheckMonitoredTrip.targetZonedDateTime = noonMonday8June2020
-            .withDayOfMonth(previousTargetDay)
-            .withHour(8)
-            .withMinute(35);
+        mockCheckMonitoredTrip.targetZonedDateTime = MONDAY_20200615_0835.withDayOfMonth(previousTargetDay);
 
         Persistence.monitoredTrips.create(mockTrip);
 
@@ -774,13 +742,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     private static Stream<Arguments> casesForChangingMonitoredDays() {
-        ZonedDateTime monday20200608T0830 = noonMonday8June2020
-            .withDayOfMonth(8)
+        ZonedDateTime monday0830 = MONDAY_20200608_NOON
             .withHour(8)
             .withMinute(30);
         return Stream.of(
             Arguments.of(
-                monday20200608T0830,
+                monday0830,
                 8,
                 "2020-06-08",
                 "2020-06-10",
@@ -789,7 +756,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             ),
             Arguments.of(
                 // Mock the current time to same day of itinerary, between itinerary start and end time.
-                monday20200608T0830.withMinute(50),
+                monday0830.withMinute(50),
                 8,
                 "2020-06-08",
                 "2020-06-08",
@@ -797,7 +764,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 true
             ),
             Arguments.of(
-                monday20200608T0830,
+                monday0830,
                 9,
                 "2020-06-09",
                 "2020-06-08",
@@ -906,12 +873,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         firstItinerary(unexpectedResponse).legs.remove(2);
 
         // Mock the current time to be 8:45am on Monday, June 15, 2020.
-        DateTimeUtils.useFixedClockAt(
-            noonMonday8June2020
-                .withDayOfMonth(15)
-                .withHour(8)
-                .withMinute(45)
-        );
+        DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
 
         // Match on first attempts.
         assertCheckMonitoredTrip(monitoredTrip, expectedResponse, true, 0, TRIP_ACTIVE);
@@ -1019,7 +981,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     private static Stream<Arguments> createCanUnsnoozeTripCases() {
         // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
-        ZonedDateTime tuesday = noonMonday8June2020.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
+        ZonedDateTime tuesday = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
         ZonedDateTime wednesday = tuesday.withDayOfMonth(10);
 
         return Stream.of(
@@ -1030,7 +992,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(tuesday.withHour(8), wednesday, true),
             // Trip snoozed on Monday, June 8, 2020 (a day before the trip starts), should unsnooze at 12:00am (midnight)
             // on Tuesday, June 9, 2020.
-            Arguments.of(noonMonday8June2020, tuesday, true)
+            Arguments.of(MONDAY_20200608_NOON, tuesday, true)
         );
     }
 
@@ -1121,7 +1083,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // change "now" time after initial check to be within 30 min lead
         // 1:00AM UTC or 5:00PM PST
         DateTimeUtils.useFixedClockAt(
-            noonMonday8June2020
+            MONDAY_20200608_NOON
                 .withDayOfMonth(9)
                 .withHour(17)
                 .withMinute(0)
