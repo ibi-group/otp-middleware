@@ -730,10 +730,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     ) throws Exception {
         DateTimeUtils.useFixedClockAt(nowTime);
 
-        // Create an OTP mock to return, with itinerary start on Monday June 8, 2020.
+        // Create an OTP mock to return, with itinerary start on Monday, June 8, 2020.
         OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
         Itinerary originalItinerary = firstItinerary(mockWeekdayResponse);
-        // parse original itinerary date/time and then update mock itinerary to occur on Monday June 8, 2020
         OtpTestUtils.updateBaseItineraryTime(
             originalItinerary,
             DateTimeUtils.makeOtpZonedDateTime(originalItinerary.startTime)
@@ -742,36 +741,37 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         Date originalStartTime = originalItinerary.startTime;
 
+        // Create an OTP mock to return, with itinerary start on Tuesday, June 9, 2020.
         OtpResponse mockPreviousWeekdayResponse = mockOtpPlanResponse();
         Itinerary mockPreviousItinerary = firstItinerary(mockPreviousWeekdayResponse);
-        // parse original itinerary date/time and then update mock itinerary to occur on Monday June 8, 2020
         OtpTestUtils.updateBaseItineraryTime(
             mockPreviousItinerary,
             DateTimeUtils.makeOtpZonedDateTime(mockPreviousItinerary.startTime)
                 .withDayOfMonth(9)
         );
 
-        // Make sure that the start time on the original trip was not changed.
+        // Make sure that the start time on the original trip was not changed inadvertently.
         assertEquals(originalStartTime, originalItinerary.startTime);
 
         // Create a mock monitored trip and CheckMonitorTrip instance.
-        // Note that the response below gets modified from the original mockOtpPlanResponse.
+        // Note that the response below includes changes above to the itinerary times.
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
 
-        // All days are initially monitored, remove Monday and Tuesday, so that the next trip date is Wednesday.
         if (skipMondayTuesday) {
+            // All days are initially monitored.
+            // For some cases, un-monitor Monday and Tuesday, so that the next trip date is Wednesday.
             mockTrip.monday = false;
             mockTrip.tuesday = false;
         }
 
-        // Create mock itinerary existence for trip, with trip existing Monday and Tuesday.
+        // The trip exists Monday, Tuesday, and Wednesday.
         mockTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         mockTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
         mockTrip.itineraryExistence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
 
-        // Use a previously computed trip status to be upcoming on Tuesday.
-        // Copy those journey state params to the CheckMonitoredTrip object too.
+        // Use a previously computed trip status with the specified currentTargetDate.
+        // Copy those journey state params, including to the CheckMonitoredTrip object too.
         mockTrip.journeyState.tripStatus = tripStatus;
         mockTrip.journeyState.targetDate = currentTargetDate;
         mockTrip.journeyState.matchingItinerary = mockPreviousItinerary;
@@ -781,7 +781,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         mockCheckMonitoredTrip.previousJourneyState.matchingItinerary = mockPreviousItinerary;
         mockCheckMonitoredTrip.previousMatchingItinerary = mockPreviousItinerary;
 
-        // update the target date to be an upcoming Tuesday within the CheckMonitoredTrip
+        // Set the current target date/time.
         mockCheckMonitoredTrip.targetZonedDateTime = noonMonday8June2020
             .withDayOfMonth(previousTargetDay)
             .withHour(8)
@@ -789,15 +789,15 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         Persistence.monitoredTrips.create(mockTrip);
 
-        // Perform the skip check (this populates some internal states)
-        // This trip should not be skipped because it occurs within minutes of the mocked system time.
+        // Perform the skip check (this populates some internal states).
+        // This trip should not be skipped if Monday and Tuesday are monitored because,
+        // for those cases, the trip occurs within minutes of the mocked system time.
         assertEquals(skipMondayTuesday, mockCheckMonitoredTrip.shouldSkipMonitoredTripCheck());
 
-        // execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome
-        // (should hit the "no additional checks needed" because the next trip is in the future.)
+        // Execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome.
         assertTrue(mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
 
-        // fetch updated trip from persistence
+        // Fetch updated trip from persistence and check the trip status and target date.
         MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(mockTrip.id);
 
         if (!skipMondayTuesday) {
@@ -820,12 +820,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     private static Stream<Arguments> casesForChangingMonitoredDays() {
+        ZonedDateTime monday20200608T0830 = noonMonday8June2020
+            .withDayOfMonth(8)
+            .withHour(8)
+            .withMinute(30);
         return Stream.of(
             Arguments.of(
-                noonMonday8June2020
-                    .withDayOfMonth(8)
-                    .withHour(8)
-                    .withMinute(30),
+                monday20200608T0830,
                 8,
                 "2020-06-08",
                 "2020-06-10",
@@ -833,11 +834,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 true
             ),
             Arguments.of(
-                // mock the current time same day of itinerary and between start and end time.
-                noonMonday8June2020
-                    .withDayOfMonth(8)
-                    .withHour(8)
-                    .withMinute(50),
+                // Mock the current time to same day of itinerary, between itinerary start and end time.
+                monday20200608T0830.withMinute(50),
                 8,
                 "2020-06-08",
                 "2020-06-08",
@@ -845,10 +843,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 true
             ),
             Arguments.of(
-                noonMonday8June2020
-                    .withDayOfMonth(8)
-                    .withHour(8)
-                    .withMinute(30),
+                monday20200608T0830,
                 9,
                 "2020-06-09",
                 "2020-06-08",
