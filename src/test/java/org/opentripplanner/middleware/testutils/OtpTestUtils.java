@@ -212,12 +212,12 @@ public class OtpTestUtils {
         );
     }
 
-    private static Itinerary getFirstItinerary(OtpResponse response) {
+    public static Itinerary firstItinerary(OtpResponse response) {
         return response.plan.itineraries.get(0);
     }
 
     public static Itinerary createDefaultItinerary() throws Exception {
-        return getFirstItinerary(OTP2_DISPATCHER_PLAN_RESPONSE.clone().getResponse());
+        return firstItinerary(OTP2_DISPATCHER_PLAN_RESPONSE.clone().getResponse());
     }
 
     public static JourneyState createDefaultJourneyState() throws Exception {
@@ -225,7 +225,7 @@ public class OtpTestUtils {
     }
 
     public static JourneyState createDefaultJourneyState(Supplier<OtpResponse> otpResponseProvider) {
-        return createDefaultJourneyState(getFirstItinerary(otpResponseProvider.get()));
+        return createDefaultJourneyState(firstItinerary(otpResponseProvider.get()));
     }
 
     private static JourneyState createDefaultJourneyState(Itinerary defaultItinerary) {
