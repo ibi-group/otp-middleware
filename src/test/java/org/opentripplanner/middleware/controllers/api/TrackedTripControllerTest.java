@@ -641,7 +641,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         // Check that matching itinerary time corresponds to "today".
         assertEquals(
-            DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId()).toLocalDate(),
+            DateTimeUtils.nowAsZonedDateTime().toLocalDate(),
             ZonedDateTime.ofInstant(resetTrip.journeyState.matchingItinerary.startTime.toInstant(), DateTimeUtils.getOtpZoneId()).toLocalDate()
         );
 
