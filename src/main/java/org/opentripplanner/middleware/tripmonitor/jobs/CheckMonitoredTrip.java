@@ -331,24 +331,19 @@ public class CheckMonitoredTrip implements Runnable {
                 // If the updated trip status is upcoming and the end time of the current matching itinerary is in the
                 // past, this means the trip has completed and the next possible time the trip occurs should be
                 // calculated.
-                // If the matching itinerary is in the future,
-                // make sure that the target date reflects that.
+                // If the matching itinerary is in the future, make sure that the target date reflects that.
                 if (journeyState.tripStatus == TripStatus.TRIP_UPCOMING && (!matchingItinerary.isActive())) {
                     if (matchingItinerary.hasEnded()) {
                         // Trip has ended. Find the next target date starting from "tomorrow".
                         LOG.info("Matching itinerary has concluded, advancing to next possible trip date.");
                         targetZonedDateTime = targetZonedDateTime.plusDays(1);
                     } else {
-                        // Trip has not begun. Reset the target date to start of itinerary.
+                        // Trip has not begun. Reset the target date to the start time of itinerary "today".
                         LOG.info("Matching itinerary has not started, finding the next possible trip date.");
-                        ZonedDateTime itinStart = ZonedDateTime.ofInstant(
-                            matchingItinerary.startTime.toInstant(),
-                            DateTimeUtils.getOtpZoneId()
+                        targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(
+                            DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId()),
+                            matchingItinerary.startTime.toInstant()
                         );
-                        targetZonedDateTime = DateTimeUtils.nowAsZonedDateTime(DateTimeUtils.getOtpZoneId())
-                            .withHour(itinStart.getHour())
-                            .withMinute(itinStart.getMinute())
-                            .withSecond(itinStart.getSecond());
                     }
 
                     advanceToNextActiveTripDate();
@@ -966,9 +961,10 @@ public class CheckMonitoredTrip implements Runnable {
 
     /** Check if the previous matching itinerary was null or if it has already concluded */
     private boolean isPrevMatchingItineraryNotConcluded() {
-        return previousMatchingItinerary != null &&
-            previousMatchingItinerary.endTime.after(new Date(previousJourneyState.lastCheckedEpochMillis)) &&
-            previousMatchingItinerary.startTime.before(new Date(previousJourneyState.lastCheckedEpochMillis));
+        if (previousMatchingItinerary == null) return false;
+        Date lastCheckedDate = new Date(previousJourneyState.lastCheckedEpochMillis);
+        return previousMatchingItinerary.endTime.after(lastCheckedDate) &&
+            previousMatchingItinerary.startTime.before(lastCheckedDate);
     }
 
     /**
