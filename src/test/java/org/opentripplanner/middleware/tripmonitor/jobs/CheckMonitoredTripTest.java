@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import jersey.repackaged.com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -119,20 +120,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         LOG.info("Created trip {}", monitoredTrip.id);
 
         // Setup an OTP mock response in order to trigger some of the monitor checks.
-        OtpResponse mockResponse = mockOtpPlanResponse();
-        Itinerary mockMondayJune15Itinerary = firstItinerary(mockResponse);
-
-        // parse original itinerary date/time and then update mock itinerary to occur on Monday June 15
-        OtpTestUtils.updateBaseItineraryTime(
-            mockMondayJune15Itinerary,
-            DateTimeUtils.makeOtpZonedDateTime(mockMondayJune15Itinerary.startTime)
-                .withDayOfMonth(15)
-        );
+        OtpResponse mockResponse = getMockOtpResponseJune15();
 
         // Add fake alerts to simulated itinerary.
         ArrayList<LocalizedAlert> fakeAlerts = new ArrayList<>();
         fakeAlerts.add(new LocalizedAlert());
-        mockMondayJune15Itinerary.legs.get(1).alerts = fakeAlerts;
+        firstItinerary(mockResponse).legs.get(1).alerts = fakeAlerts;
 
         // mock the current time to be 8:45am on Monday, June 15
         DateTimeUtils.useFixedClockAt(
@@ -174,19 +167,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         OtpResponse mockResponse = mockOtpPlanResponse();
         Itinerary mockTuesdayJune9Itinerary = firstItinerary(mockResponse);
-
-        // parse original itinerary date/time and then update mock itinerary to occur on Monday June 15
-        ZonedDateTime mockItineraryDate = DateTimeUtils.makeOtpZonedDateTime(mockTuesdayJune9Itinerary.startTime)
-            .withDayOfMonth(9);
-        OtpTestUtils.updateBaseItineraryTime(
-            mockTuesdayJune9Itinerary,
-            mockItineraryDate
-        );
+        OtpTestUtils.setItineraryDay(mockTuesdayJune9Itinerary, 9);
 
         // Add fake alerts to simulated itinerary.
-        ArrayList<LocalizedAlert> fakeAlerts = new ArrayList<>();
-        fakeAlerts.add(new LocalizedAlert());
-        mockTuesdayJune9Itinerary.legs.get(1).alerts = fakeAlerts;
+        mockTuesdayJune9Itinerary.legs.get(1).alerts = Lists.newArrayList(new LocalizedAlert());
 
         // The trip is set to be monitored Monday to Friday.
         // Mock time to be 7:30am on Tuesday, June 9 before the trip start.
@@ -213,17 +197,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void sendInitialReminderNotificationForOneTimeTrip() throws Exception {
-        OtpResponse mockResponse = mockOtpPlanResponse();
-        Itinerary mockMondayJune15Itinerary = firstItinerary(mockResponse);
-
-        // Parse original itinerary date/time and then update mock itinerary to occur on Monday June 15.
-        OtpTestUtils.updateBaseItineraryTime(
-            mockMondayJune15Itinerary,
-            DateTimeUtils
-                .makeOtpZonedDateTime(mockMondayJune15Itinerary.startTime)
-                .withDayOfMonth(15)
-        );
-
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
             OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
@@ -233,7 +206,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // Set one time trip state.
         monitoredTrip.updateAllDaysOfWeek(false);
-        monitoredTrip.itinerary = mockMondayJune15Itinerary;
         monitoredTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
         Persistence.monitoredTrips.create(monitoredTrip);
 
@@ -244,7 +216,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 .withMinute(45)
         );
 
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::getMockOtpResponseJune15);
         checkMonitoredTrip.run();
         // Assert that the initial reminder has been generated.
         Assertions.assertNotNull(checkMonitoredTrip.initialReminderNotification);
@@ -500,11 +472,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     void canMakeOTPRequestAndUpdateMatchingItineraryForPreviouslyUnmatchedItinerary() throws Exception {
-        // create an OTP mock to return
-        OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
         // create a mock monitored trip and CheckMonitorTrip instance.
         // Note that the response below gets modified from the original mockOtpPlanResponse.
-        CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
+        CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(this::getMockOtpResponseJune15);
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
 
@@ -522,14 +492,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             .withDayOfMonth(15)
             .withHour(8)
             .withMinute(35);
-
-        Itinerary mockMondayJune15Itinerary = firstItinerary(mockWeekdayResponse);
-        // parse original itinerary date/time and then update mock itinerary to occur on Monday June 15
-        OtpTestUtils.updateBaseItineraryTime(
-            mockMondayJune15Itinerary,
-            DateTimeUtils.makeOtpZonedDateTime(mockMondayJune15Itinerary.startTime)
-                .withDayOfMonth(15)
-        );
 
         // mock the current time to be 8:45am on Monday, June 15
         DateTimeUtils.useFixedClockAt(
@@ -733,22 +695,14 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Create an OTP mock to return, with itinerary start on Monday, June 8, 2020.
         OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
         Itinerary originalItinerary = firstItinerary(mockWeekdayResponse);
-        OtpTestUtils.updateBaseItineraryTime(
-            originalItinerary,
-            DateTimeUtils.makeOtpZonedDateTime(originalItinerary.startTime)
-                .withDayOfMonth(8)
-        );
+        OtpTestUtils.setItineraryDay(originalItinerary, 8);
 
         Date originalStartTime = originalItinerary.startTime;
 
         // Create an OTP mock to return, with itinerary start on Tuesday, June 9, 2020.
         OtpResponse mockPreviousWeekdayResponse = mockOtpPlanResponse();
         Itinerary mockPreviousItinerary = firstItinerary(mockPreviousWeekdayResponse);
-        OtpTestUtils.updateBaseItineraryTime(
-            mockPreviousItinerary,
-            DateTimeUtils.makeOtpZonedDateTime(mockPreviousItinerary.startTime)
-                .withDayOfMonth(9)
-        );
+        OtpTestUtils.setItineraryDay(mockPreviousItinerary, 9);
 
         // Make sure that the start time on the original trip was not changed inadvertently.
         assertEquals(originalStartTime, originalItinerary.startTime);
@@ -946,8 +900,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         Persistence.monitoredTrips.create(monitoredTrip);
 
-        OtpResponse expectedResponse = getMockOtpResponse();
-        OtpResponse unexpectedResponse = getMockOtpResponse();
+        OtpResponse expectedResponse = getMockOtpResponseJune15();
+        OtpResponse unexpectedResponse = getMockOtpResponseJune15();
         // Remove the final itinerary leg so that the matching itineraries check fails.
         firstItinerary(unexpectedResponse).legs.remove(2);
 
@@ -996,14 +950,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     /**
      * Create mock OTP response and set the base times of the first itinerary to Monday, June 15, 2020.
      */
-    private OtpResponse getMockOtpResponse() {
+    private OtpResponse getMockOtpResponseJune15() {
         OtpResponse mockResponse = mockOtpPlanResponse();
         Itinerary mockMondayJune15Itinerary = firstItinerary(mockResponse);
-        OtpTestUtils.updateBaseItineraryTime(
-            mockMondayJune15Itinerary,
-            DateTimeUtils.makeOtpZonedDateTime(mockMondayJune15Itinerary.startTime)
-                .withDayOfMonth(15)
-        );
+        OtpTestUtils.setItineraryDay(mockMondayJune15Itinerary, 15);
         return mockResponse;
     }
 

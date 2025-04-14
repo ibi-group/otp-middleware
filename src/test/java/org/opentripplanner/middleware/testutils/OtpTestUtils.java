@@ -219,6 +219,17 @@ public class OtpTestUtils {
         );
     }
 
+    /**
+     * Offsets all times in the given itinerary so that the itinerary starts at the same time
+     * but on the specified day of month.
+     */
+    public static void setItineraryDay(Itinerary mockItinerary, int dayOfMonth) {
+        updateBaseItineraryTime(
+            mockItinerary,
+            DateTimeUtils.makeOtpZonedDateTime(mockItinerary.startTime).withDayOfMonth(dayOfMonth)
+        );
+    }
+
     public static Itinerary firstItinerary(OtpResponse response) {
         return response.plan.itineraries.get(0);
     }
