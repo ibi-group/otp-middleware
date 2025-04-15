@@ -688,12 +688,9 @@ public class CheckMonitoredTrip implements Runnable {
         // Get current time and trip time (with the time offset to today) for comparison.
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
 
-        Instant tripStartInstant;
-        if (!trip.isOneTime() && !isPreviousTripOngoing()) {
-            tripStartInstant = findEarliestTargetDate(trip, now).toInstant();
-        } else {
-            tripStartInstant = matchingItinerary.startTime.toInstant();
-        }
+        Instant tripStartInstant = !trip.isOneTime() && !isPreviousTripOngoing()
+            ? findEarliestTargetDate(trip, now).toInstant()
+            : matchingItinerary.startTime.toInstant();
 
         return (tripStartInstant.getEpochSecond() - now.toEpochSecond()) / 60;
     }
@@ -872,8 +869,10 @@ public class CheckMonitoredTrip implements Runnable {
         return findNextMonitoredDay(trip, nextStartDay);
     }
 
+    /**
+     * Advance the target date/time until a day is found when the trip is active.
+     */
     private static ZonedDateTime findNextMonitoredDay(MonitoredTrip trip, ZonedDateTime startingDay) {
-        // Advance the target date/time until a day is found when the trip is active.
         ZonedDateTime nextMonitoredDay = startingDay;
         if (!trip.isOneTime()) {
             while (!trip.isActiveOnDate(nextMonitoredDay)) {
