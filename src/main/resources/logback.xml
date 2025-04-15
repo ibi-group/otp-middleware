@@ -10,6 +10,8 @@
     <variable name="FILE_LOG_PATTERN" value="%d{yyyy-MM-dd'T'HH:mm:ss z} %-5level %X{prefix} %msg%n" />
     <!-- Archive logs to a folder for each day (e.g. for March 2025: logs/2025/03/14) -->
     <variable name="ARCHIVED_LOG_FOLDER" value="logs/%d{yyyy/MM/dd}" />
+    <!-- Keep about two months worth of logs -->
+    <variable name="LOG_RETENTION_DAYS" value="62" />
 
     <appender name="STDOUT" class="ConsoleAppender">
         <encoder class="PatternLayoutEncoder">
@@ -20,10 +22,8 @@
     <appender name="NOTIFICATION-FILE" class="RollingFileAppender">
         <file>logs/notifications.log</file>
         <rollingPolicy class="TimeBasedRollingPolicy">
-            <!-- Archive logs to a folder -->
             <fileNamePattern>${ARCHIVED_LOG_FOLDER}/notifications.log</fileNamePattern>
-            <!-- Keep about two months worth of logs -->
-            <maxHistory>62</maxHistory>
+            <maxHistory>${LOG_RETENTION_DAYS}</maxHistory>
         </rollingPolicy>
         <encoder>
             <pattern>${FILE_LOG_PATTERN}</pattern>
@@ -32,10 +32,8 @@
     <appender name="GMAP-FILE" class="RollingFileAppender">
         <file>logs/gmap.log</file>
         <rollingPolicy class="TimeBasedRollingPolicy">
-            <!-- Archive logs to a folder -->
             <fileNamePattern>${ARCHIVED_LOG_FOLDER}/gmap.log</fileNamePattern>
-            <!-- Keep about two months worth of logs -->
-            <maxHistory>62</maxHistory>
+            <maxHistory>${LOG_RETENTION_DAYS}</maxHistory>
         </rollingPolicy>
         <encoder>
             <pattern>${FILE_LOG_PATTERN}</pattern>
