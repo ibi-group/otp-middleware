@@ -131,7 +131,7 @@ public class AnonymizedTripRequest {
      * If all first/last legs in all itineraries are transit, return true. If any first/last leg is non transit,
      * return false.
      */
-    private static boolean areAllFirstOrLastLegsTransit(List<Itinerary> itineraries, boolean isFirstLeg) {
+    static boolean areAllFirstOrLastLegsTransit(List<Itinerary> itineraries, boolean isFirstLeg) {
         if (itineraries == null) {
             // If no itineraries are provided assume non transit leg.
             return false;
@@ -143,7 +143,7 @@ public class AnonymizedTripRequest {
             if (legs != null && !legs.isEmpty()) {
                 isTransitLeg = (isFirstLeg)
                     ? legs.get(0).transitLeg
-                    : legs.get(itineraries.get(0).legs.size() - 1).transitLeg;
+                    : legs.get(legs.size() - 1).transitLeg;
                 if (!isTransitLeg) {
                     // If the leg is non transit there is no need to check the remaining itineraries.
                     break;
