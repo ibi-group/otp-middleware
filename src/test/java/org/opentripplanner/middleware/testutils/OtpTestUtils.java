@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_GRAPHQL_ENDPOINT;
@@ -211,13 +212,35 @@ public class OtpTestUtils {
         );
     }
 
+    /**
+     * Offsets all times in the given itinerary so that the itinerary starts at the same time
+     * but on the specified day of month.
+     */
+    public static void setItineraryDay(Itinerary mockItinerary, int dayOfMonth) {
+        updateBaseItineraryTime(
+            mockItinerary,
+            DateTimeUtils.makeOtpZonedDateTime(mockItinerary.startTime).withDayOfMonth(dayOfMonth)
+        );
+    }
+
+    public static Itinerary firstItinerary(OtpResponse response) {
+        return response.plan.itineraries.get(0);
+    }
+
     public static Itinerary createDefaultItinerary() throws Exception {
-        return OTP2_DISPATCHER_PLAN_RESPONSE.clone().getResponse().plan.itineraries.get(0);
+        return firstItinerary(OTP2_DISPATCHER_PLAN_RESPONSE.clone().getResponse());
     }
 
     public static JourneyState createDefaultJourneyState() throws Exception {
+        return  createDefaultJourneyState(createDefaultItinerary());
+    }
+
+    public static JourneyState createDefaultJourneyState(Supplier<OtpResponse> otpResponseProvider) {
+        return createDefaultJourneyState(firstItinerary(otpResponseProvider.get()));
+    }
+
+    private static JourneyState createDefaultJourneyState(Itinerary defaultItinerary) {
         JourneyState journeyState = new JourneyState();
-        Itinerary defaultItinerary = createDefaultItinerary();
         journeyState.scheduledArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
         journeyState.scheduledDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
         journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();

@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
@@ -50,8 +49,7 @@ class ShouldSkipTripTestCase {
 
     public CheckMonitoredTrip generateCheckMonitoredTrip(OtpUser user) throws Exception {
         // create a mock OTP response for planning a trip on a weekday target datetime
-        OtpResponse mockWeekdayResponse = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
-        Itinerary mockWeekdayItinerary = mockWeekdayResponse.plan.itineraries.get(0);
+        Itinerary mockWeekdayItinerary = OtpTestUtils.createDefaultItinerary();
         OtpTestUtils.updateBaseItineraryTime(
             mockWeekdayItinerary,
             mockTime.withYear(2020).withMonth(6).withDayOfMonth(8).withHour(8).withMinute(40).withSecond(10)

@@ -136,6 +136,13 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns the current time as a ZonedDateTime instance in the configured timezone
+     */
+    public static ZonedDateTime nowAsZonedDateTime() {
+        return ZonedDateTime.now(clock);
+    }
+
+    /**
      * Returns the current time in milliseconds according to the current set Clock.
      */
     public static long currentTimeMillis() {
@@ -226,6 +233,19 @@ public class DateTimeUtils {
             getDateFromString(dateString, DEFAULT_DATE_FORMAT_PATTERN),
             LocalTime.parse(timeString),
             DateTimeUtils.getOtpZoneId()
+        );
+    }
+
+    /**
+     * Makes a {@link ZonedDateTime} object from a {@link ZonedDateTime} for the date portion,
+     * and a {@link Instant} for the time portion. The result is expressed in the configured OTP time zone.
+     */
+    public static ZonedDateTime makeOtpZonedDateTime(ZonedDateTime datePortion, Instant timePortion) {
+        ZoneId zoneId = getOtpZoneId();
+        return ZonedDateTime.of(
+            datePortion.toLocalDate(),
+            LocalTime.ofInstant(timePortion, zoneId),
+            zoneId
         );
     }
 
