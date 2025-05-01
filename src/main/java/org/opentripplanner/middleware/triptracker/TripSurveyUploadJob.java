@@ -6,16 +6,19 @@ import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadFiles;
 import org.opentripplanner.middleware.connecteddataplatform.IntervalUploadJob;
 import org.opentripplanner.middleware.connecteddataplatform.ReportingInterval;
 import org.opentripplanner.middleware.models.TripSurveyUpload;
+import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
 import org.opentripplanner.middleware.typeform.Responses;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.typeform.TypeFormDispatcher;
 import org.opentripplanner.middleware.utils.FileUtils;
+import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -26,7 +29,7 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 /**
  * This job will analyze completed trips with deviations and send survey notifications about select trips.
  */
-public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
+public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> implements RecurringJobScheduler {
     private static final Logger LOG = LoggerFactory.getLogger(TripSurveyUploadJob.class);
 
 
@@ -93,5 +96,18 @@ public class TripSurveyUploadJob extends IntervalUploadJob<TripSurveyUpload> {
 
     public static boolean isConfigured() {
         return !Strings.isBlank(CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME) && TypeFormDispatcher.checkSurveyIdAndToken();
+    }
+
+    @Override
+    public void scheduleRecurringJob() {
+        if (TripSurveyUploadJob.isConfigured()) {
+            LOG.info("Scheduling trip survey upload every day.");
+            Scheduler.scheduleJob(
+                new TripSurveyUploadJob(),
+                0,
+                1,
+                TimeUnit.DAYS
+            );
+        }
     }
 }

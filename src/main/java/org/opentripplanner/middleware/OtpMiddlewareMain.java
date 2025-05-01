@@ -3,9 +3,7 @@ package org.opentripplanner.middleware;
 import io.github.manusant.ss.SparkSwagger;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
-import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
-import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
 import org.opentripplanner.middleware.controllers.api.AdminUserController;
 import org.opentripplanner.middleware.controllers.api.ApiUserController;
 import org.opentripplanner.middleware.controllers.api.CDPFilesController;
@@ -20,12 +18,10 @@ import org.opentripplanner.middleware.controllers.api.TrackedTripController;
 import org.opentripplanner.middleware.controllers.api.TripHistoryController;
 import org.opentripplanner.middleware.controllers.api.TripSurveyController;
 import org.opentripplanner.middleware.docs.PublicApiDocGenerator;
-import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.tripmonitor.jobs.MonitorAllTripsJob;
-import org.opentripplanner.middleware.triptracker.TripSurveySenderJob;
-import org.opentripplanner.middleware.triptracker.TripSurveyUploadJob;
+import org.opentripplanner.middleware.recurringjobs.RecurringJob;
+import org.opentripplanner.middleware.utils.CommandLineProcessor;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.Scheduler;
@@ -38,6 +34,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -57,57 +54,34 @@ public class OtpMiddlewareMain {
     public static boolean inTestEnvironment = false;
 
     public static void main(String[] args) throws IOException {
+        CommandLineProcessor processor = new CommandLineProcessor();
+        processor.parseArguments(args);
+
         // Load configuration.
-        ConfigUtils.loadConfig(args);
-
-        // Initialize template engine
-        TemplateUtils.initialize();
-
+        ConfigUtils.loadConfig(processor.getConfigFile());
         // Connect to MongoDB.
         Persistence.initialize();
 
-        MonitoredComponent.initializeMonitoredComponentsFromConfig();
-
-        initializeHttpEndpoints();
-
-        // If Middleware started from test class, skip recurring jobs (that can be log heavy).
         if (!inTestEnvironment) {
-            // Schedule Bugsnag jobs to start retrieving Bugsnag event/error data
-            BugsnagJobs.initialize();
-            // Initialize Bugsnag in order to report application errors
+            // Initialize Bugsnag in order to report application errors.
             BugsnagReporter.initializeBugsnagErrorReporting();
-            // Schedule trip history uploads.
-            ConnectedDataManager.scheduleTripHistoryUploadJob();
-
-            // Schedule recurring jobs.
-            // TODO: Determine whether this should go in some other process.
-
-            MonitorAllTripsJob monitorAllTripsJob = new MonitorAllTripsJob();
-            Scheduler.scheduleJob(
-                monitorAllTripsJob,
-                0,
-                1,
-                TimeUnit.MINUTES
-            );
-
-            TripSurveySenderJob tripSurveySenderJob = new TripSurveySenderJob();
-            Scheduler.scheduleJob(
-                tripSurveySenderJob,
-                0,
-                30,
-                TimeUnit.MINUTES
-            );
-
-            if (TripSurveyUploadJob.isConfigured()) {
-                LOG.info("Scheduling trip survey upload every day");
-                TripSurveyUploadJob tripSurveyUploadJob = new TripSurveyUploadJob();
-                Scheduler.scheduleJob(
-                    tripSurveyUploadJob,
-                    0,
-                    1,
-                    TimeUnit.DAYS
-                );
+            Set<RecurringJob> recurringJobs = processor.getRecurringJobs();
+            if (!recurringJobs.isEmpty()) {
+                recurringJobs.forEach(RecurringJob::schedule);
+                try {
+                    // Block the main thread until the scheduler is terminated to prevent the application from
+                    // immediately stopping.
+                    Scheduler.schedulerService.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    LOG.info("Shutting down.", e);
+                    Thread.currentThread().interrupt();
+                }
             }
+        }
+
+        if (processor.isLoadBalance()) {
+            TemplateUtils.initialize();
+            initializeHttpEndpoints();
         }
     }
 

@@ -47,6 +47,7 @@ import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithi
 import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
+import static org.opentripplanner.middleware.utils.ConfigUtils.DEFAULT_ENV;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
@@ -73,7 +74,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
     @BeforeAll
     public static void setUp() throws IOException {
         // Load default env.yml configuration.
-        ConfigUtils.loadConfig(new String[]{});
+        ConfigUtils.loadConfig(DEFAULT_ENV);
 
         UsRideGwinnettNotifyBusOperator.IS_TEST = true;
 
