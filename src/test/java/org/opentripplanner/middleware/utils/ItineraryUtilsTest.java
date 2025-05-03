@@ -116,7 +116,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         MockOtpResponseProvider mockResponses = new MockOtpResponseProvider(mockOtpResponses);
 
         // Also set trip itinerary to the template itinerary for easy/lazy match.
-        Itinerary expectedItinerary = firstItinerary(mockOtpResponses.get(DayOfWeek.THURSDAY));
+        Itinerary expectedItinerary = firstItinerary(mockOtpResponses.get(/* DayOfWeek.THURSDAY */ FRIDAY_INDEX - 1));
         trip.itinerary = expectedItinerary;
 
         trip.checkItineraryExistence(false, mockResponses::getMockResponse);
