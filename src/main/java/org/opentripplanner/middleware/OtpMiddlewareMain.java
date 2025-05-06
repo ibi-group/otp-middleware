@@ -79,7 +79,7 @@ public class OtpMiddlewareMain {
             }
         }
 
-        if (processor.isLoadBalance()) {
+        if (processor.hasEndPoints()) {
             TemplateUtils.initialize();
             initializeHttpEndpoints();
         }

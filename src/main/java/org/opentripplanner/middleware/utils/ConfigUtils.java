@@ -75,9 +75,6 @@ public class ConfigUtils {
         if (isRunningCi) {
             LOG.info("Constructing env config from environment variables");
             envConfig = constructConfigFromEnvironment();
-        } else if (configFile.equalsIgnoreCase(DEFAULT_ENV)) {
-            LOG.warn("Using default env.yml: {}", configFile);
-            envConfig = yamlMapper.readTree(new FileInputStream(configFile));
         } else {
             LOG.info("Loading env.yml: {}", configFile);
             envConfig = yamlMapper.readTree(new FileInputStream(configFile));

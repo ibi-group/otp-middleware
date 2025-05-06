@@ -8,7 +8,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.opentripplanner.middleware.utils.CommandLineProcessor.LOAD_BALANCE_ERROR_MESSAGE;
+import static org.opentripplanner.middleware.utils.CommandLineProcessor.END_POINTS_ONLY_FLAGS;
+import static org.opentripplanner.middleware.utils.CommandLineProcessor.END_POINTS_ERROR_MESSAGE;
+import static org.opentripplanner.middleware.utils.CommandLineProcessor.RECURRING_JOB_FLAGS;
 import static org.opentripplanner.middleware.utils.ConfigUtils.DEFAULT_ENV;
 
 class CommandLineProcessorTest {
@@ -22,48 +24,53 @@ class CommandLineProcessorTest {
             processor.parseArguments(commandLineTestCase.command);
             assertEquals(commandLineTestCase.configFile, processor.getConfigFile(), commandLineTestCase.message);
             assertEquals(commandLineTestCase.recurringJobs, processor.getRecurringJobs());
-            assertEquals(commandLineTestCase.isLoadBalanced, processor.isLoadBalance());
+            assertEquals(commandLineTestCase.isLoadBalanced, processor.hasEndPoints());
         } catch (IllegalArgumentException e) {
             assertEquals(commandLineTestCase.errorMessage, e.getMessage());
         }
     }
 
     private static Stream<CommandLineTestCase> createCommandLineParametersCases() {
+        final String endPointFlagLonghand = END_POINTS_ONLY_FLAGS.get(0);
+        final String endPointFlagShorthand = END_POINTS_ONLY_FLAGS.get(1);
+        final String recurringJobFlagLonghand = RECURRING_JOB_FLAGS.get(0);
+        final String recurringJobFlagShorthand = RECURRING_JOB_FLAGS.get(1);
+
         return Stream.of(
             new CommandLineTestCase()
-                .withCommand(new String[] {"Unknown", "set", "of", "commands"})
-                .withMessage("Unknown command, should default to original command outcome: default env, all jobs and load balancing."),
+                .withCommand("Unknown", "set", "of", "commands")
+                .withMessage("Unknown command, should default to original command outcome: default env, all jobs and end points."),
             new CommandLineTestCase()
-                .withCommand(new String[] {})
-                .withMessage("Original command with default env, all jobs and load balancing."),
+                .withCommand()
+                .withMessage("Original command with default env, all jobs and end points."),
             new CommandLineTestCase()
-                .withCommand(new String[] {TEST_ENV})
+                .withCommand(TEST_ENV)
                 .withConfigFile(TEST_ENV)
-                .withMessage("Original command with test env, all jobs and load balancing."),
+                .withMessage("Original command with test env, all jobs and end points."),
             new CommandLineTestCase()
-                .withCommand(new String[] {"-loadbalance", "no"})
-                .withMessage("Original command, all jobs and no load balancing.")
+                .withCommand(endPointFlagLonghand, "no")
+                .withMessage("Original command, all jobs and no end points.")
                 .withLoadBalanced(false),
             new CommandLineTestCase()
-                .withCommand(new String[] {"-loadbalance", "yes"})
-                .withMessage("Original command, all jobs and with explicit load balancing.")
+                .withCommand(endPointFlagShorthand, "yes")
+                .withMessage("Original command, all jobs and with explicit end points.")
                 .withLoadBalanced(true),
             new CommandLineTestCase()
-                .withCommand(new String[] {"-loadbalance", "no", "-recurringjobs", "monitor-all-trips-job", "trip-history-upload-job"})
+                .withCommand(endPointFlagShorthand, "no", recurringJobFlagLonghand, "monitor-all-trips-job", "trip-history-upload-job")
                 .withMessage("Two jobs and no load balancing.")
                 .withLoadBalanced(false)
-                .withRecurringJob(Set.of(RecurringJob.MONITOR_ALL_TRIPS_JOB, RecurringJob.TRIP_HISTORY_UPLOAD_JOB)),
+                .withRecurringJobs(Set.of(RecurringJob.MONITOR_ALL_TRIPS_JOB, RecurringJob.TRIP_HISTORY_UPLOAD_JOB)),
             new CommandLineTestCase()
-                .withCommand(new String[] {"-loadbalance", "no", "-recurringjobs", "monitor-all-trips-job", "trip-history-upload-job", "bugsnag-event-handing-job", "trip-survey-sender-job", "trip-survey-upload-job"})
+                .withCommand(endPointFlagLonghand, "no", recurringJobFlagLonghand, "monitor-all-trips-job", "trip-history-upload-job", "bugsnag-event-handing-job", "trip-survey-sender-job", "trip-survey-upload-job")
                 .withMessage("All jobs long hand and no load balancing.")
                 .withLoadBalanced(false)
-                .withRecurringJob(RecurringJob.getAllRecurringJobs()),
+                .withRecurringJobs(RecurringJob.getAllRecurringJobs()),
             new CommandLineTestCase()
-                .withCommand(new String[] {"-loadbalance", "off"})
-                .withMessage("Unknown load balancing, throw exception.")
-                .withErrorMessage(LOAD_BALANCE_ERROR_MESSAGE),
+                .withCommand(endPointFlagLonghand, "off")
+                .withMessage("Unknown end point flag, throw exception.")
+                .withErrorMessage(END_POINTS_ERROR_MESSAGE),
             new CommandLineTestCase()
-                .withCommand(new String[] {"-recurringjobs", "unknown-job"})
+                .withCommand(recurringJobFlagShorthand, "unknown-job")
                 .withMessage("Unknown job, throw exception.")
                 .withErrorMessage(CommandLineProcessor.getRecurringJobErrorMessage("unknown-job"))
         );
@@ -82,7 +89,7 @@ class CommandLineProcessorTest {
             return this;
         }
 
-        public CommandLineTestCase withRecurringJob(Set<RecurringJob> recurringJobs) {
+        public CommandLineTestCase withRecurringJobs(Set<RecurringJob> recurringJobs) {
             this.recurringJobs = recurringJobs;
             return this;
         }
@@ -92,7 +99,7 @@ class CommandLineProcessorTest {
             return this;
         }
 
-        public CommandLineTestCase withCommand(String[] command) {
+        public CommandLineTestCase withCommand(String... command) {
             this.command = command;
             return this;
         }

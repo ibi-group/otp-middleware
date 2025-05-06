@@ -4,6 +4,7 @@ import org.opentripplanner.middleware.recurringjobs.RecurringJob;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,19 +15,21 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.DEFAULT_ENV;
  * Parses the command line to extract which jobs and/or services should be started. The only stipulation, is that if a
  * config file is defined, it must be the first argument defined. e.g.
  *
- * /configurations/test/env.yml -loadbalance yes -recurringjobs monitor-all-trips-job
+ * /configurations/test/env.yml --endpoints-only yes --recurring-jobs monitor-all-trips-job
  */
 public class CommandLineProcessor {
-    public static final String LOAD_BALANCE_ERROR_MESSAGE = "Invalid value for -loadbalance. Use 'yes' or 'no'.";
+    public static final List<String> END_POINTS_ONLY_FLAGS = List.of("--endpoints-only", "-E");
+    public static final List<String> RECURRING_JOB_FLAGS = List.of("--recurring-jobs", "-R");
+    public static final String END_POINTS_ERROR_MESSAGE = String.format("Invalid value for %s. Use 'yes' or 'no'.", END_POINTS_ONLY_FLAGS);
     public static final String RECURRING_JOB_ERROR_MESSAGE = "Unknown recurring job: %s. Valid jobs are: %s";
 
     private final Set<RecurringJob> recurringJobs;
-    private boolean loadBalance;
+    private boolean hadEndPoints;
     private String configFile;
 
     public CommandLineProcessor() {
         this.recurringJobs = RecurringJob.getAllRecurringJobs();
-        this.loadBalance = true;
+        this.hadEndPoints = true;
         this.configFile = DEFAULT_ENV;
     }
 
@@ -39,12 +42,12 @@ public class CommandLineProcessor {
             configFile = arguments[0];
         }
         Map<String, Set<String>> groupedParams = parseCommandLineArguments(arguments);
-        groupedParams.forEach((command, commandValues) -> {
-            if (command.equalsIgnoreCase("-recurringjobs")) {
+        groupedParams.forEach((flag, commandValues) -> {
+            if (RECURRING_JOB_FLAGS.contains(flag)) {
                 defineRecurringJobs(commandValues);
             }
-            if (command.equalsIgnoreCase("-loadbalance")) {
-                defineLoadBalancing(commandValues);
+            if (END_POINTS_ONLY_FLAGS.contains(flag)) {
+                defineEndPoints(commandValues);
             }
         });
     }
@@ -87,15 +90,15 @@ public class CommandLineProcessor {
     }
 
     /**
-     * Define if load balancing tasks should be enabled.
+     * Define if the end points should be enabled.
      */
-    private void defineLoadBalancing(Set<String> loadBalancingArguments) {
-        if (loadBalancingArguments.size() == 1 && loadBalancingArguments.contains("yes")) {
-            loadBalance = true;
-        } else if (loadBalancingArguments.size() == 1 && loadBalancingArguments.contains("no")) {
-            loadBalance = false;
+    private void defineEndPoints(Set<String> endPointArguments) {
+        if (endPointArguments.size() == 1 && endPointArguments.contains("yes")) {
+            hadEndPoints = true;
+        } else if (endPointArguments.size() == 1 && endPointArguments.contains("no")) {
+            hadEndPoints = false;
         } else {
-            throw new IllegalArgumentException(LOAD_BALANCE_ERROR_MESSAGE);
+            throw new IllegalArgumentException(END_POINTS_ERROR_MESSAGE);
         }
     }
 
@@ -103,8 +106,8 @@ public class CommandLineProcessor {
         return recurringJobs;
     }
 
-    public boolean isLoadBalance() {
-        return loadBalance;
+    public boolean hasEndPoints() {
+        return hadEndPoints;
     }
 
     public String getConfigFile() {
