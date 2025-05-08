@@ -45,10 +45,12 @@ public class OtpMiddlewareTestEnvironment {
             // If not running E2E, use test env.yml.
             args = CommandLineProcessor.getDefaultArguments("configurations/test/env.yml");
         }
-        // Fail this test and others if the above files do not exist.
-        File f = new File(args[0]);
-        if (!f.exists() || f.isDirectory()) {
-            throw new RuntimeException(String.format("Required config file %s does not exist!", f.getName()));
+        if (args[0].contains(".yml")) {
+            // Fail this test and others if the first argument is a file that does not exist.
+            File f = new File(args[0]);
+            if (!f.exists() || f.isDirectory()) {
+                throw new RuntimeException(String.format("Required config file %s does not exist!", f.getName()));
+            }
         }
 
         // start server
