@@ -106,4 +106,12 @@ public class CommandLineProcessor {
     public static String getRecurringJobErrorMessage(String unknownJobName) {
         return String.format(RECURRING_JOB_ERROR_MESSAGE, unknownJobName, RecurringJob.getAllCommandLineNames());
     }
+
+    public static String[] getDefaultArguments() {
+        return new String[]{END_POINTS_ONLY_FLAGS.get(0)};
+    }
+
+    public static String[] getDefaultArguments(String configFile) {
+        return new String[]{configFile, END_POINTS_ONLY_FLAGS.get(0)};
+    }
 }

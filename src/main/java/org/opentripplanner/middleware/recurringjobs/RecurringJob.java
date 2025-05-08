@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -41,7 +42,7 @@ public enum RecurringJob {
     }
 
     public static Set<RecurringJob> getAllRecurringJobs() {
-        return Set.of(RecurringJob.values());
+        return new HashSet<>(Arrays.asList(RecurringJob.values()));
     }
 
     public static List<String> getAllCommandLineNames() {
