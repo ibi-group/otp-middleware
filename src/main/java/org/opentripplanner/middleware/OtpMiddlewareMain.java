@@ -62,6 +62,12 @@ public class OtpMiddlewareMain {
         // Connect to MongoDB.
         Persistence.initialize();
 
+        if (processor.hasEndPoints()) {
+            // This must take place before the main thread is blocked below.
+            TemplateUtils.initialize();
+            initializeHttpEndpoints();
+        }
+
         if (!inTestEnvironment) {
             // Initialize Bugsnag in order to report application errors.
             BugsnagReporter.initializeBugsnagErrorReporting();
@@ -79,10 +85,6 @@ public class OtpMiddlewareMain {
             }
         }
 
-        if (processor.hasEndPoints()) {
-            TemplateUtils.initialize();
-            initializeHttpEndpoints();
-        }
     }
 
     private static void initializeHttpEndpoints() throws IOException {

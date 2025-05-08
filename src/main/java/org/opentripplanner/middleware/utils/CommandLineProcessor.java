@@ -13,14 +13,13 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.DEFAULT_ENV;
 
 /**
  * Parses the command line to extract which jobs and/or services should be started. The only stipulation, is that if a
- * config file is defined, it must be the first argument defined. e.g.
- *
- * /configurations/test/env.yml --endpoints-only yes --recurring-jobs monitor-all-trips-job
+ * config file is defined, it must be the first argument. e.g.
+ * <p>
+ * /configurations/test/env.yml --endpoints --recurring-jobs monitor-all-trips-job
  */
 public class CommandLineProcessor {
-    public static final List<String> END_POINTS_ONLY_FLAGS = List.of("--endpoints-only", "-E");
+    public static final List<String> END_POINTS_ONLY_FLAGS = List.of("--endpoints", "-E");
     public static final List<String> RECURRING_JOB_FLAGS = List.of("--recurring-jobs", "-R");
-    public static final String END_POINTS_ERROR_MESSAGE = String.format("Invalid value for %s. Use 'yes' or 'no'.", END_POINTS_ONLY_FLAGS);
     public static final String RECURRING_JOB_ERROR_MESSAGE = "Unknown recurring job: %s. Valid jobs are: %s";
 
     private final Set<RecurringJob> recurringJobs;
@@ -29,13 +28,13 @@ public class CommandLineProcessor {
 
     public CommandLineProcessor() {
         this.recurringJobs = RecurringJob.getAllRecurringJobs();
-        this.hadEndPoints = true;
+        this.hadEndPoints = false;
         this.configFile = DEFAULT_ENV;
     }
 
     /**
      * Parse the arguments provided on the command line. To maintain backward compatibility, if a config file is
-     * required, it must be the first argument and no command e.g. -config is NOT required.
+     * required, it must be the first argument, and no flag (e.g. --config) is used.
      */
     public void parseArguments(String[] arguments) {
         if (arguments.length > 0 && arguments[0].contains(".yml")) {
@@ -47,7 +46,7 @@ public class CommandLineProcessor {
                 defineRecurringJobs(commandValues);
             }
             if (END_POINTS_ONLY_FLAGS.contains(flag)) {
-                defineEndPoints(commandValues);
+                hadEndPoints = true;
             }
         });
     }
@@ -75,6 +74,9 @@ public class CommandLineProcessor {
      */
     private void defineRecurringJobs(Set<String> recurringJobArguments) {
         recurringJobs.clear();
+        if (recurringJobArguments.contains("none")) {
+            return;
+        }
         for (String job : recurringJobArguments) {
             RecurringJob recurringJob = RecurringJob.getJobFromCommandLineArgument(job);
             if (recurringJob != null) {
@@ -86,19 +88,6 @@ public class CommandLineProcessor {
                     RecurringJob.getAllCommandLineNames()
                 ));
             }
-        }
-    }
-
-    /**
-     * Define if the end points should be enabled.
-     */
-    private void defineEndPoints(Set<String> endPointArguments) {
-        if (endPointArguments.size() == 1 && endPointArguments.contains("yes")) {
-            hadEndPoints = true;
-        } else if (endPointArguments.size() == 1 && endPointArguments.contains("no")) {
-            hadEndPoints = false;
-        } else {
-            throw new IllegalArgumentException(END_POINTS_ERROR_MESSAGE);
         }
     }
 
