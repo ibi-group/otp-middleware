@@ -55,7 +55,7 @@ cp configurations/default/env.yml.tmp configurations/default/env.yml
 # executable jar, or import and run the code in an interactive 
 # development environment. 
 mvn package
-java -jar target/otp-middleware.jar configurations/default/env.yml
+java -jar target/otp-middleware.jar configurations/default/env.yml --endpoints
 ```
 
 It's also possible to run otp-middleware via Docker (see Deployment above)
