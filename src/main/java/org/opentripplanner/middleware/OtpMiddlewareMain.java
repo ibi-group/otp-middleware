@@ -61,10 +61,11 @@ public class OtpMiddlewareMain {
         ConfigUtils.loadConfig(processor.getConfigFile());
         // Connect to MongoDB.
         Persistence.initialize();
+        // Required for notification content.
+        TemplateUtils.initialize();
 
         if (processor.hasEndPoints()) {
             // This must take place before the main thread is blocked below.
-            TemplateUtils.initialize();
             initializeHttpEndpoints();
         }
 
@@ -84,7 +85,6 @@ public class OtpMiddlewareMain {
                 }
             }
         }
-
     }
 
     private static void initializeHttpEndpoints() throws IOException {

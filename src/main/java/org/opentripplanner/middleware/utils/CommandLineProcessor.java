@@ -27,7 +27,8 @@ public class CommandLineProcessor {
     private String configFile;
 
     public CommandLineProcessor() {
-        this.recurringJobs = RecurringJob.getAllRecurringJobs();
+        // Default to all jobs, but modifiable so that definitive jobs can be set.
+        this.recurringJobs =  new HashSet<>(RecurringJob.getAllRecurringJobs());
         this.hadEndPoints = false;
         this.configFile = DEFAULT_ENV;
     }
@@ -46,7 +47,7 @@ public class CommandLineProcessor {
                 defineRecurringJobs(commandValues);
             }
             if (END_POINTS_ONLY_FLAGS.contains(flag)) {
-                hadEndPoints = true;
+                defineEndPoints(commandValues);
             }
         });
     }
@@ -91,6 +92,17 @@ public class CommandLineProcessor {
         }
     }
 
+    /**
+     * Define if the end points should be enabled.
+     */
+    private void defineEndPoints(Set<String> endPointArguments) {
+        if (endPointArguments.isEmpty() || (endPointArguments.size() == 1 && endPointArguments.contains("yes"))) {
+            hadEndPoints = true;
+        } else if (endPointArguments.size() == 1 && endPointArguments.contains("no")) {
+            hadEndPoints = false;
+        }
+    }
+
     public Set<RecurringJob> getRecurringJobs() {
         return recurringJobs;
     }
@@ -108,10 +120,10 @@ public class CommandLineProcessor {
     }
 
     public static String[] getDefaultArguments() {
-        return new String[]{END_POINTS_ONLY_FLAGS.get(0)};
+        return new String[] {END_POINTS_ONLY_FLAGS.get(0)};
     }
 
     public static String[] getDefaultArguments(String configFile) {
-        return new String[]{configFile, END_POINTS_ONLY_FLAGS.get(0)};
+        return new String[] {configFile, END_POINTS_ONLY_FLAGS.get(0)};
     }
 }

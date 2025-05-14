@@ -38,39 +38,45 @@ class CommandLineProcessorTest {
         return Stream.of(
             new CommandLineTestCase()
                 .withCommand("Unknown", "set", "of", "commands")
-                .withMessage("Unknown commands, should default to default env, all jobs and NO end points."),
+                .withMessage("Unknown commands, default env, all jobs and no end points."),
             new CommandLineTestCase()
                 .withCommand()
-                .withMessage("Original command with default env, all jobs and end points."),
+                .withMessage("Default config, all jobs and no end points."),
             new CommandLineTestCase()
-                .withCommand(TEST_ENV)
+                .withCommand(TEST_ENV, endPointFlagLonghand)
                 .withConfigFile(TEST_ENV)
-                .withMessage("Original command with test env, all jobs and end points."),
+                .withEndpoints(true)
+                .withMessage("Test config, all jobs and end points."),
             new CommandLineTestCase()
-                .withCommand()
-                .withMessage("Original command, all jobs and NO end points."),
+                .withCommand(endPointFlagShorthand, "no")
+                .withEndpoints(false)
+                .withMessage("Default config, all jobs and explicit 'no' end points."),
+            new CommandLineTestCase()
+                .withCommand(endPointFlagShorthand, "yes")
+                .withEndpoints(true)
+                .withMessage("Default config, all jobs and explicit 'yes' end points."),
             new CommandLineTestCase()
                 .withCommand(endPointFlagShorthand)
                 .withEndpoints(true)
-                .withMessage("Original command, all jobs and with explicit end points."),
-        new CommandLineTestCase()
+                .withMessage("Default config, all jobs and with 'shorthand' end points."),
+            new CommandLineTestCase()
                 .withCommand(endPointFlagLonghand)
                 .withEndpoints(true)
-                .withMessage("Original command, all jobs and with explicit end points."),
-        new CommandLineTestCase()
+                .withMessage("Default config, all jobs and with 'longhand' end points."),
+            new CommandLineTestCase()
                 .withCommand(recurringJobFlagLonghand, "monitor-all-trips-job", "trip-history-upload-job")
                 .withRecurringJobs(Set.of(RecurringJob.MONITOR_ALL_TRIPS_JOB, RecurringJob.TRIP_HISTORY_UPLOAD_JOB))
                 .withMessage("Two jobs and no end points."),
-        new CommandLineTestCase()
+            new CommandLineTestCase()
                 .withCommand(endPointFlagLonghand, recurringJobFlagLonghand, "none")
                 .withEndpoints(true)
                 .withRecurringJobs(Set.of())
                 .withMessage("End points and no jobs."),
-        new CommandLineTestCase()
+            new CommandLineTestCase()
                 .withCommand(recurringJobFlagLonghand, "monitor-all-trips-job", "trip-history-upload-job", "bugsnag-event-handing-job", "trip-survey-sender-job", "trip-survey-upload-job")
                 .withRecurringJobs(RecurringJob.getAllRecurringJobs())
                 .withMessage("All jobs long hand and no end points."),
-        new CommandLineTestCase()
+            new CommandLineTestCase()
                 .withCommand(recurringJobFlagShorthand, "unknown-job")
                 .withErrorMessage(CommandLineProcessor.getRecurringJobErrorMessage("unknown-job"))
                 .withMessage("Unknown job, throw exception.")
