@@ -79,7 +79,11 @@ class CommandLineProcessorTest {
             new CommandLineTestCase()
                 .withCommand(recurringJobFlagShorthand, "unknown-job")
                 .withErrorMessage(CommandLineProcessor.getRecurringJobErrorMessage("unknown-job"))
-                .withMessage("Unknown job, throw exception.")
+                .withMessage("Unknown job, throw exception."),
+            new CommandLineTestCase()
+                .withCommand(endPointFlagLonghand, "off")
+                .withErrorMessage(CommandLineProcessor.getEndPointsOnlyErrorMessage("[off]"))
+                .withMessage("Unknown argument, throw exception.")
         );
     }
 

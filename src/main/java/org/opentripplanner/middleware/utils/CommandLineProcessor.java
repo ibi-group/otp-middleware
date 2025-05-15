@@ -19,8 +19,9 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.DEFAULT_ENV;
  */
 public class CommandLineProcessor {
     public static final List<String> END_POINTS_ONLY_FLAGS = List.of("--endpoints", "-E");
+    public static final String END_POINTS_ONLY_ERROR_MESSAGE = "Unknown end point only argument: %s. Valid arguments are: 'yes' & 'no'.";
     public static final List<String> RECURRING_JOB_FLAGS = List.of("--recurring-jobs", "-R");
-    public static final String RECURRING_JOB_ERROR_MESSAGE = "Unknown recurring job: %s. Valid jobs are: %s";
+    public static final String RECURRING_JOB_ERROR_MESSAGE = "Unknown recurring job: %s. Valid jobs are: %s.";
 
     private final Set<RecurringJob> recurringJobs;
     private boolean hadEndPoints;
@@ -100,6 +101,11 @@ public class CommandLineProcessor {
             hadEndPoints = true;
         } else if (endPointArguments.size() == 1 && endPointArguments.contains("no")) {
             hadEndPoints = false;
+        } else {
+            throw new IllegalArgumentException(String.format(
+                END_POINTS_ONLY_ERROR_MESSAGE,
+                endPointArguments
+            ));
         }
     }
 
@@ -117,6 +123,10 @@ public class CommandLineProcessor {
 
     public static String getRecurringJobErrorMessage(String unknownJobName) {
         return String.format(RECURRING_JOB_ERROR_MESSAGE, unknownJobName, RecurringJob.getAllCommandLineNames());
+    }
+
+    public static String getEndPointsOnlyErrorMessage(String unknownArgument) {
+        return String.format(END_POINTS_ONLY_ERROR_MESSAGE, unknownArgument);
     }
 
     public static String[] getDefaultArguments() {
