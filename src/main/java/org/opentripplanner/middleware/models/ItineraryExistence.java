@@ -37,6 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK_ON_DAY;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
@@ -192,7 +193,7 @@ public class ItineraryExistence extends Model {
         for (DayOfWeek dow : DayOfWeek.values()) {
             ItineraryExistenceResult resultForDayOfWeek = getResultForDayOfWeek(dow);
             if (resultForDayOfWeek != null && !resultForDayOfWeek.isValid()) {
-                invalidDaysOfWeek.add(String.format("%s (no trip %s)",
+                invalidDaysOfWeek.add(String.format(TRIP_NOT_POSSIBLE_CHECK_ON_DAY.get(locale),
                     dow.getDisplayName(TextStyle.FULL, locale),
                     String.join(", ", resultForDayOfWeek.invalidDates)
                 ));
