@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
@@ -264,7 +265,7 @@ public class ItineraryExistence extends Model {
             OtpUser user = Persistence.otpUsers.getById(trip.userId);
             Locale locale = I18nUtils.getOtpUserLocale(user);
             this.message = String.format(
-                "The trip is not possible on the following days of the week you have selected: %s. Real-time conditions have changed since this trip was planned. Return to the trip planner, plan a new trip, and save the result.",
+                TRIP_NOT_POSSIBLE_CHECK.get(locale),
                 getInvalidDaysOfWeekMessage(locale)
             );
             this.error = true;
