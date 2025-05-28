@@ -2,14 +2,15 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.TripPlan;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.I18nUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -185,15 +186,13 @@ public class ItineraryExistence extends Model {
     /**
      * @return A string containing the days of week (and first date found) for which the trip is not possible.
      */
-    @JsonIgnore
-    @BsonIgnore
-    public String getInvalidDaysOfWeekMessage() {
+    public String getInvalidDaysOfWeekMessage(Locale locale) {
         List<String> invalidDaysOfWeek = new ArrayList<>();
         for (DayOfWeek dow : DayOfWeek.values()) {
             ItineraryExistenceResult resultForDayOfWeek = getResultForDayOfWeek(dow);
             if (resultForDayOfWeek != null && !resultForDayOfWeek.isValid()) {
                 invalidDaysOfWeek.add(String.format("%s (no trip %s)",
-                    dow.getDisplayName(TextStyle.FULL, Locale.ENGLISH), // TODO: i18n
+                    dow.getDisplayName(TextStyle.FULL, locale),
                     String.join(", ", resultForDayOfWeek.invalidDates)
                 ));
             }
@@ -262,9 +261,11 @@ public class ItineraryExistence extends Model {
             }
         }
         if (!allMonitoredDaysAreValid(trip)) {
+            OtpUser user = Persistence.otpUsers.getById(trip.userId);
+            Locale locale = I18nUtils.getOtpUserLocale(user);
             this.message = String.format(
                 "The trip is not possible on the following days of the week you have selected: %s. Real-time conditions have changed since this trip was planned. Return to the trip planner, plan a new trip, and save the result.",
-                getInvalidDaysOfWeekMessage()
+                getInvalidDaysOfWeekMessage(locale)
             );
             this.error = true;
         }
