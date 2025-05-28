@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.i18n.Message.ENUM_SEPARATOR;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK_ON_DAY;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS;
@@ -193,6 +194,8 @@ public class ItineraryExistence extends Model {
     public String getInvalidDaysOfWeekMessage(Locale locale) {
         List<String> invalidDaysOfWeek = new ArrayList<>();
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale);
+        String enumSeparator = ENUM_SEPARATOR.get(locale);
+
         for (DayOfWeek dow : DayOfWeek.values()) {
             ItineraryExistenceResult resultForDayOfWeek = getResultForDayOfWeek(dow);
             if (resultForDayOfWeek != null && !resultForDayOfWeek.isValid()) {
@@ -200,11 +203,11 @@ public class ItineraryExistence extends Model {
                     dow.getDisplayName(TextStyle.FULL, locale),
                     resultForDayOfWeek.invalidDates.stream()
                         .map(d -> dateFormatter.format(DateTimeFormatter.ISO_LOCAL_DATE.parse(d)))
-                        .collect(Collectors.joining(", "))
+                        .collect(Collectors.joining(enumSeparator))
                 ));
             }
         }
-        return String.join(", ", invalidDaysOfWeek);
+        return String.join(enumSeparator, invalidDaysOfWeek);
     }
 
     /**
