@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -190,12 +192,15 @@ public class ItineraryExistence extends Model {
      */
     public String getInvalidDaysOfWeekMessage(Locale locale) {
         List<String> invalidDaysOfWeek = new ArrayList<>();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale);
         for (DayOfWeek dow : DayOfWeek.values()) {
             ItineraryExistenceResult resultForDayOfWeek = getResultForDayOfWeek(dow);
             if (resultForDayOfWeek != null && !resultForDayOfWeek.isValid()) {
                 invalidDaysOfWeek.add(String.format(TRIP_NOT_POSSIBLE_CHECK_ON_DAY.get(locale),
                     dow.getDisplayName(TextStyle.FULL, locale),
-                    String.join(", ", resultForDayOfWeek.invalidDates)
+                    resultForDayOfWeek.invalidDates.stream()
+                        .map(d -> dateFormatter.format(DateTimeFormatter.ISO_LOCAL_DATE.parse(d)))
+                        .collect(Collectors.joining(", "))
                 ));
             }
         }
