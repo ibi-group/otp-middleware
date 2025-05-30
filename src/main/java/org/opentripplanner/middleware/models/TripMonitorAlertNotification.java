@@ -131,7 +131,7 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
             resolvedAlerts.size()
         );
         if (hasNewAlerts && hasResolvedAlerts) {
-            return String.format(Message.TRIP_ALERT_NEW_AND_RESOLVED.get(locale), newAlertsText, resolvedAlertsText);
+            return String.join(Message.ENUM_SEPARATOR.get(locale), newAlertsText, resolvedAlertsText);
         } else if (hasNewAlerts) {
             return newAlertsText;
         } else if (hasResolvedAlerts) {
