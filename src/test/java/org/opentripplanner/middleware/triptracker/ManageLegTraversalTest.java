@@ -18,6 +18,7 @@ import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.ContinueRidingTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
@@ -496,7 +497,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 new TraceData()
                     .withPosition(33.916779, -84.226556)
                     .withStartingTrip()
-                    .withExpectedInstruction(NO_INSTRUCTION)
+                    .withExpectedInstruction(new ContinueRidingTransitInstruction())
             ),
             Arguments.of(
                 "Start live tracking well after bus departure. Issue wait instruction (indicate past departure).",
