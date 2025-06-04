@@ -597,10 +597,10 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withExpectedInstruction(String.format("Ride 4 min / 8 stops to %s", destinationName))
             ),
             Arguments.of(
-                "On the transit segment, but far from the arrival stop, so no instruction is given.",
+                "On the transit segment, but far from the arrival stop, an instruction to continue riding is given.",
                 new TraceData()
                     .withPosition(33.78792, -84.37776)
-                    .withExpectedInstruction(NO_INSTRUCTION)
+                    .withExpectedInstruction("Continue riding the bus.")
             ),
             Arguments.of(
                 "Upcoming arrival stop instruction.",
