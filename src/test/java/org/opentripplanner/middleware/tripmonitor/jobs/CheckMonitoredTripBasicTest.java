@@ -156,4 +156,32 @@ class CheckMonitoredTripBasicTest {
             Arguments.of(14, 21, "Mon Apr 14, 2025 10am is after the trip and should result in next Monday")
         );
     }
+
+    @ParameterizedTest
+    @MethodSource("createShouldAdvanceToNextDayCases")
+    void testShouldAdvanceToNextDay(int offsetSeconds, boolean expected, String message) throws Exception {
+        MonitoredTrip trip = makeMonitoredTripFromNow(offsetSeconds, offsetSeconds + 300);
+        setRecurringTodayAndTomorrow(trip);
+        trip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
+        trip.journeyState.matchingItinerary = trip.itinerary;
+
+        CheckMonitoredTrip check = new CheckMonitoredTrip(trip);
+        check.shouldSkipMonitoredTripCheck(false);
+        assertEquals(
+            expected,
+            check.shouldAdvanceToNextDay(),
+            message
+        );
+    }
+
+    private static Stream<Arguments> createShouldAdvanceToNextDayCases() {
+        final int ONE_HOURS_IN_SECS = 3600;
+        final int TWO_MINUTES_IN_SECS = 120;
+        return Stream.of(
+            Arguments.of(ONE_HOURS_IN_SECS, false, "Should not advance monitored day if trip in near future"),
+            Arguments.of(TWO_MINUTES_IN_SECS, false, "Should not advance monitored day if trip is ongoing"),
+            Arguments.of(-ONE_HOURS_IN_SECS, true, "Should advance monitored day if trip is past.")
+        );
+    }
+
 }

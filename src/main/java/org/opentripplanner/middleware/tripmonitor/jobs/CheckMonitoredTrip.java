@@ -786,7 +786,7 @@ public class CheckMonitoredTrip implements Runnable {
 
             // Attempt to advance to the next monitored day, except for one-time trips
             // or if tracking is ongoing or if the matching itinerary is still valid.
-            if (!trip.isOneTime() && trip.journeyState.tripStatus != TripStatus.TRIP_ACTIVE && !isTrackingOngoing()) {
+            if (shouldAdvanceToNextDay()) {
                 advanceToNextMonitoredDay();
             }
 
@@ -842,6 +842,13 @@ public class CheckMonitoredTrip implements Runnable {
         // TODO: Change log level.
         LOG.info("Trip criteria not met to check. Skipping.");
         return true;
+    }
+
+    /**
+     * Whether to advance to the next monitored day.
+     */
+    public boolean shouldAdvanceToNextDay() {
+        return !trip.isOneTime() && journeyState.tripStatus == TripStatus.TRIP_UPCOMING && matchingItinerary.hasEnded() && !isTrackingOngoing();
     }
 
     private boolean isPreviousTripOngoing() {
