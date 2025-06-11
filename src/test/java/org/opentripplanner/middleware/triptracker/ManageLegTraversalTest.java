@@ -488,7 +488,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     )
             ),
             Arguments.of(
-                "On transit leg away from the boarding location (or walked past the bus stop). No specific instruction to give.",
+                "On transit leg away from the boarding location (or walked past the bus stop). Instruct to continue riding.",
                 firstLegBusTransit,
                 0,
                 new TraceData()
