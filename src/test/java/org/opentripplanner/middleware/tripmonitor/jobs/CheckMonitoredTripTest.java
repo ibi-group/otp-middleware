@@ -114,6 +114,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canMonitorOngoingTrip() throws Exception {
+        // Setup an OTP mock response in order to trigger some of the monitor checks.
+        OtpResponse mockResponse = getMockOtpResponseJune15();
+        Itinerary itinerary = firstItinerary(mockResponse);
+
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
             OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
@@ -121,16 +125,16 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             null
         );
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        // For an ongoing trip, assume the journey state has been initialized.
+        monitoredTrip.journeyState.baselineDepartureTimeEpochMillis = itinerary.startTime.getTime();
+        monitoredTrip.journeyState.baselineArrivalTimeEpochMillis = itinerary.endTime.getTime();
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
-
-        // Setup an OTP mock response in order to trigger some of the monitor checks.
-        OtpResponse mockResponse = getMockOtpResponseJune15();
 
         // Add fake alerts to simulated itinerary.
         ArrayList<LocalizedAlert> fakeAlerts = new ArrayList<>();
         fakeAlerts.add(new LocalizedAlert());
-        firstItinerary(mockResponse).legs.get(1).alerts = fakeAlerts;
+        itinerary.legs.get(1).alerts = fakeAlerts;
 
         // mock the current time to be 8:45am on Monday, June 15
         DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
