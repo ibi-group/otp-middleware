@@ -834,8 +834,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip check = new CheckMonitoredTrip(trip, () -> otpResponse);
-        check.shouldSkipMonitoredTripCheck(false);
-        check.checkOtpAndUpdateTripStatus();
+        // Trip is advanced to next monitored day because "today"'s trip instance has ended.
+        // As a result, trip status is set to upcoming, checkOtpAndUpdateTripStatus is skipped. .
+        assertTrue(check.shouldSkipMonitoredTripCheck());
+        assertEquals(TripStatus.TRIP_UPCOMING, check.journeyState.tripStatus);
         assertEquals(TripStatus.TRIP_UPCOMING, trip.journeyState.tripStatus);
         assertEquals(getShiftedDay(trip.itinerary.startTime, 1), trip.journeyState.targetDate);
     }
@@ -997,6 +999,51 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             // Trip snoozed on Monday, June 8, 2020 (a day before the trip starts), should unsnooze at 12:00am (midnight)
             // on Tuesday, June 9, 2020.
             Arguments.of(MONDAY_20200608_NOON, tuesday, true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createUpdateTripStuckInActiveStateCases")
+    void canUpdateTripStuckInActiveState(ZonedDateTime clockTime, TripStatus tripStatus) throws Exception {
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            false,
+            OtpTestUtils.createDefaultJourneyState()
+        );
+        monitoredTrip.id = UUID.randomUUID().toString();
+        // Set monitored days to Tuesday only.
+        monitoredTrip.monday = false;
+        monitoredTrip.tuesday = true;
+        monitoredTrip.journeyState.targetDate = "2020-06-09";
+        monitoredTrip.journeyState.tripStatus = TRIP_ACTIVE;
+
+        Persistence.monitoredTrips.create(monitoredTrip);
+
+        // Mock the current time
+        DateTimeUtils.useFixedClockAt(clockTime);
+
+        // After trip has completed, check that trip status has been updated.
+        CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+
+        check.run();
+
+        MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
+        assertEquals(tripStatus, modifiedTrip.journeyState.tripStatus);
+
+        // Clear the created trip.
+        PersistenceTestUtils.deleteMonitoredTrip(modifiedTrip);
+    }
+
+    private static Stream<Arguments> createUpdateTripStuckInActiveStateCases() {
+        // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
+        ZonedDateTime tuesday = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
+
+        return Stream.of(
+            // During trip (before 8:58 am), state should remain active.
+            Arguments.of(tuesday.withHour(8).withMinute(50), TRIP_ACTIVE),
+            // After trip is done (after 9am), state should change to upcoming (for recurring trip).
+            Arguments.of(tuesday.withHour(10), TRIP_UPCOMING)
         );
     }
 
