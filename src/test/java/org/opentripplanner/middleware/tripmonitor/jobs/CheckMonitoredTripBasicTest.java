@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * This class contains tests for {@link CheckMonitoredTrip} that don't require database or OTP queries.
  */
-class CheckMonitoredTripBasicTest {
+public class CheckMonitoredTripBasicTest {
     private static final int ONE_DAY_IN_SECONDS = 3600 * 24;
 
     @ParameterizedTest
@@ -65,7 +65,7 @@ class CheckMonitoredTripBasicTest {
     }
 
     /** Add the day-of-week of the itinerary start time as the recurring day, and the next day too. */
-    static void setRecurringTodayAndTomorrow(MonitoredTrip trip) {
+    public static void setRecurringTodayAndTomorrow(MonitoredTrip trip) {
         DayOfWeek dayOfWeek = DayOfWeek.of(LocalDate.ofInstant(
             trip.itinerary.startTime.toInstant(),
             DateTimeUtils.getOtpZoneId()).get(ChronoField.DAY_OF_WEEK
@@ -110,7 +110,7 @@ class CheckMonitoredTripBasicTest {
         }
     }
 
-    static MonitoredTrip makeMonitoredTripFromNow(int startOffsetSecs, int endOffsetSecs) {
+    public static MonitoredTrip makeMonitoredTripFromNow(int startOffsetSecs, int endOffsetSecs) {
         Instant now = Instant.now();
         Date start = Date.from(now.plusSeconds(startOffsetSecs));
 
@@ -183,5 +183,4 @@ class CheckMonitoredTripBasicTest {
             Arguments.of(-ONE_HOURS_IN_SECS, true, "Should advance monitored day if trip is past.")
         );
     }
-
 }

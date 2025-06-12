@@ -539,4 +539,22 @@ public class MonitoredTrip extends Model {
             companion != null &&
             tripOwner.email.equalsIgnoreCase(companion.email);
     }
+
+    /**
+     * Determines whether the trip status is consistent with the matching itinerary.
+     */
+    public boolean tripStateIsConsistentWithMatchingItinerary() {
+        if (journeyState == null) return false;
+        Itinerary matchingItinerary = journeyState.matchingItinerary;
+        switch (journeyState.tripStatus) {
+            case PAST_TRIP:
+                return isOneTime() && matchingItinerary.hasEnded();
+            case TRIP_UPCOMING:
+                return !matchingItinerary.isActive();
+            case TRIP_ACTIVE:
+                return matchingItinerary.isActive();
+            default:
+                return false;
+        }
+    }
 }

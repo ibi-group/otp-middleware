@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.tripmonitor.TripStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,8 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.opentripplanner.middleware.models.RelatedUser.RelatedUserStatus.CONFIRMED;
 import static org.opentripplanner.middleware.models.RelatedUser.RelatedUserStatus.PENDING;
+import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
+import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.setRecurringTodayAndTomorrow;
 
 class MonitoredTripTest {
     @Test
@@ -180,6 +183,40 @@ class MonitoredTripTest {
                 creatorId,
                 "Should return the id of the user that created the trip if primary is null."
             )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createTripStateVsMatchingItineraryCases")
+    void testCheckTripStateVsMatchingItinerary(int offsetSeconds, TripStatus tripStatus, boolean expected, String whenIsTrip) throws Exception {
+        MonitoredTrip trip = makeMonitoredTripFromNow(offsetSeconds, offsetSeconds + 300);
+        if (tripStatus != TripStatus.PAST_TRIP) {
+            setRecurringTodayAndTomorrow(trip);
+        }
+        trip.journeyState.tripStatus = tripStatus;
+        trip.journeyState.matchingItinerary = trip.itinerary;
+
+        assertEquals(
+            expected,
+            trip.tripStateIsConsistentWithMatchingItinerary(),
+            String.format("%s + trip %s is %sconsistent", tripStatus, whenIsTrip, expected ? "" : "not ")
+        );
+    }
+
+    private static Stream<Arguments> createTripStateVsMatchingItineraryCases() {
+        final int ONE_HOURS_IN_SECS = 3600;
+        final int TWO_MINUTES_IN_SECS = 120;
+        return Stream.of(
+            Arguments.of(ONE_HOURS_IN_SECS, TripStatus.TRIP_UPCOMING, true, "in near future"),
+            Arguments.of(ONE_HOURS_IN_SECS, TripStatus.TRIP_ACTIVE, false, "in near future"),
+            Arguments.of(ONE_HOURS_IN_SECS, TripStatus.PAST_TRIP, false, "in near future"),
+            Arguments.of(-TWO_MINUTES_IN_SECS, TripStatus.TRIP_ACTIVE, true, "ongoing"),
+            Arguments.of(-TWO_MINUTES_IN_SECS, TripStatus.TRIP_UPCOMING, false, "ongoing"),
+            Arguments.of(-TWO_MINUTES_IN_SECS, TripStatus.PAST_TRIP, false, "ongoing"),
+            Arguments.of(-ONE_HOURS_IN_SECS, TripStatus.PAST_TRIP, true, "ended"),
+            Arguments.of(-ONE_HOURS_IN_SECS, TripStatus.TRIP_ACTIVE, false, "ended"),
+            // For recurring trips, the state below is actually consistent.
+            Arguments.of(-ONE_HOURS_IN_SECS, TripStatus.TRIP_UPCOMING, true, "ended")
         );
     }
 }
