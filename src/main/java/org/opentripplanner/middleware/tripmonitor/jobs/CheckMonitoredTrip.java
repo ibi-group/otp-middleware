@@ -848,7 +848,7 @@ public class CheckMonitoredTrip implements Runnable {
      * Whether to advance to the next monitored day.
      */
     public boolean shouldAdvanceToNextDay() {
-        return !trip.isOneTime() && journeyState.tripStatus == TripStatus.TRIP_UPCOMING && matchingItinerary.hasEnded() && !isTrackingOngoing();
+        return !trip.isOneTime() && matchingItinerary.hasEnded() && !isTrackingOngoing();
     }
 
     private boolean isPreviousTripOngoing() {
