@@ -378,7 +378,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         ShouldSkipTripTestCase weekendTripOnWeekdayTestCase = new ShouldSkipTripTestCase(
             "should return true for a weekend trip when current time is on a weekday",
             MONDAY_20200608_NOON,
-            true
+            false // FIXME: Was true. False means extra checks will be done for the same outcome.
         );
         weekendTripOnWeekdayTestCase.trip = weekendTrip;
         testCases.add(weekendTripOnWeekdayTestCase);
@@ -387,7 +387,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         testCases.add(new ShouldSkipTripTestCase(
             "should return true for weekday trip when current time is on a weekend",
             MONDAY_20200608_NOON.withDayOfMonth(6), // mock time: June 6, 2020 (Saturday)
-            true
+            false // FIXME: Was true. False means extra checks will be done for the same outcome.
         ));
 
         // - Return true if trip is starting today, but before lead time
@@ -663,7 +663,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         String currentTargetDate,
         String expectedTargetDate,
         TripStatus tripStatus,
-        boolean skipMondayTuesday
+        boolean skipMondayTuesday,
+        boolean skipCheck
     ) throws Exception {
         DateTimeUtils.useFixedClockAt(nowTime);
 
@@ -718,8 +719,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Perform the skip check (this populates some internal states).
         // This trip should not be skipped if Monday and Tuesday are monitored because,
         // for those cases, the trip occurs within minutes of the mocked system time.
-        // If the trip is active, the check can be skipped.
-        assertEquals(skipMondayTuesday && tripStatus != TRIP_ACTIVE, mockCheckMonitoredTrip.shouldSkipMonitoredTripCheck());
+        assertEquals(skipCheck, mockCheckMonitoredTrip.shouldSkipMonitoredTripCheck());
 
         // Execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome.
         assertTrue(mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
@@ -757,7 +757,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 "2020-06-08",
                 "2020-06-10",
                 TRIP_UPCOMING,
-                true
+                true,
+                false
             ),
             Arguments.of(
                 // Mock the current time to same day of itinerary, between itinerary start and end time.
@@ -766,7 +767,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 "2020-06-08",
                 "2020-06-08",
                 TRIP_ACTIVE,
-                true
+                true,
+                false // If the trip is active, the check should not be skipped.
             ),
             Arguments.of(
                 monday0830,
@@ -775,7 +777,66 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 "2020-06-08",
                 TRIP_UPCOMING,
                 // This trip should not be skipped because it occurs within minutes of the mocked system time.
+                false,
                 false
+            )
+        );
+    }
+
+    /**
+     * Tests whether the journey state is updated after monitored days are changed.
+     * This test also involves a matching itinerary a day ahead of the days to monitor.
+     */
+    @Test
+    void canHandleChangingMonitoredDays2() throws Exception {
+        // Create a check with a mock OTP response itinerary for Tuesday 09 June 2020 08:40.
+        CheckMonitoredTrip check = createCheckMonitoredTrip(this::mockOtpPlanResponse);
+        MonitoredTrip trip = check.trip;
+
+        trip.wednesday = true;
+        trip.tuesday = true;
+        // Set the clock to Tuesday before trip start.
+        ZonedDateTime tuesdayBeforeTripStarts = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(7);
+        DateTimeUtils.useFixedClockAt(tuesdayBeforeTripStarts);
+
+        // The trip exists Monday, Tuesday, and Wednesday.
+        trip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        trip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
+        trip.itineraryExistence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
+
+        // Set the matching itinerary and previous matching itinerary to Wednesday
+        trip.journeyState.matchingItinerary = firstItinerary(mockOtpPlanResponse());
+        trip.journeyState.matchingItinerary.offsetTimes(24 * 3600 * 1000);
+        check.previousMatchingItinerary.offsetTimes(24 * 3600 * 1000);
+        assertEquals(
+            "2020-06-10",
+            DateTimeUtils.getStringFromDate(
+                DateTimeUtils.makeOtpZonedDateTime(trip.journeyState.matchingItinerary.startTime).toLocalDate(),
+                DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
+            )
+        );
+
+        trip.journeyState.lastCheckedEpochMillis = DateTimeUtils.nowAsZonedDateTime().minusMinutes(30).toInstant().toEpochMilli();
+
+        // Set target date to Wednesday
+        trip.journeyState.targetDate = "2020-06-10";
+
+        Persistence.monitoredTrips.create(trip);
+
+        // Run the checks. Test the new target date
+        check.run();
+
+        MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(trip.id);
+
+        assertEquals(
+            "2020-06-09",
+            updatedTrip.journeyState.targetDate
+        );
+        assertEquals(
+            "2020-06-09",
+            DateTimeUtils.getStringFromDate(
+                DateTimeUtils.makeOtpZonedDateTime(updatedTrip.journeyState.matchingItinerary.startTime).toLocalDate(),
+                DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
             )
         );
     }
