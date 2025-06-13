@@ -798,8 +798,8 @@ public class CheckMonitoredTrip implements Runnable {
             }
         }
 
-        // Perform the check if the journey state is incorrect vs the matching itinerary.
-        if (!trip.tripStateIsConsistentWithMatchingItinerary()) {
+        // Perform the check if the journey state or target date is incorrect vs the matching itinerary.
+        if (!trip.tripStateIsConsistentWithMatchingItinerary() || !trip.tripTargetDateIsConsistentWithMatchingItinerary()) {
             return false;
         }
 
