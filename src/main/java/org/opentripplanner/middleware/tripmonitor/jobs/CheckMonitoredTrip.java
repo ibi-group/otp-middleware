@@ -798,6 +798,11 @@ public class CheckMonitoredTrip implements Runnable {
             }
         }
 
+        // Perform the check if the journey state is incorrect vs the matching itinerary.
+        if (!trip.tripStateIsConsistentWithMatchingItinerary()) {
+            return false;
+        }
+
         // If last check was more than an hour ago and trip doesn't occur until an hour from now, check trip.
         long minutesSinceLastCheck = getMinutesSinceLastCheck();
         LOG.info("{} minutes since last checking trip", minutesSinceLastCheck);

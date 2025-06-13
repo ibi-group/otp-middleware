@@ -718,7 +718,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Perform the skip check (this populates some internal states).
         // This trip should not be skipped if Monday and Tuesday are monitored because,
         // for those cases, the trip occurs within minutes of the mocked system time.
-        assertEquals(skipMondayTuesday, mockCheckMonitoredTrip.shouldSkipMonitoredTripCheck());
+        // If the trip is active, the check can be skipped.
+        assertEquals(skipMondayTuesday && tripStatus != TRIP_ACTIVE, mockCheckMonitoredTrip.shouldSkipMonitoredTripCheck());
 
         // Execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome.
         assertTrue(mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
@@ -1004,7 +1005,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     @ParameterizedTest
     @MethodSource("createUpdateTripStuckInActiveStateCases")
-    void canUpdateTripStuckInActiveState(ZonedDateTime clockTime, TripStatus tripStatus) throws Exception {
+    void canUpdateTripStuckInActiveState(ZonedDateTime clockTime, TripStatus tripStatus, String message) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
             OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
@@ -1029,7 +1030,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         check.run();
 
         MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
-        assertEquals(tripStatus, modifiedTrip.journeyState.tripStatus);
+        assertEquals(tripStatus, modifiedTrip.journeyState.tripStatus, message);
 
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(modifiedTrip);
@@ -1037,13 +1038,14 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     private static Stream<Arguments> createUpdateTripStuckInActiveStateCases() {
         // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
+        // The initial state for the trip is TRIP_ACTIVE.
         ZonedDateTime tuesday = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
 
         return Stream.of(
-            // During trip (before 8:58 am), state should remain active.
-            Arguments.of(tuesday.withHour(8).withMinute(50), TRIP_ACTIVE),
-            // After trip is done (after 9am), state should change to upcoming (for recurring trip).
-            Arguments.of(tuesday.withHour(10), TRIP_UPCOMING)
+            Arguments.of(tuesday.withHour(8).withMinute(50), TRIP_ACTIVE, " During trip (before 8:58 am), state should remain active."),
+            Arguments.of(tuesday.withHour(10), TRIP_UPCOMING, "After trip (after 9am), state should change to upcoming (for recurring trip)."),
+            Arguments.of(tuesday.withHour(8), TRIP_UPCOMING, "Shortly before trip starts, state should change to upcoming."),
+            Arguments.of(tuesday.withHour(4), TRIP_UPCOMING, "Long before trip starts, state should change to upcoming.")
         );
     }
 

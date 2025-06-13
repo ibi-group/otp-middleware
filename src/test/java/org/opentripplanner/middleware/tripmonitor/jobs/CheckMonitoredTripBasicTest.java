@@ -123,6 +123,12 @@ public class CheckMonitoredTripBasicTest {
         trip.itinerary = itinerary;
         trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(start).format(DateTimeFormatter.ISO_LOCAL_TIME);
         trip.leadTimeInMinutes = 30;
+
+        trip.journeyState.tripStatus = endOffsetSecs >= 0 && startOffsetSecs <= 0
+            ? TripStatus.TRIP_ACTIVE
+            : TripStatus.TRIP_UPCOMING;
+        trip.journeyState.matchingItinerary = itinerary;
+
         return trip;
     }
 
