@@ -378,7 +378,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         ShouldSkipTripTestCase weekendTripOnWeekdayTestCase = new ShouldSkipTripTestCase(
             "should return true for a weekend trip when current time is on a weekday",
             MONDAY_20200608_NOON,
-            false // FIXME: Was true. False means extra checks will be done for the same outcome.
+            true
         );
         weekendTripOnWeekdayTestCase.trip = weekendTrip;
         testCases.add(weekendTripOnWeekdayTestCase);
@@ -387,7 +387,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         testCases.add(new ShouldSkipTripTestCase(
             "should return true for weekday trip when current time is on a weekend",
             MONDAY_20200608_NOON.withDayOfMonth(6), // mock time: June 6, 2020 (Saturday)
-            false // FIXME: Was true. False means extra checks will be done for the same outcome.
+            true
         ));
 
         // - Return true if trip is starting today, but before lead time
@@ -663,8 +663,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         String currentTargetDate,
         String expectedTargetDate,
         TripStatus tripStatus,
-        boolean skipMondayTuesday,
-        boolean skipCheck
+        boolean skipMondayTuesday
     ) throws Exception {
         DateTimeUtils.useFixedClockAt(nowTime);
 
@@ -679,6 +678,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         OtpResponse mockPreviousWeekdayResponse = mockOtpPlanResponse();
         Itinerary mockPreviousItinerary = firstItinerary(mockPreviousWeekdayResponse);
         OtpTestUtils.setItineraryDay(mockPreviousItinerary, 9);
+        if (tripStatus == TRIP_ACTIVE) {
+            // If the trip is active, set the trip day to Monday when that case applies.
+            mockPreviousItinerary.offsetTimes(-24 * 3600000);
+        }
 
         // Make sure that the start time on the original trip was not changed inadvertently.
         assertEquals(originalStartTime, originalItinerary.startTime);
@@ -719,7 +722,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Perform the skip check (this populates some internal states).
         // This trip should not be skipped if Monday and Tuesday are monitored because,
         // for those cases, the trip occurs within minutes of the mocked system time.
-        assertEquals(skipCheck, mockCheckMonitoredTrip.shouldSkipMonitoredTripCheck());
+        assertEquals(skipMondayTuesday, mockCheckMonitoredTrip.shouldSkipMonitoredTripCheck());
 
         // Execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome.
         assertTrue(mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
@@ -757,8 +760,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 "2020-06-08",
                 "2020-06-10",
                 TRIP_UPCOMING,
-                true,
-                false
+                true
             ),
             Arguments.of(
                 // Mock the current time to same day of itinerary, between itinerary start and end time.
@@ -767,8 +769,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 "2020-06-08",
                 "2020-06-08",
                 TRIP_ACTIVE,
-                true,
-                false // If the trip is active, the check should not be skipped.
+                true
             ),
             Arguments.of(
                 monday0830,
@@ -777,7 +778,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 "2020-06-08",
                 TRIP_UPCOMING,
                 // This trip should not be skipped because it occurs within minutes of the mocked system time.
-                false,
                 false
             )
         );
