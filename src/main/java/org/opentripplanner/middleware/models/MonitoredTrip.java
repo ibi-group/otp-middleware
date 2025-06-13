@@ -544,7 +544,7 @@ public class MonitoredTrip extends Model {
      * Determines whether the trip status is consistent with the matching itinerary.
      */
     public boolean tripStateIsConsistentWithMatchingItinerary() {
-        if (journeyState == null) return false;
+        if (journeyState == null || journeyState.tripStatus == null) return false;
         Itinerary matchingItinerary = journeyState.matchingItinerary;
         switch (journeyState.tripStatus) {
             case PAST_TRIP:

@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponseGraphQLWrapper;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
+import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtilsTest;
@@ -252,6 +253,11 @@ public class OtpTestUtils {
         journeyState.scheduledDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
         journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
         journeyState.baselineDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
+        journeyState.tripStatus = defaultItinerary.isActive()
+            ? TripStatus.TRIP_ACTIVE
+            : TripStatus.TRIP_UPCOMING;
+        journeyState.matchingItinerary = defaultItinerary;
+
         return journeyState;
     }
 }
