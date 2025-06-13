@@ -10,7 +10,9 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -188,7 +190,7 @@ class MonitoredTripTest {
 
     @ParameterizedTest
     @MethodSource("createTripStateVsMatchingItineraryCases")
-    void testCheckTripStateVsMatchingItinerary(int offsetSeconds, TripStatus tripStatus, boolean expected, String whenIsTrip) throws Exception {
+    void testCheckTripStateVsMatchingItinerary(int offsetSeconds, TripStatus tripStatus, boolean expected, String whenIsTrip) {
         MonitoredTrip trip = makeMonitoredTripFromNow(offsetSeconds, offsetSeconds + 300);
         if (tripStatus != TripStatus.PAST_TRIP) {
             setRecurringTodayAndTomorrow(trip);
@@ -217,6 +219,29 @@ class MonitoredTripTest {
             Arguments.of(-ONE_HOURS_IN_SECS, TripStatus.TRIP_ACTIVE, false, "ended"),
             // For recurring trips, the state below is actually consistent.
             Arguments.of(-ONE_HOURS_IN_SECS, TripStatus.TRIP_UPCOMING, true, "ended")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createTripTargetDateVsMatchingItineraryCases")
+    void testCheckTripDateVsMatchingItinerary(ZonedDateTime targetDate, boolean expected) {
+        MonitoredTrip trip = makeMonitoredTripFromNow(0, 300);
+        setRecurringTodayAndTomorrow(trip);
+        trip.journeyState.matchingItinerary = trip.itinerary;
+        trip.journeyState.targetDate = DateTimeUtils.getStringFromDate(targetDate.toLocalDate(), DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN);
+
+        assertEquals(
+            expected,
+            trip.tripTargetDateIsConsistentWithMatchingItinerary(),
+            String.format("%s and %s is %sconsistent", trip.itinerary.startTime, targetDate, expected ? "" : "not ")
+        );
+    }
+
+    private static Stream<Arguments> createTripTargetDateVsMatchingItineraryCases() {
+        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
+        return Stream.of(
+            Arguments.of(now, true),
+            Arguments.of(now.plusDays(1), false)
         );
     }
 }
