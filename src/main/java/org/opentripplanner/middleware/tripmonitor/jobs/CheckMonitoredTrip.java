@@ -165,7 +165,12 @@ public class CheckMonitoredTrip implements Runnable {
         LOG.info("Begin checking trip.");
         // Check if the trip check should be skipped (based on time, day of week, etc.)
         try {
-            if (shouldSkipMonitoredTripCheck()) {
+            if (
+                shouldSkipMonitoredTripCheck() &&
+                // Perform the check if the journey state or target date is not consistent with the matching itinerary.
+                trip.tripStateIsConsistentWithMatchingItinerary() &&
+                trip.tripTargetDateIsConsistentWithMatchingItinerary()
+            ) {
                 LOG.debug("Skipping check for trip");
                 return;
             }
@@ -798,11 +803,6 @@ public class CheckMonitoredTrip implements Runnable {
             }
         }
 
-        // Perform the check if the journey state or target date is incorrect vs the matching itinerary.
-        if (!trip.tripStateIsConsistentWithMatchingItinerary() || !trip.tripTargetDateIsConsistentWithMatchingItinerary()) {
-            return false;
-        }
-
         // If last check was more than an hour ago and trip doesn't occur until an hour from now, check trip.
         long minutesSinceLastCheck = getMinutesSinceLastCheck();
         LOG.info("{} minutes since last checking trip", minutesSinceLastCheck);
@@ -853,7 +853,14 @@ public class CheckMonitoredTrip implements Runnable {
      * Whether to advance to the next monitored day.
      */
     public boolean shouldAdvanceToNextDay() {
-        return !trip.isOneTime() && !matchingItinerary.isActive() && !isTrackingOngoing();
+        boolean sameDayAsItinerary = DateTimeUtils.nowAsZonedDateTime().toLocalDate().equals(
+            DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime).toLocalDate()
+        );
+        return
+            !trip.isOneTime() &&
+            !matchingItinerary.isActive() &&
+            !isTrackingOngoing() &&
+            !(sameDayAsItinerary && !matchingItinerary.hasEnded());
     }
 
     private boolean isPreviousTripOngoing() {

@@ -123,12 +123,6 @@ public class CheckMonitoredTripBasicTest {
         trip.itinerary = itinerary;
         trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(start).format(DateTimeFormatter.ISO_LOCAL_TIME);
         trip.leadTimeInMinutes = 30;
-
-        trip.journeyState.tripStatus = endOffsetSecs >= 0 && startOffsetSecs <= 0
-            ? TripStatus.TRIP_ACTIVE
-            : TripStatus.TRIP_UPCOMING;
-        trip.journeyState.matchingItinerary = itinerary;
-
         return trip;
     }
 
@@ -168,11 +162,9 @@ public class CheckMonitoredTripBasicTest {
     void testShouldAdvanceToNextDay(int offsetSeconds, boolean expected, String message) throws Exception {
         MonitoredTrip trip = makeMonitoredTripFromNow(offsetSeconds, offsetSeconds + 300);
         setRecurringTodayAndTomorrow(trip);
-        trip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
-        trip.journeyState.matchingItinerary = trip.itinerary;
 
         CheckMonitoredTrip check = new CheckMonitoredTrip(trip);
-        check.shouldSkipMonitoredTripCheck(false);
+        check.matchingItinerary = trip.itinerary;
         assertEquals(
             expected,
             check.shouldAdvanceToNextDay(),
