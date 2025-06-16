@@ -5,6 +5,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.ContinueRidingTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffHereTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.GetOffNextStopTransitInstruction;
@@ -332,7 +333,12 @@ public class TravelerLocator {
                 stopsRemaining == expectedLeg.intermediateStops.size() &&
                 travelerPosition.speed >= MIN_TRANSIT_VEHICLE_SPEED
             ) {
+                // When on board, after the transit vehicle departs the boarding stop, announce how long to ride
+                // (similar to the itinerary narrative in OTP-react-redux),
                 return new TransitLegSummaryInstruction(expectedLeg, locale);
+            } else {
+                // While far from the exiting stop, simply announce "Continue riding the bus."
+                return new ContinueRidingTransitInstruction();
             }
         }
         return null;

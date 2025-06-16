@@ -18,6 +18,7 @@ import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
+import org.opentripplanner.middleware.triptracker.instruction.ContinueRidingTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
@@ -487,12 +488,12 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     )
             ),
             Arguments.of(
-                "On transit leg away from the boarding location (or walked past the bus stop). No specific instruction to give.",
+                "On transit leg away from the boarding location (or walked past the bus stop). Instruct to continue riding.",
                 firstLegBusTransit,
                 0,
                 new TraceData()
                     .withPosition(33.916779, -84.226556)
-                    .withExpectedInstruction(NO_INSTRUCTION)
+                    .withExpectedInstruction(new ContinueRidingTransitInstruction())
             ),
             Arguments.of(
                 "Start live tracking well after bus departure. Issue wait instruction (indicate past departure).",
@@ -597,10 +598,10 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withExpectedInstruction(String.format("Ride 4 min / 8 stops to %s", destinationName))
             ),
             Arguments.of(
-                "On the transit segment, but far from the arrival stop, so no instruction is given.",
+                "On the transit segment, but far from the arrival stop, an instruction to continue riding is given.",
                 new TraceData()
                     .withPosition(33.78792, -84.37776)
-                    .withExpectedInstruction(NO_INSTRUCTION)
+                    .withExpectedInstruction("Continue riding the bus.")
             ),
             Arguments.of(
                 "Upcoming arrival stop instruction.",
