@@ -69,6 +69,7 @@ import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip
  */
 public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTripTest.class);
+    public static final int ONE_DAY_IN_MILLIS = 24 * 3600000;
     private static OtpUser user;
 
     // this is initialized in the setup method after the OTP_TIMEZONE config value is known.
@@ -680,7 +681,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         OtpTestUtils.setItineraryDay(mockPreviousItinerary, 9);
         if (tripStatus == TRIP_ACTIVE) {
             // If the trip is active, set the trip day to Monday when that case applies.
-            mockPreviousItinerary.offsetTimes(-24 * 3600000);
+            mockPreviousItinerary.offsetTimes(-ONE_DAY_IN_MILLIS);
         }
 
         // Make sure that the start time on the original trip was not changed inadvertently.
@@ -788,7 +789,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      * This test also involves a matching itinerary a day ahead of the days to monitor.
      */
     @Test
-    void canHandleChangingMonitoredDays2() throws Exception {
+    void canUpdateTargetDate() throws Exception {
         // Create a check with a mock OTP response itinerary for Tuesday 09 June 2020 08:40.
         CheckMonitoredTrip check = createCheckMonitoredTrip(this::mockOtpPlanResponse);
         MonitoredTrip trip = check.trip;
@@ -806,8 +807,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // Set the matching itinerary and previous matching itinerary to Wednesday
         trip.journeyState.matchingItinerary = firstItinerary(mockOtpPlanResponse());
-        trip.journeyState.matchingItinerary.offsetTimes(24 * 3600 * 1000);
-        check.previousMatchingItinerary.offsetTimes(24 * 3600 * 1000);
+        trip.journeyState.matchingItinerary.offsetTimes(ONE_DAY_IN_MILLIS);
+        check.previousMatchingItinerary.offsetTimes(ONE_DAY_IN_MILLIS);
         assertEquals(
             "2020-06-10",
             DateTimeUtils.getStringFromDate(
@@ -897,7 +898,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip check = new CheckMonitoredTrip(trip, () -> otpResponse);
         // Trip is advanced to next monitored day because "today"'s trip instance has ended.
-        // As a result, trip status is set to upcoming, checkOtpAndUpdateTripStatus is skipped. .
+        // As a result, trip status is set to upcoming, checkOtpAndUpdateTripStatus is skipped.
         assertTrue(check.shouldSkipMonitoredTripCheck());
         assertEquals(TripStatus.TRIP_UPCOMING, check.journeyState.tripStatus);
         assertEquals(TripStatus.TRIP_UPCOMING, trip.journeyState.tripStatus);
