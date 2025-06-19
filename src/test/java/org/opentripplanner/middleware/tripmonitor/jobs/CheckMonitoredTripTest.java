@@ -47,7 +47,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static com.mongodb.client.model.Filters.eq;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.text.MatchesPattern.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,10 +91,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     @AfterAll
     public static void tearDown() {
-        Persistence.otpUsers.removeById(user.id);
-        for (MonitoredTrip trip : Persistence.monitoredTrips.getFiltered(eq("userId", user.id))) {
-            PersistenceTestUtils.deleteMonitoredTrip(trip);
-        }
+        user.delete(false);
     }
 
     @AfterEach
@@ -1098,9 +1094,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
         assertEquals(expectedStatus, modifiedTrip.journeyState.tripStatus, message);
-
-        // Clear the created trip.
-        PersistenceTestUtils.deleteMonitoredTrip(modifiedTrip);
     }
 
     private static Stream<Arguments> createUpdateTripWithStaleStateCases() {
