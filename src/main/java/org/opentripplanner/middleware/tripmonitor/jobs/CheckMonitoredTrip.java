@@ -384,7 +384,7 @@ public class CheckMonitoredTrip implements Runnable {
             LOG.info(
                 noMatchingItineraryFoundOnPreviousChecks
                     ? "Trip checking has no more possible days to check, TRIP NO LONGER POSSIBLE!"
-                    : "Trip is not possible today, will check again next week."
+                    : "Trip for today was not found after the allowed attempts. Snoozing for today."
             );
 
             // update trip itinerary existence to reflect that trip was not possible on this day of the week
