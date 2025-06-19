@@ -25,6 +25,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -538,5 +539,37 @@ public class MonitoredTrip extends Model {
             tripOwner.email != null &&
             companion != null &&
             tripOwner.email.equalsIgnoreCase(companion.email);
+    }
+
+    /**
+     * Determines whether the trip status is consistent with the matching itinerary.
+     */
+    public boolean tripStateIsConsistentWithMatchingItinerary() {
+        if (journeyState == null || journeyState.tripStatus == null) return false;
+        Itinerary matchingItinerary = journeyState.matchingItinerary;
+        switch (journeyState.tripStatus) {
+            case PAST_TRIP:
+                return isOneTime() && matchingItinerary.hasEnded();
+            case TRIP_UPCOMING:
+                return !matchingItinerary.isActive();
+            case TRIP_ACTIVE:
+                return matchingItinerary.isActive();
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Determines whether the trip target date is consistent with the matching itinerary.
+     */
+    public boolean tripTargetDateIsConsistentWithMatchingItinerary() {
+        if (journeyState == null || journeyState.targetDate == null) return false;
+        Itinerary matchingItinerary = journeyState.matchingItinerary;
+        return journeyState.targetDate.equals(
+            DateTimeUtils.getStringFromDate(
+                DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime).toLocalDate(),
+                DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
+            )
+        );
     }
 }

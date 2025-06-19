@@ -165,7 +165,12 @@ public class CheckMonitoredTrip implements Runnable {
         LOG.info("Begin checking trip.");
         // Check if the trip check should be skipped (based on time, day of week, etc.)
         try {
-            if (shouldSkipMonitoredTripCheck()) {
+            if (
+                shouldSkipMonitoredTripCheck() &&
+                // Perform the check if the journey state or target date is not consistent with the matching itinerary.
+                trip.tripStateIsConsistentWithMatchingItinerary() &&
+                trip.tripTargetDateIsConsistentWithMatchingItinerary()
+            ) {
                 LOG.debug("Skipping check for trip");
                 return;
             }
@@ -786,7 +791,7 @@ public class CheckMonitoredTrip implements Runnable {
 
             // Attempt to advance to the next monitored day, except for one-time trips
             // or if tracking is ongoing or if the matching itinerary is still valid.
-            if (!trip.isOneTime() && trip.journeyState.tripStatus != TripStatus.TRIP_ACTIVE && !isTrackingOngoing()) {
+            if (shouldAdvanceToNextDay()) {
                 advanceToNextMonitoredDay();
             }
 
@@ -842,6 +847,20 @@ public class CheckMonitoredTrip implements Runnable {
         // TODO: Change log level.
         LOG.info("Trip criteria not met to check. Skipping.");
         return true;
+    }
+
+    /**
+     * Whether to advance to the next monitored day.
+     */
+    public boolean shouldAdvanceToNextDay() {
+        boolean sameDayAsItinerary = DateTimeUtils.nowAsZonedDateTime().toLocalDate().equals(
+            DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime).toLocalDate()
+        );
+        return
+            !trip.isOneTime() &&
+            !matchingItinerary.isActive() &&
+            !isTrackingOngoing() &&
+            !(sameDayAsItinerary && !matchingItinerary.hasEnded());
     }
 
     private boolean isPreviousTripOngoing() {

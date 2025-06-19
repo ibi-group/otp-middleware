@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * This class contains tests for {@link CheckMonitoredTrip} that don't require database or OTP queries.
  */
-class CheckMonitoredTripBasicTest {
+public class CheckMonitoredTripBasicTest {
     private static final int ONE_DAY_IN_SECONDS = 3600 * 24;
 
     @ParameterizedTest
@@ -65,7 +65,7 @@ class CheckMonitoredTripBasicTest {
     }
 
     /** Add the day-of-week of the itinerary start time as the recurring day, and the next day too. */
-    static void setRecurringTodayAndTomorrow(MonitoredTrip trip) {
+    public static void setRecurringTodayAndTomorrow(MonitoredTrip trip) {
         DayOfWeek dayOfWeek = DayOfWeek.of(LocalDate.ofInstant(
             trip.itinerary.startTime.toInstant(),
             DateTimeUtils.getOtpZoneId()).get(ChronoField.DAY_OF_WEEK
@@ -110,7 +110,7 @@ class CheckMonitoredTripBasicTest {
         }
     }
 
-    static MonitoredTrip makeMonitoredTripFromNow(int startOffsetSecs, int endOffsetSecs) {
+    public static MonitoredTrip makeMonitoredTripFromNow(int startOffsetSecs, int endOffsetSecs) {
         Instant now = Instant.now();
         Date start = Date.from(now.plusSeconds(startOffsetSecs));
 
@@ -154,6 +154,31 @@ class CheckMonitoredTripBasicTest {
         return Stream.of(
             Arguments.of(9, 14, "Wed Apr 9, 2025 should result in Monday Apr 14"),
             Arguments.of(14, 21, "Mon Apr 14, 2025 10am is after the trip and should result in next Monday")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createShouldAdvanceToNextDayCases")
+    void testShouldAdvanceToNextDay(int offsetSeconds, boolean expected, String message) throws Exception {
+        MonitoredTrip trip = makeMonitoredTripFromNow(offsetSeconds, offsetSeconds + 300);
+        setRecurringTodayAndTomorrow(trip);
+
+        CheckMonitoredTrip check = new CheckMonitoredTrip(trip);
+        check.matchingItinerary = trip.itinerary;
+        assertEquals(
+            expected,
+            check.shouldAdvanceToNextDay(),
+            message
+        );
+    }
+
+    private static Stream<Arguments> createShouldAdvanceToNextDayCases() {
+        final int ONE_HOURS_IN_SECS = 3600;
+        final int TWO_MINUTES_IN_SECS = 120;
+        return Stream.of(
+            Arguments.of(ONE_HOURS_IN_SECS, false, "Should not advance monitored day if trip in near future"),
+            Arguments.of(TWO_MINUTES_IN_SECS, false, "Should not advance monitored day if trip is ongoing"),
+            Arguments.of(-ONE_HOURS_IN_SECS, true, "Should advance monitored day if trip is past.")
         );
     }
 }
