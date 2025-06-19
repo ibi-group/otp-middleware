@@ -699,7 +699,7 @@ public class CheckMonitoredTrip implements Runnable {
         // Get current time and trip time (with the time offset to today) for comparison.
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
 
-        Instant tripStartInstant = !trip.isOneTime() && !isPreviousTripOngoing()
+        Instant tripStartInstant = !trip.isOneTime() && !isPreviousTripOngoingAtLastCheck()
             ? findEarliestTargetDate(trip, now).toInstant()
             : matchingItinerary.startTime.toInstant();
 
@@ -764,16 +764,16 @@ public class CheckMonitoredTrip implements Runnable {
             }
         }
 
-        if (isPreviousTripOngoing()) {
+        if (isPreviousTripOngoingAtLastCheck()) {
+            matchingItinerary = previousMatchingItinerary;
+            targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(previousJourneyState.targetDate, trip.tripTime);
+
             // Skip checking the trip the rest of the time that it is active if the trip was deemed not possible for the
             // next possible time during a previous query to find candidate itinerary matches.
             if (previousJourneyState.tripStatus == TripStatus.NEXT_TRIP_NOT_POSSIBLE) {
                 LOG.info("Skipping: Next trip was not found.");
                 return true;
             }
-
-            matchingItinerary = previousMatchingItinerary;
-            targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(previousJourneyState.targetDate, trip.tripTime);
         } else {
             // Either the monitored trip hasn't ever checked on the next itinerary, or the most recent itinerary has
             // completed and the next possible one needs to be fetched in order to determine the scheduled start time of
@@ -868,8 +868,8 @@ public class CheckMonitoredTrip implements Runnable {
             !(sameDayAsItinerary && !matchingItinerary.hasEnded());
     }
 
-    private boolean isPreviousTripOngoing() {
-        return isPrevMatchingItineraryNotConcluded() && isPrevMatchingItineraryDayValid();
+    private boolean isPreviousTripOngoingAtLastCheck() {
+        return isPrevMatchingItineraryNotConcludedAtLastCheck() && isPrevMatchingItineraryDayValid();
     }
 
     /**
@@ -980,7 +980,7 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /** Check if the previous matching itinerary was null or if it has already concluded */
-    private boolean isPrevMatchingItineraryNotConcluded() {
+    private boolean isPrevMatchingItineraryNotConcludedAtLastCheck() {
         if (previousMatchingItinerary == null) return false;
         Date lastCheckedDate = new Date(previousJourneyState.lastCheckedEpochMillis);
         return previousMatchingItinerary.endTime.after(lastCheckedDate) &&
