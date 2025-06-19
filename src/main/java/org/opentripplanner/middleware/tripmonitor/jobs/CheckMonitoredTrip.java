@@ -56,6 +56,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.makeOtpZonedDat
  */
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
+    private static final Logger ITINERARY_NOT_FOUND_LOGGER = LoggerFactory.getLogger("itinerary-not-found-logger");
 
     public boolean IS_TEST = false;
 
@@ -367,7 +368,12 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         // If this point is reached, a matching itinerary was not found
-        ItineraryExistence.logItineraryNotFound("No comparison itinerary found", trip, otpResponse.plan, LOG);
+        ItineraryExistence.logItineraryNotFound(
+            "No comparison itinerary found",
+            trip,
+            otpResponse.plan,
+            ITINERARY_NOT_FOUND_LOGGER
+        );
 
         if (hasReachedMaxItineraryChecks()) {
             // Check whether this trip should no longer ever be checked due to not having matching itineraries on any

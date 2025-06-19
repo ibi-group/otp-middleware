@@ -51,6 +51,9 @@
     <logger name="org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction">
         <appender-ref ref="GMAP-FILE"/>
     </logger>
+    <logger name="itinerary-not-found-logger" additivity="false">
+        <appender-ref ref="ITINERARY-NOT-FOUND-FILE"/>
+    </logger>
     <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
