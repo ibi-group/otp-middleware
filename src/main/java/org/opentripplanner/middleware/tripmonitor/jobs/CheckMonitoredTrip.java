@@ -768,7 +768,7 @@ public class CheckMonitoredTrip implements Runnable {
             // Skip checking the trip the rest of the time that it is active if the trip was deemed not possible for the
             // next possible time during a previous query to find candidate itinerary matches.
             if (previousJourneyState.tripStatus == TripStatus.NEXT_TRIP_NOT_POSSIBLE) {
-                LOG.info("Skipping: Next trip is not possible.");
+                LOG.info("Skipping: Next trip was not found.");
                 return true;
             }
 
@@ -779,7 +779,7 @@ public class CheckMonitoredTrip implements Runnable {
             // completed and the next possible one needs to be fetched in order to determine the scheduled start time of
             // the itinerary on the next possible day the monitored trip happens
 
-            LOG.info("Calculating next itinerary for trip");
+            LOG.info("Calculating next day that trip should occur");
 
             // initialize the trip's journey state and matching itinerary to the latest journeyState's matching
             // itinerary, or use the itinerary that the trip was saved with
@@ -803,8 +803,7 @@ public class CheckMonitoredTrip implements Runnable {
 
             // save journey state with updated matching itinerary and target date
             if (persist && !updateMonitoredTrip()) {
-                // trip no longer exists, skip check
-                LOG.info("Skipping: Trip no longer exists.");
+                LOG.info("Skipping: Trip no longer exists in Mongo.");
                 return true;
             }
         }
