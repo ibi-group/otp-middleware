@@ -1066,8 +1066,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     @ParameterizedTest
-    @MethodSource("createUpdateTripStuckInActiveStateCases")
-    void canUpdateTripStuckInActiveState(ZonedDateTime clockTime, TripStatus tripStatus, String message) throws Exception {
+    @MethodSource("createUpdateTripWithStaleStateCases")
+    void canUpdateTripWithStaleState(
+        ZonedDateTime clockTime,
+        TripStatus currentStatus,
+        TripStatus expectedStatus,
+        String message
+    ) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
             OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
@@ -1079,7 +1084,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.monday = false;
         monitoredTrip.tuesday = true;
         monitoredTrip.journeyState.targetDate = "2020-06-09";
-        monitoredTrip.journeyState.tripStatus = TRIP_ACTIVE;
+        monitoredTrip.journeyState.tripStatus = currentStatus;
 
         Persistence.monitoredTrips.create(monitoredTrip);
 
@@ -1092,22 +1097,23 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         check.run();
 
         MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
-        assertEquals(tripStatus, modifiedTrip.journeyState.tripStatus, message);
+        assertEquals(expectedStatus, modifiedTrip.journeyState.tripStatus, message);
 
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(modifiedTrip);
     }
 
-    private static Stream<Arguments> createUpdateTripStuckInActiveStateCases() {
+    private static Stream<Arguments> createUpdateTripWithStaleStateCases() {
         // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
         // The initial state for the trip is TRIP_ACTIVE.
         ZonedDateTime tuesday = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
 
         return Stream.of(
-            Arguments.of(tuesday.withHour(8).withMinute(50), TRIP_ACTIVE, " During trip (before 8:58 am), state should remain active."),
-            Arguments.of(tuesday.withHour(10), TRIP_UPCOMING, "After trip (after 9am), state should change to upcoming (for recurring trip)."),
-            Arguments.of(tuesday.withHour(8), TRIP_UPCOMING, "Shortly before trip starts, state should change to upcoming."),
-            Arguments.of(tuesday.withHour(4), TRIP_UPCOMING, "Long before trip starts, state should change to upcoming.")
+            Arguments.of(tuesday.withHour(8).withMinute(50), TRIP_ACTIVE, TRIP_ACTIVE, " During trip (before 8:58 am), state should remain active."),
+            Arguments.of(tuesday.withHour(10), TRIP_ACTIVE, TRIP_UPCOMING, "After trip (after 9am), state should change to upcoming (for recurring trip)."),
+            Arguments.of(tuesday.withHour(10), NEXT_TRIP_NOT_POSSIBLE, TRIP_UPCOMING, "Stale trip status should be updated to upcoming (for recurring trip)."),
+            Arguments.of(tuesday.withHour(8), TRIP_ACTIVE, TRIP_UPCOMING, "Shortly before trip starts, state should change to upcoming."),
+            Arguments.of(tuesday.withHour(4), TRIP_ACTIVE, TRIP_UPCOMING, "Long before trip starts, state should change to upcoming.")
         );
     }
 
