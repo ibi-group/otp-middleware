@@ -1148,13 +1148,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.journeyState.tripStatus = TRIP_UPCOMING; // Not active, to create a state discrepancy.
         monitoredTrip.snoozed = isSnoozed;
         monitoredTrip.isActive = isActive;
-
-        // Mock the current time
-        DateTimeUtils.useFixedClockAt(clockTime);
-        monitoredTrip.journeyState.lastCheckedEpochMillis = clockTime.minusSeconds(10).toInstant().toEpochMilli();
+        monitoredTrip.journeyState.lastCheckedEpochMillis =
+            DateTimeUtils.nowAsZonedDateTime().minusDays(300).toInstant().toEpochMilli();
 
         Persistence.monitoredTrips.create(monitoredTrip);
 
+        // Mock the current time
+        DateTimeUtils.useFixedClockAt(clockTime);
 
         // After trip has completed, check that trip status has been updated.
         CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
