@@ -554,6 +554,8 @@ public class MonitoredTrip extends Model {
                 return !matchingItinerary.isActive();
             case TRIP_ACTIVE:
                 return matchingItinerary.isActive();
+            case NO_LONGER_POSSIBLE:
+                return !itineraryExistence.isPossibleOnAtLeastOneMonitoredDayOfTheWeek(this);
             default:
                 return false;
         }
