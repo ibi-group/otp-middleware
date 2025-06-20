@@ -39,6 +39,16 @@
             <pattern>${FILE_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
+    <appender name="ITINERARY-NOT-FOUND-FILE" class="RollingFileAppender">
+        <file>logs/itinerary-not-found.log</file>
+        <rollingPolicy class="TimeBasedRollingPolicy">
+            <fileNamePattern>${ARCHIVED_LOG_FOLDER}/itinerary-not-found.log</fileNamePattern>
+            <maxHistory>${LOG_RETENTION_DAYS}</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
     <logger name="org.opentripplanner.middleware.utils.NotificationUtils">
         <appender-ref ref="NOTIFICATION-FILE"/>
     </logger>
