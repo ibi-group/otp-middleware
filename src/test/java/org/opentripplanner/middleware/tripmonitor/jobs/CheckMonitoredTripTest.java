@@ -557,13 +557,15 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         assertEquals(
             NEXT_TRIP_NOT_POSSIBLE,
             updatedTrip.journeyState.tripStatus,
-            "updated trips status should indicate trip is not possible this day"
+            "updated trips status should indicate trip could not be monitored this day"
         );
 
-        // verify itinerary existence was updated to show trip is not possible today
-        assertFalse(
+        // Itinerary existence should not be updated if the trip was not found today.
+        // (We don't know whether the trip is actually not possible or
+        // that some real-time condition is not met.)
+        assertTrue(
             updatedTrip.itineraryExistence.monday.isValid(),
-            "updated Trip should not be valid on Monday"
+            "updated Trip should remain valid on Monday"
         );
 
         // verify a notification was sent indicating that the next trip is not possible
