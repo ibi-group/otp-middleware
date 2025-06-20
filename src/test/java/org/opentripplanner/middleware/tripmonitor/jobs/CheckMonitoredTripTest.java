@@ -1107,13 +1107,65 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         ZonedDateTime tuesday = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
 
         return Stream.of(
-            Arguments.of(tuesday.withHour(8).withMinute(50), true, TRIP_ACTIVE, TRIP_ACTIVE, " During trip (before 8:58 am), state should remain active."),
+            Arguments.of(tuesday.withHour(8).withMinute(50), true, TRIP_ACTIVE, TRIP_ACTIVE, "During trip (before 8:58 am), state should remain active."),
             Arguments.of(tuesday.withHour(10), true, TRIP_ACTIVE, TRIP_UPCOMING, "After trip (after 9am), state should change to upcoming (for recurring trip)."),
             Arguments.of(tuesday.withHour(10), true, NEXT_TRIP_NOT_POSSIBLE, TRIP_UPCOMING, "Stale trip status should be updated to upcoming (for recurring trip)."),
             Arguments.of(tuesday.withHour(10), false, NEXT_TRIP_NOT_POSSIBLE, PAST_TRIP, "Stale trip status should be updated to past (for one-time trip)."),
             Arguments.of(tuesday.withHour(8), true, TRIP_ACTIVE, TRIP_UPCOMING, "Shortly before trip starts, state should change to upcoming."),
             Arguments.of(tuesday.withHour(4), true, TRIP_ACTIVE, TRIP_UPCOMING, "Long before trip starts, state should change to upcoming."),
             Arguments.of(tuesday.withHour(4), true, NO_LONGER_POSSIBLE, NO_LONGER_POSSIBLE, "Should not attempt to update a trip no longer possible.")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("createUpdateTripWithStaleState2Cases")
+    void canUpdateTripWithStaleState2(
+        ZonedDateTime clockTime,
+        boolean isActive,
+        boolean isSnoozed
+    ) throws Exception {
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            false,
+            OtpTestUtils.createDefaultJourneyState()
+        );
+        monitoredTrip.id = UUID.randomUUID().toString();
+        monitoredTrip.tuesday = true;
+        monitoredTrip.journeyState.targetDate = "2020-06-09";
+        monitoredTrip.journeyState.tripStatus = TRIP_UPCOMING; // Not active, to create a state discrepancy.
+        monitoredTrip.snoozed = isSnoozed;
+        monitoredTrip.isActive = isActive;
+
+        // Mock the current time
+        DateTimeUtils.useFixedClockAt(clockTime);
+        monitoredTrip.journeyState.lastCheckedEpochMillis = clockTime.minusSeconds(10).toInstant().toEpochMilli();
+
+        Persistence.monitoredTrips.create(monitoredTrip);
+
+
+        // After trip has completed, check that trip status has been updated.
+        CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+
+        check.run();
+
+        MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
+        assertEquals(
+            monitoredTrip.journeyState.lastCheckedEpochMillis,
+            modifiedTrip.journeyState.lastCheckedEpochMillis,
+            "Should not check trip if " + (isActive ? "" : "in") + "active and " + (isSnoozed ? "" : "not ") + "snoozed."
+        );
+    }
+
+    private static Stream<Arguments> createUpdateTripWithStaleState2Cases() {
+        // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
+        // The initial state for the trip is TRIP_ACTIVE.
+        ZonedDateTime tuesday = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
+
+        return Stream.of(
+            Arguments.of(tuesday.withHour(8).withMinute(50), true, true),
+            Arguments.of(tuesday.withHour(8).withMinute(50), false, true),
+            Arguments.of(tuesday.withHour(8).withMinute(50), false, false)
         );
     }
 
