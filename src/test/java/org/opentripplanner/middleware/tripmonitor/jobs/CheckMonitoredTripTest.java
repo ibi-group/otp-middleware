@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.models.TripMonitorNotification.STOPWATCH_ICON;
 import static org.opentripplanner.middleware.testutils.OtpTestUtils.firstItinerary;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
+import static org.opentripplanner.middleware.tripmonitor.TripStatus.NO_LONGER_POSSIBLE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.PAST_TRIP;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_UPCOMING;
@@ -626,7 +627,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // verify that trip status is no longer possible
         assertEquals(
-            TripStatus.NO_LONGER_POSSIBLE,
+            NO_LONGER_POSSIBLE,
             updatedTrip.journeyState.tripStatus,
             "updated trips status should indicate trip is no longer possible"
         );
@@ -1111,7 +1112,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(tuesday.withHour(10), true, NEXT_TRIP_NOT_POSSIBLE, TRIP_UPCOMING, "Stale trip status should be updated to upcoming (for recurring trip)."),
             Arguments.of(tuesday.withHour(10), false, NEXT_TRIP_NOT_POSSIBLE, PAST_TRIP, "Stale trip status should be updated to past (for one-time trip)."),
             Arguments.of(tuesday.withHour(8), true, TRIP_ACTIVE, TRIP_UPCOMING, "Shortly before trip starts, state should change to upcoming."),
-            Arguments.of(tuesday.withHour(4), true, TRIP_ACTIVE, TRIP_UPCOMING, "Long before trip starts, state should change to upcoming.")
+            Arguments.of(tuesday.withHour(4), true, TRIP_ACTIVE, TRIP_UPCOMING, "Long before trip starts, state should change to upcoming."),
+            Arguments.of(tuesday.withHour(4), true, NO_LONGER_POSSIBLE, NO_LONGER_POSSIBLE, "Should not attempt to update a trip no longer possible.")
         );
     }
 
