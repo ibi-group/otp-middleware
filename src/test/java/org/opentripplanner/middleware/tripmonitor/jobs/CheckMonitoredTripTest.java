@@ -80,6 +80,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         .withDayOfMonth(8)
         .withHour(12)
         .withMinute(0);
+    public static final ZonedDateTime TUESDAY_20200609 = MONDAY_20200608_NOON
+        .withDayOfMonth(9)
+        .withHour(0)
+        .withMinute(0)
+        .withSecond(0);
     private static final ZonedDateTime MONDAY_20200615_0845 = MONDAY_20200608_NOON
         .withDayOfMonth(15)
         .withHour(8)
@@ -177,12 +182,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // The trip is set to be monitored Monday to Friday.
         // Mock time to be 7:30am on Tuesday, June 9 before the trip start.
-        DateTimeUtils.useFixedClockAt(
-            MONDAY_20200608_NOON
-                .withDayOfMonth(9)
-                .withHour(7)
-                .withMinute(30)
-        );
+        DateTimeUtils.useFixedClockAt(TUESDAY_20200609.withHour(7).withMinute(30));
 
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
@@ -795,8 +795,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         trip.wednesday = true;
         trip.tuesday = true;
         // Set the clock to Tuesday before trip start.
-        ZonedDateTime tuesdayBeforeTripStarts = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(7);
-        DateTimeUtils.useFixedClockAt(tuesdayBeforeTripStarts);
+        DateTimeUtils.useFixedClockAt(TUESDAY_20200609.withHour(7));
 
         // The trip exists Monday, Tuesday, and Wednesday.
         trip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
@@ -1048,18 +1047,16 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     private static Stream<Arguments> createCanUnsnoozeTripCases() {
         // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
-        ZonedDateTime tuesday = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
-        ZonedDateTime wednesday = tuesday.withDayOfMonth(10);
-
+        ZonedDateTime wednesday = TUESDAY_20200609.withDayOfMonth(10);
         return Stream.of(
             // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should remain snoozed right after trip ends at 9:00am.
-            Arguments.of(tuesday.withHour(8), tuesday.withHour(9), false),
+            Arguments.of(TUESDAY_20200609.withHour(8), TUESDAY_20200609.withHour(9), false),
             // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should unsnooze at 12:00am (midnight) on
             // Wednesday, June 10, 2020, but it is too early for the trip to be analyzed again.
-            Arguments.of(tuesday.withHour(8), wednesday, true),
+            Arguments.of(TUESDAY_20200609.withHour(8), wednesday, true),
             // Trip snoozed on Monday, June 8, 2020 (a day before the trip starts), should unsnooze at 12:00am (midnight)
             // on Tuesday, June 9, 2020.
-            Arguments.of(MONDAY_20200608_NOON, tuesday, true)
+            Arguments.of(MONDAY_20200608_NOON, TUESDAY_20200609, true)
         );
     }
 
@@ -1104,16 +1101,14 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     private static Stream<Arguments> createUpdateTripWithStaleStateCases() {
         // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
         // The initial state for the trip is TRIP_ACTIVE.
-        ZonedDateTime tuesday = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
-
         return Stream.of(
-            Arguments.of(tuesday.withHour(8).withMinute(50), true, TRIP_ACTIVE, TRIP_ACTIVE, "During trip (before 8:58 am), state should remain active."),
-            Arguments.of(tuesday.withHour(10), true, TRIP_ACTIVE, TRIP_UPCOMING, "After trip (after 9am), state should change to upcoming (for recurring trip)."),
-            Arguments.of(tuesday.withHour(10), true, NEXT_TRIP_NOT_POSSIBLE, TRIP_UPCOMING, "Stale trip status should be updated to upcoming (for recurring trip)."),
-            Arguments.of(tuesday.withHour(10), false, NEXT_TRIP_NOT_POSSIBLE, PAST_TRIP, "Stale trip status should be updated to past (for one-time trip)."),
-            Arguments.of(tuesday.withHour(8), true, TRIP_ACTIVE, TRIP_UPCOMING, "Shortly before trip starts, state should change to upcoming."),
-            Arguments.of(tuesday.withHour(4), true, TRIP_ACTIVE, TRIP_UPCOMING, "Long before trip starts, state should change to upcoming."),
-            Arguments.of(tuesday.withHour(4), true, NO_LONGER_POSSIBLE, NO_LONGER_POSSIBLE, "Should not attempt to update a trip no longer possible.")
+            Arguments.of(TUESDAY_20200609.withHour(8).withMinute(50), true, TRIP_ACTIVE, TRIP_ACTIVE, "During trip (before 8:58 am), state should remain active."),
+            Arguments.of(TUESDAY_20200609.withHour(10), true, TRIP_ACTIVE, TRIP_UPCOMING, "After trip (after 9am), state should change to upcoming (for recurring trip)."),
+            Arguments.of(TUESDAY_20200609.withHour(10), true, NEXT_TRIP_NOT_POSSIBLE, TRIP_UPCOMING, "Stale trip status should be updated to upcoming (for recurring trip)."),
+            Arguments.of(TUESDAY_20200609.withHour(10), false, NEXT_TRIP_NOT_POSSIBLE, PAST_TRIP, "Stale trip status should be updated to past (for one-time trip)."),
+            Arguments.of(TUESDAY_20200609.withHour(8), true, TRIP_ACTIVE, TRIP_UPCOMING, "Shortly before trip starts, state should change to upcoming."),
+            Arguments.of(TUESDAY_20200609.withHour(4), true, TRIP_ACTIVE, TRIP_UPCOMING, "Long before trip starts, state should change to upcoming."),
+            Arguments.of(TUESDAY_20200609.withHour(4), true, NO_LONGER_POSSIBLE, NO_LONGER_POSSIBLE, "Should not attempt to update a trip no longer possible.")
         );
     }
 
@@ -1160,12 +1155,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     private static Stream<Arguments> shouldNotUpdateInactiveOrSnoozedTripCases() {
         // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
         // The initial state for the trip is TRIP_ACTIVE.
-        ZonedDateTime tuesday = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
-
         return Stream.of(
-            Arguments.of(tuesday.withHour(8).withMinute(50), true, true),
-            Arguments.of(tuesday.withHour(8).withMinute(50), false, true),
-            Arguments.of(tuesday.withHour(8).withMinute(50), false, false)
+            Arguments.of(TUESDAY_20200609.withHour(8).withMinute(50), true, true),
+            Arguments.of(TUESDAY_20200609.withHour(8).withMinute(50), false, true),
+            Arguments.of(TUESDAY_20200609.withHour(8).withMinute(50), false, false)
         );
     }
 
@@ -1256,8 +1249,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // change "now" time after initial check to be within 30 min lead
         // 1:00AM UTC or 5:00PM PST
         DateTimeUtils.useFixedClockAt(
-            MONDAY_20200608_NOON
-                .withDayOfMonth(9)
+            TUESDAY_20200609
                 .withHour(17)
                 .withMinute(0)
                 .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
