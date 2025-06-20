@@ -1107,6 +1107,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // The initial state for the trip is TRIP_ACTIVE.
         return Stream.of(
             Arguments.of(TUESDAY_20200609.withHour(8).withMinute(50), true, TRIP_ACTIVE, TRIP_ACTIVE, "During trip (before 8:58 am), state should remain active."),
+            Arguments.of(TUESDAY_20200609.withHour(8).withMinute(50), true, NEXT_TRIP_NOT_POSSIBLE, TRIP_ACTIVE, "During trip (before 8:58 am), state should be updated to active."),
             Arguments.of(TUESDAY_20200609.withHour(10), true, TRIP_ACTIVE, TRIP_UPCOMING, "After trip (after 9am), state should change to upcoming (for recurring trip)."),
             Arguments.of(TUESDAY_20200609.withHour(10), true, NEXT_TRIP_NOT_POSSIBLE, TRIP_UPCOMING, "Stale trip status should be updated to upcoming (for recurring trip)."),
             Arguments.of(TUESDAY_20200609.withHour(10), false, NEXT_TRIP_NOT_POSSIBLE, PAST_TRIP, "Stale trip status should be updated to past (for one-time trip)."),
