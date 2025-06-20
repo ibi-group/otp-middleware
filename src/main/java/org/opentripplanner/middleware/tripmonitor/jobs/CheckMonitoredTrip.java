@@ -385,24 +385,23 @@ public class CheckMonitoredTrip implements Runnable {
             // that the trip is no longer possible.
             boolean noMatchingItineraryFoundOnPreviousChecks =
                 !trip.itineraryExistence.isPossibleOnAtLeastOneMonitoredDayOfTheWeek(trip);
-            journeyState.tripStatus = noMatchingItineraryFoundOnPreviousChecks
-                ? TripStatus.NO_LONGER_POSSIBLE
-                : TripStatus.NEXT_TRIP_NOT_POSSIBLE;
 
-            LOG.info(
-                noMatchingItineraryFoundOnPreviousChecks
-                    ? "Trip checking has no more possible days to check, TRIP NO LONGER POSSIBLE!"
-                    : "Trip for today was not found after the allowed attempts. Snoozing for today."
-            );
+            if (noMatchingItineraryFoundOnPreviousChecks) {
+                journeyState.tripStatus = TripStatus.NO_LONGER_POSSIBLE;
+                LOG.info("Trip checking has no more possible days to check, TRIP NO LONGER POSSIBLE!");
 
-            if (journeyState.tripStatus == TripStatus.NEXT_TRIP_NOT_POSSIBLE) {
+                // update trip itinerary existence to reflect that trip was not possible on this day of the week
+                trip.itineraryExistence
+                    .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek())
+                    .handleInvalidDate(targetZonedDateTime);
+
+            } else {
+                journeyState.tripStatus = TripStatus.NEXT_TRIP_NOT_POSSIBLE;
                 trip.snoozed = true;
+                trip.attemptsToGetMatchingItinerary = 0;
+                LOG.info("Trip for today was not found after the allowed attempts. Snoozing for today.");
             }
 
-            // update trip itinerary existence to reflect that trip was not possible on this day of the week
-            trip.itineraryExistence
-                .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek())
-                .handleInvalidDate(targetZonedDateTime);
             updateMonitoredTrip();
 
             // send an appropriate notification if the trip is still possible on another day of the week, or if it is now
@@ -413,6 +412,10 @@ public class CheckMonitoredTrip implements Runnable {
                     getOtpUserLocale()
                 )
             );
+        } else if (matchingItinerary != null) {
+            // Set/reset the trip status according to the existing matching itinerary while attempting to get a new one.
+            updateTripStatus();
+            updateMonitoredTrip();
         }
         return false;
     }
