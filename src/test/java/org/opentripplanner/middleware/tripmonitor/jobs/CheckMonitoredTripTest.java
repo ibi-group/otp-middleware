@@ -532,6 +532,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // set trip status to be upcoming
         mockTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
 
+        // Initialize some positive number of attempts to obtain a matching itinerary.
+        // That number should be reset when the NEXT_TRIP_NOT_POSSIBLE state is set.
+        mockTrip.attemptsToGetMatchingItinerary = 5;
+
         // update the target date to be an upcoming Monday within the CheckMonitoredTrip
         mockCheckMonitoredTrip.targetZonedDateTime = MONDAY_20200615_0835;
 
@@ -561,16 +565,21 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             "updated trips status should indicate trip is not possible this day"
         );
 
-        // verify itinerary existence was updated to show trip is not possible today
-        assertFalse(
+        // verify itinerary existence was NOT updated to show trip could not be monitored today
+        assertTrue(
             updatedTrip.itineraryExistence.monday.isValid(),
-            "updated Trip should not be valid on Monday"
+            "updated Trip should remain valid on Monday"
         );
 
         // Check that the trip was snoozed. This is to avoid repeated unsuccessful network calls.
         assertTrue(mockCheckMonitoredTrip.trip.snoozed, "Trip should be snoozed if no matching itinerary.");
 
-        // verify a notification was sent indicating that the next trip is not possible
+        assertEquals(
+            0,
+            mockCheckMonitoredTrip.trip.attemptsToGetMatchingItinerary,
+            "Attempts to obtain a matching itinerary should have been reset."
+        );
+
         assertEquals(
             1,
             mockCheckMonitoredTrip.notifications.size(),
@@ -951,8 +960,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Fail on first attempt.
         assertCheckMonitoredTrip(monitoredTrip, unexpectedResponse, false, 0, NEXT_TRIP_NOT_POSSIBLE);
 
-        // Reactivate and unsnooze trip.
-        monitoredTrip.journeyState.tripStatus = TRIP_ACTIVE;
+        // Unsnooze trip (this resets its status according to prev. matching itinerary, in this case TRIP_ACTIVE).
         monitoredTrip.snoozed = false;
         Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
 
@@ -971,8 +979,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // Fail after maximum checks have been reached.
         for (int i = 1; i <= maxChecks; i++) {
-            TripStatus tripStatus = (i < maxChecks) ? TRIP_ACTIVE : NEXT_TRIP_NOT_POSSIBLE;
-            assertCheckMonitoredTrip(monitoredTrip, unexpectedResponse, true, i, tripStatus);
+            if (i < maxChecks) {
+                assertCheckMonitoredTrip(monitoredTrip, unexpectedResponse, true, i, TRIP_ACTIVE);
+            } else {
+                // When NEXT_TRIP_NOT_POSSIBLE is set, the attempts to get a matching itinerary is reset.
+                assertCheckMonitoredTrip(monitoredTrip, unexpectedResponse, true, 0, NEXT_TRIP_NOT_POSSIBLE);
+            }
         }
 
         // Clear the created trip.
