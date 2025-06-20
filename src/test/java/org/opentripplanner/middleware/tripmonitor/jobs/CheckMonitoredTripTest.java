@@ -479,7 +479,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // create mock itinerary existence for trip
         mockTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
 
-        // update trip to say that itinerary was not possible on Mondays as of the last check
+        // update trip to say that itinerary was not found on Mondays as of the last check
         mockTrip.itineraryExistence.monday.invalidDates.add("Mock date");
 
         // set trip status to be upcoming
@@ -525,8 +525,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
 
-        // create mock itinerary existence for trip that indicates the trip was still possible on Mondays as of the last
-        // check
+        // create mock itinerary existence for trip that indicates the trip was
+        // still possible on Mondays as of the last check
         mockTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
 
         // set trip status to be upcoming
@@ -562,7 +562,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         assertEquals(
             NEXT_TRIP_NOT_POSSIBLE,
             updatedTrip.journeyState.tripStatus,
-            "updated trips status should indicate trip is not possible this day"
+            "updated trips status should indicate trip could not be monitored this day"
         );
 
         // verify itinerary existence was NOT updated to show trip could not be monitored today
@@ -583,12 +583,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         assertEquals(
             1,
             mockCheckMonitoredTrip.notifications.size(),
-            "A notification should be generated for the next trip not being possible"
+            "A notification should be generated for the next trip could not be monitored"
         );
         assertEquals(
             "The trip planner was unable to find your trip today after a few attempts and has snoozed monitoring as a result. Go to Trip Details to resume monitoring or plan a new trip.",
             mockCheckMonitoredTrip.notifications.iterator().next().body,
-            "The notification should have the appropriate message when the next trip is not possible"
+            "The notification should have the appropriate message when the next trip could not be monitored"
         );
     }
 
