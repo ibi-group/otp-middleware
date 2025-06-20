@@ -166,12 +166,14 @@ public class CheckMonitoredTrip implements Runnable {
         LOG.info("Begin checking trip.");
         // Check if the trip check should be skipped (based on time, day of week, etc.)
         try {
-            if (
-                shouldSkipMonitoredTripCheck() &&
-                // Perform the check if the journey state or target date is not consistent with the matching itinerary.
-                trip.tripStateIsConsistentWithMatchingItinerary() &&
-                trip.tripTargetDateIsConsistentWithMatchingItinerary()
-            ) {
+            if (shouldSkipMonitoredTripCheck() && (
+                !trip.isActive ||
+                trip.snoozed || (
+                    // Perform the check if the journey state or target date is not consistent with the matching itinerary.
+                    trip.tripStateIsConsistentWithMatchingItinerary() &&
+                    trip.tripTargetDateIsConsistentWithMatchingItinerary()
+                )
+            )) {
                 LOG.debug("Skipping check for trip");
                 return;
             }
