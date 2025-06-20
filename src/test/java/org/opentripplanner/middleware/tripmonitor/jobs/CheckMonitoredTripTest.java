@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.models.TripMonitorNotification.STOPWATCH_ICON;
 import static org.opentripplanner.middleware.testutils.OtpTestUtils.firstItinerary;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
+import static org.opentripplanner.middleware.tripmonitor.TripStatus.PAST_TRIP;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_UPCOMING;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
@@ -845,7 +846,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         trip.journeyState.tripStatus = TRIP_ACTIVE;
 
         new CheckMonitoredTrip(trip, this::mockOtpPlanResponse).checkOtpAndUpdateTripStatus();
-        assertEquals(TripStatus.PAST_TRIP, trip.journeyState.tripStatus);
+        assertEquals(PAST_TRIP, trip.journeyState.tripStatus);
     }
 
     @Test
@@ -1065,6 +1066,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @MethodSource("createUpdateTripWithStaleStateCases")
     void canUpdateTripWithStaleState(
         ZonedDateTime clockTime,
+        boolean isRecurring,
         TripStatus currentStatus,
         TripStatus expectedStatus,
         String message
@@ -1076,9 +1078,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             OtpTestUtils.createDefaultJourneyState()
         );
         monitoredTrip.id = UUID.randomUUID().toString();
-        // Set monitored days to Tuesday only.
-        monitoredTrip.monday = false;
-        monitoredTrip.tuesday = true;
+        // If recurring, set monitored days to Tuesday only.
+        monitoredTrip.updateAllDaysOfWeek(false);
+        if (isRecurring) {
+            monitoredTrip.tuesday = true;
+        }
         monitoredTrip.journeyState.targetDate = "2020-06-09";
         monitoredTrip.journeyState.tripStatus = currentStatus;
 
@@ -1102,11 +1106,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         ZonedDateTime tuesday = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
 
         return Stream.of(
-            Arguments.of(tuesday.withHour(8).withMinute(50), TRIP_ACTIVE, TRIP_ACTIVE, " During trip (before 8:58 am), state should remain active."),
-            Arguments.of(tuesday.withHour(10), TRIP_ACTIVE, TRIP_UPCOMING, "After trip (after 9am), state should change to upcoming (for recurring trip)."),
-            Arguments.of(tuesday.withHour(10), NEXT_TRIP_NOT_POSSIBLE, TRIP_UPCOMING, "Stale trip status should be updated to upcoming (for recurring trip)."),
-            Arguments.of(tuesday.withHour(8), TRIP_ACTIVE, TRIP_UPCOMING, "Shortly before trip starts, state should change to upcoming."),
-            Arguments.of(tuesday.withHour(4), TRIP_ACTIVE, TRIP_UPCOMING, "Long before trip starts, state should change to upcoming.")
+            Arguments.of(tuesday.withHour(8).withMinute(50), true, TRIP_ACTIVE, TRIP_ACTIVE, " During trip (before 8:58 am), state should remain active."),
+            Arguments.of(tuesday.withHour(10), true, TRIP_ACTIVE, TRIP_UPCOMING, "After trip (after 9am), state should change to upcoming (for recurring trip)."),
+            Arguments.of(tuesday.withHour(10), true, NEXT_TRIP_NOT_POSSIBLE, TRIP_UPCOMING, "Stale trip status should be updated to upcoming (for recurring trip)."),
+            Arguments.of(tuesday.withHour(10), false, NEXT_TRIP_NOT_POSSIBLE, PAST_TRIP, "Stale trip status should be updated to past (for one-time trip)."),
+            Arguments.of(tuesday.withHour(8), true, TRIP_ACTIVE, TRIP_UPCOMING, "Shortly before trip starts, state should change to upcoming."),
+            Arguments.of(tuesday.withHour(4), true, TRIP_ACTIVE, TRIP_UPCOMING, "Long before trip starts, state should change to upcoming.")
         );
     }
 
