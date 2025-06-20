@@ -567,6 +567,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             "updated Trip should not be valid on Monday"
         );
 
+        // Check that the trip was snoozed. This is to avoid repeated unsuccessful network calls.
+        assertTrue(mockCheckMonitoredTrip.trip.snoozed, "Trip should be snoozed if no matching itinerary.");
+
         // verify a notification was sent indicating that the next trip is not possible
         assertEquals(
             1,
@@ -948,8 +951,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Fail on first attempt.
         assertCheckMonitoredTrip(monitoredTrip, unexpectedResponse, false, 0, NEXT_TRIP_NOT_POSSIBLE);
 
-        // Reactivate trip.
+        // Reactivate and unsnooze trip.
         monitoredTrip.journeyState.tripStatus = TRIP_ACTIVE;
+        monitoredTrip.snoozed = false;
         Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
 
         // Match on second attempt.

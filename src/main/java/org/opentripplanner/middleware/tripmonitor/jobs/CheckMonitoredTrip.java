@@ -395,6 +395,10 @@ public class CheckMonitoredTrip implements Runnable {
                     : "Trip for today was not found after the allowed attempts. Snoozing for today."
             );
 
+            if (journeyState.tripStatus == TripStatus.NEXT_TRIP_NOT_POSSIBLE) {
+                trip.snoozed = true;
+            }
+
             // update trip itinerary existence to reflect that trip was not possible on this day of the week
             trip.itineraryExistence
                 .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek())
