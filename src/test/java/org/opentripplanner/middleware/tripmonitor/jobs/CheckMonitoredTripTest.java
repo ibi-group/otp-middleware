@@ -1118,8 +1118,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     @ParameterizedTest
-    @MethodSource("createUpdateTripWithStaleState2Cases")
-    void canUpdateTripWithStaleState2(
+    @MethodSource("shouldNotUpdateInactiveOrSnoozedTripCases")
+    void shouldNotUpdateInactiveOrSnoozedTrip(
         ZonedDateTime clockTime,
         boolean isActive,
         boolean isSnoozed
@@ -1157,7 +1157,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         );
     }
 
-    private static Stream<Arguments> createUpdateTripWithStaleState2Cases() {
+    private static Stream<Arguments> shouldNotUpdateInactiveOrSnoozedTripCases() {
         // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
         // The initial state for the trip is TRIP_ACTIVE.
         ZonedDateTime tuesday = MONDAY_20200608_NOON.withDayOfMonth(9).withHour(0).withMinute(0).withSecond(0);
