@@ -586,7 +586,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             "A notification should be generated for the next trip could not be monitored"
         );
         assertEquals(
-            "The trip planner was unable to find your trip today after a few attempts and has snoozed monitoring as a result. Go to Trip Details to resume monitoring or plan a new trip.",
+            "After multiple failed attempts to locate your itinerary, monitoring has been snoozed for today. Go to Trip Details for options.",
             mockCheckMonitoredTrip.notifications.iterator().next().body,
             "The notification should have the appropriate message when the next trip could not be monitored"
         );
