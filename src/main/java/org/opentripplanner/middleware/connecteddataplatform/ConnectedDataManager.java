@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.graphql.TransportMode;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -48,7 +49,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDa
 /**
  * Responsible for collating, anonymizing and uploading to AWS s3 trip requests and related itineraries.
  */
-public class ConnectedDataManager {
+public class ConnectedDataManager implements RecurringJobScheduler {
 
     public static final String ANON_TRIP_FILE_NAME = "anon-trip-data";
     public static final String ANON_TRIP_ZIP_FILE_NAME = ANON_TRIP_FILE_NAME + ".zip";
@@ -94,7 +95,7 @@ public class ConnectedDataManager {
     private static final String DATE_CREATED_FIELD = "dateCreated";
     public static final String BATCH_ID_FIELD = "batchId";
 
-    private ConnectedDataManager() {}
+    public ConnectedDataManager() {}
 
     public static boolean canScheduleUploads() {
         if (!isConnectedDataPlatformEnabled()) {
@@ -115,7 +116,8 @@ public class ConnectedDataManager {
         return true;
     }
 
-    public static void scheduleTripHistoryUploadJob() {
+    @Override
+    public void scheduleRecurringJob() {
         if (canScheduleUploads()) {
             LOG.info("Scheduling trip history upload for every {} minute(s) starting at {}",
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,

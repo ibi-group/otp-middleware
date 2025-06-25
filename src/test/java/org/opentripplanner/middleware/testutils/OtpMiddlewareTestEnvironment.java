@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.testutils;
 
 import org.opentripplanner.middleware.OtpMiddlewareMain;
+import org.opentripplanner.middleware.utils.CommandLineProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,15 +37,17 @@ public class OtpMiddlewareTestEnvironment {
         if (IS_END_TO_END) {
             LOG.info("running E2E tests");
             // Check if running in a CI environment. If so, use environment variables instead of config file.
-            args = isRunningCi ? new String[]{} : new String[]{"configurations/default/env.yml"};
+            args = isRunningCi
+                ? CommandLineProcessor.getDefaultArguments()
+                : CommandLineProcessor.getDefaultArguments("configurations/default/env.yml");
         } else {
             LOG.info("running unit tests");
             // If not running E2E, use test env.yml.
-            args = new String[]{"configurations/test/env.yml"};
+            args = CommandLineProcessor.getDefaultArguments("configurations/test/env.yml");
         }
-        // Fail this test and others if the above files do not exist.
-        for (String arg : args) {
-            File f = new File(arg);
+        if (args[0].contains(".yml")) {
+            // Fail this test and others if the first argument is a file that does not exist.
+            File f = new File(args[0]);
             if (!f.exists() || f.isDirectory()) {
                 throw new RuntimeException(String.format("Required config file %s does not exist!", f.getName()));
             }

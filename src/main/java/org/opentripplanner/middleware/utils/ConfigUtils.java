@@ -70,17 +70,14 @@ public class ConfigUtils {
      * Load config files from either program arguments or (if no args specified) from
      * default configuration file locations. Config fields are retrieved with getConfigProperty.
      */
-    public static void loadConfig(String[] args) throws IOException {
+    public static void loadConfig(String configFile) throws IOException {
         // Check if running in a CI environment. If so, skip loading config (CI uses environment variables).
         if (isRunningCi) {
             LOG.info("Constructing env config from environment variables");
             envConfig = constructConfigFromEnvironment();
-        } else if (args.length == 0) {
-            LOG.warn("Using default env.yml: {}", DEFAULT_ENV);
-            envConfig = yamlMapper.readTree(new FileInputStream(DEFAULT_ENV));
         } else {
-            LOG.info("Loading env.yml: {}", args[0]);
-            envConfig = yamlMapper.readTree(new FileInputStream(args[0]));
+            LOG.info("Loading env.yml: {}", configFile);
+            envConfig = yamlMapper.readTree(new FileInputStream(configFile));
         }
         validateConfig();
     }
