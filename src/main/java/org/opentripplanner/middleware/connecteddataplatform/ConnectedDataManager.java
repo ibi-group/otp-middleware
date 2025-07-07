@@ -141,7 +141,7 @@ public class ConnectedDataManager implements RecurringJobScheduler {
             Scheduler.scheduleJob(
                 new TripHistoryUploadJob(),
                 initialDelayMillis,
-                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES * 60000L, // milliseconds
                 TimeUnit.MILLISECONDS);
         }
     }
