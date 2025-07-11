@@ -48,6 +48,9 @@
     <logger name="org.opentripplanner.middleware.triptracker.interactions.UsGdotGwinnettTrafficSignalNotifier">
         <appender-ref ref="GMAP-FILE"/>
     </logger>
+    <logger name="org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction">
+        <appender-ref ref="GMAP-FILE"/>
+    </logger>
     <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
