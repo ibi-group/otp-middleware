@@ -57,14 +57,14 @@ class WaitForTransitInstructionTest {
 
     static Stream<Arguments> getStatusCases() {
         return Stream.of(
-            Arguments.of(0, false, 0, " (No real-time info)", "zero wait"),
-            Arguments.of(300, false, 0, " (No real-time info)", "5 min wait"),
-            Arguments.of(-300, false, 0, " (That time has passed)", "5 min past"),
-            Arguments.of(0, true, 0, ", on time", "zero delay"),
-            Arguments.of(300, true, 0, ", on time", "5 min wait"),
-            Arguments.of(300, true, 160, ", now 2 minutes late", "5 min wait incl 2 min delay"),
-            Arguments.of(300, true, -160, ", now 2 minutes early", "5 min wait incl 2 min advance"),
-            Arguments.of(-300, false, 100, " (That time has passed)", "5 min past incl 1 min delay")
+            Arguments.of(0, false, 0, "No real-time info", "zero wait"),
+            Arguments.of(300, false, 0, "No real-time info", "5 min wait"),
+            Arguments.of(-300, false, 0, "That time has passed", "5 min past"),
+            Arguments.of(0, true, 0, "On time", "zero delay"),
+            Arguments.of(300, true, 0, "On time", "5 min wait"),
+            Arguments.of(300, true, 160, "Now 2 minutes late", "5 min wait incl 2 min delay"),
+            Arguments.of(300, true, -160, "Now 2 minutes early", "5 min wait incl 2 min advance"),
+            Arguments.of(-300, false, 100, "That time has passed", "5 min past incl 1 min delay")
         );
     }
 }

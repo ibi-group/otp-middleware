@@ -33,7 +33,7 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
         String status = getStatus(waitInMinutes);
 
         String message = String.format(
-            "Wait%s for your bus, route %s, scheduled at %s%s",
+            "Wait%s for your bus, route %s, scheduled at %s (%s)",
             getReadableMinutes(waitInMinutes),
             routeShortName,
             DateTimeUtils.formatShortDate(Date.from(transitLeg.getScheduledStartTime().toInstant()), locale),
@@ -54,16 +54,16 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
 
     public String getStatus(long waitInMinutes) {
         if (waitInMinutes < -2) {
-            return " (That time has passed)";
+            return "That time has passed";
         } else if (Boolean.TRUE.equals(transitLeg.realTime)) {
             long delayInMinutes = transitLeg.departureDelay / 60;
             long absoluteMinutes = Math.abs(delayInMinutes);
             String delayInfo = (delayInMinutes > 0) ? "late" : "early";
             return (absoluteMinutes <= 1)
-                ? ", on time"
-                : String.format(", now%s %s", getReadableMinutes(absoluteMinutes), delayInfo);
+                ? "On time"
+                : String.format("Now%s %s", getReadableMinutes(absoluteMinutes), delayInfo);
         } else {
-            return " (No real-time info)";
+            return "No real-time info";
         }
     }
 

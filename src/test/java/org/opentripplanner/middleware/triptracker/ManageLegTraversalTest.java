@@ -528,7 +528,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(walkToBusTransition.legs.get(0).to.toCoordinates())
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
                     .withInstant(walkToBusTransition.legs.get(1).startTime.toInstant().minus(40, ChronoUnit.MINUTES))
-                    .withExpectedInstruction("Wait 40 minutes for your bus, route 40, scheduled at 6:41 AM, on time")
+                    .withExpectedInstruction("Wait 40 minutes for your bus, route 40, scheduled at 6:41 AM (On time)")
             ),
             Arguments.of(
                 "After boarding bus and bus starts moving, but incorrectly produced 'COMPLETED' status.",
