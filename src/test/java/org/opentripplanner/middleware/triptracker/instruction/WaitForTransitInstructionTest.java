@@ -36,4 +36,35 @@ class WaitForTransitInstructionTest {
             Arguments.of(310, 5, "5 min wait")
         );
     }
+
+    @ParameterizedTest
+    @MethodSource("getStatusCases")
+    void testGetStatus(int waitMinutes, boolean realTime, int delaySeconds, String expectedStatus, String message) {
+        Instant now = Instant.now();
+        Leg transitLeg = new Leg();
+        transitLeg.startTime = Date.from(now);
+        transitLeg.realTime = realTime;
+        if (realTime) {
+            transitLeg.departureDelay = delaySeconds;
+        }
+
+        assertEquals(
+            expectedStatus,
+            new WaitForTransitInstruction(transitLeg, now, Locale.US).getStatus(waitMinutes),
+            message
+        );
+    }
+
+    static Stream<Arguments> getStatusCases() {
+        return Stream.of(
+            Arguments.of(0, false, 0, " (No real-time info)", "zero wait"),
+            Arguments.of(300, false, 0, " (No real-time info)", "5 min wait"),
+            Arguments.of(-300, false, 0, " (That time has passed)", "5 min past"),
+            Arguments.of(0, true, 0, ", on time", "zero delay"),
+            Arguments.of(300, true, 0, ", on time", "5 min wait"),
+            Arguments.of(300, true, 160, ", now 2 minutes late", "5 min wait incl 2 min delay"),
+            Arguments.of(300, true, -160, ", now 2 minutes early", "5 min wait incl 2 min advance"),
+            Arguments.of(-300, false, 100, " (That time has passed)", "5 min past incl 1 min delay")
+        );
+    }
 }
