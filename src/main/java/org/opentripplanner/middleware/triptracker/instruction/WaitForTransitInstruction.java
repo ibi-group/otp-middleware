@@ -25,18 +25,13 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
     public String build() {
         // TODO: i18n
         String routeShortName = getRouteShortNameFromLeg(transitLeg);
-        long delayInMinutes = transitLeg.departureDelay / 60;
-        long absoluteMinutes = Math.abs(delayInMinutes);
-        long waitInMinutes = Duration
-            .between(
-                currentTime.atZone(DateTimeUtils.getOtpZoneId()),
-                ZonedDateTime.ofInstant(transitLeg.startTime.toInstant(), DateTimeUtils.getOtpZoneId())
-            )
-            .toMinutes();
+        long waitInMinutes = getWaitInMinutes();
         String waitInfo;
         if (waitInMinutes < -2) {
             waitInfo = " (That time has passed)";
         } else if (Boolean.TRUE.equals(transitLeg.realTime)) {
+            long delayInMinutes = transitLeg.departureDelay / 60;
+            long absoluteMinutes = Math.abs(delayInMinutes);
             String delayInfo = (delayInMinutes > 0) ? "late" : "early";
             waitInfo = (absoluteMinutes <= 1)
                 ? ", on time"
@@ -51,5 +46,12 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
             DateTimeUtils.formatShortDate(Date.from(transitLeg.getScheduledStartTime().toInstant()), locale),
             waitInfo
         );
+    }
+
+    public long getWaitInMinutes() {
+        return Duration.between(
+            currentTime.atZone(DateTimeUtils.getOtpZoneId()),
+            ZonedDateTime.ofInstant(transitLeg.startTime.toInstant(), DateTimeUtils.getOtpZoneId())
+        ).toMinutes();
     }
 }
