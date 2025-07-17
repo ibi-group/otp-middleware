@@ -775,7 +775,7 @@ public class CheckMonitoredTrip implements Runnable {
 
         if (isPreviousTripOngoingAtLastCheck()) {
             matchingItinerary = previousMatchingItinerary;
-            targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(previousJourneyState.targetDate, trip.tripTime);
+            targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(previousJourneyState.targetDate, trip.otp2QueryParams.time);
 
             // Skip checking the trip the rest of the time that it is active if the trip was deemed not possible for the
             // next possible time during a previous query to find candidate itinerary matches.
@@ -982,7 +982,7 @@ public class CheckMonitoredTrip implements Runnable {
         if (
             previousMatchingItinerary == null &&
             trip.itinerary.endTime.before(DateTimeUtils.nowAsDate()) &&
-            ItineraryUtils.occursOnSameServiceDay(trip.itinerary, targetZonedDateTime, trip.arriveBy)
+            ItineraryUtils.occursOnSameServiceDay(trip.itinerary, targetZonedDateTime, trip.otp2QueryParams.arriveBy)
         ) {
             targetZonedDateTime = targetZonedDateTime.plusDays(1);
         }
@@ -1010,7 +1010,7 @@ public class CheckMonitoredTrip implements Runnable {
         ZonedDateTime scheduledTime = makeOtpZonedDateTime(
             targetZonedDateTime,
             Instant.ofEpochMilli(
-                trip.arriveBy
+                trip.otp2QueryParams.arriveBy
                     ? matchingItinerary.getScheduledEndTimeEpochMillis()
                     : matchingItinerary.getScheduledStartTimeEpochMillis()
             )
@@ -1024,7 +1024,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private void applyDelayOffset() {
         ZonedDateTime scheduledTime = DateTimeUtils.makeOtpZonedDateTime(new Date(
-            trip.arriveBy
+            trip.otp2QueryParams.arriveBy
                 ? matchingItinerary.getScheduledEndTimeEpochMillis()
                 : matchingItinerary.getScheduledStartTimeEpochMillis()
         ));
@@ -1037,7 +1037,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private void applyDelayOffset(ZonedDateTime scheduledTime) {
         long offsetMillis = scheduledTime.toInstant().toEpochMilli() -
-            (trip.arriveBy
+            (trip.otp2QueryParams.arriveBy
                 ? matchingItinerary.endTime.getTime()
                 : matchingItinerary.getScheduledStartTimeEpochMillis()
             );

@@ -25,7 +25,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -55,24 +54,10 @@ public class MonitoredTrip extends Model {
     public String tripName;
 
     /**
-     * The time at which the trip takes place. This will be in the format HH:mm and is extracted (or provided
-     * separately) to the date and time within the query parameters. The reasoning is so that it doesn't have to be
-     * extracted every time the trip requires checking.
-     */
-    @JsonIgnore
-    public String tripTime;
-
-    /**
      * From and to locations for the stored trip.
      */
     public Place from;
     public Place to;
-
-    /**
-     * whether the trip is an arriveBy trip
-     */
-    @JsonIgnore
-    public boolean arriveBy;
 
     /**
      * The number of minutes prior to a trip taking place that the status should be checked.
@@ -130,12 +115,6 @@ public class MonitoredTrip extends Model {
      * CheckMonitoredTrip job.
      */
     public boolean snoozed = false;
-
-    /**
-     * Query params. Query parameters influencing trip.
-     */
-    // TODO: Remove
-    public String queryParams;
 
     /**
      * GraphQL query parameters for OTP.
@@ -215,7 +194,7 @@ public class MonitoredTrip extends Model {
     ) {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
-        itineraryExistence = new ItineraryExistence(queriesByDate, itinerary, arriveBy, otpResponseProvider);
+        itineraryExistence = new ItineraryExistence(queriesByDate, itinerary, otp2QueryParams.arriveBy, otpResponseProvider);
         itineraryExistence.checkExistence(this);
         boolean itineraryExists = itineraryExistence.allMonitoredDaysAreValid(this);
         // If itinerary should be replaced, do so if all checked days are valid.
@@ -287,14 +266,11 @@ public class MonitoredTrip extends Model {
         from = itinerary.legs.get(0).from;
         to = itinerary.legs.get(lastLegIndex).to;
         this.otp2QueryParams = graphQLVariables;
-        this.arriveBy = graphQLVariables.arriveBy;
 
         // Ensure the itinerary we store does not contain any realtime info.
         clearRealtimeInfo();
 
-        // set the trip time by parsing the query params
-        tripTime = graphQLVariables.time;
-        if (tripTime == null) {
+        if (graphQLVariables.time == null) {
             throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
         }
     }
@@ -413,7 +389,7 @@ public class MonitoredTrip extends Model {
      * Returns the target hour of the day that the trip is either departing at or arriving by
      */
     public int tripTimeHour() {
-        return Integer.valueOf(tripTime.split(":")[0]);
+        return Integer.parseInt(otp2QueryParams.time.split(":")[0]);
     }
 
     /**
@@ -429,7 +405,7 @@ public class MonitoredTrip extends Model {
      * Returns the target minute of the hour that the trip is either departing at or arriving by
      */
     public int tripTimeMinute() {
-        return Integer.valueOf(tripTime.split(":")[1]);
+        return Integer.parseInt(otp2QueryParams.time.split(":")[1]);
     }
 
     /**

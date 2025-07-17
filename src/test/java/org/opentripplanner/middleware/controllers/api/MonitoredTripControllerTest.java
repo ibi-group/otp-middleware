@@ -20,6 +20,7 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -138,10 +139,6 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         // Expect only 1 trip for solo Otp user.
         assertEquals(1, soloTrips.data.size());
 
-        // Certain fields such as tripTime should be null when obtained from parsing JSON responses
-        // because of the @JsonIgnore annotation.
-        assertNull(soloTrips.data.get(0).tripTime);
-
         // Get trips for multi Otp user/admin user.
         ResponseList<MonitoredTrip> multiTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, multiOtpUser);
 
@@ -171,16 +168,13 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertNotNull(originalTrip.itinerary);
         assertNotNull(originalTrip.itineraryExistence);
         // Can't really assert journeyState because itinerary checks will not be run for these tests.
-        assertNotEquals(DUMMY_STRING, originalTrip.tripTime);
-        assertNotEquals(DUMMY_STRING, originalTrip.queryParams);
         assertNotEquals(DUMMY_STRING, originalTrip.userId);
         assertNotNull(originalTrip.from);
         assertNotNull(originalTrip.to);
 
         MonitoredTrip modifiedTrip = new MonitoredTrip();
         modifiedTrip.id = originalTrip.id;
-        modifiedTrip.tripTime = DUMMY_STRING;
-        modifiedTrip.queryParams = DUMMY_STRING;
+        modifiedTrip.otp2QueryParams = OtpTestUtils.getSampleQueryParams();
         modifiedTrip.userId = DUMMY_STRING;
 
         mockAuthenticatedRequest(MONITORED_TRIP_PATH,
@@ -191,8 +185,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(originalTrip.id);
         assertEquals(updatedTrip.itinerary.startTime, originalTrip.itinerary.startTime);
-        assertEquals(updatedTrip.tripTime, originalTrip.tripTime);
-        assertEquals(updatedTrip.queryParams, originalTrip.queryParams);
+        assertEquals(updatedTrip.otp2QueryParams.time, originalTrip.otp2QueryParams.time);
         assertEquals(updatedTrip.userId, originalTrip.userId);
         assertEquals(updatedTrip.from.name, originalTrip.from.name);
         assertEquals(updatedTrip.to.name, originalTrip.to.name);
@@ -213,8 +206,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip monitoredTrip = new MonitoredTrip();
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
-        monitoredTrip.tripTime = "08:35";
-        monitoredTrip.queryParams = UI_QUERY_PARAMS;
+        monitoredTrip.otp2QueryParams = OtpTestUtils.getSampleQueryParams();
         monitoredTrip.itinerary = new Itinerary();
         monitoredTrip.itinerary.startTime = new Date();
         monitoredTrip.itineraryExistence = new ItineraryExistence();

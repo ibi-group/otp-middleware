@@ -312,12 +312,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
 
         MonitoredTrip trip = new MonitoredTrip();
         trip.id = "Test trip";
-        trip.queryParams = BASE_QUERY;
         trip.otp2QueryParams = new OtpGraphQLVariables();
         trip.otp2QueryParams.date = QUERY_DATE;
         trip.otp2QueryParams.mobilityProfile = "mobility-profile";
         trip.otp2QueryParams.time = QUERY_TIME;
-        trip.tripTime = QUERY_TIME;
 
         trip.from = targetPlace;
         trip.to = dummyPlace;

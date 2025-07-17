@@ -14,6 +14,7 @@ import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
@@ -159,13 +160,16 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // TODO refactor with above test.
         // Save an itinerary in the future, and run an itinerary check on it at at time before that itinerary start.
 
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.time = "08:35";
+
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
             OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
             false,
             null
         );
-        monitoredTrip.tripTime = "08:35";
+        monitoredTrip.otp2QueryParams = params;
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
 
@@ -1243,9 +1247,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 .withMinute(30)
                 .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
         );
+
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.time = "17:30";
+
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
-        monitoredTrip.tripTime = "17:30";
+        monitoredTrip.otp2QueryParams = params;
         monitoredTrip.leadTimeInMinutes = 30;
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
