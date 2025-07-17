@@ -36,11 +36,13 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
         String waitInfo;
         if (waitInMinutes < -2) {
             waitInfo = " (That time has passed)";
-        } else {
+        } else if (Boolean.TRUE.equals(transitLeg.realTime)) {
             String delayInfo = (delayInMinutes > 0) ? "late" : "early";
             waitInfo = (absoluteMinutes <= 1)
                 ? ", on time"
                 : String.format(" now%s %s", getReadableMinutes(delayInMinutes), delayInfo);
+        } else {
+            waitInfo = " (No real-time info)";
         }
         return String.format(
             "Wait%s for your bus, route %s, scheduled at %s%s",
