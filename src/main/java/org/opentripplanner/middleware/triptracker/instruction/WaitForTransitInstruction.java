@@ -26,26 +26,30 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
         // TODO: i18n
         String routeShortName = getRouteShortNameFromLeg(transitLeg);
         long waitInMinutes = getWaitInMinutes();
-        String waitInfo;
-        if (waitInMinutes < -2) {
-            waitInfo = " (That time has passed)";
-        } else if (Boolean.TRUE.equals(transitLeg.realTime)) {
-            long delayInMinutes = transitLeg.departureDelay / 60;
-            long absoluteMinutes = Math.abs(delayInMinutes);
-            String delayInfo = (delayInMinutes > 0) ? "late" : "early";
-            waitInfo = (absoluteMinutes <= 1)
-                ? ", on time"
-                : String.format(" now%s %s", getReadableMinutes(delayInMinutes), delayInfo);
-        } else {
-            waitInfo = " (No real-time info)";
-        }
+        String status = getStatus(waitInMinutes);
+
         return String.format(
             "Wait%s for your bus, route %s, scheduled at %s%s",
             getReadableMinutes(waitInMinutes),
             routeShortName,
             DateTimeUtils.formatShortDate(Date.from(transitLeg.getScheduledStartTime().toInstant()), locale),
-            waitInfo
+            status
         );
+    }
+
+    public String getStatus(long waitInMinutes) {
+        if (waitInMinutes < -2) {
+            return " (That time has passed)";
+        } else if (Boolean.TRUE.equals(transitLeg.realTime)) {
+            long delayInMinutes = transitLeg.departureDelay / 60;
+            long absoluteMinutes = Math.abs(delayInMinutes);
+            String delayInfo = (delayInMinutes > 0) ? "late" : "early";
+            return (absoluteMinutes <= 1)
+                ? ", on time"
+                : String.format(", now%s %s", getReadableMinutes(absoluteMinutes), delayInfo);
+        } else {
+            return " (No real-time info)";
+        }
     }
 
     public long getWaitInMinutes() {
