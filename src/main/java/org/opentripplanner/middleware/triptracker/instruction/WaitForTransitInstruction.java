@@ -5,6 +5,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.Locale;
 
@@ -27,7 +28,10 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
         long delayInMinutes = transitLeg.departureDelay / 60;
         long absoluteMinutes = Math.abs(delayInMinutes);
         long waitInMinutes = Duration
-            .between(currentTime.atZone(DateTimeUtils.getOtpZoneId()), transitLeg.getScheduledStartTime())
+            .between(
+                currentTime.atZone(DateTimeUtils.getOtpZoneId()),
+                ZonedDateTime.ofInstant(transitLeg.startTime.toInstant(), DateTimeUtils.getOtpZoneId())
+            )
             .toMinutes();
         String waitInfo;
         if (waitInMinutes < -2) {
