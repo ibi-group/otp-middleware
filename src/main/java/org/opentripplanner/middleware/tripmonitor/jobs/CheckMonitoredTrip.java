@@ -212,9 +212,13 @@ public class CheckMonitoredTrip implements Runnable {
      * Whether an initial trip reminder should be sent.
      */
     public boolean shouldSendInitialReminder() {
-        boolean isFirstTimeCheckWithinLeadMonitoringTime = isFirstTimeCheckWithinLeadMonitoringTime();
-        boolean userWantsInitialReminder = !trip.snoozed && trip.notifyAtLeadingInterval;
-        return trip.isActive && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder;
+        TripStatus tripStatus = trip.journeyState.tripStatus;
+        return trip.isActive &&
+            !trip.snoozed &&
+            trip.notifyAtLeadingInterval &&
+            (tripStatus == TripStatus.TRIP_UPCOMING || tripStatus == TripStatus.TRIP_ACTIVE) &&
+            DateTimeUtils.convertToLocalDateTime(matchingItinerary.startTime).toLocalDate().equals(DateTimeUtils.nowAsLocalDate()) &&
+            isFirstTimeCheckWithinLeadMonitoringTime();
     }
 
     /**
