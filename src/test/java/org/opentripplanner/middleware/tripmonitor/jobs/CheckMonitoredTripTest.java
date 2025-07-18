@@ -212,9 +212,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
         Persistence.monitoredTrips.create(monitoredTrip);
 
-        DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
+        // Mock time to be 7:30am on Tuesday, June 9 before the trip start at 8:40am.
+        DateTimeUtils.useFixedClockAt(TUESDAY_20200609.withHour(7).withMinute(30));
 
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::getMockOtpResponseJune15);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
         checkMonitoredTrip.run();
         // Assert that the initial reminder has been generated.
         Assertions.assertNotNull(checkMonitoredTrip.initialReminderNotification);
