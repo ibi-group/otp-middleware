@@ -17,6 +17,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.stream.Stream;
@@ -179,6 +180,109 @@ public class CheckMonitoredTripBasicTest {
             Arguments.of(ONE_HOURS_IN_SECS, false, "Should not advance monitored day if trip in near future"),
             Arguments.of(TWO_MINUTES_IN_SECS, false, "Should not advance monitored day if trip is ongoing"),
             Arguments.of(-ONE_HOURS_IN_SECS, true, "Should advance monitored day if trip is past.")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("shouldSendInitialReminderCases")
+    void testShouldSendInitialReminder(
+        int offsetSeconds,
+        boolean active,
+        boolean snoozed,
+        TripStatus tripStatus,
+        boolean expected,
+        String message
+    ) throws CloneNotSupportedException {
+        MonitoredTrip trip = makeMonitoredTripFromNow(offsetSeconds, offsetSeconds + 300);
+        if (tripStatus != TripStatus.PAST_TRIP) {
+            setRecurringTodayAndTomorrow(trip);
+        } else {
+            trip.updateAllDaysOfWeek(false);
+        }
+        trip.isActive = active;
+        trip.snoozed = snoozed;
+        trip.notifyAtLeadingInterval = true;
+        trip.leadTimeInMinutes = 30;
+        trip.journeyState.lastCheckedEpochMillis = Instant.now().minus(60, ChronoUnit.MINUTES).toEpochMilli();
+        trip.journeyState.tripStatus = tripStatus;
+
+        CheckMonitoredTrip check = new CheckMonitoredTrip(trip);
+        check.matchingItinerary = trip.itinerary;
+        check.previousMatchingItinerary = trip.itinerary;
+
+        assertEquals(
+            expected,
+            check.shouldSendInitialReminder(),
+            message
+        );
+    }
+
+    static Stream<Arguments> shouldSendInitialReminderCases() {
+        return Stream.of(
+            Arguments.of(
+                300,
+                true,
+                false,
+                TripStatus.TRIP_UPCOMING,
+                true,
+                "Send reminder today for upcoming monitored trip today."
+            ),
+            Arguments.of(
+                -60,
+                true,
+                false,
+                TripStatus.TRIP_ACTIVE,
+                true,
+                "Send reminder for ongoing monitored trip (for trips is saved after starting time)."
+            ),
+            Arguments.of(
+                -60 + 24 * 3600, // Next trip starts tomorrow.
+                true,
+                false,
+                TripStatus.TRIP_UPCOMING,
+                false,
+                "Don't send reminder today after today's trip is complete. (Send it tomorrow.)"
+            ),
+            Arguments.of(
+                300,
+                false,
+                true,
+                TripStatus.TRIP_UPCOMING,
+                false,
+                "Don't send reminder for upcoming non-monitored trip."
+            ),
+            Arguments.of(
+                300,
+                true,
+                true,
+                TripStatus.TRIP_UPCOMING,
+                false,
+                "Don't send reminder for upcoming snoozed trip."
+            ),
+            Arguments.of(
+                300,
+                true,
+                false,
+                TripStatus.NEXT_TRIP_NOT_POSSIBLE,
+                false,
+                "Don't send reminder for unmonitorable trip."
+            ),
+            Arguments.of(
+                -3000,
+                true,
+                false,
+                TripStatus.PAST_TRIP,
+                false,
+                "Don't send reminder for one-time past trip."
+            ),
+            Arguments.of(
+                -3000,
+                true,
+                false,
+                TripStatus.NO_LONGER_POSSIBLE,
+                false,
+                "Don't send reminder for trip no longer possible."
+            )
         );
     }
 }
