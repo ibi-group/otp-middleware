@@ -200,15 +200,21 @@ public class CheckMonitoredTrip implements Runnable {
      * occurs within the monitoring lead time.
      */
     private void addInitialReminderIfNeeded() {
-        boolean isFirstTimeCheckWithinLeadMonitoringTime = isFirstTimeCheckWithinLeadMonitoringTime();
-        boolean userWantsInitialReminder = !trip.snoozed && trip.notifyAtLeadingInterval;
-
-        if (trip.isActive && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder) {
+        if (shouldSendInitialReminder()) {
             initialReminderNotification = TripMonitorNotification.createInitialReminderNotification(
                 trip,
                 getOtpUserLocale()
             );
         }
+    }
+
+    /**
+     * Whether an initial trip reminder should be sent.
+     */
+    public boolean shouldSendInitialReminder() {
+        boolean isFirstTimeCheckWithinLeadMonitoringTime = isFirstTimeCheckWithinLeadMonitoringTime();
+        boolean userWantsInitialReminder = !trip.snoozed && trip.notifyAtLeadingInterval;
+        return trip.isActive && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder;
     }
 
     /**
