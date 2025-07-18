@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
@@ -66,8 +65,6 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser multiOtpUser;
     private static final String MONITORED_TRIP_PATH = "api/secure/monitoredtrip";
 
-    private static final String UI_QUERY_PARAMS
-        = "?fromPlace=fromplace%3A%3A28.556631%2C-81.411781&toPlace=toplace%3A%3A28.545925%2C-81.348609&date=2020-11-13&time=14%3A21&arriveBy=false&mode=WALK%2CBUS%2CRAIL&numItineraries=3";
     private static final String DUMMY_STRING = "ABCDxyz";
 
     /**
