@@ -2514,9 +2514,6 @@ definitions:
   EncodedPolyline:
     type: "object"
     properties:
-      length:
-        type: "integer"
-        format: "int32"
       points:
         type: "string"
   OtpGraphQLTransportMode:
