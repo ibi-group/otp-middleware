@@ -8,13 +8,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public class EncodedPolyline implements Cloneable {
 
     /**
-     * The number of points in the string.
-     */
-    public Integer length;
-
-    /**
-     * List of coordinates of in a Google encoded polyline format (see
-     * https://developers.google.com/maps/documentation/utilities/polylinealgorithm)
+     * List of coordinates in an encoded polyline format
+     * (see https://developers.google.com/maps/documentation/utilities/polylinealgorithm). The value appears in JSON as
+     * a string.
      */
     public String points;
 
