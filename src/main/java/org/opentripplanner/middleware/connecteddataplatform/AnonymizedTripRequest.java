@@ -182,8 +182,7 @@ public class AnonymizedTripRequest {
             itin.duration = itinerary.duration;
             itin.startTime = itinerary.startTime;
             itin.endTime = itinerary.endTime;
-            itin.transfers = itinerary.transfers;
-            itin.transitTime = itinerary.transitTime;
+            itin.transfers = itinerary.numberOfTransfers;
             itin.waitingTime = itinerary.waitingTime;
             itin.walkDistance = itinerary.walkDistance;
             itin.walkTime = itinerary.walkTime;
@@ -199,24 +198,24 @@ public class AnonymizedTripRequest {
                     anonymizedLeg.endTime = leg.endTime;
                     anonymizedLeg.mode = leg.mode;
                     anonymizedLeg.transitLeg = leg.transitLeg;
-                    anonymizedLeg.fromStop = leg.from.stopId;
+                    anonymizedLeg.fromStop = leg.from.stop.id;
                     anonymizedLeg.from = getLegCoordinates(leg.from);
-                    anonymizedLeg.toStop = leg.to.stopId;
+                    anonymizedLeg.toStop = leg.to.stop.id;
                     anonymizedLeg.to = getLegCoordinates(leg.to);
                     if (Boolean.TRUE.equals(leg.transitLeg)) {
                         // Parameters for a transit leg.
-                        anonymizedLeg.agencyId = leg.agencyId;
+                        anonymizedLeg.agencyId = leg.agency.id;
                         anonymizedLeg.interlineWithPreviousLeg = leg.interlineWithPreviousLeg;
                         anonymizedLeg.realTime = leg.realTime;
-                        anonymizedLeg.routeId = leg.routeId;
-                        anonymizedLeg.routeShortName = leg.routeShortName;
-                        anonymizedLeg.routeLongName = leg.routeLongName;
-                        anonymizedLeg.routeType = leg.routeType;
-                        anonymizedLeg.tripBlockId = leg.tripBlockId;
-                        anonymizedLeg.tripId = leg.tripId;
+                        anonymizedLeg.routeId = leg.route.id;
+                        anonymizedLeg.routeShortName = leg.route.shortName;
+                        anonymizedLeg.routeLongName = leg.route.longName;
+                        anonymizedLeg.routeType = leg.route.type;
+                        anonymizedLeg.tripBlockId = leg.trip.blockId;
+                        anonymizedLeg.tripId = leg.trip.id;
                     } else {
                         // Parameters for non transit leg.
-                        anonymizedLeg.rentedVehicle = leg.rentedVehicle;
+                        anonymizedLeg.rentedVehicle = leg.rideHailingEstimate != null;
                     }
                     itin.legs.add(anonymizedLeg);
                 }

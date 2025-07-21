@@ -238,11 +238,9 @@ public class PersistenceTestUtils {
         itinerary.elevationLost = 0.0;
         itinerary.endTime = new Date();
         itinerary.startTime = new Date();
-        itinerary.transfers = 0;
-        itinerary.transitTime = 150;
+        itinerary.numberOfTransfers = 0;
         itinerary.waitingTime = 2;
         itinerary.walkDistance = 1514.13182088778;
-        itinerary.walkLimitExceeded = false;
 
         Leg leg = new Leg();
         leg.startTime = new Date();
@@ -251,14 +249,12 @@ public class PersistenceTestUtils {
         leg.arrivalDelay = 10;
         leg.realTime = true;
         leg.distance = 1500.0;
-        leg.pathway = true;
         leg.mode = "walk";
 
         Place place = new Place();
         place.lat = 28.5398938204469;
         place.lon = -81.3772773742676;
         place.name = "28.54894, -81.38971";
-        place.orig = "28.54894, -81.38971";
         leg.from = place;
         leg.to = place;
 

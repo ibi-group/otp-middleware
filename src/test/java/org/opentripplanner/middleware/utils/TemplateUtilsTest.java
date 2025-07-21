@@ -6,7 +6,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
-import org.opentripplanner.middleware.otp.response.LocalizedAlert;
+import org.opentripplanner.middleware.otp.response.Alert;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 
@@ -99,12 +99,12 @@ class TemplateUtilsTest extends OtpMiddlewareTestEnvironment {
     private static TripMonitorAlertNotification createAlertNotification() {
         // Create a notification with new and existing alerts,
         // mixing cases of alerts without header and alerts without description.
-        Set<LocalizedAlert> newAlerts = Set.of(
-            new LocalizedAlert("New Alert 1", null),
-            new LocalizedAlert(null, "New Alert 2 description")
+        Set<Alert> newAlerts = Set.of(
+            new Alert("New Alert 1", null),
+            new Alert(null, "New Alert 2 description")
         );
-        Set<LocalizedAlert> previousAlerts = Set.of(
-            new LocalizedAlert("Resolved Alert", null)
+        Set<Alert> previousAlerts = Set.of(
+            new Alert("Resolved Alert", null)
         );
 
         return TripMonitorAlertNotification.createAlertNotification(previousAlerts, newAlerts, Locale.ENGLISH);

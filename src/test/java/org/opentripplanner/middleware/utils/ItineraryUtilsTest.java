@@ -15,6 +15,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.RideHailingEstimate;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.slf4j.Logger;
@@ -469,10 +470,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             boolean isRent = legMode.endsWith("_RENT");
             Leg leg = new Leg();
             leg.mode = modeParts[0];
-            // Field 'rentedbike' includes rented bikes and rented scooters.
-            leg.rentedBike = ("BICYCLE".equals(leg.mode) || "SCOOTER".equals(leg.mode)) && isRent;
-            leg.rentedCar = "CAR".equals(leg.mode) && isRent;
-            leg.hailedCar = "CAR".equals(leg.mode) && legMode.endsWith("_HAIL");
+            // Field 'rentedbike' includes _all_ vehicles e.g. cars, bikes and scooters.
+            leg.rentedBike = ("CAR".equals(leg.mode) || "BICYCLE".equals(leg.mode) || "SCOOTER".equals(leg.mode)) && isRent;
+            leg.rideHailingEstimate = ("CAR".equals(leg.mode) && legMode.endsWith("_HAIL")) ? new RideHailingEstimate() : null;
             leg.transitLeg = "BUS".equals(leg.mode);
             return leg;
         }).collect(Collectors.toList());

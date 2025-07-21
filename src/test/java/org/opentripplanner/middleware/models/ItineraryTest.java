@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.RideHailingEstimate;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 
 import java.util.Collections;
@@ -39,18 +40,19 @@ public class ItineraryTest {
 
         Leg rentalCarLeg = new Leg();
         rentalCarLeg.mode = "CAR_RENT";
-        rentalCarLeg.rentedCar = true;
+        rentalCarLeg.rentedBike = true;
 
         Leg rentalMicromobilityLeg = new Leg();
         rentalMicromobilityLeg.mode = "MICROMOBILITY_RENT";
-        rentalMicromobilityLeg.rentedVehicle = true;
+        rentalMicromobilityLeg.rideHailingEstimate = new RideHailingEstimate();
 
         Leg walkLeg = new Leg();
         walkLeg.mode = "WALK";
 
         Leg rideHailLeg = new Leg();
         rideHailLeg.mode = "CAR_HAIL";
-        rideHailLeg.hailedCar = true;
+        rideHailLeg.rideHailingEstimate = new RideHailingEstimate();
+//        rideHailLeg.hailedCar = true;
 
         itineraryWithTransitNoRentals = new Itinerary();
         itineraryWithTransitNoRentals.legs = List.of(transitLeg, walkLeg);

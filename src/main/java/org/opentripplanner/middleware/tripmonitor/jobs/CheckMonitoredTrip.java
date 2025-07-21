@@ -12,7 +12,7 @@ import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.LocalizedAlert;
+import org.opentripplanner.middleware.otp.response.Alert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
@@ -494,11 +494,11 @@ public class CheckMonitoredTrip implements Runnable {
         }
         // Get the previously checked itinerary/alerts from the journey state (i.e., the response from OTP the most
         // recent the trip check was run). If no check has yet been run, this will be null.=
-        Set<LocalizedAlert> previousAlerts = previousMatchingItinerary == null
+        Set<Alert> previousAlerts = previousMatchingItinerary == null
             ? Collections.emptySet()
             : new HashSet<>(previousMatchingItinerary.getAlerts());
         // Construct set from new alerts.
-        Set<LocalizedAlert> newAlerts = new HashSet<>(matchingItinerary.getAlerts());
+        Set<Alert> newAlerts = new HashSet<>(matchingItinerary.getAlerts());
         TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(
             previousAlerts,
             newAlerts,

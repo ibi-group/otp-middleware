@@ -2,8 +2,8 @@ package org.opentripplanner.middleware.triptracker;
 
 import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
-import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.otp.response.Stop;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueRidingTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -321,7 +322,7 @@ public class TravelerLocator {
             return new GetOffHereTransitInstruction(finalStop, locale);
         }
 
-        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
+        Stop nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
         if (nextStop != null) {
             int stopsRemaining = stopsUntilEndOfLeg(nextStop, expectedLeg);
             double distance = getDistance(travelerPosition.currentPosition, new Coordinates(nextStop));
@@ -502,11 +503,11 @@ public class TravelerLocator {
         return pointIndex;
     }
 
-    private static List<Place> getIntermediateAndLastStop(Leg leg) {
-        ArrayList<Place> stops = leg.intermediateStops == null
+    private static List<Stop> getIntermediateAndLastStop(Leg leg) {
+        ArrayList<Stop> stops = leg.intermediateStops == null
             ? new ArrayList<>()
             : new ArrayList<>(leg.intermediateStops);
-        stops.add(leg.to);
+        stops.add(new Stop(leg.to));
         return stops;
     }
 
@@ -655,10 +656,18 @@ public class TravelerLocator {
         return false;
     }
 
-    public static int stopsUntilEndOfLeg(Place stop, Leg leg) {
-        if (stop == leg.to) return 0;
+    public static int stopsUntilEndOfLeg(Stop stop, Leg leg) {
+        if (isTheSameLocation(stop, leg)) return 0;
 
-        List<Place> stops = leg.intermediateStops;
+        List<Stop> stops = leg.intermediateStops;
         return stops.size() - stops.indexOf(stop);
+    }
+
+    private static boolean isTheSameLocation(Stop stop, Leg leg) {
+        return
+            (stop.lat != null && stop.lon != null) &&
+            (leg.to.lat != null && leg.to.lon != null) &&
+            Objects.equals(stop.lat, leg.to.lat) &&
+            Objects.equals(stop.lon, leg.to.lon);
     }
 }
