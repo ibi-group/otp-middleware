@@ -233,7 +233,7 @@ public class CheckMonitoredTripBasicTest {
                 false,
                 TripStatus.TRIP_ACTIVE,
                 true,
-                "Send reminder for ongoing monitored trip (for trips is saved after starting time)."
+                "Send reminder for ongoing monitored trip (for trips saved after starting time)."
             ),
             Arguments.of(
                 -60 + 24 * 3600, // Next trip starts tomorrow.
@@ -241,7 +241,7 @@ public class CheckMonitoredTripBasicTest {
                 false,
                 TripStatus.TRIP_UPCOMING,
                 false,
-                "Don't send reminder today after today's trip is complete. (Send it tomorrow.)"
+                "Don't send reminder today after today's trip is complete (send it tomorrow)."
             ),
             Arguments.of(
                 300,
