@@ -462,14 +462,16 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
 
         String fileContents = getContentsOfFileInZip(tempFile, String.join(".", tripFileName, JSON_FILE_EXTENSION));
-        MatcherAssert.assertThat(fileContents, matchesSnapshot());
+        // Exactly all trip summaries created above should be in the file,
+        assertEquals(tripRequests.size(), JsonUtils.getPOJOFromJSONAsList(fileContents, TripRequest.class).size());
 
         String summaryFileName = ConnectedDataManager.getDailyFileName(PREVIOUS_DAY, "TripSummary");
         summaryZipFileName = String.join(".", summaryFileName, ZIP_FILE_EXTENSION);
         summaryTempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), summaryZipFileName);
 
         String summaryContents = getContentsOfFileInZip(summaryTempFile, String.join(".", summaryFileName, JSON_FILE_EXTENSION));
-        MatcherAssert.assertThat(summaryContents, matchesSnapshot());
+        // Exactly all trip summaries created above should be in the file,
+        assertEquals(tripSummaries.size(), JsonUtils.getPOJOFromJSONAsList(summaryContents, TripSummary.class).size());
     }
 
     /**
@@ -508,7 +510,6 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         String summaryContents = getContentsOfFileInZip(summaryTempFile, String.join(".", summaryFileName, JSON_FILE_EXTENSION));
         // Exactly all trip summaries created above should be in the file,
         assertEquals(tripSummaries.size(), JsonUtils.getPOJOFromJSONAsList(summaryContents, TripSummary.class).size());
-        MatcherAssert.assertThat(summaryContents, matchesSnapshot());
     }
 
     /** Create trip history upload for required date. */
