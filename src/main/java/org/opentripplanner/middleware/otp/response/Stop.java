@@ -5,9 +5,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
 import org.opentripplanner.middleware.utils.Coordinates;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Stop implements ConvertsToCoordinates, Cloneable {
@@ -28,12 +25,12 @@ public class Stop implements ConvertsToCoordinates, Cloneable {
     public String id;
 
     /**
-     * Longitude of the stop (WGS 84).
+     * Longitude of the stop.
      */
     public Double lon;
 
     /**
-     * Latitude of the stop (WGS 84).
+     * Latitude of the stop.
      */
     public Double lat;
 
