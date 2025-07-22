@@ -48,6 +48,7 @@ import static org.opentripplanner.middleware.connecteddataplatform.ConnectedData
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.ZIP_FILE_EXTENSION;
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.getHourlyFileName;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getPreviousDayFrom;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getPreviousWholeHourFrom;
 import static org.opentripplanner.middleware.utils.FileUtils.getContentsOfFileInZip;
@@ -245,13 +246,13 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(
             userId,
             batchId,
-            DateTimeUtils.convertToDate(PREVIOUS_WHOLE_HOUR_FROM_NOW),
+            convertToDate(PREVIOUS_WHOLE_HOUR_FROM_NOW),
             mode
         );
         TripRequest tripRequestTwo = PersistenceTestUtils.createTripRequest(
             userId,
             batchId,
-            DateTimeUtils.convertToDate(PREVIOUS_WHOLE_HOUR_FROM_NOW),
+            convertToDate(PREVIOUS_WHOLE_HOUR_FROM_NOW),
             "WALK"
         );
         tripRequests.clear();
@@ -462,16 +463,27 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
 
         String fileContents = getContentsOfFileInZip(tempFile, String.join(".", tripFileName, JSON_FILE_EXTENSION));
-        // Exactly all trip summaries created above should be in the file,
-        assertEquals(tripRequests.size(), JsonUtils.getPOJOFromJSONAsList(fileContents, TripRequest.class).size());
+
+        // Get all trip requests created for the previous day.
+        long tripRequestCount = tripRequests
+            .stream()
+            .filter(tr -> tr.dateCreated.equals(convertToDate(PREVIOUS_DAY)))
+            .count();
+
+        assertEquals(tripRequestCount, JsonUtils.getPOJOFromJSONAsList(fileContents, TripRequest.class).size());
 
         String summaryFileName = ConnectedDataManager.getDailyFileName(PREVIOUS_DAY, "TripSummary");
         summaryZipFileName = String.join(".", summaryFileName, ZIP_FILE_EXTENSION);
         summaryTempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), summaryZipFileName);
 
         String summaryContents = getContentsOfFileInZip(summaryTempFile, String.join(".", summaryFileName, JSON_FILE_EXTENSION));
-        // Exactly all trip summaries created above should be in the file,
-        assertEquals(tripSummaries.size(), JsonUtils.getPOJOFromJSONAsList(summaryContents, TripSummary.class).size());
+
+        // Get all trip summaries created for the previous day.
+        long tripSummaryCount = tripSummaries
+            .stream()
+            .filter(ts -> ts.dateCreated.equals(convertToDate(PREVIOUS_DAY)))
+            .count();
+        assertEquals(tripSummaryCount, JsonUtils.getPOJOFromJSONAsList(summaryContents, TripSummary.class).size());
     }
 
     /**
@@ -509,7 +521,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
 
         String summaryContents = getContentsOfFileInZip(summaryTempFile, String.join(".", summaryFileName, JSON_FILE_EXTENSION));
         // Exactly all trip summaries created above should be in the file,
-        assertEquals(tripSummaries.size(), JsonUtils.getPOJOFromJSONAsList(summaryContents, TripSummary.class).size());
+        List<TripSummary> tripSummariesFromFile = JsonUtils.getPOJOFromJSONAsList(summaryContents, TripSummary.class);
+        assertEquals(tripSummaries.size(), tripSummariesFromFile.size());
     }
 
     /** Create trip history upload for required date. */
@@ -556,7 +569,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(
             userId,
             batchId,
-            DateTimeUtils.convertToDate(PREVIOUS_WHOLE_HOUR_FROM_NOW),
+            convertToDate(PREVIOUS_WHOLE_HOUR_FROM_NOW),
             mode
         );
 
@@ -608,7 +621,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         TripRequest tripRequestOne = PersistenceTestUtils.createTripRequest(
             userId,
             batchId,
-            DateTimeUtils.convertToDate(PREVIOUS_WHOLE_HOUR_FROM_NOW),
+            convertToDate(PREVIOUS_WHOLE_HOUR_FROM_NOW),
             null,
             false
         );
