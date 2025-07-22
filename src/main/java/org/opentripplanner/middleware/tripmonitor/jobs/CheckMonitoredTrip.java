@@ -410,6 +410,8 @@ public class CheckMonitoredTrip implements Runnable {
                 trip.snoozed = true;
                 trip.attemptsToGetMatchingItinerary = 0;
                 LOG.info("Trip for today was not found after the allowed attempts. Snoozing for today.");
+                // Delete previous such notifications to ensure this one gets sent.
+                previousJourneyState.lastNotifications.removeIf(n -> n.type == NotificationType.ITINERARY_NOT_FOUND);
             }
 
             updateMonitoredTrip();
@@ -626,7 +628,7 @@ public class CheckMonitoredTrip implements Runnable {
         }
         // If the same notifications were just sent, there is no need to send the same notification.
         // TODO: Should there be some time threshold check here based on lastNotificationTime?
-        if (previousJourneyState.lastNotifications.containsAll(notifications) && !hasInitialReminder) {
+        if (thereAreNoNewNotifications() && !hasInitialReminder) {
             LOG.info("Last notifications match current ones. Skipping notify.");
             return;
         }
@@ -669,6 +671,13 @@ public class CheckMonitoredTrip implements Runnable {
         if (successEmail || successPush || successSms || IS_TEST) {
             notificationTimestampMillis = DateTimeUtils.currentTimeMillis();
         }
+    }
+
+    /**
+     * Determines whether pending notifications are the same as notifications previously sent.
+     */
+    public boolean thereAreNoNewNotifications() {
+        return previousJourneyState.lastNotifications.containsAll(notifications);
     }
 
     /**
