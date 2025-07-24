@@ -467,6 +467,15 @@ public class TravelerLocator {
         return Math.min(distanceToLastShapeCoords, distanceToLegDestination);
     }
 
+    private static <T extends ConvertsToCoordinates> T findWaypointAt(Map<T, Coordinates> waypoints, Coordinates position) {
+        for (var entry : waypoints.entrySet()) {
+            if (position.equals(entry.getValue())) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
     /**
      * From the starting index, find the next waypoint along a leg.
      */
@@ -476,14 +485,12 @@ public class TravelerLocator {
             .collect(Collectors.toMap(s -> s, ConvertsToCoordinates::toCoordinates));
 
         for (int i = startIndex; i < positions.size(); i++) {
-            Coordinates pos = positions.get(i);
-            for (var entry : waypoints.entrySet()) {
-                if (pos.equals(entry.getValue())) {
-                    return entry.getKey();
-                }
-            }
+            T waypoint = findWaypointAt(waypoints, positions.get(i));
+            if (waypoint != null) return waypoint;
         }
-        return null;
+
+        // If no waypoint has been found, try the previous position (result can still be null).
+        return findWaypointAt(waypoints, positions.get(Math.max(startIndex - 1, 0)));
     }
 
     /**
