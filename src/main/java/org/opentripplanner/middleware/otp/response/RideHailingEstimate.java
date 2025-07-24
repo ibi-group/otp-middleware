@@ -7,5 +7,5 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RideHailingEstimate {
     public String arrival;
-    public String produceName;
+    public String productName;
 }
