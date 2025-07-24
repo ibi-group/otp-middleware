@@ -1,4 +1,4 @@
 /**
- * Classes in this package are pare down versions of that defined under OpenTripPlanner.
+ * Classes in this package are pared down versions of their counterparts in OpenTripPlanner.
  */
 package org.opentripplanner.middleware.otp.response;
