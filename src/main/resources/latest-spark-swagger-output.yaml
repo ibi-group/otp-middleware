@@ -2749,7 +2749,7 @@ definitions:
     properties:
       arrival:
         type: "string"
-      produceName:
+      productName:
         type: "string"
   Alert:
     type: "object"
@@ -2837,6 +2837,8 @@ definitions:
   Route:
     type: "object"
     properties:
+      color:
+        type: "string"
       gtfsId:
         type: "string"
       id:
@@ -2844,6 +2846,8 @@ definitions:
       longName:
         type: "string"
       shortName:
+        type: "string"
+      textColor:
         type: "string"
       type:
         type: "integer"

@@ -52,7 +52,7 @@ public class OtpTestUtils {
 
     /** Contains an OTP response with no itinerary found. */
     public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
-        initializeMockPlanResponse("otp/response/planErrorResponse.json");
+        initializeMockPlanResponse("otp/response/planErrorResponse-otp2.json");
 
 
     /** OTP2 plan mock response.

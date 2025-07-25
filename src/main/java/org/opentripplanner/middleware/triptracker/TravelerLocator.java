@@ -325,7 +325,7 @@ public class TravelerLocator {
         Stop nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
         if (nextStop != null) {
             int stopsRemaining = stopsUntilEndOfLeg(nextStop, expectedLeg);
-            double distance = getDistance(travelerPosition.currentPosition, new Coordinates(nextStop));
+            double distance = getDistance(travelerPosition.currentPosition, nextStop.toCoordinates());
             if (stopsRemaining == 1 && distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS && !isPositionPastStep(travelerPosition, nextStop) || stopsRemaining == 0) {
                 return new GetOffNextStopTransitInstruction(finalStop, locale);
             } else if (stopsRemaining <= 3) {

@@ -46,11 +46,6 @@ public class Coordinates {
         this.lon = place.lon;
     }
 
-    public Coordinates(Stop stop) {
-        this.lat = stop.lat;
-        this.lon = stop.lon;
-    }
-
     @JsonIgnore
     @BsonIgnore
     public String getCoordinates() {

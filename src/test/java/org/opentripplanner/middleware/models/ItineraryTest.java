@@ -52,7 +52,6 @@ public class ItineraryTest {
         Leg rideHailLeg = new Leg();
         rideHailLeg.mode = "CAR_HAIL";
         rideHailLeg.rideHailingEstimate = new RideHailingEstimate();
-//        rideHailLeg.hailedCar = true;
 
         itineraryWithTransitNoRentals = new Itinerary();
         itineraryWithTransitNoRentals.legs = List.of(transitLeg, walkLeg);

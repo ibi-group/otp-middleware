@@ -8,6 +8,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public class Route {
 
     /**
+     * The color (in hexadecimal format) the agency operating this route would prefer
+     * to use on UI elements (e.g. polylines on a map) related to this route.
+     */
+    public String color;
+
+    /**
      * ID of the route in format FeedId:RouteId.
      */
     public String gtfsId;
@@ -26,6 +32,12 @@ public class Route {
      * Short name of the route, usually a line number, e.g. 550.
      */
     public String shortName;
+
+    /**
+     * The color (in hexadecimal format) the agency operating this route would prefer
+     * to use when displaying text related to this route.
+     */
+    public String textColor;
 
     /**
      * The raw GTFS route type as a integer. For the list of possible values, see:

@@ -77,7 +77,7 @@ public class Leg implements Cloneable {
     public EncodedPolyline legGeometry;
 
     /**
-     * Whether this leg is traversed with a rented bike.
+     * Whether this leg is traversed with a rented vehicle.
      */
     public Boolean rentedBike;
 

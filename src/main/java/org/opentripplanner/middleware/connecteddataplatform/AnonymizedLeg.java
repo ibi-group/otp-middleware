@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
+import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.util.Date;
@@ -23,19 +25,48 @@ public class AnonymizedLeg {
     public Coordinates to;
 
     // Parameters for a transit leg.
-    public String agencyId;
     public Boolean interlineWithPreviousLeg;
     public Boolean realTime;
-    public String routeId;
-    public String routeShortName;
-    public String routeLongName;
-    public Integer routeType;
-    public String tripBlockId;
-    public String tripId;
+    public AnonymizedAgency agency;
+    public AnonymizedRoute route;
+    public AnonymizedTrip trip;
 
     // Parameters for non transit leg.
     public Boolean rentedVehicle;
 
+    public AnonymizedLeg() {
+    }
 
+    public AnonymizedLeg(Leg leg) {
+        // Parameters for both transit and non transit legs.
+        this.distance = leg.distance;
+        this.duration = leg.duration;
+        this.startTime = leg.startTime;
+        this.endTime = leg.endTime;
+        this.mode = leg.mode;
+        this.transitLeg = leg.transitLeg;
+        this.fromStop = (leg.from.stop != null) ? leg.from.stop.id : null;
+        this.from = getLegCoordinates(leg.from);
+        this.toStop = (leg.to.stop != null) ? leg.to.stop.id : null;
+        this.to = getLegCoordinates(leg.to);
+        if (Boolean.TRUE.equals(leg.transitLeg)) {
+            // Parameters for a transit leg.
+            this.interlineWithPreviousLeg = leg.interlineWithPreviousLeg;
+            this.realTime = leg.realTime;
+            this.agency = (leg.agency != null) ? new AnonymizedAgency(leg.agency) : null;
+            this.route = (leg.route != null) ? new AnonymizedRoute(leg.route) : null;
+            this.trip = (leg.trip != null) ? new AnonymizedTrip(leg.trip) : null;
+        } else {
+            // Parameters for non transit leg.
+            this.rentedVehicle = leg.rideHailingEstimate != null;
+        }
+    }
+
+    /**
+     * Only provide the leg coordinates if both lat/lon values are available.
+     */
+    private Coordinates getLegCoordinates(Place place) {
+        return (place.lat != null && place.lon != null) ? new Coordinates(place.lat, place.lon) : null;
+    }
 
 }

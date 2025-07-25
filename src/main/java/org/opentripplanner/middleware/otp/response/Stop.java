@@ -20,7 +20,7 @@ public class Stop implements ConvertsToCoordinates, Cloneable {
     public String gtfsId;
 
     /**
-     * Global object ID provided by Relay. This value can be used to re-fetch this object using node query.
+     * OTP generated global ID.
      */
     public String id;
 

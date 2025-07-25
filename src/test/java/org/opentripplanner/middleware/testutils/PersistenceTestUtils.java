@@ -5,6 +5,7 @@ import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.RoutingError;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
@@ -144,7 +145,7 @@ public class PersistenceTestUtils {
      */
     public static TripSummary createTripSummary(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
         OtpResponse planResponse = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getOtp2Response();
-        TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId, batchId);
+        TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.plan.routingErrors, tripRequestId, batchId);
         if (createDate != null) {
             tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
         }
@@ -164,7 +165,7 @@ public class PersistenceTestUtils {
      */
     public static TripSummary createTripSummaryWithError(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
         OtpResponse planErrorResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse();
-        TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId, batchId);
+        TripSummary tripSummary = new TripSummary(null, planErrorResponse.plan.routingErrors, tripRequestId, batchId);
         if (createDate != null) {
             tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
         }

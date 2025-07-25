@@ -587,7 +587,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
                 leg.transitLeg = true;
             }
         }
-        tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestOne.id, batchId);
+        tripSummary = new TripSummary(planResponse.plan, planResponse.plan.routingErrors, tripRequestOne.id, batchId);
         Persistence.tripSummaries.create(tripSummary);
 
         TripHistoryUploadJob job = new TripHistoryUploadJob(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);

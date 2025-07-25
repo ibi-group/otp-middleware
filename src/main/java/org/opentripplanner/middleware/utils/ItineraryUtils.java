@@ -105,11 +105,12 @@ public class ItineraryUtils {
         boolean hasCarAndTransit = firstCarLeg.isPresent() && itinerary.hasTransit();
         if (hasCarAndTransit) {
             Leg carLeg = firstCarLeg.get();
+            boolean isCar = carLeg.mode.equalsIgnoreCase("CAR");
             String carQualifier;
 
-            if (Boolean.TRUE.equals(carLeg.rentedBike) && carLeg.mode.equals("CAR")) {
+            if (Boolean.TRUE.equals(carLeg.rentedBike) && isCar) {
                 carQualifier = "RENT";
-            } else if (Boolean.TRUE.equals(carLeg.rideHailingEstimate != null && carLeg.mode.equalsIgnoreCase("CAR"))) {
+            } else if (Boolean.TRUE.equals(carLeg.rideHailingEstimate != null && isCar)) {
                 carQualifier = "HAIL";
             } else {
                 carQualifier = "PARK";
