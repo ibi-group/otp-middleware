@@ -200,15 +200,25 @@ public class CheckMonitoredTrip implements Runnable {
      * occurs within the monitoring lead time.
      */
     private void addInitialReminderIfNeeded() {
-        boolean isFirstTimeCheckWithinLeadMonitoringTime = isFirstTimeCheckWithinLeadMonitoringTime();
-        boolean userWantsInitialReminder = !trip.snoozed && trip.notifyAtLeadingInterval;
-
-        if (trip.isActive && isFirstTimeCheckWithinLeadMonitoringTime && userWantsInitialReminder) {
+        if (shouldSendInitialReminder()) {
             initialReminderNotification = TripMonitorNotification.createInitialReminderNotification(
                 trip,
                 getOtpUserLocale()
             );
         }
+    }
+
+    /**
+     * Whether an initial trip reminder should be sent.
+     */
+    public boolean shouldSendInitialReminder() {
+        TripStatus tripStatus = trip.journeyState.tripStatus;
+        return trip.isActive &&
+            !trip.snoozed &&
+            trip.notifyAtLeadingInterval &&
+            (tripStatus == TripStatus.TRIP_UPCOMING || tripStatus == TripStatus.TRIP_ACTIVE) &&
+            DateTimeUtils.convertToLocalDateTime(matchingItinerary.startTime).toLocalDate().equals(DateTimeUtils.nowAsLocalDate()) &&
+            isFirstTimeCheckWithinLeadMonitoringTime();
     }
 
     /**
@@ -400,6 +410,8 @@ public class CheckMonitoredTrip implements Runnable {
                 trip.snoozed = true;
                 trip.attemptsToGetMatchingItinerary = 0;
                 LOG.info("Trip for today was not found after the allowed attempts. Snoozing for today.");
+                // Delete previous such notifications to ensure this one gets sent.
+                previousJourneyState.lastNotifications.removeIf(n -> n.type == NotificationType.ITINERARY_NOT_FOUND);
             }
 
             updateMonitoredTrip();
@@ -616,7 +628,7 @@ public class CheckMonitoredTrip implements Runnable {
         }
         // If the same notifications were just sent, there is no need to send the same notification.
         // TODO: Should there be some time threshold check here based on lastNotificationTime?
-        if (previousJourneyState.lastNotifications.containsAll(notifications) && !hasInitialReminder) {
+        if (thereAreNoNewNotifications() && !hasInitialReminder) {
             LOG.info("Last notifications match current ones. Skipping notify.");
             return;
         }
@@ -659,6 +671,13 @@ public class CheckMonitoredTrip implements Runnable {
         if (successEmail || successPush || successSms || IS_TEST) {
             notificationTimestampMillis = DateTimeUtils.currentTimeMillis();
         }
+    }
+
+    /**
+     * Determines whether pending notifications are the same as notifications previously sent.
+     */
+    public boolean thereAreNoNewNotifications() {
+        return previousJourneyState.lastNotifications.containsAll(notifications);
     }
 
     /**
