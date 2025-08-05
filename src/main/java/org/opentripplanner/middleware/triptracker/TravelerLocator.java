@@ -472,6 +472,9 @@ public class TravelerLocator {
         return Math.min(distanceToLastShapeCoords, distanceToLegDestination);
     }
 
+    /**
+     * Returns, from a list of waypoints, one that is at the specified position.
+     */
     private static <T extends ConvertsToCoordinates> T findWaypointAt(Map<T, Coordinates> waypoints, Coordinates position) {
         for (var entry : waypoints.entrySet()) {
             if (position.equals(entry.getValue())) {
