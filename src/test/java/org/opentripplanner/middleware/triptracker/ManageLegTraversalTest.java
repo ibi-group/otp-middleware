@@ -264,7 +264,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         Coordinates pointBeforeTurn = new Coordinates(33.78151,-84.36481);
         Coordinates pointAfterTurn = new Coordinates(33.78165, -84.36484);
         Coordinates pointOnKanugaStreet = new Coordinates(33.781544, -84.367849);
-        Coordinates deviatedFrom10B = new Coordinates(33.924073513840774,-84.25019791869008);
+        Coordinates deviatedFrom10B = new Coordinates(33.924073513840774, -84.25019791869008);
 
         Leg toEastCroganFirstLeg = baptistChurchToEastCroganStreetIntinerary.legs.get(0);
         Step southClaytonSt = toEastCroganFirstLeg.steps.get(1);
