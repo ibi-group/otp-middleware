@@ -1,7 +1,10 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
+import org.opentripplanner.middleware.otp.response.Agency;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.Route;
+import org.opentripplanner.middleware.otp.response.Trip;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.util.Date;
@@ -27,9 +30,9 @@ public class AnonymizedLeg {
     // Parameters for a transit leg.
     public Boolean interlineWithPreviousLeg;
     public Boolean realTime;
-    public AnonymizedAgency agency;
-    public AnonymizedRoute route;
-    public AnonymizedTrip trip;
+    public Agency agency;
+    public Route route;
+    public Trip trip;
 
     // Parameters for non transit leg.
     public Boolean rentedVehicle;
@@ -53,9 +56,9 @@ public class AnonymizedLeg {
             // Parameters for a transit leg.
             this.interlineWithPreviousLeg = leg.interlineWithPreviousLeg;
             this.realTime = leg.realTime;
-            this.agency = (leg.agency != null) ? new AnonymizedAgency(leg.agency) : null;
-            this.route = (leg.route != null) ? new AnonymizedRoute(leg.route) : null;
-            this.trip = (leg.trip != null) ? new AnonymizedTrip(leg.trip) : null;
+            this.agency = (leg.agency != null) ? leg.agency : null;
+            this.route = (leg.route != null) ? leg.route : null;
+            this.trip = (leg.trip != null) ? leg.trip : null;
         } else {
             // Parameters for non transit leg.
             this.rentedVehicle = leg.rideHailingEstimate != null;

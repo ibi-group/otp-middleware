@@ -664,10 +664,6 @@ public class TravelerLocator {
     }
 
     private static boolean isTheSameLocation(Stop stop, Leg leg) {
-        return
-            (stop.lat != null && stop.lon != null) &&
-            (leg.to.lat != null && leg.to.lon != null) &&
-            Objects.equals(stop.lat, leg.to.lat) &&
-            Objects.equals(stop.lon, leg.to.lon);
+        return stop.toCoordinates().equals(leg.to.toCoordinates());
     }
 }
