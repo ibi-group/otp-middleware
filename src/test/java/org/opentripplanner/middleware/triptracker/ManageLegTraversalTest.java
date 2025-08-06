@@ -69,6 +69,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary walkGjacTo1js;
     private static Itinerary walkToBusTransition;
     private static Itinerary walkToBus20;
+    private static Itinerary walkToBus10B;
 
     private static final Locale locale = Locale.US;
 
@@ -121,6 +122,10 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         );
         walkToBus20 = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-20.json"),
+            Itinerary.class
+        );
+        walkToBus10B = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-10B.json"),
             Itinerary.class
         );
 
@@ -259,6 +264,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         Coordinates pointBeforeTurn = new Coordinates(33.78151,-84.36481);
         Coordinates pointAfterTurn = new Coordinates(33.78165, -84.36484);
         Coordinates pointOnKanugaStreet = new Coordinates(33.781544, -84.367849);
+        Coordinates deviatedFrom10B = new Coordinates(33.924073513840774, -84.25019791869008);
 
         Leg toEastCroganFirstLeg = baptistChurchToEastCroganStreetIntinerary.legs.get(0);
         Step southClaytonSt = toEastCroganFirstLeg.steps.get(1);
@@ -424,6 +430,14 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 new TraceData()
                     .withPosition(midtownWalkCoords)
                     .withExpectedInstruction(new ContinueInstruction(midtownWalkFirstStep, locale))
+            ),
+            Arguments.of(
+                "Deviated position near walk leg should result in a 'walk back' instruction and not 'No instruction'.",
+                walkToBus10B.legs.get(0),
+                new TraceData()
+                    .withPosition(deviatedFrom10B)
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction("Head to Buford Highway")
             )
         );
     }
@@ -670,7 +684,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(leg.steps.get(1), 5, "Approaching second step, expecting the second step."),
             Arguments.of(leg.steps.get(2), 7, "Approaching third step, expecting the third step."),
             Arguments.of(leg.steps.get(3), 9, "After third step, expecting the fourth step."),
-            Arguments.of(null, 10, "After fourth and final step, expecting no step.")
+            Arguments.of(leg.steps.get(3), 10, "After fourth and final step, keep referring to the final step, so that an instruction is generated.")
         );
     }
 
