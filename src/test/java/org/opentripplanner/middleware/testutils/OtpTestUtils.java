@@ -242,10 +242,6 @@ public class OtpTestUtils {
 
     private static JourneyState createDefaultJourneyState(Itinerary defaultItinerary) {
         JourneyState journeyState = new JourneyState();
-        journeyState.scheduledArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
-        journeyState.scheduledDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
-        journeyState.baselineArrivalTimeEpochMillis = defaultItinerary.endTime.getTime();
-        journeyState.baselineDepartureTimeEpochMillis = defaultItinerary.startTime.getTime();
         journeyState.tripStatus = defaultItinerary.isActive()
             ? TripStatus.TRIP_ACTIVE
             : TripStatus.TRIP_UPCOMING;
