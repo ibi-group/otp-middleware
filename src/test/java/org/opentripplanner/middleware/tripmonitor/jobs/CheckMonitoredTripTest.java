@@ -235,6 +235,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     ) throws Exception {
         long previousDelayMillis = TimeUnit.MILLISECONDS.convert(previousMinutesLate, TimeUnit.MINUTES);
         JourneyState journeyState = OtpTestUtils.createDefaultJourneyState();
+        // initialize JourneyState time values 
+        journeyState.scheduledArrivalTimeEpochMillis = journeyState.matchingItinerary.endTime.getTime();
+        journeyState.scheduledDepartureTimeEpochMillis = journeyState.matchingItinerary.startTime.getTime();
+        journeyState.baselineArrivalTimeEpochMillis = journeyState.matchingItinerary.endTime.getTime();
+        journeyState.baselineDepartureTimeEpochMillis = journeyState.matchingItinerary.startTime.getTime();
 
         if (notificationType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY || notificationType == NotificationType.DEPARTURE_DELAY) {
             journeyState.baselineDepartureTimeEpochMillis += previousDelayMillis;
@@ -260,6 +265,34 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             assertEquals(notificationType, notification.type);
             assertThat(message, notification.body, matchesPattern(expectedNotificationPattern));
         }
+    }
+
+    /**
+     * Ensure that journey state time values are properly initialized for OTP request and don't show delays
+     */
+    @Test
+    void testJourneyStateAfterOTPRequest() throws Exception {
+        // create a mock monitored trip and CheckMonitorTrip instance.
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
+        CheckMonitoredTrip check = createCheckMonitoredTrip(this::getMockOtpResponseJune15);
+        MonitoredTrip mockTrip = check.trip;
+        Persistence.monitoredTrips.create(mockTrip);
+
+        // set trip status to be upcoming
+        mockTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
+
+        // update the target date to be an upcoming Monday within the CheckMonitoredTrip
+        check.targetZonedDateTime = MONDAY_20200615_0835;
+
+        // mock the current time to be 8:45am on Monday, June 15, 2020.
+        DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
+
+        // Execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome.
+        assertTrue(check.checkOtpAndUpdateTripStatus());
+        assertEquals(TripStatus.TRIP_ACTIVE, mockTrip.journeyState.tripStatus);
+
+        // There should be no notifications.
+        assertNull(check.checkTripForDelays());
     }
 
     private static Stream<Arguments> createDelayNotificationTestCases() {
