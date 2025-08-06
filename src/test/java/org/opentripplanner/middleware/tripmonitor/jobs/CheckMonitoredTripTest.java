@@ -268,12 +268,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
-     * Ensure that journey state time values are properly initialized for OTP request and don't show delays
+     * Ensure that journey state time values are properly initialized after making OTP request
+     * and setting the matchingItinerary, so that delays are correctly computed.
      */
     @Test
     void testJourneyStateAfterOTPRequest() throws Exception {
-        // create a mock monitored trip and CheckMonitorTrip instance.
-        // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip check = createCheckMonitoredTrip(this::getMockOtpResponseJune15);
         MonitoredTrip mockTrip = check.trip;
         Persistence.monitoredTrips.create(mockTrip);
@@ -287,7 +286,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // mock the current time to be 8:45am on Monday, June 15, 2020.
         DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
 
-        // Execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome.
+        // Execute checkOtpAndUpdateTripStatus method and verify the expected outcome.
         assertTrue(check.checkOtpAndUpdateTripStatus());
         assertEquals(TripStatus.TRIP_ACTIVE, mockTrip.journeyState.tripStatus);
 
