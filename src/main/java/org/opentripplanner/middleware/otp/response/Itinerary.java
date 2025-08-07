@@ -72,7 +72,6 @@ public class Itinerary implements Cloneable {
     /**
      * How many transfers are part of this itinerary.
      */
-    @JsonProperty("numberOfTransfers")
     public Integer transfers = 0;
 
     /**
