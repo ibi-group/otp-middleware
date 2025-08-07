@@ -53,5 +53,4 @@ public class Stop implements ConvertsToCoordinates, Cloneable {
     protected Place clone() throws CloneNotSupportedException {
         return (Place) super.clone();
     }
-
 }

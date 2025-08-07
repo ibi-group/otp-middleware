@@ -5,7 +5,6 @@ import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.otp.response.RoutingError;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
@@ -239,7 +238,7 @@ public class PersistenceTestUtils {
         itinerary.elevationLost = 0.0;
         itinerary.endTime = new Date();
         itinerary.startTime = new Date();
-        itinerary.numberOfTransfers = 0;
+        itinerary.transfers = 0;
         itinerary.waitingTime = 2;
         itinerary.walkDistance = 1514.13182088778;
 

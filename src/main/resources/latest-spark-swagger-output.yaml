@@ -2737,7 +2737,7 @@ definitions:
       elevationGained:
         type: "number"
         format: "double"
-      numberOfTransfers:
+      transfers:
         type: "integer"
         format: "int32"
       legs:

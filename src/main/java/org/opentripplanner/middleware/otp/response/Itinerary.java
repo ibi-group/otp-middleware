@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -71,7 +72,8 @@ public class Itinerary implements Cloneable {
     /**
      * How many transfers are part of this itinerary.
      */
-    public Integer numberOfTransfers = 0;
+    @JsonProperty("numberOfTransfers")
+    public Integer transfers = 0;
 
     /**
      * Leg information for this itinerary.
@@ -167,7 +169,7 @@ public class Itinerary implements Cloneable {
             ", walkDistance=" + walkDistance +
             ", elevationLost=" + elevationLost +
             ", elevationGained=" + elevationGained +
-            ", transfers=" + numberOfTransfers +
+            ", transfers=" + transfers +
             ", legs=" + legs +
             '}';
     }

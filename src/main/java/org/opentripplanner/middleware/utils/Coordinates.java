@@ -5,7 +5,6 @@ import io.leonard.Position;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
-import org.opentripplanner.middleware.otp.response.Stop;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 
 import java.util.Objects;

@@ -181,7 +181,7 @@ public class AnonymizedTripRequest {
             itin.duration = itinerary.duration;
             itin.startTime = itinerary.startTime;
             itin.endTime = itinerary.endTime;
-            itin.transfers = itinerary.numberOfTransfers;
+            itin.transfers = itinerary.transfers;
             itin.waitingTime = itinerary.waitingTime;
             itin.walkDistance = itinerary.walkDistance;
             itin.walkTime = itinerary.walkTime;
