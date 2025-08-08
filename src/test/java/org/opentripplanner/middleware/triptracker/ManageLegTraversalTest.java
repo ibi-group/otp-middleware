@@ -601,7 +601,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
 
         return Stream.of(
             Arguments.of(
-                "If present at the transit stop after the trip departure, instruct to wait (TODO: indicate past departure).",
+                "If present at the transit stop after the trip departure, instruct to wait (indicate past departure).",
                 new TraceData()
                     .withPosition(originCoords)
                     .withExpectedInstruction("Wait for your bus, route 27, scheduled at 9:18 AM (That time has passed)")
