@@ -497,8 +497,13 @@ public class TravelerLocator {
             if (waypoint != null) return waypoint;
         }
 
-        // If no waypoint has been found, try the previous position (result can still be null).
-        return findWaypointAt(waypoints, positions.get(Math.max(startIndex - 1, 0)));
+        // If no waypoint has been found, try the previous positions (result much less likely to be null).
+        for (int i = startIndex - 1; i >= 0; i--) {
+            T waypoint = findWaypointAt(waypoints, positions.get(i));
+            if (waypoint != null) return waypoint;
+        }
+
+        return null;
     }
 
     /**

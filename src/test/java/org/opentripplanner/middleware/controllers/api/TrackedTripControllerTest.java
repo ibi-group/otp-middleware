@@ -77,7 +77,6 @@ import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversalTest.WALK_AND_TRANSIT_LEG_OVERLAP_POINT;
 import static org.opentripplanner.middleware.triptracker.ManageTripTracking.setOtpGraphQLVariables;
 import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
-import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
 public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
@@ -455,12 +454,12 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .withExpectedInstruction(TRIP_INSTRUCTION_END_OF_ROUTING)
             ),
             Arguments.of(
-                "Deviated significantly from nearest step should produce no instruction",
+                "Deviated significantly from nearest step should still produce walk instruction",
                 itinerary,
                 new TraceData()
                     .withPosition(createPoint(thirdStepCoords, 1000, NORTH_WEST_BEARING))
                     .withTripStatus(TripStatus.DEVIATED)
-                    .withExpectedInstruction(NO_INSTRUCTION)
+                    .withExpectedInstruction("Head to Kanuga Street Northeast")
             ),
             Arguments.of(
                 "Standing at location where walk leg and start of transit leg overlap, should produce walk instruction",

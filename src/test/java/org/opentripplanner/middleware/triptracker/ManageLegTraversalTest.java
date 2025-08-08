@@ -264,6 +264,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         Coordinates pointAfterTurn = new Coordinates(33.78165, -84.36484);
         Coordinates pointOnKanugaStreet = new Coordinates(33.781544, -84.367849);
         Coordinates deviatedFrom10B = new Coordinates(33.924073513840774, -84.25019791869008);
+        Coordinates deviatedFrom10B2 = new Coordinates(33.924106088790076, -84.2493224143982);
 
         Leg toEastCroganFirstLeg = baptistChurchToEastCroganStreetIntinerary.legs.get(0);
         Step southClaytonSt = toEastCroganFirstLeg.steps.get(1);
@@ -436,6 +437,14 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 walkToBus10B.legs.get(0),
                 new TraceData()
                     .withPosition(deviatedFrom10B)
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction("Head to Buford Highway")
+            ),
+            Arguments.of(
+                "Deviated position near walk leg should result in a 'walk back' instruction and not 'No instruction'.",
+                walkToBus10B.legs.get(0),
+                new TraceData()
+                    .withPosition(deviatedFrom10B2)
                     .withTripStatus(TripStatus.DEVIATED)
                     .withExpectedInstruction("Head to Buford Highway")
             )
