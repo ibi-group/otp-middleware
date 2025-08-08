@@ -36,7 +36,6 @@ import static org.opentripplanner.middleware.triptracker.instruction.TripInstruc
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.isPointBetween;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
 
 /**
  * Locate the traveler in relation to the nearest step or destination and provide the appropriate instructions.
@@ -135,7 +134,7 @@ public class TravelerLocator {
             return (nearestStep != null && !nearestStep.isEndOfRouting())
                 ? new DeviatedInstruction(nearestStep.streetName, travelerPosition.locale)
                 : null;
-        } else if (atStartOfTransitTrip(travelerPosition)) {
+        } else if (atStartOfTransitLeg(travelerPosition)) {
             // Only provide instruction if at the start of a trip.
             String busStopName = getBusStopName(travelerPosition.expectedLeg);
             return (busStopName != null)
@@ -298,14 +297,16 @@ public class TravelerLocator {
     }
 
     /**
-     * A trip which starts with a transit leg and the traveler is on that leg.
+     * Determines whether the traveler is at the beginning of a transit leg,
+     * i.e. is near the departing stop.
      */
-    private static boolean atStartOfTransitTrip(TravelerPosition travelerPosition) {
-        return
-            travelerPosition.expectedLeg != null &&
-            travelerPosition.firstLegOfTrip != null &&
-            travelerPosition.firstLegOfTrip.transitLeg &&
-            legsMatch(travelerPosition.expectedLeg, travelerPosition.firstLegOfTrip);
+    private static boolean atStartOfTransitLeg(TravelerPosition travelerPosition) {
+        Leg expectedLeg = travelerPosition.expectedLeg;
+        if (expectedLeg == null || !expectedLeg.transitLeg) return false;
+
+        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
+        int stopsRemaining = stopsUntilEndOfLeg(nextStop, expectedLeg);
+        return stopsRemaining == expectedLeg.intermediateStops.size();
     }
 
     /**

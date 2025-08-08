@@ -674,6 +674,13 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(33.79371, -84.37711)
                     .withTripStatus(TripStatus.DEVIATED)
                     .withExpectedInstruction(NO_INSTRUCTION)
+            ),
+            Arguments.of(
+                "If 'near' departing stop, instruct to head to stop.",
+                new TraceData()
+                    .withPosition(33.786558, -84.381534)
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction("Head to 14th St at Juniper St")
             )
         );
     }
