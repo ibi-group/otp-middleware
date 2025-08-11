@@ -364,7 +364,7 @@ public class CheckMonitoredTrip implements Runnable {
                         );
                     }
 
-                    advanceToNextActiveTripDate();
+                    targetZonedDateTime = advanceToNextActiveTripDate(targetZonedDateTime);
                     updateMonitoredTrip();
 
                     if (matchingItinerary.hasEnded()) {
@@ -786,7 +786,7 @@ public class CheckMonitoredTrip implements Runnable {
             matchingItinerary = previousMatchingItinerary.clone();
         }
 
-        setTargetDateTime();
+        targetZonedDateTime = computeTargetDateTime();
 
         if (isPreviousTripOngoingAtLastCheck()) {
             matchingItinerary = previousMatchingItinerary;
@@ -851,9 +851,9 @@ public class CheckMonitoredTrip implements Runnable {
      * initializing the appropriate target time. Start by checking today's date at the earliest in case the user has
      * paused trip monitoring for a while.
      */
-    private void setTargetDateTime() {
+    private ZonedDateTime computeTargetDateTime() {
         // Initialize to the current date with the trip's hours and minutes.
-        targetZonedDateTime = trip.tripZonedDateTime(DateTimeUtils.nowAsLocalDate());
+        ZonedDateTime nextTripDateTime = trip.tripZonedDateTime(DateTimeUtils.nowAsLocalDate());
 
         // Attempt to advance to the next monitored day, except for one-time trips
         // or if tracking is ongoing or if the matching itinerary is still valid.
@@ -868,15 +868,16 @@ public class CheckMonitoredTrip implements Runnable {
                     DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
                 );
                 if (
-                    lastDate.getYear() == targetZonedDateTime.getYear() &&
-                    lastDate.getMonthValue() == targetZonedDateTime.getMonthValue() &&
-                    lastDate.getDayOfMonth() == targetZonedDateTime.getDayOfMonth()
+                    lastDate.getYear() == nextTripDateTime.getYear() &&
+                    lastDate.getMonthValue() == nextTripDateTime.getMonthValue() &&
+                    lastDate.getDayOfMonth() == nextTripDateTime.getDayOfMonth()
                 ) {
-                    targetZonedDateTime = targetZonedDateTime.plusDays(1);
+                    nextTripDateTime = nextTripDateTime.plusDays(1);
                 }
             }
-            advanceToNextActiveTripDate();
+            nextTripDateTime = advanceToNextActiveTripDate(nextTripDateTime);
         }
+        return nextTripDateTime;
     }
 
     /**
@@ -991,8 +992,8 @@ public class CheckMonitoredTrip implements Runnable {
      * itinerary and journey state data the appropriate number of days and then recalculate the new scheduled time
      * based on the updated time in the updated itinerary.
      */
-    private void advanceToNextActiveTripDate() {
-        targetZonedDateTime = findNextMonitoredDay(trip, targetZonedDateTime);
+    private ZonedDateTime advanceToNextActiveTripDate(ZonedDateTime targetZonedDateTime) {
+        ZonedDateTime nextTripDateTime = findNextMonitoredDay(trip, targetZonedDateTime);
 
         LOG.info("Next itinerary happening on {}.", targetZonedDateTime);
 
@@ -1006,6 +1007,7 @@ public class CheckMonitoredTrip implements Runnable {
         );
 
         applyDelayOffset(scheduledTime);
+        return nextTripDateTime;
     }
 
     /**
