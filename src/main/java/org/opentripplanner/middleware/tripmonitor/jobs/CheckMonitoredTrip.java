@@ -321,6 +321,8 @@ public class CheckMonitoredTrip implements Runnable {
                 // Set the matching itinerary.
                 matchingItinerary = candidateItinerary;
 
+                // reset journey state departure/arrival times
+                resetJourneyState();
                 // update the journey state with whether the matching itinerary has realtime data
                 journeyState.hasRealtimeData = matchingItinerary.legs.stream().anyMatch(leg -> leg.realTime);
 
