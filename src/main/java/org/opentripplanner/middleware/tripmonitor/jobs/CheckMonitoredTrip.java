@@ -887,10 +887,13 @@ public class CheckMonitoredTrip implements Runnable {
      * is unlikely to be defined in which case use the original trip start time instead.
      */
     private long getMinutesUntilNextTrip() {
+        // Get current time and trip time (with the time offset to today) for comparison.
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
-        Instant tripStartInstant = targetZonedDateTime == null
-            ? trip.tripZonedDateTime(DateTimeUtils.nowAsLocalDate()).toInstant()
-            : targetZonedDateTime.toInstant();
+
+        Instant tripStartInstant = !trip.isOneTime() && !isPreviousTripOngoingAtLastCheck()
+            ? findEarliestTargetDate(trip, now).toInstant()
+            : matchingItinerary.startTime.toInstant();
+
         return (tripStartInstant.getEpochSecond() - now.toEpochSecond()) / 60;
     }
 
