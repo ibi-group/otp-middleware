@@ -498,7 +498,13 @@ public class CheckMonitoredTrip implements Runnable {
      * or future
      */
     private void updateTripStatus() {
-        journeyState.tripStatus = matchingItinerary.isActive() ? TripStatus.TRIP_ACTIVE : TripStatus.TRIP_UPCOMING;
+        if (matchingItinerary.isActive()) {
+            journeyState.tripStatus = TripStatus.TRIP_ACTIVE;
+        } else {
+            journeyState.tripStatus = DateTimeUtils.nowAsZonedDateTime().isBefore(targetZonedDateTime)
+                ? TripStatus.TRIP_UPCOMING
+                : TripStatus.TRIP_ACTIVE;
+        }
     }
 
     public TripMonitorNotification checkTripForNewAlerts() {
@@ -788,7 +794,12 @@ public class CheckMonitoredTrip implements Runnable {
             matchingItinerary = previousMatchingItinerary.clone();
         }
 
-        targetZonedDateTime = computeTargetDateTime();
+        if (!matchingItinerary.isActive()) {
+            targetZonedDateTime = findEarliestTargetDate(trip, DateTimeUtils.nowAsZonedDateTime()); // computeTargetDateTime();
+        } else {
+            targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime);
+        }
+        updateTripStatus();
 
         if (isPreviousTripOngoingAtLastCheck()) {
             matchingItinerary = previousMatchingItinerary;
