@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
-import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextWayPoint;
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextOrClosestWayPoint;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithinExclusionZone;
 import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
@@ -690,7 +690,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
     void canGetNearestWaypoint(Step expectedStep, int startIndex, String message) {
         Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
         List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps, TRIP_INSTRUCTION_UPCOMING_RADIUS);
-        assertEquals(expectedStep, getNextWayPoint(allPositions, leg.steps, startIndex), message);
+        assertEquals(expectedStep, getNextOrClosestWayPoint(allPositions, leg.steps, startIndex), message);
     }
 
     private static Stream<Arguments> createGetNearestWaypointTrace() {

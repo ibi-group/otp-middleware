@@ -487,8 +487,9 @@ public class TravelerLocator {
 
     /**
      * From the starting index, find the next waypoint along a leg.
+     * If no waypoint has been found, try the previous positions (result much less likely to be null).
      */
-    public static <T extends ConvertsToCoordinates> T getNextWayPoint(List<Coordinates> positions, List<T> steps, int startIndex) {
+    public static <T extends ConvertsToCoordinates> T getNextOrClosestWayPoint(List<Coordinates> positions, List<T> steps, int startIndex) {
         Map<T, Coordinates> waypoints = steps
             .stream()
             .collect(Collectors.toMap(s -> s, ConvertsToCoordinates::toCoordinates));
@@ -585,7 +586,7 @@ public class TravelerLocator {
         List<Coordinates> legPositions = injectWaypointsIntoLegPositions(pos.expectedLeg, waypoints, TRIP_INSTRUCTION_UPCOMING_RADIUS);
         int pointIndex = getNearestPointIndex(legPositions, pos.currentPosition);
         int startingIndex = excludeCurrent ? Math.min(pointIndex + 1, legPositions.size() - 1) : pointIndex;
-        return pointIndex != -1 ? getNextWayPoint(legPositions, waypoints, startingIndex) : null;
+        return pointIndex != -1 ? getNextOrClosestWayPoint(legPositions, waypoints, startingIndex) : null;
     }
 
     /**
