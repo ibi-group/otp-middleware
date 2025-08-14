@@ -471,18 +471,6 @@ public class TravelerLocator {
     }
 
     /**
-     * Returns, from a list of waypoints, one that is at the specified position.
-     */
-    private static <T extends ConvertsToCoordinates> T findWaypointAt(Map<T, Coordinates> waypoints, Coordinates position) {
-        for (var entry : waypoints.entrySet()) {
-            if (position.equals(entry.getValue())) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
-    /**
      * From the starting index, find the next waypoint along a leg.
      * If no waypoint has been found, try the previous positions (result much less likely to be null).
      */
@@ -497,8 +485,12 @@ public class TravelerLocator {
         List<Coordinates> fallbackPositions = Lists.reverse(positions.subList(0, startIndex));
 
         for (Coordinates position : Iterables.concat(initialPositions, fallbackPositions)) {
-            T waypoint = findWaypointAt(waypoints, position);
-            if (waypoint != null) return waypoint;
+            for (var entry : waypoints.entrySet()) {
+                if (position.equals(entry.getValue())) {
+                    T waypoint = entry.getKey();
+                    if (waypoint != null) return waypoint;
+                }
+            }
         }
 
         return null;
