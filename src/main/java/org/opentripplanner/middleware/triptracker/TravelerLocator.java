@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.triptracker;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
@@ -489,14 +491,13 @@ public class TravelerLocator {
             .stream()
             .collect(Collectors.toMap(s -> s, ConvertsToCoordinates::toCoordinates));
 
-        for (int i = startIndex; i < positions.size(); i++) {
-            T waypoint = findWaypointAt(waypoints, positions.get(i));
-            if (waypoint != null) return waypoint;
-        }
+        // Look in the next waypoints first, starting from startIndex.
+        List<Coordinates> initialPositions = positions.subList(startIndex, positions.size());
+        // Fallback from the position before startIndex, going back to the first waypoint.
+        List<Coordinates> fallbackPositions = Lists.reverse(positions.subList(0, startIndex));
 
-        // If no waypoint has been found, try the previous positions (result much less likely to be null).
-        for (int i = startIndex - 1; i >= 0; i--) {
-            T waypoint = findWaypointAt(waypoints, positions.get(i));
+        for (Coordinates position : Iterables.concat(initialPositions, fallbackPositions)) {
+            T waypoint = findWaypointAt(waypoints, position);
             if (waypoint != null) return waypoint;
         }
 
