@@ -857,16 +857,13 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Calculate target time for the next trip plan request find the next possible day the trip is active by
+     * Calculate target time for the next trip plan request. Find the next possible day the trip is active by
      * initializing the appropriate target time.
      */
     private void computeTargetZonedDateTime() {
-        targetZonedDateTime = findEarliestTargetDate(trip, DateTimeUtils.nowAsZonedDateTime());
-        if (matchingItinerary.isActive()) {
-            targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime);
-        } else if (journeyState.tripStatus == TripStatus.TRIP_UPCOMING) {
-            targetZonedDateTime = advanceToNextActiveTripDate(targetZonedDateTime);
-        }
+        targetZonedDateTime = matchingItinerary.isActive()
+            ? DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime)
+            : findEarliestTargetDate(trip, DateTimeUtils.nowAsZonedDateTime());
     }
 
     /**
@@ -905,7 +902,7 @@ public class CheckMonitoredTrip implements Runnable {
             trip.itinerary.startTime.toInstant()
         );
 
-        return findNextMonitoredDay (trip, nextStartDay);
+        return findNextMonitoredDay(trip, nextStartDay);
     }
 
     /**
@@ -961,30 +958,6 @@ public class CheckMonitoredTrip implements Runnable {
         Date lastCheckedDate = new Date(previousJourneyState.lastCheckedEpochMillis);
         return previousMatchingItinerary.endTime.after(lastCheckedDate) &&
             previousMatchingItinerary.startTime.before(lastCheckedDate);
-    }
-
-    /**
-     * Advance (or set) the journey state data to point to the next actively monitored date and time that the scheduled
-     * itinerary could occur. This does not make a request to the trip planner, instead it will offset the matching
-     * itinerary and journey state data the appropriate number of days and then recalculate the new scheduled time
-     * based on the updated time in the updated itinerary.
-     */
-    private ZonedDateTime advanceToNextActiveTripDate(ZonedDateTime targetZonedDateTime) {
-        ZonedDateTime nextTripDateTime = findNextMonitoredDay(trip, targetZonedDateTime);
-
-        LOG.info("Next itinerary happening on {}.", targetZonedDateTime);
-
-        ZonedDateTime scheduledTime = makeOtpZonedDateTime(
-            targetZonedDateTime,
-            Instant.ofEpochMilli(
-                trip.arriveBy
-                    ? matchingItinerary.getScheduledEndTimeEpochMillis()
-                    : matchingItinerary.getScheduledStartTimeEpochMillis()
-            )
-        );
-
-        applyDelayOffset(scheduledTime);
-        return nextTripDateTime;
     }
 
     /**
