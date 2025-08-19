@@ -1,0 +1,312 @@
+{
+  "duration": 1095,
+  "startTime": 1753384473000,
+  "endTime": 1753385568000,
+  "walkTime": 175,
+  "transitTime": 0,
+  "waitingTime": 300,
+  "walkDistance": 0,
+  "walkLimitExceeded": false,
+  "elevationLost": 0,
+  "elevationGained": 0,
+  "transfers": 0,
+  "fare": null,
+  "legs": [
+    {
+      "startTime": 1753384473000,
+      "endTime": 1753384531000,
+      "departureDelay": 0,
+      "arrivalDelay": 0,
+      "realTime": false,
+      "distance": 99.19,
+      "mode": "WALK",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "33.924, -84.25051",
+        "lon": -84.2505092,
+        "lat": 33.924001,
+        "vertexType": "NORMAL"
+      },
+      "to": {
+        "name": "Buford Hwy at Pleasantdale Rd IB",
+        "lon": -84.249667,
+        "lat": 33.924555,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "1073",
+          "gtfsId": "GwinnettCountyTransit:1073",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA3Mw",
+          "lon": -84.249667,
+          "lat": 33.924555
+        }
+      },
+      "legGeometry": {
+        "points": "_x`nEvdfaOw@sAQ_@SYQY@A",
+        "length": 6
+      },
+      "rentedBike": false,
+      "transitLeg": false,
+      "duration": 58,
+      "steps": [
+        {
+          "distance": 99.19,
+          "relativeDirection": "DEPART",
+          "streetName": "Buford Highway",
+          "absoluteDirection": "NORTHEAST",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.2505103,
+          "lat": 33.9240022
+        }
+      ]
+    },
+    {
+      "startTime": 1753384831000,
+      "endTime": 1753385451000,
+      "departureDelay": 431,
+      "arrivalDelay": 431,
+      "realTime": true,
+      "distance": 4573.87,
+      "mode": "BUS",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "Buford Hwy at Pleasantdale Rd IB",
+        "lon": -84.249667,
+        "lat": 33.924555,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "1073",
+          "gtfsId": "GwinnettCountyTransit:1073",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA3Mw",
+          "lon": -84.249667,
+          "lat": 33.924555
+        }
+      },
+      "to": {
+        "name": "Buford Hwy & Summerour St IB",
+        "lon": -84.20651,
+        "lat": 33.9426,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "1089",
+          "gtfsId": "GwinnettCountyTransit:1089",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA4OQ",
+          "lon": -84.20651,
+          "lat": 33.9426
+        }
+      },
+      "legGeometry": {
+        "points": "{{`nEz_faOACgGaM??CEeEaOkBcM??AA{DoX??AAcByK??AC{AmK??ACEYk@{De@iD??AAGc@[sBqA}I??AAsCsS??ACsBkO??AAc@kEiDeS?A??cBgGaBaEyEkI??AAgAaBsD}D???@oO{Q????AAgGiI??ACgGqI???AaF{G",
+        "length": 58
+      },
+      "transitLeg": true,
+      "duration": 620,
+      "intermediateStops": [
+        {
+          "name": "Buford Hwy & Button Gwinnett Dr IB",
+          "lon": -84.247394,
+          "lat": 33.925875,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA3NA",
+          "stopCode": "1074"
+        },
+        {
+          "name": "Buford Hwy & Susan Ln",
+          "lon": -84.242584,
+          "lat": 33.927436,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA3NQ",
+          "stopCode": "1075"
+        },
+        {
+          "name": "Buford Hwy at Oak Rd IB",
+          "lon": -84.238496,
+          "lat": 33.928394,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA3Ng",
+          "stopCode": "1076"
+        },
+        {
+          "name": "Buford Hwy at Hillside Dr IB",
+          "lon": -84.236424,
+          "lat": 33.928888,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA3Nw",
+          "stopCode": "1077"
+        },
+        {
+          "name": "Buford Hwy & Pine St IB",
+          "lon": -84.234414,
+          "lat": 33.929351,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA3OA",
+          "stopCode": "1078"
+        },
+        {
+          "name": "Buford Hwy at Car Z Atlanta IB",
+          "lon": -84.232476,
+          "lat": 33.929792,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA3OQ",
+          "stopCode": "1079"
+        },
+        {
+          "name": "Buford Hwy & Gwinn Dr IB",
+          "lon": -84.229966,
+          "lat": 33.930425,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA4MA",
+          "stopCode": "1080"
+        },
+        {
+          "name": "Buford Hwy & S Peachtree St IB",
+          "lon": -84.226642,
+          "lat": 33.931147,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA4MQ",
+          "stopCode": "1081"
+        },
+        {
+          "name": "Buford Hwy at Huntington Rd Apts IB",
+          "lon": -84.224021,
+          "lat": 33.931777,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA4Mg",
+          "stopCode": "1082"
+        },
+        {
+          "name": "Buford Hwy at Jimmy Carter IB",
+          "lon": -84.219746,
+          "lat": 33.932774,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA4Mw",
+          "stopCode": "1083"
+        },
+        {
+          "name": "Buford Hwy & N Norcross Tucker Rd",
+          "lon": -84.215772,
+          "lat": 33.934894,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA4NA",
+          "stopCode": "1084"
+        },
+        {
+          "name": "Buford Hwy at Lively Ave IB",
+          "lon": -84.214272,
+          "lat": 33.936159,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA4NQ",
+          "stopCode": "1085"
+        },
+        {
+          "name": "Buford Hwy & S Cemetery St IB",
+          "lon": -84.211318,
+          "lat": 33.938828,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA4Ng",
+          "stopCode": "1086"
+        },
+        {
+          "name": "Buford Hwy & Centro Norcross Plaza IB",
+          "lon": -84.209622,
+          "lat": 33.940124,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA4Nw",
+          "stopCode": "1087"
+        },
+        {
+          "name": "Buford Hwy & Mitchell Rd (NAPA) IB",
+          "lon": -84.207948,
+          "lat": 33.941476,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA4OA",
+          "stopCode": "1088"
+        }
+      ],
+      "steps": [],
+      "headsign": "Sugarloaf Mills",
+      "agency": {
+        "alerts": [],
+        "gtfsId": "GwinnettCountyTransit:GCT",
+        "id": "GwinnettCountyTransit:GCT",
+        "name": "Gwinnett County Transit"
+      },
+      "route": {
+        "alerts": [],
+        "color": "008B44",
+        "gtfsId": "GwinnettCountyTransit:50",
+        "id": "GwinnettCountyTransit:50",
+        "longName": "Sugarloaf - GTC - Dora via Remington",
+        "shortName": "10B",
+        "textColor": "FFFFFF",
+        "type": 3
+      },
+      "trip": {
+        "gtfsId": "GwinnettCountyTransit:t5E1-b72-sl5-v3B",
+        "id": "VHJpcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6dDVFMS1iNzItc2w1LXYzQg",
+        "departureStoptime": {
+          "stop": {
+            "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA2MQ",
+            "gtfsId": "GwinnettCountyTransit:1061"
+          },
+          "stopPosition": 0
+        },
+        "arrivalStoptime": {
+          "stop": {
+            "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTAwMA",
+            "gtfsId": "GwinnettCountyTransit:1000"
+          },
+          "stopPosition": 3300
+        }
+      }
+    },
+    {
+      "startTime": 1753385451000,
+      "endTime": 1753385568000,
+      "departureDelay": 0,
+      "arrivalDelay": 0,
+      "realTime": false,
+      "distance": 145.76,
+      "mode": "WALK",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "Buford Hwy & Summerour St IB",
+        "lon": -84.20651,
+        "lat": 33.9426,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "1089",
+          "gtfsId": "GwinnettCountyTransit:1089",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MTA4OQ",
+          "lon": -84.20651,
+          "lat": 33.9426
+        }
+      },
+      "to": {
+        "name": "5576 Buford Highway, Norcross, GA, USA",
+        "lon": -84.2055628,
+        "lat": 33.9428565,
+        "vertexType": "NORMAL"
+      },
+      "legGeometry": {
+        "points": "gldnEtq}`OABMSe@o@QUa@m@EEf@_@KQBSPI",
+        "length": 11
+      },
+      "rentedBike": false,
+      "transitLeg": false,
+      "duration": 117,
+      "steps": [
+        {
+          "distance": 89.41,
+          "relativeDirection": "DEPART",
+          "streetName": "Buford Highway",
+          "absoluteDirection": "NORTHEAST",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.2065228,
+          "lat": 33.9426116
+        },
+        {
+          "distance": 56.36,
+          "relativeDirection": "RIGHT",
+          "streetName": "service road",
+          "absoluteDirection": "SOUTHEAST",
+          "stayOn": true,
+          "area": false,
+          "lon": -84.2058182,
+          "lat": 33.9431638
+        }
+      ]
+    }
+  ],
+  "alerts": []
+}
