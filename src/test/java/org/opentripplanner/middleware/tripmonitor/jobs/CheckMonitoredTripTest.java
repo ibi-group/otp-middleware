@@ -730,14 +730,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         Date originalStartTime = originalItinerary.startTime;
 
-        // Create an OTP mock to return, with itinerary start on Tuesday, June 9, 2020.
+        // Create an OTP mock to return, with itinerary start on Tuesday, June 9, 2020,
+        // unless the trip is still active in which case we set the trip day to Monday, June 8, 2020.
         OtpResponse mockPreviousWeekdayResponse = mockOtpPlanResponse();
         Itinerary mockPreviousItinerary = firstItinerary(mockPreviousWeekdayResponse);
-        OtpTestUtils.setItineraryDay(mockPreviousItinerary, 9);
-        if (tripStatus == TRIP_ACTIVE) {
-            // If the trip is active, set the trip day to Monday when that case applies.
-            mockPreviousItinerary.offsetTimes(-ONE_DAY_IN_MILLIS);
-        }
+        OtpTestUtils.setItineraryDay(mockPreviousItinerary, tripStatus == TRIP_ACTIVE ? 8 : 9);
 
         // Make sure that the start time on the original trip was not changed inadvertently.
         assertEquals(originalStartTime, originalItinerary.startTime);
