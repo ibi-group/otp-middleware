@@ -2859,14 +2859,10 @@ definitions:
         type: "string"
       tripName:
         type: "string"
-      tripTime:
-        type: "string"
       from:
         $ref: "#/definitions/Place"
       to:
         $ref: "#/definitions/Place"
-      arriveBy:
-        type: "boolean"
       leadTimeInMinutes:
         type: "integer"
         format: "int32"
@@ -2890,8 +2886,6 @@ definitions:
         type: "boolean"
       snoozed:
         type: "boolean"
-      queryParams:
-        type: "string"
       otp2QueryParams:
         $ref: "#/definitions/OtpGraphQLVariables"
       itinerary:
