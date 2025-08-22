@@ -191,12 +191,10 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             monitoredTrip.itinerary = preExisting.itinerary;
             monitoredTrip.journeyState = preExisting.journeyState;
             monitoredTrip.itineraryExistence = preExisting.itineraryExistence;
-            monitoredTrip.tripTime = preExisting.tripTime;
-            monitoredTrip.queryParams = preExisting.queryParams;
+            monitoredTrip.otp2QueryParams = preExisting.otp2QueryParams;
             monitoredTrip.userId = preExisting.userId;
             monitoredTrip.from = preExisting.from;
             monitoredTrip.to = preExisting.to;
-            monitoredTrip.arriveBy = preExisting.arriveBy;
 
             // TODO: Update itinerary existence record when updating a trip?
             //   (Currently, we let web requests change the monitored days regardless of existence.)

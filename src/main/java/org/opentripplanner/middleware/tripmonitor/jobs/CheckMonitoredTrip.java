@@ -800,6 +800,7 @@ public class CheckMonitoredTrip implements Runnable {
 
         if (isPreviousTripOngoingAtLastCheck()) {
             matchingItinerary = previousMatchingItinerary;
+
             // Skip checking the trip the rest of the time that it is active if the trip was deemed not possible for the
             // next possible time during a previous query to find candidate itinerary matches.
             if (previousJourneyState.tripStatus == TripStatus.NEXT_TRIP_NOT_POSSIBLE) {
@@ -965,7 +966,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private void applyDelayOffset() {
         ZonedDateTime scheduledTime = DateTimeUtils.makeOtpZonedDateTime(new Date(
-            trip.arriveBy
+            trip.otp2QueryParams.arriveBy
                 ? matchingItinerary.getScheduledEndTimeEpochMillis()
                 : matchingItinerary.getScheduledStartTimeEpochMillis()
         ));
@@ -978,7 +979,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private void applyDelayOffset(ZonedDateTime scheduledTime) {
         long offsetMillis = scheduledTime.toInstant().toEpochMilli() -
-            (trip.arriveBy
+            (trip.otp2QueryParams.arriveBy
                 ? matchingItinerary.endTime.getTime()
                 : matchingItinerary.getScheduledStartTimeEpochMillis()
             );
