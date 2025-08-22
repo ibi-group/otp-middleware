@@ -1026,7 +1026,7 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         // Keep the matching itinerary only if it is on the target date.
-        if (matchingItinerary != null && (trip.isOneTime() || (targetZonedDateTime != null && targetZonedDateTime.format(DEFAULT_DATE_FORMATTER).equals(DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime).format(DEFAULT_DATE_FORMATTER))))) {
+        if (shouldPersistMatchingItinerary()) {
             journeyState.matchingItinerary = matchingItinerary;
         } else {
             journeyState.matchingItinerary = null;
@@ -1044,6 +1044,21 @@ public class CheckMonitoredTrip implements Runnable {
         trip.journeyState = journeyState;
         Persistence.monitoredTrips.replace(trip.id, trip);
         return true;
+    }
+
+    /**
+     * Whether to keep the matching itinerary.
+     * @return true if matchingItinerary and target date are the same,
+     * or trip is one-time and matchingItinerary occurs on the trip date
+     * (assuming matchingItinerary is not null).
+     */
+    private boolean shouldPersistMatchingItinerary() {
+        if (matchingItinerary == null) return false;
+        String matchingItineraryDay = makeOtpZonedDateTime(matchingItinerary.startTime).format(DEFAULT_DATE_FORMATTER);
+
+        if (trip.isOneTime() && makeOtpZonedDateTime(trip.itinerary.startTime).format(DEFAULT_DATE_FORMATTER).equals(matchingItineraryDay)) return true;
+        if (targetZonedDateTime == null) return false;
+        return targetZonedDateTime.format(DEFAULT_DATE_FORMATTER).equals(matchingItineraryDay);
     }
 
     /**
