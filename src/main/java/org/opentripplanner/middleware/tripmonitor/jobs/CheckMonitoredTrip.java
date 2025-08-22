@@ -377,7 +377,8 @@ public class CheckMonitoredTrip implements Runnable {
             ITINERARY_NOT_FOUND_LOGGER
         );
 
-        if (hasReachedMaxItineraryChecks() || !shouldPersistMatchingItinerary()) {
+        boolean setNullItinerary = !shouldPersistMatchingItinerary();
+        if (hasReachedMaxItineraryChecks() || setNullItinerary) {
             // Check whether this trip should no longer ever be checked due to not having matching itineraries on any
             // monitored day of the week. For trips that are only monitored on one day of the week, they could have been not
             // possible for just that day, but could again be possible the next week. Therefore, this checks if the trip
@@ -386,8 +387,10 @@ public class CheckMonitoredTrip implements Runnable {
             boolean noMatchingItineraryFoundOnPreviousChecks =
                 !trip.itineraryExistence.isPossibleOnAtLeastOneMonitoredDayOfTheWeek(trip);
 
-            // Record a null matching itinerary.
-            matchingItinerary = null;
+            // Record a null matching itinerary if "today" is not the target trip date or the one-time trip date.
+            if (setNullItinerary) {
+                matchingItinerary = null;
+            }
 
             if (noMatchingItineraryFoundOnPreviousChecks) {
                 journeyState.tripStatus = TripStatus.NO_LONGER_POSSIBLE;
