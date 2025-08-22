@@ -1026,10 +1026,11 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         // Keep the matching itinerary only if it is on the target date.
-        if (matchingItinerary != null && targetZonedDateTime != null && targetZonedDateTime.format(DEFAULT_DATE_FORMATTER).equals(DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime).format(DEFAULT_DATE_FORMATTER))) {
+        if (matchingItinerary != null && (trip.isOneTime() || (targetZonedDateTime != null && targetZonedDateTime.format(DEFAULT_DATE_FORMATTER).equals(DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime).format(DEFAULT_DATE_FORMATTER))))) {
             journeyState.matchingItinerary = matchingItinerary;
         } else {
             journeyState.matchingItinerary = null;
+            journeyState.tripStatus = TripStatus.NEXT_TRIP_NOT_POSSIBLE;
         }
 
 
