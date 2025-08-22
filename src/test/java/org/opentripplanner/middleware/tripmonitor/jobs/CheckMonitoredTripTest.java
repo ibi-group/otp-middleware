@@ -706,7 +706,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // verify that trip status is no longer possible
         assertEquals(
-            NEXT_TRIP_NOT_POSSIBLE,
+            NO_LONGER_POSSIBLE,
             updatedTrip.journeyState.tripStatus,
             "updated trips status should indicate trip is no longer possible"
         );
@@ -832,6 +832,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                  ? "Trip state should remain in future."
                  : "Active trips will continue to be monitored until they end. Failed queries on a different target date should result in next trip not possible state."
         );
+
+        assertEquals(!itineraryExistsInOtp, updatedTrip.snoozed);
 
         assertEquals(
             expectedTargetDate,

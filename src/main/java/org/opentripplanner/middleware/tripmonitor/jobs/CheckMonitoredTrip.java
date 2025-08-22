@@ -369,7 +369,7 @@ public class CheckMonitoredTrip implements Runnable {
             }
         }
 
-        // If this point is reached, a matching itinerary was not found
+        // If this point is reached, a matching itinerary was not found.
         ItineraryExistence.logItineraryNotFound(
             "No comparison itinerary found",
             trip,
@@ -377,7 +377,7 @@ public class CheckMonitoredTrip implements Runnable {
             ITINERARY_NOT_FOUND_LOGGER
         );
 
-        if (hasReachedMaxItineraryChecks()) {
+        if (hasReachedMaxItineraryChecks() || !shouldPersistMatchingItinerary()) {
             // Check whether this trip should no longer ever be checked due to not having matching itineraries on any
             // monitored day of the week. For trips that are only monitored on one day of the week, they could have been not
             // possible for just that day, but could again be possible the next week. Therefore, this checks if the trip
@@ -385,6 +385,9 @@ public class CheckMonitoredTrip implements Runnable {
             // that the trip is no longer possible.
             boolean noMatchingItineraryFoundOnPreviousChecks =
                 !trip.itineraryExistence.isPossibleOnAtLeastOneMonitoredDayOfTheWeek(trip);
+
+            // Record a null matching itinerary.
+            matchingItinerary = null;
 
             if (noMatchingItineraryFoundOnPreviousChecks) {
                 journeyState.tripStatus = TripStatus.NO_LONGER_POSSIBLE;
@@ -1025,14 +1028,7 @@ public class CheckMonitoredTrip implements Runnable {
             journeyState.targetDate = targetZonedDateTime.format(DEFAULT_DATE_FORMATTER);
         }
 
-        // Keep the matching itinerary only if it is on the target date.
-        if (shouldPersistMatchingItinerary()) {
-            journeyState.matchingItinerary = matchingItinerary;
-        } else {
-            journeyState.matchingItinerary = null;
-            journeyState.tripStatus = TripStatus.NEXT_TRIP_NOT_POSSIBLE;
-        }
-
+        journeyState.matchingItinerary = matchingItinerary;
 
         journeyState.lastCheckedEpochMillis = DateTimeUtils.currentTimeMillis();
         // Update notification time if notification successfully sent.
