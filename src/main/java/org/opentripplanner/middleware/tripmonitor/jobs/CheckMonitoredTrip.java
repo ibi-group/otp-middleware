@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMATTER;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.diffInMinutes;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.makeOtpZonedDateTime;
 
@@ -253,7 +254,8 @@ public class CheckMonitoredTrip implements Runnable {
         // If matching itinerary has concluded, and live tracking is ongoing or the trip is one-time, don't check OTP.
         boolean oneTime = trip.isOneTime();
         boolean trackingOngoing = isTrackingOngoing();
-        if ((oneTime || trackingOngoing) && trip.journeyState.matchingItinerary.hasEnded()) {
+        Itinerary matchingItin = trip.journeyState.matchingItinerary;
+        if ((oneTime || trackingOngoing) && (matchingItin == null || matchingItin.hasEnded())) {
             if (oneTime && !trackingOngoing) {
                 trip.journeyState.tripStatus = TripStatus.PAST_TRIP;
             }
@@ -457,7 +459,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private OtpGraphQLVariables getQueryParamsForTargetZonedDateTime() {
         OtpGraphQLVariables params = trip.otp2QueryParams.clone();
-        params.date = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
+        params.date = targetZonedDateTime.format(DEFAULT_DATE_FORMATTER);
         checkForRerouting(params);
         return params;
     }
@@ -1019,10 +1021,18 @@ public class CheckMonitoredTrip implements Runnable {
             // trip has been deleted!
             return false;
         }
-        journeyState.matchingItinerary = matchingItinerary;
         if (targetZonedDateTime != null) {
-            journeyState.targetDate = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
+            journeyState.targetDate = targetZonedDateTime.format(DEFAULT_DATE_FORMATTER);
         }
+
+        // Keep the matching itinerary only if it is on the target date.
+        if (matchingItinerary != null && targetZonedDateTime != null && targetZonedDateTime.format(DEFAULT_DATE_FORMATTER).equals(DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime).format(DEFAULT_DATE_FORMATTER))) {
+            journeyState.matchingItinerary = matchingItinerary;
+        } else {
+            journeyState.matchingItinerary = null;
+        }
+
+
         journeyState.lastCheckedEpochMillis = DateTimeUtils.currentTimeMillis();
         // Update notification time if notification successfully sent.
         if (notificationTimestampMillis != -1) {
