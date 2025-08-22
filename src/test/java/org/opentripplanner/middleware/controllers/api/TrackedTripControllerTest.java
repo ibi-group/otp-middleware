@@ -146,7 +146,9 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         trip.userId = soloOtpUser.id;
         trip.itinerary = itin;
         // Original itinerary time should be populated.
-        trip.tripTime = DateTimeUtils.convertToLocalDateTime(itin.startTime).toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.time = DateTimeUtils.convertToLocalDateTime(itin.startTime).toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+        trip.otp2QueryParams = params;
         trip.journeyState = new JourneyState();
         trip.journeyState.matchingItinerary = itin;
         // Original target date should be populated but does not really matter.
@@ -633,7 +635,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         // Confirm traveler is no longer 'deviated'.
         assertNotEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
 
-        rerouteMonitoredTrip.tripTime = "12:31";
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.time = "12:31";
+
+        rerouteMonitoredTrip.otp2QueryParams = params;
         Itinerary beforeCheck = rerouteMonitoredTrip.journeyState.matchingItinerary;
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(rerouteMonitoredTrip);
         checkMonitoredTrip.run();
