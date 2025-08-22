@@ -1027,12 +1027,10 @@ public class CheckMonitoredTrip implements Runnable {
             // trip has been deleted!
             return false;
         }
+        journeyState.matchingItinerary = matchingItinerary;
         if (targetZonedDateTime != null) {
             journeyState.targetDate = targetZonedDateTime.format(DEFAULT_DATE_FORMATTER);
         }
-
-        journeyState.matchingItinerary = matchingItinerary;
-
         journeyState.lastCheckedEpochMillis = DateTimeUtils.currentTimeMillis();
         // Update notification time if notification successfully sent.
         if (notificationTimestampMillis != -1) {
