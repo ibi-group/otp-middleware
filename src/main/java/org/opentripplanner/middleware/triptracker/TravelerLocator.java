@@ -1,5 +1,7 @@
 package org.opentripplanner.middleware.triptracker;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
@@ -36,7 +38,6 @@ import static org.opentripplanner.middleware.triptracker.instruction.TripInstruc
 import static org.opentripplanner.middleware.utils.GeometryUtils.getDistance;
 import static org.opentripplanner.middleware.utils.GeometryUtils.isPointBetween;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
 
 /**
  * Locate the traveler in relation to the nearest step or destination and provide the appropriate instructions.
@@ -128,7 +129,7 @@ public class TravelerLocator {
             return (nearestStep != null && !nearestStep.isEndOfRouting())
                 ? new DeviatedInstruction(nearestStep.streetName, travelerPosition.locale)
                 : null;
-        } else if (atStartOfTransitTrip(travelerPosition)) {
+        } else if (atStartOfTransitLeg(travelerPosition)) {
             // Only provide instruction if at the start of a trip.
             String busStopName = getBusStopName(travelerPosition.expectedLeg);
             return (busStopName != null)
@@ -289,14 +290,16 @@ public class TravelerLocator {
     }
 
     /**
-     * A trip which starts with a transit leg and the traveler is on that leg.
+     * Determines whether the traveler is at the beginning of a transit leg,
+     * i.e. is near the departing stop.
      */
-    private static boolean atStartOfTransitTrip(TravelerPosition travelerPosition) {
-        return
-            travelerPosition.expectedLeg != null &&
-            travelerPosition.firstLegOfTrip != null &&
-            travelerPosition.firstLegOfTrip.transitLeg &&
-            legsMatch(travelerPosition.expectedLeg, travelerPosition.firstLegOfTrip);
+    private static boolean atStartOfTransitLeg(TravelerPosition travelerPosition) {
+        Leg expectedLeg = travelerPosition.expectedLeg;
+        if (expectedLeg == null || !expectedLeg.transitLeg) return false;
+
+        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
+        int stopsRemaining = stopsUntilEndOfLeg(nextStop, expectedLeg);
+        return stopsRemaining == expectedLeg.intermediateStops.size();
     }
 
     /**
@@ -468,32 +471,29 @@ public class TravelerLocator {
     }
 
     /**
-     * Returns, from a list of waypoints, one that is at the specified position.
-     */
-    private static <T extends ConvertsToCoordinates> T findWaypointAt(Map<T, Coordinates> waypoints, Coordinates position) {
-        for (var entry : waypoints.entrySet()) {
-            if (position.equals(entry.getValue())) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
-    /**
      * From the starting index, find the next waypoint along a leg.
+     * If no waypoint has been found, try the previous positions (result much less likely to be null).
      */
-    public static <T extends ConvertsToCoordinates> T getNextWayPoint(List<Coordinates> positions, List<T> steps, int startIndex) {
+    public static <T extends ConvertsToCoordinates> T getNextOrClosestWayPoint(List<Coordinates> positions, List<T> steps, int startIndex) {
         Map<T, Coordinates> waypoints = steps
             .stream()
             .collect(Collectors.toMap(s -> s, ConvertsToCoordinates::toCoordinates));
 
-        for (int i = startIndex; i < positions.size(); i++) {
-            T waypoint = findWaypointAt(waypoints, positions.get(i));
-            if (waypoint != null) return waypoint;
+        // Look in the next waypoints first, starting from startIndex.
+        List<Coordinates> initialPositions = positions.subList(startIndex, positions.size());
+        // Fallback from the position before startIndex, going back to the first waypoint.
+        List<Coordinates> fallbackPositions = Lists.reverse(positions.subList(0, startIndex));
+
+        for (Coordinates position : Iterables.concat(initialPositions, fallbackPositions)) {
+            for (var entry : waypoints.entrySet()) {
+                if (position.equals(entry.getValue())) {
+                    T waypoint = entry.getKey();
+                    if (waypoint != null) return waypoint;
+                }
+            }
         }
 
-        // If no waypoint has been found, try the previous position (result can still be null).
-        return findWaypointAt(waypoints, positions.get(Math.max(startIndex - 1, 0)));
+        return null;
     }
 
     /**
@@ -574,7 +574,7 @@ public class TravelerLocator {
         List<Coordinates> legPositions = injectWaypointsIntoLegPositions(pos.expectedLeg, waypoints, TRIP_INSTRUCTION_UPCOMING_RADIUS);
         int pointIndex = getNearestPointIndex(legPositions, pos.currentPosition);
         int startingIndex = excludeCurrent ? Math.min(pointIndex + 1, legPositions.size() - 1) : pointIndex;
-        return pointIndex != -1 ? getNextWayPoint(legPositions, waypoints, startingIndex) : null;
+        return pointIndex != -1 ? getNextOrClosestWayPoint(legPositions, waypoints, startingIndex) : null;
     }
 
     /**
