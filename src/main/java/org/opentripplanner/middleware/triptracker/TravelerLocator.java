@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -298,7 +297,7 @@ public class TravelerLocator {
         Leg expectedLeg = travelerPosition.expectedLeg;
         if (expectedLeg == null || !expectedLeg.transitLeg) return false;
 
-        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
+        Stop nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
         int stopsRemaining = stopsUntilEndOfLeg(nextStop, expectedLeg);
         return stopsRemaining == expectedLeg.intermediateStops.size();
     }
