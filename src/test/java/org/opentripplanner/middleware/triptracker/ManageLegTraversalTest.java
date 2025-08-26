@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
-import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextWayPoint;
+import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextOrClosestWayPoint;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithinExclusionZone;
 import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
@@ -266,6 +266,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         Coordinates pointAfterTurn = new Coordinates(33.78165, -84.36484);
         Coordinates pointOnKanugaStreet = new Coordinates(33.781544, -84.367849);
         Coordinates deviatedFrom10B = new Coordinates(33.924073513840774, -84.25019791869008);
+        Coordinates deviatedFrom10B2 = new Coordinates(33.924106088790076, -84.2493224143982);
 
         Leg toEastCroganFirstLeg = baptistChurchToEastCroganStreetIntinerary.legs.get(0);
         Step southClaytonSt = toEastCroganFirstLeg.steps.get(1);
@@ -439,6 +440,14 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(deviatedFrom10B)
                     .withTripStatus(TripStatus.DEVIATED)
                     .withExpectedInstruction("Head to Buford Highway")
+            ),
+            Arguments.of(
+                "Deviated position near walk leg should result in a 'walk back' instruction and not 'No instruction'.",
+                walkToBus10B.legs.get(0),
+                new TraceData()
+                    .withPosition(deviatedFrom10B2)
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction("Head to Buford Highway")
             )
         );
     }
@@ -589,7 +598,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
 
         return Stream.of(
             Arguments.of(
-                "If present at the transit stop after the trip departure, there should not be an instruction.",
+                "If present at the transit stop after the trip departure, instruct to wait (indicate past departure).",
                 new TraceData()
                     .withPosition(originCoords)
                     .withExpectedInstruction("Wait for your bus, route 27, scheduled at 9:18 AM (That time has passed)")
@@ -662,6 +671,13 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(33.79371, -84.37711)
                     .withTripStatus(TripStatus.DEVIATED)
                     .withExpectedInstruction(NO_INSTRUCTION)
+            ),
+            Arguments.of(
+                "If 'near' departing stop, instruct to head to stop.",
+                new TraceData()
+                    .withPosition(33.786558, -84.381534)
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction("Head to 14th St at Juniper St")
             )
         );
     }
@@ -671,7 +687,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
     void canGetNearestWaypoint(Step expectedStep, int startIndex, String message) {
         Leg leg = edmundParkDriveToRockSpringsItinerary.legs.get(0);
         List<Coordinates> allPositions = TravelerLocator.injectWaypointsIntoLegPositions(leg, leg.steps, TRIP_INSTRUCTION_UPCOMING_RADIUS);
-        assertEquals(expectedStep, getNextWayPoint(allPositions, leg.steps, startIndex), message);
+        assertEquals(expectedStep, getNextOrClosestWayPoint(allPositions, leg.steps, startIndex), message);
     }
 
     private static Stream<Arguments> createGetNearestWaypointTrace() {
