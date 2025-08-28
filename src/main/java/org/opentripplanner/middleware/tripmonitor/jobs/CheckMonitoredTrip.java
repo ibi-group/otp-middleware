@@ -749,30 +749,6 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     public boolean shouldSkipMonitoredTripCheck(boolean persist) throws Exception {
-        // before anything else, return true if the trip is inactive
-        if (!trip.isActive) {
-            LOG.info("Skipping: Trip is inactive.");
-            return true;
-        }
-
-        // If trip is no longer possible, no further checking is needed. The itinerary existence data should not be
-        // checked here to avoid incorrectly skipping trips that are monitored on a single day of the week, but which
-        // may have not had a matching itinerary on that day for one week (even though the trip could be possible the
-        // next week).
-        if (previousJourneyState.tripStatus == TripStatus.NO_LONGER_POSSIBLE) {
-            LOG.info("Skipping: Trip is no longer possible.");
-            return true;
-        }
-
-        // If trip is one-time and has ended, no further checking is needed. The itinerary existence data should not be
-        // checked here to avoid incorrectly skipping trips that are monitored on a single day of the week, but which
-        // may have not had a matching itinerary on that day for one week (even though the trip could be possible the
-        // next week).
-        if (isOneTimeTripInPast()) {
-            LOG.info("Skipping: One-time trip is in the past.");
-            return true;
-        }
-
         // For trips that are snoozed, see if they should be unsnoozed first.
         if (trip.snoozed) {
             if (shouldUnsnoozeTrip()) {
@@ -858,6 +834,50 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
+     * Convenience method for unit tests to do the precheck before the full check
+     */
+    protected boolean shouldSkipMonitoredTripCheck(boolean persist, boolean preCheck) throws Exception {
+        if (preCheck && CheckMonitoredTrip.shouldSkipMonitoredTripPreCheck(trip)) {
+            return true;
+        }
+        return shouldSkipMonitoredTripCheck(persist);
+    }
+
+    /**
+     * A series of trivial checks on fields in a candidate monitored trip as obtained from the database, to determine
+     * whether to do all the other checking that instantiating this class has to offer.
+     * @param trip candidate monitored trip to quickly check some fields of
+     * @return  whether to skip the trip, boolean value
+     */
+    protected static boolean shouldSkipMonitoredTripPreCheck(MonitoredTrip trip) {
+        // before anything else, return true if the trip is inactive
+        if (!trip.isActive) {
+            LOG.info("Skipping: Trip {} is inactive.", trip.id);
+            return true;
+        }
+
+        // If trip is no longer possible, no further checking is needed. The itinerary existence data should not be
+        // checked here to avoid incorrectly skipping trips that are monitored on a single day of the week, but which
+        // may have not had a matching itinerary on that day for one week (even though the trip could be possible the
+        // next week).
+        if (trip.journeyState.tripStatus == TripStatus.NO_LONGER_POSSIBLE) {
+            LOG.info("Skipping: Trip {} is no longer possible.", trip.id);
+            return true;
+        }
+
+        // If trip is a one-off trip which has already happened, no further checking is needed. The itinerary existence
+        // data should not be checked here to avoid incorrectly skipping trips that are monitored on a single day of
+        // the week, but which may have not had a matching itinerary on that day for one week (even though the trip
+        // could be possible the next week).
+        if (trip.isOneTime() && trip.journeyState.tripStatus == TripStatus.PAST_TRIP) {
+            LOG.info("Skipping: One-time trip {} is in the past.", trip.id);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Calculate target time for the next trip plan request. Find the next possible day the trip is active by
      * initializing the appropriate target time.
      */
@@ -918,13 +938,6 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         return nextMonitoredDay;
-    }
-
-    /**
-     * Is a one-off trip which has already happened.
-     */
-    private boolean isOneTimeTripInPast() {
-        return trip.isOneTime() && previousJourneyState.tripStatus == TripStatus.PAST_TRIP;
     }
 
     /** Check if previous matching itinerary day is still valid */
