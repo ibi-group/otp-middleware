@@ -443,15 +443,7 @@ public class CheckMonitoredTrip implements Runnable {
             trip.attemptsToGetMatchingItinerary,
             MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS
         );
-        if (trip.attemptsToGetMatchingItinerary < MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS) {
-            if (Persistence.monitoredTrips.getById(trip.id) == null) {
-                // Trip has been deleted. Continue as if maximum itinerary checks have been reached.
-                return true;
-            }
-            Persistence.monitoredTrips.replace(trip.id, trip);
-            return false;
-        }
-        return true;
+        return trip.attemptsToGetMatchingItinerary >= MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS;
     }
 
     /** Default implementation for OtpResponse provider that actually invokes the OTP server. */
