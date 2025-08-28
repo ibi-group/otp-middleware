@@ -970,7 +970,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         String todayFormatted = trip.journeyState.targetDate;
 
         CheckMonitoredTrip check = new CheckMonitoredTrip(trip, this::mockOtpPlanResponse);
-        check.shouldSkipMonitoredTripCheck(false);
+        check.shouldSkipMonitoredTripCheck(false, true);
         check.checkOtpAndUpdateTripStatus();
         // Trip should remain active, and the target date should still be "today".
         assertEquals(TRIP_ACTIVE, trip.journeyState.tripStatus);
