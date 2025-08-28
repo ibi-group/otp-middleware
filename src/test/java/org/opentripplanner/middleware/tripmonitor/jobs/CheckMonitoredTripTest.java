@@ -750,7 +750,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         Date targetItineraryStartTime = null;
 
         if (itineraryExistsInOtp) {
-            // Create an OTP mock to return for the nexttarget date, with itinerary start on Monday, June 8, 2020.
+            // Create an OTP mock to return for the next target date, with itinerary start on Monday, June 8, 2020.
             Itinerary firstItinerary = firstItinerary(mockWeekdayResponse);
             OtpTestUtils.setItineraryDay(firstItinerary, skipMondayTuesday && tripStatus != TRIP_ACTIVE ? 10 : 8);
             targetItineraryStartTime = firstItinerary.startTime;
