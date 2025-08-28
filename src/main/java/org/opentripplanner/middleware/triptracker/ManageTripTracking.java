@@ -142,8 +142,8 @@ public class ManageTripTracking {
                 tripStatus = TripStatus.getTimingStatus(travelerPosition);
             }
 
-            if (isEndOfRoutingInstruction(instruction)) {
-                // Deem trip completed if issuing a "destination in vicinity" instruction.
+            if (isEndOfRoutingInstruction(instruction) && travelerPosition.nextLeg == null) {
+                // Deem trip completed if on the last leg and issuing a "destination in vicinity" instruction.
                 tripStatus = TripStatus.COMPLETED;
             }
 
