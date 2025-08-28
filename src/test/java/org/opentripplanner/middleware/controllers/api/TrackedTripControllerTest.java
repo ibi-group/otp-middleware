@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -78,7 +79,6 @@ import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversalTest.WALK_AND_TRANSIT_LEG_OVERLAP_POINT;
 import static org.opentripplanner.middleware.triptracker.ManageTripTracking.setOtpGraphQLVariables;
 import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
-import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
 public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
@@ -160,6 +160,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     @AfterAll
     public static void tearDown() throws Exception {
         assumeTrue(IS_END_TO_END);
+        DateTimeUtils.useSystemDefaultClockAndTimezone();
         restoreDefaultAuthDisabled();
         soloOtpUser = Persistence.otpUsers.getById(soloOtpUser.id);
         if (soloOtpUser != null) soloOtpUser.delete(true);
@@ -488,12 +489,12 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .withExpectedInstruction(TRIP_INSTRUCTION_END_OF_ROUTING)
             ),
             Arguments.of(
-                "Deviated significantly from nearest step should produce no instruction",
+                "Deviated significantly from nearest step should still produce walk instruction",
                 itinerary,
                 new TraceData()
                     .withPosition(createPoint(thirdStepCoords, 1000, NORTH_WEST_BEARING))
                     .withTripStatus(TripStatus.DEVIATED)
-                    .withExpectedInstruction(NO_INSTRUCTION)
+                    .withExpectedInstruction("Head to Kanuga Street Northeast")
             ),
             Arguments.of(
                 "Standing at location where walk leg and start of transit leg overlap, should produce walk instruction",
@@ -592,8 +593,9 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals("Provided journey does not exist or has already been completed!", updateTrackingResponse.message);
     }
 
-    @Test
-    void canRerouteTrip() throws Exception {
+    @ParameterizedTest
+    @ValueSource(ints = {-300, 30, 3000})
+    void canRerouteTrip(int offsetSeconds) throws Exception {
         assumeTrue(IS_END_TO_END);
 
         MonitoredTrip rerouteMonitoredTrip = monitoredTrip = createMonitoredTrip(walkToVoterRegCenterItinerary);
@@ -601,6 +603,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var startTrackingPayload = createStartTrackingPayload(rerouteMonitoredTrip.id);
         var mockOtpResponse = mockOtpReroutedPlanResponse();
         var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().plan.itineraries);
+
+        // Use current time relative to itinerary start (this will affect the computed target date after end tracking).
+        DateTimeUtils.useFixedClockAt(ZonedDateTime.ofInstant(expectedReroutedItinerary.startTime.toInstant().plusSeconds(offsetSeconds), DateTimeUtils.getOtpZoneId()));
+
         ManageTripTracking.otpResponseProviderOverride = mockOtpResponse;
         var deviatedPosition = new TrackingLocation(Instant.now(), 33.94412, -83.98899);
         var reroutingPoint = new Coordinates(expectedReroutedItinerary.legs.get(0).steps.get(2));
@@ -675,9 +681,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             resetTrip.journeyState.matchingItinerary.legs.get(0).from.toCoordinates()
         );
 
-        // Check that matching itinerary time corresponds to "today".
+        // Check that matching itinerary time corresponds to "today" if current time is before trip end,
+        // or "tomorrow" if trip has ended (assuming a recurring trip).
         assertEquals(
-            DateTimeUtils.nowAsZonedDateTime().toLocalDate(),
+            DateTimeUtils.nowAsZonedDateTime().plusDays(expectedReroutedItinerary.hasEnded() ? 1 : 0).toLocalDate(),
             ZonedDateTime.ofInstant(resetTrip.journeyState.matchingItinerary.startTime.toInstant(), DateTimeUtils.getOtpZoneId()).toLocalDate()
         );
 
