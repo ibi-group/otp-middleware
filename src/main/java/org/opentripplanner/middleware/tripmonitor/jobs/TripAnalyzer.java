@@ -72,6 +72,13 @@ public class TripAnalyzer implements Runnable {
                     continue;
                 }
 
+                // Do a few trivial prechecks to see whether to even bother locking the trip
+                // and instantiating a CheckMonitoredTrip run.
+                if (CheckMonitoredTrip.shouldSkipMonitoredTripPreCheck(trip)) {
+                    analyzerIsIdle.set(true);
+                    continue;
+                }
+
                 LOG.info("Analyzing trip {}", tripId);
 
                 // place lock on trip
