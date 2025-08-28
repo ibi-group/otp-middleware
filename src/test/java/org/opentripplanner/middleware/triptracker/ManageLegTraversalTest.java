@@ -45,7 +45,6 @@ import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getS
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextOrClosestWayPoint;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithinExclusionZone;
-import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
@@ -69,11 +68,12 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary walkToBusTransition;
     private static Itinerary walkToBus20;
     private static Itinerary walkToBus10B;
+    private static Itinerary walkToBus12;
 
     private static final Locale locale = Locale.US;
 
     @BeforeAll
-    public static void setUp() throws IOException {
+    static void setUp() throws IOException {
         // Load default env.yml configuration.
         ConfigUtils.loadConfig(new String[]{});
 
@@ -125,6 +125,10 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
         );
         walkToBus10B = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-10B.json"),
+            Itinerary.class
+        );
+        walkToBus12 = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-12.json"),
             Itinerary.class
         );
 
@@ -423,7 +427,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 legToDestinationAwayFromSidewalk,
                 new TraceData()
                     .withPosition(pointNearEndOfSidewalk)
-                    .withExpectedInstruction(TRIP_INSTRUCTION_END_OF_ROUTING)
+                    .withExpectedInstruction("Your destination is in the vicinity.")
             ),
             Arguments.of(
                 "Immediately after departure instruction. Should provide a 'Continue' instruction and not 'No instruction'.",
@@ -552,6 +556,16 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
                     .withInstant(walkToBusTransition.legs.get(1).startTime.toInstant().minus(40, ChronoUnit.MINUTES))
                     .withExpectedInstruction("Wait 40 minutes for your bus, route 40, scheduled at 6:41 AM (On time)")
+            ),
+            Arguments.of(
+                "Arrive at bus stop where the walk geometry is so the stop is farther than the last walk shape. Should produce a wait-for-bus instruction, not 'destination in vicinity'.",
+                walkToBus12,
+                0,
+                new TraceData()
+                    .withPosition(new Coordinates(33.78118173054279, -84.3867252767086))
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withInstant(walkToBus12.startTime.toInstant())
+                    .withExpectedInstruction("Your bus stop is in the vicinity.")
             ),
             Arguments.of(
                 "After boarding bus and bus starts moving, but incorrectly produced 'COMPLETED' status.",
