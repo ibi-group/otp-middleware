@@ -43,7 +43,7 @@ public class CheckMonitoredTripBasicTest {
         }
         assertEquals(
             args.expectedResult,
-            new CheckMonitoredTrip(trip).shouldSkipMonitoredTripCheck(false),
+            new CheckMonitoredTrip(trip).shouldSkipMonitoredTripCheck(false, true),
             args.message
         );
     }
