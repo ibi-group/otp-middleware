@@ -540,13 +540,14 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
      * e.g. because real-time data is briefly lost from the agency, so OTP cannot find the desired itinerary.
      * @throws Exception
      */
-    @Test
-    void canGenerateInstructionIfMatchingItineraryUndefined() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void canGenerateInstructionIfMatchingItineraryUndefined(boolean nullMatchingItinerary) throws Exception {
         assumeTrue(IS_END_TO_END);
         final int WEST_BEARING = 270;
 
         monitoredTrip = createMonitoredTrip(multiLegItinerary);
-        monitoredTrip.journeyState.matchingItinerary = null;
+        monitoredTrip.journeyState.matchingItinerary = nullMatchingItinerary ? null : multiLegItinerary;
         monitoredTrip.journeyState.tripStatus = org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
         Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
 

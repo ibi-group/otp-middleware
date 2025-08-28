@@ -102,7 +102,10 @@ public class ManageTripTracking {
                 Persistence.otpUsers.getById(tripData.trip.getPrimaryTravelerId())
             );
             TripStatus tripStatus = TripStatus.NO_ITINERARY;
-            if (matchingItinerary != null) {
+
+            boolean isValidItinerary = matchingItinerary != null &&
+                tripData.trip.journeyState.tripStatus != org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
+            if (isValidItinerary) {
                 tripStatus = TripStatus.getTripStatus(travelerPosition);
                 trackedJourney.lastLocation().deviationMeters = travelerPosition.getDeviationMeters();
             }
@@ -118,7 +121,7 @@ public class ManageTripTracking {
                 );
             }
 
-            if (matchingItinerary == null) {
+            if (!isValidItinerary) {
                 return new TrackingResponse(
                     TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
                     "Unable to monitor trip.",
