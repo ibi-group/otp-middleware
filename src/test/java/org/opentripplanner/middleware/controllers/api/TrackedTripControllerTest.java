@@ -538,7 +538,6 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     /**
      * Handle cases where user is in live tracking, and a saved itinerary becomes not monitorable
      * e.g. because real-time data is briefly lost from the agency, so OTP cannot find the desired itinerary.
-     * @throws Exception
      */
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
