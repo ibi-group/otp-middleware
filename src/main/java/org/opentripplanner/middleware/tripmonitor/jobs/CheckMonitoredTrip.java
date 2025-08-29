@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -1046,8 +1047,7 @@ public class CheckMonitoredTrip implements Runnable {
         String matchingItineraryDay = makeOtpZonedDateTime(matchingItinerary.startTime).format(DEFAULT_DATE_FORMATTER);
 
         if (trip.isOneTime() && makeOtpZonedDateTime(trip.itinerary.startTime).format(DEFAULT_DATE_FORMATTER).equals(matchingItineraryDay)) return true;
-        if (targetZonedDateTime == null) return false;
-        return targetZonedDateTime.format(DEFAULT_DATE_FORMATTER).equals(matchingItineraryDay);
+        return targetZonedDateTime != null && targetZonedDateTime.format(DEFAULT_DATE_FORMATTER).equals(matchingItineraryDay);
     }
 
     /**
