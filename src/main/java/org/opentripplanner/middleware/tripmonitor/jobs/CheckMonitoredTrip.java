@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -44,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMATTER;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.diffInMinutes;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.makeOtpZonedDateTime;
 
@@ -253,7 +255,8 @@ public class CheckMonitoredTrip implements Runnable {
         // If matching itinerary has concluded, and live tracking is ongoing or the trip is one-time, don't check OTP.
         boolean oneTime = trip.isOneTime();
         boolean trackingOngoing = isTrackingOngoing();
-        if ((oneTime || trackingOngoing) && trip.journeyState.matchingItinerary.hasEnded()) {
+        Itinerary matchingItin = trip.journeyState.matchingItinerary;
+        if ((oneTime || trackingOngoing) && (matchingItin == null || matchingItin.hasEnded())) {
             if (oneTime && !trackingOngoing) {
                 trip.journeyState.tripStatus = TripStatus.PAST_TRIP;
             }
@@ -367,7 +370,7 @@ public class CheckMonitoredTrip implements Runnable {
             }
         }
 
-        // If this point is reached, a matching itinerary was not found
+        // If this point is reached, a matching itinerary was not found.
         ItineraryExistence.logItineraryNotFound(
             "No comparison itinerary found",
             trip,
@@ -375,7 +378,8 @@ public class CheckMonitoredTrip implements Runnable {
             ITINERARY_NOT_FOUND_LOGGER
         );
 
-        if (hasReachedMaxItineraryChecks()) {
+        boolean setNullItinerary = !shouldPersistMatchingItinerary();
+        if (hasReachedMaxItineraryChecks() || setNullItinerary) {
             // Check whether this trip should no longer ever be checked due to not having matching itineraries on any
             // monitored day of the week. For trips that are only monitored on one day of the week, they could have been not
             // possible for just that day, but could again be possible the next week. Therefore, this checks if the trip
@@ -383,6 +387,11 @@ public class CheckMonitoredTrip implements Runnable {
             // that the trip is no longer possible.
             boolean noMatchingItineraryFoundOnPreviousChecks =
                 !trip.itineraryExistence.isPossibleOnAtLeastOneMonitoredDayOfTheWeek(trip);
+
+            // Record a null matching itinerary if "today" is not the target trip date or the one-time trip date.
+            if (setNullItinerary) {
+                matchingItinerary = null;
+            }
 
             if (noMatchingItineraryFoundOnPreviousChecks) {
                 journeyState.tripStatus = TripStatus.NO_LONGER_POSSIBLE;
@@ -435,15 +444,7 @@ public class CheckMonitoredTrip implements Runnable {
             trip.attemptsToGetMatchingItinerary,
             MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS
         );
-        if (trip.attemptsToGetMatchingItinerary < MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS) {
-            if (Persistence.monitoredTrips.getById(trip.id) == null) {
-                // Trip has been deleted. Continue as if maximum itinerary checks have been reached.
-                return true;
-            }
-            Persistence.monitoredTrips.replace(trip.id, trip);
-            return false;
-        }
-        return true;
+        return trip.attemptsToGetMatchingItinerary >= MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS;
     }
 
     /** Default implementation for OtpResponse provider that actually invokes the OTP server. */
@@ -457,7 +458,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private OtpGraphQLVariables getQueryParamsForTargetZonedDateTime() {
         OtpGraphQLVariables params = trip.otp2QueryParams.clone();
-        params.date = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
+        params.date = targetZonedDateTime.format(DEFAULT_DATE_FORMATTER);
         checkForRerouting(params);
         return params;
     }
@@ -1021,7 +1022,7 @@ public class CheckMonitoredTrip implements Runnable {
         }
         journeyState.matchingItinerary = matchingItinerary;
         if (targetZonedDateTime != null) {
-            journeyState.targetDate = targetZonedDateTime.format(DateTimeUtils.DEFAULT_DATE_FORMATTER);
+            journeyState.targetDate = targetZonedDateTime.format(DEFAULT_DATE_FORMATTER);
         }
         journeyState.lastCheckedEpochMillis = DateTimeUtils.currentTimeMillis();
         // Update notification time if notification successfully sent.
@@ -1033,6 +1034,20 @@ public class CheckMonitoredTrip implements Runnable {
         trip.journeyState = journeyState;
         Persistence.monitoredTrips.replace(trip.id, trip);
         return true;
+    }
+
+    /**
+     * Whether to keep the matching itinerary.
+     * @return true if matchingItinerary and target date are the same,
+     * or trip is one-time and matchingItinerary occurs on the trip date
+     * (assuming matchingItinerary is not null).
+     */
+    private boolean shouldPersistMatchingItinerary() {
+        if (matchingItinerary == null) return false;
+        String matchingItineraryDay = makeOtpZonedDateTime(matchingItinerary.startTime).format(DEFAULT_DATE_FORMATTER);
+
+        if (trip.isOneTime() && makeOtpZonedDateTime(trip.itinerary.startTime).format(DEFAULT_DATE_FORMATTER).equals(matchingItineraryDay)) return true;
+        return targetZonedDateTime != null && targetZonedDateTime.format(DEFAULT_DATE_FORMATTER).equals(matchingItineraryDay);
     }
 
     /**

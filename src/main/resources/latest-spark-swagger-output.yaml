@@ -3246,6 +3246,7 @@ definitions:
         - "ENDED"
         - "DEVIATED"
         - "COMPLETED"
+        - "NO_ITINERARY"
       locationAccuracy:
         type: "number"
         format: "double"

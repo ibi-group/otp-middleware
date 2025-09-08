@@ -521,7 +521,7 @@ public class MonitoredTrip extends Model {
      * Determines whether the trip status is consistent with the matching itinerary.
      */
     public boolean tripStateIsConsistentWithMatchingItinerary() {
-        if (journeyState == null || journeyState.tripStatus == null) return false;
+        if (journeyState == null || journeyState.tripStatus == null || journeyState.matchingItinerary == null) return false;
         Itinerary matchingItinerary = journeyState.matchingItinerary;
         switch (journeyState.tripStatus) {
             case PAST_TRIP:
@@ -541,7 +541,7 @@ public class MonitoredTrip extends Model {
      * Determines whether the trip target date is consistent with the matching itinerary.
      */
     public boolean tripTargetDateIsConsistentWithMatchingItinerary() {
-        if (journeyState == null || journeyState.targetDate == null) return false;
+        if (journeyState == null || journeyState.targetDate == null || journeyState.matchingItinerary == null) return false;
         Itinerary matchingItinerary = journeyState.matchingItinerary;
         return journeyState.targetDate.equals(
             DateTimeUtils.getStringFromDate(
