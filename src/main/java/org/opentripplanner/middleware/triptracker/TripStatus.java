@@ -39,7 +39,12 @@ public enum TripStatus {
     /**
      * The traveler has arrived at the trip's final destination.
      **/
-    COMPLETED;
+    COMPLETED,
+
+    /**
+     * Used when no trip was found from OTP.
+     */
+    NO_ITINERARY;
 
     public static final int TRIP_TRACKING_WALK_ON_TRACK_RADIUS
         = getConfigPropertyAsInt("TRIP_TRACKING_WALK_ON_TRACK_RADIUS", 5);
