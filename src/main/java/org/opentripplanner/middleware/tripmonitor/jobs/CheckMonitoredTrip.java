@@ -867,20 +867,6 @@ public class CheckMonitoredTrip implements Runnable {
             : findEarliestTargetDate(trip, DateTimeUtils.nowAsZonedDateTime());
     }
 
-    /**
-     * Whether to advance to the next monitored day.
-     */
-    public boolean shouldAdvanceToNextDay() {
-        boolean sameDayAsItinerary = DateTimeUtils.nowAsZonedDateTime().toLocalDate().equals(
-            DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime).toLocalDate()
-        );
-        return
-            !trip.isOneTime() &&
-            !matchingItinerary.isActive() &&
-            !isTrackingOngoing() &&
-            !(sameDayAsItinerary && !matchingItinerary.hasEnded());
-    }
-
     private boolean isPreviousTripOngoingAtLastCheck() {
         return isPrevMatchingItineraryNotConcludedAtLastCheck() && isPrevMatchingItineraryDayValid();
     }

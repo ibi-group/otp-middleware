@@ -166,31 +166,6 @@ public class CheckMonitoredTripBasicTest {
     }
 
     @ParameterizedTest
-    @MethodSource("createShouldAdvanceToNextDayCases")
-    void testShouldAdvanceToNextDay(int offsetSeconds, boolean expected, String message) throws Exception {
-        MonitoredTrip trip = makeMonitoredTripFromNow(offsetSeconds, offsetSeconds + 300);
-        setRecurringTodayAndTomorrow(trip);
-
-        CheckMonitoredTrip check = new CheckMonitoredTrip(trip);
-        check.matchingItinerary = trip.itinerary;
-        assertEquals(
-            expected,
-            check.shouldAdvanceToNextDay(),
-            message
-        );
-    }
-
-    private static Stream<Arguments> createShouldAdvanceToNextDayCases() {
-        final int ONE_HOURS_IN_SECS = 3600;
-        final int TWO_MINUTES_IN_SECS = 120;
-        return Stream.of(
-            Arguments.of(ONE_HOURS_IN_SECS, false, "Should not advance monitored day if trip in near future"),
-            Arguments.of(TWO_MINUTES_IN_SECS, false, "Should not advance monitored day if trip is ongoing"),
-            Arguments.of(-ONE_HOURS_IN_SECS, true, "Should advance monitored day if trip is past.")
-        );
-    }
-
-    @ParameterizedTest
     @MethodSource("shouldSendInitialReminderCases")
     void testShouldSendInitialReminder(
         int offsetSeconds,
