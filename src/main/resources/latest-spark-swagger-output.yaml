@@ -2495,6 +2495,7 @@ definitions:
         - "DEPARTED_NOTIFICATION"
         - "ARRIVED_NOTIFICATION"
         - "DEPARTURE_AND_ARRIVAL_DELAY"
+        - "REALTIME_UPDATES_LOST"
       body:
         type: "string"
   EncodedPolyline:
