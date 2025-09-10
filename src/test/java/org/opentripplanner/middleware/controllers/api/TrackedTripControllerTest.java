@@ -535,6 +535,44 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
     }
 
+    /**
+     * Handle cases where user is in live tracking, and a saved itinerary becomes not monitorable
+     * e.g. because real-time data is briefly lost from the agency, so OTP cannot find the desired itinerary.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void canGenerateInstructionIfMatchingItineraryUndefined(boolean nullMatchingItinerary) throws Exception {
+        assumeTrue(IS_END_TO_END);
+        final int WEST_BEARING = 270;
+
+        monitoredTrip = createMonitoredTrip(multiLegItinerary);
+        monitoredTrip.journeyState.matchingItinerary = nullMatchingItinerary ? null : multiLegItinerary;
+        monitoredTrip.journeyState.tripStatus = org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
+        Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
+
+        // Defaults to itinerary start time, unless specified otherwise.
+        Leg multiItinFirstLeg = multiLegItinerary.legs.get(0);
+        Coordinates multiItinFirstLegDestCoords = new Coordinates(multiItinFirstLeg.to);
+        Instant instant = monitoredTrip.itinerary.startTime.toInstant();
+        String jsonPayload = JsonUtils.toJson(
+            createTrackPayload(
+                monitoredTrip,
+                createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING),
+                0,
+                // The timestamp has to be in seconds, hence the division by 1000.
+                Date.from(Instant.ofEpochMilli(instant.toEpochMilli() / 1000))
+            )
+        );
+
+        // Make a request to start a journey.
+        var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
+
+        assertEquals(HttpStatus.OK_200, response.status);
+        var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertEquals("Unable to monitor trip.", trackResponse.instruction, "Live tracking is not possible if no matching itinerary.");
+        assertEquals(TripStatus.NO_ITINERARY.name(), trackResponse.tripStatus);
+    }
+
     @Test
     void canForciblyEndJourney() throws Exception {
         assumeTrue(IS_END_TO_END);

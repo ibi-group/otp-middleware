@@ -237,12 +237,15 @@ public class OtpTestUtils {
     }
 
     public static JourneyState createDefaultJourneyState(Supplier<OtpResponse> otpResponseProvider) {
-        return createDefaultJourneyState(firstItinerary(otpResponseProvider.get()));
+        List<Itinerary> itineraries = otpResponseProvider.get().plan.itineraries;
+        return createDefaultJourneyState(itineraries.isEmpty() ? null : itineraries.get(0));
     }
 
     private static JourneyState createDefaultJourneyState(Itinerary defaultItinerary) {
         JourneyState journeyState = new JourneyState();
-        journeyState.tripStatus = defaultItinerary.isActive()
+        journeyState.tripStatus = defaultItinerary == null
+            ? null
+            : defaultItinerary.isActive()
             ? TripStatus.TRIP_ACTIVE
             : TripStatus.TRIP_UPCOMING;
         journeyState.matchingItinerary = defaultItinerary;
