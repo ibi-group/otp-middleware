@@ -317,11 +317,11 @@ public class CheckMonitoredTrip implements Runnable {
                 LOG.info("Found matching itinerary!");
                 trip.attemptsToGetMatchingItinerary = 0;
 
-                // Set the matching itinerary.
+                // Set the matching itinerary. Compute target date and set the baseline journey state.
                 matchingItinerary = candidateItinerary;
+                computeTargetZonedDateTime();
+                resetJourneyTripTimes();
 
-                // reset journey state departure/arrival times
-                resetJourneyState();
                 // update the journey state with whether the matching itinerary has realtime data
                 journeyState.hasRealtimeData = matchingItinerary.legs.stream().anyMatch(leg -> leg.realTime);
 
@@ -352,7 +352,6 @@ public class CheckMonitoredTrip implements Runnable {
                 // calculated.
                 // If the matching itinerary is in the future, make sure that the target date reflects that.
                 if (journeyState.tripStatus == TripStatus.TRIP_UPCOMING && (!matchingItinerary.isActive())) {
-                    computeTargetZonedDateTime();
                     updateMonitoredTrip();
 
                     if (matchingItinerary.hasEnded()) {
@@ -986,12 +985,25 @@ public class CheckMonitoredTrip implements Runnable {
 
         // update journey state with the original (scheduled departure and arrival times). Calculate these by
         // finding the first/last transit legs and subtracting any delay.
-        journeyState.scheduledDepartureTimeEpochMillis = matchingItinerary.getScheduledStartTimeEpochMillis();
-        journeyState.scheduledArrivalTimeEpochMillis = matchingItinerary.getScheduledEndTimeEpochMillis();
+        //// FIXME: This should be done based on the (saved itinerary + target date), not based on .
+        //resetScheduledTripTimes(matchingItinerary);
 
         // resent journey state's realtime data to be false as it has just been manually advanced without having checked
         // the trip planner for realtime data
         journeyState.hasRealtimeData = false;
+    }
+
+    /**
+     * Sets the journey state scheduled time based on the monitored itinerary (subtracting any delays),
+     * and applying offsets corresponding to the number of days between "now" and the target date.
+     */
+    public void resetJourneyTripTimes() {
+        long millis = trip.itinerary.startTime.toInstant().until(targetZonedDateTime, ChronoUnit.MILLIS);
+        journeyState.scheduledDepartureTimeEpochMillis = trip.itinerary.getScheduledStartTimeEpochMillis() + millis;
+        journeyState.scheduledArrivalTimeEpochMillis = trip.itinerary.getScheduledEndTimeEpochMillis() + millis;
+        journeyState.baselineDepartureTimeEpochMillis = matchingItinerary.getScheduledStartTimeEpochMillis();
+        journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.getScheduledEndTimeEpochMillis();
+
     }
 
     /**
