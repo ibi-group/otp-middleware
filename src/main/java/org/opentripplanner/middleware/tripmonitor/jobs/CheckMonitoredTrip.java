@@ -978,32 +978,17 @@ public class CheckMonitoredTrip implements Runnable {
         updateTripStatus();
     }
 
-    private void resetJourneyState() {
-        // update journey state with baseline departure and arrival times which are the last known departure/arrival
-        journeyState.baselineDepartureTimeEpochMillis = matchingItinerary.startTime.getTime();
-        journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.endTime.getTime();
-
-        // update journey state with the original (scheduled departure and arrival times). Calculate these by
-        // finding the first/last transit legs and subtracting any delay.
-        //// FIXME: This should be done based on the (saved itinerary + target date), not based on .
-        //resetScheduledTripTimes(matchingItinerary);
-
-        // resent journey state's realtime data to be false as it has just been manually advanced without having checked
-        // the trip planner for realtime data
-        journeyState.hasRealtimeData = false;
-    }
-
     /**
      * Sets the journey state scheduled time based on the monitored itinerary (subtracting any delays),
      * and applying offsets corresponding to the number of days between "now" and the target date.
      */
-    public void resetJourneyTripTimes() {
+    private void resetJourneyState() {
         long millis = trip.itinerary.startTime.toInstant().until(targetZonedDateTime, ChronoUnit.MILLIS);
         journeyState.scheduledDepartureTimeEpochMillis = trip.itinerary.getScheduledStartTimeEpochMillis() + millis;
         journeyState.scheduledArrivalTimeEpochMillis = trip.itinerary.getScheduledEndTimeEpochMillis() + millis;
         journeyState.baselineDepartureTimeEpochMillis = matchingItinerary.getScheduledStartTimeEpochMillis();
         journeyState.baselineArrivalTimeEpochMillis = matchingItinerary.getScheduledEndTimeEpochMillis();
-
+        journeyState.hasRealtimeData = false;
     }
 
     /**
