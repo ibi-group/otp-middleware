@@ -247,9 +247,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         if (notificationType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY || notificationType == NotificationType.DEPARTURE_DELAY) {
             journeyState.baselineDepartureTimeEpochMillis += previousDelayMillis;
+            journeyState.hasRealtimeData = true;
         }
         if (notificationType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY || notificationType == NotificationType.ARRIVAL_DELAY) {
             journeyState.baselineArrivalTimeEpochMillis += previousDelayMillis;
+            journeyState.hasRealtimeData = true;
         }
 
         CheckMonitoredTrip check = createCheckMonitoredTrip(journeyState, this::mockOtpPlanResponse, true);
