@@ -763,18 +763,16 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     void canSendDelayNotificationOnSavingDelayedTrip() throws Exception {
-        // create an OTP mock to return
         OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
         // Add some delays in the transit leg, and remove any alerts.
-        // No need to change the start/end times of the leg or other legs because
         Itinerary firstMockItinerary = firstItinerary(mockWeekdayResponse);
         firstMockItinerary.clearAlerts();
         setTransitLegDelay(firstMockItinerary);
 
-        // create a mock monitored trip and CheckMonitorTrip instance
+        // Create a mock monitored trip and CheckMonitorTrip instance
         // Note that the response below gets modified from the original mockOtpPlanResponse.
         CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
-        // Override matching itinerary to null to simulate first save.
+        // Override matching itinerary to null to simulate initial save.
         mockCheckMonitoredTrip.matchingItinerary = null;
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         // Trigger notifications for 5-minute delays instead of 15.
@@ -787,9 +785,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // create mock itinerary existence for trip for Tuesdays
         mockTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
-
-        // set trip status to be upcoming
-        mockTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
 
         DateTimeUtils.useFixedClockAt(TUESDAY_20200609.withHour(8));
 
