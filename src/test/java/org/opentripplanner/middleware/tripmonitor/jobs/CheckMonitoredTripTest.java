@@ -733,7 +733,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     /**
      * Utility method to set delays on a transit itinerary.
      */
-    void setTransitLegDelay(Itinerary itinerary, int departureDelay, int arrivalDelay) {
+    void addTransitLegDelay(Itinerary itinerary, int departureDelay, int arrivalDelay, boolean realTime) {
         Leg walkLeg = itinerary.legs.get(0);
         Leg transitLeg = itinerary.legs.get(1);
         Leg finalLeg = itinerary.legs.get(2);
@@ -741,10 +741,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         walkLeg.startTime = Date.from(walkLeg.startTime.toInstant().plusSeconds(departureDelay));
         walkLeg.endTime = Date.from(walkLeg.endTime.toInstant().plusSeconds(departureDelay));
 
-        transitLeg.realTime = true;
-        transitLeg.departureDelay = departureDelay;
+        transitLeg.realTime = realTime;
+        transitLeg.departureDelay += departureDelay;
         transitLeg.startTime = Date.from(transitLeg.startTime.toInstant().plusSeconds(departureDelay));
-        transitLeg.arrivalDelay = arrivalDelay;
+        transitLeg.arrivalDelay += arrivalDelay;
         transitLeg.endTime = Date.from(transitLeg.endTime.toInstant().plusSeconds(arrivalDelay));
 
         finalLeg.startTime = Date.from(finalLeg.startTime.toInstant().plusSeconds(arrivalDelay));
@@ -764,7 +764,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Add some delays in the transit leg, and remove any alerts.
         Itinerary firstMockItinerary = firstItinerary(mockWeekdayResponse);
         firstMockItinerary.clearAlerts();
-        setTransitLegDelay(firstMockItinerary, 300, 420);
+        addTransitLegDelay(firstMockItinerary, 300, 420, true);
 
         // Create a mock monitored trip and CheckMonitorTrip instance
         // Note that the response below gets modified from the original mockOtpPlanResponse.
@@ -777,7 +777,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         mockTrip.arrivalVarianceMinutesThreshold = 5;
         // Add delays to the original saved trip, different from the mock response.
         // The delays from the mock response should be used.
-        setTransitLegDelay(mockTrip.itinerary, 600, 720);
+        addTransitLegDelay(mockTrip.itinerary, 600, 720, true);
 
         Persistence.monitoredTrips.create(mockTrip);
 
@@ -798,7 +798,43 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         assertEquals(
             "⏱ Your trip is now predicted to depart 5 minutes late (at 8:45 AM).",
             mockCheckMonitoredTrip.notifications.iterator().next().body,
-            "The notification should be about a trip delay."
+            "The notification should be about a departure delay."
+        );
+
+        // Decrease real-time delays (subtract delays) from the OTP response.
+        // Clear previous notifications.
+        addTransitLegDelay(firstMockItinerary, -100, -60, true);
+        mockCheckMonitoredTrip.notifications.clear();
+
+        mockCheckMonitoredTrip.run();
+
+        assertEquals(
+            1,
+            mockCheckMonitoredTrip.notifications.size(),
+            "One notification should be generated."
+        );
+        assertEquals(
+            "⏱ Your trip is now predicted to arrive 6 minutes late (at 9:04 AM).",
+            mockCheckMonitoredTrip.notifications.iterator().next().body,
+            "The notification should be about an arrival delay because the departure delay is insignificant."
+        );
+
+        // Drop real-time updates (subtract delays) from the OTP response.
+        // Clear previous notifications
+        addTransitLegDelay(firstMockItinerary, -200, -360, false);
+        mockCheckMonitoredTrip.notifications.clear();
+
+        mockCheckMonitoredTrip.run();
+
+        assertEquals(
+            1,
+            mockCheckMonitoredTrip.notifications.size(),
+            "One notification should be generated."
+        );
+        assertEquals(
+            "⏱ Real-time updates for your trip were lost. Monitoring will be based on your originally saved trip.",
+            mockCheckMonitoredTrip.notifications.iterator().next().body,
+            "The notification should be about the loss of real-time information."
         );
     }
 
