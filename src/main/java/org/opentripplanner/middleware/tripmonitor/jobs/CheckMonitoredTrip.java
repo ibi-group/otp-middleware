@@ -540,10 +540,7 @@ public class CheckMonitoredTrip implements Runnable {
      * - Result: The threshold is met, so a notification is sent.
      */
     public TripMonitorNotification checkTripForDelays() {
-        if (!journeyState.hasRealtimeData && (
-            journeyState.baselineArrivalTimeEpochMillis != 0 && journeyState.baselineArrivalTimeEpochMillis != journeyState.scheduledArrivalTimeEpochMillis ||
-            journeyState.baselineDepartureTimeEpochMillis != 0 && journeyState.baselineDepartureTimeEpochMillis != journeyState.scheduledDepartureTimeEpochMillis
-        )) {
+        if (journeyState.realtimeDataLost()) {
             // Reset baseline if real-time updates are lost.
             journeyState.baselineArrivalTimeEpochMillis = 0;
             journeyState.baselineDepartureTimeEpochMillis = 0;
@@ -555,8 +552,8 @@ public class CheckMonitoredTrip implements Runnable {
             long newEndTime = newEndDate.getTime();
 
             // Fallback on scheduled if baseline is zero.
-            long departureDelay = Math.abs(diffInMinutes(journeyState.baselineDepartureTimeEpochMillis == 0 ? journeyState.scheduledDepartureTimeEpochMillis : journeyState.baselineDepartureTimeEpochMillis, newStartTime));
-            long arrivalDelay = Math.abs(diffInMinutes(journeyState.baselineArrivalTimeEpochMillis == 0 ? journeyState.scheduledArrivalTimeEpochMillis : journeyState.baselineArrivalTimeEpochMillis, newEndTime));
+            long departureDelay = Math.abs(diffInMinutes(journeyState.tripDepartureTime(), newStartTime));
+            long arrivalDelay = Math.abs(diffInMinutes(journeyState.tripArrivalTime(), newEndTime));
 
             // For each of the cases below, use the scheduled departure/arrival epoch millis of the trip
             // (the scheduled departure/arrival time if checking for departure/arrival delay, respectively).

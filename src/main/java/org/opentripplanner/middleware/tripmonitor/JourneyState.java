@@ -87,4 +87,39 @@ public class JourneyState implements Cloneable {
         }
         return cloned;
     }
+
+    /**
+     * Gets the baseline departure, or fall back on the scheduled departure.
+     */
+    public long tripDepartureTime() {
+        return baselineDepartureTimeEpochMillis == 0 ? scheduledDepartureTimeEpochMillis : baselineDepartureTimeEpochMillis;
+    }
+
+    /**
+     * Gets the baseline arrival, or fall back on the scheduled arrival.
+     */
+    public long tripArrivalTime() {
+        return baselineArrivalTimeEpochMillis == 0 ? scheduledArrivalTimeEpochMillis : baselineArrivalTimeEpochMillis;
+    }
+
+    /**
+     * Whether there is an arrival delay (non-zero).
+     */
+    public boolean arrivalIsDelayed() {
+        return baselineArrivalTimeEpochMillis != 0 && baselineArrivalTimeEpochMillis != scheduledArrivalTimeEpochMillis;
+    }
+
+    /**
+     * Whether there is a departure delay (non-zero).
+     */
+    public boolean departureIsDelayed() {
+        return baselineDepartureTimeEpochMillis != 0 && baselineDepartureTimeEpochMillis != scheduledDepartureTimeEpochMillis;
+    }
+
+    /**
+     * Whether real-time data were lost.
+     */
+    public boolean realtimeDataLost() {
+        return !hasRealtimeData && (arrivalIsDelayed() || departureIsDelayed());
+    }
 }
