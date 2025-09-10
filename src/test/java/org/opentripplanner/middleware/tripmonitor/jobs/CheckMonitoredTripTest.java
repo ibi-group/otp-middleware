@@ -733,28 +733,25 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     /**
      * Utility method to set delays on a transit itinerary.
      */
-    void setTransitLegDelay(Itinerary itinerary) {
+    void setTransitLegDelay(Itinerary itinerary, int departureDelay, int arrivalDelay) {
         Leg walkLeg = itinerary.legs.get(0);
         Leg transitLeg = itinerary.legs.get(1);
         Leg finalLeg = itinerary.legs.get(2);
 
-        final int DEPARTURE_DELAY = 300;
-        final int ARRIVAL_DELAY = 420;
-
-        walkLeg.startTime = Date.from(walkLeg.startTime.toInstant().plusSeconds(DEPARTURE_DELAY));
-        walkLeg.endTime = Date.from(walkLeg.endTime.toInstant().plusSeconds(DEPARTURE_DELAY));
+        walkLeg.startTime = Date.from(walkLeg.startTime.toInstant().plusSeconds(departureDelay));
+        walkLeg.endTime = Date.from(walkLeg.endTime.toInstant().plusSeconds(departureDelay));
 
         transitLeg.realTime = true;
-        transitLeg.departureDelay = DEPARTURE_DELAY;
-        transitLeg.startTime = Date.from(transitLeg.startTime.toInstant().plusSeconds(DEPARTURE_DELAY));
-        transitLeg.arrivalDelay = ARRIVAL_DELAY;
-        transitLeg.endTime = Date.from(transitLeg.endTime.toInstant().plusSeconds(ARRIVAL_DELAY));
+        transitLeg.departureDelay = departureDelay;
+        transitLeg.startTime = Date.from(transitLeg.startTime.toInstant().plusSeconds(departureDelay));
+        transitLeg.arrivalDelay = arrivalDelay;
+        transitLeg.endTime = Date.from(transitLeg.endTime.toInstant().plusSeconds(arrivalDelay));
 
-        finalLeg.startTime = Date.from(finalLeg.startTime.toInstant().plusSeconds(ARRIVAL_DELAY));
-        finalLeg.endTime = Date.from(finalLeg.endTime.toInstant().plusSeconds(ARRIVAL_DELAY));
+        finalLeg.startTime = Date.from(finalLeg.startTime.toInstant().plusSeconds(arrivalDelay));
+        finalLeg.endTime = Date.from(finalLeg.endTime.toInstant().plusSeconds(arrivalDelay));
 
-        itinerary.startTime = Date.from(itinerary.startTime.toInstant().plusSeconds(DEPARTURE_DELAY));
-        itinerary.endTime = Date.from(itinerary.endTime.toInstant().plusSeconds(ARRIVAL_DELAY));
+        itinerary.startTime = Date.from(itinerary.startTime.toInstant().plusSeconds(departureDelay));
+        itinerary.endTime = Date.from(itinerary.endTime.toInstant().plusSeconds(arrivalDelay));
     }
 
     /**
@@ -767,7 +764,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Add some delays in the transit leg, and remove any alerts.
         Itinerary firstMockItinerary = firstItinerary(mockWeekdayResponse);
         firstMockItinerary.clearAlerts();
-        setTransitLegDelay(firstMockItinerary);
+        setTransitLegDelay(firstMockItinerary, 300, 420);
 
         // Create a mock monitored trip and CheckMonitorTrip instance
         // Note that the response below gets modified from the original mockOtpPlanResponse.
@@ -778,8 +775,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Trigger notifications for 5-minute delays instead of 15.
         mockTrip.departureVarianceMinutesThreshold = 5;
         mockTrip.arrivalVarianceMinutesThreshold = 5;
-
-        // (Don't add delays to the original trip at first.)
+        // Add delays to the original saved trip, different from the mock response.
+        // The delays from the mock response should be used.
+        setTransitLegDelay(mockTrip.itinerary, 600, 720);
 
         Persistence.monitoredTrips.create(mockTrip);
 
