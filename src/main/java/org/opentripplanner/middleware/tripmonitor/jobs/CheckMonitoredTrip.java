@@ -323,7 +323,7 @@ public class CheckMonitoredTrip implements Runnable {
                 // Set the matching itinerary. Compute target date and set the baseline journey state.
                 matchingItinerary = candidateItinerary;
                 computeTargetZonedDateTime();
-                resetJourneyTripTimes();
+                resetJourneyState();
 
                 // update the journey state with whether the matching itinerary has realtime data
                 journeyState.hasRealtimeData = matchingItinerary.legs.stream().anyMatch(leg -> leg.realTime);
