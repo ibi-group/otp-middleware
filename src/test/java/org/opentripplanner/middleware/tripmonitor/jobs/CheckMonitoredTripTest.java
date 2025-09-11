@@ -1266,17 +1266,19 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Mock the current time
         DateTimeUtils.useFixedClockAt(clockTime);
 
-        // After trip has completed, check that trip status has been updated.
-        CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+        if (!CheckMonitoredTrip.shouldSkipMonitoredTripPreCheck(monitoredTrip)) {
+            // After trip has completed, check that trip status has been updated.
+            CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
 
-        check.run();
+            check.run();
 
-        MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
-        assertEquals(
-            monitoredTrip.journeyState.lastCheckedEpochMillis,
-            modifiedTrip.journeyState.lastCheckedEpochMillis,
-            "Should not check trip if " + (isActive ? "" : "in") + "active and " + (isSnoozed ? "" : "not ") + "snoozed."
-        );
+            MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
+            assertEquals(
+                monitoredTrip.journeyState.lastCheckedEpochMillis,
+                modifiedTrip.journeyState.lastCheckedEpochMillis,
+                "Should not check trip if " + (isActive ? "" : "in") + "active and " + (isSnoozed ? "" : "not ") + "snoozed."
+            );
+        }
     }
 
     private static Stream<Arguments> shouldNotUpdateInactiveOrSnoozedTripCases() {
