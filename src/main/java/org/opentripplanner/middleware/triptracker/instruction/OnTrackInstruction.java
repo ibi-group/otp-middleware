@@ -67,7 +67,7 @@ public class OnTrackInstruction extends SelfLegInstruction {
         if (hasInstruction()) {
             if (legStep != null) {
                 if (legStep.isEndOfRouting()) {
-                    // Hacky - The kind of place is stored in streetName.
+                    // Hacky - The kind of place will either be 'bus stop' or 'destination' and is stored in streetName.
                     return String.format(TRIP_INSTRUCTION_END_OF_ROUTING, legStep.streetName);
                 } else {
                     String instruction = legStep.relativeDirection.equals(Step.DEPART)
