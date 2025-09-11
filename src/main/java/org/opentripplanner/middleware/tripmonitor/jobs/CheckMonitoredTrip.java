@@ -544,7 +544,10 @@ public class CheckMonitoredTrip implements Runnable {
             // Reset baseline if real-time updates are lost.
             journeyState.baselineArrivalTimeEpochMillis = 0;
             journeyState.baselineDepartureTimeEpochMillis = 0;
-            return TripMonitorNotification.updatesLostNotification(getOtpUserLocale());
+
+            return getMinutesUntilTrip() <= trip.leadTimeInMinutes
+                ? TripMonitorNotification.updatesLostNotification(getOtpUserLocale())
+                : null;
         } else {
             Date newStartDate = matchingItinerary.startTime;
             Date newEndDate = matchingItinerary.endTime;

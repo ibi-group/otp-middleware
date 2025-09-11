@@ -132,9 +132,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             null
         );
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
-        // For an ongoing trip, assume the journey state has been initialized.
-        monitoredTrip.journeyState.baselineDepartureTimeEpochMillis = itinerary.startTime.getTime();
-        monitoredTrip.journeyState.baselineArrivalTimeEpochMillis = itinerary.endTime.getTime();
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
 
@@ -837,6 +834,64 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             "⏱ Real-time updates for your trip were lost. Monitoring will be based on your originally saved trip.",
             mockCheckMonitoredTrip.notifications.iterator().next().body,
             "The notification should be about the loss of real-time information."
+        );
+    }
+
+    /**
+     * A trip delay notification should not be sent after trip is over
+     */
+    @Test
+    void shouldNotSendDelayNotificationAfterTripIsOver() throws Exception {
+        OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
+        // Add some delays in the transit leg, and remove any alerts.
+        Itinerary firstMockItinerary = firstItinerary(mockWeekdayResponse);
+        firstMockItinerary.clearAlerts();
+        addTransitLegDelay(firstMockItinerary, 300, 420, true);
+
+        // Create a mock monitored trip and CheckMonitorTrip instance
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
+        CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
+        // Override matching itinerary to null to simulate initial save.
+        mockCheckMonitoredTrip.matchingItinerary = null;
+        MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
+        // Trigger notifications for 5-minute delays instead of 15.
+        mockTrip.departureVarianceMinutesThreshold = 5;
+        mockTrip.arrivalVarianceMinutesThreshold = 5;
+        // Add delays to the original saved trip, different from the mock response.
+        // The delays from the mock response should be used.
+        addTransitLegDelay(mockTrip.itinerary, 600, 720, true);
+
+        Persistence.monitoredTrips.create(mockTrip);
+
+        // create mock itinerary existence for trip for Tuesdays
+        mockTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
+
+        DateTimeUtils.useFixedClockAt(TUESDAY_20200609.withHour(8));
+
+        mockCheckMonitoredTrip.run();
+
+        assertEquals(firstMockItinerary, mockCheckMonitoredTrip.matchingItinerary);
+
+        assertEquals(
+            1,
+            mockCheckMonitoredTrip.notifications.size(),
+            "One notification should be generated."
+        );
+
+        // Simulate switch to next-day matching itinerary by pretending the journey state is from "yesterday".
+        DateTimeUtils.useFixedClockAt(TUESDAY_20200609.minusDays(1));
+
+        // Drop real-time updates (subtract delays) from the OTP response.
+        // Clear previous notifications
+        addTransitLegDelay(firstMockItinerary, -300, -420, false);
+        mockCheckMonitoredTrip.notifications.clear();
+
+        mockCheckMonitoredTrip.run();
+
+        assertEquals(
+            0,
+            mockCheckMonitoredTrip.notifications.size(),
+            "No notification should be generated if the matching itinerary is outside of the monitoring window."
         );
     }
 
