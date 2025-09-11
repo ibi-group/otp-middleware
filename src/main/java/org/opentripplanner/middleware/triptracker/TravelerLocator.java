@@ -191,7 +191,7 @@ public class TravelerLocator {
             double distanceToLegDestination = getDistance(travelerPosition.currentPosition, legDestination);
 
             if (distanceToLastShapeCoords < distanceToLegDestination) {
-                // Issue an leg end-of-routing step
+                // Issue a leg end-of-routing step
                 Step endOfRoutingStep = createEndOfRoutingStep(
                     legPositions,
                     ItineraryUtils.isBusLeg(travelerPosition.nextLeg) ? "bus stop" : "destination"

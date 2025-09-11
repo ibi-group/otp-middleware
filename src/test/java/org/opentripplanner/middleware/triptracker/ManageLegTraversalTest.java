@@ -554,7 +554,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withExpectedInstruction("Wait 40 minutes for your bus, route 40, scheduled at 6:41 AM (On time)")
             ),
             Arguments.of(
-                "Arrive at bus stop where the walk geometry is so the stop is farther than the last walk shape. Should produce a wait-for-bus instruction, not 'destination in vicinity'.",
+                "Arrive at bus stop where the walk geometry is so the stop is farther than the last walk shape. Should produce a bus-stop-in-vicinity instruction, not 'destination in vicinity'.",
                 walkToBus12,
                 0,
                 new TraceData()
