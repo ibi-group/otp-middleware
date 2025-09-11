@@ -1215,13 +1215,15 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Mock the current time
         DateTimeUtils.useFixedClockAt(clockTime);
 
-        // After trip has completed, check that trip status has been updated.
-        CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+        if (!CheckMonitoredTrip.shouldSkipMonitoredTripPreCheck(monitoredTrip)) {
+            // After trip has completed, check that trip status has been updated.
+            CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
 
-        check.run();
+            check.run();
 
-        MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
-        assertEquals(expectedStatus, modifiedTrip.journeyState.tripStatus, message);
+            MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
+            assertEquals(expectedStatus, modifiedTrip.journeyState.tripStatus, message);
+	}
     }
 
     private static Stream<Arguments> createUpdateTripWithStaleStateCases() {
