@@ -93,20 +93,27 @@ public class TravelerPosition {
      * Returns the closest transit leg in 'upcoming' radius eligible for a "Wait for transit" instruction.
      */
     public Leg getTransitLegWithClosestUpcomingOrigin() {
-        double distancetoExpectedLeg = distanceToTransitLegOrigin(currentPosition, expectedLeg);
-        double distanceToNextLeg = distanceToTransitLegOrigin(currentPosition, nextLeg);
+        return getLegWithClosestUpcomingOrigin(true);
+    }
 
-        if (distancetoExpectedLeg <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distancetoExpectedLeg < distanceToNextLeg) {
+    /**
+     * Returns the closest leg in 'upcoming' radius.
+     */
+    public Leg getLegWithClosestUpcomingOrigin(boolean isTransit) {
+        double distanceToExpectedLeg = distanceToLegOrigin(currentPosition, expectedLeg, isTransit);
+        double distanceToNextLeg = distanceToLegOrigin(currentPosition, nextLeg, isTransit);
+
+        if (distanceToExpectedLeg <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distanceToExpectedLeg < distanceToNextLeg) {
             return expectedLeg;
-        } else if (distanceToNextLeg <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distanceToNextLeg < distancetoExpectedLeg) {
+        } else if (distanceToNextLeg <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distanceToNextLeg < distanceToExpectedLeg) {
             return nextLeg;
         } else {
             return null;
         }
     }
 
-    private static double distanceToTransitLegOrigin(Coordinates position, Leg leg) {
-        return leg != null && leg.transitLeg && leg.from != null
+    private static double distanceToLegOrigin(Coordinates position, Leg leg, boolean isTransit) {
+        return leg != null && (!isTransit || leg.transitLeg) && leg.from != null
             ? getDistance(position, leg.from.toCoordinates())
             : Double.MAX_VALUE;
     }
