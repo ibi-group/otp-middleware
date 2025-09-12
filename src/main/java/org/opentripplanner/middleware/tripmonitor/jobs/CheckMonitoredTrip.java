@@ -344,9 +344,8 @@ public class CheckMonitoredTrip implements Runnable {
                 if (trip.isOneTime() &&
                     (journeyState.tripStatus == TripStatus.TRIP_UPCOMING || journeyState.tripStatus == TripStatus.TRIP_ACTIVE)
                 ) {
-                    applyDelayOffset();
                     updateMonitoredTrip();
-                    return false;
+                    return true;
                 }
 
                 // If the updated trip status is upcoming and the end time of the current matching itinerary is in the
@@ -956,38 +955,6 @@ public class CheckMonitoredTrip implements Runnable {
         Date lastCheckedDate = new Date(previousJourneyState.lastCheckedEpochMillis);
         return previousMatchingItinerary.endTime.after(lastCheckedDate) &&
             previousMatchingItinerary.startTime.before(lastCheckedDate);
-    }
-
-    /**
-     * Define default values for applying delay offset.
-     */
-    private void applyDelayOffset() {
-        ZonedDateTime scheduledTime = DateTimeUtils.makeOtpZonedDateTime(new Date(
-            trip.otp2QueryParams.arriveBy
-                ? matchingItinerary.getScheduledEndTimeEpochMillis()
-                : matchingItinerary.getScheduledStartTimeEpochMillis()
-        ));
-        applyDelayOffset(scheduledTime);
-    }
-
-    /**
-     * Update the matching itinerary with the expected scheduled times for when the next trip is expected to happen in a
-     * scheduled state. This will also take into consideration any arrival or departure delays.
-     */
-    private void applyDelayOffset(ZonedDateTime scheduledTime) {
-        long offsetMillis = scheduledTime.toInstant().toEpochMilli() -
-            (trip.otp2QueryParams.arriveBy
-                ? matchingItinerary.endTime.getTime()
-                : matchingItinerary.getScheduledStartTimeEpochMillis()
-            );
-        // Update overall itinerary and leg start/end times by adding offset.
-        matchingItinerary.offsetTimes(offsetMillis);
-        LOG.info("Next matching itinerary starts at {}", matchingItinerary.startTime);
-        resetJourneyState();
-
-        // Reset the snoozed parameter to false.
-        trip.snoozed = false;
-        updateTripStatus();
     }
 
     /**
