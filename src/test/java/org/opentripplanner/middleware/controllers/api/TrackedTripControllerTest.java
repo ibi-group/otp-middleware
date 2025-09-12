@@ -90,6 +90,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary walkToVoterRegCenterItinerary;
     private static Itinerary walkToBus20;
     private static Itinerary arrivingOnBus40;
+    private static Itinerary walkFromBus40;
 
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
@@ -125,6 +126,10 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
         arrivingOnBus40 = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/bus-40-to-dest-away-from-sidewalk.json"),
+            Itinerary.class
+        );
+        walkFromBus40 = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-from-bus-40.json"),
             Itinerary.class
         );
 
@@ -531,6 +536,14 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .withSpeed(1)
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
                     .withExpectedInstruction("Continue on crossing over service road")
+            ),
+            Arguments.of(
+                "Deviated position because of gap between bus stop and path should direct to next walk leg and not state 'Upcoming/Arrived'.",
+                walkFromBus40,
+                new TraceData()
+                    .withPosition(new Coordinates(33.9521485, -83.9927426))
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction("Head to Langley Drive")
             )
         );
     }
