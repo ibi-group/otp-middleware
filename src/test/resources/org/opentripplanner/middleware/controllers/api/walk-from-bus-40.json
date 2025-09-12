@@ -1,0 +1,252 @@
+{
+  "duration": 753,
+  "startTime": 1757598698000,
+  "endTime": 1757599451000,
+  "walkTime": 178,
+  "transitTime": 0,
+  "waitingTime": 300,
+  "walkDistance": 0,
+  "walkLimitExceeded": false,
+  "elevationLost": 0,
+  "elevationGained": 0,
+  "transfers": 0,
+  "fare": null,
+  "legs": [
+    {
+      "startTime": 1757598698000,
+      "endTime": 1757598821000,
+      "departureDelay": 0,
+      "arrivalDelay": 0,
+      "realTime": false,
+      "distance": 157.27,
+      "mode": "WALK",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "Gwinnett Voter Registrations & Elections, Grayson Highway, Lawrenceville, GA",
+        "lon": -83.984951,
+        "lat": 33.939115,
+        "vertexType": "NORMAL"
+      },
+      "to": {
+        "name": "Gwinnett Dr & Kroger Shopping IB",
+        "lon": -83.984931,
+        "lat": 33.940172,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "4086",
+          "gtfsId": "GwinnettCountyTransit:4086",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDA4Ng",
+          "lon": -83.984931,
+          "lat": 33.940172
+        }
+      },
+      "legGeometry": {
+        "points": "yvcnE~gr_OWJ[P]NMRKF[Re@NK@AOAGEe@AUA?",
+        "length": 14
+      },
+      "rentedBike": false,
+      "transitLeg": false,
+      "duration": 123,
+      "steps": [
+        {
+          "distance": 117.16,
+          "relativeDirection": "DEPART",
+          "streetName": "service road",
+          "absoluteDirection": "NORTHWEST",
+          "stayOn": false,
+          "area": false,
+          "lon": -83.984793,
+          "lat": 33.9391784
+        },
+        {
+          "distance": 40.11,
+          "relativeDirection": "RIGHT",
+          "streetName": "path",
+          "absoluteDirection": "EAST",
+          "stayOn": true,
+          "area": false,
+          "lon": -83.9853587,
+          "lat": 33.9401082
+        }
+      ]
+    },
+    {
+      "startTime": 1757599121000,
+      "endTime": 1757599396000,
+      "departureDelay": 796,
+      "arrivalDelay": 796,
+      "realTime": true,
+      "distance": 1946.91,
+      "mode": "BUS",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "Gwinnett Dr & Kroger Shopping IB",
+        "lon": -83.984931,
+        "lat": 33.940172,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "4086",
+          "gtfsId": "GwinnettCountyTransit:4086",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDA4Ng",
+          "lon": -83.984931,
+          "lat": 33.940172
+        }
+      },
+      "to": {
+        "name": "Gwinnett Justice & Admin Center",
+        "lon": -83.992756,
+        "lat": 33.952172,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "4092",
+          "gtfsId": "GwinnettCountyTransit:4092",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDA5Mg",
+          "lon": -83.992756,
+          "lat": 33.952172
+        }
+      },
+      "legGeometry": {
+        "points": "k}cnE`jr_OCe@{CmKCIU{@iEtB??]NuN`H??]N@?wDjB??]NB?wMzG??]N?AmFjCgBZAPm@dIBhA??@d@`@bCGBkIfEYjD",
+        "length": 31
+      },
+      "transitLeg": true,
+      "duration": 275,
+      "intermediateStops": [
+        {
+          "name": "Grayson Hwy & VFW IB",
+          "lon": -83.983171,
+          "lat": 33.942288,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDA4Nw",
+          "stopCode": "4087"
+        },
+        {
+          "name": "Grayson Hwy & Big Lots",
+          "lon": -83.984694,
+          "lat": 33.945032,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDA4OA",
+          "stopCode": "4088"
+        },
+        {
+          "name": "Grayson Hwy & Metro Matress",
+          "lon": -83.985288,
+          "lat": 33.946053,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDA4OQ",
+          "stopCode": "4089"
+        },
+        {
+          "name": "Grayson Hwy & Lawrenceville Square Plaza",
+          "lon": -83.986839,
+          "lat": 33.948562,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDA5MA",
+          "stopCode": "4090"
+        },
+        {
+          "name": "Nash St & Culver St",
+          "lon": -83.990039,
+          "lat": 33.950482,
+          "stopId": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDA5MQ",
+          "stopCode": "4091"
+        }
+      ],
+      "steps": [],
+      "headsign": "Transit Center",
+      "agency": {
+        "alerts": [],
+        "gtfsId": "GwinnettCountyTransit:GCT",
+        "id": "GwinnettCountyTransit:GCT",
+        "name": "Gwinnett County Transit"
+      },
+      "route": {
+        "alerts": [],
+        "color": "AB0634",
+        "gtfsId": "GwinnettCountyTransit:40",
+        "id": "GwinnettCountyTransit:40",
+        "longName": "Lawrenceville - GTC - Sugarloaf Mills",
+        "shortName": "40",
+        "textColor": "FFFFFF",
+        "type": 3
+      },
+      "trip": {
+        "gtfsId": "GwinnettCountyTransit:t3A4-b130-sl5-v3B",
+        "id": "VHJpcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6dDNBNC1iMTMwLXNsNS12M0I",
+        "departureStoptime": {
+          "stop": {
+            "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDA3MA",
+            "gtfsId": "GwinnettCountyTransit:4070"
+          },
+          "stopPosition": 0
+        },
+        "arrivalStoptime": {
+          "stop": {
+            "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6MjUwMA",
+            "gtfsId": "GwinnettCountyTransit:2500"
+          },
+          "stopPosition": 3480
+        }
+      }
+    },
+    {
+      "startTime": 1757599396000,
+      "endTime": 1757599451000,
+      "departureDelay": 0,
+      "arrivalDelay": 0,
+      "realTime": false,
+      "distance": 82.08,
+      "mode": "WALK",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "Gwinnett Justice & Admin Center",
+        "lon": -83.992756,
+        "lat": 33.952172,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "4092",
+          "gtfsId": "GwinnettCountyTransit:4092",
+          "id": "U3RvcDpHd2lubmV0dENvdW50eVRyYW5zaXQ6NDA5Mg",
+          "lon": -83.992756,
+          "lat": 33.952172
+        }
+      },
+      "to": {
+        "name": "Gwinnett Justice and Administration Center, Langley Drive, Lawrenceville, GA",
+        "lon": -83.99308,
+        "lat": 33.951519,
+        "vertexType": "NORMAL"
+      },
+      "legGeometry": {
+        "points": "ahfnEvys_OC??@APJ@ZBj@Dn@D",
+        "length": 8
+      },
+      "rentedBike": false,
+      "transitLeg": false,
+      "duration": 55,
+      "steps": [
+        {
+          "distance": 9.01,
+          "relativeDirection": "DEPART",
+          "streetName": "Langley Drive",
+          "absoluteDirection": "WEST",
+          "stayOn": false,
+          "area": false,
+          "lon": -83.9927574,
+          "lat": 33.9521904
+        },
+        {
+          "distance": 73.06,
+          "relativeDirection": "LEFT",
+          "streetName": "Langley Drive",
+          "absoluteDirection": "SOUTH",
+          "stayOn": true,
+          "area": false,
+          "lon": -83.9928542,
+          "lat": 33.952201
+        }
+      ]
+    }
+  ],
+  "alerts": []
+}
