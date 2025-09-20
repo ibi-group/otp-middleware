@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.controllers.api;
 
-
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
