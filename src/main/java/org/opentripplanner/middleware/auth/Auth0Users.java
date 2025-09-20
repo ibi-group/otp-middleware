@@ -139,7 +139,13 @@ public class Auth0Users {
         return null;
     }
 
+    /**
+     * Method to update a user's Auth0 metadata to include their preferred language as set in OTP-RR. This will
+     * ensure that account emails (such as email verification and reset password emails) are sent in the correct
+     * language.
+     */
     public static User updateAuth0Language(OtpUser user, OtpUser preExistingUser) {
+        // Only call API if the user language has changed
         if (!Objects.equals(user.preferredLocale, preExistingUser.preferredLocale)) {
             try {
                 Map<String, Object> userMetadata = new HashMap<>();
