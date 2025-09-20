@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
+
 import com.auth0.exception.Auth0Exception;
 import com.auth0.json.mgmt.jobs.Job;
 import com.auth0.json.mgmt.users.User;
@@ -22,6 +23,7 @@ import spark.Response;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
+import static org.opentripplanner.middleware.auth.Auth0Users.updateAuth0Language;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -35,7 +37,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     public static final String VERIFICATION_EMAIL_PATH = "/verification-email";
 
     /**
-     * Constructor that child classes can access to setup persistence and API route.
+     * Constructor that child classes can access to set up persistence and API route.
      */
     public AbstractUserController(String apiPrefix, TypedPersistence<U> persistence, String resource) {
         super(apiPrefix, persistence, resource);
@@ -177,6 +179,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     @Override
     U preUpdateHook(U user, U preExistingUser, Request req) {
         Auth0Users.validateExistingUser(user, preExistingUser, req, this.persistence);
+        updateAuth0Language((OtpUser) user, (OtpUser) preExistingUser);
         if (user instanceof OtpUser) {
             OtpUser otpUser = (OtpUser) user;
             OtpUser existingOtpUser = (OtpUser) preExistingUser;

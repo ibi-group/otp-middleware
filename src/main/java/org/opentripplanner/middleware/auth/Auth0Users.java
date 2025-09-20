@@ -11,6 +11,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.models.AbstractUser;
+import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -23,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.HashMap;
+import java.util.Objects;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
@@ -135,6 +138,25 @@ public class Auth0Users {
         }
         return null;
     }
+
+    public static User updateAuth0Language(OtpUser user, OtpUser preExistingUser) {
+        if (!Objects.equals(user.preferredLocale, preExistingUser.preferredLocale)) {
+            try {
+                Map<String, Object> userMetadata = new HashMap<>();
+                userMetadata.put("lang", user.preferredLocale);
+                User auth0user = new User();
+                auth0user.setUserMetadata(userMetadata);
+                return getManagementAPI()
+                        .users()
+                        .update(user.auth0UserId, auth0user)
+                        .execute();
+            } catch (Auth0Exception e) {
+                BugsnagReporter.reportErrorToBugsnag("Could not update metadata", e);
+                return null;
+            }
+        }
+        return null;
+    };
 
     /**
      * Method to trigger an Auth0 job to resend a verification email. Returns an Auth0 {@link Job} which can be used to
