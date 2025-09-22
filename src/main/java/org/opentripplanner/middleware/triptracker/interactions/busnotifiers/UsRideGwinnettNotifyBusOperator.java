@@ -82,9 +82,10 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
     public void sendNotification(TravelerPosition travelerPosition, Leg busLeg) {
         var routeId = getRouteGtfsIdFromLeg(busLeg);
         try {
-            LOG.info("About to notify bus for journey {} trip {}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId);
+            boolean hasNotNotified = hasNotSentNotificationForRoute(travelerPosition.trackedJourney, routeId);
+            LOG.info("About to notify bus for journey {} trip {} hasNotified={}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId, !hasNotNotified);
             if (
-                hasNotSentNotificationForRoute(travelerPosition.trackedJourney, routeId) &&
+                hasNotNotified &&
                 supportsBusOperatorNotification(routeId)
             ) {
                 // Immediately set the notification state to pending, so that subsequent calls don't initiate another
@@ -102,12 +103,13 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      * Cancel a previously sent notification for the expected or next leg.
      */
     public void cancelNotification(TravelerPosition travelerPosition, Leg busLeg) {
-        LOG.info("About to cancel journey {} trip {}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId);
         var routeId = getRouteGtfsIdFromLeg(busLeg);
         try {
+            boolean hasNotCanceled = hasNotCanceledNotificationForRoute(travelerPosition.trackedJourney, routeId);
+            LOG.info("About to cancel journey {} trip {} canceled={}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId, !hasNotCanceled);
             if (
                 isBusLeg(busLeg) && routeId != null &&
-                hasNotCanceledNotificationForRoute(travelerPosition.trackedJourney, routeId)
+                    hasNotCanceled
             ) {
                 Map<String, String> busNotificationRequests = travelerPosition.trackedJourney.busNotificationMessages;
                 if (busNotificationRequests.containsKey(routeId)) {
