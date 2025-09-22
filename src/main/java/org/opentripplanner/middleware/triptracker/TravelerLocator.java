@@ -426,10 +426,7 @@ public class TravelerLocator {
      * Get the bus departure time.
      */
     public static Instant getBusDepartureTime(Leg busLeg) {
-        return ZonedDateTime.ofInstant(
-            busLeg.startTime.toInstant(), // already includes any delays
-            DateTimeUtils.getOtpZoneId()
-        ).toInstant();
+        return busLeg.getScheduledStartTime().toInstant();
     }
 
     private static double getDistanceToStartOfLeg(TravelerPosition travelerPosition) {
