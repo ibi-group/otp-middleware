@@ -427,7 +427,7 @@ public class TravelerLocator {
      */
     public static Instant getBusDepartureTime(Leg busLeg) {
         return ZonedDateTime.ofInstant(
-            busLeg.startTime.toInstant().plusSeconds(busLeg.departureDelay),
+            busLeg.startTime.toInstant(), // already includes any delays
             DateTimeUtils.getOtpZoneId()
         ).toInstant();
     }
