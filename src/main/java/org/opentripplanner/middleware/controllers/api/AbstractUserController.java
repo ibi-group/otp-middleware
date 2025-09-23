@@ -178,10 +178,10 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     @Override
     U preUpdateHook(U user, U preExistingUser, Request req) {
         Auth0Users.validateExistingUser(user, preExistingUser, req, this.persistence);
-        updateAuth0Language((OtpUser) user, (OtpUser) preExistingUser);
         if (user instanceof OtpUser) {
             OtpUser otpUser = (OtpUser) user;
             OtpUser existingOtpUser = (OtpUser) preExistingUser;
+            updateAuth0Language(otpUser, existingOtpUser);
             if (!otpUser.storeTripHistory && existingOtpUser.storeTripHistory) {
                 // If an OTP user no longer wants their trip history stored, remove all history from MongoDB.
                 ConnectedDataManager.removeUsersTripHistory(otpUser.id);

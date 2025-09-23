@@ -144,7 +144,7 @@ public class Auth0Users {
      * ensure that account emails (such as email verification and reset password emails) are sent in the correct
      * language.
      */
-    public static User updateAuth0Language(OtpUser user, OtpUser preExistingUser) {
+    public static void updateAuth0Language(OtpUser user, OtpUser preExistingUser) {
         // Only call API if the user language has changed
         if (!Objects.equals(user.preferredLocale, preExistingUser.preferredLocale)) {
             try {
@@ -152,16 +152,14 @@ public class Auth0Users {
                 userMetadata.put("lang", user.preferredLocale);
                 User auth0user = new User();
                 auth0user.setUserMetadata(userMetadata);
-                return getManagementAPI()
+                getManagementAPI()
                         .users()
                         .update(user.auth0UserId, auth0user)
                         .execute();
             } catch (Auth0Exception e) {
                 BugsnagReporter.reportErrorToBugsnag("Could not update metadata", e);
-                return null;
             }
         }
-        return null;
     };
 
     /**
