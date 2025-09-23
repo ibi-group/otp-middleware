@@ -391,7 +391,7 @@ public class TravelerLocator {
     public static boolean isWithinOperationalNotifyWindow(Instant currentTime, Leg busLeg) {
         var busDepartureTime = getBusDepartureTime(busLeg);
         return
-            (currentTime.equals(busDepartureTime) || currentTime.isBefore(busDepartureTime)) &&
+            (currentTime.equals(busDepartureTime) || currentTime.isBefore(busLeg.startTime.toInstant())) &&
             ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES >= getMinutesAheadOfDeparture(currentTime, busDepartureTime);
     }
 
