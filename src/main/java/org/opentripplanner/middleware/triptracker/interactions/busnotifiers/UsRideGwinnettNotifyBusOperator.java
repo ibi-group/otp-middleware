@@ -217,7 +217,13 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
     ) throws JsonProcessingException {
         String messageBody = trackedJourney.busNotificationMessages.get(routeId);
         if (messageBody == null) {
-            throw new IllegalStateException("A notification must exist before it can be cancelled!");
+            throw new IllegalStateException(
+                String.format(
+                    "A notification must exist before it can be cancelled! Journey %s, Trip %s",
+                    trackedJourney.id,
+                    trackedJourney.tripId
+                )
+            );
         }
         UsRideGwinnettBusOpNotificationMessage message = getNotificationMessage(messageBody);
         return message.msg_type != 0;
