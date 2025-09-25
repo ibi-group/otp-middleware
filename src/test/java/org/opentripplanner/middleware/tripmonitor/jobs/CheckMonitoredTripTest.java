@@ -821,8 +821,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     /**
      * A trip delay notification should not be sent after trip is over
      */
-    @Test
-    void shouldNotSendDelayNotificationAfterTripIsOver() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void shouldNotSendDelayNotificationAfterTripIsOver(boolean isOneTime) throws Exception {
         OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
         // Remove any alerts.
         Itinerary firstMockItinerary = firstItinerary(mockWeekdayResponse);
@@ -837,6 +838,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Trigger notifications for 5-minute delays instead of 15.
         mockTrip.departureVarianceMinutesThreshold = 5;
         mockTrip.arrivalVarianceMinutesThreshold = 5;
+        if (isOneTime) mockTrip.updateAllDaysOfWeek(false);
         // Add delays to the original saved trip, different from the mock response.
         // The delays from the mock response should be used.
         addTransitLegDelay(mockTrip.itinerary, 600, 720, true);
@@ -847,70 +849,21 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         mockTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
 
         List<DelayCase> cases = List.of(
-            // TODO: fix time separator char
             // Original delays for the trip.
             new DelayCase(300, 420, true, TUESDAY_20200609.withHour(8), 1),
             // Drop real-time updates (subtract delays) from the OTP response.
-            new DelayCase(-300, -420, false, TUESDAY_20200609.minusDays(1), 0)
+            new DelayCase(
+                -300,
+                -420,
+                false,
+                isOneTime ? TUESDAY_20200609.withHour(10) : TUESDAY_20200609.minusDays(1), 0
+            )
         );
 
         for (DelayCase c: cases) {
             DateTimeUtils.useFixedClockAt(c.clockTime);
-
-            // Add some delays in the transit leg.
             addTransitLegDelay(firstMockItinerary, c.departureDelay, c.arrivalDelay, c.isRealTime);
-            // Clear previous notifications
-            mockCheckMonitoredTrip.notifications.clear();
-
-            mockCheckMonitoredTrip.run();
-
-            assertEquals(firstMockItinerary, mockCheckMonitoredTrip.matchingItinerary);
-
-            assertEquals(c.expectedNotifications, mockCheckMonitoredTrip.notifications.size());
-        }
-    }
-
-    /**
-     * A trip delay notification should not be sent after trip is over
-     */
-    @Test
-    void shouldNotSendDelayNotificationAfterOneTimeTripIsOver() throws Exception {
-        OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
-        // Remove any alerts.
-        Itinerary firstMockItinerary = firstItinerary(mockWeekdayResponse);
-        firstMockItinerary.clearAlerts();
-
-        // Create a mock monitored trip and CheckMonitorTrip instance
-        // Note that the response below gets modified from the original mockOtpPlanResponse.
-        CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
-        // Override matching itinerary to null to simulate initial save.
-        mockCheckMonitoredTrip.matchingItinerary = null;
-        MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
-        // Trigger notifications for 5-minute delays instead of 15.
-        mockTrip.departureVarianceMinutesThreshold = 5;
-        mockTrip.arrivalVarianceMinutesThreshold = 5;
-        mockTrip.updateAllDaysOfWeek(false);
-        // Add delays to the original saved trip, different from the mock response.
-        // The delays from the mock response should be used.
-        addTransitLegDelay(mockTrip.itinerary, 600, 720, true);
-
-        Persistence.monitoredTrips.create(mockTrip);
-
-        // create mock itinerary existence for trip for Tuesdays
-        mockTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
-
-        List<DelayCase> cases = List.of(
-            // TODO: fix time separator char
-            // Original delays for the trip.
-            new DelayCase(300, 420, true, TUESDAY_20200609.withHour(8), 1),
-            // Drop real-time updates (subtract delays) from the OTP response.
-            new DelayCase(-300, -420, false, TUESDAY_20200609.withHour(10), 0)
-        );
-
-        for (DelayCase c : cases) {
-            DateTimeUtils.useFixedClockAt(c.clockTime);
-            // Add some delays in the transit leg.
-            addTransitLegDelay(firstMockItinerary, c.departureDelay, c.arrivalDelay, c.isRealTime);
+            // Clear previous notifications to ensure expected notifications are recorded.
             mockCheckMonitoredTrip.notifications.clear();
 
             mockCheckMonitoredTrip.run();
