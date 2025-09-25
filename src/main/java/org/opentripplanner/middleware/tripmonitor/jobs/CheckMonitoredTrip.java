@@ -802,7 +802,7 @@ public class CheckMonitoredTrip implements Runnable {
             // clone the trip's itinerary just in case the code attempts to save the trip (and thus the itinerary)
             matchingItinerary = trip.itinerary.clone();
         } else {
-            matchingItinerary = previousMatchingItinerary.clone();
+            matchingItinerary = previousMatchingItinerary;
         }
 
         computeTargetZonedDateTime();

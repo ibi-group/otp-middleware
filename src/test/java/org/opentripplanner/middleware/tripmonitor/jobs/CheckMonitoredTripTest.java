@@ -915,7 +915,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
             mockCheckMonitoredTrip.run();
 
-            //assertEquals(firstMockItinerary, mockCheckMonitoredTrip.matchingItinerary);
+            assertEquals(firstMockItinerary, mockCheckMonitoredTrip.matchingItinerary);
 
             assertEquals(c.expectedNotifications, mockCheckMonitoredTrip.notifications.size());
         }
