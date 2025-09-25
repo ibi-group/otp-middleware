@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
+import static org.opentripplanner.middleware.auth.Auth0Users.getUserByEmail;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
@@ -55,7 +56,6 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser relatedUserFour;
     private static OtpUser dependentUserFour;
     private static final String NICKNAME = "my-trusted-companion";
-    private static User auth0User = new User();
 
     @BeforeAll
     public static void setUp() throws Exception {
@@ -80,9 +80,8 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         dependentUserThree = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-three"));
 
         relatedUserFour = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("related-user-four"));
-        relatedUserFour.preferredLocale = "fr";
 
-        auth0User = createAuth0UserForEmail(relatedUserFour.email, TEMP_AUTH0_USER_PASSWORD);
+        User auth0User = createAuth0UserForEmail(relatedUserFour.email, TEMP_AUTH0_USER_PASSWORD);
         relatedUserFour.auth0UserId = auth0User.getId();
         Persistence.otpUsers.replace(relatedUserFour.id, relatedUserFour);
 
@@ -294,16 +293,24 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canPassUserMetadataToAuth0() throws Exception {
-        Map<String, Object> relatedUserFourMetadata = new HashMap<>();
-        relatedUserFourMetadata.put("lang", relatedUserFour.preferredLocale);
-        auth0User.setUserMetadata(relatedUserFourMetadata);
+        relatedUserFour.preferredLocale = "fr";
+
+        // Confirm the user as currently exists in Auth0 does not contain metadata
+        User auth0UserProfile = getUserByEmail(relatedUserFour.email, false);
+        assertNotNull(auth0UserProfile);
+        assertNull(auth0UserProfile.getUserMetadata());
+
         makeRequest(
                 String.format("api/secure/user/%s", relatedUserFour.id),
                 JsonUtils.toJson(relatedUserFour),
                 getMockHeaders(relatedUserFour),
                 HttpMethod.PUT
         );
-        assertTrue(auth0User.getUserMetadata().containsValue(relatedUserFour.preferredLocale));
+
+        // Confirm that the same user now has language metadata set correctly
+        User updatedAuth0UserProfile = getUserByEmail(relatedUserFour.email, false);
+        assertNotNull(updatedAuth0UserProfile);
+        assertEquals("fr", updatedAuth0UserProfile.getUserMetadata().get("lang"));
     }
 
     /**
