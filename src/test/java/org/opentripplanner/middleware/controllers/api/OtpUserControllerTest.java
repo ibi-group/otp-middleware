@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
+import static org.opentripplanner.middleware.auth.Auth0Users.AUTH0_LANG_PARAM;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
 import static org.opentripplanner.middleware.auth.Auth0Users.getUserByEmail;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
@@ -208,7 +209,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         );
         auth0UserProfile = getUserByEmail(relatedUserFour.email, false);
         assertNotNull(auth0UserProfile);
-        Assertions.assertEquals(preferredLocale, auth0UserProfile.getUserMetadata().get("lang"));
+        Assertions.assertEquals(preferredLocale, auth0UserProfile.getUserMetadata().get(AUTH0_LANG_PARAM));
     }
 
     @Test

@@ -44,6 +44,7 @@ public class Auth0Users {
     private static final String DEFAULT_AUDIENCE = "https://otp-middleware";
     private static final String MANAGEMENT_API_VERSION = "v2";
     public static final String API_PATH = "/api/" + MANAGEMENT_API_VERSION;
+    public static final String AUTH0_LANG_PARAM = "lang";
 
     /**
      * Cached API token so that we do not have to request a new one each time a Management API request is made.
@@ -149,7 +150,7 @@ public class Auth0Users {
         if (!Objects.equals(user.preferredLocale, preExistingUser.preferredLocale)) {
             try {
                 Map<String, Object> userMetadata = new HashMap<>();
-                userMetadata.put("lang", user.preferredLocale);
+                userMetadata.put(AUTH0_LANG_PARAM, user.preferredLocale);
                 User auth0user = new User();
                 auth0user.setUserMetadata(userMetadata);
                 getManagementAPI()
