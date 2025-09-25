@@ -23,7 +23,11 @@ import org.opentripplanner.middleware.tripmonitor.TrustedCompanion;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -301,16 +305,16 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         assertNull(auth0UserProfile.getUserMetadata());
 
         makeRequest(
-                String.format("api/secure/user/%s", relatedUserFour.id),
-                JsonUtils.toJson(relatedUserFour),
-                getMockHeaders(relatedUserFour),
-                HttpMethod.PUT
+            String.format("api/secure/user/%s", relatedUserFour.id),
+            JsonUtils.toJson(relatedUserFour),
+            getMockHeaders(relatedUserFour),
+            HttpMethod.PUT
         );
 
         // Confirm that the same user now has language metadata set correctly
         User updatedAuth0UserProfile = getUserByEmail(relatedUserFour.email, false);
         assertNotNull(updatedAuth0UserProfile);
-        assertEquals("fr", updatedAuth0UserProfile.getUserMetadata().get("lang"));
+        assertEquals(relatedUserFour.preferredLocale, updatedAuth0UserProfile.getUserMetadata().get("lang"));
     }
 
     /**
