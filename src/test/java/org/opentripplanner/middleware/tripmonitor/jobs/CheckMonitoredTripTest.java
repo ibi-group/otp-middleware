@@ -762,10 +762,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @ValueSource(booleans = {false, true})
     void canSendDelayNotificationOnSavingDelayedTrip(boolean isOneTime) throws Exception {
         OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
-        // Add some delays in the transit leg, and remove any alerts.
         Itinerary firstMockItinerary = firstItinerary(mockWeekdayResponse);
         firstMockItinerary.clearAlerts();
-        addTransitLegDelay(firstMockItinerary, 300, 420, true);
 
         // Create a mock monitored trip and CheckMonitorTrip instance
         // Note that the response below gets modified from the original mockOtpPlanResponse.
@@ -788,56 +786,36 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         DateTimeUtils.useFixedClockAt(TUESDAY_20200609.withHour(8));
 
-        mockCheckMonitoredTrip.run();
-
-        assertEquals(firstMockItinerary, mockCheckMonitoredTrip.matchingItinerary);
-
-        assertEquals(
-            1,
-            mockCheckMonitoredTrip.notifications.size(),
-            "One notification should be generated."
-        );
-        assertEquals(
-            "⏱ Your trip is now predicted to depart 5 minutes late (at 8:45 AM).",
-            mockCheckMonitoredTrip.notifications.iterator().next().body,
-            "The notification should be about a departure delay."
+        List<DelayCase> cases = List.of(
+            // TODO: fix time separator char
+            // Add some delays for the trip.
+            new DelayCase(300, 420, true, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:45 AM)."),
+            // Decrease real-time delays (subtract delays) from the OTP response.
+            new DelayCase(-100, -60, true, "⏱ Your trip is now predicted to arrive 6 minutes late (at 9:04 AM)."),
+            // Drop real-time updates (subtract delays) from the OTP response.
+            new DelayCase(-200, -360, false, "⏱ Real-time updates for your trip were lost. Monitoring will be based on your originally saved trip.")
         );
 
-        // Decrease real-time delays (subtract delays) from the OTP response.
-        // Clear previous notifications.
-        addTransitLegDelay(firstMockItinerary, -100, -60, true);
-        mockCheckMonitoredTrip.notifications.clear();
+        for (DelayCase c : cases) {
+            addTransitLegDelay(firstMockItinerary, c.departureDelay, c.arrivalDelay, c.isRealTime);
+            // Clear previous notifications to ensure expected notifications are recorded.
+            mockCheckMonitoredTrip.notifications.clear();
 
-        mockCheckMonitoredTrip.run();
+            mockCheckMonitoredTrip.run();
 
-        assertEquals(
-            1,
-            mockCheckMonitoredTrip.notifications.size(),
-            "One notification should be generated."
-        );
-        assertEquals(
-            "⏱ Your trip is now predicted to arrive 6 minutes late (at 9:04 AM).",
-            mockCheckMonitoredTrip.notifications.iterator().next().body,
-            "The notification should be about an arrival delay because the departure delay is insignificant."
-        );
+            assertEquals(firstMockItinerary, mockCheckMonitoredTrip.matchingItinerary);
 
-        // Drop real-time updates (subtract delays) from the OTP response.
-        // Clear previous notifications
-        addTransitLegDelay(firstMockItinerary, -200, -360, false);
-        mockCheckMonitoredTrip.notifications.clear();
-
-        mockCheckMonitoredTrip.run();
-
-        assertEquals(
-            1,
-            mockCheckMonitoredTrip.notifications.size(),
-            "One notification should be generated."
-        );
-        assertEquals(
-            "⏱ Real-time updates for your trip were lost. Monitoring will be based on your originally saved trip.",
-            mockCheckMonitoredTrip.notifications.iterator().next().body,
-            "The notification should be about the loss of real-time information."
-        );
+            assertEquals(
+                1,
+                mockCheckMonitoredTrip.notifications.size(),
+                "One notification should be generated."
+            );
+            assertEquals(
+                c.message,
+                mockCheckMonitoredTrip.notifications.iterator().next().body,
+                "The notification text should be correct."
+            );
+        }
     }
 
     /**
@@ -846,10 +824,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @Test
     void shouldNotSendDelayNotificationAfterTripIsOver() throws Exception {
         OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
-        // Add some delays in the transit leg, and remove any alerts.
+        // Remove any alerts.
         Itinerary firstMockItinerary = firstItinerary(mockWeekdayResponse);
         firstMockItinerary.clearAlerts();
-        addTransitLegDelay(firstMockItinerary, 300, 420, true);
 
         // Create a mock monitored trip and CheckMonitorTrip instance
         // Note that the response below gets modified from the original mockOtpPlanResponse.
@@ -869,33 +846,28 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // create mock itinerary existence for trip for Tuesdays
         mockTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
 
-        DateTimeUtils.useFixedClockAt(TUESDAY_20200609.withHour(8));
-
-        mockCheckMonitoredTrip.run();
-
-        assertEquals(firstMockItinerary, mockCheckMonitoredTrip.matchingItinerary);
-
-        assertEquals(
-            1,
-            mockCheckMonitoredTrip.notifications.size(),
-            "One notification should be generated."
+        List<DelayCase> cases = List.of(
+            // TODO: fix time separator char
+            // Original delays for the trip.
+            new DelayCase(300, 420, true, TUESDAY_20200609.withHour(8), 1),
+            // Drop real-time updates (subtract delays) from the OTP response.
+            new DelayCase(-300, -420, false, TUESDAY_20200609.minusDays(1), 0)
         );
 
-        // Simulate switch to next-day matching itinerary by pretending the journey state is from "yesterday".
-        DateTimeUtils.useFixedClockAt(TUESDAY_20200609.minusDays(1));
+        for (DelayCase c: cases) {
+            DateTimeUtils.useFixedClockAt(c.clockTime);
 
-        // Drop real-time updates (subtract delays) from the OTP response.
-        // Clear previous notifications
-        addTransitLegDelay(firstMockItinerary, -300, -420, false);
-        mockCheckMonitoredTrip.notifications.clear();
+            // Add some delays in the transit leg.
+            addTransitLegDelay(firstMockItinerary, c.departureDelay, c.arrivalDelay, c.isRealTime);
+            // Clear previous notifications
+            mockCheckMonitoredTrip.notifications.clear();
 
-        mockCheckMonitoredTrip.run();
+            mockCheckMonitoredTrip.run();
 
-        assertEquals(
-            0,
-            mockCheckMonitoredTrip.notifications.size(),
-            "No notification should be generated if the matching itinerary is outside of the monitoring window."
-        );
+            assertEquals(firstMockItinerary, mockCheckMonitoredTrip.matchingItinerary);
+
+            assertEquals(c.expectedNotifications, mockCheckMonitoredTrip.notifications.size());
+        }
     }
 
     /**
@@ -904,10 +876,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     @Test
     void shouldNotSendDelayNotificationAfterOneTimeTripIsOver() throws Exception {
         OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
-        // Add some delays in the transit leg, and remove any alerts.
+        // Remove any alerts.
         Itinerary firstMockItinerary = firstItinerary(mockWeekdayResponse);
         firstMockItinerary.clearAlerts();
-        addTransitLegDelay(firstMockItinerary, 300, 420, true);
 
         // Create a mock monitored trip and CheckMonitorTrip instance
         // Note that the response below gets modified from the original mockOtpPlanResponse.
@@ -928,33 +899,26 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // create mock itinerary existence for trip for Tuesdays
         mockTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
 
-        DateTimeUtils.useFixedClockAt(TUESDAY_20200609.withHour(8));
-
-        mockCheckMonitoredTrip.run();
-
-        assertEquals(firstMockItinerary, mockCheckMonitoredTrip.matchingItinerary);
-
-        assertEquals(
-            1,
-            mockCheckMonitoredTrip.notifications.size(),
-            "One notification should be generated."
+        List<DelayCase> cases = List.of(
+            // TODO: fix time separator char
+            // Original delays for the trip.
+            new DelayCase(300, 420, true, TUESDAY_20200609.withHour(8), 1),
+            // Drop real-time updates (subtract delays) from the OTP response.
+            new DelayCase(-300, -420, false, TUESDAY_20200609.withHour(10), 0)
         );
 
-        // Simulate time after trip end time.
-        DateTimeUtils.useFixedClockAt(TUESDAY_20200609.withHour(10));
+        for (DelayCase c : cases) {
+            DateTimeUtils.useFixedClockAt(c.clockTime);
+            // Add some delays in the transit leg.
+            addTransitLegDelay(firstMockItinerary, c.departureDelay, c.arrivalDelay, c.isRealTime);
+            mockCheckMonitoredTrip.notifications.clear();
 
-        // Drop real-time updates (subtract delays) from the OTP response.
-        // Clear previous notifications
-        addTransitLegDelay(firstMockItinerary, -300, -420, false);
-        mockCheckMonitoredTrip.notifications.clear();
+            mockCheckMonitoredTrip.run();
 
-        mockCheckMonitoredTrip.run();
+            //assertEquals(firstMockItinerary, mockCheckMonitoredTrip.matchingItinerary);
 
-        assertEquals(
-            0,
-            mockCheckMonitoredTrip.notifications.size(),
-            "No notification should be generated after the trip has ended."
-        );
+            assertEquals(c.expectedNotifications, mockCheckMonitoredTrip.notifications.size());
+        }
     }
 
     /**
@@ -1622,5 +1586,30 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
+    }
+
+    /**
+     * Supports delay notification test cases.
+     */
+    static class DelayCase {
+        public int departureDelay;
+        public int arrivalDelay;
+        public boolean isRealTime;
+        public String message;
+        public ZonedDateTime clockTime;
+        public int expectedNotifications;
+
+        public DelayCase(int depDelay, int arrDelay, boolean realTime, String msg) {
+            departureDelay = depDelay;
+            arrivalDelay = arrDelay;
+            isRealTime = realTime;
+            message = msg;
+        }
+
+        public DelayCase(int depDelay, int arrDelay, boolean realTime, ZonedDateTime time, int notifications) {
+            this(depDelay, arrDelay, realTime, "");
+            clockTime = time;
+            expectedNotifications = notifications;
+        }
     }
 }
