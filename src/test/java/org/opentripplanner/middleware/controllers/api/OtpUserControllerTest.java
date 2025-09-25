@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
+import static org.opentripplanner.middleware.auth.Auth0Users.getUserByEmail;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
@@ -190,6 +191,24 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
 
         OtpUser updatedUser = Persistence.otpUsers.getById(otpUser.id);
         Assertions.assertEquals(otpUser.smsConsentDate, updatedUser.smsConsentDate);
+    }
+
+    @Test
+    void canUpdateAuth0Language() throws Exception {
+        String preferredLocale = "en-GB";
+        User auth0UserProfile = getUserByEmail(relatedUserFour.email, false);
+        assertNotNull(auth0UserProfile);
+        Assertions.assertNull(auth0UserProfile.getUserMetadata());
+        relatedUserFour.preferredLocale = preferredLocale;
+        makeRequest(
+            String.format("api/secure/user/%s", relatedUserFour.id),
+            JsonUtils.toJson(relatedUserFour),
+            getMockHeaders(relatedUserFour),
+            HttpMethod.PUT
+        );
+        auth0UserProfile = getUserByEmail(relatedUserFour.email, false);
+        assertNotNull(auth0UserProfile);
+        Assertions.assertEquals(preferredLocale, auth0UserProfile.getUserMetadata().get("lang"));
     }
 
     @Test
