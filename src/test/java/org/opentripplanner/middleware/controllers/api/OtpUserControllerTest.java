@@ -23,11 +23,7 @@ import org.opentripplanner.middleware.tripmonitor.TrustedCompanion;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,6 +55,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser relatedUserFour;
     private static OtpUser dependentUserFour;
     private static final String NICKNAME = "my-trusted-companion";
+    private static User auth0User = new User();
 
     @BeforeAll
     public static void setUp() throws Exception {
@@ -83,8 +80,9 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         dependentUserThree = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("dependent-three"));
 
         relatedUserFour = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("related-user-four"));
+        relatedUserFour.preferredLocale = "fr";
 
-        User auth0User = createAuth0UserForEmail(relatedUserFour.email, TEMP_AUTH0_USER_PASSWORD);
+        auth0User = createAuth0UserForEmail(relatedUserFour.email, TEMP_AUTH0_USER_PASSWORD);
         relatedUserFour.auth0UserId = auth0User.getId();
         Persistence.otpUsers.replace(relatedUserFour.id, relatedUserFour);
 
@@ -292,6 +290,20 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(RelatedUser.RelatedUserStatus.INVALID, updatedTripWithCompanionAndObserver.companion.status);
         assertFalse(updatedTripWithCompanionAndObserver.observers.isEmpty());
         assertEquals(RelatedUser.RelatedUserStatus.INVALID, updatedTripWithCompanionAndObserver.observers.get(0).status);
+    }
+
+    @Test
+    void canPassUserMetadataToAuth0() throws Exception {
+        Map<String, Object> relatedUserFourMetadata = new HashMap<>();
+        relatedUserFourMetadata.put("lang", relatedUserFour.preferredLocale);
+        auth0User.setUserMetadata(relatedUserFourMetadata);
+        makeRequest(
+                String.format("api/secure/user/%s", relatedUserFour.id),
+                JsonUtils.toJson(relatedUserFour),
+                getMockHeaders(relatedUserFour),
+                HttpMethod.PUT
+        );
+        assertTrue(auth0User.getUserMetadata().containsValue(relatedUserFour.preferredLocale));
     }
 
     /**
