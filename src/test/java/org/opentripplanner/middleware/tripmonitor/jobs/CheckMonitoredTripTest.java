@@ -1500,7 +1500,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
-     * Supports delay notification test cases.
+     * Supports delay notification tests.
      */
     static class DelayCase {
         public int departureDelay;
@@ -1510,17 +1510,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         public ZonedDateTime clockTime;
         public int expectedNotifications;
 
-        public DelayCase(int depDelay, int arrDelay, boolean realTime, String msg) {
+        public DelayCase(int depDelay, int arrDelay, boolean realTime, ZonedDateTime time, int notifications, String msg) {
             departureDelay = depDelay;
             arrivalDelay = arrDelay;
             isRealTime = realTime;
-            message = msg;
-        }
-
-        public DelayCase(int depDelay, int arrDelay, boolean realTime, ZonedDateTime time, int notifications, String msg) {
-            this(depDelay, arrDelay, realTime,  msg);
             clockTime = time;
             expectedNotifications = notifications;
+            message = msg;
         }
     }
 }
