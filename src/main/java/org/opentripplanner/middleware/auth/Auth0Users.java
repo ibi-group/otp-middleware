@@ -150,6 +150,8 @@ public class Auth0Users {
             try {
                 Map<String, Object> userMetadata = new HashMap<>();
                 userMetadata.put("lang", user.preferredLocale);
+                // Passing the entire user here will return a 403, because Auth0 sees it as you overwriting
+                // read-only fields, so create a blank user and give it only the data we want to update.
                 User auth0user = new User();
                 auth0user.setUserMetadata(userMetadata);
                 getManagementAPI()
