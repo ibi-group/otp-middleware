@@ -148,12 +148,10 @@ public class Auth0Users {
         // Only call API if the user language has changed
         if (!Objects.equals(user.preferredLocale, preExistingUser.preferredLocale)) {
             try {
-                Map<String, Object> userMetadata = new HashMap<>();
-                userMetadata.put("lang", user.preferredLocale);
                 // Passing the entire user here will return a 403, because Auth0 sees it as you overwriting
                 // read-only fields, so create a blank user and give it only the data we want to update.
                 User auth0user = new User();
-                auth0user.setUserMetadata(userMetadata);
+                auth0user.setUserMetadata(Map.of("lang", user.preferredLocale));
                 getManagementAPI()
                         .users()
                         .update(user.auth0UserId, auth0user)
