@@ -140,6 +140,26 @@ public class Auth0Users {
     }
 
     /**
+     * Auth0 supported locale codes occasionally differ from the ones used in OTP-RR.
+     * See https://auth0.com/docs/customize/internationalization-and-localization/universal-login-internationalization
+     */
+    public static String getAuth0Locale(String locale) {
+        if (locale == null) {
+            return "en";
+        }
+        switch (locale) {
+            case "fr":
+                return "fr-FR";
+            case "zh-Hant":
+                return "zh-TW";
+            case "zh-Hans":
+                return "zh-CN";
+            default:
+                return locale;
+        }
+    }
+
+    /**
      * Method to update a user's Auth0 metadata to include their preferred language as set in OTP-RR. This will
      * ensure that account emails (such as email verification and reset password emails) are sent in the correct
      * language.
@@ -151,7 +171,7 @@ public class Auth0Users {
                 // Passing the entire user here will return a 403, because Auth0 sees it as you overwriting
                 // read-only fields, so create a blank user and give it only the data we want to update.
                 User auth0user = new User();
-                auth0user.setUserMetadata(Map.of("lang", user.preferredLocale));
+                auth0user.setUserMetadata(Map.of("lang", getAuth0Locale(user.preferredLocale)));
                 getManagementAPI()
                         .users()
                         .update(user.auth0UserId, auth0user)
