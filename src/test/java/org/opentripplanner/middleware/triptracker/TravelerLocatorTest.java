@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -88,6 +89,35 @@ class TravelerLocatorTest {
             Arguments.of(stopCoordinates, stopCoordinates, true),
             Arguments.of(stopCoordinates, createPoint(stopCoordinates, 4, NORTH_EAST_BEARING), true),
             Arguments.of(stopCoordinates, createPoint(stopCoordinates, 30, NORTH_EAST_BEARING), false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("notifyWindowCases")
+    void testIsWithinOperationalNotifyWindow(int beforeSeconds, int delaySeconds, boolean expected, String message) {
+        Instant now = Instant.now();
+        Leg leg = new Leg();
+        leg.startTime = Date.from(now);
+        leg.departureDelay = delaySeconds;
+
+        assertEquals(
+            expected,
+            TravelerLocator.isWithinOperationalNotifyWindow(now.minusSeconds(beforeSeconds), leg),
+            message
+        );
+    }
+
+    private static Stream<Arguments> notifyWindowCases() {
+        return Stream.of(
+            Arguments.of(60, 0, true, "Before start time is in notify window."),
+            Arguments.of(0, 0, false, "At start time is not in notify window."),
+            Arguments.of(60, 60, true, "Should be indifferent to delays (they are included in startTime)."),
+            Arguments.of(960, 0, true, "At the 15 min window (after truncations) is in notify window."),
+            Arguments.of(970, 0, false, "Before the 15 min window is not in notify window."),
+            Arguments.of(970, 60, true, "Before the 15 min window of actual departure but within 15 min after delays is in notify window."),
+            Arguments.of(-60, 0, false, "After start time is not in notify window."),
+            Arguments.of(-30, 60, false, "After start time with delay is not in notify window."),
+            Arguments.of(-100, 60, false, "After start time with delay is not in notify window.")
         );
     }
 }
