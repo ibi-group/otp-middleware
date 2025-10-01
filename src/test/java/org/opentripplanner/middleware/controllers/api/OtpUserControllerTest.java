@@ -40,6 +40,7 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefault
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
 import static org.opentripplanner.middleware.auth.Auth0Users.getUserByEmail;
+import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Locale;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
@@ -314,7 +315,7 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         // Confirm that the same user now has language metadata set correctly
         User updatedAuth0UserProfile = getUserByEmail(relatedUserFour.email, false);
         assertNotNull(updatedAuth0UserProfile);
-        assertEquals(relatedUserFour.preferredLocale, updatedAuth0UserProfile.getUserMetadata().get("lang"));
+        assertEquals(getAuth0Locale(relatedUserFour.preferredLocale), updatedAuth0UserProfile.getUserMetadata().get("lang"));
     }
 
     /**
