@@ -391,7 +391,7 @@ public class TravelerLocator {
     public static boolean isWithinOperationalNotifyWindow(Instant currentTime, Leg busLeg) {
         var busDepartureTime = getBusDepartureTime(busLeg);
         return
-            (currentTime.equals(busDepartureTime) || currentTime.isBefore(busDepartureTime)) &&
+            (currentTime.equals(busDepartureTime) || currentTime.isBefore(busLeg.startTime.toInstant())) &&
             ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES >= getMinutesAheadOfDeparture(currentTime, busDepartureTime);
     }
 
@@ -406,10 +406,7 @@ public class TravelerLocator {
      * Get the bus departure time.
      */
     public static Instant getBusDepartureTime(Leg busLeg) {
-        return ZonedDateTime.ofInstant(
-            busLeg.startTime.toInstant().plusSeconds(busLeg.departureDelay),
-            DateTimeUtils.getOtpZoneId()
-        ).toInstant();
+        return busLeg.getScheduledStartTime().toInstant();
     }
 
     private static double getDistanceToStartOfLeg(TravelerPosition travelerPosition) {
