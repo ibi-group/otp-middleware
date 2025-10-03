@@ -750,19 +750,6 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     public boolean shouldSkipMonitoredTripCheck(boolean persist) throws Exception {
-        // For trips that are snoozed, see if they should be unsnoozed first.
-        if (trip.snoozed) {
-            if (shouldUnsnoozeTrip()) {
-                // Clear previous matching itinerary as we want to start afresh.
-                previousMatchingItinerary = null;
-                // unsnooze trip now, for cases where the next itinerary isn't calculated
-                trip.snoozed = false;
-            } else {
-                LOG.info("Skipping: Trip is snoozed.");
-                return true;
-            }
-        }
-
         // initialize the trip's journey state and matching itinerary to the latest journeyState's matching
         // itinerary, or use the itinerary that the trip was saved with
         if (previousMatchingItinerary == null) {
@@ -845,8 +832,8 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * A series of trivial checks on fields in a candidate monitored trip as obtained from the database, to determine
-     * whether to do all the other checking that instantiating this class has to offer.
+     * A series of trivial checks a {@pre MonitoredTrip} object, just fields obtained from the database, to
+     * determine whether to instantiate a {@pre CheckMonitoredTrip} object to do further checking.
      * @param trip candidate monitored trip to quickly check some fields of
      * @return  whether to skip the trip, boolean value
      */
@@ -875,7 +862,20 @@ public class CheckMonitoredTrip implements Runnable {
             return true;
         }
 
-        return false;
+        // For trips that are snoozed, see if they should be unsnoozed first.
+        if (trip.snoozed) {
+            if (shouldUnsnoozeTrip(trip.journeyState.lastCheckedEpochMillis)) {
+                // Clear previous matching itinerary as we want to start afresh.
+                trip.journeyState.matchingItinerary = null;
+                // unsnooze trip now, for cases where the next itinerary isn't calculated
+                trip.snoozed = false;
+            } else {
+                LOG.info("Skipping: Trip {} is snoozed.", trip.id);
+                return true;
+            }
+        }
+ 
+	return false;
     }
 
     /**
@@ -1083,14 +1083,15 @@ public class CheckMonitoredTrip implements Runnable {
 
     /**
      * Whether a trip should be unsnoozed and monitoring should resume.
+     * @param lastCheckedEpochMillis to acquire the trip's start day
      * @return true if the current time is after the calendar day (on or after midnight)
      * after the matching trip start day, false otherwise.
      */
-    public boolean shouldUnsnoozeTrip() {
+    public static boolean shouldUnsnoozeTrip(long lastCheckedEpochMillis) {
         ZoneId otpZoneId = DateTimeUtils.getOtpZoneId();
         var midnightAfterLastChecked = ZonedDateTime
             .ofInstant(
-                Instant.ofEpochMilli(previousJourneyState.lastCheckedEpochMillis).plus(1, ChronoUnit.DAYS),
+                Instant.ofEpochMilli(lastCheckedEpochMillis).plus(1, ChronoUnit.DAYS),
                 otpZoneId
             )
             .withHour(0)
