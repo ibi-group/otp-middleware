@@ -26,7 +26,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.LocalizedAlert;
+import org.opentripplanner.middleware.otp.response.Alert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
@@ -139,8 +139,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         LOG.info("Created trip {}", monitoredTrip.id);
 
         // Add fake alerts to simulated itinerary.
-        ArrayList<LocalizedAlert> fakeAlerts = new ArrayList<>();
-        fakeAlerts.add(new LocalizedAlert());
+        ArrayList<Alert> fakeAlerts = new ArrayList<>();
+        fakeAlerts.add(new Alert());
         itinerary.legs.get(1).alerts = fakeAlerts;
 
         // mock the current time to be 8:45am on Monday, June 15
@@ -184,7 +184,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         OtpTestUtils.setItineraryDay(mockTuesdayJune9Itinerary, 9);
 
         // Add fake alerts to simulated itinerary.
-        mockTuesdayJune9Itinerary.legs.get(1).alerts = Lists.newArrayList(new LocalizedAlert());
+        mockTuesdayJune9Itinerary.legs.get(1).alerts = Lists.newArrayList(new Alert());
 
         // The trip is set to be monitored Monday to Friday.
         // Mock time to be 7:30am on Tuesday, June 9 before the trip start.

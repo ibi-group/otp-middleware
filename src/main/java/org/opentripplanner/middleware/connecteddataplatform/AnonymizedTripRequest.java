@@ -7,8 +7,7 @@ import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.graphql.TransportMode;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
-import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.otp.response.PlannerError;
+import org.opentripplanner.middleware.otp.response.RoutingError;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.util.ArrayList;
@@ -60,9 +59,9 @@ public class AnonymizedTripRequest {
     public List<AnonymizedItinerary> itineraries = new ArrayList<>();
 
     /**
-     * Trip plan error.
+     * A list of routing errors, and fields which caused them.
      */
-    public PlannerError error;
+    public List<RoutingError> errors;
 
     /**
      * This no-arg constructor exists for JSON deserialization.
@@ -88,10 +87,10 @@ public class AnonymizedTripRequest {
         // Extract all trip summary itineraries, convert to anonymized itineraries and group.
         int tripSummaryId = 1;
         for (TripSummary tripSummary : tripSummaries) {
-            if (tripSummary.error != null) {
+            if (!tripSummary.errors.isEmpty()) {
                 // If trip summary has an error, add it to the anonymized trip request and don't attempt to process the
                 // trip summary itineraries, because there won't be any.
-                this.error = tripSummary.error;
+                this.errors = tripSummary.errors;
                 break;
             }
             itineraries.addAll(getItineraries(tripSummaryId++, tripSummary));
@@ -183,43 +182,12 @@ public class AnonymizedTripRequest {
             itin.startTime = itinerary.startTime;
             itin.endTime = itinerary.endTime;
             itin.transfers = itinerary.transfers;
-            itin.transitTime = itinerary.transitTime;
             itin.waitingTime = itinerary.waitingTime;
             itin.walkDistance = itinerary.walkDistance;
             itin.walkTime = itinerary.walkTime;
             if (itinerary.legs != null) {
                 processLegCoordinates(itinerary.legs);
-                for (int i = 0; i < itinerary.legs.size(); i++) {
-                    Leg leg = itinerary.legs.get(i);
-                    AnonymizedLeg anonymizedLeg = new AnonymizedLeg();
-                    // Parameters for both transit and non transit legs.
-                    anonymizedLeg.distance = leg.distance;
-                    anonymizedLeg.duration = leg.duration;
-                    anonymizedLeg.startTime = leg.startTime;
-                    anonymizedLeg.endTime = leg.endTime;
-                    anonymizedLeg.mode = leg.mode;
-                    anonymizedLeg.transitLeg = leg.transitLeg;
-                    anonymizedLeg.fromStop = leg.from.stopId;
-                    anonymizedLeg.from = getLegCoordinates(leg.from);
-                    anonymizedLeg.toStop = leg.to.stopId;
-                    anonymizedLeg.to = getLegCoordinates(leg.to);
-                    if (Boolean.TRUE.equals(leg.transitLeg)) {
-                        // Parameters for a transit leg.
-                        anonymizedLeg.agencyId = leg.agencyId;
-                        anonymizedLeg.interlineWithPreviousLeg = leg.interlineWithPreviousLeg;
-                        anonymizedLeg.realTime = leg.realTime;
-                        anonymizedLeg.routeId = leg.routeId;
-                        anonymizedLeg.routeShortName = leg.routeShortName;
-                        anonymizedLeg.routeLongName = leg.routeLongName;
-                        anonymizedLeg.routeType = leg.routeType;
-                        anonymizedLeg.tripBlockId = leg.tripBlockId;
-                        anonymizedLeg.tripId = leg.tripId;
-                    } else {
-                        // Parameters for non transit leg.
-                        anonymizedLeg.rentedVehicle = leg.rentedVehicle;
-                    }
-                    itin.legs.add(anonymizedLeg);
-                }
+                itinerary.legs.forEach(leg -> itin.legs.add(new AnonymizedLeg(leg)));
             }
             anonymizedItineraries.add(itin);
         }
@@ -279,12 +247,5 @@ public class AnonymizedTripRequest {
         leg.from.lon = null;
         leg.to.lat = null;
         leg.to.lon = null;
-    }
-
-    /**
-     * Only provide the leg coordinates if both lat/lon values are available.
-     */
-    private Coordinates getLegCoordinates(Place place) {
-        return (place.lat != null && place.lon != null) ? new Coordinates(place.lat, place.lon) : null;
     }
 }

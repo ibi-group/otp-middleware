@@ -15,6 +15,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.otp.response.Stop;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
@@ -62,7 +63,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary adairAvenueToMonroeDriveItinerary;
     private static Itinerary midtownToAnsleyItinerary;
     private static Itinerary midtownWalkItinerary;
-    private static List<Place> midtownToAnsleyIntermediateStops;
+    private static List<Stop> midtownToAnsleyIntermediateStops;
     private static Itinerary firstLegBusTransit;
     private static Itinerary baptistChurchToEastCroganStreetIntinerary;
     private static Itinerary arrivingOnBus40;

@@ -45,10 +45,7 @@ public class Itinerary implements Cloneable {
      * How much time is spent walking, in seconds.
      */
     public long walkTime = 0;
-    /**
-     * How much time is spent on transit, in seconds.
-     */
-    public long transitTime = 0;
+
     /**
      * How much time is spent waiting for transit to arrive, in seconds.
      */
@@ -58,11 +55,6 @@ public class Itinerary implements Cloneable {
      * How far the user has to walk, in meters.
      */
     public Double walkDistance = 0.0;
-
-    /**
-     * Indicates that the walk limit distance has been exceeded for this itinerary when true.
-     */
-    public boolean walkLimitExceeded = false;
 
     /**
      * How much elevation is lost, in total, over the course of the trip, in meters. As an example,
@@ -77,14 +69,9 @@ public class Itinerary implements Cloneable {
     public Double elevationGained = 0.0;
 
     /**
-     * The number of transfers this trip has.
+     * How many transfers are part of this itinerary.
      */
     public Integer transfers = 0;
-
-    /**
-     * Fare information for this itinerary.
-     */
-    public FareWrapper fare;
 
     /**
      * Leg information for this itinerary.
@@ -131,10 +118,7 @@ public class Itinerary implements Cloneable {
     public boolean hasRentalOrRideHail() {
         if (legs != null) {
             for (Leg leg : legs) {
-                if (TRUE.equals(leg.rentedBike) ||
-                    TRUE.equals(leg.rentedCar) ||
-                    TRUE.equals(leg.rentedVehicle) ||
-                    TRUE.equals(leg.hailedCar)) {
+                if (TRUE.equals(leg.rentedBike) || leg.rideHailingEstimate != null) {
                     return true;
                 }
             }
@@ -145,7 +129,7 @@ public class Itinerary implements Cloneable {
     /**
      * OTP-middleware specific function to aid in collecting alerts from legs.
      */
-    public List<LocalizedAlert> getAlerts() {
+    public List<Alert> getAlerts() {
         if (legs == null) return Collections.emptyList();
         return legs.stream()
             .map(leg -> leg.alerts)
@@ -179,14 +163,11 @@ public class Itinerary implements Cloneable {
             ", startTime=" + startTime +
             ", endTime=" + endTime +
             ", walkTime=" + walkTime +
-            ", transitTime=" + transitTime +
             ", waitingTime=" + waitingTime +
             ", walkDistance=" + walkDistance +
-            ", walkLimitExceeded=" + walkLimitExceeded +
             ", elevationLost=" + elevationLost +
             ", elevationGained=" + elevationGained +
             ", transfers=" + transfers +
-            ", fare=" + fare +
             ", legs=" + legs +
             '}';
     }

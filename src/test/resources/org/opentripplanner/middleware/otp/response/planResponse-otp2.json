@@ -84,8 +84,10 @@
               },
               "to": {
                 "name": "Providence Park MAX Station",
-                "stopId": "TriMet:9758",
-                "stopCode": "9758",
+                "stop": {
+                  "id": "TriMet:9758",
+                  "code": "9758"
+                },
                 "lon": -122.689886,
                 "lat": 45.521321,
                 "arrival": 1591717794000,
@@ -637,14 +639,18 @@
                 "url": "https://trimet.org/"
               },
               "interlineWithPreviousLeg": false,
-              "tripBlockId": "9004",
+              "trip": {
+                "id": "TriMet:9942889",
+                "blockId": "9004"
+              },
               "headsign": "Gresham",
-              "tripId": "TriMet:9942889",
               "serviceDate": "20200609",
               "from": {
                 "name": "Providence Park MAX Station",
-                "stopId": "TriMet:9758",
-                "stopCode": "9758",
+                "stop": {
+                  "id": "TriMet:9758",
+                  "code": "9758"
+                },
                 "lon": -122.689886,
                 "lat": 45.521321,
                 "arrival": 1591717794000,
@@ -657,8 +663,10 @@
               },
               "to": {
                 "name": "Pioneer Square South MAX Station",
-                "stopId": "TriMet:8334",
-                "stopCode": "8334",
+                "stop": {
+                  "id": "TriMet:8334",
+                  "code": "8334"
+                },
                 "lon": -122.679145,
                 "lat": 45.518496,
                 "arrival": 1591718035000,
@@ -744,8 +752,10 @@
               "interlineWithPreviousLeg": false,
               "from": {
                 "name": "Pioneer Square South MAX Station",
-                "stopId": "TriMet:8334",
-                "stopCode": "8334",
+                "stop": {
+                  "id": "TriMet:8334",
+                  "code": "8334"
+                },
                 "lon": -122.679145,
                 "lat": 45.518496,
                 "arrival": 1591718035000,
@@ -1061,8 +1071,10 @@
               },
               "to": {
                 "name": "NW 11th & Johnson",
-                "stopId": "TriMet:10753",
-                "stopCode": "10753",
+                "stop": {
+                  "id": "TriMet:10753",
+                  "code": "10753"
+                },
                 "lon": -122.682374,
                 "lat": 45.528742,
                 "arrival": 1591717499000,
@@ -1460,14 +1472,18 @@
                 "url": "https://portlandstreetcar.org/"
               },
               "interlineWithPreviousLeg": false,
-              "tripBlockId": "58",
+              "trip": {
+                "id": "TriMet:9945177",
+                "blockId": "58"
+              },
               "headsign": "Lloyd via OMSI",
-              "tripId": "TriMet:9945177",
               "serviceDate": "20200609",
               "from": {
                 "name": "NW 11th & Johnson",
-                "stopId": "TriMet:10753",
-                "stopCode": "10753",
+                "stop": {
+                  "id": "TriMet:10753",
+                  "code": "10753"
+                },
                 "lon": -122.682374,
                 "lat": 45.528742,
                 "arrival": 1591717499000,
@@ -1480,8 +1496,10 @@
               },
               "to": {
                 "name": "SW 11th & Taylor",
-                "stopId": "TriMet:9633",
-                "stopCode": "9633",
+                "stop": {
+                  "id": "TriMet:9633",
+                  "code": "9633"
+                },
                 "lon": -122.683873,
                 "lat": 45.519059,
                 "arrival": 1591717920000,
@@ -1593,8 +1611,10 @@
               "interlineWithPreviousLeg": false,
               "from": {
                 "name": "SW 11th & Taylor",
-                "stopId": "TriMet:9633",
-                "stopCode": "9633",
+                "stop": {
+                  "id": "TriMet:9633",
+                  "code": "9633"
+                },
                 "lon": -122.683873,
                 "lat": 45.519059,
                 "arrival": 1591717920000,
@@ -2085,8 +2105,10 @@
               },
               "to": {
                 "name": "SW 18th & Morrison",
-                "stopId": "TriMet:6911",
-                "stopCode": "6911",
+                "stop": {
+                  "id": "TriMet:6911",
+                  "code": "6911"
+                },
                 "lon": -122.690453,
                 "lat": 45.52188,
                 "arrival": 1591718399000,
@@ -2645,14 +2667,18 @@
                 "url": "https://trimet.org/"
               },
               "interlineWithPreviousLeg": false,
-              "tripBlockId": "1505",
+              "trip": {
+                "id": "TriMet:9932776",
+                "blockId": "1505"
+              },
               "headsign": "Gateway TC",
-              "tripId": "TriMet:9932776",
               "serviceDate": "20200609",
               "from": {
                 "name": "SW 18th & Morrison",
-                "stopId": "TriMet:6911",
-                "stopCode": "6911",
+                "stop": {
+                  "id": "TriMet:6911",
+                  "code": "6911"
+                },
                 "lon": -122.690453,
                 "lat": 45.52188,
                 "arrival": 1591718399000,
@@ -2665,8 +2691,10 @@
               },
               "to": {
                 "name": "SW Salmon & 5th",
-                "stopId": "TriMet:5020",
-                "stopCode": "5020",
+                "stop": {
+                  "id": "TriMet:5020",
+                  "code": "5020"
+                },
                 "lon": -122.678854,
                 "lat": 45.516794,
                 "arrival": 1591718760000,
@@ -2819,8 +2847,10 @@
               "interlineWithPreviousLeg": false,
               "from": {
                 "name": "SW Salmon & 5th",
-                "stopId": "TriMet:5020",
-                "stopCode": "5020",
+                "stop": {
+                  "id": "TriMet:5020",
+                  "code": "5020"
+                },
                 "lon": -122.678854,
                 "lat": 45.516794,
                 "arrival": 1591718760000,

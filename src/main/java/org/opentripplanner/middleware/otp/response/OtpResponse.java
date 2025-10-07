@@ -16,16 +16,15 @@ public class OtpResponse {
     /** A dictionary of the parameters provided in the request that triggered this response. */
     public HashMap<String, String> requestParameters;
     public TripPlan plan;
-    public PlannerError error = null;
     /** A timestamp representing when the response was received */
     public long timestamp = DateTimeUtils.currentTimeMillis();
 
     @Override
     public String toString() {
-        return "Response{" +
-                "requestParameters=" + requestParameters +
-                ", plan=" + plan +
-                ", error=" + error +
-                '}';
+        return "OtpResponse{" +
+            "requestParameters=" + requestParameters +
+            ", plan=" + plan +
+            ", timestamp=" + timestamp +
+            '}';
     }
 }

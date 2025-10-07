@@ -6,6 +6,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.Stop;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.time.Instant;
@@ -23,25 +24,33 @@ class TravelerLocatorTest {
         Leg leg = new Leg();
         leg.to = createPlace("FinalStop");
         leg.intermediateStops = List.of(
-            createPlace("Stop0"),
-            createPlace("Stop1"),
-            createPlace("Stop2"),
-            createPlace("Stop3"),
-            createPlace("Stop4"),
-            createPlace("Stop5"),
-            createPlace("Stop6")
+            createStop("Stop0"),
+            createStop("Stop1"),
+            createStop("Stop2"),
+            createStop("Stop3"),
+            createStop("Stop4"),
+            createStop("Stop5"),
+            createStop("Stop6")
         );
 
         for (int i = 0; i < leg.intermediateStops.size(); i++) {
-            Place stop = leg.intermediateStops.get(i);
-            assertEquals(7 - i, stopsUntilEndOfLeg(stop, leg), stop.stopId);
+            Stop stop = leg.intermediateStops.get(i);
+            assertEquals(7 - i, stopsUntilEndOfLeg(stop, leg), stop.id);
         }
-        assertEquals(0, stopsUntilEndOfLeg(leg.to, leg), leg.to.stopId);
+        assertEquals(0, stopsUntilEndOfLeg(new Stop(leg.to), leg), leg.to.stop.id);
+    }
+
+    Stop createStop(String id) {
+        Stop stop = new Stop();
+        stop.id = id;
+        return stop;
     }
 
     Place createPlace(String id) {
         Place place = new Place();
-        place.stopId = id;
+        place.stop = createStop(id);
+        place.lat = 33.78647;
+        place.lon = -84.380412;
         return place;
     }
 
