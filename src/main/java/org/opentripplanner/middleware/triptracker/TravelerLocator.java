@@ -20,6 +20,7 @@ import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusO
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -190,8 +191,11 @@ public class TravelerLocator {
             double distanceToLegDestination = getDistance(travelerPosition.currentPosition, legDestination);
 
             if (distanceToLastShapeCoords < distanceToLegDestination) {
-                // Issue an end-of-routing step
-                Step endOfRoutingStep = createEndOfRoutingStep(legPositions);
+                // Issue a leg end-of-routing step
+                Step endOfRoutingStep = createEndOfRoutingStep(
+                    legPositions,
+                    ItineraryUtils.isBusLeg(travelerPosition.nextLeg) ? "bus stop" : "destination"
+                );
                 return new OnTrackInstruction(
                     getDistance(travelerPosition.currentPosition, new Coordinates(endOfRoutingStep)),
                     endOfRoutingStep,
@@ -577,12 +581,13 @@ public class TravelerLocator {
     /**
      * Creates a special end-of-routing step to instruct that no further routing instructions are available.
      */
-    private static Step createEndOfRoutingStep(List<Coordinates> legPositions) {
+    private static Step createEndOfRoutingStep(List<Coordinates> legPositions, String locationName) {
         Coordinates lastShapeCoordinate = legPositions.get(legPositions.size() - 2);
         Step step = new Step();
         step.lat = lastShapeCoordinate.lat;
         step.lon = lastShapeCoordinate.lon;
         step.relativeDirection = Step.END_OF_ROUTING;
+        step.streetName = locationName;
         return step;
     }
 
