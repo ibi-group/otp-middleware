@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.getSecondsToMilliseconds;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversal.interpolatePoints;
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNextOrClosestWayPoint;
@@ -471,7 +472,11 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             .build();
         travelerPosition.locale = locale;
         TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition);
-        assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
+        if (tripInstruction == null) {
+            assertEquals(traceData.expectedInstruction, NO_INSTRUCTION, message);
+        } else {
+            assertTrue(DateTimeUtils.equalsAmPm(traceData.expectedInstruction, tripInstruction.build()), message);
+        }
 
         // If a Gwinnett County bus notification was sent, check that the agency, route, and trip id fields are not null.
         if (!travelerPosition.trackedJourney.busNotificationMessages.isEmpty() && currentLeg.route != null) {
@@ -532,7 +537,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(busStopCoords)
                     .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
-                    .withExpectedInstruction("Wait for your bus, route 20, scheduled at 7:58 AM (That time has passed)")
+                    .withExpectedInstruction("Wait for your bus, route 20, scheduled at 7:58\u202fAM (That time has passed)")
             ),
             Arguments.of(
                 "Arrive at bus stop well after the bus departure (indicates past departure).",
@@ -542,7 +547,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(walkToBusTransition.legs.get(0).to.toCoordinates())
                     .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
-                    .withExpectedInstruction("Wait for your bus, route 40, scheduled at 6:41 AM (That time has passed)")
+                    .withExpectedInstruction("Wait for your bus, route 40, scheduled at 6:41\u202fAM (That time has passed)")
             ),
             Arguments.of(
                 "Arrive at bus stop well in advance.",
@@ -552,7 +557,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(walkToBusTransition.legs.get(0).to.toCoordinates())
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
                     .withInstant(walkToBusTransition.legs.get(1).startTime.toInstant().minus(40, ChronoUnit.MINUTES))
-                    .withExpectedInstruction("Wait 40 minutes for your bus, route 40, scheduled at 6:41 AM (On time)")
+                    .withExpectedInstruction("Wait 40 minutes for your bus, route 40, scheduled at 6:41\u202fAM (On time)")
             ),
             Arguments.of(
                 "Arrive at bus stop where the walk geometry is so the stop is farther than the last walk shape. Should produce a bus-stop-in-vicinity instruction, not 'destination in vicinity'.",
@@ -615,7 +620,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 "If present at the transit stop after the trip departure, instruct to wait (indicate past departure).",
                 new TraceData()
                     .withPosition(originCoords)
-                    .withExpectedInstruction("Wait for your bus, route 27, scheduled at 9:18 AM (That time has passed)")
+                    .withExpectedInstruction("Wait for your bus, route 27, scheduled at 9:18\u202fAM (That time has passed)")
                     .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
             ),
