@@ -234,7 +234,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         int minutesLate,
         int previousMinutesLate,
         NotificationType notificationType,
-        String expectedNotificationPattern,
+        String expectedBody,
         String message
     ) throws Exception {
         long previousDelayMillis = TimeUnit.MILLISECONDS.convert(previousMinutesLate, TimeUnit.MINUTES);
@@ -264,12 +264,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         }
 
         TripMonitorNotification notification = check.checkTripForDelays();
-        if (expectedNotificationPattern == null) {
+        if (expectedBody == null) {
             assertNull(notification, message);
         } else {
             assertNotNull(notification);
             assertEquals(notificationType, notification.type);
-            assertThat(message, notification.body, matchesPattern(expectedNotificationPattern));
+            assertTrue(DateTimeUtils.equalsAmPm(notification.body, expectedBody), message);
         }
     }
 
@@ -318,7 +318,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 0,
                 NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
                 STOPWATCH_ICON +
-                " Your trip is now predicted to depart 20 minutes late at 9:00[\\u202f ]AM \\(Now arriving at 9:18[\\u202f ]AM\\)\\.",
+                " Your trip is now predicted to depart 20 minutes late at 9:00\u202fAM (Now arriving at 9:18\u202fAM).",
                 "20m-late trip previously on-time => show dep/arr delay notifications"
             ),
             Arguments.of(
@@ -326,7 +326,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 0,
                 NotificationType.DEPARTURE_DELAY,
                 STOPWATCH_ICON +
-                " Your trip is now predicted to depart 20 minutes late \\(at 9:00[\\u202f ]AM\\)\\.",
+                " Your trip is now predicted to depart 20 minutes late (at 9:00\u202fAM).",
                 "20m-late departure previously on-time, but still arriving on-time => show departure-only delay notifications"
             ),
             Arguments.of(
@@ -334,7 +334,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 0,
                 NotificationType.ARRIVAL_DELAY,
                 STOPWATCH_ICON +
-                " Your trip is now predicted to arrive 20 minutes late \\(at 9:18[\\u202f ]AM\\)\\.",
+                " Your trip is now predicted to arrive 20 minutes late (at 9:18\u202fAM).",
                 "20m-late arrival previously on-time, but still departing on-time => show arrival-only delay notifications"
             ),
             Arguments.of(
@@ -342,7 +342,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 0,
                 NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
                 STOPWATCH_ICON +
-                " Your trip is now predicted to depart 18 minutes early at 8:22[\\u202f ]AM \\(Now arriving at 8:40[\\u202f ]AM\\)\\.",
+                " Your trip is now predicted to depart 18 minutes early at 8:22\u202fAM (Now arriving at 8:40\u202fAM).",
                 "18m-early trip previously on-time => show delay (early) notifications"
             ),
             Arguments.of(
@@ -357,7 +357,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 15,
                 NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
                 STOPWATCH_ICON +
-                " Your trip is now predicted to depart about on time at 8:40[\\u202f ]AM \\(Now arriving at 8:58[\\u202f ]AM\\)\\.",
+                " Your trip is now predicted to depart about on time at 8:40\u202fAM (Now arriving at 8:58\u202fAM).",
                 "On-time trip previously late => show on-time notifications"
             )
         );
@@ -788,16 +788,15 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         mockTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
 
         List<DelayCase> cases = List.of(
-            // TODO: fix time separator char
             // Add some delays for the trip.
-            new DelayCase(300, 420, true, TUESDAY_20200609_0800, 1, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:45 AM)."),
+            new DelayCase(300, 420, true, TUESDAY_20200609_0800, 1, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:45\u202fAM)."),
             // Decrease real-time delays (subtract delays) from the OTP response.
-            new DelayCase(-100, -60, true, TUESDAY_20200609_0800, 1, "⏱ Your trip is now predicted to arrive 6 minutes late (at 9:04 AM)."),
+            new DelayCase(-100, -60, true, TUESDAY_20200609_0800, 1, "⏱ Your trip is now predicted to arrive 6 minutes late (at 9:04\u202fAM)."),
             // Drop real-time updates (subtract delays) from the OTP response.
             new DelayCase(-200, -360, false, TUESDAY_20200609_0800, 1, "⏱ Real-time updates for your trip were lost. Monitoring will be based on your originally saved trip."),
 
             // Add back delays for the trip.
-            new DelayCase(300, 420, true, TUESDAY_20200609_0800, 1, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:45 AM)."),
+            new DelayCase(300, 420, true, TUESDAY_20200609_0800, 1, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:45\u202fAM)."),
             // Drop real-time updates and simulate a time at which the trip is considered over.
             // No notifications should be sent when the trip is considered over.
             new DelayCase(
