@@ -98,6 +98,29 @@ public class DateTimeUtils {
     }
 
     /**
+     * Compares two Strings, returning {@code true} if they are equal or if the only difference
+     * is between a space and a narrow no-break space (NNBSP).  Intended for strings that have
+     * formatted time in the {@code en_US} locale which includes AM or PM.  Older JDKs formatted
+     * these with an ASCII space ({@code U+0020}) before "AM" or "PM", but as of JDK 20 the space
+     * is replaced with NNBSP ({@code U+202F}) by default.
+     * <p>
+     * Use of {@code null}s will return {@code false} but not throw an exception.  It is intended
+     * that the first string was made using {@link DateTimeFormatter} and may have either a space
+     * or a NNBSP, whereas the second "test string" to compare it against will have a hardcoded
+     * NNBSP in it regardless of the JDK.
+     *
+     * @param  str      formatted text to test, e.g. {@code "6:30 PM"} or {@code "6:30\u202fPM"}
+     * @param  testStr  text to be tested against using NNBSP format, e.g. {@code "6:30\u202fPM"}
+     */
+    public static boolean equalsAmPm(final String str, final String testStr) {
+        if (str == null || testStr == null) {
+            return false;
+        } else {
+            return str.equals(testStr) || str.equals(testStr.replaceAll("\u202F", " "));
+        }
+    }
+
+    /**
      * Helper to format a date in short format (e.g. "5:40 PM" - no seconds) in the specified locale.
      */
     public static String formatShortDate(Date date, Locale locale) {
