@@ -116,7 +116,7 @@ public class DateTimeUtils {
         if (str == null || testStr == null) {
             return false;
         } else {
-            return str.equals(testStr) || str.equals(testStr.replaceAll("\u202f", " "));
+            return str.equals(testStr) || str.equals(testStr.replaceAll("\\u202f", " "));
         }
     }
 
