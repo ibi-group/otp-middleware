@@ -1,0 +1,265 @@
+{
+  "duration": 535,
+  "startTime": 1756249113000,
+  "endTime": 1756249648000,
+  "walkTime": 188,
+  "transitTime": 0,
+  "waitingTime": 0,
+  "walkDistance": 0,
+  "walkLimitExceeded": false,
+  "elevationLost": 0,
+  "elevationGained": 0,
+  "transfers": 0,
+  "fare": null,
+  "legs": [
+    {
+      "startTime": 1756249113000,
+      "endTime": 1756249200000,
+      "departureDelay": 0,
+      "arrivalDelay": 0,
+      "realTime": false,
+      "distance": 168.27,
+      "mode": "WALK",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "33.78144, -84.38519",
+        "lon": -84.385193,
+        "lat": 33.7814398,
+        "vertexType": "NORMAL"
+      },
+      "to": {
+        "name": "Midtown Station",
+        "lon": -84.386697,
+        "lat": 33.78111,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "904800",
+          "gtfsId": "MARTA:81910",
+          "id": "U3RvcDpNQVJUQTo4MTkxMA",
+          "lon": -84.386697,
+          "lat": 33.78111
+        }
+      },
+      "legGeometry": {
+        "points": "w|dmEln`bO@T?b@@bB?Z?l@?L?d@?LN?`@?B??B",
+        "length": 13
+      },
+      "rentedBike": false,
+      "transitLeg": false,
+      "duration": 87,
+      "steps": [
+        {
+          "distance": 137.91,
+          "relativeDirection": "DEPART",
+          "streetName": "10th Street Northeast",
+          "absoluteDirection": "WEST",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.3851875,
+          "lat": 33.7814088
+        },
+        {
+          "distance": 30.36,
+          "relativeDirection": "LEFT",
+          "streetName": "service road",
+          "absoluteDirection": "SOUTH",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.3866782,
+          "lat": 33.781383
+        }
+      ]
+    },
+    {
+      "startTime": 1756249200000,
+      "endTime": 1756249547000,
+      "departureDelay": 0,
+      "arrivalDelay": 66,
+      "realTime": true,
+      "distance": 1510.59,
+      "mode": "BUS",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "Midtown Station",
+        "lon": -84.386697,
+        "lat": 33.78111,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "904800",
+          "gtfsId": "MARTA:81910",
+          "id": "U3RvcDpNQVJUQTo4MTkxMA",
+          "lon": -84.386697,
+          "lat": 33.78111
+        }
+      },
+      "to": {
+        "name": "10th St NW at Hirsch St NW",
+        "lon": -84.401956,
+        "lat": 33.781538,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "905012",
+          "gtfsId": "MARTA:80171",
+          "id": "U3RvcDpNQVJUQTo4MDE3MQ",
+          "lon": -84.401956,
+          "lat": 33.781538
+        }
+      },
+      "legGeometry": {
+        "points": "}zdmEzw`bOdA?BzCq@VYJUHs@J?jB?n@?j@?jA?j@Ar@AT???t@?f@?dAC`A?`ACpAAdADnA?l@??@XBbD@rD?nA@b@ClE?R@z@???B?r@?hA?tB?zC?bCAz@?j@?N???\\?P?l@?hA?l@?b@?BCt@?z@@t@?FAD?D",
+        "length": 57
+      },
+      "transitLeg": true,
+      "duration": 347,
+      "intermediateStops": [
+        {
+          "name": "10th St NE at Williams St",
+          "lon": -84.389733,
+          "lat": 33.781591,
+          "stopId": "U3RvcDpNQVJUQTo4MTAwNQ",
+          "stopCode": "600018"
+        },
+        {
+          "name": "10th St NW at Techwood Dr NW",
+          "lon": -84.392606,
+          "lat": 33.781557,
+          "stopId": "U3RvcDpNQVJUQTo4MTA4Mg",
+          "stopCode": "904350"
+        },
+        {
+          "name": "10th St at Holly St",
+          "lon": -84.396467,
+          "lat": 33.781528,
+          "stopId": "U3RvcDpNQVJUQTo4MTA4Mw",
+          "stopCode": "904285"
+        },
+        {
+          "name": "10th St NW at State St NW",
+          "lon": -84.39975,
+          "lat": 33.781554,
+          "stopId": "U3RvcDpNQVJUQTo4MDI0Mw",
+          "stopCode": "905018"
+        }
+      ],
+      "steps": [],
+      "headsign": "Cumberland Transfer Center",
+      "agency": {
+        "alerts": [],
+        "gtfsId": "MARTA:MARTA",
+        "id": "MARTA:MARTA",
+        "name": "Metropolitan Atlanta Rapid Transit Authority"
+      },
+      "route": {
+        "alerts": [],
+        "color": "FF00FF",
+        "gtfsId": "MARTA:26781",
+        "id": "MARTA:26781",
+        "longName": "Howell Mill Road / Cumberland",
+        "shortName": "12",
+        "textColor": "000000",
+        "type": 3
+      },
+      "trip": {
+        "gtfsId": "MARTA:10737755",
+        "id": "VHJpcDpNQVJUQToxMDczNzc1NQ",
+        "departureStoptime": {
+          "stop": {
+            "id": "U3RvcDpNQVJUQTo4MTkxMA",
+            "gtfsId": "MARTA:81910"
+          },
+          "stopPosition": 1
+        },
+        "arrivalStoptime": {
+          "stop": {
+            "id": "U3RvcDpNQVJUQTo5OTk3MDA4OA",
+            "gtfsId": "MARTA:99970088"
+          },
+          "stopPosition": 44
+        }
+      }
+    },
+    {
+      "startTime": 1756249547000,
+      "endTime": 1756249648000,
+      "departureDelay": 0,
+      "arrivalDelay": 0,
+      "realTime": false,
+      "distance": 183.27,
+      "mode": "WALK",
+      "interlineWithPreviousLeg": false,
+      "from": {
+        "name": "10th St NW at Hirsch St NW",
+        "lon": -84.401956,
+        "lat": 33.781538,
+        "vertexType": "TRANSIT",
+        "stop": {
+          "alerts": [],
+          "code": "905012",
+          "gtfsId": "MARTA:80171",
+          "id": "U3RvcDpNQVJUQTo4MDE3MQ",
+          "lon": -84.401956,
+          "lat": 33.781538
+        }
+      },
+      "to": {
+        "name": "492 Lynch Avenue NW, Atlanta, GA, USA",
+        "lon": -84.4031749,
+        "lat": 33.7821839,
+        "vertexType": "NORMAL"
+      },
+      "legGeometry": {
+        "points": "q}dmEfwcbO@??n@?^O??bA?F?HuBD?p@?T",
+        "length": 11
+      },
+      "rentedBike": false,
+      "transitLeg": false,
+      "duration": 101,
+      "steps": [
+        {
+          "distance": 76.49,
+          "relativeDirection": "DEPART",
+          "streetName": "10th Street Northwest",
+          "absoluteDirection": "WEST",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.4019561,
+          "lat": 33.7815206
+        },
+        {
+          "distance": 8.32,
+          "relativeDirection": "CONTINUE",
+          "streetName": "path",
+          "absoluteDirection": "WEST",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.4026912,
+          "lat": 33.7816031
+        },
+        {
+          "distance": 65.65,
+          "relativeDirection": "RIGHT",
+          "streetName": "Northwest Center Street",
+          "absoluteDirection": "NORTH",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.4027813,
+          "lat": 33.7816029
+        },
+        {
+          "distance": 32.8,
+          "relativeDirection": "LEFT",
+          "streetName": "Lynch Avenue Northwest",
+          "absoluteDirection": "WEST",
+          "stayOn": false,
+          "area": false,
+          "lon": -84.4028197,
+          "lat": 33.7821924
+        }
+      ]
+    }
+  ],
+  "alerts": []
+}

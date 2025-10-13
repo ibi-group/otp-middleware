@@ -96,6 +96,19 @@ public class TripMonitorNotification extends Model {
     }
 
     /**
+     * Create a new notification about the loss of real-time updates.
+     */
+    public static TripMonitorNotification updatesLostNotification(Locale locale) {
+        return new TripMonitorNotification(
+            NotificationType.REALTIME_UPDATES_LOST,
+            String.format(
+                Message.TRIP_DELAY_REALTIME_UPDATES_LOST.get(locale),
+                STOPWATCH_ICON
+            )
+        );
+    }
+
+    /**
      * @return A string describing time adherence (e.g. "about on time", "2 minutes early", "5 minutes late").
      */
     private static String getTimeAdherenceText(long delayInMinutes, Locale locale) {

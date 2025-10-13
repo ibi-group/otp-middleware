@@ -107,9 +107,9 @@ public class ItineraryUtils {
             Leg carLeg = firstCarLeg.get();
             String carQualifier;
 
-            if (Boolean.TRUE.equals(carLeg.rentedCar)) {
+            if (Boolean.TRUE.equals(carLeg.rentedBike)) {
                 carQualifier = "RENT";
-            } else if (Boolean.TRUE.equals(carLeg.hailedCar)) {
+            } else if (carLeg.rideHailingEstimate != null) {
                 carQualifier = "HAIL";
             } else {
                 carQualifier = "PARK";

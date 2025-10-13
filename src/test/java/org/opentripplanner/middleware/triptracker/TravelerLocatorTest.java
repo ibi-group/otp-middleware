@@ -6,9 +6,11 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.Stop;
 import org.opentripplanner.middleware.utils.Coordinates;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -22,25 +24,33 @@ class TravelerLocatorTest {
         Leg leg = new Leg();
         leg.to = createPlace("FinalStop");
         leg.intermediateStops = List.of(
-            createPlace("Stop0"),
-            createPlace("Stop1"),
-            createPlace("Stop2"),
-            createPlace("Stop3"),
-            createPlace("Stop4"),
-            createPlace("Stop5"),
-            createPlace("Stop6")
+            createStop("Stop0"),
+            createStop("Stop1"),
+            createStop("Stop2"),
+            createStop("Stop3"),
+            createStop("Stop4"),
+            createStop("Stop5"),
+            createStop("Stop6")
         );
 
         for (int i = 0; i < leg.intermediateStops.size(); i++) {
-            Place stop = leg.intermediateStops.get(i);
-            assertEquals(7 - i, stopsUntilEndOfLeg(stop, leg), stop.stopId);
+            Stop stop = leg.intermediateStops.get(i);
+            assertEquals(7 - i, stopsUntilEndOfLeg(stop, leg), stop.id);
         }
-        assertEquals(0, stopsUntilEndOfLeg(leg.to, leg), leg.to.stopId);
+        assertEquals(0, stopsUntilEndOfLeg(new Stop(leg.to), leg), leg.to.stop.id);
+    }
+
+    Stop createStop(String id) {
+        Stop stop = new Stop();
+        stop.id = id;
+        return stop;
     }
 
     Place createPlace(String id) {
         Place place = new Place();
-        place.stopId = id;
+        place.stop = createStop(id);
+        place.lat = 33.78647;
+        place.lon = -84.380412;
         return place;
     }
 
@@ -88,6 +98,35 @@ class TravelerLocatorTest {
             Arguments.of(stopCoordinates, stopCoordinates, true),
             Arguments.of(stopCoordinates, createPoint(stopCoordinates, 4, NORTH_EAST_BEARING), true),
             Arguments.of(stopCoordinates, createPoint(stopCoordinates, 30, NORTH_EAST_BEARING), false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("notifyWindowCases")
+    void testIsWithinOperationalNotifyWindow(int beforeSeconds, int delaySeconds, boolean expected, String message) {
+        Instant now = Instant.now();
+        Leg leg = new Leg();
+        leg.startTime = Date.from(now);
+        leg.departureDelay = delaySeconds;
+
+        assertEquals(
+            expected,
+            TravelerLocator.isWithinOperationalNotifyWindow(now.minusSeconds(beforeSeconds), leg),
+            message
+        );
+    }
+
+    private static Stream<Arguments> notifyWindowCases() {
+        return Stream.of(
+            Arguments.of(60, 0, true, "Before start time is in notify window."),
+            Arguments.of(0, 0, false, "At start time is not in notify window."),
+            Arguments.of(60, 60, true, "Should be indifferent to delays (they are included in startTime)."),
+            Arguments.of(960, 0, true, "At the 15 min window (after truncations) is in notify window."),
+            Arguments.of(970, 0, false, "Before the 15 min window is not in notify window."),
+            Arguments.of(970, 60, true, "Before the 15 min window of actual departure but within 15 min after delays is in notify window."),
+            Arguments.of(-60, 0, false, "After start time is not in notify window."),
+            Arguments.of(-30, 60, false, "After start time with delay is not in notify window."),
+            Arguments.of(-100, 60, false, "After start time with delay is not in notify window.")
         );
     }
 }

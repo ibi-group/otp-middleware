@@ -4,8 +4,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
-import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.otp.response.Stop;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueRidingTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
@@ -20,6 +20,7 @@ import org.opentripplanner.middleware.triptracker.interactions.busnotifiers.BusO
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.ConvertsToCoordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -197,8 +198,11 @@ public class TravelerLocator {
             double distanceToLegDestination = getDistance(travelerPosition.currentPosition, legDestination);
 
             if (distanceToLastShapeCoords < distanceToLegDestination) {
-                // Issue an end-of-routing step
-                Step endOfRoutingStep = createEndOfRoutingStep(legPositions);
+                // Issue a leg end-of-routing step
+                Step endOfRoutingStep = createEndOfRoutingStep(
+                    legPositions,
+                    ItineraryUtils.isBusLeg(travelerPosition.nextLeg) ? "bus stop" : "destination"
+                );
                 return new OnTrackInstruction(
                     getDistance(travelerPosition.currentPosition, new Coordinates(endOfRoutingStep)),
                     endOfRoutingStep,
@@ -304,7 +308,7 @@ public class TravelerLocator {
         Leg expectedLeg = travelerPosition.expectedLeg;
         if (expectedLeg == null || !expectedLeg.transitLeg) return false;
 
-        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
+        Stop nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
         int stopsRemaining = stopsUntilEndOfLeg(nextStop, expectedLeg);
         return stopsRemaining == expectedLeg.intermediateStops.size();
     }
@@ -331,10 +335,10 @@ public class TravelerLocator {
             return new GetOffHereTransitInstruction(finalStop, locale);
         }
 
-        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
+        Stop nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
         if (nextStop != null) {
             int stopsRemaining = stopsUntilEndOfLeg(nextStop, expectedLeg);
-            double distance = getDistance(travelerPosition.currentPosition, new Coordinates(nextStop));
+            double distance = getDistance(travelerPosition.currentPosition, nextStop.toCoordinates());
             if (stopsRemaining == 1 && distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS && !isPositionPastStep(travelerPosition, nextStop) || stopsRemaining == 0) {
                 return new GetOffNextStopTransitInstruction(finalStop, locale);
             } else if (stopsRemaining <= 3) {
@@ -398,7 +402,7 @@ public class TravelerLocator {
     public static boolean isWithinOperationalNotifyWindow(Instant currentTime, Leg busLeg) {
         var busDepartureTime = getBusDepartureTime(busLeg);
         return
-            (currentTime.equals(busDepartureTime) || currentTime.isBefore(busDepartureTime)) &&
+            (currentTime.equals(busDepartureTime) || currentTime.isBefore(busLeg.startTime.toInstant())) &&
             ACCEPTABLE_AHEAD_OF_SCHEDULE_IN_MINUTES >= getMinutesAheadOfDeparture(currentTime, busDepartureTime);
     }
 
@@ -413,10 +417,7 @@ public class TravelerLocator {
      * Get the bus departure time.
      */
     public static Instant getBusDepartureTime(Leg busLeg) {
-        return ZonedDateTime.ofInstant(
-            busLeg.startTime.toInstant().plusSeconds(busLeg.departureDelay),
-            DateTimeUtils.getOtpZoneId()
-        ).toInstant();
+        return busLeg.getScheduledStartTime().toInstant();
     }
 
     private static double getDistanceToStartOfLeg(TravelerPosition travelerPosition) {
@@ -519,11 +520,11 @@ public class TravelerLocator {
         return pointIndex;
     }
 
-    private static List<Place> getIntermediateAndLastStop(Leg leg) {
-        ArrayList<Place> stops = leg.intermediateStops == null
+    private static List<Stop> getIntermediateAndLastStop(Leg leg) {
+        ArrayList<Stop> stops = leg.intermediateStops == null
             ? new ArrayList<>()
             : new ArrayList<>(leg.intermediateStops);
-        stops.add(leg.to);
+        stops.add(new Stop(leg.to));
         return stops;
     }
 
@@ -587,12 +588,13 @@ public class TravelerLocator {
     /**
      * Creates a special end-of-routing step to instruct that no further routing instructions are available.
      */
-    private static Step createEndOfRoutingStep(List<Coordinates> legPositions) {
+    private static Step createEndOfRoutingStep(List<Coordinates> legPositions, String locationName) {
         Coordinates lastShapeCoordinate = legPositions.get(legPositions.size() - 2);
         Step step = new Step();
         step.lat = lastShapeCoordinate.lat;
         step.lon = lastShapeCoordinate.lon;
         step.relativeDirection = Step.END_OF_ROUTING;
+        step.streetName = locationName;
         return step;
     }
 
@@ -672,10 +674,14 @@ public class TravelerLocator {
         return false;
     }
 
-    public static int stopsUntilEndOfLeg(Place stop, Leg leg) {
-        if (stop == leg.to) return 0;
+    public static int stopsUntilEndOfLeg(Stop stop, Leg leg) {
+        if (isTheSameLocation(stop, leg)) return 0;
 
-        List<Place> stops = leg.intermediateStops;
+        List<Stop> stops = leg.intermediateStops;
         return stops.size() - stops.indexOf(stop);
+    }
+
+    private static boolean isTheSameLocation(Stop stop, Leg leg) {
+        return stop.toCoordinates().equals(leg.to.toCoordinates());
     }
 }

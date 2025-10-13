@@ -2453,20 +2453,27 @@ definitions:
         type: "string"
       name:
         type: "string"
-  TripStop:
+  Trip:
     type: "object"
     properties:
+      gtfsId:
+        type: "string"
       id:
         type: "string"
+      blockId:
+        type: "string"
+  Agency:
+    type: "object"
+    properties:
       gtfsId:
+        type: "string"
+      id:
+        type: "string"
+      name:
         type: "string"
   Stop:
     type: "object"
     properties:
-      alerts:
-        type: "array"
-        items:
-          $ref: "#/definitions/LocalizedAlert"
       code:
         type: "string"
       gtfsId:
@@ -2495,18 +2502,21 @@ definitions:
         - "DEPARTED_NOTIFICATION"
         - "ARRIVED_NOTIFICATION"
         - "DEPARTURE_AND_ARRIVAL_DELAY"
+        - "REALTIME_UPDATES_LOST"
       body:
+        type: "string"
+  OtpGraphQLRoutesAndTrips:
+    type: "object"
+    properties:
+      routes:
+        type: "string"
+      trips:
         type: "string"
   EncodedPolyline:
     type: "object"
     properties:
       points:
         type: "string"
-      levels:
-        type: "string"
-      length:
-        type: "integer"
-        format: "int32"
   OtpGraphQLTransportMode:
     type: "object"
     properties:
@@ -2526,12 +2536,6 @@ definitions:
         type: "string"
       absoluteDirection:
         type: "string"
-      stayOn:
-        type: "boolean"
-      area:
-        type: "boolean"
-      bogusName:
-        type: "boolean"
       lon:
         type: "number"
         format: "double"
@@ -2553,304 +2557,6 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/Itinerary"
-  Currency:
-    type: "object"
-    properties:
-      symbol:
-        type: "string"
-      currency:
-        type: "string"
-      defaultFractionDigits:
-        type: "integer"
-        format: "int32"
-      currencyCode:
-        type: "string"
-  Itinerary:
-    type: "object"
-    properties:
-      duration:
-        type: "integer"
-        format: "int64"
-      startTime:
-        type: "string"
-        format: "date"
-      endTime:
-        type: "string"
-        format: "date"
-      walkTime:
-        type: "integer"
-        format: "int64"
-      transitTime:
-        type: "integer"
-        format: "int64"
-      waitingTime:
-        type: "integer"
-        format: "int64"
-      walkDistance:
-        type: "number"
-        format: "double"
-      walkLimitExceeded:
-        type: "boolean"
-      elevationLost:
-        type: "number"
-        format: "double"
-      elevationGained:
-        type: "number"
-        format: "double"
-      transfers:
-        type: "integer"
-        format: "int32"
-      fare:
-        $ref: "#/definitions/FareWrapper"
-      legs:
-        type: "array"
-        items:
-          $ref: "#/definitions/Leg"
-  OtpGraphQLVariables:
-    type: "object"
-    properties:
-      arriveBy:
-        type: "boolean"
-      banned:
-        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
-      bikeReluctance:
-        type: "number"
-        format: "float"
-      carReluctance:
-        type: "number"
-        format: "float"
-      date:
-        type: "string"
-      fromPlace:
-        type: "string"
-      mobilityProfile:
-        type: "string"
-      modes:
-        type: "array"
-        items:
-          $ref: "#/definitions/OtpGraphQLTransportMode"
-      numItineraries:
-        type: "integer"
-        format: "int32"
-      preferred:
-        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
-      time:
-        type: "string"
-      toPlace:
-        type: "string"
-      unpreferred:
-        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
-      walkReluctance:
-        type: "number"
-        format: "float"
-      walkSpeed:
-        type: "number"
-        format: "float"
-      wheelchair:
-        type: "boolean"
-  FareWrapper:
-    type: "object"
-    properties:
-      fare:
-        $ref: "#/definitions/Fare"
-      details:
-        $ref: "#/definitions/FareDetails"
-  MobilityProfileLite:
-    type: "object"
-    properties:
-      userId:
-        type: "string"
-      mobilityMode:
-        type: "string"
-      email:
-        type: "string"
-      name:
-        type: "string"
-  LocalizedAlert:
-    type: "object"
-    properties:
-      alertHeaderText:
-        type: "string"
-      alertDescriptionText:
-        type: "string"
-      alertUrl:
-        type: "string"
-      effectiveStartDate:
-        type: "string"
-        format: "date"
-      effectiveEndDate:
-        type: "string"
-        format: "date"
-      id:
-        type: "string"
-  Route:
-    type: "object"
-    properties:
-      alerts:
-        type: "array"
-        items:
-          $ref: "#/definitions/LocalizedAlert"
-      color:
-        type: "string"
-      gtfsId:
-        type: "string"
-      id:
-        type: "string"
-      longName:
-        type: "string"
-      shortName:
-        type: "string"
-      textColor:
-        type: "string"
-      type:
-        type: "integer"
-        format: "int32"
-  MonitoredTrip:
-    type: "object"
-    properties:
-      userId:
-        type: "string"
-      tripName:
-        type: "string"
-      from:
-        $ref: "#/definitions/Place"
-      to:
-        $ref: "#/definitions/Place"
-      leadTimeInMinutes:
-        type: "integer"
-        format: "int32"
-      monday:
-        type: "boolean"
-      tuesday:
-        type: "boolean"
-      wednesday:
-        type: "boolean"
-      thursday:
-        type: "boolean"
-      friday:
-        type: "boolean"
-      saturday:
-        type: "boolean"
-      sunday:
-        type: "boolean"
-      excludeFederalHolidays:
-        type: "boolean"
-      isActive:
-        type: "boolean"
-      snoozed:
-        type: "boolean"
-      otp2QueryParams:
-        $ref: "#/definitions/OtpGraphQLVariables"
-      itinerary:
-        $ref: "#/definitions/Itinerary"
-      notifyOnAlert:
-        type: "boolean"
-      departureVarianceMinutesThreshold:
-        type: "integer"
-        format: "int32"
-      arrivalVarianceMinutesThreshold:
-        type: "integer"
-        format: "int32"
-      notifyOnItineraryChange:
-        type: "boolean"
-      itineraryExistence:
-        $ref: "#/definitions/ItineraryExistence"
-      journeyState:
-        $ref: "#/definitions/JourneyState"
-      notifyAtLeadingInterval:
-        type: "boolean"
-      primary:
-        $ref: "#/definitions/MobilityProfileLite"
-      companion:
-        $ref: "#/definitions/RelatedUser"
-      observers:
-        type: "array"
-        items:
-          $ref: "#/definitions/RelatedUser"
-      attemptsToGetMatchingItinerary:
-        type: "integer"
-        format: "int32"
-  StopTime:
-    type: "object"
-    properties:
-      stop:
-        $ref: "#/definitions/TripStop"
-      stopPosition:
-        type: "integer"
-        format: "int32"
-  Trip:
-    type: "object"
-    properties:
-      gtfsId:
-        type: "string"
-      id:
-        type: "string"
-      departureStoptime:
-        $ref: "#/definitions/StopTime"
-      arrivalStoptime:
-        $ref: "#/definitions/StopTime"
-  Agency:
-    type: "object"
-    properties:
-      alerts:
-        type: "array"
-        items:
-          $ref: "#/definitions/LocalizedAlert"
-      gtfsId:
-        type: "string"
-      id:
-        type: "string"
-      name:
-        type: "string"
-  OtpGraphQLRoutesAndTrips:
-    type: "object"
-    properties:
-      routes:
-        type: "string"
-      trips:
-        type: "string"
-  FareDetails:
-    type: "object"
-    properties:
-      regular:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
-      student:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
-      senior:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
-      tram:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
-      special:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
-      youth:
-        type: "array"
-        items:
-          $ref: "#/definitions/FareComponent"
-  Fare:
-    type: "object"
-    properties:
-      regular:
-        $ref: "#/definitions/Price"
-      student:
-        $ref: "#/definitions/Price"
-      senior:
-        $ref: "#/definitions/Price"
-      tram:
-        $ref: "#/definitions/Price"
-      special:
-        $ref: "#/definitions/Price"
-      youth:
-        $ref: "#/definitions/Price"
   Leg:
     type: "object"
     properties:
@@ -2871,8 +2577,6 @@ definitions:
       distance:
         type: "number"
         format: "double"
-      pathway:
-        type: "boolean"
       mode:
         type: "string"
       interlineWithPreviousLeg:
@@ -2885,12 +2589,8 @@ definitions:
         $ref: "#/definitions/EncodedPolyline"
       rentedBike:
         type: "boolean"
-      rentedCar:
-        type: "boolean"
-      rentedVehicle:
-        type: "boolean"
-      hailedCar:
-        type: "boolean"
+      rideHailingEstimate:
+        $ref: "#/definitions/RideHailingEstimate"
       transitLeg:
         type: "boolean"
       duration:
@@ -2899,44 +2599,15 @@ definitions:
       intermediateStops:
         type: "array"
         items:
-          $ref: "#/definitions/Place"
+          $ref: "#/definitions/Stop"
       steps:
         type: "array"
         items:
           $ref: "#/definitions/Step"
-      agencyName:
-        type: "string"
-      agencyUrl:
-        type: "string"
-      routeType:
-        type: "integer"
-        format: "int32"
-      routeId:
-        type: "string"
-      agencyId:
-        type: "string"
-      tripBlockId:
-        type: "string"
-      tripId:
-        type: "string"
-      serviceDate:
-        type: "string"
-      interStopGeometry:
-        type: "array"
-        items:
-          $ref: "#/definitions/EncodedPolyline"
-      routeShortName:
-        type: "string"
-      routeLongName:
-        type: "string"
-      routeColor:
-        type: "string"
-      routeTextColor:
-        type: "string"
       alerts:
         type: "array"
         items:
-          $ref: "#/definitions/LocalizedAlert"
+          $ref: "#/definitions/Alert"
       headsign:
         type: "string"
       agency:
@@ -2952,14 +2623,6 @@ definitions:
         $ref: "#/definitions/ZonedDateTime"
       requestParameters:
         $ref: "#/definitions/OtpGraphQLVariables"
-  Price:
-    type: "object"
-    properties:
-      currency:
-        $ref: "#/definitions/Currency"
-      cents:
-        type: "integer"
-        format: "int32"
   ItineraryExistence:
     type: "object"
     properties:
@@ -3048,17 +2711,117 @@ definitions:
         type: "string"
       nickname:
         type: "string"
-  FareComponent:
+  Itinerary:
     type: "object"
     properties:
-      fareId:
+      duration:
+        type: "integer"
+        format: "int64"
+      startTime:
         type: "string"
-      price:
-        $ref: "#/definitions/Price"
-      routes:
+        format: "date"
+      endTime:
+        type: "string"
+        format: "date"
+      walkTime:
+        type: "integer"
+        format: "int64"
+      waitingTime:
+        type: "integer"
+        format: "int64"
+      walkDistance:
+        type: "number"
+        format: "double"
+      elevationLost:
+        type: "number"
+        format: "double"
+      elevationGained:
+        type: "number"
+        format: "double"
+      transfers:
+        type: "integer"
+        format: "int32"
+      legs:
         type: "array"
         items:
-          type: "string"
+          $ref: "#/definitions/Leg"
+  RideHailingEstimate:
+    type: "object"
+    properties:
+      arrival:
+        type: "string"
+      productName:
+        type: "string"
+  Alert:
+    type: "object"
+    properties:
+      alertHeaderText:
+        type: "string"
+      alertDescriptionText:
+        type: "string"
+      alertUrl:
+        type: "string"
+      effectiveStartDate:
+        type: "string"
+        format: "date"
+      effectiveEndDate:
+        type: "string"
+        format: "date"
+      id:
+        type: "string"
+  OtpGraphQLVariables:
+    type: "object"
+    properties:
+      arriveBy:
+        type: "boolean"
+      banned:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      bikeReluctance:
+        type: "number"
+        format: "float"
+      carReluctance:
+        type: "number"
+        format: "float"
+      date:
+        type: "string"
+      fromPlace:
+        type: "string"
+      mobilityProfile:
+        type: "string"
+      modes:
+        type: "array"
+        items:
+          $ref: "#/definitions/OtpGraphQLTransportMode"
+      numItineraries:
+        type: "integer"
+        format: "int32"
+      preferred:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      time:
+        type: "string"
+      toPlace:
+        type: "string"
+      unpreferred:
+        $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
+      walkReluctance:
+        type: "number"
+        format: "float"
+      walkSpeed:
+        type: "number"
+        format: "float"
+      wheelchair:
+        type: "boolean"
+  MobilityProfileLite:
+    type: "object"
+    properties:
+      userId:
+        type: "string"
+      mobilityMode:
+        type: "string"
+      email:
+        type: "string"
+      name:
+        type: "string"
   Place:
     type: "object"
     properties:
@@ -3070,40 +2833,91 @@ definitions:
       lat:
         type: "number"
         format: "double"
-      departure:
-        type: "string"
-        format: "date"
-      orig:
-        type: "string"
-      vertexType:
-        type: "string"
-      stopId:
-        type: "string"
-      arrival:
-        type: "string"
-        format: "date"
       stop:
         $ref: "#/definitions/Stop"
-      stopIndex:
+  Route:
+    type: "object"
+    properties:
+      color:
+        type: "string"
+      gtfsId:
+        type: "string"
+      id:
+        type: "string"
+      longName:
+        type: "string"
+      shortName:
+        type: "string"
+      textColor:
+        type: "string"
+      type:
         type: "integer"
         format: "int32"
-      stopSequence:
+  MonitoredTrip:
+    type: "object"
+    properties:
+      userId:
+        type: "string"
+      tripName:
+        type: "string"
+      from:
+        $ref: "#/definitions/Place"
+      to:
+        $ref: "#/definitions/Place"
+      leadTimeInMinutes:
         type: "integer"
         format: "int32"
-      stopCode:
-        type: "string"
-      platformCode:
-        type: "string"
-      zoneId:
-        type: "string"
-      bikeShareId:
-        type: "string"
-      networks:
+      monday:
+        type: "boolean"
+      tuesday:
+        type: "boolean"
+      wednesday:
+        type: "boolean"
+      thursday:
+        type: "boolean"
+      friday:
+        type: "boolean"
+      saturday:
+        type: "boolean"
+      sunday:
+        type: "boolean"
+      excludeFederalHolidays:
+        type: "boolean"
+      isActive:
+        type: "boolean"
+      snoozed:
+        type: "boolean"
+      otp2QueryParams:
+        $ref: "#/definitions/OtpGraphQLVariables"
+      itinerary:
+        $ref: "#/definitions/Itinerary"
+      notifyOnAlert:
+        type: "boolean"
+      departureVarianceMinutesThreshold:
+        type: "integer"
+        format: "int32"
+      arrivalVarianceMinutesThreshold:
+        type: "integer"
+        format: "int32"
+      notifyOnItineraryChange:
+        type: "boolean"
+      itineraryExistence:
+        $ref: "#/definitions/ItineraryExistence"
+      journeyState:
+        $ref: "#/definitions/JourneyState"
+      notifyAtLeadingInterval:
+        type: "boolean"
+      primary:
+        $ref: "#/definitions/MobilityProfileLite"
+      companion:
+        $ref: "#/definitions/RelatedUser"
+      observers:
         type: "array"
         items:
-          type: "string"
-      address:
-        type: "string"
+          $ref: "#/definitions/RelatedUser"
+      attemptsToGetMatchingItinerary:
+        type: "integer"
+        format: "int32"
   VerificationResult:
     type: "object"
     properties:

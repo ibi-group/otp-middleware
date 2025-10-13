@@ -14,7 +14,8 @@ import java.util.Set;
 public class JourneyState implements Cloneable {
     /**
      * The current arrival/departure baseline to use when checking if a new threshold has been met for the active or
-     * upcoming itinerary. These values are updated whenever a notification has already been sent out that informed the
+     * upcoming itinerary that has real-time updates. These fields are zero if no transit leg has real-time updates.
+     * These values are updated whenever a notification has already been sent out that informed the
      * user that the trip's estimated departure or arrival time changed. Subsequent comparisons will then check against
      * this updated baseline to determine if this new threshold for sending an alert has been met.
      *
@@ -86,5 +87,33 @@ public class JourneyState implements Cloneable {
             cloned.matchingItinerary = matchingItinerary.clone();
         }
         return cloned;
+    }
+
+    /**
+     * Gets the baseline departure, or fall back on the scheduled departure.
+     */
+    public long tripDepartureTime() {
+        return baselineDepartureTimeEpochMillis == 0 ? scheduledDepartureTimeEpochMillis : baselineDepartureTimeEpochMillis;
+    }
+
+    /**
+     * Gets the baseline arrival, or fall back on the scheduled arrival.
+     */
+    public long tripArrivalTime() {
+        return baselineArrivalTimeEpochMillis == 0 ? scheduledArrivalTimeEpochMillis : baselineArrivalTimeEpochMillis;
+    }
+
+    /**
+     * Whether real-time data were previously set.
+     */
+    public boolean hadRealtimeData() {
+        return baselineDepartureTimeEpochMillis != 0 || baselineArrivalTimeEpochMillis != 0;
+    }
+
+    /**
+     * Whether real-time data were lost.
+     */
+    public boolean realtimeDataLost() {
+        return !hasRealtimeData && hadRealtimeData();
     }
 }

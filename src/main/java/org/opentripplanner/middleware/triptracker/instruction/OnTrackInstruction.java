@@ -16,7 +16,7 @@ public class OnTrackInstruction extends SelfLegInstruction {
     public static final String TRIP_INSTRUCTION_ARRIVED_PREFIX = "ARRIVED: ";
 
     /** Generic text when arriving at the end of routing. */
-    public static final String TRIP_INSTRUCTION_END_OF_ROUTING = "Your destination is in the vicinity.";
+    public static final String TRIP_INSTRUCTION_END_OF_ROUTING = "Your %s is in the vicinity.";
 
     public OnTrackInstruction(boolean isDestination, double distance, Locale locale) {
         this.distance = distance;
@@ -53,11 +53,12 @@ public class OnTrackInstruction extends SelfLegInstruction {
     }
 
     /**
-     * Build on track instruction based on step instructions and location. e.g.
+     * Build on track instruction based on step instructions and location. e.g.:
      * <p>
      * "UPCOMING: CONTINUE on Langley Drive"
      * "IMMEDIATE: RIGHT on service road"
      * "ARRIVED: Gwinnett Justice Center (Central)"
+     * "Your destination/bus stop is in the vicinity."
      * <p>
      * TODO: Internationalization and refinements to these generated instructions with input from the mobile app team.
      */
@@ -66,7 +67,8 @@ public class OnTrackInstruction extends SelfLegInstruction {
         if (hasInstruction()) {
             if (legStep != null) {
                 if (legStep.isEndOfRouting()) {
-                    return TRIP_INSTRUCTION_END_OF_ROUTING;
+                    // Hacky - The kind of place will either be 'bus stop' or 'destination' and is stored in streetName.
+                    return String.format(TRIP_INSTRUCTION_END_OF_ROUTING, legStep.streetName);
                 } else {
                     String instruction = legStep.relativeDirection.equals(Step.DEPART)
                         ? "Head " + legStep.absoluteDirection

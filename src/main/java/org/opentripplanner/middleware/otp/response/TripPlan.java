@@ -25,6 +25,8 @@ public class TripPlan {
     /** A list of possible itineraries */
     public List<Itinerary> itineraries = new ArrayList<>();
 
+    public List<RoutingError> routingErrors = new ArrayList<>();
+
     @Override
     public String toString() {
         return "TripPlan{" +
