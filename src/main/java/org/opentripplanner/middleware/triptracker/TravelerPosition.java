@@ -103,13 +103,13 @@ public class TravelerPosition {
         double distanceToExpectedLeg = distanceToLegOrigin(currentPosition, expectedLeg, isTransit);
         double distanceToNextLeg = distanceToLegOrigin(currentPosition, nextLeg, isTransit);
 
-        if (distanceToExpectedLeg <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distanceToExpectedLeg < distanceToNextLeg) {
-            return expectedLeg;
-        } else if (distanceToNextLeg <= TRIP_INSTRUCTION_UPCOMING_RADIUS && distanceToNextLeg < distanceToExpectedLeg) {
-            return nextLeg;
-        } else {
-            return null;
+        if (
+            distanceToExpectedLeg <= TRIP_INSTRUCTION_UPCOMING_RADIUS ||
+                distanceToNextLeg <= TRIP_INSTRUCTION_UPCOMING_RADIUS
+        ) {
+            return (distanceToExpectedLeg <= distanceToNextLeg) ? expectedLeg : nextLeg;
         }
+        return null;
     }
 
     private static double distanceToLegOrigin(Coordinates position, Leg leg, boolean isTransit) {
