@@ -172,6 +172,13 @@ public class TravelerLocator {
                 return new WaitForTransitInstruction(transitLeg, travelerPosition.currentTime, locale);
             }
 
+            // If outcoming leg is transit and there is no next transit leg, find walk leg with closest start.
+            Leg walkLeg = travelerPosition.getLegWithClosestUpcomingOrigin(false);
+            if (walkLeg != null) {
+                // If a walk leg was found, direct to the first street on the walk leg.
+                return new DeviatedInstruction(walkLeg.steps.get(0).streetName, locale);
+            }
+
             Step nextStep = snapToWaypoint(travelerPosition, travelerPosition.expectedLeg.steps);
             if (nextStep != null && nextStep.isEndOfRouting()) {
                 return new OnTrackInstruction(
