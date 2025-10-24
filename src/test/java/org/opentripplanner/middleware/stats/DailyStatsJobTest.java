@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.stats;
 
+import org.bson.conversions.Bson;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -20,7 +21,6 @@ import java.util.Date;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.opentripplanner.middleware.stats.DailyStatsJob.DATE_FIELD;
 import static org.opentripplanner.middleware.stats.DailyStatsJob.getDateFilter;
 
@@ -129,12 +129,21 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
     @Test
     void shouldRunJob() {
         DateTimeUtils.useFixedClockAt(DateTimeUtils.makeOtpZonedDateTime(DATE_1).plusDays(1));
+        Bson dateFilter = getDateFilter(DAY_1, DATE_FIELD);
 
         DailyStatsJob job = new DailyStatsJob();
+        // Initial run of the job.
         job.run();
 
-        DailyStats stats = Persistence.dailyStats.getOneFiltered(getDateFilter(DAY_1, DATE_FIELD));
-        assertNotNull(stats);
+        assertEquals(1, Persistence.dailyStats.getCountFiltered(dateFilter));
+        DailyStats stats = Persistence.dailyStats.getOneFiltered(dateFilter);
+
+        // Second run of the job should not create another DailyStats entry (id should be the same).
+        job.run();
+        assertEquals(1, Persistence.dailyStats.getCountFiltered(dateFilter));
+        DailyStats statsAfter = Persistence.dailyStats.getOneFiltered(dateFilter);
+        assertEquals(stats.id, statsAfter.id);
+
         Persistence.dailyStats.removeById(stats.id);
 
         // Same assertions as canRetrieveStats above.
