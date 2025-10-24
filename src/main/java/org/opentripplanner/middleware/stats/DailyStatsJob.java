@@ -15,10 +15,9 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 import java.util.concurrent.TimeUnit;
 
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
 
 /**
@@ -26,18 +25,8 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
  */
 public class DailyStatsJob implements RecurringJobScheduler, Runnable {
 
-    private static final int ONE_DAY_IN_MINUTES = 60 * 24; // 1 day
-
-    // This property needs to be a valid DateTimeFormatter.ISO_LOCAL_TIME specification.
-    // If it's not, this hardcoded default will be used.
-    private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT =
-        "03:00";
-    private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME =
-        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME",
-                                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
-
     private static final Logger LOG = LoggerFactory.getLogger(DailyStatsJob.class);
-
+    private static final int ONE_DAY_IN_MINUTES = 60 * 24; // 1 day
     public static final String BATCH_ID_FIELD = "batchId";
     private static final String DATE_CREATED_FIELD = "dateCreated";
     static final String DATE_FIELD = "date";
@@ -48,30 +37,18 @@ public class DailyStatsJob implements RecurringJobScheduler, Runnable {
 
     @Override
     public void scheduleRecurringJob() {
-        LOG.info("Scheduling daily stats job");
+        LOG.info("Scheduling daily stats job starting at {}.", CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
 
-        // Run the job immediately (so that the previous day is captured as soon as possible if not already captured).
-        run();
-
-        // Then compute a delay so that the job runs at the default time.
-        long initialDelayMillis = 0L;
-
-        try {
-            initialDelayMillis = Scheduler.getInitialDelayMillis(
-                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
-        } catch (DateTimeParseException e) {
-            LOG.error("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME value \"{}\" is invalid, using default value \"{}\" instead",
-                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME,
-                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
-            initialDelayMillis = Scheduler.getInitialDelayMillis(
-                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
-        }
-
+        // Compute a delay so that the job runs at the same time as the CDP upload jobs,
+        // so that the content and stats from both jobs are most likely consistent.
         Scheduler.scheduleJob(
             new DailyStatsJob(),
-            initialDelayMillis,
+            ConnectedDataManager.getInitialDelayMillis(),
             ONE_DAY_IN_MINUTES * 60000L, // milliseconds
             TimeUnit.MILLISECONDS);
+
+        // Run the job immediately, so that the previous day is captured as soon as possible, if not already.
+        run();
     }
 
     /** Get the stats for OtpUsers */

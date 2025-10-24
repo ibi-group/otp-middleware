@@ -67,7 +67,7 @@ public class ConnectedDataManager implements RecurringJobScheduler {
     // If it's not, this hardcoded default will be used.
     private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT =
         "03:00";
-    private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME =
+    public static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME",
                                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
 
@@ -124,19 +124,9 @@ public class ConnectedDataManager implements RecurringJobScheduler {
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
 
             // There is no initial delay unless we're reporting daily
-            long initialDelayMillis = 0L;
-            if (isReportingDaily()) {
-                try {
-                    initialDelayMillis = Scheduler.getInitialDelayMillis(
-                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
-                } catch (DateTimeParseException e) {
-                    LOG.error("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME value \"{}\" is invalid, using default value \"{}\" instead",
-                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME,
-                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
-                    initialDelayMillis = Scheduler.getInitialDelayMillis(
-                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
-                }
-            }
+            long initialDelayMillis = isReportingDaily()
+                ? getInitialDelayMillis()
+                : 0;
 
             Scheduler.scheduleJob(
                 new TripHistoryUploadJob(),
@@ -144,6 +134,24 @@ public class ConnectedDataManager implements RecurringJobScheduler {
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES * 60000L, // milliseconds
                 TimeUnit.MILLISECONDS);
         }
+    }
+
+    /**
+     * Computes the delay before which the job repeat interval takes effect.
+     */
+    public static long getInitialDelayMillis() {
+        long initialDelayMillis;
+        try {
+            initialDelayMillis = Scheduler.getInitialDelayMillis(
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
+        } catch (DateTimeParseException e) {
+            LOG.error("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME value \"{}\" is invalid, using default value \"{}\" instead",
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME,
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
+            initialDelayMillis = Scheduler.getInitialDelayMillis(
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
+        }
+        return initialDelayMillis;
     }
 
     /**
