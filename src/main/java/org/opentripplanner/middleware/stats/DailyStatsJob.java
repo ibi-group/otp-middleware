@@ -3,10 +3,10 @@ package org.opentripplanner.middleware.stats;
 import com.google.common.collect.Iterators;
 import com.mongodb.client.DistinctIterable;
 import com.mongodb.client.model.Filters;
-import org.opentripplanner.middleware.controllers.api.OtpRequestProcessor;
+import org.bson.conversions.Bson;
+import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,10 +15,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
-import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
 
 /**
  * Responsible for collating daily stats and saving them in Mongo.
@@ -39,7 +39,6 @@ public class DailyStatsJob implements RecurringJobScheduler, Runnable {
 
     public static final String BATCH_ID_FIELD = "batchId";
     private static final String DATE_CREATED_FIELD = "dateCreated";
-    public static final String DATE_FIELD = "date";
 
     public DailyStatsJob() {
         // No actions performed.
@@ -78,19 +77,14 @@ public class DailyStatsJob implements RecurringJobScheduler, Runnable {
     }
 
     /**
-     * Get distinct batchId values for the specified date. Only select trip requests where a batch id has been provided.
+     * Retrieve statistics for a given date.
      */
     public DailyStats retrieveStats(LocalDate date) {
-        // TODO: Refactor with ConnectedDataPlatform
-        DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
-            BATCH_ID_FIELD,
-            Filters.and(
-                Filters.gte(DATE_CREATED_FIELD, DateTimeUtils.convertToDate(LocalDateTime.of(date, LocalTime.MIDNIGHT))),
-                Filters.lt(DATE_CREATED_FIELD, DateTimeUtils.convertToDate(LocalDateTime.of(date.plusDays(1), LocalTime.MIDNIGHT))),
-                Filters.ne(BATCH_ID_FIELD, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
-            ),
-            String.class
+        Bson dateFilter = Filters.and(
+            Filters.gte(DATE_CREATED_FIELD, convertToDate(LocalDateTime.of(date, LocalTime.MIDNIGHT))),
+            Filters.lt(DATE_CREATED_FIELD, convertToDate(LocalDateTime.of(date.plusDays(1), LocalTime.MIDNIGHT)))
         );
+        DistinctIterable<String> uniqueBatchIds = ConnectedDataManager.getUniqueBatchIds(dateFilter);
 
         // Get user ids for the matching trips
         DistinctIterable<String> uniqueUserIds = Persistence.tripRequests.getDistinctFieldValues(

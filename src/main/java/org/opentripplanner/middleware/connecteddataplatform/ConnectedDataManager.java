@@ -201,16 +201,7 @@ public class ConnectedDataManager implements RecurringJobScheduler {
         boolean anonymize
     ) throws IOException {
         Bson dateFilter = getDateFilter(periodStart, reportingInterval);
-
-        // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
-        DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
-            BATCH_ID_FIELD,
-            Filters.and(
-                dateFilter,
-                Filters.ne(BATCH_ID_FIELD, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
-            ),
-            String.class
-        );
+        DistinctIterable<String> uniqueBatchIds = getUniqueBatchIds(dateFilter);
 
         // Needed to correctly format the JSON content.
         // (If needed for perf and if settings permit: skip writing file if no records.)
@@ -246,6 +237,21 @@ public class ConnectedDataManager implements RecurringJobScheduler {
         }
         FileUtils.writeToFile(pathAndFileName, true, "]");
         return numTripRequestsWrittenToFile;
+    }
+
+    /**
+     * Get a Mongo iterator of distinct batchId values within the specified date filter.
+     * Only select trip requests where a batch id has been provided.
+     */
+    public static DistinctIterable<String> getUniqueBatchIds(Bson dateFilter) {
+        return Persistence.tripRequests.getDistinctFieldValues(
+            BATCH_ID_FIELD,
+            Filters.and(
+                dateFilter,
+                Filters.ne(BATCH_ID_FIELD, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
+            ),
+            String.class
+        );
     }
 
     /**
