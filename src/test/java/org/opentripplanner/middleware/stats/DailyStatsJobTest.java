@@ -132,8 +132,9 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
         Bson dateFilter = getDateFilter(DAY_1, DATE_FIELD);
 
         DailyStatsJob job = new DailyStatsJob();
-        // Initial run of the job.
-        job.run();
+        // Initial run of the job should occur right after scheduling and
+        // should end long before the job repeat interval has passed.
+        job.scheduleRecurringJob();
 
         assertEquals(1, Persistence.dailyStats.getCountFiltered(dateFilter));
         DailyStats stats = Persistence.dailyStats.getOneFiltered(dateFilter);

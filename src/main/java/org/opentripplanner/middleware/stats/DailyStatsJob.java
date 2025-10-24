@@ -50,8 +50,9 @@ public class DailyStatsJob implements RecurringJobScheduler, Runnable {
     public void scheduleRecurringJob() {
         LOG.info("Scheduling daily stats job");
 
-        // Run the collection immediately for the previous day
-        // TODO
+        // Run the job immediately (so that the previous day is captured as soon as possible if not already captured).
+        run();
+
         // Then compute a delay so that the job runs at the default time.
         long initialDelayMillis = 0L;
 
