@@ -39,6 +39,7 @@ public class DailyStatsJob implements RecurringJobScheduler, Runnable {
 
     public static final String BATCH_ID_FIELD = "batchId";
     private static final String DATE_CREATED_FIELD = "dateCreated";
+    private static final String DATE_FIELD = "date";
 
     public DailyStatsJob() {
         // No actions performed.
@@ -80,10 +81,7 @@ public class DailyStatsJob implements RecurringJobScheduler, Runnable {
      * Retrieve statistics for a given date.
      */
     public DailyStats retrieveStats(LocalDate date) {
-        Bson dateFilter = Filters.and(
-            Filters.gte(DATE_CREATED_FIELD, convertToDate(LocalDateTime.of(date, LocalTime.MIDNIGHT))),
-            Filters.lt(DATE_CREATED_FIELD, convertToDate(LocalDateTime.of(date.plusDays(1), LocalTime.MIDNIGHT)))
-        );
+        Bson dateFilter = getDateFilter(date, DATE_CREATED_FIELD);
         DistinctIterable<String> uniqueBatchIds = ConnectedDataManager.getUniqueBatchIds(dateFilter);
 
         // Get user ids for the matching trips
@@ -100,8 +98,27 @@ public class DailyStatsJob implements RecurringJobScheduler, Runnable {
         return stats;
     }
 
+    /**
+     * Get the date filter for the specified date only.
+     */
+    private static Bson getDateFilter(LocalDate date, String field) {
+        return Filters.and(
+            Filters.gte(field, convertToDate(LocalDateTime.of(date, LocalTime.MIDNIGHT))),
+            Filters.lt(field, convertToDate(LocalDateTime.of(date.plusDays(1), LocalTime.MIDNIGHT)))
+        );
+    }
+
     public void run() {
         DailyStats stats = retrieveStats(LocalDate.now());
         Persistence.dailyStats.create(stats);
+    }
+
+    /**
+     * Whether to retrieve stats for a given day.
+     * @return true if an entry doesn't exist in Mongo for the given day, false otherwise.
+     */
+    public boolean shouldRetrieveStats(LocalDate date) {
+        Bson dateFilter = getDateFilter(date, DATE_FIELD);
+        return Persistence.dailyStats.getCountFiltered(dateFilter) == 0;
     }
 }

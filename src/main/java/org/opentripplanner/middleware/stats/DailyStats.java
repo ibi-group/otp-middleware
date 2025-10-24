@@ -2,7 +2,7 @@ package org.opentripplanner.middleware.stats;
 
 import org.opentripplanner.middleware.models.Model;
 
-import java.time.LocalDate;
+import java.util.Date;
 
 /**
  * Holds anonymous statistics collected on a daily basis.
@@ -11,7 +11,7 @@ public class DailyStats extends Model {
     /**
      * The date for which the stats apply.
      */
-    public LocalDate date;
+    public Date date;
 
     /**
      * The total number of {@link org.opentripplanner.middleware.models.OtpUser}
