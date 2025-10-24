@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.recurringjobs;
 
 import org.opentripplanner.middleware.bugsnag.BugsnagJobs;
 import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
+import org.opentripplanner.middleware.stats.DailyStatsJob;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitorAllTripsJob;
 import org.opentripplanner.middleware.triptracker.TripSurveySenderJob;
 import org.opentripplanner.middleware.triptracker.TripSurveyUploadJob;
@@ -21,7 +22,8 @@ public enum RecurringJob {
     TRIP_HISTORY_UPLOAD_JOB("trip-history-upload-job", ConnectedDataManager::new),
     BUGSNAG_EVENT_HANDLING_JOB("bugsnag-event-handing-job", BugsnagJobs::new),
     TRIP_SURVEY_SENDER_JOB("trip-survey-sender-job", TripSurveySenderJob::new),
-    TRIP_SURVEY_UPLOAD_JOB("trip-survey-upload-job", TripSurveyUploadJob::new);
+    TRIP_SURVEY_UPLOAD_JOB("trip-survey-upload-job", TripSurveyUploadJob::new),
+    DAILY_STATS_JOB("daily-stats",DailyStatsJob::new);
 
     private final String commandLineName;
     private final Supplier<RecurringJobScheduler> recurringJobScheduler;
