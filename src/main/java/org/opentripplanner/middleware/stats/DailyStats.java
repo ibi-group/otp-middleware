@@ -17,20 +17,20 @@ public class DailyStats extends Model {
      * The total number of {@link org.opentripplanner.middleware.models.OtpUser}
      * at the time the statistics are collected.
      */
-    public int otpUsers;
+    public long otpUsers;
 
     /**
      * The number of {@link org.opentripplanner.middleware.models.TripRequest} by logged-in users
      * for the date the statistics are collected.
      */
-    public int tripRequests;
+    public long tripRequests;
 
     /**
      * The number of {@link org.opentripplanner.middleware.models.OtpUser} associated with the
      * {@link org.opentripplanner.middleware.models.TripRequest}
      * for the date the statistics are collected.
      */
-    public int otpUsersWithTripRequests;
+    public long otpUsersWithTripRequests;
 
     // Insert other stats here as needed.
 }
