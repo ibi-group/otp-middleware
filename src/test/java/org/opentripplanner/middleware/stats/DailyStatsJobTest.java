@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.stats;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,6 +20,9 @@ import java.util.Date;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.opentripplanner.middleware.stats.DailyStatsJob.DATE_FIELD;
+import static org.opentripplanner.middleware.stats.DailyStatsJob.getDateFilter;
 
 class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
 
@@ -49,8 +53,8 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
         createTripRequest("req8", "batch4", DATE_1, "user2");
         createTripRequest("req9", "batch5", DATE_1, "user2");
 
-        stats1 = createStats(DAY_1);
-        stats2 = createStats(DAY_1.minusDays(1));
+        stats1 = createStats(DAY_1.minusDays(5));
+        stats2 = createStats(DAY_1.minusDays(4));
     }
 
     @AfterAll
@@ -63,6 +67,13 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
 
         Persistence.dailyStats.removeById(stats1.id);
         Persistence.dailyStats.removeById(stats2.id);
+
+        assertEquals(0, Persistence.dailyStats.getCount());
+    }
+
+    @AfterEach
+    void afterEach() {
+        DateTimeUtils.useSystemDefaultClockAndTimezone();
     }
 
     @Test
@@ -70,6 +81,7 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
         DailyStatsJob job = new DailyStatsJob();
         DailyStats stats = job.retrieveStats(DAY_1);
 
+        assertEquals(DAY_1, DateTimeUtils.makeOtpZonedDateTime(stats.date).toLocalDate());
         assertEquals(3, stats.otpUsers);
         assertEquals(4, stats.tripRequests);
         assertEquals(2, stats.otpUsersWithTripRequests);
@@ -100,9 +112,9 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
 
     private static Stream<Arguments> shouldRetrieveStatsCases() {
         return Stream.of(
-            Arguments.of(DAY_1.minusDays(1), false),
-            Arguments.of(DAY_1, false),
-            Arguments.of(DAY_1.plusDays(1), true)
+            Arguments.of(DAY_1.minusDays(5), false),
+            Arguments.of(DAY_1.minusDays(4), false),
+            Arguments.of(DAY_1.minusDays(3), true)
         );
     }
 
@@ -112,5 +124,22 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
         stats.date = DateTimeUtils.convertToDate(LocalDateTime.of(date, LocalTime.MIDNIGHT));
         Persistence.dailyStats.create(stats);
         return stats;
+    }
+
+    @Test
+    void shouldRunJob() {
+        DateTimeUtils.useFixedClockAt(DateTimeUtils.makeOtpZonedDateTime(DATE_1).plusDays(1));
+
+        DailyStatsJob job = new DailyStatsJob();
+        job.run();
+
+        DailyStats stats = Persistence.dailyStats.getOneFiltered(getDateFilter(DAY_1, DATE_FIELD));
+        assertNotNull(stats);
+        Persistence.dailyStats.removeById(stats.id);
+
+        // Same assertions as canRetrieveStats above.
+        assertEquals(3, stats.otpUsers);
+        assertEquals(4, stats.tripRequests);
+        assertEquals(2, stats.otpUsersWithTripRequests);
     }
 }
