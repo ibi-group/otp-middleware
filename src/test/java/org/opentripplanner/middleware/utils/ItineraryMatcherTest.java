@@ -13,7 +13,7 @@ import java.util.List;
 
 import static org.opentripplanner.middleware.testutils.OtpTestUtils.createDefaultItinerary;
 
-public class ItineraryMatcherTest {
+class ItineraryMatcherTest {
 
     /**
      * Check whether certain itineraries match.
