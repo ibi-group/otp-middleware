@@ -31,15 +31,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.Calendar;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -312,6 +304,8 @@ public class CheckMonitoredTrip implements Runnable {
             LOG.warn("No comparison itinerary found for trip {} - OTP response was null.", trip.id);
             return false;
         }
+
+        List<String> mismatchReasons = new ArrayList<>();
         for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
             Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
             ItineraryMatcher matcher = new ItineraryMatcher(trip.itinerary, candidateItinerary);
@@ -365,12 +359,14 @@ public class CheckMonitoredTrip implements Runnable {
 
                 LOG.info("Trip status set to {}", journeyState.tripStatus);
                 return updateMonitoredTrip();
+            } else {
+                mismatchReasons.add(matcher.getFailingReason());
             }
         }
 
         // If this point is reached, a matching itinerary was not found.
         ItineraryExistence.logItineraryNotFound(
-            "No comparison itinerary found",
+            String.format("No comparison itinerary found: %s", String.join("; ", mismatchReasons)),
             trip,
             otpResponse.plan,
             ITINERARY_NOT_FOUND_LOGGER
