@@ -21,7 +21,7 @@ import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.I18nUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtils;
+import org.opentripplanner.middleware.utils.ItineraryMatcher;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -314,7 +314,8 @@ public class CheckMonitoredTrip implements Runnable {
         }
         for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
             Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
-            if (ItineraryUtils.itinerariesMatch(trip.itinerary, candidateItinerary)) {
+            ItineraryMatcher matcher = new ItineraryMatcher(trip.itinerary, candidateItinerary);
+            if (matcher.match()) {
                 // matching itinerary found!
                 LOG.info("Found matching itinerary!");
                 trip.attemptsToGetMatchingItinerary = 0;

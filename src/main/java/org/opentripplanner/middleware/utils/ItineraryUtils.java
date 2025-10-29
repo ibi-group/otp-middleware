@@ -120,31 +120,6 @@ public class ItineraryUtils {
     }
 
     /**
-     * Returns true if the itineraries match for the purposes of trip monitoring.
-     *
-     * @param referenceItinerary The reference itinerary that others are compared against.
-     * @param candidateItinerary A new itinerary that might match the previous itinerary.
-     */
-    public static boolean itinerariesMatch(Itinerary referenceItinerary, Itinerary candidateItinerary) {
-        // Make sure both itineraries are monitorable before continuing.
-        if (!referenceItinerary.canBeMonitored() || !candidateItinerary.canBeMonitored()) return false;
-
-        // make sure itineraries have same amount of legs
-        if (referenceItinerary.legs.size() != candidateItinerary.legs.size()) return false;
-
-        // make sure each leg matches
-        for (int i = 0; i < referenceItinerary.legs.size(); i++) {
-            Leg referenceItineraryLeg = referenceItinerary.legs.get(i);
-            Leg candidateItineraryLeg = candidateItinerary.legs.get(i);
-
-            if (!legsMatch(referenceItineraryLeg, candidateItineraryLeg)) return false;
-        }
-
-        // if this point is reached, the itineraries are assumed to match
-        return true;
-    }
-
-    /**
      * Checks that the specified itinerary is on the same day as the specified date/time.
      * @param itinerary the itinerary to check.
      * @param requestDateTime the request date/time to check, in the OTP's time zone.
