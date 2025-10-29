@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
@@ -97,6 +98,15 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         .withMinute(45);
     private static final ZonedDateTime MONDAY_20200615_0835 = MONDAY_20200615_0845.withMinute(35);
 
+    private static final ZonedDateTime THURS_20251016_0000 = DateTimeUtils.makeOtpZonedDateTime(new Date())
+        .withYear(2025)
+        .withMonth(10)
+        .withDayOfMonth(16)
+        .withHour(12)
+        .withMinute(0)
+        .withSecond(17)
+        .withNano(0);
+
     @BeforeAll
     public static void setup() {
         user = PersistenceTestUtils.createUser("user@example.com");
@@ -120,6 +130,70 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /** Provides a mock OTP 'plan' response for trip not possible at midnight. */
+    public OtpResponse mockOtpPlanResponseForTripNotPossibleAtMidnight() {
+        try {
+            // Setup an OTP mock response in order to trigger some of the monitor checks.
+            return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_NOT_POSSIBLE_AT_MIDNIGHT.getResponse();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    void canMonitorTripAtMidNight() throws Exception {
+        DateTimeUtils.useFixedClockAt(THURS_20251016_0000);
+
+        // Mock empty OTP response to simulate trip not possible.
+        OtpResponse mockResponse = new OtpResponse();
+        mockResponse.plan = new TripPlan();
+        mockResponse.plan.itineraries = new ArrayList<>();
+
+        // Mock OTP response matching test case.
+//        OtpResponse mockResponse = mockOtpPlanResponseForTripNotPossibleAtMidnight();
+
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_NOT_POSSIBLE_AT_MIDNIGHT.clone(),
+            false,
+            null
+        );
+
+        monitoredTrip.leadTimeInMinutes = 30;
+        monitoredTrip.monday = true;
+        monitoredTrip.tuesday = true;
+        monitoredTrip.wednesday = true;
+        monitoredTrip.thursday = true;
+        monitoredTrip.friday = true;
+        monitoredTrip.saturday = false;
+        monitoredTrip.sunday = false;
+        monitoredTrip.excludeFederalHolidays = true;
+        monitoredTrip.isActive = true;
+        monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.monday.validDates.add("2025-06-02");
+        monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.tuesday.validDates.add("2025-06-03");
+        monitoredTrip.itineraryExistence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.wednesday.validDates.add("2025-05-28");
+        monitoredTrip.itineraryExistence.thursday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.thursday.validDates.add("2025-05-29");
+        monitoredTrip.itineraryExistence.friday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.friday.validDates.add("2025-05-30");
+        monitoredTrip.itineraryExistence.friday.invalidDates.add("2025-07-04");
+        monitoredTrip.itineraryExistence.saturday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.saturday.invalidDates.add("2025-05-31");
+        monitoredTrip.itineraryExistence.sunday = new ItineraryExistence.ItineraryExistenceResult();
+        monitoredTrip.itineraryExistence.sunday.invalidDates.add("2025-06-01");
+
+        Persistence.monitoredTrips.create(monitoredTrip);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        checkMonitoredTrip.run();
+
+        assertEquals(NotificationType.ITINERARY_NOT_FOUND, checkMonitoredTrip.notifications.iterator().next().type);
+        assertEquals(TripStatus.NEXT_TRIP_NOT_POSSIBLE, checkMonitoredTrip.journeyState.tripStatus);
+        PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
     }
 
     @Test
