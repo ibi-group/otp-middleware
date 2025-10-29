@@ -34,14 +34,16 @@ public class LegMatcher {
      * Check that two legs match.
      */
     public boolean match() {
-        // for now don't analyze non-transit legs
+        // For now, do not analyze non-transit legs.
         if (!referenceLeg.transitLeg) return true;
 
-        // make sure the same from/to stop are being used
-        if (
-            !stopsMatch(referenceLeg.from, candidateLeg.from) ||
-                !stopsMatch(referenceLeg.to, candidateLeg.to)
-        ) {
+        // Make sure the same from/to stop are being used.
+        if (!stopsMatch(referenceLeg.from, candidateLeg.from)) {
+            failingReason = "Leg origin stops do not match.";
+            return false;
+        }
+        if (!stopsMatch(referenceLeg.to, candidateLeg.to)) {
+            failingReason = "Leg destination stops do not match.";
             return false;
         }
 

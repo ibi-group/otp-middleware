@@ -28,10 +28,16 @@ public class ItineraryMatcher {
      */
     public boolean match() {
         // Make sure both itineraries are monitorable before continuing.
-        if (!referenceItinerary.canBeMonitored() || !candidateItinerary.canBeMonitored()) return false;
+        if (!referenceItinerary.canBeMonitored() || !candidateItinerary.canBeMonitored()) {
+            failingReason = "Reference or candidate itinerary cannot be monitored (might have a rental vehicle).";
+            return false;
+        }
 
         // make sure itineraries have same amount of legs
-        if (referenceItinerary.legs.size() != candidateItinerary.legs.size()) return false;
+        if (referenceItinerary.legs.size() != candidateItinerary.legs.size()) {
+            failingReason = "Reference and candidate itineraries have different numbers of legs.";
+            return false;
+        }
 
         // make sure each leg matches
         for (int i = 0; i < referenceItinerary.legs.size(); i++) {
@@ -40,7 +46,7 @@ public class ItineraryMatcher {
             LegMatcher legMatcher = new LegMatcher(referenceItineraryLeg, candidateItineraryLeg);
 
             if (!legMatcher.match()) {
-                failingReason = legMatcher.getFailingReason();
+                failingReason = String.format("Leg %d: %s", i, legMatcher.getFailingReason());
                 return false;
             }
         }
