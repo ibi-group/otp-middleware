@@ -134,7 +134,7 @@ public class LegMatcher {
     }
 
     /**
-     * Returns true if the reference string was not present either by being null or an emptry string. Otherwise, returns
+     * Returns true if the reference string was not present either by being null or an empty string. Otherwise, returns
      * if the strings are equal ignoring case.
      */
     private static boolean equalsIgnoreCaseOrReferenceWasEmpty(String reference, String candidate) {
@@ -151,6 +151,6 @@ public class LegMatcher {
     }
 
     public String getFailingReason() {
-        return String.format("%s mismatch", result.getFailingMatchDescription());
+        return result == null ? null : String.format("%s mismatch", result.getFailingMatchDescription());
     }
 }
