@@ -65,7 +65,7 @@ public class LegMatcher {
 
         MatcherResult result = Match.all(criteria);
         if (result.isFailed()) {
-            failingReason = String.format("%s mismatch", result.failingMatch);
+            failingReason = String.format("%s mismatch", result.failingMatch.descriptionGetter.get());
             return false;
         }
         return true;

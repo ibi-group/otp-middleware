@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.itinerarymatching;
 
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 /**
  * Helper class to hold a match criterion and a descriptive text if the criterion is not met.
@@ -9,11 +10,15 @@ import java.util.function.BooleanSupplier;
 public class Match {
 
     public final BooleanSupplier criterion;
-    public final String description;
+    public final Supplier<String> descriptionGetter;
+
+    public Match(BooleanSupplier criterion, Supplier<String> descriptionGetter) {
+        this.criterion = criterion;
+        this.descriptionGetter = descriptionGetter;
+    }
 
     public Match(BooleanSupplier criterion, String description) {
-        this.criterion = criterion;
-        this.description = description;
+        this(criterion, () -> description);
     }
 
     /**

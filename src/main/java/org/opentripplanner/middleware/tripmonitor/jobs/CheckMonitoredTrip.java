@@ -369,7 +369,7 @@ public class CheckMonitoredTrip implements Runnable {
                 LOG.info("Trip status set to {}", journeyState.tripStatus);
                 return updateMonitoredTrip();
             } else {
-                mismatchReasons.add(matcher.getFailingReason());
+                mismatchReasons.add(String.format("Itin %d: %s", i + 1, matcher.getFailingReason()));
             }
         }
 

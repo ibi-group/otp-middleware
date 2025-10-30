@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.itinerarymatching;
 
+import jersey.repackaged.com.google.common.collect.Lists;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Leg;
 
 import java.util.List;
 
@@ -29,28 +29,22 @@ public class ItineraryMatcher {
      * Returns true if the itineraries match for the purposes of trip monitoring.
      */
     public boolean match() {
-        List<Match> criteria = List.of(
+        List<Match> criteria = Lists.newArrayList(
             new Match(referenceItinerary::canBeMonitored, "Reference itin cannot be monitored"),
             new Match(candidateItinerary::canBeMonitored, "Candidate itin cannot be monitored"),
             new Match(() -> referenceItinerary.legs.size() == candidateItinerary.legs.size(), "Itineraries don't have the same number of legs.")
         );
+        // Make sure each leg matches.
+        for (int i = 0; i < referenceItinerary.legs.size(); i++) {
+            LegMatcher legMatcher = new LegMatcher(referenceItinerary.legs.get(i), candidateItinerary.legs.get(i));
+            int friendlyIndex = i + 1;
+            criteria.add(new Match(legMatcher::match, () -> String.format("Leg %d: %s", friendlyIndex, legMatcher.getFailingReason())));
+        }
 
         MatcherResult result = Match.all(criteria);
         if (result.isFailed()) {
-            failingReason = result.failingMatch.description;
+            failingReason = result.failingMatch.descriptionGetter.get();
             return false;
-        }
-
-        // make sure each leg matches
-        for (int i = 0; i < referenceItinerary.legs.size(); i++) {
-            Leg referenceItineraryLeg = referenceItinerary.legs.get(i);
-            Leg candidateItineraryLeg = candidateItinerary.legs.get(i);
-            LegMatcher legMatcher = new LegMatcher(referenceItineraryLeg, candidateItineraryLeg);
-
-            if (!legMatcher.match()) {
-                failingReason = String.format("Leg %d: %s", i, legMatcher.getFailingReason());
-                return false;
-            }
         }
 
         // if this point is reached, the itineraries are assumed to match
