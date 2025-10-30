@@ -3,6 +3,8 @@ package org.opentripplanner.middleware.itinerarymatching;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 
+import java.util.List;
+
 /**
  * Helper class for matching itineraries and legs.
  */
@@ -27,16 +29,18 @@ public class ItineraryMatcher {
      * Returns true if the itineraries match for the purposes of trip monitoring.
      */
     public boolean match() {
-        // Make sure both itineraries are monitorable before continuing.
-        if (!referenceItinerary.canBeMonitored() || !candidateItinerary.canBeMonitored()) {
-            failingReason = "Reference or candidate itinerary cannot be monitored (might have a rental vehicle).";
-            return false;
-        }
+        List<Match> criteria = List.of(
+            new Match(() -> referenceItinerary.canBeMonitored(), "Reference itin cannot be monitored"),
+            new Match(() -> candidateItinerary.canBeMonitored(), "Candidate itin cannot be monitored"),
+            new Match(() -> referenceItinerary.legs.size() == candidateItinerary.legs.size(), "Itineraries don't have the same number of legs.")
+        );
 
-        // make sure itineraries have same amount of legs
-        if (referenceItinerary.legs.size() != candidateItinerary.legs.size()) {
-            failingReason = "Reference and candidate itineraries have different numbers of legs.";
-            return false;
+        for (Match m : criteria) {
+            boolean result = m.criterion.getAsBoolean();
+            if (!result) {
+                failingReason = m.description;
+                return false;
+            }
         }
 
         // make sure each leg matches

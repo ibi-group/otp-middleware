@@ -36,50 +36,39 @@ public class LegMatcher {
      */
     public boolean match() {
         // For now, do not analyze non-transit legs.
-        if (!referenceLeg.transitLeg) return true;
-
-        // Make sure the same from/to stop are being used.
-        if (!stopsMatch(referenceLeg.from, candidateLeg.from)) {
-            failingReason = "Leg origin stops do not match.";
-            return false;
-        }
-        if (!stopsMatch(referenceLeg.to, candidateLeg.to)) {
-            failingReason = "Leg destination stops do not match.";
-            return false;
-        }
+        if (!Boolean.TRUE.equals(referenceLeg.transitLeg)) return true;
 
         // Make sure the transit service is the same as perceived by the customer. It is assumed that the transit
-        // service is the same experience to a customer if the following conditions are met:
+        // service is the same experience to a customer if all the following conditions are met:
+        // - The origin and destination stops are the same
         // - The modes of transportation are the same
         // - The agency name of the transit service is the same (or the reference leg had an empty agency name)
         // - The route's long name is the same (or the reference leg had an empty route long name)
         // - The route's short name is the same (or the reference leg had an empty route short name)
         // - The headsign is the same (or the reference leg had an empty headsign)
         // - The leg has the same interlining qualities with the previous leg
-        if (
-            !equalsOrReferenceWasNull(referenceLeg.mode, candidateLeg.mode) ||
-            !agenciesMatch(referenceLeg.agency, candidateLeg.agency) ||
-            !routesMatch(referenceLeg.route, candidateLeg.route) ||
-            !equalsIgnoreCaseOrReferenceWasEmpty(referenceLeg.headsign, candidateLeg.headsign) ||
-            (referenceLeg.interlineWithPreviousLeg != candidateLeg.interlineWithPreviousLeg)
-        ) {
-            return false;
-        }
+        // - The legs are scheduled for the same time of the day. A check is being done for the exact
+        //   scheduled time in order for the trip monitor to attempt to track a specific trip.
+        //   Trip IDs may change over time, however, as far as an end-user is concerned, as long as the same route
+        //   comes at the same time to the same start and end stops, it can be considered a match.
+        List<Match> criteria = List.of(
+            new Match(() -> stopsMatch(referenceLeg.from, candidateLeg.from), "Origin stops"),
+            new Match(() -> stopsMatch(referenceLeg.to, candidateLeg.to), "Destination stops"),
+            new Match(() -> equalsOrReferenceWasNull(referenceLeg.mode, candidateLeg.mode), "Modes"),
+            new Match(() -> agenciesMatch(referenceLeg.agency, candidateLeg.agency), "Agency"),
+            new Match(() -> routesMatch(referenceLeg.route, candidateLeg.route), "Routes"),
+            new Match(() -> equalsIgnoreCaseOrReferenceWasEmpty(referenceLeg.headsign, candidateLeg.headsign), "Headsigns"),
+            new Match(() -> referenceLeg.interlineWithPreviousLeg.equals(candidateLeg.interlineWithPreviousLeg), "Prev. leg interline"),
+            new Match(() -> timeOfDayMatches(referenceLeg.getScheduledStartTime(), candidateLeg.getScheduledStartTime()), "Scheduled start time"),
+            new Match(() -> timeOfDayMatches(referenceLeg.getScheduledEndTime(), candidateLeg.getScheduledEndTime()), "Scheduled end time")
+        );
 
-        // Make sure the transit trips are scheduled for the same time of the day. A check is being done for the exact
-        // scheduled time in order for the trip monitor to attempt to track a specific trip. It is assumed that trip IDs
-        // will change over time and as far as an end-user is concerned if, as long as the same route comes at the same
-        // time to the same start and end stops, then it can be considered a match.
-        if (
-            !timeOfDayMatches(
-                referenceLeg.getScheduledStartTime(),
-                candidateLeg.getScheduledStartTime()
-            ) || !timeOfDayMatches(
-                referenceLeg.getScheduledEndTime(),
-                candidateLeg.getScheduledEndTime()
-            )
-        ) {
-            return false;
+        for (Match m : criteria) {
+            boolean result = m.criterion.getAsBoolean();
+            if (!result) {
+                failingReason = String.format("%s mismatch.", m.description);
+                return false;
+            }
         }
 
         // if this point is reached, the legs are assumed to match
