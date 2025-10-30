@@ -27,6 +27,7 @@ import org.opentripplanner.middleware.triptracker.response.RerouteResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.LegMatcher;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import spark.Request;
 
@@ -45,7 +46,6 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getTimeNowAsString;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteGtfsIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
@@ -473,8 +473,9 @@ public class ManageTripTracking {
      * Traveler is waiting for a bus at the start of a trip.
      */
     private static boolean isWaitingForBusAtStartOfTrip(TravelerPosition travelerPosition) {
+        LegMatcher legMatcher = new LegMatcher(travelerPosition.expectedLeg, travelerPosition.firstLegOfTrip);
         return
-            legsMatch(travelerPosition.expectedLeg, travelerPosition.firstLegOfTrip) &&
+            legMatcher.match() &&
             isBusLeg(travelerPosition.expectedLeg) &&
             isAtStartOfLeg(travelerPosition);
     }
