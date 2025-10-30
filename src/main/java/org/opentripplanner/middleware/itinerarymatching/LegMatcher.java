@@ -18,7 +18,7 @@ public class LegMatcher {
 
     private final Leg referenceLeg;
     private final Leg candidateLeg;
-    private String failingReason;
+    private MatcherResult result;
 
     /**
      * Creates a new instance with two itineraries.
@@ -63,12 +63,8 @@ public class LegMatcher {
             new Match(() -> timeOfDayMatches(referenceLeg.getScheduledEndTime(), candidateLeg.getScheduledEndTime()), "Scheduled end time")
         );
 
-        MatcherResult result = Match.all(criteria);
-        if (result.isFailed()) {
-            failingReason = String.format("%s mismatch", result.failingMatch.descriptionGetter.get());
-            return false;
-        }
-        return true;
+        result = Match.all(criteria);
+        return result.isSuccessful();
     }
 
     /**
@@ -155,6 +151,6 @@ public class LegMatcher {
     }
 
     public String getFailingReason() {
-        return failingReason;
+        return String.format("%s mismatch", result.getFailingMatchDescription());
     }
 }

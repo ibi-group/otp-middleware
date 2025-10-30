@@ -12,7 +12,7 @@ public class ItineraryMatcher {
 
     private final Itinerary referenceItinerary;
     private final Itinerary candidateItinerary;
-    private String failingReason;
+    private MatcherResult result;
 
     /**
      * Creates a new instance with two itineraries.
@@ -41,17 +41,11 @@ public class ItineraryMatcher {
             criteria.add(new Match(legMatcher::match, () -> String.format("Leg %d: %s", friendlyIndex, legMatcher.getFailingReason())));
         }
 
-        MatcherResult result = Match.all(criteria);
-        if (result.isFailed()) {
-            failingReason = result.failingMatch.descriptionGetter.get();
-            return false;
-        }
-
-        // if this point is reached, the itineraries are assumed to match
-        return true;
+        result = Match.all(criteria);
+        return result.isSuccessful();
     }
 
     public String getFailingReason() {
-        return failingReason;
+        return result.getFailingMatchDescription();
     }
 }

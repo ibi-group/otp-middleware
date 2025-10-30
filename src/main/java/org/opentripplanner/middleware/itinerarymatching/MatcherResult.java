@@ -10,7 +10,11 @@ public class MatcherResult {
         this.failingMatch = failingMatch;
     }
 
-    public boolean isFailed() {
-        return failingMatch != null;
+    public boolean isSuccessful() {
+        return failingMatch == null;
+    }
+
+    public String getFailingMatchDescription() {
+        return failingMatch != null ? failingMatch.descriptionGetter.get() : null;
     }
 }
