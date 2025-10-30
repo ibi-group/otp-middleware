@@ -63,15 +63,11 @@ public class LegMatcher {
             new Match(() -> timeOfDayMatches(referenceLeg.getScheduledEndTime(), candidateLeg.getScheduledEndTime()), "Scheduled end time")
         );
 
-        for (Match m : criteria) {
-            boolean result = m.criterion.getAsBoolean();
-            if (!result) {
-                failingReason = String.format("%s mismatch.", m.description);
-                return false;
-            }
+        MatcherResult result = Match.all(criteria);
+        if (result.isFailed()) {
+            failingReason = String.format("%s mismatch", result.failingMatch);
+            return false;
         }
-
-        // if this point is reached, the legs are assumed to match
         return true;
     }
 

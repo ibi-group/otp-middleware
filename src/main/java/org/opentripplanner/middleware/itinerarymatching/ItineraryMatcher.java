@@ -30,17 +30,15 @@ public class ItineraryMatcher {
      */
     public boolean match() {
         List<Match> criteria = List.of(
-            new Match(() -> referenceItinerary.canBeMonitored(), "Reference itin cannot be monitored"),
-            new Match(() -> candidateItinerary.canBeMonitored(), "Candidate itin cannot be monitored"),
+            new Match(referenceItinerary::canBeMonitored, "Reference itin cannot be monitored"),
+            new Match(candidateItinerary::canBeMonitored, "Candidate itin cannot be monitored"),
             new Match(() -> referenceItinerary.legs.size() == candidateItinerary.legs.size(), "Itineraries don't have the same number of legs.")
         );
 
-        for (Match m : criteria) {
-            boolean result = m.criterion.getAsBoolean();
-            if (!result) {
-                failingReason = m.description;
-                return false;
-            }
+        MatcherResult result = Match.all(criteria);
+        if (result.isFailed()) {
+            failingReason = result.failingMatch.description;
+            return false;
         }
 
         // make sure each leg matches
