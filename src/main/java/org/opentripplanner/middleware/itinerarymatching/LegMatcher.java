@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.utils;
+package org.opentripplanner.middleware.itinerarymatching;
 
 import com.spatial4j.core.distance.DistanceUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Route;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Objects;
 
 /**

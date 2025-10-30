@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.utils;
+package org.opentripplanner.middleware.itinerarymatching;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;

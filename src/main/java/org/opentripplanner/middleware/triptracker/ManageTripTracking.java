@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.triptracker;
 import com.mongodb.client.model.Filters;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
+import org.opentripplanner.middleware.itinerarymatching.LegMatcher;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -27,7 +28,6 @@ import org.opentripplanner.middleware.triptracker.response.RerouteResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.LegMatcher;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import spark.Request;
 

@@ -1,4 +1,4 @@
-package org.opentripplanner.middleware.utils;
+package org.opentripplanner.middleware.itinerarymatching;
 
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
