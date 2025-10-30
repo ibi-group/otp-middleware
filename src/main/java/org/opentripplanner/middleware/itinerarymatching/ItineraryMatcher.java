@@ -29,16 +29,19 @@ public class ItineraryMatcher {
      * Returns true if the itineraries match for the purposes of trip monitoring.
      */
     public boolean match() {
+        boolean sameLegSize = referenceItinerary.legs.size() == candidateItinerary.legs.size();
         List<Match> criteria = Lists.newArrayList(
             new Match(referenceItinerary::canBeMonitored, "Reference itin cannot be monitored"),
             new Match(candidateItinerary::canBeMonitored, "Candidate itin cannot be monitored"),
-            new Match(() -> referenceItinerary.legs.size() == candidateItinerary.legs.size(), "Itineraries don't have the same number of legs.")
+            new Match(() -> sameLegSize, "Itineraries don't have the same number of legs.")
         );
         // Make sure each leg matches.
-        for (int i = 0; i < referenceItinerary.legs.size(); i++) {
-            LegMatcher legMatcher = new LegMatcher(referenceItinerary.legs.get(i), candidateItinerary.legs.get(i));
-            int friendlyIndex = i + 1;
-            criteria.add(new Match(legMatcher::match, () -> String.format("Leg %d: %s", friendlyIndex, legMatcher.getFailingReason())));
+        if (sameLegSize) {
+            for (int i = 0; i < referenceItinerary.legs.size(); i++) {
+                LegMatcher legMatcher = new LegMatcher(referenceItinerary.legs.get(i), candidateItinerary.legs.get(i));
+                int friendlyIndex = i + 1;
+                criteria.add(new Match(legMatcher::match, () -> String.format("Leg %d: %s", friendlyIndex, legMatcher.getFailingReason())));
+            }
         }
 
         result = Match.all(criteria);
