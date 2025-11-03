@@ -16,6 +16,7 @@ import java.util.Objects;
  */
 public class LegMatcher {
 
+    public static final int MAX_STOP_DISTANCE_METERS = 5;
     private final Leg referenceLeg;
     private final Leg candidateLeg;
     private MatcherResult result;
@@ -95,12 +96,8 @@ public class LegMatcher {
             DistanceUtils.distHaversineRAD(stopA.lat, stopA.lon, stopB.lat, stopB.lon),
             DistanceUtils.EARTH_MEAN_RADIUS_KM
         ) * 1000;
-        if (stopDistanceMeters > 5) {
-            return false;
-        }
-
-        // if this point is reached, the stops are assumed to match
-        return true;
+        // If the distance criterion is met, the stops are assumed to match.
+        return stopDistanceMeters <= MAX_STOP_DISTANCE_METERS;
     }
 
     /**
