@@ -315,8 +315,9 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         List<String> mismatchReasons = new ArrayList<>();
-        for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
-            Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
+        List<Itinerary> itineraries = otpResponse.plan.itineraries;
+        for (int i = 0; i < itineraries.size(); i++) {
+            Itinerary candidateItinerary = itineraries.get(i);
             ItineraryMatcher matcher = new ItineraryMatcher(trip.itinerary, candidateItinerary);
             if (matcher.match()) {
                 // matching itinerary found!
@@ -371,6 +372,10 @@ public class CheckMonitoredTrip implements Runnable {
             } else {
                 mismatchReasons.add(String.format("Itin %d: %s", i + 1, matcher.getFailingReason()));
             }
+        }
+
+        if (itineraries.isEmpty()) {
+            mismatchReasons.add("OTP returned no itineraries");
         }
 
         // If this point is reached, a matching itinerary was not found.
