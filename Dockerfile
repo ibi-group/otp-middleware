@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM openjdk:11
+FROM amazoncorretto:11
 WORKDIR /middleware
 
 # Grab latest dev build
