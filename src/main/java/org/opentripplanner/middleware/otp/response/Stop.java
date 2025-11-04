@@ -10,6 +10,11 @@ import org.opentripplanner.middleware.utils.Coordinates;
 public class Stop implements ConvertsToCoordinates, Cloneable {
 
     /**
+     * Name of the stop.
+     */
+    public String name;
+
+    /**
      * Stop code which is visible at the stop.
      */
     public String code;
