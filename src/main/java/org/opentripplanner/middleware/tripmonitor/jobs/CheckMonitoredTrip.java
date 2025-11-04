@@ -28,8 +28,10 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -787,7 +789,15 @@ public class CheckMonitoredTrip implements Runnable {
         if (trip.snoozed) {
             if (shouldUnsnoozeTrip()) {
                 // Clear previous matching itinerary as we want to start afresh.
-                previousMatchingItinerary = null;
+                previousMatchingItinerary = matchingItinerary = trip.itinerary.clone();
+
+                // TODO refactor same formula as in CheckMonitoredTrip
+                computeTargetZonedDateTime();
+                //ZonedDateTime targetZonedDateTime = trip.tripZonedDateTime(LocalDate.parse(targetZonedDateTime, DateTimeFormatter.ISO_LOCAL_DATE));
+                long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - matchingItinerary.getScheduledStartTimeEpochMillis();
+                // update overall itinerary and leg start/end times by adding offset
+                matchingItinerary.offsetTimes(offsetMillis);
+
                 // unsnooze trip now, for cases where the next itinerary isn't calculated
                 trip.snoozed = false;
             } else {

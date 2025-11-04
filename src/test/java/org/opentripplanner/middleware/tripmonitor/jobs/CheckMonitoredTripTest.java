@@ -102,7 +102,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         .withYear(2025)
         .withMonth(10)
         .withDayOfMonth(16)
-        .withHour(12)
+        .withHour(0)
         .withMinute(0)
         .withSecond(17)
         .withNano(0);
@@ -144,6 +144,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canMonitorTripAtMidNight() throws Exception {
+        //DateTimeUtils.useFixedClockAt(THURS_20251016_0000.minusHours(2));
         DateTimeUtils.useFixedClockAt(THURS_20251016_0000);
 
         // Mock empty OTP response to simulate trip not possible.
@@ -167,8 +168,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.wednesday = true;
         monitoredTrip.thursday = true;
         monitoredTrip.friday = true;
-        monitoredTrip.saturday = false;
-        monitoredTrip.sunday = false;
+        monitoredTrip.saturday = true;
+        monitoredTrip.sunday = true;
         monitoredTrip.excludeFederalHolidays = true;
         monitoredTrip.isActive = true;
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
@@ -186,6 +187,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.itineraryExistence.saturday.invalidDates.add("2025-05-31");
         monitoredTrip.itineraryExistence.sunday = new ItineraryExistence.ItineraryExistenceResult();
         monitoredTrip.itineraryExistence.sunday.invalidDates.add("2025-06-01");
+        monitoredTrip.snoozed = true;
+        monitoredTrip.journeyState.lastCheckedEpochMillis = THURS_20251016_0000.minusDays(1).toInstant().toEpochMilli();
 
         Persistence.monitoredTrips.create(monitoredTrip);
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
