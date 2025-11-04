@@ -12,6 +12,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.I18nUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryMatcher;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -249,9 +250,10 @@ public class ItineraryExistence extends Model {
                         // If a matching itinerary on the same service day as the request date is found,
                         // save the date with the matching itinerary.
                         // (The matching itinerary will replace the original trip.itinerary.)
+                        ItineraryMatcher matcher = new ItineraryMatcher(referenceItinerary, itineraryCandidate);
                         if (
                             ItineraryUtils.occursOnSameServiceDay(itineraryCandidate, otpRequest.dateTime, tripIsArriveBy) &&
-                            ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)
+                            matcher.match()
                         ) {
                             result.handleValidDate(otpRequest.dateTime, itineraryCandidate);
                             hasMatchingItinerary = true;

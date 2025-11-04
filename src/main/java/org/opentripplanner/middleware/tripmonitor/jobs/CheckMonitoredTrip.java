@@ -21,7 +21,7 @@ import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.I18nUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtils;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryMatcher;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -312,9 +313,13 @@ public class CheckMonitoredTrip implements Runnable {
             LOG.warn("No comparison itinerary found for trip {} - OTP response was null.", trip.id);
             return false;
         }
-        for (int i = 0; i < otpResponse.plan.itineraries.size(); i++) {
-            Itinerary candidateItinerary = otpResponse.plan.itineraries.get(i);
-            if (ItineraryUtils.itinerariesMatch(trip.itinerary, candidateItinerary)) {
+
+        List<String> mismatchReasons = new ArrayList<>();
+        List<Itinerary> itineraries = otpResponse.plan.itineraries;
+        for (int i = 0; i < itineraries.size(); i++) {
+            Itinerary candidateItinerary = itineraries.get(i);
+            ItineraryMatcher matcher = new ItineraryMatcher(trip.itinerary, candidateItinerary);
+            if (matcher.match()) {
                 // matching itinerary found!
                 LOG.info("Found matching itinerary!");
                 trip.attemptsToGetMatchingItinerary = 0;
@@ -364,12 +369,18 @@ public class CheckMonitoredTrip implements Runnable {
 
                 LOG.info("Trip status set to {}", journeyState.tripStatus);
                 return updateMonitoredTrip();
+            } else {
+                mismatchReasons.add(String.format("Itin %d: %s", i + 1, matcher.getFailingReason()));
             }
+        }
+
+        if (itineraries.isEmpty()) {
+            mismatchReasons.add("OTP returned no itineraries");
         }
 
         // If this point is reached, a matching itinerary was not found.
         ItineraryExistence.logItineraryNotFound(
-            "No comparison itinerary found",
+            String.format("No comparison itinerary found: %s", String.join("; ", mismatchReasons)),
             trip,
             otpResponse.plan,
             ITINERARY_NOT_FOUND_LOGGER
