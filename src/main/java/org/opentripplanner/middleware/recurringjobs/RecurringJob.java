@@ -23,7 +23,7 @@ public enum RecurringJob {
     BUGSNAG_EVENT_HANDLING_JOB("bugsnag-event-handing-job", BugsnagJobs::new),
     TRIP_SURVEY_SENDER_JOB("trip-survey-sender-job", TripSurveySenderJob::new),
     TRIP_SURVEY_UPLOAD_JOB("trip-survey-upload-job", TripSurveyUploadJob::new),
-    DAILY_STATS_JOB("daily-stats",DailyStatsJob::new);
+    DAILY_STATS_JOB("daily-stats-job",DailyStatsJob::new);
 
     private final String commandLineName;
     private final Supplier<RecurringJobScheduler> recurringJobScheduler;
