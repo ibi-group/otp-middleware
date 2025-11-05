@@ -799,7 +799,7 @@ public class CheckMonitoredTrip implements Runnable {
         // For trips that are snoozed, see if they should be unsnoozed first.
         if (trip.snoozed) {
             if (shouldUnsnoozeTrip()) {
-                // Clear previous matching itineraries and start afresh.
+                // Reset previous matching itineraries and start afresh.
                 previousMatchingItinerary = matchingItinerary = trip.itinerary.clone();
 
                 computeTargetZonedDateTime();
