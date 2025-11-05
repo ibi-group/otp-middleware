@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.triptracker;
 import com.mongodb.client.model.Filters;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
+import org.opentripplanner.middleware.itinerarymatching.LegMatcher;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -45,7 +46,6 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getTimeNowAsString;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteGtfsIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
@@ -473,8 +473,9 @@ public class ManageTripTracking {
      * Traveler is waiting for a bus at the start of a trip.
      */
     private static boolean isWaitingForBusAtStartOfTrip(TravelerPosition travelerPosition) {
+        LegMatcher legMatcher = new LegMatcher(travelerPosition.expectedLeg, travelerPosition.firstLegOfTrip);
         return
-            legsMatch(travelerPosition.expectedLeg, travelerPosition.firstLegOfTrip) &&
+            legMatcher.match() &&
             isBusLeg(travelerPosition.expectedLeg) &&
             isAtStartOfLeg(travelerPosition);
     }

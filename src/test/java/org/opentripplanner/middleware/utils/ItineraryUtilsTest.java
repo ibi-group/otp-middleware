@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryMatcher;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
@@ -27,7 +28,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.time.format.DateTimeFormatter;
@@ -41,14 +41,11 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.opentripplanner.middleware.testutils.OtpTestUtils.createDefaultItinerary;
 import static org.opentripplanner.middleware.testutils.OtpTestUtils.firstItinerary;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
 
 public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryUtilsTest.class);
-    /** Abbreviated query for the tests */
-    public static final String BASE_QUERY = "?fromPlace=2418%20Dade%20Ave&toPlace=McDonald%27s&date=2020-08-13&time=11%3A23&arriveBy=false";
 
     /** Date and time from the above query. */
     public static final String QUERY_DATE = "2020-08-13";
@@ -142,7 +139,8 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         //  7 days to 14 (or more) days, this may need to be adjusted.
         for (ItineraryExistence.ItineraryExistenceResult validDay : validDays) {
             assertTrue(validDay.isValid());
-            assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, validDay.itineraries.get(0)));
+            ItineraryMatcher matcher = new ItineraryMatcher(expectedItinerary, validDay.itineraries.get(0));
+            assertTrue(matcher.match());
         }
 
         // Days not monitored had an error response, so the check should return invalid for those days.
@@ -230,76 +228,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
-     * Check whether certain itineraries match.
-     */
-    @ParameterizedTest
-    @MethodSource("createItineraryComparisonTestCases")
-    void testItineraryMatches(ItineraryMatchTestCase testCase) {
-        Assertions.assertEquals(
-            testCase.shouldMatch,
-            ItineraryUtils.itinerariesMatch(testCase.previousItinerary, testCase.newItinerary),
-            testCase.name
-        );
-    }
-
-    private static List<ItineraryMatchTestCase> createItineraryComparisonTestCases() throws Exception {
-        List<ItineraryMatchTestCase> testCases = new ArrayList<>();
-
-        // should match same data
-        testCases.add(
-            new ItineraryMatchTestCase(
-                "Should be equal with same data",
-                createDefaultItinerary(),
-                true
-            )
-        );
-
-        // should not be equal with a different amount of legs
-        Leg extraBikeLeg = new Leg();
-        extraBikeLeg.mode = "BICYCLE";
-        Itinerary itineraryWithMoreLegs = createDefaultItinerary();
-        itineraryWithMoreLegs.legs.add(extraBikeLeg);
-        testCases.add(
-            new ItineraryMatchTestCase(
-                "should not be equal with a different amount of legs",
-                itineraryWithMoreLegs,
-                false
-            )
-        );
-
-        // should be equal with realtime data on transit leg (same day)
-        Itinerary itineraryWithRealtimeTransit = createDefaultItinerary();
-        Leg transitLeg = itineraryWithRealtimeTransit.legs.get(1);
-        int secondsOfDelay = 120;
-        transitLeg.startTime = new Date(transitLeg.startTime.getTime() + secondsOfDelay * 1000);
-        transitLeg.departureDelay = secondsOfDelay;
-        transitLeg.endTime = new Date(transitLeg.endTime.getTime() + secondsOfDelay * 1000);
-        transitLeg.arrivalDelay = secondsOfDelay;
-        testCases.add(
-            new ItineraryMatchTestCase(
-                "should be equal with realtime data on transit leg (same day)",
-                itineraryWithRealtimeTransit,
-                true
-            )
-        );
-
-        // should be equal with scheduled data on transit leg (future date)
-        Itinerary itineraryOnFutureDate = createDefaultItinerary();
-        Leg transitLeg2 = itineraryOnFutureDate.legs.get(1);
-        transitLeg2.startTime = Date.from(transitLeg2.startTime.toInstant().plus(7, ChronoUnit.DAYS));
-        transitLeg2.endTime = Date.from(transitLeg2.endTime.toInstant().plus(7, ChronoUnit.DAYS));
-        testCases.add(
-            new ItineraryMatchTestCase(
-                "should be equal with scheduled data on transit leg (future date)",
-                itineraryOnFutureDate,
-                true
-            )
-        );
-
-        return testCases;
-    }
-
-    /**
      * Helper method to create a trip with locations, time, and queryParams populated.
      */
     private MonitoredTrip makeTestTrip() {
@@ -340,54 +268,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         return dates.stream()
             .map(d -> DateTimeUtils.makeOtpZonedDateTime(d, QUERY_TIME))
             .collect(Collectors.toList());
-    }
-
-    private static class ItineraryMatchTestCase {
-        /**
-         * A descriptive name of this test case
-         */
-        public final String name;
-
-        /**
-         * The newer itinerary to compare to.
-         */
-        public final Itinerary newItinerary;
-
-        /**
-         * The previous itinerary which should be perform the baseline comparison from.
-         */
-        public final Itinerary previousItinerary;
-        /**
-         * Whether the given itineraries should match
-         */
-        public final boolean shouldMatch;
-
-        /**
-         * Constructor that uses the default itinerary as the previous itinerary.
-         */
-        public ItineraryMatchTestCase(
-            String name,
-            Itinerary newItinerary,
-            boolean shouldMatch
-        ) throws Exception {
-            this(name, null, newItinerary, shouldMatch);
-        }
-
-        public ItineraryMatchTestCase(
-            String name,
-            Itinerary previousItinerary,
-            Itinerary newItinerary,
-            boolean shouldMatch
-        ) throws Exception {
-            this.name = name;
-            if (previousItinerary != null) {
-                this.previousItinerary = previousItinerary;
-            } else {
-                this.previousItinerary = createDefaultItinerary();
-            }
-            this.newItinerary = newItinerary;
-            this.shouldMatch = shouldMatch;
-        }
     }
 
     @ParameterizedTest
