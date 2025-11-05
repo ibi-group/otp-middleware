@@ -178,11 +178,8 @@ public class TypedPersistence<T extends Model> {
      * Build a filter for querying Mongo based on userId and from/to dates.
      */
     public static Bson filterByUserAndDateRange(String userId, Date fromDate, Date toDate) {
-        if (userId == null) {
-            throw new IllegalArgumentException("userId is required to be non-null.");
-        }
         return Filters.and(
-            eq("userId", userId),
+            filterByUserId(userId),
             filterByDateRange(fromDate, toDate)
         );
     }
@@ -214,7 +211,10 @@ public class TypedPersistence<T extends Model> {
      * Build a filter for querying Mongo based on userId.
      */
     public static Bson filterByUserId(String userId) {
-        return filterByUserAndDateRange(userId, null, null);
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required to be non-null.");
+        }
+        return eq("userId", userId);
     }
 
     /**
