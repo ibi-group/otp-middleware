@@ -799,17 +799,15 @@ public class CheckMonitoredTrip implements Runnable {
         // For trips that are snoozed, see if they should be unsnoozed first.
         if (trip.snoozed) {
             if (shouldUnsnoozeTrip()) {
-                // Clear previous matching itinerary as we want to start afresh.
+                // Clear previous matching itineraries and start afresh.
                 previousMatchingItinerary = matchingItinerary = trip.itinerary.clone();
 
-                // TODO refactor same formula as in CheckMonitoredTrip
                 computeTargetZonedDateTime();
-                //ZonedDateTime targetZonedDateTime = trip.tripZonedDateTime(LocalDate.parse(targetZonedDateTime, DateTimeFormatter.ISO_LOCAL_DATE));
                 long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - matchingItinerary.getScheduledStartTimeEpochMillis();
-                // update overall itinerary and leg start/end times by adding offset
+                // Update overall itinerary and leg start/end times by adding offset.
                 matchingItinerary.offsetTimes(offsetMillis);
 
-                // unsnooze trip now, for cases where the next itinerary isn't calculated
+                // Unsnooze trip now, for cases where the next itinerary isn't calculated.
                 trip.snoozed = false;
             } else {
                 LOG.info("Skipping: Trip is snoozed.");
