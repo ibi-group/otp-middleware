@@ -102,7 +102,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         .withYear(2025)
         .withMonth(10)
         .withDayOfMonth(16)
-        .withHour(12)
+        .withHour(0)
         .withMinute(0)
         .withSecond(17)
         .withNano(0);
@@ -146,13 +146,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     void canMonitorTripAtMidNight() throws Exception {
         DateTimeUtils.useFixedClockAt(THURS_20251016_0000);
 
-        // Mock empty OTP response to simulate trip not possible.
-        OtpResponse mockResponse = new OtpResponse();
-        mockResponse.plan = new TripPlan();
-        mockResponse.plan.itineraries = new ArrayList<>();
-
         // Mock OTP response matching test case.
-//        OtpResponse mockResponse = mockOtpPlanResponseForTripNotPossibleAtMidnight();
+        OtpResponse mockResponse = mockOtpPlanResponseForTripNotPossibleAtMidnight();
 
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
