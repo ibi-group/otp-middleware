@@ -21,9 +21,7 @@ import static io.github.manusant.ss.descriptor.EndpointDescriptor.endpointPath;
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_LIMIT;
 import static org.opentripplanner.middleware.controllers.api.ApiController.DEFAULT_OFFSET;
-import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT;
 import static org.opentripplanner.middleware.controllers.api.ApiController.LIMIT_PARAM;
-import static org.opentripplanner.middleware.controllers.api.ApiController.OFFSET;
 import static org.opentripplanner.middleware.controllers.api.ApiController.OFFSET_PARAM;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByDateRange;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
@@ -53,15 +51,13 @@ public class DailyStatsController implements Endpoint {
             endpointPath(ROOT_ROUTE).withDescription("Interface for retrieving daily stats."),
             HttpUtils.NO_FILTER
         ).get(
-            // TODO: Refactor with TripHistoryController? (Date params are the same.)
+            // TODO: Refactor with TripHistoryController and LogController (Date params work the same.)
             path(ROOT_ROUTE)
                 .withDescription("Gets a paginated list of daily stats.")
-                .withQueryParam(LIMIT)
-                .withQueryParam(OFFSET)
                 .withQueryParam()
                 .withName(FROM_DATE_PARAM)
                 .withPattern(DEFAULT_DATE_FORMAT_PATTERN)
-                .withDefaultValue("The current date")
+                .withDefaultValue("30 days prior to the current date")
                 .withDescription(String.format(
                     "If specified, the earliest date (format %s) for which daily stats are retrieved.",
                     DEFAULT_DATE_FORMAT_PATTERN
@@ -82,7 +78,7 @@ public class DailyStatsController implements Endpoint {
     /**
      * Return daily stats based on provided parameters.
      * An authorized user (Auth0) and user id are required.
-     * TODO: refactor with TripHistoryController
+     * TODO: refactor with TripHistoryController (and LogController)
      */
     private static ResponseList<DailyStats> getDailyStats(Request request, Response response) {
         // Only admins can get the stats. (otherwise a halt is thrown).
@@ -93,6 +89,7 @@ public class DailyStatsController implements Endpoint {
         }
 
         // Get params from request (or use defaults).
+        // TODO: Set defaults to ~30 days in the past if no date param is set.
         int limit = HttpUtils.getQueryParamFromRequest(request, LIMIT_PARAM, 0, DEFAULT_LIMIT, 100);
         int offset = HttpUtils.getQueryParamFromRequest(request, OFFSET_PARAM, 0, DEFAULT_OFFSET);
         String paramFromDate = HttpUtils.getQueryParamFromRequest(request, FROM_DATE_PARAM, true);
@@ -105,7 +102,7 @@ public class DailyStatsController implements Endpoint {
                 String.format("%s (%s) before %s (%s)", TO_DATE_PARAM, paramToDate, FROM_DATE_PARAM,
                     paramFromDate));
         }
-        Bson filter = filterByDateRange(fromDate, toDate);
+        Bson filter = filterByDateRange("date", fromDate, toDate);
         return Persistence.dailyStats.getResponseList(filter, offset, limit);
     }
 }
