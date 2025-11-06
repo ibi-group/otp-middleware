@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -33,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.makeOtpZonedDateTime;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
@@ -549,5 +551,59 @@ public class MonitoredTrip extends Model {
                 DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
             )
         );
+    }
+
+    /**
+     * Calculate target time for the next trip plan request. Find the next possible day the trip is active by
+     * initializing the appropriate target time.
+     */
+    public static ZonedDateTime computeTargetZonedDateTime(MonitoredTrip trip, Itinerary matchingItinerary) {
+        return matchingItinerary.isActive()
+            ? DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime)
+            : findEarliestTargetDate(trip, DateTimeUtils.nowAsZonedDateTime());
+    }
+
+    /**
+     * Find, starting from the given date, the earliest target date for a monitored trip,
+     * using the trip start time and the monitored days.
+     * (Itinerary existence is not being checked, assuming that clients prevent monitoring days when a trip doesn't exist.)
+     */
+    public static ZonedDateTime findEarliestTargetDate(MonitoredTrip trip, ZonedDateTime fromDateTime) {
+        ZonedDateTime itineraryEndTimeToday = makeOtpZonedDateTime(
+            fromDateTime,
+            trip.itinerary.endTime.toInstant()
+        );
+
+        int daysToAdd = fromDateTime.toInstant().isAfter(itineraryEndTimeToday.toInstant()) ? 1 : 0;
+
+        ZonedDateTime nextStartDay = makeOtpZonedDateTime(
+            fromDateTime.plusDays(daysToAdd),
+            trip.itinerary.startTime.toInstant()
+        );
+
+        return findNextMonitoredDay(trip, nextStartDay);
+    }
+
+    /**
+     * Advance the target date/time until a day is found when the trip is active.
+     */
+    private static ZonedDateTime findNextMonitoredDay(MonitoredTrip trip, ZonedDateTime startingDay) {
+        ZonedDateTime nextMonitoredDay = startingDay;
+        if (!trip.isOneTime()) {
+            while (!trip.isActiveOnDate(nextMonitoredDay)) {
+                nextMonitoredDay = nextMonitoredDay.plusDays(1);
+            }
+        }
+
+        return nextMonitoredDay;
+    }
+
+    /**
+     * Offset the matching itinerary times to align with the target zoned date time.
+     */
+    public static void offsetMatchingItineraryTimes(ZonedDateTime targetZonedDateTime, Itinerary matchingItinerary) {
+        long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - matchingItinerary.startTime.getTime();
+        // Update overall itinerary and leg start/end times by adding offset.
+        matchingItinerary.offsetTimes(offsetMillis);
     }
 }

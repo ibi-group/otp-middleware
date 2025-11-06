@@ -28,10 +28,8 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -740,7 +738,7 @@ public class CheckMonitoredTrip implements Runnable {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
 
         Instant tripStartInstant = !trip.isOneTime() && !isPreviousTripOngoingAtLastCheck()
-            ? findEarliestTargetDate(trip, now).toInstant()
+            ? MonitoredTrip.findEarliestTargetDate(trip, now).toInstant()
             : matchingItinerary.startTime.toInstant();
 
         return (tripStartInstant.getEpochSecond() - now.toEpochSecond()) / 60;
@@ -803,9 +801,7 @@ public class CheckMonitoredTrip implements Runnable {
                 previousMatchingItinerary = matchingItinerary = trip.itinerary.clone();
 
                 computeTargetZonedDateTime();
-                long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - matchingItinerary.getScheduledStartTimeEpochMillis();
-                // Update overall itinerary and leg start/end times by adding offset.
-                matchingItinerary.offsetTimes(offsetMillis);
+                MonitoredTrip.offsetMatchingItineraryTimes(targetZonedDateTime, matchingItinerary);
 
                 // Unsnooze trip now, for cases where the next itinerary isn't calculated.
                 trip.snoozed = false;
@@ -886,53 +882,12 @@ public class CheckMonitoredTrip implements Runnable {
         return true;
     }
 
-    /**
-     * Calculate target time for the next trip plan request. Find the next possible day the trip is active by
-     * initializing the appropriate target time.
-     */
     private void computeTargetZonedDateTime() {
-        targetZonedDateTime = matchingItinerary.isActive()
-            ? DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime)
-            : findEarliestTargetDate(trip, DateTimeUtils.nowAsZonedDateTime());
+        targetZonedDateTime = MonitoredTrip.computeTargetZonedDateTime(trip, matchingItinerary);
     }
 
     private boolean isPreviousTripOngoingAtLastCheck() {
         return isPrevMatchingItineraryNotConcludedAtLastCheck() && isPrevMatchingItineraryDayValid();
-    }
-
-    /**
-     * Find, starting from the given date, the earliest target date for a monitored trip,
-     * using the trip start time and the monitored days.
-     * (Itinerary existence is not being checked, assuming that clients prevent monitoring days when a trip doesn't exist.)
-     */
-    public static ZonedDateTime findEarliestTargetDate(MonitoredTrip trip, ZonedDateTime fromDateTime) {
-        ZonedDateTime itineraryEndTimeToday = makeOtpZonedDateTime(
-            fromDateTime,
-            trip.itinerary.endTime.toInstant()
-        );
-
-        int daysToAdd = fromDateTime.toInstant().isAfter(itineraryEndTimeToday.toInstant()) ? 1 : 0;
-
-        ZonedDateTime nextStartDay = makeOtpZonedDateTime(
-            fromDateTime.plusDays(daysToAdd),
-            trip.itinerary.startTime.toInstant()
-        );
-
-        return findNextMonitoredDay(trip, nextStartDay);
-    }
-
-    /**
-     * Advance the target date/time until a day is found when the trip is active.
-     */
-    private static ZonedDateTime findNextMonitoredDay(MonitoredTrip trip, ZonedDateTime startingDay) {
-        ZonedDateTime nextMonitoredDay = startingDay;
-        if (!trip.isOneTime()) {
-            while (!trip.isActiveOnDate(nextMonitoredDay)) {
-                nextMonitoredDay = nextMonitoredDay.plusDays(1);
-            }
-        }
-
-        return nextMonitoredDay;
     }
 
     /**

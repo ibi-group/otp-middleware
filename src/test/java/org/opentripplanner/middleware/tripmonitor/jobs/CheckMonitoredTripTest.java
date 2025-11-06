@@ -122,18 +122,18 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         }
     }
 
-    /** Provides a mock OTP 'plan' response for trip not possible at midnight. */
-    public OtpResponse mockOtpPlanResponseForTripNotPossibleAtMidnight() {
+    /** Provides a mock OTP 'plan' response for trip queried at midnight */
+    public OtpResponse mockOtpPlanResponseForTripQueriedAtMidnight() {
         try {
             // Setup an OTP mock response in order to trigger some of the monitor checks.
-            return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_NOT_POSSIBLE_AT_MIDNIGHT.getResponse();
+            return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_QUERIED_AT_MIDNIGHT.getResponse();
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    void canMonitorTripAtMidNight() throws Exception {
+    void canUnsnoozeAndMonitorTripAtMidNight() throws Exception {
         final ZonedDateTime THURS_20251016_0000 = DateTimeUtils.makeOtpZonedDateTime(new Date())
             .withYear(2025)
             .withMonth(10)
@@ -145,11 +145,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         DateTimeUtils.useFixedClockAt(THURS_20251016_0000);
 
         // Mock OTP response matching test case.
-        OtpResponse mockResponse = mockOtpPlanResponseForTripNotPossibleAtMidnight();
+        OtpResponse mockResponse = mockOtpPlanResponseForTripQueriedAtMidnight();
 
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_NOT_POSSIBLE_AT_MIDNIGHT.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_QUERIED_AT_MIDNIGHT.clone(),
             false,
             null
         );
@@ -162,6 +162,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
         checkMonitoredTrip.run();
 
+        MonitoredTrip updated = Persistence.monitoredTrips.getById(monitoredTrip.id);
+        assertFalse(updated.snoozed);
         assertTrue(checkMonitoredTrip.notifications.isEmpty());
         assertEquals(TRIP_UPCOMING, checkMonitoredTrip.journeyState.tripStatus);
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);

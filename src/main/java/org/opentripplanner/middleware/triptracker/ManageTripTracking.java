@@ -31,10 +31,8 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import spark.Request;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.i18n.Message.TRIP_REROUTED_NOTIFICATION;
@@ -428,11 +426,8 @@ public class ManageTripTracking {
 
                 trip.journeyState.matchingItinerary = trip.itinerary.clone();
 
-                // TODO refactor same formula as in CheckMonitoredTrip
-                ZonedDateTime targetZonedDateTime = trip.tripZonedDateTime(LocalDate.parse(trip.journeyState.targetDate, DateTimeFormatter.ISO_LOCAL_DATE));
-                long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - trip.journeyState.matchingItinerary.getScheduledStartTimeEpochMillis();
-                // update overall itinerary and leg start/end times by adding offset
-                trip.journeyState.matchingItinerary.offsetTimes(offsetMillis);
+                ZonedDateTime targetZonedDateTime = MonitoredTrip.computeTargetZonedDateTime(trip, trip.journeyState.matchingItinerary);
+                MonitoredTrip.offsetMatchingItineraryTimes(targetZonedDateTime, trip.journeyState.matchingItinerary);
 
                 Persistence.monitoredTrips.replace(trip.id, trip);
             } catch (CloneNotSupportedException e) {
