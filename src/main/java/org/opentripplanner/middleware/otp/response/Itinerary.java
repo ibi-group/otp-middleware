@@ -260,6 +260,16 @@ public class Itinerary implements Cloneable {
     }
 
     /**
+     * Offset the matching itinerary times to align with the target zoned date time.
+     */
+    public void offsetTimes(ZonedDateTime targetZonedDateTime) {
+        long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - startTime.getTime();
+        // Update overall itinerary and leg start/end times by adding offset.
+        offsetTimes(offsetMillis);
+    }
+
+
+    /**
      * Select the itinerary which has the shortest duration.
      */
     public static Itinerary getShortestDuration(List<Itinerary> itineraries) {

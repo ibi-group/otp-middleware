@@ -26,7 +26,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -557,7 +556,7 @@ public class MonitoredTrip extends Model {
      * Calculate target time for the next trip plan request. Find the next possible day the trip is active by
      * initializing the appropriate target time.
      */
-    public static ZonedDateTime computeTargetZonedDateTime(MonitoredTrip trip, Itinerary matchingItinerary) {
+    public ZonedDateTime computeTargetZonedDateTime(MonitoredTrip trip, Itinerary matchingItinerary) {
         return matchingItinerary.isActive()
             ? DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime)
             : findEarliestTargetDate(trip, DateTimeUtils.nowAsZonedDateTime());
@@ -568,7 +567,7 @@ public class MonitoredTrip extends Model {
      * using the trip start time and the monitored days.
      * (Itinerary existence is not being checked, assuming that clients prevent monitoring days when a trip doesn't exist.)
      */
-    public static ZonedDateTime findEarliestTargetDate(MonitoredTrip trip, ZonedDateTime fromDateTime) {
+    public ZonedDateTime findEarliestTargetDate(MonitoredTrip trip, ZonedDateTime fromDateTime) {
         ZonedDateTime itineraryEndTimeToday = makeOtpZonedDateTime(
             fromDateTime,
             trip.itinerary.endTime.toInstant()
@@ -587,7 +586,7 @@ public class MonitoredTrip extends Model {
     /**
      * Advance the target date/time until a day is found when the trip is active.
      */
-    private static ZonedDateTime findNextMonitoredDay(MonitoredTrip trip, ZonedDateTime startingDay) {
+    private ZonedDateTime findNextMonitoredDay(MonitoredTrip trip, ZonedDateTime startingDay) {
         ZonedDateTime nextMonitoredDay = startingDay;
         if (!trip.isOneTime()) {
             while (!trip.isActiveOnDate(nextMonitoredDay)) {
@@ -596,14 +595,5 @@ public class MonitoredTrip extends Model {
         }
 
         return nextMonitoredDay;
-    }
-
-    /**
-     * Offset the matching itinerary times to align with the target zoned date time.
-     */
-    public static void offsetMatchingItineraryTimes(ZonedDateTime targetZonedDateTime, Itinerary matchingItinerary) {
-        long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - matchingItinerary.startTime.getTime();
-        // Update overall itinerary and leg start/end times by adding offset.
-        matchingItinerary.offsetTimes(offsetMillis);
     }
 }
