@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.concurrent.TimeUnit;
 
+import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.BATCH_ID_FIELD;
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
 
@@ -27,7 +28,6 @@ public class DailyStatsJob implements RecurringJobScheduler, Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(DailyStatsJob.class);
     private static final int ONE_DAY_IN_MINUTES = 60 * 24;
-    public static final String BATCH_ID_FIELD = "batchId";
     private static final String DATE_CREATED_FIELD = "dateCreated";
     static final String DATE_FIELD = "date";
 
@@ -60,8 +60,8 @@ public class DailyStatsJob implements RecurringJobScheduler, Runnable {
      * Retrieve statistics for a given date.
      */
     public DailyStats retrieveStats(LocalDate date) {
-        Bson dateFilter = getDateFilter(date, DATE_CREATED_FIELD);
-        DistinctIterable<String> uniqueBatchIds = ConnectedDataManager.getUniqueBatchIds(dateFilter);
+        Bson tripRequestDateFilter = getDateFilter(date, DATE_CREATED_FIELD);
+        DistinctIterable<String> uniqueBatchIds = ConnectedDataManager.getUniqueBatchIds(tripRequestDateFilter);
 
         // Get user ids for the matching trips
         DistinctIterable<String> uniqueUserIds = Persistence.tripRequests.getDistinctFieldValues(
