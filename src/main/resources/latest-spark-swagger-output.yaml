@@ -1097,25 +1097,13 @@ paths:
       produces:
       - "application/json"
       parameters:
-      - name: "limit"
-        in: "query"
-        description: "If specified, the maximum number of items to return."
-        required: false
-        type: "string"
-        default: "10"
-      - name: "offset"
-        in: "query"
-        description: "If specified, the number of records to skip/offset."
-        required: false
-        type: "string"
-        default: "0"
       - name: "fromDate"
         in: "query"
         description: "If specified, the earliest date (format yyyy-MM-dd) for which\
           \ daily stats are retrieved."
         required: false
         type: "string"
-        default: "The current date"
+        default: "30 days prior to the current date"
         pattern: "yyyy-MM-dd"
       - name: "toDate"
         in: "query"
