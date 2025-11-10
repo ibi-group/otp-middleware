@@ -21,12 +21,12 @@ import static org.opentripplanner.middleware.connecteddataplatform.ConnectedData
 import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
 
 /**
- * Responsible for collating daily stats and saving them in Mongo.
+ * Responsible for collecting daily stats and saving them in Mongo.
  */
 public class DailyStatsJob implements RecurringJobScheduler, Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(DailyStatsJob.class);
-    private static final int ONE_DAY_IN_MINUTES = 60 * 24; // 1 day
+    private static final int ONE_DAY_IN_MINUTES = 60 * 24;
     public static final String BATCH_ID_FIELD = "batchId";
     private static final String DATE_CREATED_FIELD = "dateCreated";
     static final String DATE_FIELD = "date";
