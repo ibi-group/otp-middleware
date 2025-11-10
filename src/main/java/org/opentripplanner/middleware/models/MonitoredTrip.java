@@ -556,10 +556,10 @@ public class MonitoredTrip extends Model {
      * Calculate target time for the next trip plan request. Find the next possible day the trip is active by
      * initializing the appropriate target time.
      */
-    public ZonedDateTime computeTargetZonedDateTime(MonitoredTrip trip, Itinerary matchingItinerary) {
+    public ZonedDateTime computeTargetZonedDateTime(Itinerary matchingItinerary) {
         return matchingItinerary.isActive()
             ? DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime)
-            : findEarliestTargetDate(trip, DateTimeUtils.nowAsZonedDateTime());
+            : findEarliestTargetDate(DateTimeUtils.nowAsZonedDateTime());
     }
 
     /**
@@ -567,29 +567,29 @@ public class MonitoredTrip extends Model {
      * using the trip start time and the monitored days.
      * (Itinerary existence is not being checked, assuming that clients prevent monitoring days when a trip doesn't exist.)
      */
-    public ZonedDateTime findEarliestTargetDate(MonitoredTrip trip, ZonedDateTime fromDateTime) {
+    public ZonedDateTime findEarliestTargetDate(ZonedDateTime fromDateTime) {
         ZonedDateTime itineraryEndTimeToday = makeOtpZonedDateTime(
             fromDateTime,
-            trip.itinerary.endTime.toInstant()
+            itinerary.endTime.toInstant()
         );
 
         int daysToAdd = fromDateTime.toInstant().isAfter(itineraryEndTimeToday.toInstant()) ? 1 : 0;
 
         ZonedDateTime nextStartDay = makeOtpZonedDateTime(
             fromDateTime.plusDays(daysToAdd),
-            trip.itinerary.startTime.toInstant()
+            itinerary.startTime.toInstant()
         );
 
-        return findNextMonitoredDay(trip, nextStartDay);
+        return findNextMonitoredDay(nextStartDay);
     }
 
     /**
      * Advance the target date/time until a day is found when the trip is active.
      */
-    private ZonedDateTime findNextMonitoredDay(MonitoredTrip trip, ZonedDateTime startingDay) {
+    private ZonedDateTime findNextMonitoredDay(ZonedDateTime startingDay) {
         ZonedDateTime nextMonitoredDay = startingDay;
-        if (!trip.isOneTime()) {
-            while (!trip.isActiveOnDate(nextMonitoredDay)) {
+        if (!isOneTime()) {
+            while (!isActiveOnDate(nextMonitoredDay)) {
                 nextMonitoredDay = nextMonitoredDay.plusDays(1);
             }
         }

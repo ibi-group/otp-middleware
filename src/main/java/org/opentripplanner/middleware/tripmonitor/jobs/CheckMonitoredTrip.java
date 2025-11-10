@@ -738,7 +738,7 @@ public class CheckMonitoredTrip implements Runnable {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
 
         Instant tripStartInstant = !trip.isOneTime() && !isPreviousTripOngoingAtLastCheck()
-            ? trip.findEarliestTargetDate(trip, now).toInstant()
+            ? trip.findEarliestTargetDate(now).toInstant()
             : matchingItinerary.startTime.toInstant();
 
         return (tripStartInstant.getEpochSecond() - now.toEpochSecond()) / 60;
@@ -801,7 +801,7 @@ public class CheckMonitoredTrip implements Runnable {
                 previousMatchingItinerary = matchingItinerary = trip.itinerary.clone();
 
                 computeTargetZonedDateTime();
-                trip.itinerary.offsetTimes(targetZonedDateTime);
+                matchingItinerary.offsetTimes(targetZonedDateTime);
 
                 // Unsnooze trip now, for cases where the next itinerary isn't calculated.
                 trip.snoozed = false;
@@ -883,7 +883,7 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     private void computeTargetZonedDateTime() {
-        targetZonedDateTime = trip.computeTargetZonedDateTime(trip, matchingItinerary);
+        targetZonedDateTime = trip.computeTargetZonedDateTime(matchingItinerary);
     }
 
     private boolean isPreviousTripOngoingAtLastCheck() {

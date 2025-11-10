@@ -426,8 +426,8 @@ public class ManageTripTracking {
 
                 trip.journeyState.matchingItinerary = trip.itinerary.clone();
 
-                ZonedDateTime targetZonedDateTime = trip.computeTargetZonedDateTime(trip, trip.journeyState.matchingItinerary);
-                trip.itinerary.offsetTimes(targetZonedDateTime);
+                ZonedDateTime targetZonedDateTime = trip.computeTargetZonedDateTime(trip.journeyState.matchingItinerary);
+                trip.journeyState.matchingItinerary.offsetTimes(targetZonedDateTime);
 
                 Persistence.monitoredTrips.replace(trip.id, trip);
             } catch (CloneNotSupportedException e) {
