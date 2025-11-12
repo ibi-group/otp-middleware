@@ -14,6 +14,7 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
@@ -159,14 +160,22 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
      * written to the JSON file is correct and covers a single hour's worth of trip data and that the correct lat/log
      * have been randomized.
      */
-    @Test
-    void canCreateZipFileWithContent() throws Exception {
+    @ParameterizedTest
+    @MethodSource("canCreateZipFileCases")
+    void canCreateZipFile(OtpDispatcherResponse dispResponse, boolean usePlan, boolean useErrors) throws Exception {
         assumeTrue(IS_END_TO_END);
 
         String userId = UUID.randomUUID().toString();
         String batchId = "783726";
         tripRequest = PersistenceTestUtils.createTripRequest(userId, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        tripSummary = PersistenceTestUtils.createTripSummary(tripRequest.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
+        tripSummary = PersistenceTestUtils.createTripSummary(
+            dispResponse,
+            tripRequest.id,
+            batchId,
+            PREVIOUS_WHOLE_HOUR_FROM_NOW,
+            usePlan,
+            useErrors
+        );
         TripHistoryUploadJob job = new TripHistoryUploadJob(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
         job.stageUploadHours();
         job.runInnerLogic();
@@ -200,70 +209,14 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         });
     }
 
-    /**
-     * Confirm that a single zip file is created which contains a single JSON file. Also confirm that the contents
-     * written to the JSON file is correct and includes no itineraries and an error message.
-     */
-    @Test
-    void canCreateZipFileForTripSummaryWithError() throws Exception {
-        assumeTrue(IS_END_TO_END);
-
-        String userId = UUID.randomUUID().toString();
-        String batchId = "783726";
-        tripRequest = PersistenceTestUtils.createTripRequest(userId, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        tripSummary = PersistenceTestUtils.createTripSummaryWithError(tripRequest.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        TripHistoryUploadJob job = new TripHistoryUploadJob(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
-        job.stageUploadHours();
-        job.runInnerLogic();
-        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
-        tempFile = String.join(
-            "/",
-            FileUtils.getTempDirectory().getAbsolutePath(),
-            zipFileName
+    private static Stream<Arguments> canCreateZipFileCases() {
+        return Stream.of(
+            Arguments.of(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE, true, true),
+            // Same as above but with null error field.
+            Arguments.of(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE, true, false),
+            // Handling an OTP1 error response.
+            Arguments.of(OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE, false, true)
         );
-        String fileContents = getContentsOfFileInZip(
-            tempFile,
-            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
-        );
-        MatcherAssert.assertThat(fileContents, matchesSnapshot());
-
-        // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
-        List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
-        assertNotNull(anonymizedTripRequests);
-    }
-
-    /**
-     * Confirm that a single zip file is created which contains a single JSON file. Also confirm that the contents
-     * written to the JSON file is correct and includes no itineraries and an error message.
-     */
-    @Test
-    void canCreateZipFileForTripSummaryWithNullError() throws Exception {
-        assumeTrue(IS_END_TO_END);
-
-        String userId = UUID.randomUUID().toString();
-        String batchId = "783726";
-        tripRequest = PersistenceTestUtils.createTripRequest(userId, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        tripSummary = PersistenceTestUtils.createTripSummary(tripRequest.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
-        tripSummary.errors = null;
-        Persistence.tripSummaries.replace(tripSummary.id, tripSummary);
-        TripHistoryUploadJob job = new TripHistoryUploadJob(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
-        job.stageUploadHours();
-        job.runInnerLogic();
-        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
-        tempFile = String.join(
-            "/",
-            FileUtils.getTempDirectory().getAbsolutePath(),
-            zipFileName
-        );
-        String fileContents = getContentsOfFileInZip(
-            tempFile,
-            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
-        );
-        MatcherAssert.assertThat(fileContents, matchesSnapshot());
-
-        // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
-        List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
-        assertNotNull(anonymizedTripRequests);
     }
 
     /**
