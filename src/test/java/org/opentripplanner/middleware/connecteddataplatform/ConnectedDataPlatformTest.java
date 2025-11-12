@@ -214,7 +214,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE, true, true),
             // Same as above but with null error field.
             Arguments.of(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE, true, false),
-            // Handling an OTP1 error response.
+            // Handling an OTPv2 error response.
             Arguments.of(OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE, false, true)
         );
     }
