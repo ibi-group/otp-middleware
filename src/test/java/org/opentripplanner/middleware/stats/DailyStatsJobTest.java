@@ -32,6 +32,7 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
 
     private static DailyStats stats1;
     private static DailyStats stats2;
+    private static DailyStats expectedStats;
 
     private static final Date DATE_1 = DateTimeUtils.convertToDate(LocalDateTime.of(2025, 10, 24, 12, 0));
     private static final Date DATE_2 = DateTimeUtils.convertToDate(LocalDateTime.of(2025, 10, 25, 1, 0));
@@ -39,6 +40,9 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
 
     @BeforeAll
     static void setUp() {
+        // Accounts for existing OtpUser objects, including those not removed by other tests.
+        long initialOtpUserCount = Persistence.otpUsers.getCount();
+
         user1 = createUser("user1");
         user2 = createUser("user2");
         user3 = createUser("user3");
@@ -53,8 +57,15 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
         createTripRequest("req8", "batch4", DATE_1, "user2");
         createTripRequest("req9", "batch5", DATE_1, "user2");
 
+        // Used by shouldRetrieveStats
         stats1 = createStats(DAY_1.minusDays(5));
         stats2 = createStats(DAY_1.minusDays(4));
+
+        expectedStats = new DailyStats();
+        expectedStats.date = DateTimeUtils.convertToDate(LocalDateTime.of(DAY_1, LocalTime.MIDNIGHT));
+        expectedStats.otpUsers = initialOtpUserCount + 3;
+        expectedStats.tripRequests = 4;
+        expectedStats.otpUsersWithTripRequests = 2;
     }
 
     @AfterAll
@@ -80,11 +91,7 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
     void canRetrieveStats() {
         DailyStatsJob job = new DailyStatsJob();
         DailyStats stats = job.retrieveStats(DAY_1);
-
-        assertEquals(DAY_1, DateTimeUtils.makeOtpZonedDateTime(stats.date).toLocalDate());
-        assertEquals(3, stats.otpUsers);
-        assertEquals(4, stats.tripRequests);
-        assertEquals(2, stats.otpUsersWithTripRequests);
+        assertEquals(expectedStats, stats);
     }
 
     private static OtpUser createUser(String id) {
@@ -147,9 +154,6 @@ class DailyStatsJobTest extends OtpMiddlewareTestEnvironment {
 
         Persistence.dailyStats.removeById(stats.id);
 
-        // Same assertions as canRetrieveStats above.
-        assertEquals(3, stats.otpUsers);
-        assertEquals(4, stats.tripRequests);
-        assertEquals(2, stats.otpUsersWithTripRequests);
+        assertEquals(expectedStats, stats);
     }
 }

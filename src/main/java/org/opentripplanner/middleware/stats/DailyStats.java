@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.stats;
 import org.opentripplanner.middleware.models.Model;
 
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * Holds anonymous statistics collected on a daily basis.
@@ -32,5 +33,24 @@ public class DailyStats extends Model {
      */
     public long otpUsersWithTripRequests;
 
-    // Insert other stats here as needed.
+    // Insert other stats here as needed and update equals().
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) return false;
+        if (!(other instanceof DailyStats)) return false;
+        if (other == this) return true;
+
+        DailyStats otherStats = (DailyStats) other;
+        return otherStats.date.equals(this.date) &&
+            otherStats.otpUsers == this.otpUsers &&
+            otherStats.tripRequests == this.tripRequests &&
+            otherStats.otpUsersWithTripRequests == this.otpUsersWithTripRequests;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(date, tripRequests, otpUsersWithTripRequests);
+    }
+
 }
