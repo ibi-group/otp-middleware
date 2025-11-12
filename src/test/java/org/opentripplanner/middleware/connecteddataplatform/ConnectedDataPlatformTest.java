@@ -232,6 +232,39 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         assertNotNull(anonymizedTripRequests);
     }
 
+    /**
+     * Confirm that a single zip file is created which contains a single JSON file. Also confirm that the contents
+     * written to the JSON file is correct and includes no itineraries and an error message.
+     */
+    @Test
+    void canCreateZipFileForTripSummaryWithNullError() throws Exception {
+        assumeTrue(IS_END_TO_END);
+
+        String userId = UUID.randomUUID().toString();
+        String batchId = "783726";
+        tripRequest = PersistenceTestUtils.createTripRequest(userId, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
+        tripSummary = PersistenceTestUtils.createTripSummary(tripRequest.id, batchId, PREVIOUS_WHOLE_HOUR_FROM_NOW);
+        tripSummary.errors = null;
+        Persistence.tripSummaries.replace(tripSummary.id, tripSummary);
+        TripHistoryUploadJob job = new TripHistoryUploadJob(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);
+        job.stageUploadHours();
+        job.runInnerLogic();
+        zipFileName = getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_ZIP_FILE_NAME);
+        tempFile = String.join(
+            "/",
+            FileUtils.getTempDirectory().getAbsolutePath(),
+            zipFileName
+        );
+        String fileContents = getContentsOfFileInZip(
+            tempFile,
+            getHourlyFileName(PREVIOUS_WHOLE_HOUR_FROM_NOW, ConnectedDataManager.ANON_TRIP_JSON_FILE_NAME)
+        );
+        MatcherAssert.assertThat(fileContents, matchesSnapshot());
+
+        // Confirm that all non transit lat/lon's have been randomized (with test lat/lon).
+        List<AnonymizedTripRequest> anonymizedTripRequests = JsonUtils.getPOJOFromJSONAsList(fileContents, AnonymizedTripRequest.class);
+        assertNotNull(anonymizedTripRequests);
+    }
 
     /**
      * Confirm that the trip request with the most modes is used.
