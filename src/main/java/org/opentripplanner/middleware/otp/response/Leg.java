@@ -15,6 +15,11 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Leg implements Cloneable {
 
+    /**
+     * A unique OTP-generated id to identify a leg.
+     */
+    public String id;
+
     // TODO: Deprecated and replaced with 'start.estimated.time', but this introduces significant changes.
     /**
      * The date and time when this leg begins. Format: Unix timestamp in milliseconds.
