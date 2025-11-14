@@ -834,7 +834,7 @@ public class CheckMonitoredTrip implements Runnable {
     /**
      * A series of trivial checks a {@pre MonitoredTrip} object, just using fields obtained from the database, to
      * determine whether to instantiate a {@pre CheckMonitoredTrip} object to do further checking.
-     * @param trip candidate monitored trip to quickly check some fields of
+     * @param trip candidate monitored trip
      * @return  whether to skip the trip, boolean value
      */
     protected static boolean shouldSkipMonitoredTripPreCheck(MonitoredTrip trip) {
