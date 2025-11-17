@@ -122,6 +122,53 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         }
     }
 
+    /** Provides a mock OTP 'plan' response for trip queried at midnight */
+    public OtpResponse mockOtpPlanResponseForTripQueriedAtMidnight() {
+        try {
+            // Setup an OTP mock response in order to trigger some of the monitor checks.
+            return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_QUERIED_AT_MIDNIGHT.getResponse();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    void canUnsnoozeAndMonitorTripAtMidNight() throws Exception {
+        final ZonedDateTime THURS_20251016_0000 = DateTimeUtils.makeOtpZonedDateTime(new Date())
+            .withYear(2025)
+            .withMonth(10)
+            .withDayOfMonth(16)
+            .withHour(0)
+            .withMinute(0)
+            .withSecond(17)
+            .withNano(0);
+        DateTimeUtils.useFixedClockAt(THURS_20251016_0000);
+
+        // Mock OTP response matching test case.
+        OtpResponse mockResponse = mockOtpPlanResponseForTripQueriedAtMidnight();
+
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_QUERIED_AT_MIDNIGHT.clone(),
+            false,
+            null
+        );
+
+        monitoredTrip.leadTimeInMinutes = 30;
+        monitoredTrip.isActive = true;
+        monitoredTrip.snoozed = true;
+
+        Persistence.monitoredTrips.create(monitoredTrip);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        checkMonitoredTrip.run();
+
+        MonitoredTrip updated = Persistence.monitoredTrips.getById(monitoredTrip.id);
+        assertFalse(updated.snoozed);
+        assertTrue(checkMonitoredTrip.notifications.isEmpty());
+        assertEquals(TRIP_UPCOMING, checkMonitoredTrip.journeyState.tripStatus);
+        PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
+    }
+
     @Test
     void canMonitorOngoingTrip() throws Exception {
         // Setup an OTP mock response in order to trigger some of the monitor checks.

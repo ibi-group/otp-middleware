@@ -153,7 +153,7 @@ public class CheckMonitoredTripBasicTest {
         LocalDate expectedDate = fromDateTime.withDayOfMonth(expectedDay).toLocalDate();
         assertEquals(
             ZonedDateTime.of(expectedDate, LocalTime.parse(trip.otp2QueryParams.time, DateTimeFormatter.ISO_LOCAL_TIME), zoneId),
-            CheckMonitoredTrip.findEarliestTargetDate(trip, fromDateTime),
+            trip.findEarliestTargetDate(fromDateTime),
             message
         );
     }

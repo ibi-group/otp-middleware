@@ -33,6 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.makeOtpZonedDateTime;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
@@ -549,5 +550,50 @@ public class MonitoredTrip extends Model {
                 DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
             )
         );
+    }
+
+    /**
+     * Calculate target time for the next trip plan request. Find the next possible day the trip is active by
+     * initializing the appropriate target time.
+     */
+    public ZonedDateTime computeTargetZonedDateTime(Itinerary matchingItinerary) {
+        return matchingItinerary.isActive()
+            ? DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime)
+            : findEarliestTargetDate(DateTimeUtils.nowAsZonedDateTime());
+    }
+
+    /**
+     * Find, starting from the given date, the earliest target date for a monitored trip,
+     * using the trip start time and the monitored days.
+     * (Itinerary existence is not being checked, assuming that clients prevent monitoring days when a trip doesn't exist.)
+     */
+    public ZonedDateTime findEarliestTargetDate(ZonedDateTime fromDateTime) {
+        ZonedDateTime itineraryEndTimeToday = makeOtpZonedDateTime(
+            fromDateTime,
+            itinerary.endTime.toInstant()
+        );
+
+        int daysToAdd = fromDateTime.toInstant().isAfter(itineraryEndTimeToday.toInstant()) ? 1 : 0;
+
+        ZonedDateTime nextStartDay = makeOtpZonedDateTime(
+            fromDateTime.plusDays(daysToAdd),
+            itinerary.startTime.toInstant()
+        );
+
+        return findNextMonitoredDay(nextStartDay);
+    }
+
+    /**
+     * Advance the target date/time until a day is found when the trip is active.
+     */
+    private ZonedDateTime findNextMonitoredDay(ZonedDateTime startingDay) {
+        ZonedDateTime nextMonitoredDay = startingDay;
+        if (!isOneTime()) {
+            while (!isActiveOnDate(nextMonitoredDay)) {
+                nextMonitoredDay = nextMonitoredDay.plusDays(1);
+            }
+        }
+
+        return nextMonitoredDay;
     }
 }
