@@ -67,7 +67,7 @@ public class ConnectedDataManager implements RecurringJobScheduler {
     // If it's not, this hardcoded default will be used.
     private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT =
         "03:00";
-    private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME =
+    public static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME =
         getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME",
                                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
 
@@ -124,19 +124,9 @@ public class ConnectedDataManager implements RecurringJobScheduler {
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
 
             // There is no initial delay unless we're reporting daily
-            long initialDelayMillis = 0L;
-            if (isReportingDaily()) {
-                try {
-                    initialDelayMillis = Scheduler.getInitialDelayMillis(
-                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
-                } catch (DateTimeParseException e) {
-                    LOG.error("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME value \"{}\" is invalid, using default value \"{}\" instead",
-                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME,
-                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
-                    initialDelayMillis = Scheduler.getInitialDelayMillis(
-                        CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
-                }
-            }
+            long initialDelayMillis = isReportingDaily()
+                ? getInitialDelayMillis()
+                : 0;
 
             Scheduler.scheduleJob(
                 new TripHistoryUploadJob(),
@@ -144,6 +134,24 @@ public class ConnectedDataManager implements RecurringJobScheduler {
                 CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES * 60000L, // milliseconds
                 TimeUnit.MILLISECONDS);
         }
+    }
+
+    /**
+     * Computes the delay before which the job repeat interval takes effect.
+     */
+    public static long getInitialDelayMillis() {
+        long initialDelayMillis;
+        try {
+            initialDelayMillis = Scheduler.getInitialDelayMillis(
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
+        } catch (DateTimeParseException e) {
+            LOG.error("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME value \"{}\" is invalid, using default value \"{}\" instead",
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME,
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
+            initialDelayMillis = Scheduler.getInitialDelayMillis(
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
+        }
+        return initialDelayMillis;
     }
 
     /**
@@ -201,16 +209,7 @@ public class ConnectedDataManager implements RecurringJobScheduler {
         boolean anonymize
     ) throws IOException {
         Bson dateFilter = getDateFilter(periodStart, reportingInterval);
-
-        // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
-        DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
-            BATCH_ID_FIELD,
-            Filters.and(
-                dateFilter,
-                Filters.ne(BATCH_ID_FIELD, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
-            ),
-            String.class
-        );
+        DistinctIterable<String> uniqueBatchIds = getUniqueBatchIds(dateFilter);
 
         // Needed to correctly format the JSON content.
         // (If needed for perf and if settings permit: skip writing file if no records.)
@@ -246,6 +245,21 @@ public class ConnectedDataManager implements RecurringJobScheduler {
         }
         FileUtils.writeToFile(pathAndFileName, true, "]");
         return numTripRequestsWrittenToFile;
+    }
+
+    /**
+     * Get a Mongo iterator of distinct batchId values within the specified date filter.
+     * Only select trip requests where a batch id has been provided.
+     */
+    public static DistinctIterable<String> getUniqueBatchIds(Bson dateFilter) {
+        return Persistence.tripRequests.getDistinctFieldValues(
+            BATCH_ID_FIELD,
+            Filters.and(
+                dateFilter,
+                Filters.ne(BATCH_ID_FIELD, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
+            ),
+            String.class
+        );
     }
 
     /**

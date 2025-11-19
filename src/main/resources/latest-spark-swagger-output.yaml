@@ -22,6 +22,8 @@ tags:
   description: "Interface for listing and downloading CDP files from S3."
 - name: "api/secure/cdp"
   description: "Interface for querying and managing 'CDPUser' entities."
+- name: "api/secure/dailystats"
+  description: "Interface for retrieving daily stats."
 - name: "api/admin/bugsnag/eventsummary"
   description: "Interface for reporting and retrieving application errors using Bugsnag."
 - name: "api/secure/logs"
@@ -1087,6 +1089,37 @@ paths:
           description: "An error occurred while performing the request. Contact an\
             \ API administrator for more information."
           examples: {}
+  /api/secure/dailystats:
+    get:
+      tags:
+      - "api/secure/dailystats"
+      description: "Gets a paginated list of daily stats."
+      produces:
+      - "application/json"
+      parameters:
+      - name: "fromDate"
+        in: "query"
+        description: "If specified, the earliest date (format yyyy-MM-dd) for which\
+          \ daily stats are retrieved."
+        required: false
+        type: "string"
+        default: "30 days prior to the current date"
+        pattern: "yyyy-MM-dd"
+      - name: "toDate"
+        in: "query"
+        description: "If specified, the latest date (format yyyy-MM-dd) for which\
+          \ daily stats are retrieved."
+        required: false
+        type: "string"
+        default: "The current date"
+        pattern: "yyyy-MM-dd"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/DailyStats"
+          responseSchema:
+            $ref: "#/definitions/DailyStats"
   /api/admin/bugsnag/eventsummary:
     get:
       tags:
@@ -2390,6 +2423,21 @@ definitions:
         type: "string"
       S3DownloadTimes:
         $ref: "#/definitions/Map"
+  DailyStats:
+    type: "object"
+    properties:
+      date:
+        type: "string"
+        format: "date"
+      otpUsers:
+        type: "integer"
+        format: "int64"
+      tripRequests:
+        type: "integer"
+        format: "int64"
+      otpUsersWithTripRequests:
+        type: "integer"
+        format: "int64"
   App:
     type: "object"
     properties:
