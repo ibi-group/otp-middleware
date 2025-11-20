@@ -81,7 +81,7 @@ import static org.opentripplanner.middleware.triptracker.ManageTripTracking.setO
 import static org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction.TRIP_INSTRUCTION_END_OF_ROUTING;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
-public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
+class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     private static OtpUser soloOtpUser;
     private static TrackedJourney trackedJourney;
@@ -89,7 +89,9 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary multiLegItinerary;
     private static Itinerary walkToVoterRegCenterItinerary;
     private static Itinerary walkToBus20;
+    private static Itinerary walkToBus12;
     private static Itinerary arrivingOnBus40;
+    private static Itinerary walkFromBus40;
 
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
@@ -123,8 +125,16 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-20.json"),
             Itinerary.class
         );
+        walkToBus12 = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-12.json"),
+            Itinerary.class
+        );
         arrivingOnBus40 = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/bus-40-to-dest-away-from-sidewalk.json"),
+            Itinerary.class
+        );
+        walkFromBus40 = JsonUtils.getPOJOFromJSON(
+            CommonTestUtils.getTestResourceAsString("controllers/api/walk-from-bus-40.json"),
             Itinerary.class
         );
 
@@ -478,7 +488,7 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 new TraceData()
                     .withPosition(pointNearEndOfSidewalk)
                     .withTripStatus(TripStatus.COMPLETED)
-                    .withExpectedInstruction(TRIP_INSTRUCTION_END_OF_ROUTING)
+                    .withExpectedInstruction("Your destination is in the vicinity.")
             ),
             Arguments.of(
                 "Arrival instruction when destination is away from sidewalk",
@@ -486,7 +496,15 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 new TraceData()
                     .withPosition(pointPastEndOfSidewalk)
                     .withTripStatus(TripStatus.COMPLETED)
-                    .withExpectedInstruction(TRIP_INSTRUCTION_END_OF_ROUTING)
+                    .withExpectedInstruction("Your destination is in the vicinity.")
+            ),
+            Arguments.of(
+                "Arrival at bus stop instruction when bus stop farther from end-of-leg",
+                walkToBus12,
+                new TraceData()
+                    .withPosition(new Coordinates(33.78118173054279, -84.3867252767086))
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction("Your bus stop is in the vicinity.")
             ),
             Arguments.of(
                 "Deviated significantly from nearest step should still produce walk instruction",
@@ -531,6 +549,14 @@ public class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .withSpeed(1)
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
                     .withExpectedInstruction("Continue on crossing over service road")
+            ),
+            Arguments.of(
+                "Deviated position because of gap between bus stop and path should direct to next walk leg and not state 'Upcoming/Arrived'.",
+                walkFromBus40,
+                new TraceData()
+                    .withPosition(new Coordinates(33.9521485, -83.9927426))
+                    .withTripStatus(TripStatus.DEVIATED)
+                    .withExpectedInstruction("Head to Langley Drive")
             )
         );
     }

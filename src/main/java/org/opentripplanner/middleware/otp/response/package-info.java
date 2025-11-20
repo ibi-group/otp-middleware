@@ -1,5 +1,4 @@
 /**
- * Classes in this package are either pare down versions of that defined under OpenTripPlanner or are derived from
- * parsing the raw JSON response to POJOs using http://www.jsonschema2pojo.org/
+ * Classes in this package are pared down versions of their counterparts in OpenTripPlanner.
  */
 package org.opentripplanner.middleware.otp.response;

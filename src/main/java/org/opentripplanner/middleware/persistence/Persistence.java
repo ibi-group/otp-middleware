@@ -21,6 +21,7 @@ import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.stats.DailyStats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +61,7 @@ public class Persistence {
     public static TypedPersistence<BugsnagEventRequest> bugsnagEventRequests;
     public static TypedPersistence<BugsnagEvent> bugsnagEvents;
     public static TypedPersistence<MonitoredComponent> monitoredComponents;
+    public static TypedPersistence<DailyStats> dailyStats;
 
     public static void initialize () {
         // TODO Add custom codec libraries
@@ -110,6 +112,7 @@ public class Persistence {
         bugsnagEventRequests = new TypedPersistence(mongoDatabase, BugsnagEventRequest.class);
         bugsnagEvents = new TypedPersistence(mongoDatabase, BugsnagEvent.class);
         monitoredComponents = new TypedPersistence(mongoDatabase, MonitoredComponent.class);
+        dailyStats = new TypedPersistence(mongoDatabase, DailyStats.class);
     }
 
 }

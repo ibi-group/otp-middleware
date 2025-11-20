@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.triptracker;
 import com.mongodb.client.model.Filters;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
+import org.opentripplanner.middleware.itinerarymatching.LegMatcher;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -30,10 +31,8 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import spark.Request;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.i18n.Message.TRIP_REROUTED_NOTIFICATION;
@@ -45,7 +44,6 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getTimeNowAsString;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteGtfsIdFromLeg;
 import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
-import static org.opentripplanner.middleware.utils.ItineraryUtils.legsMatch;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
@@ -142,8 +140,8 @@ public class ManageTripTracking {
                 tripStatus = TripStatus.getTimingStatus(travelerPosition);
             }
 
-            if (isEndOfRoutingInstruction(instruction)) {
-                // Deem trip completed if issuing a "destination in vicinity" instruction.
+            if (isEndOfRoutingInstruction(instruction) && travelerPosition.nextLeg == null) {
+                // Deem trip completed if on the last leg and issuing a "destination in vicinity" instruction.
                 tripStatus = TripStatus.COMPLETED;
             }
 
@@ -428,11 +426,8 @@ public class ManageTripTracking {
 
                 trip.journeyState.matchingItinerary = trip.itinerary.clone();
 
-                // TODO refactor same formula as in CheckMonitoredTrip
-                ZonedDateTime targetZonedDateTime = trip.tripZonedDateTime(LocalDate.parse(trip.journeyState.targetDate, DateTimeFormatter.ISO_LOCAL_DATE));
-                long offsetMillis = targetZonedDateTime.toInstant().toEpochMilli() - trip.journeyState.matchingItinerary.getScheduledStartTimeEpochMillis();
-                // update overall itinerary and leg start/end times by adding offset
-                trip.journeyState.matchingItinerary.offsetTimes(offsetMillis);
+                ZonedDateTime targetZonedDateTime = trip.computeTargetZonedDateTime(trip.journeyState.matchingItinerary);
+                trip.journeyState.matchingItinerary.offsetTimes(targetZonedDateTime);
 
                 Persistence.monitoredTrips.replace(trip.id, trip);
             } catch (CloneNotSupportedException e) {
@@ -473,8 +468,9 @@ public class ManageTripTracking {
      * Traveler is waiting for a bus at the start of a trip.
      */
     private static boolean isWaitingForBusAtStartOfTrip(TravelerPosition travelerPosition) {
+        LegMatcher legMatcher = new LegMatcher(travelerPosition.expectedLeg, travelerPosition.firstLegOfTrip);
         return
-            legsMatch(travelerPosition.expectedLeg, travelerPosition.firstLegOfTrip) &&
+            legMatcher.match() &&
             isBusLeg(travelerPosition.expectedLeg) &&
             isAtStartOfLeg(travelerPosition);
     }

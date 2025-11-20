@@ -144,7 +144,7 @@ public class PersistenceTestUtils {
      */
     public static TripSummary createTripSummary(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
         OtpResponse planResponse = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getOtp2Response();
-        TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId, batchId);
+        TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.plan.routingErrors, tripRequestId, batchId);
         if (createDate != null) {
             tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
         }
@@ -164,7 +164,7 @@ public class PersistenceTestUtils {
      */
     public static TripSummary createTripSummaryWithError(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
         OtpResponse planErrorResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse();
-        TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId, batchId);
+        TripSummary tripSummary = new TripSummary(null, planErrorResponse.plan.routingErrors, tripRequestId, batchId);
         if (createDate != null) {
             tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
         }
@@ -236,10 +236,8 @@ public class PersistenceTestUtils {
         itinerary.endTime = new Date();
         itinerary.startTime = new Date();
         itinerary.transfers = 0;
-        itinerary.transitTime = 150;
         itinerary.waitingTime = 2;
         itinerary.walkDistance = 1514.13182088778;
-        itinerary.walkLimitExceeded = false;
 
         Leg leg = new Leg();
         leg.startTime = new Date();
@@ -248,14 +246,12 @@ public class PersistenceTestUtils {
         leg.arrivalDelay = 10;
         leg.realTime = true;
         leg.distance = 1500.0;
-        leg.pathway = true;
         leg.mode = "walk";
 
         Place place = new Place();
         place.lat = 28.5398938204469;
         place.lon = -81.3772773742676;
         place.name = "28.54894, -81.38971";
-        place.orig = "28.54894, -81.38971";
         leg.from = place;
         leg.to = place;
 

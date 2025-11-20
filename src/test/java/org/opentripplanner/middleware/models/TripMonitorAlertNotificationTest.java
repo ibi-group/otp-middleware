@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opentripplanner.middleware.otp.response.LocalizedAlert;
+import org.opentripplanner.middleware.otp.response.Alert;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 
 import java.time.temporal.ChronoUnit;
@@ -23,8 +23,8 @@ class TripMonitorAlertNotificationTest {
     @ParameterizedTest
     @MethodSource("createNewAlertCases")
     void shouldNotifyOnNewAlerts(Locale locale, String alertFormat, String detailText) {
-        Set<LocalizedAlert> previousAlerts = Set.of();
-        Set<LocalizedAlert> alerts = Set.of(createAlert(), createAlert("Other alert", "Other alert"));
+        Set<Alert> previousAlerts = Set.of();
+        Set<Alert> alerts = Set.of(createAlert(), createAlert("Other alert", "Other alert"));
 
         TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(
             previousAlerts,
@@ -47,9 +47,9 @@ class TripMonitorAlertNotificationTest {
     @ParameterizedTest
     @MethodSource("createResolvedAlertCases")
     void shouldNotifyOnResolvedAlerts(Locale locale, String alertFormat, String detailText) {
-        LocalizedAlert remainingAlert = createAlert("Remaining Alert", "Remaining Alert Description");
-        Set<LocalizedAlert> previousAlerts = Set.of(remainingAlert, createAlert());
-        Set<LocalizedAlert> alerts = Set.of(remainingAlert);
+        Alert remainingAlert = createAlert("Remaining Alert", "Remaining Alert Description");
+        Set<Alert> previousAlerts = Set.of(remainingAlert, createAlert());
+        Set<Alert> alerts = Set.of(remainingAlert);
 
         TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(
             previousAlerts,
@@ -71,8 +71,8 @@ class TripMonitorAlertNotificationTest {
 
     @Test
     void shouldNotifyOnAllResolvedAlerts() {
-        Set<LocalizedAlert> previousAlerts = Set.of(createAlert());
-        Set<LocalizedAlert> alerts = Set.of();
+        Set<Alert> previousAlerts = Set.of(createAlert());
+        Set<Alert> alerts = Set.of();
 
         TripMonitorAlertNotification notification = TripMonitorAlertNotification.createAlertNotification(
             previousAlerts,
@@ -94,11 +94,11 @@ class TripMonitorAlertNotificationTest {
     @ParameterizedTest
     @MethodSource("createDisjointAlertCases")
     void shouldNotifyOnDisjointAlerts(Locale locale, String alertFormat) {
-        Set<LocalizedAlert> previousAlerts = Set.of(
+        Set<Alert> previousAlerts = Set.of(
             createAlert("Trip Other Alert", "Other Alert description"),
             createAlert("Trip Old Alert", "Old Alert description")
         );
-        Set<LocalizedAlert> alerts = Set.of(createAlert());
+        Set<Alert> alerts = Set.of(createAlert());
 
         TripMonitorNotification notification = TripMonitorAlertNotification.createAlertNotification(
             previousAlerts,
@@ -122,8 +122,8 @@ class TripMonitorAlertNotificationTest {
         Date now = new Date();
 
         // Create two alerts with the same header and description, and effectiveStartDate.
-        LocalizedAlert previousAlert = createAlert();
-        LocalizedAlert newAlert = createAlert();
+        Alert previousAlert = createAlert();
+        Alert newAlert = createAlert();
         previousAlert.effectiveStartDate = now;
         newAlert.effectiveStartDate = now;
 
@@ -133,19 +133,19 @@ class TripMonitorAlertNotificationTest {
         previousAlert.effectiveEndDate = Date.from(now.toInstant().plus(1, ChronoUnit.HOURS));
         newAlert.effectiveEndDate = Date.from(now.toInstant().plus(2, ChronoUnit.HOURS));
 
-        Set<LocalizedAlert> previousAlerts = Set.of(previousAlert);
-        Set<LocalizedAlert> alerts = Set.of(newAlert);
+        Set<Alert> previousAlerts = Set.of(previousAlert);
+        Set<Alert> alerts = Set.of(newAlert);
 
         // These two alerts should be considered the same, and no new alert notifications should be triggered.
         assertNull(TripMonitorAlertNotification.createAlertNotification(previousAlerts, alerts, Locale.ENGLISH));
     }
 
-    private static LocalizedAlert createAlert() {
+    private static Alert createAlert() {
         return createAlert("Trip Alert", "Alert description");
     }
 
-    private static LocalizedAlert createAlert(String header, String description) {
-        LocalizedAlert newAlert = new LocalizedAlert();
+    private static Alert createAlert(String header, String description) {
+        Alert newAlert = new Alert();
         newAlert.alertDescriptionText = description;
         newAlert.alertHeaderText = header;
         return newAlert;

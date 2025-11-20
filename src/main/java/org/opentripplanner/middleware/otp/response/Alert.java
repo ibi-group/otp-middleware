@@ -7,26 +7,48 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public class LocalizedAlert {
+public class Alert {
+
+    /**
+     * Header of the alert, if available.
+     */
     public String alertHeaderText;
+
+    /**
+     * Long description of the alert.
+     */
     public String alertDescriptionText;
+
+    /**
+     * Url with more information.
+     */
     public String alertUrl;
+
+    /**
+     * Time when this alert comes into effect. Format: Unix timestamp in seconds.
+     */
     public Date effectiveStartDate;
 
+    /**
+     * Time when this alert is not in effect anymore. Format: Unix timestamp in seconds.
+     */
     public Date effectiveEndDate;
 
+    /**
+     * Global object ID provided by Relay. This value can be used to re-fetch this object using node query.
+     */
     public String id;
 
     /** Regex to find both Windows and Unix line endings. */
     private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\R");
 
     /** Main, passive constructor for persistence */
-    public LocalizedAlert() {
+    public Alert() {
         // Does nothing
     }
 
     /** Constructor, mainly for tests and object comparisons. */
-    public LocalizedAlert(String header, String description) {
+    public Alert(String header, String description) {
         alertHeaderText = header;
         alertDescriptionText = description;
     }
@@ -62,10 +84,10 @@ public class LocalizedAlert {
     }
 
     public boolean equals(Object o) {
-        if (!(o instanceof LocalizedAlert)) {
+        if (!(o instanceof Alert)) {
             return false;
         }
-        LocalizedAlert ao = (LocalizedAlert) o;
+        Alert ao = (Alert) o;
         if (
             !getAlertDescriptionText().equals(ao.getAlertDescriptionText()) ||
             !getAlertHeaderText().equals(ao.getAlertHeaderText())

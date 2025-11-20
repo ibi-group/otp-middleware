@@ -52,7 +52,7 @@ public class OtpTestUtils {
 
     /** Contains an OTP response with no itinerary found. */
     public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
-        initializeMockPlanResponse("otp/response/planErrorResponse.json");
+        initializeMockPlanResponse("otp/response/planErrorResponse-otp2.json");
 
 
     /** OTP2 plan mock response.
@@ -70,6 +70,9 @@ public class OtpTestUtils {
 
     public static final OtpDispatcherResponse REROUTE_PLAN_RESPONSE =
         initializeMockPlanResponse("otp/response/rerouteResponse.json");
+
+    public static final OtpDispatcherResponse OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_QUERIED_AT_MIDNIGHT =
+        initializeMockPlanResponse("otp/response/trip-queried-at-midnight.json");
 
     /**
      * Prevents the mock OTP server from being initialized more than once

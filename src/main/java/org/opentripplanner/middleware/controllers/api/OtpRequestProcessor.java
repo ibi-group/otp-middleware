@@ -275,7 +275,7 @@ public class OtpRequestProcessor implements Endpoint {
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
                 if (tripRequestSaved) {
-                    TripSummary tripSummary = new TripSummary(otpResponse.plan, otpResponse.error, tripRequest.id, batchId);
+                    TripSummary tripSummary = new TripSummary(otpResponse.plan, otpResponse.plan.routingErrors, tripRequest.id, batchId);
                     Persistence.tripSummaries.create(tripSummary);
                 } else {
                     LOG.warn("Unable to save trip request, orphaned trip summary not saved");

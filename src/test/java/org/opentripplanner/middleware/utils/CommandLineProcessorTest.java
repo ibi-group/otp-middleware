@@ -73,7 +73,15 @@ class CommandLineProcessorTest {
                 .withRecurringJobs(Set.of())
                 .withMessage("End points and no jobs."),
             new CommandLineTestCase()
-                .withCommand(recurringJobFlagLonghand, "monitor-all-trips-job", "trip-history-upload-job", "bugsnag-event-handing-job", "trip-survey-sender-job", "trip-survey-upload-job")
+                .withCommand(
+                    recurringJobFlagLonghand,
+                    "monitor-all-trips-job",
+                    "trip-history-upload-job",
+                    "bugsnag-event-handing-job",
+                    "trip-survey-sender-job",
+                    "trip-survey-upload-job",
+                    "daily-stats-job"
+                )
                 .withRecurringJobs(RecurringJob.getAllRecurringJobs())
                 .withMessage("All jobs long hand and no end points."),
             new CommandLineTestCase()
