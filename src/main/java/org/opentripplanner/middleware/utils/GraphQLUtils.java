@@ -24,8 +24,8 @@ public class GraphQLUtils {
      * Location of the GraphQL default plan query template file, as URI resource.
      */
     private static final String DEFAULT_PLAN_QUERY_RESOURCE_URI =
-        // Commit below corresponds to OTP-UI core-utils 13.x (no DependentFareProduct support)
-        "https://raw.githubusercontent.com/opentripplanner/otp-ui/938a2f3c01b3797cba1c35861c93af91ef7752a8/packages/core-utils/src/planQuery.graphql";
+        // Commit below corresponds to OTP-UI core-utils 14.x (adds DependentFareProduct support and queries leg id)
+        "https://raw.githubusercontent.com/opentripplanner/otp-ui/457d17a6d99108f2874d1008d17f8a169af4989b/packages/core-utils/src/planQuery.graphql";
 
     /**
      * Location of the GraphQL plan query template file, as URI resource.
