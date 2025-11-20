@@ -76,7 +76,7 @@ public class OtpDispatcher {
      * Provides a response from the OTP server target service based on the input {@link OtpRequest}.
      */
     public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, OtpGraphQLVariables params) {
-        OtpGraphQLQuery query = new OtpGraphQLQuery();
+        OtpGraphQLQuery<OtpGraphQLVariables> query = new OtpGraphQLQuery<>();
         query.query = GraphQLUtils.getPlanQueryTemplate();
         query.variables = params;
         return sendOtpPostRequest(

@@ -32,7 +32,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.isAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
@@ -263,8 +262,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         HttpResponseValues planTripResponseAsOtpUser = mockAuthenticatedPlanPost(
             otpQueryForOtpUserRequest,
             monitoredTrip.otp2QueryParams,
-            ApiTestUtils.getMockHeaders(otpUserResponse),
-            otpUserResponse
+            ApiTestUtils.getMockHeaders(otpUserResponse)
         );
         LOG.info("OTP user: Plan trip response: {}\n....",
             planTripResponseAsOtpUser.responseBody.substring(0, 300));
@@ -277,8 +275,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         HttpResponseValues planTripResponseAsApiUser = mockAuthenticatedPlanPost(
             otpQueryForApiUserRequest,
             monitoredTrip.otp2QueryParams,
-            apiUserHeaders,
-            otpUserResponse
+            apiUserHeaders
         );
         LOG.info("API user (on behalf of an Otp user): Plan trip response: {}\n....",
             planTripResponseAsApiUser.responseBody.substring(0, 300));
