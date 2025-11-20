@@ -63,6 +63,7 @@
           },
           "legs": [
             {
+              "id": null,
               "startTime": 1591717210000,
               "endTime": 1591717794000,
               "departureDelay": 0,
@@ -612,6 +613,7 @@
               ]
             },
             {
+              "id": "id1591717795000abcd",
               "startTime": 1591717795000,
               "endTime": 1591718035000,
               "departureDelay": 0,
@@ -739,6 +741,7 @@
               "steps": []
             },
             {
+              "id": null,
               "startTime": 1591718036000,
               "endTime": 1591718324000,
               "departureDelay": 0,
@@ -1050,6 +1053,7 @@
           },
           "legs": [
             {
+              "id": null,
               "startTime": 1591717148000,
               "endTime": 1591717499000,
               "departureDelay": 0,
@@ -1445,6 +1449,7 @@
               ]
             },
             {
+              "id": "id1591717500000abcd",
               "startTime": 1591717500000,
               "endTime": 1591717920000,
               "departureDelay": 0,
@@ -1598,6 +1603,7 @@
               "steps": []
             },
             {
+              "id": null,
               "startTime": 1591717921000,
               "endTime": 1591718390000,
               "departureDelay": 0,
@@ -2084,6 +2090,7 @@
           },
           "legs": [
             {
+              "id": null,
               "startTime": 1591717825000,
               "endTime": 1591718399000,
               "departureDelay": 0,
@@ -2640,6 +2647,7 @@
               ]
             },
             {
+              "id": "id1591718400000abc",
               "startTime": 1591718400000,
               "endTime": 1591718760000,
               "departureDelay": 0,
@@ -2834,6 +2842,7 @@
               "steps": []
             },
             {
+              "id": null,
               "startTime": 1591718761000,
               "endTime": 1591718861000,
               "departureDelay": 0,
