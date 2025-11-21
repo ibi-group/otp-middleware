@@ -1,9 +1,6 @@
-package org.opentripplanner.middleware.itinerarymatching;
+package org.opentripplanner.middleware.otp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
-import org.opentripplanner.middleware.otp.OtpGraphQLQuery;
-import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;

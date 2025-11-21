@@ -1,10 +1,9 @@
-package org.opentripplanner.middleware.itinerarymatching;
+package org.opentripplanner.middleware.otp;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 
 import java.util.stream.Stream;
 
