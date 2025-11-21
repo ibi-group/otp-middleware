@@ -2610,6 +2610,8 @@ definitions:
   Leg:
     type: "object"
     properties:
+      id:
+        type: "string"
       startTime:
         type: "string"
         format: "date"
