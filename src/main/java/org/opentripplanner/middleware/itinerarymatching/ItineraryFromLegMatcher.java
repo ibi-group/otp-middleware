@@ -5,19 +5,27 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * Helper class that matches a collection of transit legs to a reference itinerary.
  */
 public class ItineraryFromLegMatcher {
+    // TODO: Make these config params.
+    private static final int TRANSFER_SLACK_SECONDS = 0;
+    private static final int BOARDING_SLACK_SECONDS = 0;
+    private static final int ALIGHT_SLACK_SECONDS = 0;
+    private static final int TOTAL_SLACK_SECONDS = ALIGHT_SLACK_SECONDS + BOARDING_SLACK_SECONDS + TRANSFER_SLACK_SECONDS;
 
     private final Itinerary referenceItinerary;
-
     private final Collection<Leg> legs;
 
-    ItineraryFromLegMatcher(Itinerary referenceItinerary, Collection<Leg> legs) {
+    public ItineraryFromLegMatcher(Itinerary referenceItinerary, Collection<Leg> legs) {
         this.referenceItinerary = referenceItinerary;
         this.legs = legs;
     }
@@ -36,10 +44,6 @@ public class ItineraryFromLegMatcher {
     }
 
     public boolean match() {
-        // TODO: Make these config params.
-        int transferSlackSeconds = 0;
-        int boardingSlackSeconds = 0;
-
         // Check that there are the same number of transit legs
         List<Leg> candidateTransitLegs = getTransitLegs(legs);
         List<Leg> itineraryTransitLegs = getTransitLegs(referenceItinerary.legs);
@@ -54,40 +58,47 @@ public class ItineraryFromLegMatcher {
         // of all walk legs plus the boarding slack, or the transfer slack.
         Map<String, Leg> transitLegsById = candidateTransitLegs
             .stream()
-            .collect(Collectors.toMap(leg -> leg.id, leg -> leg));
+            .collect(Collectors.toMap( leg -> leg.id, Function.identity()));
 
         Leg previousTransitLeg = null;
         List<Leg> transferLegs = new ArrayList<>();
-        double transferDurationSeconds = 0;
-        boolean transferImpossible = false;
         for (Leg leg : referenceItinerary.legs) {
             if (Boolean.TRUE.equals(leg.transitLeg)) {
                 if (previousTransitLeg != null) {
-                    Duration interval = Duration.between(
-                        transitLegsById.get(previousTransitLeg.id).endTime.toInstant(),
-                        transitLegsById.get(leg.id).startTime.toInstant()
+                    boolean transferImpossible = isInsufficientTime(
+                        transitLegsById.get(previousTransitLeg.id),
+                        transitLegsById.get(leg.id),
+                        transferLegs
                     );
-
-                    // If there are no transfer legs, keep a minimum transfer slack.
-                    // Otherwise, use the boarding slack.
-                    if (
-                        (transferLegs.isEmpty() && interval.toSeconds() < transferSlackSeconds) ||
-                        (interval.toSeconds() < boardingSlackSeconds + transferDurationSeconds)
-                    ) {
-                        transferImpossible = true;
-                        break;
-                    }
+                    if (transferImpossible) return false;
                 }
 
                 previousTransitLeg = leg;
                 transferLegs = new ArrayList<>();
-                transferDurationSeconds = 0;
             } else {
                 transferLegs.add(leg);
-                if (leg.duration != null) transferDurationSeconds += leg.duration;
             }
         }
 
-        return !transferImpossible;
+        return true;
+    }
+
+    /**
+     * Determines whether there is enough time, including slacks, for legs between the two given legs.
+     */
+    private static boolean isInsufficientTime(Leg fromTransitLeg, Leg toTransitleg, List<Leg> legsBetween) {
+        Duration interval = Duration.between(
+            fromTransitLeg.endTime.toInstant(),
+            toTransitleg.startTime.toInstant()
+        );
+
+        double transferDurationSeconds = legsBetween.isEmpty()
+            ? 0
+            : Duration.between(
+                legsBetween.get(0).startTime.toInstant(),
+                legsBetween.get(legsBetween.size() - 1).endTime.toInstant()
+            ).toSeconds();
+
+        return interval.toSeconds() < transferDurationSeconds + TOTAL_SLACK_SECONDS;
     }
 }
