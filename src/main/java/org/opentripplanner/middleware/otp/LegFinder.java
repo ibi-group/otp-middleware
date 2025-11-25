@@ -42,8 +42,8 @@ public class LegFinder {
 
     /**
      * Provides OTP's response for the desired leg id.
+     * Only the minimal fields needed to reconstruct an itinerary with real-time updates are included.
      */
-    // TODO: Adjust OtpDispatcherResponseType
     public static OtpDispatcherResponse sendOtpLegRequest(String legId) {
         OtpGraphQLQuery<LegQueryVariables> query = new OtpGraphQLQuery<>();
         query.query = "query ($legId: String!) { leg(id: $legId) { endTime id startTime transitLeg } }";
@@ -65,7 +65,6 @@ public class LegFinder {
         }
     }
 
-    // TODO: Combine with OtpResponse
     public static class LegResponseWrapper {
         public LegResponse data = new LegResponse();
     }
