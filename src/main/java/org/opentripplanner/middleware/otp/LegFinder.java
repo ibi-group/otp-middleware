@@ -46,7 +46,7 @@ public class LegFinder {
     // TODO: Adjust OtpDispatcherResponseType
     public static OtpDispatcherResponse sendOtpLegRequest(String legId) {
         OtpGraphQLQuery<LegQueryVariables> query = new OtpGraphQLQuery<>();
-        query.query = "query ($legId: String!) { leg(id: $legId) { id } }";
+        query.query = "query ($legId: String!) { leg(id: $legId) { endTime id startTime transitLeg } }";
         query.variables = new LegQueryVariables(legId);
         return sendOtpPostRequest(
             OtpVersion.OTP2,
@@ -67,7 +67,7 @@ public class LegFinder {
 
     // TODO: Combine with OtpResponse
     public static class LegResponseWrapper {
-        public LegResponse data;
+        public LegResponse data = new LegResponse();
     }
 
     public static class LegResponse {
