@@ -32,6 +32,8 @@ class LegFinderTest {
         existingLeg.transitLeg = true;
         existingLeg.startTime = DateTimeUtils.nowAsDate();
         existingLeg.endTime = existingLeg.startTime;
+        existingLeg.departureDelay = 30;
+        existingLeg.arrivalDelay = 60;
 
         return Stream.of(
             Arguments.of(existingLeg, true),
