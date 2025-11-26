@@ -14,6 +14,7 @@ import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -285,25 +286,28 @@ public class CheckMonitoredTripBasicTest {
         Itinerary itinerary = createTransitWalkTransitItinerary(baseTime);
         // Simulate a 6-minute delay on the itinerary arrival.
         // For the first leg, make it a 4-minute delay on departure only.
-        final int DEPARTURE_DELAY_MINUTES = 4;
-        final int FINAL_DELAY_MINUTES = 6;
-        Itinerary mockItinerary = createTransitWalkTransitItinerary(baseTime.plusMinutes(FINAL_DELAY_MINUTES));
+        final int DEPARTURE_DELAY_SECONDS = (int)Duration.ofMinutes(4).toSeconds();
+        final int FINAL_DELAY_SECONDS = (int)Duration.ofMinutes(6).toSeconds();
+        Itinerary mockItinerary = createTransitWalkTransitItinerary(baseTime.plusSeconds(FINAL_DELAY_SECONDS));
         Leg firstMockLeg = mockItinerary.legs.get(0);
-        firstMockLeg.departureDelay = DEPARTURE_DELAY_MINUTES * 60;
+        firstMockLeg.departureDelay = DEPARTURE_DELAY_SECONDS;
+        firstMockLeg.realTime = true;
         firstMockLeg.startTime = convertToDate(LocalDateTime.ofInstant(firstMockLeg.startTime.toInstant(), getOtpZoneId()).minusMinutes(2));
-        mockItinerary.legs.get(2).arrivalDelay = FINAL_DELAY_MINUTES * 60;
-        MockLegResponseProvider mockLegResponseProvider = new MockLegResponseProvider(mockItinerary);
+        Leg lastMockLeg = mockItinerary.legs.get(2);
+        lastMockLeg.arrivalDelay = FINAL_DELAY_SECONDS;
+        lastMockLeg.realTime = true;
 
         MonitoredTrip trip = new MonitoredTrip();
         trip.itinerary = itinerary;
 
+        MockLegResponseProvider mockLegResponseProvider = new MockLegResponseProvider(mockItinerary);
         LegFinder mockLegFinder = new LegFinder(mockLegResponseProvider::getLegResponse);
 
         CheckMonitoredTrip check = new CheckMonitoredTrip(trip, mockLegFinder);
         LegCheckStatus legStatus = check.checkLegs();
 
         assertTrue(legStatus.legsExist);
-        assertEquals(DEPARTURE_DELAY_MINUTES * 60, legStatus.departureDelaySeconds);
-        assertEquals(FINAL_DELAY_MINUTES * 60, legStatus.arrivalDelaySeconds);
+        assertEquals(DEPARTURE_DELAY_SECONDS, legStatus.departureDelaySeconds);
+        assertEquals(FINAL_DELAY_SECONDS, legStatus.arrivalDelaySeconds);
     }
 }
