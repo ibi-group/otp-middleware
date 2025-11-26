@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createBusLeg;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createTransitWalkTransitItinerary;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
 
 class ItineraryFromLegMatcherTest {
     @Test

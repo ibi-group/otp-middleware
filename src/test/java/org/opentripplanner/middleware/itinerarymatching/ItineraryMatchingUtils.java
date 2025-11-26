@@ -13,7 +13,7 @@ public class ItineraryMatchingUtils {
         Itinerary itinerary = new Itinerary();
         itinerary.legs = List.of(
             createBusLeg("transit-leg-id-1", baseTime, baseTime.plusMinutes(10)),
-            createWalkLeg(baseTime.minusMinutes(20), baseTime.plusMinutes(30)),
+            createWalkLeg(baseTime.plusMinutes(20), baseTime.plusMinutes(30)),
             createBusLeg("transit-leg-id-2", baseTime.plusMinutes(40), baseTime.plusMinutes(50))
         );
         return itinerary;
