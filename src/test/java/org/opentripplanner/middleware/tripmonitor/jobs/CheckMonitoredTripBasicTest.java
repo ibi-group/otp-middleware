@@ -1,10 +1,12 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
@@ -13,6 +15,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -24,6 +27,8 @@ import java.util.Date;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createTransitWalkTransitItinerary;
 
 /**
  * This class contains tests for {@link CheckMonitoredTrip} that don't require database or OTP queries.
@@ -266,5 +271,33 @@ public class CheckMonitoredTripBasicTest {
                 "Don't send reminder for trip no longer possible."
             )
         );
+    }
+
+    @Test
+    void canComputeTripDelays() throws CloneNotSupportedException {
+        // Given a saved itinerary and some matching legs,
+        // CheckMonitoredTrip should be able to compute trip delays.
+        LocalDateTime baseTime = LocalDateTime.of(2025, 11, 10, 8, 0, 0);
+
+        Itinerary itinerary = createTransitWalkTransitItinerary(baseTime);
+        // Simulate a 6-minute delay on the transit.
+        // TODO: Make delays adjustable per leg.
+        final int DELAY_MINUTES = 6;
+        Itinerary mockItinerary = createTransitWalkTransitItinerary(baseTime.plusMinutes(DELAY_MINUTES));
+        mockItinerary.legs.get(0).departureDelay = DELAY_MINUTES * 60;
+        mockItinerary.legs.get(2).arrivalDelay = DELAY_MINUTES * 60;
+        MockLegResponseProvider mockLegResponseProvider = new MockLegResponseProvider(mockItinerary);
+
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.itinerary = itinerary;
+
+        LegFinder mockLegFinder = new LegFinder(mockLegResponseProvider::getLegResponse);
+
+        CheckMonitoredTrip check = new CheckMonitoredTrip(trip, mockLegFinder);
+        LegCheckStatus legStatus = check.checkLegs();
+
+        assertTrue(legStatus.legsExist);
+        assertEquals(DELAY_MINUTES * 60, legStatus.departureDelaySeconds);
+        assertEquals(DELAY_MINUTES * 60, legStatus.arrivalDelaySeconds);
     }
 }

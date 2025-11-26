@@ -8,11 +8,13 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
+import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Alert;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
@@ -44,6 +46,7 @@ import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMATTER;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.diffInMinutes;
@@ -121,6 +124,9 @@ public class CheckMonitoredTrip implements Runnable {
     /** The OTP Response provider */
     private Supplier<OtpResponse> otpResponseProvider;
 
+    /** The helper object for making OTP Leg queries. */
+    private LegFinder legFinder;
+
     private final boolean hasTolerantItineraryCheck;
 
     public CheckMonitoredTrip(MonitoredTrip trip) throws CloneNotSupportedException {
@@ -139,6 +145,11 @@ public class CheckMonitoredTrip implements Runnable {
     public CheckMonitoredTrip(MonitoredTrip trip, Supplier<OtpResponse> otpResponseProvider) throws CloneNotSupportedException {
         this(trip, false);
         this.otpResponseProvider = otpResponseProvider;
+    }
+
+    public CheckMonitoredTrip(MonitoredTrip trip, LegFinder legFinder) throws CloneNotSupportedException {
+        this(trip, false);
+        this.legFinder = legFinder;
     }
 
     public CheckMonitoredTrip(
@@ -1020,5 +1031,32 @@ public class CheckMonitoredTrip implements Runnable {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
         // Include equal or after midnight as true.
         return !now.isBefore(midnightAfterLastChecked);
+    }
+
+    /**
+     * Check leg existence and returns status and delay information
+     */
+    public LegCheckStatus checkLegs() {
+        List<Leg> transitLegs = getTransitLegs(trip.itinerary.legs);
+        List<Leg> queriedLegs = new ArrayList<>();
+        boolean legsExist = true;
+        for (Leg leg : transitLegs) {
+            Leg returnedLeg = legFinder.queryLeg(leg.id);
+            if (returnedLeg == null) {
+                legsExist = false;
+                break;
+            } else {
+                queriedLegs.add(returnedLeg);
+            }
+        }
+
+        int departureDelaySeconds = 0;
+        int arrivalDelaySeconds = 0;
+        if (legsExist && !queriedLegs.isEmpty()) {
+            departureDelaySeconds = queriedLegs.get(0).departureDelay;
+            arrivalDelaySeconds = queriedLegs.get(queriedLegs.size() - 1).arrivalDelay;
+        }
+
+        return new LegCheckStatus(legsExist, departureDelaySeconds, arrivalDelaySeconds);
     }
 }

@@ -30,7 +30,7 @@ public class ItineraryFromLegMatcher {
         this.legs = legs;
     }
 
-    private static List<Leg> getTransitLegs(Collection<Leg> legs) {
+    public static List<Leg> getTransitLegs(Collection<Leg> legs) {
         return legs.stream()
             .filter(leg -> Boolean.TRUE.equals(leg.transitLeg))
             .filter(leg -> !Strings.isBlank(leg.id))
