@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
@@ -29,6 +30,8 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createTransitWalkTransitItinerary;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getOtpZoneId;
 
 /**
  * This class contains tests for {@link CheckMonitoredTrip} that don't require database or OTP queries.
@@ -75,7 +78,7 @@ public class CheckMonitoredTripBasicTest {
     public static void setRecurringTodayAndTomorrow(MonitoredTrip trip) {
         DayOfWeek dayOfWeek = DayOfWeek.of(LocalDate.ofInstant(
             trip.itinerary.startTime.toInstant(),
-            DateTimeUtils.getOtpZoneId()).get(ChronoField.DAY_OF_WEEK
+            getOtpZoneId()).get(ChronoField.DAY_OF_WEEK
         ));
         switch (dayOfWeek) {
             case MONDAY:
@@ -139,7 +142,7 @@ public class CheckMonitoredTripBasicTest {
     @ParameterizedTest
     @MethodSource("createFindEarliestTargetDateTime")
     void canFindEarliestTargetDateTime(int fromDay, int expectedDay, String message) {
-        ZoneId zoneId = DateTimeUtils.getOtpZoneId();
+        ZoneId zoneId = getOtpZoneId();
         // 10:25 am on some specified day in April 2025.
         ZonedDateTime fromDateTime = ZonedDateTime.of(2025, 4, fromDay, 10, 25, 0, 0, zoneId);
 
@@ -280,12 +283,15 @@ public class CheckMonitoredTripBasicTest {
         LocalDateTime baseTime = LocalDateTime.of(2025, 11, 10, 8, 0, 0);
 
         Itinerary itinerary = createTransitWalkTransitItinerary(baseTime);
-        // Simulate a 6-minute delay on the transit.
-        // TODO: Make delays adjustable per leg.
-        final int DELAY_MINUTES = 6;
-        Itinerary mockItinerary = createTransitWalkTransitItinerary(baseTime.plusMinutes(DELAY_MINUTES));
-        mockItinerary.legs.get(0).departureDelay = DELAY_MINUTES * 60;
-        mockItinerary.legs.get(2).arrivalDelay = DELAY_MINUTES * 60;
+        // Simulate a 6-minute delay on the itinerary arrival.
+        // For the first leg, make it a 4-minute delay on departure only.
+        final int DEPARTURE_DELAY_MINUTES = 4;
+        final int FINAL_DELAY_MINUTES = 6;
+        Itinerary mockItinerary = createTransitWalkTransitItinerary(baseTime.plusMinutes(FINAL_DELAY_MINUTES));
+        Leg firstMockLeg = mockItinerary.legs.get(0);
+        firstMockLeg.departureDelay = DEPARTURE_DELAY_MINUTES * 60;
+        firstMockLeg.startTime = convertToDate(LocalDateTime.ofInstant(firstMockLeg.startTime.toInstant(), getOtpZoneId()).minusMinutes(2));
+        mockItinerary.legs.get(2).arrivalDelay = FINAL_DELAY_MINUTES * 60;
         MockLegResponseProvider mockLegResponseProvider = new MockLegResponseProvider(mockItinerary);
 
         MonitoredTrip trip = new MonitoredTrip();
@@ -297,7 +303,7 @@ public class CheckMonitoredTripBasicTest {
         LegCheckStatus legStatus = check.checkLegs();
 
         assertTrue(legStatus.legsExist);
-        assertEquals(DELAY_MINUTES * 60, legStatus.departureDelaySeconds);
-        assertEquals(DELAY_MINUTES * 60, legStatus.arrivalDelaySeconds);
+        assertEquals(DEPARTURE_DELAY_MINUTES * 60, legStatus.departureDelaySeconds);
+        assertEquals(FINAL_DELAY_MINUTES * 60, legStatus.arrivalDelaySeconds);
     }
 }
