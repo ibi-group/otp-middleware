@@ -55,12 +55,12 @@ class ItineraryFromLegMatcherTest {
         liveLeg2.endTime = convertToDate(LocalDateTime.of(2025, 11, 10, 8, 50, 0));
 
         ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(itinerary, List.of(liveLeg1, liveLeg2));
-        assertTrue(matcher.match());
+        assertTrue(matcher.match(), "Transit legs in order should match.");
 
         ItineraryFromLegMatcher matcher1 = new ItineraryFromLegMatcher(itinerary, List.of(liveLeg2, liveLeg1));
-        assertFalse(matcher1.match());
+        assertFalse(matcher1.match(), "Transit legs out of order should not match.");
 
         ItineraryFromLegMatcher matcher2 = new ItineraryFromLegMatcher(itinerary, List.of(liveLeg1));
-        assertFalse(matcher2.match());
+        assertFalse(matcher2.match(),"Missing transit legs should not match.");
     }
 }
