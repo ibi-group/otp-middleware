@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.otp.response;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.logging.log4j.util.Strings;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
@@ -160,6 +161,13 @@ public class Leg implements Cloneable {
             endTime.toInstant().minusSeconds(arrivalDelay),
             DateTimeUtils.getOtpZoneId()
         );
+    }
+
+    /**
+     * Whether this leg is a transit leg with a non-null id.
+     */
+    public boolean transitLegWithId() {
+        return Boolean.TRUE.equals(transitLeg) && !Strings.isBlank(id);
     }
 
     /**

@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.itinerarymatching;
 
-import org.apache.logging.log4j.util.Strings;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 
@@ -32,8 +31,7 @@ public class ItineraryFromLegMatcher {
 
     public static List<Leg> getTransitLegs(Collection<Leg> legs) {
         return legs.stream()
-            .filter(leg -> Boolean.TRUE.equals(leg.transitLeg))
-            .filter(leg -> !Strings.isBlank(leg.id))
+            .filter(Leg::transitLegWithId)
             .collect(Collectors.toList());
     }
 
@@ -63,7 +61,7 @@ public class ItineraryFromLegMatcher {
         Leg previousTransitLeg = null;
         List<Leg> transferLegs = new ArrayList<>();
         for (Leg leg : referenceItinerary.legs) {
-            if (Boolean.TRUE.equals(leg.transitLeg)) {
+            if (leg.transitLegWithId()) {
                 if (previousTransitLeg != null) {
                     boolean transferImpossible = isInsufficientTime(
                         transitLegsById.get(previousTransitLeg.id),

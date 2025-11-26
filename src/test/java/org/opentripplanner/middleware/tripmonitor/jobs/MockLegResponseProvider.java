@@ -24,8 +24,7 @@ public class MockLegResponseProvider {
     public MockLegResponseProvider(Itinerary itinerary) {
         this.transitLegs = itinerary.legs
             .stream()
-            .filter(leg -> !Strings.isBlank(leg.id))
-            .filter(leg -> Boolean.TRUE.equals(leg.transitLeg))
+            .filter(Leg::transitLegWithId)
             .collect(Collectors.toMap(leg -> leg.id, Function.identity()));
     }
 
