@@ -40,7 +40,7 @@ public class LegFinder {
         this(LegFinder::sendOtpLegRequest);
     }
 
-    private Leg queryLeg(String legId) {
+    public Leg queryLeg(String legId) {
         OtpDispatcherResponse dispResponse = legResponseProvider.apply(legId);
         if (dispResponse != null && dispResponse.statusCode < 400) {
             try {
@@ -50,10 +50,6 @@ public class LegFinder {
             }
         }
         return null;
-    }
-
-    public boolean legExists(String legId) {
-        return queryLeg(legId) != null;
     }
 
     /**

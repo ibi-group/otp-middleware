@@ -24,7 +24,7 @@ class LegFinderTest {
         otpDispatcherResponse.statusCode = HttpStatus.OK_200;
         otpDispatcherResponse.responseBody = JsonUtils.toJson(response);
         LegFinder legFinder = new LegFinder(ignored -> otpDispatcherResponse);
-        assertEquals(expected, legFinder.legExists("leg-id"));
+        assertEquals(expected, legFinder.queryLeg("leg-id") != null);
     }
 
     private static Stream<Arguments> legExistsCases() {
