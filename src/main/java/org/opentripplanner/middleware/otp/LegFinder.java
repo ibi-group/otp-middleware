@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.otp;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import joptsimple.internal.Strings;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.OtpLegResponseWrapper;
 import org.opentripplanner.middleware.utils.HttpUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
@@ -43,7 +44,7 @@ public class LegFinder {
         OtpDispatcherResponse dispResponse = legResponseProvider.apply(legId);
         if (dispResponse != null && dispResponse.statusCode < 400) {
             try {
-                return JsonUtils.getPOJOFromJSON(dispResponse.responseBody, LegResponseWrapper.class).data.leg;
+                return JsonUtils.getPOJOFromJSON(dispResponse.responseBody, OtpLegResponseWrapper.class).data.leg;
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -78,13 +79,5 @@ public class LegFinder {
         public LegQueryVariables(String legId) {
             this.legId = legId;
         }
-    }
-
-    public static class LegResponseWrapper {
-        public LegResponse data = new LegResponse();
-    }
-
-    public static class LegResponse {
-        public Leg leg;
     }
 }

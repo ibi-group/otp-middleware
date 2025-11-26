@@ -5,6 +5,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.OtpLegResponseWrapper;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
@@ -16,7 +17,7 @@ class LegFinderTest {
     @ParameterizedTest
     @MethodSource("legExistsCases")
     void existingLeg(Leg leg, boolean expected) {
-        LegFinder.LegResponseWrapper response = new LegFinder.LegResponseWrapper();
+        OtpLegResponseWrapper response = new OtpLegResponseWrapper();
         response.data.leg = leg;
 
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
