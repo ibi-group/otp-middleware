@@ -306,7 +306,7 @@ public class CheckMonitoredTripBasicTest {
         CheckMonitoredTrip check = new CheckMonitoredTrip(trip, mockLegFinder);
         LegCheckStatus legStatus = check.checkLegs();
 
-        assertTrue(legStatus.legsExist);
+        assertTrue(legStatus.legsMatch);
         assertEquals(DEPARTURE_DELAY_SECONDS, legStatus.departureDelaySeconds);
         assertEquals(FINAL_DELAY_SECONDS, legStatus.arrivalDelaySeconds);
     }

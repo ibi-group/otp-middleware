@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.opentripplanner.middleware.i18n.Message;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -1052,11 +1053,14 @@ public class CheckMonitoredTrip implements Runnable {
 
         int departureDelaySeconds = 0;
         int arrivalDelaySeconds = 0;
+        boolean legsMatch = false;
         if (legsExist && !queriedLegs.isEmpty()) {
             departureDelaySeconds = queriedLegs.get(0).departureDelay;
             arrivalDelaySeconds = queriedLegs.get(queriedLegs.size() - 1).arrivalDelay;
+            ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(trip.itinerary, queriedLegs);
+            legsMatch = matcher.match();
         }
 
-        return new LegCheckStatus(legsExist, departureDelaySeconds, arrivalDelaySeconds);
+        return new LegCheckStatus(legsMatch, departureDelaySeconds, arrivalDelaySeconds);
     }
 }
