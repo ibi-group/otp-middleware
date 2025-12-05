@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.itinerarymatching;
 
-import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,11 +10,15 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
 public class ItineraryMatchingUtils {
     public static Itinerary createTransitWalkTransitItinerary(LocalDateTime baseTime) {
         Itinerary itinerary = new Itinerary();
-        itinerary.legs = List.of(
-            createBusLeg("transit-leg-id-1", baseTime, baseTime.plusMinutes(10)),
+        List<Leg> legs = List.of(
+            createBusLeg1(baseTime, baseTime.plusMinutes(10)),
             createWalkLeg(baseTime.plusMinutes(20), baseTime.plusMinutes(30)),
-            createBusLeg("transit-leg-id-2", baseTime.plusMinutes(40), baseTime.plusMinutes(50))
+            createBusLeg2(baseTime.plusMinutes(40), baseTime.plusMinutes(50))
         );
+        itinerary.legs = legs;
+        legs.get(1).from = legs.get(0).to;
+        legs.get(1).to = legs.get(2).from;
+
         return itinerary;
     }
 
@@ -26,6 +29,56 @@ public class ItineraryMatchingUtils {
         busLeg.id = id;
         busLeg.startTime = convertToDate(fromTime);
         busLeg.endTime = convertToDate(toTime);
+        busLeg.steps = List.of();
+        busLeg.legGeometry = new EncodedPolyline();
+        busLeg.interlineWithPreviousLeg = false;
+        busLeg.departureDelay = 0;
+        busLeg.arrivalDelay = 0;
+
+        Agency agency = new Agency();
+        agency.name = "Agency";
+        busLeg.agency = agency;
+
+        busLeg.route = new Route();
+
+        return busLeg;
+    }
+
+    public static Leg createBusLeg1(LocalDateTime fromTime, LocalDateTime toTime) {
+        Leg busLeg = createBusLeg("transit-leg-id-1", fromTime, toTime);
+
+        Place stop1 = new Place();
+        stop1.lat = 1.0;
+        stop1.lon = 2.0;
+
+        Place stop2 = new Place();
+        stop2.lat = 3.0;
+        stop2.lon = 4.0;
+
+        busLeg.from = stop1;
+        busLeg.to = stop2;
+
+        busLeg.route.shortName = "10";
+
+        return busLeg;
+    }
+
+    public static Leg createBusLeg2(LocalDateTime fromTime, LocalDateTime toTime) {
+        Leg busLeg = createBusLeg("transit-leg-id-2", fromTime, toTime);
+
+        Place stop1 = new Place();
+        stop1.lat = 5.0;
+        stop1.lon = 6.0;
+
+        Place stop2 = new Place();
+        stop2.lat = 7.0;
+        stop2.lon = 8.0;
+
+        busLeg.from = stop1;
+        busLeg.to = stop2;
+
+        busLeg.route.shortName = "20";
+
         return busLeg;
     }
 
@@ -34,6 +87,8 @@ public class ItineraryMatchingUtils {
         walkLeg.mode = "WALK";
         walkLeg.startTime = convertToDate(fromTime);
         walkLeg.endTime = convertToDate(toTime);
+        walkLeg.steps = List.of();
+        walkLeg.legGeometry = new EncodedPolyline();
         return walkLeg;
     }
 }
