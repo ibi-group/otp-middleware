@@ -7,6 +7,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -20,6 +21,11 @@ public class Leg implements Cloneable {
      * A unique OTP-generated id to identify a leg.
      */
     public String id;
+
+    /**
+     * The service date that this leg is tied to.
+     */
+    public LocalDate serviceDate;
 
     // TODO: Deprecated and replaced with 'start.estimated.time', but this introduces significant changes.
     /**
