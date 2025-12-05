@@ -2612,6 +2612,8 @@ definitions:
     properties:
       id:
         type: "string"
+      serviceDate:
+        $ref: "#/definitions/LocalDate"
       startTime:
         type: "string"
         format: "date"
