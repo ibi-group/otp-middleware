@@ -7,6 +7,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -138,6 +139,22 @@ public class ItineraryFromLegMatcher {
                     result.legs.set(i, newLeg);
                 }
 
+                // Shift times of transfer legs so that they start right after the previous transit leg,
+                // or if there was no previous transit leg, shift by the delay on the first transit leg.
+                if (previousTransitLeg != null && transitLegsById.get(previousTransitLeg.id) != null) {
+                    Duration timeDiff = Duration.between(previousTransitLeg.endTime.toInstant(), transitLegsById.get(previousTransitLeg.id).endTime.toInstant());
+                    transferLegs.forEach(l -> {
+                        l.startTime = Date.from(l.startTime.toInstant().plusSeconds(timeDiff.toSeconds()));
+                        l.endTime = Date.from(l.endTime.toInstant().plusSeconds(timeDiff.toSeconds()));
+                    });
+                } else if (newLeg != null) {
+                    Duration timeDiff = Duration.between(leg.startTime.toInstant(), newLeg.startTime.toInstant());
+                    transferLegs.forEach(l -> {
+                        l.startTime = Date.from(l.startTime.toInstant().plusSeconds(timeDiff.toSeconds()));
+                        l.endTime = Date.from(l.endTime.toInstant().plusSeconds(timeDiff.toSeconds()));
+                    });
+                }
+
                 previousTransitLeg = leg;
                 transferLegs = new ArrayList<>();
             } else {
@@ -145,6 +162,9 @@ public class ItineraryFromLegMatcher {
             }
         }
 
+        // Set itinerary new start and end time
+        result.startTime = result.legs.get(0).startTime;
+        result.endTime = result.legs.get(result.legs.size() - 1).endTime;
         return result;
     }
 }

@@ -6,6 +6,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -46,13 +47,19 @@ class ItineraryFromLegMatcherTest {
 
     @Test
     void canRebuildItineraryFromLegs() {
-        ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(ITINERARY, List.of(liveLeg1, liveLeg2));
+        // An itinerary rebuilt from an itinerary on a different day
+        // should get the correct day and time.
+        Itinerary itinerary = createTransitWalkTransitItinerary(BASE_TIME.minusDays(1));
+
+        ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(itinerary, List.of(liveLeg1, liveLeg2));
         Itinerary rebuiltItinerary = matcher.getRebuiltItinerary();
 
-        ItineraryMatcher classicMatcher = new ItineraryMatcher(ITINERARY, rebuiltItinerary);
+        ItineraryMatcher classicMatcher = new ItineraryMatcher(itinerary, rebuiltItinerary);
         assertTrue(classicMatcher.match(), classicMatcher.getFailingReason());
 
         assertEquals(liveLeg1, rebuiltItinerary.legs.get(0));
         assertEquals(liveLeg2, rebuiltItinerary.legs.get(2));
+        assertEquals(DateTimeUtils.convertToDate(BASE_TIME), rebuiltItinerary.startTime);
+        assertEquals(DateTimeUtils.convertToDate(BASE_TIME.plusMinutes(50)), rebuiltItinerary.endTime);
     }
 }
