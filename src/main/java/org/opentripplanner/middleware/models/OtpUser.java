@@ -106,6 +106,12 @@ public class OtpUser extends AbstractUser {
     /** A list of users (their ids only) that are dependent on this user. */
     public List<String> dependents = new ArrayList<>();
 
+    /** 
+     * List of query params a user's has saved as defaults. Because trip params  
+     * often have regional custom mode overrides, we pass a string here.
+     * */
+    public String userSavedTripDefaults;
+
     /** This user's name */
     public String name;
 
