@@ -1041,6 +1041,7 @@ public class CheckMonitoredTrip implements Runnable {
     public LegCheckStatus checkLegs() {
         List<Leg> transitLegs = getTransitLegs(trip.itinerary.legs);
         List<Leg> queriedLegs = new ArrayList<>();
+        Map<String, String> legIdMap = new HashMap<>();
         boolean legsExist = true;
         for (Leg leg : transitLegs) {
             Leg returnedLeg = legFinder.queryLeg(leg, targetZonedDateTime.toLocalDate());
@@ -1049,6 +1050,7 @@ public class CheckMonitoredTrip implements Runnable {
                 break;
             } else {
                 queriedLegs.add(returnedLeg);
+                legIdMap.put(leg.id, returnedLeg.id);
             }
         }
 
@@ -1059,7 +1061,7 @@ public class CheckMonitoredTrip implements Runnable {
         if (legsExist && !queriedLegs.isEmpty()) {
             departureDelaySeconds = queriedLegs.get(0).departureDelay;
             arrivalDelaySeconds = queriedLegs.get(queriedLegs.size() - 1).arrivalDelay;
-            ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(trip.itinerary, queriedLegs);
+            ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(trip.itinerary, queriedLegs, legIdMap);
             legsMatch = matcher.match();
             rebuiltItinerary = matcher.getRebuiltItinerary();
         }

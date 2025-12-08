@@ -27,9 +27,15 @@ public class ItineraryFromLegMatcher {
     private final Collection<Leg> legs;
     private Itinerary rebuiltItinerary;
 
-    public ItineraryFromLegMatcher(Itinerary referenceItinerary, Collection<Leg> legs) {
+    /**
+     * Map leg ids of a saved itinerary to leg ids applicable to the day of actual trip.
+     */
+    private final Map<String, String> legIdMap;
+
+    public ItineraryFromLegMatcher(Itinerary referenceItinerary, Collection<Leg> legs, Map<String, String> legIdMap) {
         this.referenceItinerary = referenceItinerary;
         this.legs = legs;
+        this.legIdMap = legIdMap;
     }
 
     public static List<Leg> getTransitLegs(Collection<Leg> legs) {
@@ -38,22 +44,10 @@ public class ItineraryFromLegMatcher {
             .collect(Collectors.toList());
     }
 
-    private static List<String> getLegIds(Collection<Leg> legs) {
-        return legs.stream()
-            .map(leg -> leg.id)
-            .collect(Collectors.toList());
-    }
-
     public boolean match() {
         // Check that there are the same number of transit legs
         List<Leg> candidateTransitLegs = getTransitLegs(legs);
         List<Leg> itineraryTransitLegs = getTransitLegs(referenceItinerary.legs);
-
-        // Check that ids are the same, same size and in same order
-        List<String> referenceIds = getLegIds(itineraryTransitLegs);
-        List<String> candidateIds = getLegIds(candidateTransitLegs);
-
-        if (!referenceIds.equals(candidateIds)) return false;
 
         // Interval between two consecutive transit legs should be enough for the duration
         // of all walk legs plus the boarding slack, or the transfer slack.
@@ -61,20 +55,24 @@ public class ItineraryFromLegMatcher {
             .stream()
             .collect(Collectors.toMap( leg -> leg.id, Function.identity()));
 
+        // Check that ids are the same size (order does not matter because a map will be constructed)
+        if (itineraryTransitLegs.size() != transitLegsById.size()) return false;
+
         Leg previousTransitLeg = null;
         List<Leg> transferLegs = new ArrayList<>();
         for (Leg leg : referenceItinerary.legs) {
             if (leg.transitLegWithId()) {
+                Leg newLeg = transitLegsById.get(legIdMap.get(leg.id));
                 if (previousTransitLeg != null) {
                     boolean transferImpossible = isInsufficientTime(
-                        transitLegsById.get(previousTransitLeg.id),
-                        transitLegsById.get(leg.id),
+                        previousTransitLeg,
+                        newLeg,
                         transferLegs
                     );
                     if (transferImpossible) return false;
                 }
 
-                previousTransitLeg = leg;
+                previousTransitLeg = newLeg;
                 transferLegs = new ArrayList<>();
             } else {
                 transferLegs.add(leg);
@@ -135,7 +133,7 @@ public class ItineraryFromLegMatcher {
         for (int i = 0; i < resultLegs.size(); i++) {
             Leg leg = resultLegs.get(i);
             if (leg.transitLegWithId()) {
-                Leg newLeg = transitLegsById.get(leg.id);
+                Leg newLeg = transitLegsById.get(legIdMap.get(leg.id));
                 if (newLeg != null) {
                     resultLegs.set(i, newLeg);
                 }

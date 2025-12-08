@@ -1,6 +1,12 @@
 package org.opentripplanner.middleware.itinerarymatching;
 
-import org.opentripplanner.middleware.otp.response.*;
+import jersey.repackaged.com.google.common.collect.Lists;
+import org.opentripplanner.middleware.otp.response.Agency;
+import org.opentripplanner.middleware.otp.response.EncodedPolyline;
+import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.Route;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,7 +16,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
 public class ItineraryMatchingUtils {
     public static Itinerary createTransitWalkTransitItinerary(LocalDateTime baseTime) {
         Itinerary itinerary = new Itinerary();
-        List<Leg> legs = List.of(
+        List<Leg> legs = Lists.newArrayList(
             createBusLeg1(baseTime, baseTime.plusMinutes(10)),
             createWalkLeg(baseTime.plusMinutes(20), baseTime.plusMinutes(30)),
             createBusLeg2(baseTime.plusMinutes(40), baseTime.plusMinutes(50))
