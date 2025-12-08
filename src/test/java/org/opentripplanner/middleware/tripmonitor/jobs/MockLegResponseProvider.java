@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
-import org.apache.logging.log4j.util.Strings;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
