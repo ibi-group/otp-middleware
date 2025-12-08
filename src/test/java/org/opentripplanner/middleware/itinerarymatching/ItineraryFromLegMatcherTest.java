@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.tripmonitor.jobs.MockLegResponseProvider;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -60,9 +61,13 @@ class ItineraryFromLegMatcherTest {
         LocalDateTime yesterday = BASE_TIME.minusDays(1);
         Itinerary itinerary = createTransitWalkTransitItinerary(yesterday);
         // Insert initial walk leg
-        Leg walkLeg =  createWalkLeg(yesterday.minusMinutes(10), yesterday.minusMinutes(5));
-        walkLeg.from = walkLeg.to = itinerary.legs.get(0).to;
-        itinerary.legs.add(0, walkLeg);
+        Leg initialWalkLeg =  createWalkLeg(yesterday.minusMinutes(10), yesterday.minusMinutes(5));
+        initialWalkLeg.from = initialWalkLeg.to = itinerary.legs.get(0).to;
+        itinerary.legs.add(0, initialWalkLeg);
+        // Insert final walk leg
+        Leg finalWalkLeg =  createWalkLeg(yesterday.plusMinutes(50), yesterday.plusMinutes(55));
+        finalWalkLeg.from = finalWalkLeg.to = itinerary.legs.get(3).to;
+        itinerary.legs.add(finalWalkLeg);
 
         ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(
             itinerary,
@@ -77,7 +82,12 @@ class ItineraryFromLegMatcherTest {
         // Itinerary should have received the updated legs.
         assertEquals(liveLeg1, rebuiltItinerary.legs.get(1));
         assertEquals(liveLeg2, rebuiltItinerary.legs.get(3));
+        // All legs should have been shifted
+        for (Leg leg : rebuiltItinerary.legs) {
+            assertEquals(BASE_TIME.toLocalDate(), LocalDate.ofInstant(leg.startTime.toInstant(), DateTimeUtils.getOtpZoneId()));
+        }
+        // Itinerary start, end time should have been updated.
         assertEquals(DateTimeUtils.convertToDate(BASE_TIME.minusMinutes(10)), rebuiltItinerary.startTime);
-        assertEquals(DateTimeUtils.convertToDate(BASE_TIME.plusMinutes(50)), rebuiltItinerary.endTime);
+        assertEquals(DateTimeUtils.convertToDate(BASE_TIME.plusMinutes(55)), rebuiltItinerary.endTime);
     }
 }

@@ -128,6 +128,7 @@ public class ItineraryFromLegMatcher {
 
         // Replace transit legs that have an id with the updated ones.
         Leg previousTransitLeg = null;
+        Leg previousOriginalTransitLeg = null;
         List<Leg> transferLegs = new ArrayList<>();
         List<Leg> resultLegs = result.legs;
         for (int i = 0; i < resultLegs.size(); i++) {
@@ -140,8 +141,8 @@ public class ItineraryFromLegMatcher {
 
                 // Shift times of transfer legs so that they start right after the previous transit leg,
                 // or if there was no previous transit leg, shift by the delay on the first transit leg.
-                if (previousTransitLeg != null && transitLegsById.get(previousTransitLeg.id) != null) {
-                    Duration timeDiff = Duration.between(previousTransitLeg.endTime.toInstant(), transitLegsById.get(previousTransitLeg.id).endTime.toInstant());
+                if (previousTransitLeg != null) {
+                    Duration timeDiff = Duration.between(previousOriginalTransitLeg.endTime.toInstant(), previousTransitLeg.endTime.toInstant());
                     transferLegs.forEach(l -> {
                         l.startTime = Date.from(l.startTime.toInstant().plusSeconds(timeDiff.toSeconds()));
                         l.endTime = Date.from(l.endTime.toInstant().plusSeconds(timeDiff.toSeconds()));
@@ -154,11 +155,21 @@ public class ItineraryFromLegMatcher {
                     });
                 }
 
-                previousTransitLeg = leg;
+                previousTransitLeg = newLeg;
+                previousOriginalTransitLeg = leg;
                 transferLegs = new ArrayList<>();
             } else {
                 transferLegs.add(leg);
             }
+        }
+
+        // Shift any remaining transfer (rather: egress) legs
+        if (previousTransitLeg != null) {
+            Duration timeDiff = Duration.between(previousOriginalTransitLeg.endTime.toInstant(), previousTransitLeg.endTime.toInstant());
+            transferLegs.forEach(l -> {
+                l.startTime = Date.from(l.startTime.toInstant().plusSeconds(timeDiff.toSeconds()));
+                l.endTime = Date.from(l.endTime.toInstant().plusSeconds(timeDiff.toSeconds()));
+            });
         }
 
         // Set itinerary new start and end time
