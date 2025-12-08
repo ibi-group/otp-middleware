@@ -141,6 +141,7 @@ public class CheckMonitoredTrip implements Runnable {
         journeyState = previousJourneyState.clone();
         previousMatchingItinerary = trip.journeyState.matchingItinerary;
         otpResponseProvider = this::getOtpResponse;
+        legFinder = new LegFinder();
     }
 
     public CheckMonitoredTrip(MonitoredTrip trip, Supplier<OtpResponse> otpResponseProvider) throws CloneNotSupportedException {
@@ -1042,7 +1043,7 @@ public class CheckMonitoredTrip implements Runnable {
         List<Leg> queriedLegs = new ArrayList<>();
         boolean legsExist = true;
         for (Leg leg : transitLegs) {
-            Leg returnedLeg = legFinder.queryLeg(leg.id);
+            Leg returnedLeg = legFinder.queryLeg(leg, targetZonedDateTime.toLocalDate());
             if (returnedLeg == null) {
                 legsExist = false;
                 break;

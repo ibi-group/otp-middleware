@@ -301,9 +301,13 @@ public class CheckMonitoredTripBasicTest {
         trip.itinerary = itinerary;
 
         MockLegResponseProvider mockLegResponseProvider = new MockLegResponseProvider(mockItinerary);
-        LegFinder mockLegFinder = new LegFinder(mockLegResponseProvider::getLegResponse);
+        LegFinder mockLegFinder = new LegFinder(
+            mockLegResponseProvider::getLegResponse,
+            MockLegResponseProvider::computeLegIdForServiceDate
+        );
 
         CheckMonitoredTrip check = new CheckMonitoredTrip(trip, mockLegFinder);
+        check.targetZonedDateTime = DateTimeUtils.nowAsZonedDateTime();
         LegCheckStatus legStatus = check.checkLegs();
 
         assertTrue(legStatus.legsMatch);

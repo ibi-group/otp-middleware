@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpLegResponseWrapper;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -24,7 +25,7 @@ public class MockLegResponseProvider {
         this.transitLegs = itinerary.legs
             .stream()
             .filter(Leg::transitLegWithId)
-            .collect(Collectors.toMap(leg -> leg.id, Function.identity()));
+            .collect(Collectors.toMap(leg -> String.format("%s-expected", leg.id), Function.identity()));
     }
 
     public OtpDispatcherResponse getLegResponse(String id) {
@@ -34,5 +35,9 @@ public class MockLegResponseProvider {
         OtpDispatcherResponse response = new OtpDispatcherResponse();
         response.responseBody = JsonUtils.toJson(wrapper);
         return response;
+    }
+
+    public static String computeLegIdForServiceDate(Leg leg, LocalDate desiredServiceDate) {
+        return String.format("%s-expected", leg.id);
     }
 }

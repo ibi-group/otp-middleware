@@ -17,15 +17,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class LegFinderTest {
     @ParameterizedTest
     @MethodSource("legExistsCases")
-    void existingLeg(Leg leg, boolean expected) {
+    void existingLeg(Leg leg, String requestedId, boolean expected) {
         OtpLegResponseWrapper response = new OtpLegResponseWrapper();
         response.data.leg = leg;
 
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
         otpDispatcherResponse.statusCode = HttpStatus.OK_200;
         otpDispatcherResponse.responseBody = JsonUtils.toJson(response);
-        LegFinder legFinder = new LegFinder(ignored -> otpDispatcherResponse);
-        assertEquals(expected, legFinder.queryLeg("leg-id") != null);
+        LegFinder legFinder = new LegFinder(ignored -> otpDispatcherResponse, (l, ignored) -> l.id);
+        assertEquals(expected, legFinder.queryLeg(requestedId) != null);
     }
 
     private static Stream<Arguments> legExistsCases() {
@@ -34,8 +34,9 @@ class LegFinderTest {
         existingLeg.arrivalDelay = 60;
 
         return Stream.of(
-            Arguments.of(existingLeg, true),
-            Arguments.of(null, false)
+            Arguments.of(existingLeg, "leg-id", true),
+            Arguments.of(existingLeg, "unexisting-leg-id", true),
+            Arguments.of(null, "leg-id", false)
         );
     }
 
