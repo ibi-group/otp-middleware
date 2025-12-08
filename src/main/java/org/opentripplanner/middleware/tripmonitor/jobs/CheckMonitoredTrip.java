@@ -1054,13 +1054,15 @@ public class CheckMonitoredTrip implements Runnable {
         int departureDelaySeconds = 0;
         int arrivalDelaySeconds = 0;
         boolean legsMatch = false;
+        Itinerary rebuiltItinerary = null;
         if (legsExist && !queriedLegs.isEmpty()) {
             departureDelaySeconds = queriedLegs.get(0).departureDelay;
             arrivalDelaySeconds = queriedLegs.get(queriedLegs.size() - 1).arrivalDelay;
             ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(trip.itinerary, queriedLegs);
             legsMatch = matcher.match();
+            rebuiltItinerary = matcher.getRebuiltItinerary();
         }
 
-        return new LegCheckStatus(legsMatch, departureDelaySeconds, arrivalDelaySeconds);
+        return new LegCheckStatus(legsMatch, departureDelaySeconds, arrivalDelaySeconds, rebuiltItinerary);
     }
 }
