@@ -131,12 +131,13 @@ public class ItineraryFromLegMatcher {
         // Replace transit legs that have an id with the updated ones.
         Leg previousTransitLeg = null;
         List<Leg> transferLegs = new ArrayList<>();
-        for (int i = 0; i < result.legs.size(); i++) {
-            Leg leg = result.legs.get(i);
+        List<Leg> resultLegs = result.legs;
+        for (int i = 0; i < resultLegs.size(); i++) {
+            Leg leg = resultLegs.get(i);
             if (leg.transitLegWithId()) {
                 Leg newLeg = transitLegsById.get(leg.id);
                 if (newLeg != null) {
-                    result.legs.set(i, newLeg);
+                    resultLegs.set(i, newLeg);
                 }
 
                 // Shift times of transfer legs so that they start right after the previous transit leg,
@@ -163,8 +164,8 @@ public class ItineraryFromLegMatcher {
         }
 
         // Set itinerary new start and end time
-        result.startTime = result.legs.get(0).startTime;
-        result.endTime = result.legs.get(result.legs.size() - 1).endTime;
+        result.startTime = resultLegs.get(0).startTime;
+        result.endTime = resultLegs.get(resultLegs.size() - 1).endTime;
         return result;
     }
 }
