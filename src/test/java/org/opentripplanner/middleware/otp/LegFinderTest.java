@@ -17,9 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class LegFinderTest {
     @ParameterizedTest
     @MethodSource("legExistsCases")
-    void existingLeg(Leg leg, String requestedId, boolean expected) {
+    void existingLeg(String requestedId, Leg returnedLeg, boolean expected) {
         OtpLegResponseWrapper response = new OtpLegResponseWrapper();
-        response.data.leg = leg;
+        response.data.leg = returnedLeg;
 
         OtpDispatcherResponse otpDispatcherResponse = new OtpDispatcherResponse();
         otpDispatcherResponse.statusCode = HttpStatus.OK_200;
@@ -29,14 +29,12 @@ class LegFinderTest {
     }
 
     private static Stream<Arguments> legExistsCases() {
-        Leg existingLeg = ItineraryMatchingUtils.createBusLeg("leg-id", LocalDateTime.now(), LocalDateTime.now());
-        existingLeg.departureDelay = 30;
-        existingLeg.arrivalDelay = 60;
+        LocalDateTime now = LocalDateTime.now();
+        Leg existingLeg = ItineraryMatchingUtils.createBusLeg("leg-id", now, now);
 
         return Stream.of(
-            Arguments.of(existingLeg, "leg-id", true),
-            Arguments.of(existingLeg, "unexisting-leg-id", true),
-            Arguments.of(null, "leg-id", false)
+            Arguments.of("leg-id", existingLeg, true),
+            Arguments.of("unexisting-leg-id", null, false)
         );
     }
 
