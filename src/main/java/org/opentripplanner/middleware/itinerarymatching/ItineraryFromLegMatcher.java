@@ -7,9 +7,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -24,12 +24,8 @@ public class ItineraryFromLegMatcher {
     private static final int TOTAL_SLACK_SECONDS = ALIGHT_SLACK_SECONDS + BOARDING_SLACK_SECONDS + TRANSFER_SLACK_SECONDS;
 
     private final Itinerary referenceItinerary;
-    private final Collection<Leg> legs;
-
-    /**
-     * Map leg ids of a saved itinerary to leg ids applicable to the day of actual trip.
-     */
-    private final Map<String, String> legIdMap;
+    private final List<Leg> originalTransitLegs;
+    private final Map<String, Leg> originalLegIdToCandidateLeg;
 
     private Itinerary rebuiltItinerary;
     private boolean rebuildAttempted;
@@ -37,10 +33,32 @@ public class ItineraryFromLegMatcher {
     private boolean legsMatch;
     private boolean impossibleTransfer;
 
-    public ItineraryFromLegMatcher(Itinerary referenceItinerary, Collection<Leg> legs, Map<String, String> legIdMap) {
+    public ItineraryFromLegMatcher(
+        Itinerary referenceItinerary,
+        Collection<Leg> candidateLegs,
+        Map<String, String> legIdMap
+    ) {
         this.referenceItinerary = referenceItinerary;
-        this.legs = legs;
-        this.legIdMap = legIdMap;
+        originalTransitLegs = getTransitLegs(referenceItinerary.legs);
+        originalLegIdToCandidateLeg = mapOriginalLegIdsToCandidateLegs(candidateLegs, legIdMap);
+    }
+
+    private Map<String, Leg> mapOriginalLegIdsToCandidateLegs(Collection<Leg> candidateLegs, Map<String, String> legIdMap) {
+        Map<String, Leg> candidateLegsById = getTransitLegs(candidateLegs)
+            .stream()
+            .collect(Collectors.toMap( leg -> leg.id, Function.identity()));
+
+        Map<String, Leg> result = new HashMap<>();
+        for (Leg leg : originalTransitLegs) {
+            String mappedId = legIdMap.get(leg.id);
+            if (mappedId != null) {
+                Leg mappedLeg = candidateLegsById.get(mappedId);
+                if (mappedLeg != null) {
+                    result.put(leg.id, mappedLeg);
+                }
+            }
+        }
+        return result;
     }
 
     public static List<Leg> getTransitLegs(Collection<Leg> legs) {
@@ -53,23 +71,7 @@ public class ItineraryFromLegMatcher {
      * Determines if all required legs to reconstruct the itinerary have been provided.
      */
     public boolean hasRequiredLegs() {
-        List<Leg> itineraryTransitLegs = getTransitLegs(referenceItinerary.legs);
-
-        Map<String, Leg> transitLegsById = getTransitLegs(legs)
-            .stream()
-            .collect(Collectors.toMap( leg -> leg.id, Function.identity()));
-
-        // Check that all legs from the reference itinerary can be mapped to the provided legs.
-        long mappedLegCount = itineraryTransitLegs
-            .stream()
-            .map(leg -> legIdMap.get(leg.id))
-            .filter(Objects::nonNull)
-            .distinct()
-            .map(transitLegsById::get)
-            .filter(Objects::nonNull)
-            .count();
-
-        return mappedLegCount == itineraryTransitLegs.size();
+        return originalLegIdToCandidateLeg.size() == originalTransitLegs.size();
     }
 
     /**
@@ -118,11 +120,6 @@ public class ItineraryFromLegMatcher {
             return null;
         }
 
-        List<Leg> candidateTransitLegs = getTransitLegs(legs);
-        Map<String, Leg> transitLegsById = candidateTransitLegs
-            .stream()
-            .collect(Collectors.toMap( leg -> leg.id, Function.identity()));
-
         // Replace transit legs that have an id with the updated ones.
         Leg previousTransitLeg = null;
         Leg previousOriginalTransitLeg = null;
@@ -131,7 +128,7 @@ public class ItineraryFromLegMatcher {
         for (int i = 0; i < resultLegs.size(); i++) {
             Leg leg = resultLegs.get(i);
             if (leg.transitLegWithId()) {
-                Leg newLeg = transitLegsById.get(legIdMap.get(leg.id));
+                Leg newLeg = originalLegIdToCandidateLeg.get(leg.id);
                 if (newLeg != null) {
                     resultLegs.set(i, newLeg);
                     if (previousTransitLeg != null) {
