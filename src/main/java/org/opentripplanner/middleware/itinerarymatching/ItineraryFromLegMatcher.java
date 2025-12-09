@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.itinerarymatching;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 
@@ -26,12 +25,17 @@ public class ItineraryFromLegMatcher {
 
     private final Itinerary referenceItinerary;
     private final Collection<Leg> legs;
-    private Itinerary rebuiltItinerary;
 
     /**
      * Map leg ids of a saved itinerary to leg ids applicable to the day of actual trip.
      */
     private final Map<String, String> legIdMap;
+
+    private Itinerary rebuiltItinerary;
+    private boolean rebuildAttempted;
+    private Exception exception;
+    private boolean legsMatch;
+    private boolean impossibleTransfer;
 
     public ItineraryFromLegMatcher(Itinerary referenceItinerary, Collection<Leg> legs, Map<String, String> legIdMap) {
         this.referenceItinerary = referenceItinerary;
@@ -68,44 +72,6 @@ public class ItineraryFromLegMatcher {
         return mappedLegCount == itineraryTransitLegs.size();
     }
 
-    public boolean match() {
-        // Check that there are the same number of transit legs
-        List<Leg> candidateTransitLegs = getTransitLegs(legs);
-        List<Leg> itineraryTransitLegs = getTransitLegs(referenceItinerary.legs);
-
-        // Interval between two consecutive transit legs should be enough for the duration
-        // of all walk legs plus the boarding slack, or the transfer slack.
-        Map<String, Leg> transitLegsById = candidateTransitLegs
-            .stream()
-            .collect(Collectors.toMap( leg -> leg.id, Function.identity()));
-
-        // Check that ids are the same size (order does not matter because a map will be constructed)
-        if (itineraryTransitLegs.size() != transitLegsById.size()) return false;
-
-        Leg previousTransitLeg = null;
-        List<Leg> transferLegs = new ArrayList<>();
-        for (Leg leg : referenceItinerary.legs) {
-            if (leg.transitLegWithId()) {
-                Leg newLeg = transitLegsById.get(legIdMap.get(leg.id));
-                if (previousTransitLeg != null) {
-                    boolean transferImpossible = isInsufficientTime(
-                        previousTransitLeg,
-                        newLeg,
-                        transferLegs
-                    );
-                    if (transferImpossible) return false;
-                }
-
-                previousTransitLeg = newLeg;
-                transferLegs = new ArrayList<>();
-            } else {
-                transferLegs.add(leg);
-            }
-        }
-
-        return true;
-    }
-
     /**
      * Determines whether there is enough time, including slacks, for legs between the two given legs.
      */
@@ -127,24 +93,31 @@ public class ItineraryFromLegMatcher {
 
     /**
      * Gets an itinerary based on the original one with the updated transit legs.
-     * Note: The resulting itinerary might be bogus (e.g. some legs might overlap in time).
+     * Note: The resulting itinerary might be null or bogus (e.g. some legs might overlap in time),
+     * so look at the other fields for issues.
      */
     public Itinerary getRebuiltItinerary() {
-        if (rebuiltItinerary == null) {
-            try {
-                rebuiltItinerary = rebuildItinerary();
-            } catch (CloneNotSupportedException e) {
-                throw new NotImplementedException(e);
-            }
+        if (rebuiltItinerary == null && !rebuildAttempted) {
+            rebuildAttempted = true;
+            rebuiltItinerary = rebuildItinerary();
         }
         return rebuiltItinerary;
     }
 
-    private Itinerary rebuildItinerary() throws CloneNotSupportedException {
-        Itinerary result = referenceItinerary.clone();
+    private Itinerary rebuildItinerary() {
+        if (!hasRequiredLegs()) {
+            legsMatch = false;
+            return null;
+        }
 
-        // Interval between two consecutive transit legs should be enough for the duration
-        // of all walk legs plus the boarding slack, or the transfer slack.
+        Itinerary result;
+        try {
+            result = referenceItinerary.clone();
+        } catch (CloneNotSupportedException cloneEx) {
+            exception = cloneEx;
+            return null;
+        }
+
         List<Leg> candidateTransitLegs = getTransitLegs(legs);
         Map<String, Leg> transitLegsById = candidateTransitLegs
             .stream()
@@ -161,27 +134,34 @@ public class ItineraryFromLegMatcher {
                 Leg newLeg = transitLegsById.get(legIdMap.get(leg.id));
                 if (newLeg != null) {
                     resultLegs.set(i, newLeg);
-                }
+                    if (previousTransitLeg != null) {
+                        // Interval between two consecutive transit legs should be enough for the duration
+                        // of all walk legs plus the boarding slack, or the transfer slack.
+                        boolean transferImpossible = isInsufficientTime(
+                            previousTransitLeg,
+                            newLeg,
+                            transferLegs
+                        );
+                        if (transferImpossible) impossibleTransfer = true;
 
-                // Shift times of transfer legs so that they start right after the previous transit leg,
-                // or if there was no previous transit leg, shift by the delay on the first transit leg.
-                if (previousTransitLeg != null) {
-                    Duration timeDiff = Duration.between(previousOriginalTransitLeg.endTime.toInstant(), previousTransitLeg.endTime.toInstant());
-                    transferLegs.forEach(l -> {
-                        l.startTime = Date.from(l.startTime.toInstant().plusSeconds(timeDiff.toSeconds()));
-                        l.endTime = Date.from(l.endTime.toInstant().plusSeconds(timeDiff.toSeconds()));
-                    });
-                } else if (newLeg != null) {
-                    Duration timeDiff = Duration.between(leg.startTime.toInstant(), newLeg.startTime.toInstant());
-                    transferLegs.forEach(l -> {
-                        l.startTime = Date.from(l.startTime.toInstant().plusSeconds(timeDiff.toSeconds()));
-                        l.endTime = Date.from(l.endTime.toInstant().plusSeconds(timeDiff.toSeconds()));
-                    });
+                        // Shift times of transfer legs so that they start right after the previous transit leg,
+                        // or if there was no previous transit leg, shift by the delay on the first transit leg.
+                        Duration timeDiff = Duration.between(previousOriginalTransitLeg.endTime.toInstant(), previousTransitLeg.endTime.toInstant());
+                        transferLegs.forEach(l -> {
+                            l.startTime = Date.from(l.startTime.toInstant().plusSeconds(timeDiff.toSeconds()));
+                            l.endTime = Date.from(l.endTime.toInstant().plusSeconds(timeDiff.toSeconds()));
+                        });
+                    } else {
+                        Duration timeDiff = Duration.between(leg.startTime.toInstant(), newLeg.startTime.toInstant());
+                        transferLegs.forEach(l -> {
+                            l.startTime = Date.from(l.startTime.toInstant().plusSeconds(timeDiff.toSeconds()));
+                            l.endTime = Date.from(l.endTime.toInstant().plusSeconds(timeDiff.toSeconds()));
+                        });
+                    }
+                    previousTransitLeg = newLeg;
+                    previousOriginalTransitLeg = leg;
+                    transferLegs = new ArrayList<>();
                 }
-
-                previousTransitLeg = newLeg;
-                previousOriginalTransitLeg = leg;
-                transferLegs = new ArrayList<>();
             } else {
                 transferLegs.add(leg);
             }
@@ -200,5 +180,17 @@ public class ItineraryFromLegMatcher {
         result.startTime = resultLegs.get(0).startTime;
         result.endTime = resultLegs.get(resultLegs.size() - 1).endTime;
         return result;
+    }
+
+    public boolean legsMatch() {
+        return legsMatch;
+    }
+
+    public Exception exception() {
+        return exception;
+    }
+
+    public boolean impossibleTransfer() {
+        return impossibleTransfer;
     }
 }
