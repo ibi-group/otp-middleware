@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createBusLeg1;
@@ -41,9 +42,13 @@ class ItineraryFromLegMatcherTest {
 
     @ParameterizedTest
     @MethodSource("itineraryFromLegsCases")
-    void canMatchItineraryFromLegs(Collection<Leg> legs, boolean isMatch, String message) {
-        ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(ITINERARY, legs, MockLegResponseProvider.makeUpdatedLegIdMap(legs));
-        assertEquals(isMatch, matcher.match(), message);
+    void hasRequiredLegs(Collection<Leg> legs, boolean isMatch, String message) {
+        ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(
+            ITINERARY,
+            legs,
+            MockLegResponseProvider.makeUpdatedLegIdMap(getTransitLegs(ITINERARY.legs))
+        );
+        assertEquals(isMatch, matcher.hasRequiredLegs(), message);
     }
 
     private static Stream<Arguments> itineraryFromLegsCases() {
@@ -52,6 +57,22 @@ class ItineraryFromLegMatcherTest {
             Arguments.of(List.of(liveLeg2, liveLeg1), true, "Transit legs out of order should still match."),
             Arguments.of(List.of(liveLeg1), false, "Missing transit legs should not match.")
         );
+    }
+
+    @Test
+    void unmappedLeg() {
+        List<Leg> knownLegs = List.of(liveLeg1, liveLeg2);
+        Leg otherLeg = new Leg();
+        otherLeg.id = "other-leg";
+        otherLeg.transitLeg = true;
+        List<Leg> providedLegs = List.of(liveLeg1, otherLeg);
+
+        ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(
+            ITINERARY,
+            providedLegs,
+            MockLegResponseProvider.makeUpdatedLegIdMap(knownLegs)
+        );
+        assertFalse(matcher.hasRequiredLegs(), "Updated legs must map to original legs.");
     }
 
     @Test

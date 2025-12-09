@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,29 @@ public class ItineraryFromLegMatcher {
         return legs.stream()
             .filter(Leg::transitLegWithId)
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Determines if all required legs to reconstruct the itinerary have been provided.
+     */
+    public boolean hasRequiredLegs() {
+        List<Leg> itineraryTransitLegs = getTransitLegs(referenceItinerary.legs);
+
+        Map<String, Leg> transitLegsById = getTransitLegs(legs)
+            .stream()
+            .collect(Collectors.toMap( leg -> leg.id, Function.identity()));
+
+        // Check that all legs from the reference itinerary can be mapped to the provided legs.
+        long mappedLegCount = itineraryTransitLegs
+            .stream()
+            .map(leg -> legIdMap.get(leg.id))
+            .filter(Objects::nonNull)
+            .distinct()
+            .map(transitLegsById::get)
+            .filter(Objects::nonNull)
+            .count();
+
+        return mappedLegCount == itineraryTransitLegs.size();
     }
 
     public boolean match() {
