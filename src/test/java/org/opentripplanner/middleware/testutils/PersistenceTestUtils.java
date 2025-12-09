@@ -5,6 +5,8 @@ import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
@@ -14,7 +16,6 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
-import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
@@ -165,6 +166,31 @@ public class PersistenceTestUtils {
     public static TripSummary createTripSummaryWithError(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
         OtpResponse planErrorResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse();
         TripSummary tripSummary = new TripSummary(null, planErrorResponse.plan.routingErrors, tripRequestId, batchId);
+        if (createDate != null) {
+            tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
+        }
+        Persistence.tripSummaries.create(tripSummary);
+        return tripSummary;
+    }
+
+    /**
+     * Create trip summary from given response and including the desired response parts, and store in database.
+     */
+    public static TripSummary createTripSummary(
+        OtpDispatcherResponse dispatcherResponse,
+        String tripRequestId,
+        String batchId,
+        LocalDateTime createDate,
+        boolean usePlan,
+        boolean useErrors
+    ) throws Exception {
+        TripPlan plan = dispatcherResponse.getResponse().plan;
+        TripSummary tripSummary = new TripSummary(
+            usePlan ? plan : null,
+            useErrors ? plan.routingErrors : null,
+            tripRequestId,
+            batchId
+        );
         if (createDate != null) {
             tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
         }
