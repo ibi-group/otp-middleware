@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createBusLeg1;
@@ -96,6 +97,10 @@ class ItineraryFromLegMatcherTest {
             MockLegResponseProvider.makeUpdatedLegIdMap(getTransitLegs(itinerary.legs))
         );
         Itinerary rebuiltItinerary = matcher.getRebuiltItinerary();
+        assertTrue(matcher.hasRequiredLegs());
+        assertTrue(matcher.rebuildAttempted());
+        assertFalse(matcher.impossibleTransfer());
+        assertNull(matcher.exception());
 
         ItineraryMatcher classicMatcher = new ItineraryMatcher(itinerary, rebuiltItinerary);
         assertTrue(classicMatcher.match(), classicMatcher.getFailingReason());

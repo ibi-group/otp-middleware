@@ -177,4 +177,8 @@ public class ItineraryFromLegMatcher {
     public boolean impossibleTransfer() {
         return impossibleTransfer;
     }
+
+    public boolean rebuildAttempted() {
+        return rebuildAttempted;
+    }
 }
