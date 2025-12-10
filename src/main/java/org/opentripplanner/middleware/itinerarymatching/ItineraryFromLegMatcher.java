@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,6 +106,11 @@ public class ItineraryFromLegMatcher {
         return rebuiltItinerary;
     }
 
+    private static void offsetTimes(Collection<Leg> legs, Date from, Date to) {
+        Duration timeDiff = Duration.between(from.toInstant(), to.toInstant());
+        legs.forEach(l -> l.offsetTimes(timeDiff.toMillis()));
+    }
+
     private Itinerary rebuildItinerary() {
         if (!hasRequiredLegs()) {
             legsMatch = false;
@@ -140,13 +146,11 @@ public class ItineraryFromLegMatcher {
                         );
                         if (transferImpossible) impossibleTransfer = true;
 
-                        // Shift times of transfer legs so that they start right after the previous transit leg,
-                        // or if there was no previous transit leg, shift by the delay on the first transit leg.
-                        Duration timeDiff = Duration.between(previousOriginalTransitLeg.endTime.toInstant(), previousTransitLeg.endTime.toInstant());
-                        transferLegs.forEach(l -> l.offsetTimes(timeDiff.toMillis()));
+                        // Shift times of transfer legs so that they start right after the previous transit leg.
+                        offsetTimes(transferLegs, previousOriginalTransitLeg.endTime, previousTransitLeg.endTime);
                     } else {
-                        Duration timeDiff = Duration.between(leg.startTime.toInstant(), newLeg.startTime.toInstant());
-                        transferLegs.forEach(l -> l.offsetTimes(timeDiff.toMillis()));
+                        // If there was no previous transit leg, shift by the delay on the first transit leg.
+                        offsetTimes(transferLegs, leg.startTime, newLeg.startTime);
                     }
                     previousTransitLeg = newLeg;
                     previousOriginalTransitLeg = leg;
@@ -159,8 +163,7 @@ public class ItineraryFromLegMatcher {
 
         // Shift any remaining transfer (rather: egress) legs
         if (previousTransitLeg != null) {
-            Duration timeDiff = Duration.between(previousOriginalTransitLeg.endTime.toInstant(), previousTransitLeg.endTime.toInstant());
-            transferLegs.forEach(l -> l.offsetTimes(timeDiff.toMillis()));
+            offsetTimes(transferLegs, previousOriginalTransitLeg.endTime, previousTransitLeg.endTime);
         }
 
         // Set itinerary new start and end time
