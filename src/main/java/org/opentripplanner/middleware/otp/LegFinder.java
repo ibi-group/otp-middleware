@@ -26,7 +26,8 @@ public class LegFinder {
         "endTime",
         "departureDelay",
         "arrivalDelay",
-        "transitLeg"
+        "transitLeg",
+        "realTime"
     );
     public static final String LEG_QUERY = String.format(
         "query ($legId: String!) { leg(id: $legId) { %s } }",
