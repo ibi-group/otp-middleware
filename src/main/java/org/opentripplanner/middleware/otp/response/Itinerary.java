@@ -254,8 +254,7 @@ public class Itinerary implements Cloneable {
         startTime = new Date(startTime.getTime() + offsetMillis);
         endTime = new Date(endTime.getTime() + offsetMillis);
         for (Leg leg : legs) {
-            leg.startTime = new Date(leg.startTime.getTime() + offsetMillis);
-            leg.endTime = new Date(leg.endTime.getTime() + offsetMillis);
+            leg.offsetTimes(offsetMillis);
         }
     }
 

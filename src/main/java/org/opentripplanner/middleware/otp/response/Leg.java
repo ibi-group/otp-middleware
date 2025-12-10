@@ -177,6 +177,14 @@ public class Leg implements Cloneable {
     }
 
     /**
+     * Offset the start and end time by specified milliseconds.
+     */
+    public void offsetTimes(long offsetMillis) {
+        startTime = new Date(startTime.getTime() + offsetMillis);
+        endTime = new Date(endTime.getTime() + offsetMillis);
+    }
+
+    /**
      * Clone this object.
      * NOTE: This is used primarily during testing and only clones certain needed items so not all entities are
      * deep-cloned. Implement this further if additional items should be deep-cloned.

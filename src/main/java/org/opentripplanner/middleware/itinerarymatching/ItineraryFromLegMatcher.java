@@ -6,7 +6,6 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -144,16 +143,10 @@ public class ItineraryFromLegMatcher {
                         // Shift times of transfer legs so that they start right after the previous transit leg,
                         // or if there was no previous transit leg, shift by the delay on the first transit leg.
                         Duration timeDiff = Duration.between(previousOriginalTransitLeg.endTime.toInstant(), previousTransitLeg.endTime.toInstant());
-                        transferLegs.forEach(l -> {
-                            l.startTime = Date.from(l.startTime.toInstant().plusSeconds(timeDiff.toSeconds()));
-                            l.endTime = Date.from(l.endTime.toInstant().plusSeconds(timeDiff.toSeconds()));
-                        });
+                        transferLegs.forEach(l -> l.offsetTimes(timeDiff.toMillis()));
                     } else {
                         Duration timeDiff = Duration.between(leg.startTime.toInstant(), newLeg.startTime.toInstant());
-                        transferLegs.forEach(l -> {
-                            l.startTime = Date.from(l.startTime.toInstant().plusSeconds(timeDiff.toSeconds()));
-                            l.endTime = Date.from(l.endTime.toInstant().plusSeconds(timeDiff.toSeconds()));
-                        });
+                        transferLegs.forEach(l -> l.offsetTimes(timeDiff.toMillis()));
                     }
                     previousTransitLeg = newLeg;
                     previousOriginalTransitLeg = leg;
@@ -167,10 +160,7 @@ public class ItineraryFromLegMatcher {
         // Shift any remaining transfer (rather: egress) legs
         if (previousTransitLeg != null) {
             Duration timeDiff = Duration.between(previousOriginalTransitLeg.endTime.toInstant(), previousTransitLeg.endTime.toInstant());
-            transferLegs.forEach(l -> {
-                l.startTime = Date.from(l.startTime.toInstant().plusSeconds(timeDiff.toSeconds()));
-                l.endTime = Date.from(l.endTime.toInstant().plusSeconds(timeDiff.toSeconds()));
-            });
+            transferLegs.forEach(l -> l.offsetTimes(timeDiff.toMillis()));
         }
 
         // Set itinerary new start and end time
