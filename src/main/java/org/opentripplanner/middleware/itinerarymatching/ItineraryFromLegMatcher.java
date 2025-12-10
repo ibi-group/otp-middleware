@@ -30,7 +30,6 @@ public class ItineraryFromLegMatcher {
     private Itinerary rebuiltItinerary;
     private boolean rebuildAttempted;
     private Exception exception;
-    private boolean legsMatch;
     private boolean impossibleTransfer;
 
     public ItineraryFromLegMatcher(
@@ -113,7 +112,6 @@ public class ItineraryFromLegMatcher {
 
     private Itinerary rebuildItinerary() {
         if (!hasRequiredLegs()) {
-            legsMatch = false;
             return null;
         }
 
@@ -170,10 +168,6 @@ public class ItineraryFromLegMatcher {
         result.startTime = resultLegs.get(0).startTime;
         result.endTime = resultLegs.get(resultLegs.size() - 1).endTime;
         return result;
-    }
-
-    public boolean legsMatch() {
-        return legsMatch;
     }
 
     public Exception exception() {

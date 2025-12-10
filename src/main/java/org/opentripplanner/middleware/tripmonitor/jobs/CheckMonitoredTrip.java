@@ -1062,8 +1062,8 @@ public class CheckMonitoredTrip implements Runnable {
             departureDelaySeconds = queriedLegs.get(0).departureDelay;
             arrivalDelaySeconds = queriedLegs.get(queriedLegs.size() - 1).arrivalDelay;
             ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(trip.itinerary, queriedLegs, legIdMap);
+            legsMatch = matcher.hasRequiredLegs();
             rebuiltItinerary = matcher.getRebuiltItinerary();
-            legsMatch = matcher.legsMatch();
         }
 
         return new LegCheckStatus(legsMatch, departureDelaySeconds, arrivalDelaySeconds, rebuiltItinerary);
