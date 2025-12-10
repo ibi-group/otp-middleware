@@ -38,4 +38,8 @@ public class ItineraryCheckStatus {
         this.departureDelaySeconds = transitLegs.get(0).departureDelay;
         this.arrivalDelaySeconds = transitLegs.get(transitLegs.size() - 1).arrivalDelay;
     }
+
+    public boolean isBogus() {
+        return !legsMatch || exception != null || impossibleTransfer;
+    }
 }

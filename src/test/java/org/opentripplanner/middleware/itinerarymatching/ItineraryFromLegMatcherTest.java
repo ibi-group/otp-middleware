@@ -102,6 +102,7 @@ class ItineraryFromLegMatcherTest {
         assertTrue(matcherResult.legsMatch);
         assertFalse(matcherResult.impossibleTransfer);
         assertNull(matcherResult.exception);
+        assertFalse(matcherResult.isBogus());
 
         ItineraryMatcher classicMatcher = new ItineraryMatcher(itinerary, rebuiltItinerary);
         assertTrue(classicMatcher.match(), classicMatcher.getFailingReason());
