@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryCheckStatus;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.LegFinder;
@@ -308,10 +309,10 @@ public class CheckMonitoredTripBasicTest {
 
         CheckMonitoredTrip check = new CheckMonitoredTrip(trip, mockLegFinder);
         check.targetZonedDateTime = DateTimeUtils.nowAsZonedDateTime();
-        LegCheckStatus legStatus = check.checkLegs();
+        ItineraryCheckStatus itineraryCheckStatus = check.checkLegs();
 
-        assertTrue(legStatus.legsMatch);
-        assertEquals(DEPARTURE_DELAY_SECONDS, legStatus.departureDelaySeconds);
-        assertEquals(FINAL_DELAY_SECONDS, legStatus.arrivalDelaySeconds);
+        assertTrue(itineraryCheckStatus.legsMatch);
+        assertEquals(DEPARTURE_DELAY_SECONDS, itineraryCheckStatus.departureDelaySeconds);
+        assertEquals(FINAL_DELAY_SECONDS, itineraryCheckStatus.arrivalDelaySeconds);
     }
 }

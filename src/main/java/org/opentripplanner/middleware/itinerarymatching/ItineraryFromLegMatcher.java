@@ -97,12 +97,18 @@ public class ItineraryFromLegMatcher {
      * Note: The resulting itinerary might be null or bogus (e.g. some legs might overlap in time),
      * so look at the other fields for issues.
      */
-    public Itinerary getRebuiltItinerary() {
+    public ItineraryCheckStatus process() {
         if (rebuiltItinerary == null && !rebuildAttempted) {
             rebuildAttempted = true;
             rebuiltItinerary = rebuildItinerary();
         }
-        return rebuiltItinerary;
+
+        return new ItineraryCheckStatus(
+            hasRequiredLegs(),
+            rebuiltItinerary,
+            exception,
+            impossibleTransfer
+        );
     }
 
     private static void offsetTimes(Collection<Leg> legs, Date from, Date to) {
@@ -170,15 +176,7 @@ public class ItineraryFromLegMatcher {
         return result;
     }
 
-    public Exception exception() {
-        return exception;
-    }
-
-    public boolean impossibleTransfer() {
-        return impossibleTransfer;
-    }
-
-    public boolean rebuildAttempted() {
+    public boolean processed() {
         return rebuildAttempted;
     }
 }

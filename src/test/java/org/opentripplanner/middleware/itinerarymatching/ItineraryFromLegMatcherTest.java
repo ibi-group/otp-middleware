@@ -96,11 +96,12 @@ class ItineraryFromLegMatcherTest {
             List.of(liveLeg1, liveLeg2),
             MockLegResponseProvider.makeUpdatedLegIdMap(getTransitLegs(itinerary.legs))
         );
-        Itinerary rebuiltItinerary = matcher.getRebuiltItinerary();
-        assertTrue(matcher.hasRequiredLegs());
-        assertTrue(matcher.rebuildAttempted());
-        assertFalse(matcher.impossibleTransfer());
-        assertNull(matcher.exception());
+        ItineraryCheckStatus matcherResult = matcher.process();
+        Itinerary rebuiltItinerary = matcherResult.rebuiltItinerary;
+        assertTrue(matcher.processed());
+        assertTrue(matcherResult.legsMatch);
+        assertFalse(matcherResult.impossibleTransfer);
+        assertNull(matcherResult.exception);
 
         ItineraryMatcher classicMatcher = new ItineraryMatcher(itinerary, rebuiltItinerary);
         assertTrue(classicMatcher.match(), classicMatcher.getFailingReason());

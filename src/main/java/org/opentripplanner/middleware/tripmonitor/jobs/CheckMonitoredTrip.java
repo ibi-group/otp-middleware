@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.opentripplanner.middleware.i18n.Message;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryCheckStatus;
 import org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
@@ -1038,15 +1039,13 @@ public class CheckMonitoredTrip implements Runnable {
     /**
      * Check leg existence and returns status and delay information
      */
-    public LegCheckStatus checkLegs() {
+    public ItineraryCheckStatus checkLegs() {
         List<Leg> transitLegs = getTransitLegs(trip.itinerary.legs);
         List<Leg> queriedLegs = new ArrayList<>();
         Map<String, String> legIdMap = new HashMap<>();
-        boolean legsExist = true;
         for (Leg leg : transitLegs) {
             Leg returnedLeg = legFinder.queryLeg(leg, targetZonedDateTime.toLocalDate());
             if (returnedLeg == null) {
-                legsExist = false;
                 break;
             } else {
                 queriedLegs.add(returnedLeg);
@@ -1054,18 +1053,6 @@ public class CheckMonitoredTrip implements Runnable {
             }
         }
 
-        int departureDelaySeconds = 0;
-        int arrivalDelaySeconds = 0;
-        boolean legsMatch = false;
-        Itinerary rebuiltItinerary = null;
-        if (legsExist && !queriedLegs.isEmpty()) {
-            departureDelaySeconds = queriedLegs.get(0).departureDelay;
-            arrivalDelaySeconds = queriedLegs.get(queriedLegs.size() - 1).arrivalDelay;
-            ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(trip.itinerary, queriedLegs, legIdMap);
-            legsMatch = matcher.hasRequiredLegs();
-            rebuiltItinerary = matcher.getRebuiltItinerary();
-        }
-
-        return new LegCheckStatus(legsMatch, departureDelaySeconds, arrivalDelaySeconds, rebuiltItinerary);
+        return new ItineraryFromLegMatcher(trip.itinerary, queriedLegs, legIdMap).process();
     }
 }
