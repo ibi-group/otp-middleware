@@ -140,6 +140,13 @@ public class ItineraryFromLegMatcher {
                 Leg newLeg = originalLegIdToCandidateLeg.get(leg.id);
                 if (newLeg != null) {
                     resultLegs.set(i, newLeg);
+                    // Shallow-copy over fields that remain the same between theoretical and updated legs
+                    newLeg.from = leg.from;
+                    newLeg.to = leg.to;
+                    newLeg.agency = leg.agency;
+                    newLeg.route = leg.route;
+                    newLeg.interlineWithPreviousLeg = leg.interlineWithPreviousLeg;
+
                     if (previousTransitLeg != null) {
                         // Interval between two consecutive transit legs should be enough for the duration
                         // of all walk legs plus the boarding slack, or the transfer slack.

@@ -21,10 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
-import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createBusLeg1;
-import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createBusLeg2;
+import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createQueriedBusLeg;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createTransitWalkTransitItinerary;
-import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createWalkLeg;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createWalkTransitWalkTransitWalkItinerary;
 
 class ItineraryFromLegMatcherTest {
@@ -35,13 +33,8 @@ class ItineraryFromLegMatcherTest {
     // Set up live (real-time) transit legs.
     // Non-null transit legs are presumed to match origin, destination, and trip id on a given transit route.
     // TODO: Handle cases with different leg start/end times (delays), and cases where some legs are null.
-    private static final Leg liveLeg1 = createBusLeg1(BASE_TIME, BASE_TIME.plusMinutes(10));
-    private static final Leg liveLeg2 = createBusLeg2(BASE_TIME.plusMinutes(40), BASE_TIME.plusMinutes(50));
-
-    static {
-        liveLeg1.id = MockLegResponseProvider.makeUpdatedLegId(liveLeg1);
-        liveLeg2.id = MockLegResponseProvider.makeUpdatedLegId(liveLeg2);
-    }
+    private static final Leg liveLeg1 = createQueriedBusLeg("transit-leg-id-1-expected", BASE_TIME, BASE_TIME.plusMinutes(10));
+    private static final Leg liveLeg2 = createQueriedBusLeg("transit-leg-id-2-expected" ,BASE_TIME.plusMinutes(40), BASE_TIME.plusMinutes(50));
 
     @ParameterizedTest
     @MethodSource("itineraryFromLegsCases")

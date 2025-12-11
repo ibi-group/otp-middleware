@@ -45,18 +45,23 @@ public class ItineraryMatchingUtils {
         return itinerary;
     }
 
-    public static Leg createBusLeg(String id, LocalDateTime fromTime, LocalDateTime toTime) {
+    public static Leg createGenericBusLeg(String id, LocalDateTime fromTime, LocalDateTime toTime) {
         Leg busLeg = new Leg();
         busLeg.transitLeg = true;
         busLeg.mode = "BUS";
         busLeg.id = id;
         busLeg.startTime = convertToDate(fromTime);
         busLeg.endTime = convertToDate(toTime);
+        busLeg.departureDelay = 0;
+        busLeg.arrivalDelay = 0;
+        return busLeg;
+    }
+
+    public static Leg createBusLeg(String id, LocalDateTime fromTime, LocalDateTime toTime) {
+        Leg busLeg = createGenericBusLeg(id, fromTime, toTime);
         busLeg.steps = List.of();
         busLeg.legGeometry = new EncodedPolyline();
         busLeg.interlineWithPreviousLeg = false;
-        busLeg.departureDelay = 0;
-        busLeg.arrivalDelay = 0;
 
         Agency agency = new Agency();
         agency.name = "Agency";
@@ -103,6 +108,10 @@ public class ItineraryMatchingUtils {
         busLeg.route.shortName = "20";
 
         return busLeg;
+    }
+
+    public static Leg createQueriedBusLeg(String id, LocalDateTime fromTime, LocalDateTime toTime) {
+        return createGenericBusLeg(id, fromTime, toTime);
     }
 
     public static Leg createWalkLeg(LocalDateTime fromTime, LocalDateTime toTime) {
