@@ -19,7 +19,7 @@ class LegIdProcessorTest {
         Leg leg = new Leg();
         leg.id = "rO0ABXdaABhTQ0hFRFVMRURfVFJBTlNJVF9MRUdfVjMADk1BUlRBOjEwNzQzMjc4AAoyMDI1LTEyLTAzAAAAAgAAAA4AC01BUlRBOjY4MDU3AAtNQVJUQTo4MjAxNAAA";
         // Dummy service date, different from the desired one above.
-        leg.serviceDate = LocalDate.of(2024, Month.APRIL, 20);
+        leg.serviceDate = "20240420";
 
         assertNotEquals(expectedId, leg.id);
         assertNotEquals(desiredServiceDate, leg.serviceDate);
