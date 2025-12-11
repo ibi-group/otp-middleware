@@ -186,19 +186,21 @@ public class Leg implements Cloneable {
 
     /**
      * Clone this object.
-     * NOTE: This is used primarily during testing and only clones certain needed items so not all entities are
+     * NOTE: This only clones certain needed items so not all entities are
      * deep-cloned. Implement this further if additional items should be deep-cloned.
      */
     @Override
     protected Leg clone() throws CloneNotSupportedException {
         Leg cloned = (Leg) super.clone();
-        cloned.from = this.from.clone();
-        cloned.to = this.to.clone();
-        cloned.steps = new ArrayList<>();
-        for (Step step : this.steps) {
-            cloned.steps.add(step.clone());
+        if (this.from != null) cloned.from = this.from.clone();
+        if (this.to != null) cloned.to = this.to.clone();
+        if (this.steps != null) {
+            cloned.steps = new ArrayList<>();
+            for (Step step : this.steps) {
+                cloned.steps.add(step.clone());
+            }
         }
-        cloned.legGeometry = this.legGeometry.clone();
+        if (this.legGeometry != null) cloned.legGeometry = this.legGeometry.clone();
         return cloned;
     }
 }
