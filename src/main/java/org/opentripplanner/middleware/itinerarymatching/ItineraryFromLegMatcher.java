@@ -70,7 +70,7 @@ public class ItineraryFromLegMatcher {
      * Determines if all required legs to reconstruct the itinerary have been provided.
      */
     public boolean hasRequiredLegs() {
-        return originalLegIdToCandidateLeg.size() == originalTransitLegs.size();
+        return !originalTransitLegs.isEmpty() && originalLegIdToCandidateLeg.size() == originalTransitLegs.size();
     }
 
     /**

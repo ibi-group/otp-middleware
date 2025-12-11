@@ -28,6 +28,23 @@ public class ItineraryMatchingUtils {
         return itinerary;
     }
 
+    public static Itinerary createWalkTransitWalkTransitWalkItinerary(LocalDateTime baseTime) {
+        Itinerary itinerary = new Itinerary();
+        List<Leg> legs = Lists.newArrayList(
+            createWalkLeg(baseTime.minusMinutes(10), baseTime.minusMinutes(5)),
+            createBusLeg1(baseTime, baseTime.plusMinutes(10)),
+            createWalkLeg(baseTime.plusMinutes(20), baseTime.plusMinutes(30)),
+            createBusLeg2(baseTime.plusMinutes(40), baseTime.plusMinutes(50)),
+            createWalkLeg(baseTime.plusMinutes(50), baseTime.plusMinutes(55))
+        );
+        itinerary.legs = legs;
+        legs.get(0).from = legs.get(0).to = itinerary.legs.get(1).from;
+        legs.get(2).from = legs.get(1).to;
+        legs.get(2).to = legs.get(3).from;
+        legs.get(4).from = legs.get(4).to = itinerary.legs.get(3).to;
+        return itinerary;
+    }
+
     public static Leg createBusLeg(String id, LocalDateTime fromTime, LocalDateTime toTime) {
         Leg busLeg = new Leg();
         busLeg.transitLeg = true;

@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,6 +25,7 @@ import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatching
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createBusLeg2;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createTransitWalkTransitItinerary;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createWalkLeg;
+import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createWalkTransitWalkTransitWalkItinerary;
 
 class ItineraryFromLegMatcherTest {
 
@@ -77,19 +79,26 @@ class ItineraryFromLegMatcherTest {
     }
 
     @Test
+    void allLegsWithoutId() throws CloneNotSupportedException {
+        // This test covers itineraries saved before we actively query/save leg ids.
+
+        Itinerary itinerary = ITINERARY.clone();
+        itinerary.legs.forEach(leg -> leg.id = null);
+
+        ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(
+            itinerary,
+            List.of(liveLeg1, liveLeg2),
+            Map.of("transit-leg-id-1", "transit-leg-id-1-expected", "transit-leg-id-2", "transit-leg-id-2-expected")
+        );
+        assertFalse(matcher.hasRequiredLegs(), "Updated legs must map to original legs.");
+    }
+
+    @Test
     void canRebuildItineraryFromLegs() {
         // An itinerary rebuilt from an itinerary on a different day
         // should get the correct day and time.
         LocalDateTime yesterday = BASE_TIME.minusDays(1);
-        Itinerary itinerary = createTransitWalkTransitItinerary(yesterday);
-        // Insert initial walk leg
-        Leg initialWalkLeg =  createWalkLeg(yesterday.minusMinutes(10), yesterday.minusMinutes(5));
-        initialWalkLeg.from = initialWalkLeg.to = itinerary.legs.get(0).to;
-        itinerary.legs.add(0, initialWalkLeg);
-        // Insert final walk leg
-        Leg finalWalkLeg =  createWalkLeg(yesterday.plusMinutes(50), yesterday.plusMinutes(55));
-        finalWalkLeg.from = finalWalkLeg.to = itinerary.legs.get(3).to;
-        itinerary.legs.add(finalWalkLeg);
+        Itinerary itinerary = createWalkTransitWalkTransitWalkItinerary(yesterday);
 
         ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(
             itinerary,
@@ -117,5 +126,24 @@ class ItineraryFromLegMatcherTest {
         // Itinerary start, end time should have been updated.
         assertEquals(DateTimeUtils.convertToDate(BASE_TIME.minusMinutes(10)), rebuiltItinerary.startTime);
         assertEquals(DateTimeUtils.convertToDate(BASE_TIME.plusMinutes(55)), rebuiltItinerary.endTime);
+    }
+
+    @Test
+    void shouldNotRebuildItineraryIfMissingLegIds() {
+        LocalDateTime yesterday = BASE_TIME.minusDays(1);
+        Itinerary itinerary = createWalkTransitWalkTransitWalkItinerary(yesterday);
+
+        // An itinerary where leg ids are null should not get rebuilt.
+        itinerary.legs.forEach(leg -> leg.id = null);
+
+        ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(
+            itinerary,
+            List.of(liveLeg1, liveLeg2),
+            MockLegResponseProvider.makeUpdatedLegIdMap(getTransitLegs(itinerary.legs))
+        );
+        ItineraryCheckStatus matcherResult = matcher.process();
+        assertTrue(matcher.processed());
+        assertTrue(matcherResult.isBogus());
+        assertFalse(matcherResult.legsMatch);
     }
 }

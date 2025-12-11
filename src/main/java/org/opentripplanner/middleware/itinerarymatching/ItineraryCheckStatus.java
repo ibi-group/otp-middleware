@@ -34,12 +34,20 @@ public class ItineraryCheckStatus {
         this.exception = exception;
         this.impossibleTransfer = impossibleTransfer;
 
-        List<Leg> transitLegs = getTransitLegs(rebuiltItinerary.legs);
-        this.departureDelaySeconds = transitLegs.get(0).departureDelay;
-        this.arrivalDelaySeconds = transitLegs.get(transitLegs.size() - 1).arrivalDelay;
+        int depDelay = 0;
+        int arrDelay = 0;
+        if (rebuiltItinerary != null) {
+            List<Leg> transitLegs = getTransitLegs(rebuiltItinerary.legs);
+            if (!transitLegs.isEmpty()) {
+                depDelay = transitLegs.get(0).departureDelay;
+                arrDelay = transitLegs.get(transitLegs.size() - 1).arrivalDelay;
+            }
+        }
+        departureDelaySeconds = depDelay;
+        arrivalDelaySeconds = arrDelay;
     }
 
     public boolean isBogus() {
-        return !legsMatch || exception != null || impossibleTransfer;
+        return !legsMatch || exception != null || impossibleTransfer || rebuiltItinerary == null;
     }
 }
