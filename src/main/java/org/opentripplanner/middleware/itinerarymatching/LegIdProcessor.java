@@ -31,14 +31,16 @@ public class LegIdProcessor {
             return null;
         }
 
-        var input = new ByteArrayInputStream(serializedLegReference);
         String type = null;
         String tripId = null;
         int stopPosition1 = Integer.MIN_VALUE;
         int stopPosition2 = Integer.MIN_VALUE;
         String stopId1 = null;
         String stopId2 = null;
-        try (var in = new ObjectInputStream(input)) {
+        try (
+            var input = new ByteArrayInputStream(serializedLegReference);
+            var in = new ObjectInputStream(input)
+        ) {
             // Follow the order in which OTP encoded this order must be the same in the encode and decode function
 
             type = in.readUTF();
