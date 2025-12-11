@@ -163,6 +163,15 @@ public class CheckMonitoredTrip implements Runnable {
         this.otpResponseProvider = otpResponseProvider;
     }
 
+    public CheckMonitoredTrip(
+        MonitoredTrip trip,
+        LegFinder legFinder,
+        boolean hasTolerantItineraryCheck
+    ) throws CloneNotSupportedException {
+        this(trip, hasTolerantItineraryCheck);
+        this.legFinder = legFinder;
+    }
+
     @Override
     public void run() {
         // Add a prefix of the current trip ID for logging purposes to every log message generated from within an
@@ -326,7 +335,7 @@ public class CheckMonitoredTrip implements Runnable {
             resetJourneyState();
 
             // update the journey state with whether the matching itinerary has realtime data
-            journeyState.hasRealtimeData = matchingItinerary.legs.stream().anyMatch(leg -> leg.realTime);
+            journeyState.hasRealtimeData = matchingItinerary.legs.stream().anyMatch(leg -> Boolean.TRUE.equals(leg.realTime));
 
             // set the status according to whether the current itinerary occurs in the past, present or future
             updateTripStatus();
