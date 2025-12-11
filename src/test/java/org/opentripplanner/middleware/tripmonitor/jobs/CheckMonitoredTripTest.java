@@ -11,11 +11,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.opentripplanner.middleware.itinerarymatching.LegIdProcessor;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
-import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
@@ -89,6 +90,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         .withHour(0)
         .withMinute(0)
         .withSecond(0);
+    public static final ZonedDateTime TUESDAY_20251209 = DateTimeUtils.makeOtpZonedDateTime(new Date())
+        .withYear(2025)
+        .withMonth(12)
+        .withDayOfMonth(9)
+        .withHour(0)
+        .withMinute(0)
+        .withSecond(0);
     public static final ZonedDateTime TUESDAY_20200609_0800 = TUESDAY_20200609.withHour(8);
     public static final ZonedDateTime TUESDAY_20200609_0850 = TUESDAY_20200609_0800.withMinute(50);
     private static final ZonedDateTime MONDAY_20200615_0845 = MONDAY_20200608_NOON
@@ -116,7 +124,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     public OtpResponse mockOtpPlanResponse() {
         try {
             // Setup an OTP mock response in order to trigger some of the monitor checks.
-            return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
+            return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse();
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -171,13 +179,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canMonitorOngoingTrip() throws Exception {
-        // Setup an OTP mock response in order to trigger some of the monitor checks.
-        OtpResponse mockResponse = getMockOtpResponseJune15();
-        Itinerary itinerary = firstItinerary(mockResponse);
-
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID,
             false,
             null
         );
@@ -185,16 +189,26 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
 
-        // Add fake alerts to simulated itinerary.
-        ArrayList<Alert> fakeAlerts = new ArrayList<>();
-        fakeAlerts.add(new Alert());
-        itinerary.legs.get(1).alerts = fakeAlerts;
+        // Simulate legs and add fake alerts.
+        OtpResponse mockResponse = mockOtpPlanResponse();
+        Itinerary itinerary = firstItinerary(mockResponse);
+        itinerary.legs.get(1).alerts = Lists.newArrayList(new Alert());
 
-        // mock the current time to be 8:45am on Monday, June 15
-        DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
+        // Mock the current time to be during the trip.
+        // TODO: Add params for right before and during trip.
+        DateTimeUtils.useFixedClockAt(
+            ZonedDateTime.ofInstant(itinerary.startTime.toInstant().plusSeconds(60),
+            DateTimeUtils.getOtpZoneId())
+        );
 
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(
+            monitoredTrip,
+            new LegFinder(
+                new MockLegResponseProvider(itinerary, leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
+                LegIdProcessor::computeLegIdForServiceDate
+            )
+        );
         checkMonitoredTrip.run();
 
         // Assert that there is one notification generated during check and it is an alert.
@@ -208,17 +222,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     void canMonitorFutureTrip() throws Exception {
         // TODO refactor with above test.
         // Save an itinerary in the future, and run an itinerary check on it at at time before that itinerary start.
-
-        OtpGraphQLVariables params = new OtpGraphQLVariables();
-        params.time = "08:35";
-
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone(),
             false,
             null
         );
-        monitoredTrip.otp2QueryParams = params;
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
 
@@ -226,19 +235,25 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         LOG.info("Created trip {}", monitoredTrip.id);
 
 
-        OtpResponse mockResponse = mockOtpPlanResponse();
-        Itinerary mockTuesdayJune9Itinerary = firstItinerary(mockResponse);
-        OtpTestUtils.setItineraryDay(mockTuesdayJune9Itinerary, 9);
-
         // Add fake alerts to simulated itinerary.
-        mockTuesdayJune9Itinerary.legs.get(1).alerts = Lists.newArrayList(new Alert());
+        OtpResponse mockResponse = mockOtpPlanResponse();
+        Itinerary itinerary = firstItinerary(mockResponse);
+        itinerary.legs.get(1).alerts = Lists.newArrayList(new Alert());
 
-        // The trip is set to be monitored Monday to Friday.
-        // Mock time to be 7:30am on Tuesday, June 9 before the trip start.
-        DateTimeUtils.useFixedClockAt(TUESDAY_20200609.withHour(7).withMinute(30));
+        // Mock the current time to be shortly before the trip start.
+        DateTimeUtils.useFixedClockAt(
+            ZonedDateTime.ofInstant(itinerary.startTime.toInstant().minusSeconds(4000),
+                DateTimeUtils.getOtpZoneId())
+        );
 
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(
+            monitoredTrip,
+            new LegFinder(
+                new MockLegResponseProvider(itinerary, leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
+                LegIdProcessor::computeLegIdForServiceDate
+            )
+        );
         checkMonitoredTrip.run();
         // This process should initialize the scheduled departure time on the journey state
         assertNotEquals(0, checkMonitoredTrip.trip.journeyState.scheduledDepartureTimeEpochMillis);
@@ -255,7 +270,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     void sendInitialReminderNotificationForOneTimeTrip() throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone(),
             false,
             null
         );
@@ -443,7 +458,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     ) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone(),
             false,
             journeyState
         );
@@ -472,7 +487,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         MonitoredTrip weekendTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID,
             true,
             OtpTestUtils.createDefaultJourneyState()
         );
@@ -1197,7 +1212,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     void canBeTolerantWithItineraryChecks() throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone(),
             false,
             OtpTestUtils.createDefaultJourneyState()
         );
@@ -1281,7 +1296,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     void canUnsnoozeTrip(ZonedDateTime lastCheckedTime, ZonedDateTime clockTime, boolean shouldUnsnooze) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone(),
             false,
             OtpTestUtils.createDefaultJourneyState()
         );
@@ -1346,7 +1361,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     ) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone(),
             false,
             OtpTestUtils.createDefaultJourneyState()
         );
@@ -1397,7 +1412,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     ) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone(),
             false,
             OtpTestUtils.createDefaultJourneyState()
         );
@@ -1444,7 +1459,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone(),
             true,
             OtpTestUtils.createDefaultJourneyState()
         );
@@ -1489,7 +1504,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     void testCheckMonitoredTripWhenUTCIsNextDay() throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone(),
             false,
             OtpTestUtils.createDefaultJourneyState()
         );
@@ -1497,49 +1512,40 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // monitored trip start time = 1:30AM UTC or 5:30PM PST
         OtpTestUtils.updateBaseItineraryTime(
             monitoredTrip.itinerary,
-            DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime)
-                .withHour(17)
-                .withMinute(30)
-                .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
+            TUESDAY_20251209.withHour(17).withMinute(30)
         );
-
-        OtpGraphQLVariables params = new OtpGraphQLVariables();
-        params.time = "17:30";
 
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
-        monitoredTrip.otp2QueryParams = params;
         monitoredTrip.leadTimeInMinutes = 30;
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
 
         // Set up an OTP mock response in order to trigger some of the monitor checks.
         OtpResponse mockResponse = mockOtpPlanResponse();
-        Itinerary mockTuesdayJune09Itinerary = firstItinerary(mockResponse);
+        Itinerary itinerary = firstItinerary(mockResponse);
 
         // itinerary start time = 1:30AM UTC or 5:30PM PST
         OtpTestUtils.updateBaseItineraryTime(
-            mockTuesdayJune09Itinerary,
-            DateTimeUtils.makeOtpZonedDateTime(mockTuesdayJune09Itinerary.startTime)
-                .withHour(17)
-                .withMinute(30)
-                .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
+            itinerary,
+            TUESDAY_20251209.withHour(17).withMinute(30)
         );
 
         // change "now" time after initial check to be within 30 min lead
         // 1:00AM UTC or 5:00PM PST
-        DateTimeUtils.useFixedClockAt(
-            TUESDAY_20200609
-                .withHour(17)
-                .withMinute(0)
-                .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
-        );
+        DateTimeUtils.useFixedClockAt(TUESDAY_20251209.withHour(17).withMinute(0));
 
         // Next, run a monitor trip check from the new monitored trip using the simulated response.
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(
+            monitoredTrip,
+            new LegFinder(
+                new MockLegResponseProvider(itinerary, leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
+                LegIdProcessor::computeLegIdForServiceDate
+            )
+        );
         checkMonitoredTrip.run();
 
-        // trip should have been skipped
+        // trip should not have been skipped
         Assertions.assertEquals(DayOfWeek.TUESDAY, checkMonitoredTrip.targetZonedDateTime.getDayOfWeek());
 
         // Clear the created trip.

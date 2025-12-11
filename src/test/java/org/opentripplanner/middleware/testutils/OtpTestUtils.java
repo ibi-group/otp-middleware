@@ -68,6 +68,9 @@ public class OtpTestUtils {
     public static final OtpDispatcherResponse OTP2_DISPATCHER_PLAN_RESPONSE =
         initializeMockPlanResponse("otp/response/planResponse-otp2.json");
 
+    public static final OtpDispatcherResponse OTP2_DISPATCHER_PLAN_RESPONSE_LEGID =
+        initializeMockPlanResponse("otp/response/planResponse-legid.json");
+
     public static final OtpDispatcherResponse REROUTE_PLAN_RESPONSE =
         initializeMockPlanResponse("otp/response/rerouteResponse.json");
 

@@ -22,11 +22,14 @@ public class MockLegResponseProvider {
      */
     private final Map<String, Leg> transitLegs;
 
-    public MockLegResponseProvider(Itinerary itinerary) {
+    public MockLegResponseProvider(Itinerary itinerary, Function<Leg, String> getLegId) {
         this.transitLegs = itinerary.legs
             .stream()
             .filter(Leg::transitLegWithId)
-            .collect(Collectors.toMap(MockLegResponseProvider::makeUpdatedLegId, Function.identity()));
+            .collect(Collectors.toMap(getLegId, Function.identity()));
+    }
+    public MockLegResponseProvider(Itinerary itinerary) {
+        this(itinerary, MockLegResponseProvider::makeUpdatedLegId);
     }
 
     public OtpDispatcherResponse getLegResponse(String id) {
