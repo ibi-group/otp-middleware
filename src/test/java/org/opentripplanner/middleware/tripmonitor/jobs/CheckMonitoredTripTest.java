@@ -200,14 +200,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             DateTimeUtils.getOtpZoneId())
         );
 
-        // Next, run a monitor trip check from the new monitored trip using the simulated response.
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(
-            monitoredTrip,
-            new LegFinder(
-                new MockLegResponseProvider(itinerary, leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
-                LegIdProcessor::computeLegIdForServiceDate
-            )
-        );
+        CheckMonitoredTrip checkMonitoredTrip = tripChecker(monitoredTrip, itinerary);
         checkMonitoredTrip.run();
 
         // Assert that there is one notification generated during check and it is an alert.
@@ -240,14 +233,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 DateTimeUtils.getOtpZoneId())
         );
 
-        // Next, run a monitor trip check from the new monitored trip using the simulated response.
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(
-            monitoredTrip,
-            new LegFinder(
-                new MockLegResponseProvider(itinerary, leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
-                LegIdProcessor::computeLegIdForServiceDate
-            )
-        );
+        CheckMonitoredTrip checkMonitoredTrip = tripChecker(monitoredTrip, itinerary);
         checkMonitoredTrip.run();
         // This process should initialize the scheduled departure time on the journey state
         assertNotEquals(0, checkMonitoredTrip.trip.journeyState.scheduledDepartureTimeEpochMillis);
@@ -272,16 +258,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Mock time to be an hour or so before the trip start.
         DateTimeUtils.useFixedClockAt(DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime).minusMinutes(70));
 
-        // create a mock monitored trip and CheckMonitorTrip instance
-        // Note that the response below gets modified from the original mockOtpPlanResponse.
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(
-            monitoredTrip,
-            new LegFinder(
-                new MockLegResponseProvider(firstItinerary(mockOtpPlanResponse()), leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
-                LegIdProcessor::computeLegIdForServiceDate
-            ),
-            false
-        );
+        CheckMonitoredTrip checkMonitoredTrip = tripChecker(monitoredTrip, firstItinerary(mockOtpPlanResponse()));
         checkMonitoredTrip.run();
         // Assert that the initial reminder has been generated.
         Assertions.assertNotNull(checkMonitoredTrip.initialReminderNotification);
@@ -320,14 +297,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             false,
             journeyState
         );
-        CheckMonitoredTrip check = new CheckMonitoredTrip(
-            monitoredTrip,
-            new LegFinder(
-                new MockLegResponseProvider(firstItinerary(mockOtpPlanResponse()), leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
-                LegIdProcessor::computeLegIdForServiceDate
-            ),
-            false
-        );
+        CheckMonitoredTrip check = tripChecker(monitoredTrip, firstItinerary(mockOtpPlanResponse()));
         check.matchingItinerary = OtpTestUtils.createDefaultItinerary();
 
         if (notificationType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY || notificationType == NotificationType.DEPARTURE_DELAY) {
@@ -367,16 +337,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 .withMonth(6)
                 .withDayOfMonth(15));
 
-        // create a mock monitored trip and CheckMonitorTrip instance
-        // Note that the response below gets modified from the original mockOtpPlanResponse.
-        CheckMonitoredTrip check = new CheckMonitoredTrip(
-            monitoredTrip,
-            new LegFinder(
-                new MockLegResponseProvider(itineraryForLegQuery, leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
-                LegIdProcessor::computeLegIdForServiceDate
-            ),
-            false
-        );
+        CheckMonitoredTrip check = tripChecker(monitoredTrip, itineraryForLegQuery);
 
         MonitoredTrip mockTrip = check.trip;
         Persistence.monitoredTrips.create(mockTrip);
@@ -629,16 +590,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // mock the current time to be 8:45am on Monday, June 15
         DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
 
-        // create a mock monitored trip and CheckMonitorTrip instance.
-        // Note that the response below gets modified from the original mockOtpPlanResponse.
-        CheckMonitoredTrip mockCheckMonitoredTrip = new CheckMonitoredTrip(
-            monitoredTrip,
-            new LegFinder(
-                new MockLegResponseProvider(firstItinerary(getMockOtpResponseJune15()), leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
-                LegIdProcessor::computeLegIdForServiceDate
-            ),
-            false
-        );
+        CheckMonitoredTrip mockCheckMonitoredTrip = tripChecker(monitoredTrip, firstItinerary(getMockOtpResponseJune15()));
 
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
@@ -686,16 +638,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // create an OTP mock to return
         OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
 
-        // create a mock monitored trip and CheckMonitorTrip instance.
-        // Note that the response below gets modified from the original mockOtpPlanResponse.
-        CheckMonitoredTrip mockCheckMonitoredTrip = new CheckMonitoredTrip(
-            monitoredTrip,
-            new LegFinder(
-                new MockLegResponseProvider(firstItinerary(mockWeekdayResponse), leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
-                LegIdProcessor::computeLegIdForServiceDate
-            ),
-            false
-        );
+        CheckMonitoredTrip mockCheckMonitoredTrip = tripChecker(monitoredTrip, firstItinerary(mockWeekdayResponse));
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
 
@@ -786,16 +729,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // create an OTP mock to return
         OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
-        // create a mock monitored trip and CheckMonitorTrip instance
-        // Note that the response below gets modified from the original mockOtpPlanResponse.
-        CheckMonitoredTrip mockCheckMonitoredTrip = new CheckMonitoredTrip(
-            monitoredTrip,
-            new LegFinder(
-                new MockLegResponseProvider(firstItinerary(mockWeekdayResponse), leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
-                LegIdProcessor::computeLegIdForServiceDate
-            ),
-            false
-        );
+        CheckMonitoredTrip mockCheckMonitoredTrip = tripChecker(monitoredTrip, firstItinerary(mockWeekdayResponse));
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
 
@@ -897,16 +831,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         Itinerary firstMockItinerary = firstItinerary(mockWeekdayResponse);
         firstMockItinerary.clearAlerts();
 
-        // Create a mock monitored trip and CheckMonitorTrip instance
-        // Note that the response below gets modified from the original mockOtpPlanResponse.
-        CheckMonitoredTrip mockCheckMonitoredTrip = new CheckMonitoredTrip(
-            monitoredTrip,
-            new LegFinder(
-                new MockLegResponseProvider(firstMockItinerary, leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
-                LegIdProcessor::computeLegIdForServiceDate
-            ),
-            false
-        );
+        CheckMonitoredTrip mockCheckMonitoredTrip = tripChecker(monitoredTrip, firstMockItinerary);
 
         // Override matching itinerary to null to simulate initial save.
         mockCheckMonitoredTrip.matchingItinerary = null;
@@ -1191,14 +1116,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             itineraryForOtpLegQuery,
             tuesday0840
         );
-        CheckMonitoredTrip check = new CheckMonitoredTrip(
-            trip,
-            new LegFinder(
-                new MockLegResponseProvider(itineraryForOtpLegQuery, leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
-                LegIdProcessor::computeLegIdForServiceDate
-            ),
-            false
-        );
+        CheckMonitoredTrip check = tripChecker(trip, itineraryForOtpLegQuery);
 
         trip.wednesday = true;
         trip.tuesday = true;
@@ -1675,14 +1593,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // 1:00AM UTC or 5:00PM PST
         DateTimeUtils.useFixedClockAt(TUESDAY_20251209.withHour(17).withMinute(0));
 
-        // Next, run a monitor trip check from the new monitored trip using the simulated response.
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(
-            monitoredTrip,
-            new LegFinder(
-                new MockLegResponseProvider(itinerary, leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
-                LegIdProcessor::computeLegIdForServiceDate
-            )
-        );
+        CheckMonitoredTrip checkMonitoredTrip = tripChecker(monitoredTrip, itinerary);
         checkMonitoredTrip.run();
 
         // trip should not have been skipped
@@ -1690,6 +1601,21 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
+    }
+
+    private static CheckMonitoredTrip tripChecker(
+        MonitoredTrip monitoredTrip,
+        Itinerary mockItinerary
+    ) throws CloneNotSupportedException {
+        return new CheckMonitoredTrip(
+            monitoredTrip,
+            new LegFinder(
+                new MockLegResponseProvider(
+                    mockItinerary,
+                    leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
+                LegIdProcessor::computeLegIdForServiceDate
+            )
+        );
     }
 
     private static MonitoredTrip monitoredTripWithLegId() throws Exception {
