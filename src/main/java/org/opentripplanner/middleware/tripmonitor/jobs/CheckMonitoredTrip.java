@@ -156,15 +156,6 @@ public class CheckMonitoredTrip implements Runnable {
 
     public CheckMonitoredTrip(
         MonitoredTrip trip,
-        Supplier<OtpResponse> otpResponseProvider,
-        boolean hasTolerantItineraryCheck
-    ) throws CloneNotSupportedException {
-        this(trip, hasTolerantItineraryCheck);
-        this.otpResponseProvider = otpResponseProvider;
-    }
-
-    public CheckMonitoredTrip(
-        MonitoredTrip trip,
         LegFinder legFinder,
         boolean hasTolerantItineraryCheck
     ) throws CloneNotSupportedException {

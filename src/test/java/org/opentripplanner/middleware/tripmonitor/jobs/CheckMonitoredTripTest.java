@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -417,48 +416,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 "On-time trip previously late => show on-time notifications"
             )
         );
-    }
-
-    /**
-     * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
-     */
-    private static CheckMonitoredTrip createCheckMonitoredTrip(Supplier<OtpResponse> otpResponseProvider) throws Exception {
-        return createCheckMonitoredTrip(otpResponseProvider, true);
-    }
-
-    /**
-     * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
-     */
-    private static CheckMonitoredTrip createCheckMonitoredTrip(
-        Supplier<OtpResponse> otpResponseProvider,
-        boolean hasTolerantItineraryCheck
-    ) throws Exception {
-        return createCheckMonitoredTrip(
-            OtpTestUtils.createDefaultJourneyState(otpResponseProvider),
-            otpResponseProvider,
-            hasTolerantItineraryCheck
-        );
-    }
-
-    /**
-     * Creates a new CheckMonitoredTrip instance with a new non-persisted MonitoredTrip instance. The monitored trip is
-     * created using the default OTP response. Also, creates a new matching itinerary that consists of the first
-     * itinerary in the default OTP response.
-     */
-    private static CheckMonitoredTrip createCheckMonitoredTrip(
-        JourneyState journeyState,
-        Supplier<OtpResponse> otpResponseProvider,
-        boolean hasTolerantItineraryCheck
-    ) throws Exception {
-        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
-            user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone(),
-            false,
-            journeyState
-        );
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, otpResponseProvider, hasTolerantItineraryCheck);
-        checkMonitoredTrip.matchingItinerary = OtpTestUtils.createDefaultItinerary();
-        return checkMonitoredTrip;
     }
 
     /**
