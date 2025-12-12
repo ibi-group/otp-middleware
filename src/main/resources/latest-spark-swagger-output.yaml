@@ -2613,7 +2613,7 @@ definitions:
       id:
         type: "string"
       serviceDate:
-        $ref: "#/definitions/LocalDate"
+        type: "string"
       startTime:
         type: "string"
         format: "date"
