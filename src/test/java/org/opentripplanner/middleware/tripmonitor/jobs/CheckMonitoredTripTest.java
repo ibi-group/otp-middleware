@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -756,8 +757,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         Leg transitLeg = itinerary.legs.get(1);
         Leg finalLeg = itinerary.legs.get(2);
 
-        walkLeg.startTime = Date.from(walkLeg.startTime.toInstant().plusSeconds(departureDelay));
-        walkLeg.endTime = Date.from(walkLeg.endTime.toInstant().plusSeconds(departureDelay));
+        walkLeg.offsetTimes(Duration.ofSeconds(departureDelay).toMillis());
 
         transitLeg.realTime = realTime;
         transitLeg.departureDelay += departureDelay;
@@ -765,8 +765,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         transitLeg.arrivalDelay += arrivalDelay;
         transitLeg.endTime = Date.from(transitLeg.endTime.toInstant().plusSeconds(arrivalDelay));
 
-        finalLeg.startTime = Date.from(finalLeg.startTime.toInstant().plusSeconds(arrivalDelay));
-        finalLeg.endTime = Date.from(finalLeg.endTime.toInstant().plusSeconds(arrivalDelay));
+        finalLeg.offsetTimes(Duration.ofSeconds(arrivalDelay).toMillis());
 
         itinerary.startTime = Date.from(itinerary.startTime.toInstant().plusSeconds(departureDelay));
         itinerary.endTime = Date.from(itinerary.endTime.toInstant().plusSeconds(arrivalDelay));
