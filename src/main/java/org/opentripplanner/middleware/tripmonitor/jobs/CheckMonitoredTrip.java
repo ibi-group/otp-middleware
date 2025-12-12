@@ -45,7 +45,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
@@ -122,9 +121,6 @@ public class CheckMonitoredTrip implements Runnable {
     /** Contains the initial reminder notification, if any is needed for this check. */
     TripMonitorNotification initialReminderNotification;
 
-    /** The OTP Response provider */
-    private Supplier<OtpResponse> otpResponseProvider;
-
     /** The helper object for making OTP Leg queries. */
     private LegFinder legFinder;
 
@@ -140,18 +136,11 @@ public class CheckMonitoredTrip implements Runnable {
         previousJourneyState = trip.journeyState;
         journeyState = previousJourneyState.clone();
         previousMatchingItinerary = trip.journeyState.matchingItinerary;
-        otpResponseProvider = this::getOtpResponse;
         legFinder = new LegFinder();
     }
 
-    public CheckMonitoredTrip(MonitoredTrip trip, Supplier<OtpResponse> otpResponseProvider) throws CloneNotSupportedException {
-        this(trip, false);
-        this.otpResponseProvider = otpResponseProvider;
-    }
-
     public CheckMonitoredTrip(MonitoredTrip trip, LegFinder legFinder) throws CloneNotSupportedException {
-        this(trip, false);
-        this.legFinder = legFinder;
+        this(trip, legFinder, false);
     }
 
     public CheckMonitoredTrip(

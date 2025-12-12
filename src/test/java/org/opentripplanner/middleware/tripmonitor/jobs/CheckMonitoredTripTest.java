@@ -170,7 +170,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.snoozed = true;
 
         Persistence.monitoredTrips.create(monitoredTrip);
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        CheckMonitoredTrip checkMonitoredTrip = tripChecker(monitoredTrip, firstItinerary(mockResponse));
         checkMonitoredTrip.run();
 
         MonitoredTrip updated = Persistence.monitoredTrips.getById(monitoredTrip.id);
@@ -1115,7 +1115,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         trip.journeyState.matchingItinerary = trip.itinerary;
         trip.journeyState.tripStatus = TRIP_ACTIVE;
 
-        new CheckMonitoredTrip(trip, this::mockOtpPlanResponse).checkOtpAndUpdateTripStatus();
+        tripChecker(trip, firstItinerary(mockOtpPlanResponse())).checkOtpAndUpdateTripStatus();
         assertEquals(PAST_TRIP, trip.journeyState.tripStatus);
     }
 
@@ -1123,7 +1123,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     void shouldReportOneTimeTripInPastWithTrackingAsActive() throws CloneNotSupportedException {
         MonitoredTrip trip = createPastActiveTripWithTrackedJourney();
 
-        new CheckMonitoredTrip(trip, this::mockOtpPlanResponse).checkOtpAndUpdateTripStatus();
+        tripChecker(trip, firstItinerary(mockOtpPlanResponse())).checkOtpAndUpdateTripStatus();
         assertEquals(TRIP_ACTIVE, trip.journeyState.tripStatus);
     }
 
@@ -1193,7 +1193,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         setRecurringTodayAndTomorrow(trip);
         String todayFormatted = trip.journeyState.targetDate;
 
-        CheckMonitoredTrip check = new CheckMonitoredTrip(trip, this::mockOtpPlanResponse);
+        CheckMonitoredTrip check = tripChecker(trip, firstItinerary(mockOtpPlanResponse()));
         check.shouldSkipMonitoredTripCheck(false);
         check.checkOtpAndUpdateTripStatus();
         // Trip should remain active, and the target date should still be "today".
@@ -1311,7 +1311,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         DateTimeUtils.useFixedClockAt(clockTime);
 
         // After snoozed trip is over, trip checks on that trip should not be skipped
-        CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+        CheckMonitoredTrip check = tripChecker(monitoredTrip, firstItinerary(mockOtpPlanResponse()));
 
         // Add artifacts of prior monitoring (e.g. monitoring was active until a few minutes before trip snooze)
         JourneyState journeyState = monitoredTrip.journeyState;
@@ -1436,8 +1436,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         DateTimeUtils.useFixedClockAt(clockTime);
 
         // After trip has completed, check that trip status has been updated.
-        CheckMonitoredTrip check = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
-
+        CheckMonitoredTrip check = tripChecker(monitoredTrip, firstItinerary(mockOtpPlanResponse()));
         check.run();
 
         MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
@@ -1496,7 +1495,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     private void triggerCheckMonitoredTrip(MonitoredTrip monitoredTrip, TravelerPosition travelerPosition) throws CloneNotSupportedException {
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, this::mockOtpPlanResponse);
+        CheckMonitoredTrip checkMonitoredTrip = tripChecker(monitoredTrip, firstItinerary(mockOtpPlanResponse()));
         checkMonitoredTrip.IS_TEST = true;
         checkMonitoredTrip.targetZonedDateTime = monitoredTrip.tripZonedDateTime(DateTimeUtils.nowAsLocalDate());
         checkMonitoredTrip.processLegTransition(NotificationType.MODE_CHANGE_NOTIFICATION, travelerPosition);
