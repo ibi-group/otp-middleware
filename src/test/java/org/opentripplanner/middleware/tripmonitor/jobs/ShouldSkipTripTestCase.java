@@ -49,7 +49,7 @@ class ShouldSkipTripTestCase {
 
     public CheckMonitoredTrip generateCheckMonitoredTrip(OtpUser user) throws Exception {
         // create a mock OTP response for planning a trip on a weekday target datetime
-        Itinerary mockWeekdayItinerary = OtpTestUtils.createDefaultItinerary();
+        Itinerary mockWeekdayItinerary = OtpTestUtils.firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse());
         OtpTestUtils.updateBaseItineraryTime(
             mockWeekdayItinerary,
             mockTime.withYear(2020).withMonth(6).withDayOfMonth(8).withHour(8).withMinute(40).withSecond(10)
@@ -62,7 +62,7 @@ class ShouldSkipTripTestCase {
                 user.id,
                 OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
                 true,
-                OtpTestUtils.createDefaultJourneyState()
+                OtpTestUtils.createDefaultJourneyState(OtpTestUtils.firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse()))
             );
         }
 

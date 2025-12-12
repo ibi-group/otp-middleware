@@ -239,7 +239,7 @@ public class OtpTestUtils {
     }
 
     public static JourneyState createDefaultJourneyState() throws Exception {
-        return  createDefaultJourneyState(createDefaultItinerary());
+        return createDefaultJourneyState(createDefaultItinerary());
     }
 
     public static JourneyState createDefaultJourneyState(Supplier<OtpResponse> otpResponseProvider) {
@@ -247,7 +247,7 @@ public class OtpTestUtils {
         return createDefaultJourneyState(itineraries.isEmpty() ? null : itineraries.get(0));
     }
 
-    private static JourneyState createDefaultJourneyState(Itinerary defaultItinerary) {
+    public static JourneyState createDefaultJourneyState(Itinerary defaultItinerary) {
         JourneyState journeyState = new JourneyState();
         journeyState.tripStatus = defaultItinerary == null
             ? null

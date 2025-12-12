@@ -524,9 +524,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         MonitoredTrip weekendTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
             true,
-            OtpTestUtils.createDefaultJourneyState()
+            OtpTestUtils.createDefaultJourneyState(firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse()))
         );
         weekendTrip.updateAllDaysOfWeek(false);
         weekendTrip.saturday = true;
