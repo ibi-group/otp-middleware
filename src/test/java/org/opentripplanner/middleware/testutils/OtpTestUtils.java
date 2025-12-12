@@ -235,7 +235,7 @@ public class OtpTestUtils {
     }
 
     public static Itinerary createDefaultItinerary() throws Exception {
-        return firstItinerary(OTP2_DISPATCHER_PLAN_RESPONSE.clone().getResponse());
+        return firstItinerary(OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone().getResponse());
     }
 
     public static JourneyState createDefaultJourneyState() throws Exception {

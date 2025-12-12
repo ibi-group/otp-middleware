@@ -216,8 +216,8 @@
                 "url": "https://kingcounty.gov/en/dept/metro"
               },
               "alerts": [],
-              "arrivalDelay": 94,
-              "departureDelay": 94,
+              "arrivalDelay": 0,
+              "departureDelay": 0,
               "distance": 3946.18,
               "dropOffBookingInfo": null,
               "dropoffType": "SCHEDULED",
@@ -1305,8 +1305,8 @@
                 "url": "https://kingcounty.gov/en/dept/metro"
               },
               "alerts": [],
-              "arrivalDelay": 94,
-              "departureDelay": 94,
+              "arrivalDelay": 0,
+              "departureDelay": 0,
               "distance": 3580.07,
               "dropOffBookingInfo": null,
               "dropoffType": "SCHEDULED",
@@ -2081,8 +2081,8 @@
                 "url": "https://kingcounty.gov/en/dept/metro"
               },
               "alerts": [],
-              "arrivalDelay": 56,
-              "departureDelay": 56,
+              "arrivalDelay": 0,
+              "departureDelay": 0,
               "distance": 1556.91,
               "dropOffBookingInfo": null,
               "dropoffType": "SCHEDULED",

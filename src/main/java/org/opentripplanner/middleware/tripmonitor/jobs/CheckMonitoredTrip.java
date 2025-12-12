@@ -1039,4 +1039,12 @@ public class CheckMonitoredTrip implements Runnable {
 
         return new ItineraryFromLegMatcher(trip.itinerary, queriedLegs, legIdMap).process();
     }
+
+    /**
+     * Used for tests to update the mock legs
+     */
+    public void updateLegFinderForTests(LegFinder legFinder) {
+        this.legFinder = legFinder;
+    }
+
 }
