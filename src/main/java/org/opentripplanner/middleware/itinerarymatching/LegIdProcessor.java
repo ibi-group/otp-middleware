@@ -10,6 +10,8 @@ import java.util.Base64;
 
 /**
  * Helper class for generating leg ids.
+ * The leg ids are read/written according to the format defined by OTP at:
+ * <a href="https://github.com/opentripplanner/OpenTripPlanner/blob/dev-2.x/application/src/main/java/org/opentripplanner/model/plan/legreference/LegReferenceSerializer.java">...</a>
  */
 public class LegIdProcessor {
 
