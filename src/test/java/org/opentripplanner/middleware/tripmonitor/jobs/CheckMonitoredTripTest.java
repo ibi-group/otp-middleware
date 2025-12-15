@@ -39,7 +39,6 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -90,13 +89,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         .withHour(12)
         .withMinute(0);
     public static final ZonedDateTime TUESDAY_20200609 = MONDAY_20200608_NOON
-        .withDayOfMonth(9)
-        .withHour(0)
-        .withMinute(0)
-        .withSecond(0);
-    public static final ZonedDateTime TUESDAY_20251209 = DateTimeUtils.makeOtpZonedDateTime(new Date())
-        .withYear(2025)
-        .withMonth(12)
         .withDayOfMonth(9)
         .withHour(0)
         .withMinute(0)
@@ -285,17 +277,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip monitoredTrip = monitoredTripWithLegId();
         Persistence.monitoredTrips.create(monitoredTrip);
 
-        // mock the current time to be 8:45am on Monday, June 15, 2020.
-        DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
+        // Mock the current time to a few minutes after trip start.
+        DateTimeUtils.useFixedClockAt(DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime).plusMinutes(10));
 
         Itinerary itineraryForLegQuery = firstItinerary(mockOtpPlanResponse());
-        // For this test, shift the day of the mock itinerary/legs without shifting the times.
-        OtpTestUtils.updateBaseItineraryTime(
-            itineraryForLegQuery,
-            DateTimeUtils.makeOtpZonedDateTime(itineraryForLegQuery.startTime)
-                .withYear(2020)
-                .withMonth(6)
-                .withDayOfMonth(15));
 
         CheckMonitoredTrip check = tripChecker(monitoredTrip, itineraryForLegQuery);
 
@@ -303,7 +288,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.journeyState.tripStatus = TripStatus.TRIP_UPCOMING;
 
         // update the target date to be an upcoming Monday within the CheckMonitoredTrip
-        check.targetZonedDateTime = MONDAY_20200615_0835;
+        check.targetZonedDateTime = DateTimeUtils.makeOtpZonedDateTime(itineraryForLegQuery.startTime);
 
         // Execute checkOtpAndUpdateTripStatus method and verify the expected outcome.
         assertTrue(check.checkOtpAndUpdateTripStatus());
@@ -983,7 +968,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 true
             ),
             Arguments.of(
-                monday0830.withDayOfMonth(8),
+                monday0830,
                 8,
                 "2020-06-08",
                 "2020-06-10",
@@ -1000,60 +985,45 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      */
     @Test
     void canUpdateTargetDate() throws Exception {
-        // Create a check with a mock OTP response itinerary for Tuesday 09 June 2020 08:40.
         MonitoredTrip trip = monitoredTripWithLegId();
 
-        // Set the clock to Tuesday before trip start.
-        // Simulated legs are for Tuesday.
-        DateTimeUtils.useFixedClockAt(TUESDAY_20200609.withHour(7));
+        // Set the clock to an hour before trip start, the day following the saved trip above.
+        ZonedDateTime dayAfter = DateTimeUtils.makeOtpZonedDateTime(trip.itinerary.startTime).plusDays(1);
+        DateTimeUtils.useFixedClockAt(dayAfter.minusMinutes(70));
 
         Itinerary itineraryForOtpLegQuery = firstItinerary(mockOtpPlanResponse());
-        final ZonedDateTime tuesday0840 = TUESDAY_20200609.withHour(8).withMinute(40);
-        OtpTestUtils.updateBaseItineraryTime(
-            itineraryForOtpLegQuery,
-            tuesday0840
-        );
-        CheckMonitoredTrip check = tripChecker(trip, itineraryForOtpLegQuery);
-
-        trip.wednesday = true;
-        trip.tuesday = true;
-        // The trip exists Monday, Tuesday, and Wednesday.
-        trip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
-        trip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
-        trip.itineraryExistence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
+        OtpTestUtils.updateBaseItineraryTime(itineraryForOtpLegQuery, dayAfter);
 
         // Set the matching itinerary and previous matching itinerary to Wednesday
         trip.journeyState = createDefaultJourneyState();
         trip.journeyState.matchingItinerary = firstItinerary(mockOtpPlanResponse());
-        ZonedDateTime wednesday0840 = tuesday0840.plusDays(1);
-        OtpTestUtils.updateBaseItineraryTime(
-            trip.journeyState.matchingItinerary,
-            wednesday0840
-        );
+        ZonedDateTime twoDaysAfter = dayAfter.plusDays(1);
+        OtpTestUtils.updateBaseItineraryTime(trip.journeyState.matchingItinerary, twoDaysAfter);
         assertEquals(
-            "2020-06-10",
-            DateTimeUtils.makeOtpZonedDateTime(trip.journeyState.matchingItinerary.startTime).toLocalDate().toString()
+            twoDaysAfter.toLocalDate(),
+            DateTimeUtils.makeOtpZonedDateTime(trip.journeyState.matchingItinerary.startTime).toLocalDate()
         );
 
         trip.journeyState.lastCheckedEpochMillis = DateTimeUtils.nowAsZonedDateTime().minusMinutes(30).toInstant().toEpochMilli();
 
         // Set target date to Wednesday
-        trip.journeyState.targetDate = "2020-06-10";
+        trip.journeyState.targetDate = twoDaysAfter.toLocalDate().toString();
 
         Persistence.monitoredTrips.create(trip);
 
         // Run the checks. Test the new target date
+        CheckMonitoredTrip check = tripChecker(trip, itineraryForOtpLegQuery);
         check.run();
 
         MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(trip.id);
 
         assertEquals(
-            "2020-06-09",
+            dayAfter.toLocalDate().toString(),
             updatedTrip.journeyState.targetDate
         );
         assertEquals(
-            "2020-06-09",
-            DateTimeUtils.makeOtpZonedDateTime(updatedTrip.journeyState.matchingItinerary.startTime).toLocalDate().toString()
+            dayAfter.toLocalDate(),
+            DateTimeUtils.makeOtpZonedDateTime(updatedTrip.journeyState.matchingItinerary.startTime).toLocalDate()
         );
     }
 
@@ -1447,13 +1417,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip monitoredTrip = monitoredTripWithLegId();
 
         // monitored trip start time = 1:30AM UTC or 5:30PM PST
-        OtpTestUtils.updateBaseItineraryTime(
-            monitoredTrip.itinerary,
-            TUESDAY_20251209.withHour(17).withMinute(30)
-        );
+        ZonedDateTime itineraryDayAt0030 = DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime).withHour(17).withMinute(30);
+        OtpTestUtils.updateBaseItineraryTime(monitoredTrip.itinerary, itineraryDayAt0030);
 
-        monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
-        monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
         monitoredTrip.leadTimeInMinutes = 30;
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
@@ -1463,20 +1429,17 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         Itinerary itinerary = firstItinerary(mockResponse);
 
         // itinerary start time = 1:30AM UTC or 5:30PM PST
-        OtpTestUtils.updateBaseItineraryTime(
-            itinerary,
-            TUESDAY_20251209.withHour(17).withMinute(30)
-        );
+        OtpTestUtils.updateBaseItineraryTime(itinerary, itineraryDayAt0030);
 
         // change "now" time after initial check to be within 30 min lead
         // 1:00AM UTC or 5:00PM PST
-        DateTimeUtils.useFixedClockAt(TUESDAY_20251209.withHour(17).withMinute(0));
+        DateTimeUtils.useFixedClockAt(itineraryDayAt0030.withMinute(0));
 
         CheckMonitoredTrip checkMonitoredTrip = tripChecker(monitoredTrip, itinerary);
         checkMonitoredTrip.run();
 
         // trip should not have been skipped
-        Assertions.assertEquals(DayOfWeek.TUESDAY, checkMonitoredTrip.targetZonedDateTime.getDayOfWeek());
+        Assertions.assertEquals(itineraryDayAt0030.getDayOfWeek(), checkMonitoredTrip.targetZonedDateTime.getDayOfWeek());
 
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
