@@ -2,19 +2,14 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.itinerarymatching.ItineraryCheckStatus;
 import org.opentripplanner.middleware.itinerarymatching.ItineraryChecker;
 import org.opentripplanner.middleware.otp.LegFinder;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.OtpResponse;
-import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.I18nUtils;
-import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,25 +21,14 @@ import java.time.format.FormatStyle;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.i18n.Message.ENUM_SEPARATOR;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK_ON_DAY;
-import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
@@ -54,18 +38,12 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  */
 public class ItineraryExistence extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryExistence.class);
-    private static final String OTP_REQUESTS_THREADING_ENABLED = getConfigPropertyAsText(
-        "OTP_REQUESTS_THREADING_ENABLED", "true"
-    );
 
     /**
      * Initial set of requests on which to base the itinerary existence checks. We do not want these persisted.
      */
     private transient List<OtpRequest> otpRequests;
-    /**
-     * The initial reference itinerary to compare against itinerary match candidates.
-     */
-    private transient Itinerary referenceItinerary;
+
     public ItineraryExistenceResult monday;
     public ItineraryExistenceResult tuesday;
     public ItineraryExistenceResult wednesday;
@@ -84,25 +62,16 @@ public class ItineraryExistence extends Model {
     public boolean error;
 
     /**
-     * Whether the original trip request time is a departure or arrive by time.
-     */
-    private transient boolean tripIsArriveBy;
-
-    /**
      * When the itinerary existence check was run/completed.
      * FIXME: If a monitored trip has not been fully enabled for monitoring, we may want to check the timestamp to
      *  verify that the existence check has not gone stale.
      */
     public Date timestamp = new Date();
 
-    private transient Function<OtpRequest, OtpResponse> otpResponseProvider = getOtpResponseProvider();
-
-    public static Function<OtpRequest, OtpResponse> otpResponseProviderOverride = null;
-
     private final transient Function<LocalDate, LegFinder> getLegFinder;
 
     public ItineraryExistence() {
-        this((ignored) -> new LegFinder());
+        this(ignored -> new LegFinder());
     }
 
     public ItineraryExistence(Function<LocalDate, LegFinder> getLegFinder) {
@@ -111,21 +80,10 @@ public class ItineraryExistence extends Model {
 
     public ItineraryExistence(
         List<OtpRequest> otpRequests,
-        Itinerary referenceItinerary,
-        boolean tripIsArriveBy,
         Function<LocalDate, LegFinder> getLegFinder
     ) {
         this(getLegFinder);
         this.otpRequests = otpRequests;
-        this.referenceItinerary = referenceItinerary;
-        this.tripIsArriveBy = tripIsArriveBy;
-        if (otpResponseProvider != null) this.otpResponseProvider = otpResponseProvider;
-    }
-
-    private Function<OtpRequest, OtpResponse> getOtpResponseProvider() {
-        return OtpMiddlewareMain.inTestEnvironment && otpResponseProviderOverride != null
-            ? otpResponseProviderOverride
-            : ItineraryExistence::getOtpResponse;
     }
 
     /**
@@ -264,85 +222,9 @@ public class ItineraryExistence extends Model {
 
         long timeToComplete = System.currentTimeMillis() - startTime;
         LOG.info(
-            "Time to complete itinerary existence checks: {} ms (Threaded: {})",
-            timeToComplete,
-            isOtpRequestThreadingEnabled()
+            "Time to complete itinerary existence checks: {} ms",
+            timeToComplete
         );
-    }
-
-    /**
-     * Execute OTP requests and process the responses in a custom executor. Each response is assign to a day of the week.
-     */
-    private Map<DayOfWeek, OtpResponse> getOtpResponses(List<OtpRequest> otpRequestsToProcess) {
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        ConcurrentMap<DayOfWeek, CompletableFuture<OtpResponse>> otpRequestTasks = assignOtpRequestToDayOfWeek(
-            otpRequestsToProcess,
-            executor
-        );
-
-        Map<DayOfWeek, OtpResponse> otpRequestResponses = new EnumMap<>(DayOfWeek.class);
-
-        otpRequestTasks.forEach((dayOfWeek, future) -> {
-            OtpResponse response = null;
-            try {
-                // Wait for completion and assign response.
-                response = future.join();
-            } catch (CancellationException | CompletionException e) {
-                LOG.error("Failed to get OTP response for {}.", dayOfWeek, e);
-            }
-            LOG.debug("OTP response for {}: {}", dayOfWeek, response);
-            otpRequestResponses.put(dayOfWeek, response);
-        });
-
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS)) {
-                LOG.warn(
-                    "OTP requests terminated, time out reached ({} seconds). Shutting down executor.",
-                    OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS
-                );
-                executor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            LOG.warn("OTP requests were interrupted! Shutting down executor.", e);
-            executor.shutdownNow();
-        }
-        return otpRequestResponses;
-    }
-
-    /**
-     * Assign an OTP request to a day of the week and start each call async to the OTP server.
-     */
-    private ConcurrentMap<DayOfWeek, CompletableFuture<OtpResponse>> assignOtpRequestToDayOfWeek(
-        List<OtpRequest> otpRequests,
-        ExecutorService executor
-    ) {
-        return otpRequests
-            .stream()
-            .collect(Collectors.toConcurrentMap(
-                otpRequest -> otpRequest.dateTime.getDayOfWeek(),
-                otpRequest -> CompletableFuture.supplyAsync(() -> otpResponseProvider.apply(otpRequest), executor))
-            );
-    }
-
-    private static boolean isOtpRequestThreadingEnabled() {
-        return OTP_REQUESTS_THREADING_ENABLED.equalsIgnoreCase("true");
-    }
-
-    /** Log instances of itinerary not found. */
-    public static void logItineraryNotFound(String message, MonitoredTrip trip, TripPlan plan, Logger logger) {
-        logger.warn(
-            "{} - Trip {} - Params: {} - Saved itinerary: {} - OTP itineraries: {}",
-            message,
-            trip.id,
-            JsonUtils.toJson(trip.otp2QueryParams),
-            JsonUtils.toJson(trip.itinerary),
-            JsonUtils.toJson(plan.itineraries)
-        );
-    }
-
-    private static OtpResponse getOtpResponse(OtpRequest otpRequest) {
-        return OtpDispatcher.sendOtpRequestWithErrorHandling(otpRequest);
     }
 
     /**
