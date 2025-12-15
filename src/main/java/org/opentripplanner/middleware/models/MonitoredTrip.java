@@ -7,10 +7,10 @@ import com.mongodb.client.FindIterable;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.auth.RequestingUser;
+import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
@@ -188,11 +188,11 @@ public class MonitoredTrip extends Model {
      */
     public boolean checkItineraryExistence(
         boolean replaceItinerary,
-        Function<OtpRequest, OtpResponse> otpResponseProvider
+        Function<LocalDate, LegFinder> getLegFinder
     ) {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
-        itineraryExistence = new ItineraryExistence(queriesByDate, itinerary, otp2QueryParams.arriveBy, otpResponseProvider);
+        itineraryExistence = new ItineraryExistence(queriesByDate, itinerary, otp2QueryParams.arriveBy, getLegFinder);
         itineraryExistence.checkExistence(this);
         boolean itineraryExists = itineraryExistence.allMonitoredDaysAreValid(this);
         // If itinerary should be replaced, do so if all checked days are valid.
@@ -205,7 +205,7 @@ public class MonitoredTrip extends Model {
      * Shorthand for above method using the default otpResponseProvider.
      */
     public boolean checkItineraryExistence(boolean replaceItinerary) {
-        return checkItineraryExistence(replaceItinerary, null);
+        return checkItineraryExistence(replaceItinerary, ignored -> new LegFinder());
     }
 
     /**

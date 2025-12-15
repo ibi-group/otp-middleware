@@ -3,6 +3,9 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryCheckStatus;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryChecker;
+import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -11,19 +14,17 @@ import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.I18nUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtils;
-import org.opentripplanner.middleware.itinerarymatching.ItineraryMatcher;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
@@ -98,15 +99,23 @@ public class ItineraryExistence extends Model {
 
     public static Function<OtpRequest, OtpResponse> otpResponseProviderOverride = null;
 
-    // Required for persistence.
-    public ItineraryExistence() {}
+    private final transient Function<LocalDate, LegFinder> getLegFinder;
+
+    public ItineraryExistence() {
+        this((ignored) -> new LegFinder());
+    }
+
+    public ItineraryExistence(Function<LocalDate, LegFinder> getLegFinder) {
+        this.getLegFinder = getLegFinder;
+    }
 
     public ItineraryExistence(
         List<OtpRequest> otpRequests,
         Itinerary referenceItinerary,
         boolean tripIsArriveBy,
-        Function<OtpRequest, OtpResponse> otpResponseProvider
+        Function<LocalDate, LegFinder> getLegFinder
     ) {
+        this(getLegFinder);
         this.otpRequests = otpRequests;
         this.referenceItinerary = referenceItinerary;
         this.tripIsArriveBy = tripIsArriveBy;
@@ -215,18 +224,10 @@ public class ItineraryExistence extends Model {
      * Checks whether the itinerary of a trip matches any of the OTP itineraries from the trip query params.
      */
     public void checkExistence(MonitoredTrip trip) {
-
         long startTime = System.currentTimeMillis();
 
-        Map<DayOfWeek, OtpResponse> otpResponses = isOtpRequestThreadingEnabled()
-            ? getOtpResponses(otpRequests)
-            : Collections.emptyMap();
-
-        // Check existence of itinerary in the response for each OTP request.
-        int index = 0;
+        // Check existence of itinerary in the response for each searched day.
         for (OtpRequest otpRequest : otpRequests) {
-            index++;
-            boolean hasMatchingItinerary = false;
             DayOfWeek dayOfWeek = otpRequest.dateTime.getDayOfWeek();
             // Get existing result for day of week if a date for that day of week has already been processed, or create
             // a new one.
@@ -236,40 +237,19 @@ public class ItineraryExistence extends Model {
                 setResultForDayOfWeek(result, dayOfWeek);
             }
 
-            OtpResponse response = isOtpRequestThreadingEnabled()
-                ? otpResponses.get(dayOfWeek)
-                : otpResponseProvider.apply(otpRequest);
-            if (response == null) {
-                LOG.warn("Itinerary existence check failed on {} for trip {} - OTP response was null.", dayOfWeek , trip.id);
+            LocalDate requestDate = otpRequest.dateTime.toLocalDate();
+            ItineraryChecker checker = new ItineraryChecker(trip.itinerary, getLegFinder.apply(requestDate), requestDate);
+            ItineraryCheckStatus checkerStatus = checker.checkLegs();
+
+            if (checkerStatus.isBogus()) {
+                LOG.warn("Itinerary existence check failed on {} for trip {} - {}", dayOfWeek , trip.id, "TODO: checker status failed.");
+                // If no match was found for the date, mark day of week as non-existent for the itinerary.
+                result.handleInvalidDate(otpRequest.dateTime);
             } else {
-                TripPlan plan = response.plan;
-
-                // Handle response if valid itineraries exist.
-                if (plan != null && plan.itineraries != null) {
-                    for (Itinerary itineraryCandidate : plan.itineraries) {
-                        // If a matching itinerary on the same service day as the request date is found,
-                        // save the date with the matching itinerary.
-                        // (The matching itinerary will replace the original trip.itinerary.)
-                        ItineraryMatcher matcher = new ItineraryMatcher(referenceItinerary, itineraryCandidate);
-                        if (
-                            ItineraryUtils.occursOnSameServiceDay(itineraryCandidate, otpRequest.dateTime, tripIsArriveBy) &&
-                            matcher.match()
-                        ) {
-                            result.handleValidDate(otpRequest.dateTime, itineraryCandidate);
-                            hasMatchingItinerary = true;
-                        }
-                    }
-                }
-
-                if (!hasMatchingItinerary) {
-                    // If no match was found for the date, mark day of week as non-existent for the itinerary.
-                    result.handleInvalidDate(otpRequest.dateTime);
-
-                    // Log if the itinerary didn't exist "today".
-                    if (index == 1 && plan != null) {
-                        logItineraryNotFound("Itinerary existence check failed 'today'.", trip, plan, LOG);
-                    }
-                }
+                // If a matching itinerary on the same service day as the request date is found,
+                // save the date with the matching itinerary.
+                // (The matching itinerary will replace the original trip.itinerary.)
+                result.handleValidDate(otpRequest.dateTime, checkerStatus.rebuiltItinerary);
             }
         }
         if (!allMonitoredDaysAreValid(trip)) {
