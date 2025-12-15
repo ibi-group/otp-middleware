@@ -2,7 +2,7 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.itinerarymatching.ItineraryCheckStatus;
-import org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryChecker;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -16,7 +16,6 @@ import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Alert;
-import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
@@ -39,14 +38,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 
-import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMATTER;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.diffInMinutes;
@@ -305,7 +302,8 @@ public class CheckMonitoredTrip implements Runnable {
      * by rebuilding the itinerary using the matched legs.
      */
     private boolean makeOTPRequestAndUpdateMatchingItineraryInternal() {
-        ItineraryCheckStatus itineraryCheckStatus = checkLegs();
+        ItineraryChecker checker = new ItineraryChecker(trip.itinerary, legFinder, targetZonedDateTime.toLocalDate());
+        ItineraryCheckStatus itineraryCheckStatus = checker.checkLegs();
         if (!itineraryCheckStatus.isBogus()) {
             // Set the matching itinerary. Compute target date and set the baseline journey state.
             matchingItinerary = itineraryCheckStatus.rebuiltItinerary;
@@ -998,26 +996,6 @@ public class CheckMonitoredTrip implements Runnable {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
         // Include equal or after midnight as true.
         return !now.isBefore(midnightAfterLastChecked);
-    }
-
-    /**
-     * Check leg existence and returns status and delay information
-     */
-    public ItineraryCheckStatus checkLegs() {
-        List<Leg> transitLegs = getTransitLegs(trip.itinerary.legs);
-        List<Leg> queriedLegs = new ArrayList<>();
-        Map<String, String> legIdMap = new HashMap<>();
-        for (Leg leg : transitLegs) {
-            Leg returnedLeg = legFinder.queryLeg(leg, targetZonedDateTime.toLocalDate());
-            if (returnedLeg == null) {
-                break;
-            } else {
-                queriedLegs.add(returnedLeg);
-                legIdMap.put(leg.id, returnedLeg.id);
-            }
-        }
-
-        return new ItineraryFromLegMatcher(trip.itinerary, queriedLegs, legIdMap).process();
     }
 
     /**
