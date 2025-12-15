@@ -192,7 +192,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
 
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
         OtpGraphQLVariables queryParams = OtpTestUtils.getSampleQueryParams();
-        MonitoredTrip monitoredTrip = new MonitoredTrip(queryParams, OtpTestUtils.sendSamplePlanRequest(queryParams));
+        MonitoredTrip monitoredTrip = new MonitoredTrip(queryParams, OtpTestUtils.firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse()));
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
         HttpResponseValues createTripResponseAsOtpUser = mockAuthenticatedRequest(

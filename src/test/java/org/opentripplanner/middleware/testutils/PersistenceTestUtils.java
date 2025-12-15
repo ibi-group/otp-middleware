@@ -26,6 +26,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.firstItinerary;
+
 /**
  * Utility class to aid with creating and storing objects in Mongo.
  */
@@ -239,7 +241,7 @@ public class PersistenceTestUtils {
         boolean persist,
         JourneyState journeyState
     ) throws Exception {
-        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.getSampleQueryParams(), otpDispatcherResponse);
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.getSampleQueryParams(), firstItinerary(otpDispatcherResponse.getResponse()));
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "test trip";
         monitoredTrip.leadTimeInMinutes = 240;
