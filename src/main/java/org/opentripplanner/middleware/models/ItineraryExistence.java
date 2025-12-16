@@ -201,8 +201,9 @@ public class ItineraryExistence extends Model {
      */
     public void checkExistence(MonitoredTrip trip) {
         long startTime = System.currentTimeMillis();
+        boolean useThreading = isOtpRequestThreadingEnabled();
 
-        Map<DayOfWeek, ItineraryCheckStatus> legResponses = isOtpRequestThreadingEnabled()
+        Map<DayOfWeek, ItineraryCheckStatus> legResponses = useThreading
             ? getLegResponses(trip.itinerary, otpRequests)
             : Collections.emptyMap();
 
@@ -217,7 +218,7 @@ public class ItineraryExistence extends Model {
                 setResultForDayOfWeek(result, dayOfWeek);
             }
 
-            ItineraryCheckStatus checkerStatus = isOtpRequestThreadingEnabled()
+            ItineraryCheckStatus checkerStatus = useThreading
                 ? legResponses.get(otpRequest.dateTime.toLocalDate().getDayOfWeek())
                 : getItineraryChecker(otpRequest, trip.itinerary, getLegFinder);
 
@@ -244,8 +245,9 @@ public class ItineraryExistence extends Model {
 
         long timeToComplete = System.currentTimeMillis() - startTime;
         LOG.info(
-            "Time to complete itinerary existence checks: {} ms",
-            timeToComplete
+            "Time to complete itinerary existence checks: {} ms (Threaded: {})",
+            timeToComplete,
+            useThreading
         );
     }
 
@@ -268,9 +270,9 @@ public class ItineraryExistence extends Model {
                 // Wait for completion and assign response.
                 response = future.join();
             } catch (CancellationException | CompletionException e) {
-                LOG.error("Failed to get OTP response for {}.", dayOfWeek, e);
+                LOG.error("Failed to get OTP leg response for {}.", dayOfWeek, e);
             }
-            LOG.debug("OTP response for {}: {}", dayOfWeek, response);
+            LOG.debug("OTP leg response for {}: {}", dayOfWeek, response);
             otpRequestResponses.put(dayOfWeek, response);
         });
 
