@@ -30,6 +30,7 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -199,7 +200,10 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
             queryParams,
             OtpTestUtils.firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse())
         );
-        monitoredTrip.updateAllDaysOfWeek(true);
+        monitoredTrip.updateAllDaysOfWeek(false);
+        // Monitor just one day to simplify the mock leg requests below.
+        // The mock itinerary above happens on a Thursday.
+        monitoredTrip.thursday = true;
         monitoredTrip.userId = otpUser.id;
         HttpResponseValues createTripResponseAsOtpUser = mockAuthenticatedRequest(
             MONITORED_TRIP_PATH,
@@ -211,16 +215,15 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
 
         // Create a monitored trip for an Otp user authenticating as an Api user. An Api user can create a monitored
         // trip for an Otp user they created.
+        ZonedDateTime itineraryStart = DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime);
         ItineraryExistence.legFinderOverride = new LegFinder(
             new MockLegResponseProvider(
                 monitoredTrip.itinerary,
-                leg -> LegIdProcessor.computeLegIdForServiceDate(
-                    leg,
-                    DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime).toLocalDate()
-                )
+                leg -> LegIdProcessor.computeLegIdForServiceDate(leg, itineraryStart.toLocalDate())
             )::getLegResponse,
             LegIdProcessor::computeLegIdForServiceDate
         );
+        DateTimeUtils.useFixedClockAt(itineraryStart);
 
         HttpResponseValues createTripResponseAsApiUser = makeRequest(
             MONITORED_TRIP_PATH,
@@ -229,8 +232,9 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        // After POST is complete, reset OTP leg response provider to default.
+        // After POST is complete, reset OTP leg response provider and mock date to default.
         ItineraryExistence.legFinderOverride = null;
+        DateTimeUtils.useSystemDefaultClockAndTimezone();
 
         String responseBody = createTripResponseAsApiUser.responseBody;
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.status);
