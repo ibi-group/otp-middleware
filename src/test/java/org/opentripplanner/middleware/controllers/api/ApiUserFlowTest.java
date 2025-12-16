@@ -197,7 +197,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
         OtpGraphQLVariables queryParams = OtpTestUtils.getSampleQueryParams();
         MonitoredTrip monitoredTrip = new MonitoredTrip(
             queryParams,
-            OtpTestUtils.firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse())
+            OtpTestUtils.firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse())
         );
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
