@@ -9,21 +9,24 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
+import org.opentripplanner.middleware.itinerarymatching.LegIdProcessor;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
+import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
+import org.opentripplanner.middleware.tripmonitor.jobs.MockLegResponseProvider;
 import org.opentripplanner.middleware.utils.CreateApiKeyException;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
-import org.opentripplanner.middleware.utils.MockOtpResponseProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -192,7 +195,10 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
 
         // Create a monitored trip for the Otp user (API users are prevented from doing this).
         OtpGraphQLVariables queryParams = OtpTestUtils.getSampleQueryParams();
-        MonitoredTrip monitoredTrip = new MonitoredTrip(queryParams, OtpTestUtils.firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse()));
+        MonitoredTrip monitoredTrip = new MonitoredTrip(
+            queryParams,
+            OtpTestUtils.firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse())
+        );
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
         HttpResponseValues createTripResponseAsOtpUser = mockAuthenticatedRequest(
@@ -205,11 +211,16 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
 
         // Create a monitored trip for an Otp user authenticating as an Api user. An Api user can create a monitored
         // trip for an Otp user they created.
-
-        // Set mock OTP responses so that trip existence checks in the
-        // POST call below to save the monitored trip can pass.
-        MockOtpResponseProvider mockResponses = new MockOtpResponseProvider(OtpTestUtils.createMockOtpResponsesForTripExistence());
-        ItineraryExistence.otpResponseProviderOverride = mockResponses::getMockResponse;
+        ItineraryExistence.legFinderOverride = new LegFinder(
+            new MockLegResponseProvider(
+                monitoredTrip.itinerary,
+                leg -> LegIdProcessor.computeLegIdForServiceDate(
+                    leg,
+                    DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime).toLocalDate()
+                )
+            )::getLegResponse,
+            LegIdProcessor::computeLegIdForServiceDate
+        );
 
         HttpResponseValues createTripResponseAsApiUser = makeRequest(
             MONITORED_TRIP_PATH,
@@ -218,8 +229,8 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        // After POST is complete, reset OTP response provider to default.
-        ItineraryExistence.otpResponseProviderOverride = null;
+        // After POST is complete, reset OTP leg response provider to default.
+        ItineraryExistence.legFinderOverride = null;
 
         String responseBody = createTripResponseAsApiUser.responseBody;
         assertEquals(HttpStatus.OK_200, createTripResponseAsApiUser.status);
