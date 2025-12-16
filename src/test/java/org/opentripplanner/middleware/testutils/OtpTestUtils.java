@@ -1,18 +1,13 @@
 package org.opentripplanner.middleware.testutils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
-import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponseGraphQLWrapper;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtilsTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -22,13 +17,9 @@ import spark.Service;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -181,13 +172,6 @@ public class OtpTestUtils {
     }
 
     /**
-     * Submit plan query to OTP server and return the response.
-     */
-    public static OtpDispatcherResponse sendSamplePlanRequest(OtpGraphQLVariables variables) {
-        return OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP2, variables);
-    }
-
-    /**
      * Sample GraphQL params for testing.
      */
     public static OtpGraphQLVariables getSampleQueryParams() {
@@ -198,16 +182,6 @@ public class OtpTestUtils {
         return params;
     }
 
-    public static Map<DayOfWeek, OtpResponse> createMockOtpResponsesForTripExistence() throws Exception {
-        // Set up monitored days and mock responses for itinerary existence check, ordered by day.
-        LocalDate today = DateTimeUtils.nowAsLocalDate();
-        List<String> monitoredTripDates = new ArrayList<>();
-        for (int i = 0; i < ItineraryUtils.ITINERARY_CHECK_WINDOW; i++) {
-            monitoredTripDates.add(DateTimeUtils.DEFAULT_DATE_FORMATTER.format(today.plusDays(i)));
-        }
-        return ItineraryUtilsTest.getMockDatedOtpResponses(monitoredTripDates);
-    }
-
     /**
      * Offsets all times in the given itinerary relative to the given base time. The base time is assumed to be the new
      * start time for the itinerary. Whatever the offset from the initial itinerary's start time and the new start time
@@ -216,17 +190,6 @@ public class OtpTestUtils {
     public static void updateBaseItineraryTime(Itinerary mockItinerary, ZonedDateTime baseZonedDateTime) {
         mockItinerary.offsetTimes(
             baseZonedDateTime.toInstant().toEpochMilli() - mockItinerary.startTime.getTime()
-        );
-    }
-
-    /**
-     * Offsets all times in the given itinerary so that the itinerary starts at the same time
-     * but on the specified day of month.
-     */
-    public static void setItineraryDay(Itinerary mockItinerary, int dayOfMonth) {
-        updateBaseItineraryTime(
-            mockItinerary,
-            DateTimeUtils.makeOtpZonedDateTime(mockItinerary.startTime).withDayOfMonth(dayOfMonth)
         );
     }
 
