@@ -48,7 +48,6 @@ public class LegIdProcessor {
             var in = new ObjectInputStream(input)
         ) {
             // Follow the order in which OTP encoded this order must be the same in the encode and decode function
-
             type = in.readUTF();
             tripId = in.readUTF();
             in.readUTF(); // Consume service date value, but ignore.

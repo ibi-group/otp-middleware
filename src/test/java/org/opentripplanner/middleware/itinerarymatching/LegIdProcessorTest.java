@@ -22,7 +22,7 @@ class LegIdProcessorTest {
         leg.serviceDate = "20240420";
 
         assertNotEquals(expectedId, leg.id);
-        assertNotEquals(desiredServiceDate, leg.serviceDate);
+        assertNotEquals(desiredServiceDate.toString(), leg.serviceDate);
 
         String newLegId = LegIdProcessor.computeLegIdForServiceDate(leg, desiredServiceDate);
         assertEquals(expectedId, newLegId);
