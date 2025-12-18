@@ -61,6 +61,7 @@ public class ItineraryFromLegMatcher {
     }
 
     public static List<Leg> getTransitLegs(Collection<Leg> legs) {
+        if (legs == null) return List.of();
         return legs.stream()
             .filter(Leg::transitLegWithId)
             .collect(Collectors.toList());
