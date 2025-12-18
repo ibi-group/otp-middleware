@@ -47,7 +47,7 @@ public class ItineraryCheckStatus {
         arrivalDelaySeconds = arrDelay;
     }
 
-    public boolean isBogus() {
+    public boolean isFailed() {
         return !legsMatch || exception != null || impossibleTransfer || rebuiltItinerary == null;
     }
 }

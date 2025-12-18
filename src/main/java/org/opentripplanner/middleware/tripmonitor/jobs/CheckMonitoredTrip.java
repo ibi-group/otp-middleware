@@ -304,7 +304,7 @@ public class CheckMonitoredTrip implements Runnable {
     private boolean makeOTPRequestAndUpdateMatchingItineraryInternal() {
         ItineraryChecker checker = new ItineraryChecker(trip.itinerary, legFinder, targetZonedDateTime.toLocalDate());
         ItineraryCheckStatus itineraryCheckStatus = checker.checkLegs();
-        if (!itineraryCheckStatus.isBogus()) {
+        if (!itineraryCheckStatus.isFailed()) {
             // Set the matching itinerary. Compute target date and set the baseline journey state.
             matchingItinerary = itineraryCheckStatus.rebuiltItinerary;
             LOG.info("Found matching itinerary!");

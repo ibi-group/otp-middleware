@@ -104,7 +104,7 @@ class ItineraryFromLegMatcherTest {
         assertTrue(matcherResult.legsMatch);
         assertFalse(matcherResult.impossibleTransfer);
         assertNull(matcherResult.exception);
-        assertFalse(matcherResult.isBogus());
+        assertFalse(matcherResult.isFailed());
 
         ItineraryMatcher classicMatcher = new ItineraryMatcher(itinerary, rebuiltItinerary);
         assertTrue(classicMatcher.match(), classicMatcher.getFailingReason());
@@ -136,7 +136,7 @@ class ItineraryFromLegMatcherTest {
         );
         ItineraryCheckStatus matcherResult = matcher.process();
         assertTrue(matcher.processed());
-        assertTrue(matcherResult.isBogus());
+        assertTrue(matcherResult.isFailed());
         assertFalse(matcherResult.legsMatch);
     }
 }
