@@ -49,12 +49,9 @@ public class ItineraryFromLegMatcher {
 
         Map<String, Leg> result = new HashMap<>();
         for (Leg leg : originalTransitLegs) {
-            String mappedId = legIdMap.get(leg.id);
-            if (mappedId != null) {
-                Leg mappedLeg = candidateLegsById.get(mappedId);
-                if (mappedLeg != null) {
-                    result.put(leg.id, mappedLeg);
-                }
+            Leg mappedLeg = candidateLegsById.get(legIdMap.get(leg.id));
+            if (mappedLeg != null) {
+                result.put(leg.id, mappedLeg);
             }
         }
         return result;
@@ -151,12 +148,11 @@ public class ItineraryFromLegMatcher {
                     if (previousTransitLeg != null) {
                         // Interval between two consecutive transit legs should be enough for the duration
                         // of all walk legs plus the boarding slack, or the transfer slack.
-                        boolean transferImpossible = isInsufficientTime(
+                        impossibleTransfer |= isInsufficientTime(
                             previousTransitLeg,
                             newLeg,
                             transferLegs
                         );
-                        if (transferImpossible) impossibleTransfer = true;
 
                         // Shift times of transfer legs so that they start right after the previous transit leg.
                         offsetTimes(transferLegs, previousOriginalTransitLeg.endTime, previousTransitLeg.endTime);
