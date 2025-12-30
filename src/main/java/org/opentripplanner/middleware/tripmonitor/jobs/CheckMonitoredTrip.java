@@ -24,6 +24,7 @@ import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.I18nUtils;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -532,7 +533,7 @@ public class CheckMonitoredTrip implements Runnable {
             journeyState.baselineDepartureTimeEpochMillis = 0;
 
             // Send notification within the lead time and if there is a transit leg that is not complete yet.
-            return getMinutesUntilTrip() <= trip.leadTimeInMinutes && matchingItinerary.remainingTransitLegs()
+            return getMinutesUntilTrip() <= trip.leadTimeInMinutes && ItineraryUtils.remainingTransitLegs(matchingItinerary)
                 ? TripMonitorNotification.updatesLostNotification(getOtpUserLocale())
                 : null;
         } else {

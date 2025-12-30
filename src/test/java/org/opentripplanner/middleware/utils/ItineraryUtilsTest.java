@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.utils;
 
 import com.google.common.collect.Lists;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,7 +21,6 @@ import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.RideHailingEstimate;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
-import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.tripmonitor.jobs.MockLegResponseProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +44,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID;
 import static org.opentripplanner.middleware.testutils.OtpTestUtils.firstItinerary;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
 
@@ -94,6 +95,11 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     public static final long _2020_08_14__03_00_00 = otpDateTimeAsEpochMillis(
         2020, 8, 14, 3, 0, 0
     );
+
+    @AfterEach
+    void afterEach() {
+        DateTimeUtils.useSystemDefaultClockAndTimezone();
+    }
 
     /**
      * Test that itineraries exist and result.allCheckedDatesAreValid are as expected.
@@ -189,7 +195,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
 
             // Copy the template OTP response itinerary, and change the itinerary date to the monitored date,
             // in order to pass the same-day itinerary requirement.
-            OtpResponse resp = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse();
+            OtpResponse resp = OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse();
             for (Itinerary itin : resp.plan.itineraries) {
                 itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
                 itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
@@ -213,7 +219,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
 
             // Copy the template OTP response itinerary, and change the itinerary date to the monitored date,
             // in order to pass the same-day itinerary requirement.
-            Itinerary itin = firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse());
+            Itinerary itin = firstItinerary(OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse());
             itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
             itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
 
@@ -403,6 +409,39 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             Arguments.of(List.of("WALK", "CAR_RENT", "BUS"), List.of("CAR_RENT", "BUS"), "Rented car + Bus"),
             Arguments.of(List.of("WALK", "CAR_PARK", "BUS"), List.of("CAR_PARK", "BUS"), "P+R + Bus"),
             Arguments.of(List.of("WALK", "CAR_HAIL", "BUS"), List.of("CAR_HAIL", "BUS"), "Hail car + Bus")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("remainingTransitLegsCases")
+    void remainingTransitLegs(int legIndex, int offsetSeconds, boolean result) throws Exception {
+        Itinerary itineraryWithTwoTransitLegs = OTP2_DISPATCHER_PLAN_RESPONSE_LEGID
+            .clone()
+            .getResponse()
+            .plan
+            .itineraries
+            .get(1);
+
+        DateTimeUtils.useFixedClockAt(ZonedDateTime.ofInstant(
+            itineraryWithTwoTransitLegs.legs.get(legIndex).startTime.toInstant().plusSeconds(offsetSeconds),
+            DateTimeUtils.getOtpZoneId()
+        ));
+
+        assertEquals(result, ItineraryUtils.remainingTransitLegs(itineraryWithTwoTransitLegs));
+    }
+
+    private static Stream<Arguments> remainingTransitLegsCases() {
+        return Stream.of(
+            Arguments.of(0, 0, true),
+            Arguments.of(1, 0, true),
+            Arguments.of(1, 10, true),
+            Arguments.of(2, 0, true),
+            Arguments.of(3, 0, true),
+            Arguments.of(3, 10, true),
+            Arguments.of(4, -1, true),
+            Arguments.of(4, 0, false),
+            Arguments.of(4, 10, false),
+            Arguments.of(4, 1000, false)
         );
     }
 

@@ -11,11 +11,13 @@ import org.opentripplanner.middleware.otp.OtpRequest;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
@@ -204,5 +206,13 @@ public class ItineraryUtils {
             .map(itin -> itin.legs)
             .map(legs -> legs.get(0))
             .orElse(null);
+    }
+
+    /**
+     * Whether there are transit legs that remain to be completed at the current clock time.
+     */
+    public static boolean remainingTransitLegs(Itinerary itinerary) {
+        Date now = DateTimeUtils.nowAsDate();
+        return getTransitLegs(itinerary.legs).stream().anyMatch(leg -> now.before(leg.endTime));
     }
 }
