@@ -184,6 +184,17 @@ public class Leg implements Cloneable {
     }
 
     /**
+     * Shallow-copy over fields that remain the same between theoretical and updated legs.
+     */
+    public void shallowCopyFieldsForRebuiltItinerary(Leg newLeg) {
+        newLeg.from = from;
+        newLeg.to = to;
+        newLeg.agency = agency;
+        newLeg.route = route;
+        newLeg.interlineWithPreviousLeg = interlineWithPreviousLeg;
+    }
+
+    /**
      * Clone this object.
      * NOTE: This only clones certain needed items so not all entities are
      * deep-cloned. Implement this further if additional items should be deep-cloned.

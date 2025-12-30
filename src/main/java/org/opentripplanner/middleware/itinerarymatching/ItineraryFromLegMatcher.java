@@ -138,12 +138,7 @@ public class ItineraryFromLegMatcher {
                 Leg newLeg = originalLegIdToCandidateLeg.get(leg.id);
                 if (newLeg != null) {
                     resultLegs.set(i, newLeg);
-                    // Shallow-copy over fields that remain the same between theoretical and updated legs
-                    newLeg.from = leg.from;
-                    newLeg.to = leg.to;
-                    newLeg.agency = leg.agency;
-                    newLeg.route = leg.route;
-                    newLeg.interlineWithPreviousLeg = leg.interlineWithPreviousLeg;
+                    leg.shallowCopyFieldsForRebuiltItinerary(newLeg);
 
                     if (previousTransitLeg != null) {
                         // Interval between two consecutive transit legs should be enough for the duration
