@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.tripmonitor.jobs.MockLegResponseProvider;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -138,5 +139,42 @@ class ItineraryFromLegMatcherTest {
         assertTrue(matcher.processed());
         assertTrue(matcherResult.isFailed());
         assertFalse(matcherResult.legsMatch);
+    }
+
+    @Test
+    void boardingSlack() {
+        Itinerary itinerary = createWalkTransitWalkTransitWalkItinerary(LocalDateTime.now());
+        assertEquals(
+            Duration.between(
+                itinerary.legs.get(0).endTime.toInstant(),
+                itinerary.legs.get(1).startTime.toInstant()
+            ),
+            ItineraryFromLegMatcher.computeBoardingSlack(itinerary)
+        );
+    }
+
+    @Test
+    void boardingSlackTransitWalkItinerary() {
+        Itinerary itinerary = createTransitWalkTransitItinerary(LocalDateTime.now());
+        assertEquals(Duration.ZERO, ItineraryFromLegMatcher.computeBoardingSlack(itinerary));
+    }
+
+    @Test
+    void alightingSlack() {
+        Itinerary itinerary = createWalkTransitWalkTransitWalkItinerary(LocalDateTime.now());
+        assertEquals(
+            Duration.between(
+                itinerary.legs.get(1).endTime.toInstant(),
+                itinerary.legs.get(2).startTime.toInstant()
+            ),
+            ItineraryFromLegMatcher.computeAlightingSlack(itinerary)
+        );
+    }
+
+    @Test
+    void alightingSlackNoAccessLeg() {
+        Itinerary itinerary = createTransitWalkTransitItinerary(LocalDateTime.now());
+        itinerary.legs.remove(0);
+        assertEquals(Duration.ZERO, ItineraryFromLegMatcher.computeAlightingSlack(itinerary));
     }
 }

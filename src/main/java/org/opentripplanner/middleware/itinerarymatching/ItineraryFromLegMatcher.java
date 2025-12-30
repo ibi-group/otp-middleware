@@ -17,15 +17,11 @@ import java.util.stream.Collectors;
  * Helper class that matches a collection of transit legs to a reference itinerary.
  */
 public class ItineraryFromLegMatcher {
-    // TODO: Make these config params.
-    private static final int TRANSFER_SLACK_SECONDS = 0;
-    private static final int BOARDING_SLACK_SECONDS = 0;
-    private static final int ALIGHT_SLACK_SECONDS = 0;
-    private static final int TOTAL_SLACK_SECONDS = ALIGHT_SLACK_SECONDS + BOARDING_SLACK_SECONDS + TRANSFER_SLACK_SECONDS;
-
     private final Itinerary referenceItinerary;
     private final List<Leg> originalTransitLegs;
     private final Map<String, Leg> originalLegIdToCandidateLeg;
+    private final Duration boardingSlack;
+    private final Duration alightingSlack;
 
     private Itinerary rebuiltItinerary;
     private boolean rebuildAttempted;
@@ -38,8 +34,52 @@ public class ItineraryFromLegMatcher {
         Map<String, String> legIdMap
     ) {
         this.referenceItinerary = referenceItinerary;
+        boardingSlack = computeBoardingSlack(referenceItinerary);
+        alightingSlack = computeAlightingSlack(referenceItinerary);
         originalTransitLegs = getTransitLegs(referenceItinerary.legs);
         originalLegIdToCandidateLeg = mapOriginalLegIdsToCandidateLegs(candidateLegs, legIdMap);
+    }
+
+    /**
+     * Computes the boarding slack, i.e. the time between the first transit leg with a preceding access (e.g. walk) leg.
+     * In OTP 2.x, boarding slacks are set the same across the board by configuration,
+     * so the slack we compute for any transit leg should be what OTP applies everywhere.
+     * TODO: Note that OTP also supports boarding slack by mode, we are not supporting that yet.
+     * If there is no previous access leg in the given itinerary, zero is returned.
+     * If a transit-walk-* itinerary is provided, zero is returned.
+     */
+    public static Duration computeBoardingSlack(Itinerary itinerary) {
+        Leg previousLeg = null;
+        Leg previousTransitLeg = null;
+        for (Leg leg : itinerary.legs) {
+            if (leg.transitLegWithId()) {
+                if (previousLeg != null && previousTransitLeg == null) {
+                    return Duration.between(previousLeg.endTime.toInstant(), leg.startTime.toInstant());
+                }
+                previousTransitLeg = leg;
+            }
+            previousLeg = leg;
+        }
+        return Duration.ZERO;
+    }
+
+    /**
+     * Computes the alighting slack, i.e. the time between the first transit leg followed by an access (e.g. walk) leg.
+     * In OTP 2.x, alighting slacks are set the same across the board by configuration,
+     * so the slack we compute for any transit leg should be what OTP applies everywhere.
+     * TODO: Note that OTP also supports alighting slack by mode, we are not supporting that yet.
+     * If there is no following access leg in the given itinerary, zero is returned.
+     */
+    public static Duration computeAlightingSlack(Itinerary itinerary) {
+        Leg previousTransitLeg = null;
+        for (Leg leg : itinerary.legs) {
+            if (leg.transitLegWithId()) {
+                previousTransitLeg = leg;
+            } else if (previousTransitLeg != null) {
+                return Duration.between(previousTransitLeg.endTime.toInstant(), leg.startTime.toInstant());
+            }
+        }
+        return Duration.ZERO;
     }
 
     private Map<String, Leg> mapOriginalLegIdsToCandidateLegs(Collection<Leg> candidateLegs, Map<String, String> legIdMap) {
@@ -74,7 +114,7 @@ public class ItineraryFromLegMatcher {
     /**
      * Determines whether there is enough time, including slacks, for legs between the two given legs.
      */
-    private static boolean isInsufficientTime(Leg fromTransitLeg, Leg toTransitleg, List<Leg> legsBetween) {
+    private static boolean isInsufficientTime(Leg fromTransitLeg, Leg toTransitleg, List<Leg> legsBetween, long totalSlackSeconds) {
         Duration interval = Duration.between(
             fromTransitLeg.endTime.toInstant(),
             toTransitleg.startTime.toInstant()
@@ -87,7 +127,7 @@ public class ItineraryFromLegMatcher {
                 legsBetween.get(legsBetween.size() - 1).endTime.toInstant()
             ).toSeconds();
 
-        return interval.toSeconds() < transferDurationSeconds + TOTAL_SLACK_SECONDS;
+        return interval.toSeconds() < transferDurationSeconds + totalSlackSeconds;
     }
 
     /**
@@ -127,6 +167,9 @@ public class ItineraryFromLegMatcher {
             return null;
         }
 
+        long transferSlackSeconds = 0; // TODO: make a config param.
+        long totalSlackSeconds = boardingSlack.toSeconds() + alightingSlack.toSeconds() + transferSlackSeconds;
+
         // Replace transit legs that have an id with the updated ones.
         Leg previousTransitLeg = null;
         Leg previousOriginalTransitLeg = null;
@@ -146,7 +189,8 @@ public class ItineraryFromLegMatcher {
                         impossibleTransfer |= isInsufficientTime(
                             previousTransitLeg,
                             newLeg,
-                            transferLegs
+                            transferLegs,
+                            totalSlackSeconds
                         );
 
                         // Shift times of transfer legs so that they start right after the previous transit leg.
