@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.getOtpZoneId;
 
 /**
  * This class contains tests for {@link CheckMonitoredTrip} that don't require database or OTP queries.
@@ -71,7 +70,7 @@ public class CheckMonitoredTripBasicTest {
     public static void setRecurringTodayAndTomorrow(MonitoredTrip trip) {
         DayOfWeek dayOfWeek = DayOfWeek.of(LocalDate.ofInstant(
             trip.itinerary.startTime.toInstant(),
-            getOtpZoneId()).get(ChronoField.DAY_OF_WEEK
+            DateTimeUtils.getOtpZoneId()).get(ChronoField.DAY_OF_WEEK
         ));
         switch (dayOfWeek) {
             case MONDAY:
@@ -135,7 +134,7 @@ public class CheckMonitoredTripBasicTest {
     @ParameterizedTest
     @MethodSource("createFindEarliestTargetDateTime")
     void canFindEarliestTargetDateTime(int fromDay, int expectedDay, String message) {
-        ZoneId zoneId = getOtpZoneId();
+        ZoneId zoneId = DateTimeUtils.getOtpZoneId();
         // 10:25 am on some specified day in April 2025.
         ZonedDateTime fromDateTime = ZonedDateTime.of(2025, 4, fromDay, 10, 25, 0, 0, zoneId);
 
