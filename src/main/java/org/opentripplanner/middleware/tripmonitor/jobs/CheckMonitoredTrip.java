@@ -531,7 +531,8 @@ public class CheckMonitoredTrip implements Runnable {
             journeyState.baselineArrivalTimeEpochMillis = 0;
             journeyState.baselineDepartureTimeEpochMillis = 0;
 
-            return getMinutesUntilTrip() <= trip.leadTimeInMinutes
+            // Send notification within the lead time and if there is a transit leg that is not complete yet.
+            return getMinutesUntilTrip() <= trip.leadTimeInMinutes && matchingItinerary.remainingTransitLegs()
                 ? TripMonitorNotification.updatesLostNotification(getOtpUserLocale())
                 : null;
         } else {

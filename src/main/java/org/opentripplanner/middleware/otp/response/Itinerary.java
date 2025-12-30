@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.lang.Boolean.TRUE;
+import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
 
 /**
  * An Itinerary is one complete way of getting from the start location to the end location.
@@ -293,5 +294,13 @@ public class Itinerary implements Cloneable {
         for (Leg leg : legs) {
             leg.endTime = new Date(leg.endTime.getTime() + offsetMillis);
         }
+    }
+
+    /**
+     * Whether there are transit legs that remain to be completed at the current clock time.
+     */
+    public boolean remainingTransitLegs() {
+        Date now = DateTimeUtils.nowAsDate();
+        return getTransitLegs(legs).stream().anyMatch(leg -> now.before(leg.endTime));
     }
 }

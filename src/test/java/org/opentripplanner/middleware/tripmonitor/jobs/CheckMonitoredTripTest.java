@@ -743,6 +743,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
 
         ZonedDateTime beforeTripStart = DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.startTime).minusMinutes(30);
+        ZonedDateTime transitLegEnd = DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.legs.get(1).endTime);
+        ZonedDateTime afterTripEnds = DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.endTime).plusMinutes(3);
 
         List<DelayCase> cases = List.of(
             // TODO: fix time separator char
@@ -755,16 +757,26 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
             // Add back delays for the trip.
             new DelayCase(300, 420, true, beforeTripStart, 1, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:34 AM)."),
-            // Drop real-time updates and simulate a time at which the trip is considered over.
-            // No notifications should be sent when the trip is considered over.
+            // OTP drops real-time updates at/after the end of the transit leg.
+            // No notifications should be sent when the transit leg is over.
             new DelayCase(
                 -300,
                 -420,
                 false,
-                isOneTime ? beforeTripStart.plusHours(1) : beforeTripStart.minusDays(1).truncatedTo(ChronoUnit.DAYS), 0,
+                transitLegEnd.plusMinutes(2),
+                0,
+                null
+            ),
+            // No notifications should be sent when the trip is considered over and the next trip is upcoming.
+            // (Next day is simulated by keeping the same mock itinerary and shifting the clock back to after the trip the previous day.)
+            new DelayCase(
+                0,
+                0,
+                false,
+                isOneTime ? beforeTripStart.plusHours(1) : afterTripEnds.minusDays(1),
+                0,
                 null
             )
-
         );
 
         for (DelayCase c : cases) {
@@ -1425,8 +1437,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         LOG.info("Created trip {}", monitoredTrip.id);
 
         // Set up an OTP mock response in order to trigger some of the monitor checks.
-        OtpResponse mockResponse = mockOtpPlanResponse();
-        Itinerary itinerary = firstItinerary(mockResponse);
+        Itinerary itinerary = firstItinerary(mockOtpPlanResponse());
 
         // itinerary start time = 1:30AM UTC or 5:30PM PST
         OtpTestUtils.updateBaseItineraryTime(itinerary, itineraryDayAt0030);
