@@ -223,7 +223,12 @@ public class ItineraryExistence extends Model {
                 : getItineraryChecker(otpRequest, trip.itinerary, getLegFinder);
 
             if (checkerStatus.isFailed()) {
-                LOG.warn("Itinerary existence check failed on {} for trip {} - {}", dayOfWeek , trip.id, "TODO: checker status failed.");
+                LOG.warn(
+                    "Itinerary existence check failed on {} for trip {} - {}",
+                    dayOfWeek,
+                    trip.id,
+                    checkerStatus.getFailedReason()
+                );
                 // If no match was found for the date, mark day of week as non-existent for the itinerary.
                 result.handleInvalidDate(otpRequest.dateTime);
             } else {

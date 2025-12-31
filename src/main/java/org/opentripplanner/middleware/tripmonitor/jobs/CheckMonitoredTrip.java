@@ -355,12 +355,11 @@ public class CheckMonitoredTrip implements Runnable {
             return updateMonitoredTrip();
         } else {
             // If this point is reached, a matching itinerary was not found.
-            String notFoundReason = "unknown";
-            if (!itineraryCheckStatus.legsMatch) notFoundReason = "Some legs were not found.";
-            else if (itineraryCheckStatus.impossibleTransfer) notFoundReason = "Not enough time for transfer.";
-            else if (itineraryCheckStatus.exception != null) notFoundReason = itineraryCheckStatus.exception.getMessage();
-
-            ITINERARY_NOT_FOUND_LOGGER.warn("No comparison itinerary found for trip {} - {}", trip.id, notFoundReason);
+            ITINERARY_NOT_FOUND_LOGGER.warn(
+                "No comparison itinerary found for trip {} - {}",
+                trip.id,
+                itineraryCheckStatus.getFailedReason()
+            );
 
             boolean setNullItinerary = !shouldPersistMatchingItinerary();
             if (hasReachedMaxItineraryChecks() || setNullItinerary) {

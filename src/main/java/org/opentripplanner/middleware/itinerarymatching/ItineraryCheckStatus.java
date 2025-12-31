@@ -47,6 +47,13 @@ public class ItineraryCheckStatus {
         arrivalDelaySeconds = arrDelay;
     }
 
+    public String getFailedReason() {
+        if (!legsMatch) return "Some legs were not found.";
+        else if (impossibleTransfer) return "Not enough time for transfer.";
+        else if (exception != null) return exception.getMessage();
+        return "unknown";
+    }
+
     public boolean isFailed() {
         return !legsMatch || exception != null || impossibleTransfer || rebuiltItinerary == null;
     }
