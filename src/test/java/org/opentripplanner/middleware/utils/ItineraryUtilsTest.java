@@ -17,7 +17,6 @@ import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
-import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.RideHailingEstimate;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
@@ -183,31 +182,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
-     * Creates a set of mock OTP responses by making copies of #OTP_DISPATCHER_PLAN_RESPONSE,
-     * each copy having the itinerary date set to one of the dates from the specified dates list.
-     */
-    public static Map<DayOfWeek, OtpResponse> getMockDatedOtpResponses(List<String> dates) throws Exception {
-        // Set mocks to a list of responses with itineraries, ordered by day.
-        Map<DayOfWeek, OtpResponse> mockOtpResponses = new EnumMap<>(DayOfWeek.class);
-
-        for (String dateString : dates) {
-            LocalDate monitoredDate = LocalDate.parse(dateString, DateTimeUtils.DEFAULT_DATE_FORMATTER);
-
-            // Copy the template OTP response itinerary, and change the itinerary date to the monitored date,
-            // in order to pass the same-day itinerary requirement.
-            OtpResponse resp = OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse();
-            for (Itinerary itin : resp.plan.itineraries) {
-                itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
-                itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
-            }
-
-            mockOtpResponses.put(monitoredDate.getDayOfWeek(), resp);
-        }
-        return mockOtpResponses;
-    }
-
-    /**
-     * Creates a set of mock OTP responses by making copies of #OTP_DISPATCHER_PLAN_RESPONSE,
+     * Creates a set of mock OTP responses by making copies of #OTP2_DISPATCHER_PLAN_RESPONSE_LEGID,
      * each copy having the itinerary date set to one of the dates from the specified dates list.
      */
     public static Map<DayOfWeek, Itinerary> getMockDatedItineraries(List<String> dates) throws Exception {
