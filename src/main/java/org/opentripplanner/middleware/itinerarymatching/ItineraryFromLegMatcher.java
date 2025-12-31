@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.itinerarymatching;
 
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -17,6 +18,9 @@ import java.util.stream.Collectors;
  * Helper class that matches a collection of transit legs to a reference itinerary.
  */
 public class ItineraryFromLegMatcher {
+    public static final int OTP_TRANSFER_SLACK_SECONDS =
+        ConfigUtils.getConfigPropertyAsInt("OTP_TRANSFER_SLACK_SECONDS", 0);
+
     private final Itinerary referenceItinerary;
     private final List<Leg> originalTransitLegs;
     private final Map<String, Leg> originalLegIdToCandidateLeg;
@@ -167,8 +171,7 @@ public class ItineraryFromLegMatcher {
             return null;
         }
 
-        long transferSlackSeconds = 0; // TODO: make a config param.
-        long totalSlackSeconds = boardingSlack.toSeconds() + alightingSlack.toSeconds() + transferSlackSeconds;
+        long totalSlackSeconds = boardingSlack.toSeconds() + alightingSlack.toSeconds() + OTP_TRANSFER_SLACK_SECONDS;
 
         // Replace transit legs that have an id with the updated ones.
         Leg previousTransitLeg = null;
