@@ -192,6 +192,8 @@ public class Leg implements Cloneable {
         newLeg.agency = agency;
         newLeg.route = route;
         newLeg.interlineWithPreviousLeg = interlineWithPreviousLeg;
+        newLeg.mode = mode;
+        newLeg.legGeometry = legGeometry;
     }
 
     /**
