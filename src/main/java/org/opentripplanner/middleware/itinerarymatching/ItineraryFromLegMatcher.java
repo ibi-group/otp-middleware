@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -104,6 +105,7 @@ public class ItineraryFromLegMatcher {
     public static List<Leg> getTransitLegs(Collection<Leg> legs) {
         if (legs == null) return List.of();
         return legs.stream()
+            .filter(Objects::nonNull)
             .filter(Leg::transitLegWithId)
             .collect(Collectors.toList());
     }

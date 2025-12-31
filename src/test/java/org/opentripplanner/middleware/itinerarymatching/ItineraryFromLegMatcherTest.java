@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.itinerarymatching;
 
+import jersey.repackaged.com.google.common.collect.Lists;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -33,7 +34,6 @@ class ItineraryFromLegMatcherTest {
 
     // Set up live (real-time) transit legs.
     // Non-null transit legs are presumed to match origin, destination, and trip id on a given transit route.
-    // TODO: Handle cases with different leg start/end times (delays), and cases where some legs are null.
     private static final Leg liveLeg1 = createQueriedBusLeg("transit-leg-id-1-expected", BASE_TIME, BASE_TIME.plusMinutes(10));
     private static final Leg liveLeg2 = createQueriedBusLeg("transit-leg-id-2-expected" ,BASE_TIME.plusMinutes(40), BASE_TIME.plusMinutes(50));
 
@@ -49,10 +49,25 @@ class ItineraryFromLegMatcherTest {
     }
 
     private static Stream<Arguments> itineraryFromLegsCases() {
+        Leg busLeg1WithDelays = createQueriedBusLeg("transit-leg-id-1-expected", BASE_TIME.plusMinutes(3), BASE_TIME.plusMinutes(15));
+        busLeg1WithDelays.arrivalDelay = 300;
+        busLeg1WithDelays.departureDelay = 180;
+
         return Stream.of(
             Arguments.of(List.of(liveLeg1, liveLeg2), true, "Transit legs in order should match."),
             Arguments.of(List.of(liveLeg2, liveLeg1), true, "Transit legs out of order should still match."),
-            Arguments.of(List.of(liveLeg1), false, "Missing transit legs should not match.")
+            Arguments.of(List.of(liveLeg1), false, "Missing transit legs should not match."),
+            Arguments.of(Lists.newArrayList(liveLeg1, null, liveLeg2), true, "Null legs should be ignored."),
+            Arguments.of(
+                List.of(liveLeg1, liveLeg2, createQueriedBusLeg("extra-leg" ,BASE_TIME, BASE_TIME.plusMinutes(10))),
+                true,
+                "Extra transit legs should be ignored."
+            ),
+            Arguments.of(
+                List.of(busLeg1WithDelays, liveLeg2),
+                true,
+                "Delayed transit legs should still match."
+            )
         );
     }
 
