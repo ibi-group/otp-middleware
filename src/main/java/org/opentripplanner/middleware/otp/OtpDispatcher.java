@@ -68,13 +68,6 @@ public class OtpDispatcher {
     /**
      * Provides a response from the OTP server target service based on the input {@link OtpRequest}.
      */
-    public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, OtpRequest otpRequest) {
-        return sendOtpPlanRequest(version, otpRequest.requestParameters);
-    }
-
-    /**
-     * Provides a response from the OTP server target service based on the input {@link OtpRequest}.
-     */
     public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, OtpGraphQLVariables params) {
         OtpGraphQLQuery<OtpGraphQLVariables> query = new OtpGraphQLQuery<>();
         query.query = GraphQLUtils.getPlanQueryTemplate();
@@ -127,10 +120,6 @@ public class OtpDispatcher {
                 headers,
                 bodyContent);
         return new OtpDispatcherResponse(otpResponse);
-    }
-
-    public static OtpResponse sendOtpRequestWithErrorHandling(OtpRequest otpRequest) {
-        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP2, otpRequest));
     }
 
     public static OtpResponse sendOtpRequestWithErrorHandling(OtpGraphQLVariables params) {
