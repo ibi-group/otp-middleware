@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -47,14 +46,13 @@ public class ItineraryChecker {
      */
     public ItineraryCheckStatus checkLegs() {
         List<Leg> transitLegs = getTransitLegs(itinerary.legs);
-        List<Leg> queriedLegs = new ArrayList<>();
         boolean useThreading = transitLegs.size() > 1 && ItineraryUtils.isOtpRequestThreadingEnabled();
 
         Map<String, Leg> legResponses = useThreading
             ? getThreadedLegResponses(transitLegs)
             : Collections.emptyMap();
 
-        Map<String, String> legIdMap = new HashMap<>();
+        Map<String, Leg> legMap = new HashMap<>();
         for (Leg leg : transitLegs) {
             Leg returnedLeg = useThreading
                 ? legResponses.get(leg.id)
@@ -63,12 +61,11 @@ public class ItineraryChecker {
             if (returnedLeg == null) {
                 break;
             } else {
-                queriedLegs.add(returnedLeg);
-                legIdMap.put(leg.id, returnedLeg.id);
+                legMap.put(leg.id, returnedLeg);
             }
         }
 
-        return new ItineraryFromLegMatcher(itinerary, queriedLegs, legIdMap).process();
+        return new ItineraryFromLegMatcher(itinerary, legMap).process();
     }
 
     /**

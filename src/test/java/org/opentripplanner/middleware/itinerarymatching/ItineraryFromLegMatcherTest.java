@@ -1,20 +1,16 @@
 package org.opentripplanner.middleware.itinerarymatching;
 
-import jersey.repackaged.com.google.common.collect.Lists;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
-import org.opentripplanner.middleware.tripmonitor.jobs.MockLegResponseProvider;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -22,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createQueriedBusLeg;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createTransitWalkTransitItinerary;
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryMatchingUtils.createWalkTransitWalkTransitWalkItinerary;
@@ -36,15 +31,13 @@ class ItineraryFromLegMatcherTest {
     // Non-null transit legs are presumed to match origin, destination, and trip id on a given transit route.
     private static final Leg liveLeg1 = createQueriedBusLeg("transit-leg-id-1-expected", BASE_TIME, BASE_TIME.plusMinutes(10));
     private static final Leg liveLeg2 = createQueriedBusLeg("transit-leg-id-2-expected" ,BASE_TIME.plusMinutes(40), BASE_TIME.plusMinutes(50));
+    public static final String LEG_ID_1 = "transit-leg-id-1";
+    public static final String LEG_ID_2 = "transit-leg-id-2";
 
     @ParameterizedTest
     @MethodSource("itineraryFromLegsCases")
-    void hasRequiredLegs(Collection<Leg> legs, boolean isMatch, String message) {
-        ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(
-            ITINERARY,
-            legs,
-            MockLegResponseProvider.makeUpdatedLegIdMap(getTransitLegs(ITINERARY.legs))
-        );
+    void hasRequiredLegs(Map<String, Leg> legs, boolean isMatch, String message) {
+        ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(ITINERARY, legs);
         assertEquals(isMatch, matcher.hasRequiredLegs(), message);
     }
 
@@ -54,37 +47,30 @@ class ItineraryFromLegMatcherTest {
         busLeg1WithDelays.departureDelay = 180;
 
         return Stream.of(
-            Arguments.of(List.of(liveLeg1, liveLeg2), true, "Transit legs in order should match."),
-            Arguments.of(List.of(liveLeg2, liveLeg1), true, "Transit legs out of order should still match."),
-            Arguments.of(List.of(liveLeg1), false, "Missing transit legs should not match."),
-            Arguments.of(Lists.newArrayList(liveLeg1, null, liveLeg2), true, "Null legs should be ignored."),
             Arguments.of(
-                List.of(liveLeg1, liveLeg2, createQueriedBusLeg("extra-leg" ,BASE_TIME, BASE_TIME.plusMinutes(10))),
+                Map.of(
+                    LEG_ID_1, liveLeg1,
+                    LEG_ID_2, liveLeg2
+                ),
                 true,
-                "Extra transit legs should be ignored."
+                "Transit legs should match."
+            ),
+            Arguments.of(Map.of(LEG_ID_1, liveLeg1), false, "Missing transit legs should not match."),
+            Arguments.of(
+                Map.of(
+                    LEG_ID_1, liveLeg1,
+                    LEG_ID_2, liveLeg2,
+                    "extra-leg", createQueriedBusLeg("extra-leg-updated", BASE_TIME, BASE_TIME.plusMinutes(10))
+                ),
+                false,
+                "Extra transit legs should not match."
             ),
             Arguments.of(
-                List.of(busLeg1WithDelays, liveLeg2),
+                Map.of(LEG_ID_1, busLeg1WithDelays, LEG_ID_2, liveLeg2),
                 true,
                 "Delayed transit legs should still match."
             )
         );
-    }
-
-    @Test
-    void unmappedLeg() {
-        List<Leg> knownLegs = List.of(liveLeg1, liveLeg2);
-        Leg otherLeg = new Leg();
-        otherLeg.id = "other-leg";
-        otherLeg.transitLeg = true;
-        List<Leg> providedLegs = List.of(liveLeg1, otherLeg);
-
-        ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(
-            ITINERARY,
-            providedLegs,
-            MockLegResponseProvider.makeUpdatedLegIdMap(knownLegs)
-        );
-        assertFalse(matcher.hasRequiredLegs(), "Updated legs must map to original legs.");
     }
 
     @Test
@@ -96,10 +82,9 @@ class ItineraryFromLegMatcherTest {
 
         ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(
             itinerary,
-            List.of(liveLeg1, liveLeg2),
-            Map.of("transit-leg-id-1", "transit-leg-id-1-expected", "transit-leg-id-2", "transit-leg-id-2-expected")
+            Map.of(LEG_ID_1, liveLeg1, LEG_ID_2, liveLeg2)
         );
-        assertFalse(matcher.hasRequiredLegs(), "Updated legs must map to original legs.");
+        assertFalse(matcher.hasRequiredLegs(), "Itinerary legs without ids should not match.");
     }
 
     @Test
@@ -111,8 +96,7 @@ class ItineraryFromLegMatcherTest {
 
         ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(
             itinerary,
-            List.of(liveLeg1, liveLeg2),
-            MockLegResponseProvider.makeUpdatedLegIdMap(getTransitLegs(itinerary.legs))
+            Map.of(LEG_ID_1, liveLeg1, LEG_ID_2, liveLeg2)
         );
         ItineraryCheckStatus matcherResult = matcher.process();
         Itinerary rebuiltItinerary = matcherResult.rebuiltItinerary;
@@ -147,8 +131,7 @@ class ItineraryFromLegMatcherTest {
 
         ItineraryFromLegMatcher matcher = new ItineraryFromLegMatcher(
             itinerary,
-            List.of(liveLeg1, liveLeg2),
-            MockLegResponseProvider.makeUpdatedLegIdMap(getTransitLegs(itinerary.legs))
+            Map.of(LEG_ID_1, liveLeg1, LEG_ID_2, liveLeg2)
         );
         ItineraryCheckStatus matcherResult = matcher.process();
         assertTrue(matcher.processed());

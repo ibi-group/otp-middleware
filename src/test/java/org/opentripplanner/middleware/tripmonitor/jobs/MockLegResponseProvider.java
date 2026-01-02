@@ -6,7 +6,6 @@ import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpLegResponseWrapper;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
-import java.util.Collection;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.function.Function;
@@ -43,12 +42,6 @@ public class MockLegResponseProvider {
 
     public static String makeUpdatedLegId(Leg leg) {
         return String.format("%s-expected", leg.id);
-    }
-
-    public static Map<String, String> makeUpdatedLegIdMap(Collection<Leg> legs) {
-        return legs
-            .stream()
-            .collect(Collectors.toMap(leg -> leg.id, MockLegResponseProvider::makeUpdatedLegId));
     }
 
     public static String computeLegIdForServiceDate(Leg leg, LocalDate desiredServiceDate) {

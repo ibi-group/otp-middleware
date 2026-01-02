@@ -8,11 +8,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -35,14 +33,13 @@ public class ItineraryFromLegMatcher {
 
     public ItineraryFromLegMatcher(
         Itinerary referenceItinerary,
-        Collection<Leg> candidateLegs,
-        Map<String, String> legIdMap
+        Map<String, Leg> originalLegIdToCandidateLeg
     ) {
         this.referenceItinerary = referenceItinerary;
         boardingSlack = computeBoardingSlack(referenceItinerary);
         alightingSlack = computeAlightingSlack(referenceItinerary);
         originalTransitLegs = getTransitLegs(referenceItinerary.legs);
-        originalLegIdToCandidateLeg = mapOriginalLegIdsToCandidateLegs(candidateLegs, legIdMap);
+        this.originalLegIdToCandidateLeg = originalLegIdToCandidateLeg;
     }
 
     /**
@@ -87,21 +84,6 @@ public class ItineraryFromLegMatcher {
         return Duration.ZERO;
     }
 
-    private Map<String, Leg> mapOriginalLegIdsToCandidateLegs(Collection<Leg> candidateLegs, Map<String, String> legIdMap) {
-        Map<String, Leg> candidateLegsById = getTransitLegs(candidateLegs)
-            .stream()
-            .collect(Collectors.toMap( leg -> leg.id, Function.identity()));
-
-        Map<String, Leg> result = new HashMap<>();
-        for (Leg leg : originalTransitLegs) {
-            Leg mappedLeg = candidateLegsById.get(legIdMap.get(leg.id));
-            if (mappedLeg != null) {
-                result.put(leg.id, mappedLeg);
-            }
-        }
-        return result;
-    }
-
     public static List<Leg> getTransitLegs(Collection<Leg> legs) {
         if (legs == null) return List.of();
         return legs.stream()
@@ -114,7 +96,8 @@ public class ItineraryFromLegMatcher {
      * Determines if all required legs to reconstruct the itinerary have been provided.
      */
     public boolean hasRequiredLegs() {
-        return !originalTransitLegs.isEmpty() && originalLegIdToCandidateLeg.size() == originalTransitLegs.size();
+        return !originalTransitLegs.isEmpty() &&
+            originalLegIdToCandidateLeg.values().stream().filter(Objects::nonNull).count() == originalTransitLegs.size();
     }
 
     /**
