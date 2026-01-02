@@ -7,14 +7,19 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.OtpRequest;
+import org.slf4j.Logger;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
@@ -222,5 +227,24 @@ public class ItineraryUtils {
 
     public static boolean isOtpRequestThreadingEnabled() {
         return OTP_REQUESTS_THREADING_ENABLED.equalsIgnoreCase("true");
+    }
+
+    public static <K, V> Map<K, V> collectResponses(
+        Map<K, CompletableFuture<V>> workerMap,
+        Map<K, V> responseMap,
+        Logger logger,
+        String responseType
+    ) {
+        workerMap.forEach((key, future) -> {
+            try {
+                // Wait for completion and assign response.
+                V response = future.join();
+                logger.debug("{} for {}: {}", responseType, key, response);
+                responseMap.put(key, response);
+            } catch (CancellationException | CompletionException e) {
+                logger.error("Failed to get {} for {}.", responseType, key, e);
+            }
+        });
+        return responseMap;
     }
 }

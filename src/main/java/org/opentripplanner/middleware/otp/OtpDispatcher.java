@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
@@ -156,4 +158,22 @@ public class OtpDispatcher {
         }
     }
 
+    /**
+     * Wait for default timeout, then forcibly cancel any pending requests.
+     */
+    public static void waitForTimeoutThenCancelPendingRequests(ExecutorService executor) {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS)) {
+                LOG.warn(
+                    "OTP requests terminated, time out reached ({} seconds). Shutting down executor.",
+                    OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS
+                );
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            LOG.warn("OTP requests were interrupted! Shutting down executor.", e);
+            executor.shutdownNow();
+        }
+    }
 }

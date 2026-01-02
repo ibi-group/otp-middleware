@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.itinerarymatching;
 
 import org.opentripplanner.middleware.otp.LegFinder;
+import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -11,18 +12,13 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
-import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS;
 
 /**
  * Helper class for performing an itinerary existence check.
@@ -73,39 +69,19 @@ public class ItineraryChecker {
      * Execute OTP requests and process the responses in a custom executor. Each response is assigned to a leg.
      */
     private Map<String, Leg> getLegResponsesThreaded(List<Leg> transitLegs) {
-        ConcurrentMap<String, Leg> otpRequestResponses = new ConcurrentHashMap<>();
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        transitLegs
-            .stream()
-            .collect(Collectors.toConcurrentMap(
-                leg -> leg.id,
-                leg -> CompletableFuture.supplyAsync(() -> legFinder.queryLeg(leg, targetDate), executor)
-            ))
-            .forEach((legId, future) -> {
-                try {
-                    // Wait for completion and assign response.
-                    Leg legResponse = future.join();
-                    LOG.debug("OTP leg response for {}: {}", legId, legResponse);
-                    otpRequestResponses.put(legId, legResponse);
-                } catch (CancellationException | CompletionException e) {
-                    LOG.error("Failed to get OTP leg response for {}.", legId, e);
-                }
-            });
-
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS)) {
-                LOG.warn(
-                    "OTP requests terminated, time out reached ({} seconds). Shutting down executor.",
-                    OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS
-                );
-                executor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            LOG.warn("OTP requests were interrupted! Shutting down executor.", e);
-            executor.shutdownNow();
-        }
-        return otpRequestResponses;
+        Map<String, Leg> otpLegResponses = ItineraryUtils.collectResponses(
+            transitLegs
+                .stream()
+                .collect(Collectors.toConcurrentMap(
+                    leg -> leg.id,
+                    leg -> CompletableFuture.supplyAsync(() -> legFinder.queryLeg(leg, targetDate), executor)
+                )),
+            new ConcurrentHashMap<>(),
+            LOG,
+            "OTP leg response"
+        );
+        OtpDispatcher.waitForTimeoutThenCancelPendingRequests(executor);
+        return otpLegResponses;
     }
-
 }
