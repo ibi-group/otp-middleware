@@ -22,7 +22,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
@@ -31,7 +30,6 @@ import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +40,6 @@ import static org.opentripplanner.middleware.i18n.Message.ENUM_SEPARATOR;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK_ON_DAY;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
@@ -202,8 +199,8 @@ public class ItineraryExistence extends Model {
         boolean useThreading = ItineraryUtils.isOtpRequestThreadingEnabled();
 
         Map<DayOfWeek, ItineraryCheckStatus> legResponses = useThreading
-            ? getLegResponses(trip.itinerary, otpRequests)
-            : Collections.emptyMap();
+            ? getLegResponsesThreaded(trip.itinerary, otpRequests)
+            : getLegResponsesNonThreaded(trip.itinerary, otpRequests);
 
         // Check existence of itinerary in the response for each searched day.
         for (OtpRequest otpRequest : otpRequests) {
@@ -216,10 +213,7 @@ public class ItineraryExistence extends Model {
                 setResultForDayOfWeek(result, dayOfWeek);
             }
 
-            ItineraryCheckStatus checkerStatus = useThreading
-                ? legResponses.get(otpRequest.dateTime.toLocalDate().getDayOfWeek())
-                : getItineraryChecker(otpRequest, trip.itinerary, getLegFinder);
-
+            ItineraryCheckStatus checkerStatus = legResponses.get(otpRequest.dateTime.toLocalDate().getDayOfWeek());
             if (checkerStatus.isFailed()) {
                 LOG.warn(
                     "Itinerary existence check failed on {} for trip {} - {}",
@@ -254,30 +248,39 @@ public class ItineraryExistence extends Model {
         );
     }
 
+    private Map<DayOfWeek, ItineraryCheckStatus> getLegResponsesNonThreaded(Itinerary itinerary, List<OtpRequest> otpRequestsToProcess) {
+        return otpRequestsToProcess
+            .stream()
+            .collect(Collectors.toMap(
+                otpRequest -> otpRequest.dateTime.getDayOfWeek(),
+                otpRequest -> getItineraryChecker(otpRequest, itinerary, getLegFinder)
+            ));
+    }
+
     /**
      * Execute OTP requests and process the responses in a custom executor. Each response is assign to a day of the week.
      */
-    private Map<DayOfWeek, ItineraryCheckStatus> getLegResponses(Itinerary itinerary, List<OtpRequest> otpRequestsToProcess) {
-        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        ConcurrentMap<DayOfWeek, CompletableFuture<ItineraryCheckStatus>> otpRequestTasks = assignOtpRequestToDayOfWeek(
-            itinerary,
-            otpRequestsToProcess,
-            executor
-        );
-
+    private Map<DayOfWeek, ItineraryCheckStatus> getLegResponsesThreaded(Itinerary itinerary, List<OtpRequest> otpRequestsToProcess) {
         Map<DayOfWeek, ItineraryCheckStatus> otpRequestResponses = new EnumMap<>(DayOfWeek.class);
-
-        otpRequestTasks.forEach((dayOfWeek, future) -> {
-            ItineraryCheckStatus response = null;
-            try {
-                // Wait for completion and assign response.
-                response = future.join();
-            } catch (CancellationException | CompletionException e) {
-                LOG.error("Failed to get OTP leg response for {}.", dayOfWeek, e);
-            }
-            LOG.debug("OTP leg response for {}: {}", dayOfWeek, response);
-            otpRequestResponses.put(dayOfWeek, response);
-        });
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        otpRequestsToProcess
+            .stream()
+            .collect(Collectors.toConcurrentMap(
+                otpRequest -> otpRequest.dateTime.getDayOfWeek(),
+                otpRequest -> CompletableFuture.supplyAsync(
+                    () -> getItineraryChecker(otpRequest, itinerary, getLegFinder), executor
+                )
+            ))
+            .forEach((dayOfWeek, future) -> {
+                try {
+                    // Wait for completion and assign response.
+                    ItineraryCheckStatus response = future.join();
+                    LOG.debug("OTP leg response for {}: {}", dayOfWeek, response);
+                    otpRequestResponses.put(dayOfWeek, response);
+                } catch (CancellationException | CompletionException e) {
+                    LOG.error("Failed to get OTP leg response for {}.", dayOfWeek, e);
+                }
+            });
 
         executor.shutdown();
         try {
@@ -293,23 +296,6 @@ public class ItineraryExistence extends Model {
             executor.shutdownNow();
         }
         return otpRequestResponses;
-    }
-
-    /**
-     * Assign an OTP request to a day of the week and start each call async to the OTP server.
-     */
-    private ConcurrentMap<DayOfWeek, CompletableFuture<ItineraryCheckStatus>> assignOtpRequestToDayOfWeek(
-        Itinerary itinerary,
-        List<OtpRequest> otpRequests,
-        ExecutorService executor
-    ) {
-        return otpRequests
-            .stream()
-            .collect(Collectors.toConcurrentMap(
-                otpRequest -> otpRequest.dateTime.getDayOfWeek(),
-                otpRequest -> CompletableFuture.supplyAsync(
-                    () -> getItineraryChecker(otpRequest, itinerary, getLegFinder), executor))
-                );
     }
 
     private static ItineraryCheckStatus getItineraryChecker(OtpRequest request, Itinerary itinerary, Function<LocalDate, LegFinder> getLegFinder) {

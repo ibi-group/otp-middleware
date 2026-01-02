@@ -8,13 +8,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,48 +49,48 @@ public class ItineraryChecker {
         boolean useThreading = transitLegs.size() > 1 && ItineraryUtils.isOtpRequestThreadingEnabled();
 
         Map<String, Leg> legResponses = useThreading
-            ? getThreadedLegResponses(transitLegs)
-            : Collections.emptyMap();
+            ? getLegResponsesThreaded(transitLegs)
+            : getLegResponsesNonThreaded(transitLegs);
 
+        return new ItineraryFromLegMatcher(itinerary, legResponses).process();
+    }
+
+    private Map<String, Leg> getLegResponsesNonThreaded(List<Leg> transitLegs) {
         Map<String, Leg> legMap = new HashMap<>();
         for (Leg leg : transitLegs) {
-            Leg returnedLeg = useThreading
-                ? legResponses.get(leg.id)
-                : legFinder.queryLeg(leg, targetDate);
-
+            Leg returnedLeg = legFinder.queryLeg(leg, targetDate);
+            // Skip subsequent calls if one leg is not found (the itinerary cannot be reconstructed).
             if (returnedLeg == null) {
                 break;
             } else {
                 legMap.put(leg.id, returnedLeg);
             }
         }
-
-        return new ItineraryFromLegMatcher(itinerary, legMap).process();
+        return legMap;
     }
 
     /**
-     * Execute OTP requests and process the responses in a custom executor. Each response is assign to a day of the week.
+     * Execute OTP requests and process the responses in a custom executor. Each response is assigned to a leg.
      */
-    private Map<String, Leg> getThreadedLegResponses(List<Leg> transitLegs) {
+    private Map<String, Leg> getLegResponsesThreaded(List<Leg> transitLegs) {
+        ConcurrentMap<String, Leg> otpRequestResponses = new ConcurrentHashMap<>();
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        ConcurrentMap<String, CompletableFuture<Leg>> otpLegRequestTasks = assignOtpRequestByLeg(
-            transitLegs,
-            executor
-        );
-
-        Map<String, Leg> otpRequestResponses = new HashMap<>();
-
-        otpLegRequestTasks.forEach((legId, future) -> {
-            Leg legResponse = null;
-            try {
-                // Wait for completion and assign response.
-                legResponse = future.join();
-            } catch (CancellationException | CompletionException e) {
-                LOG.error("Failed to get OTP leg response for {}.", legId, e);
-            }
-            LOG.debug("OTP leg response for {}: {}", legId, legResponse);
-            otpRequestResponses.put(legId, legResponse);
-        });
+        transitLegs
+            .stream()
+            .collect(Collectors.toConcurrentMap(
+                leg -> leg.id,
+                leg -> CompletableFuture.supplyAsync(() -> legFinder.queryLeg(leg, targetDate), executor)
+            ))
+            .forEach((legId, future) -> {
+                try {
+                    // Wait for completion and assign response.
+                    Leg legResponse = future.join();
+                    LOG.debug("OTP leg response for {}: {}", legId, legResponse);
+                    otpRequestResponses.put(legId, legResponse);
+                } catch (CancellationException | CompletionException e) {
+                    LOG.error("Failed to get OTP leg response for {}.", legId, e);
+                }
+            });
 
         executor.shutdown();
         try {
@@ -108,21 +108,4 @@ public class ItineraryChecker {
         return otpRequestResponses;
     }
 
-    /**
-     * Assign an OTP request to a leg and start each call async to the OTP server.
-     */
-    private ConcurrentMap<String, CompletableFuture<Leg>> assignOtpRequestByLeg(
-        List<Leg> transitLegs,
-        ExecutorService executor
-    ) {
-        return transitLegs
-            .stream()
-            .collect(Collectors.toConcurrentMap(
-                leg -> leg.id,
-                leg -> CompletableFuture.supplyAsync(
-                    () -> legFinder.queryLeg(leg, targetDate),
-                    executor)
-                )
-            );
-    }
 }
