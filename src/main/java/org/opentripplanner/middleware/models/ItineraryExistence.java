@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.I18nUtils;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,9 +52,6 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  */
 public class ItineraryExistence extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryExistence.class);
-    private static final String OTP_REQUESTS_THREADING_ENABLED = getConfigPropertyAsText(
-        "OTP_REQUESTS_THREADING_ENABLED", "true"
-    );
 
     /**
      * Initial set of requests on which to base the itinerary existence checks. We do not want these persisted.
@@ -201,7 +199,7 @@ public class ItineraryExistence extends Model {
      */
     public void checkExistence(MonitoredTrip trip) {
         long startTime = System.currentTimeMillis();
-        boolean useThreading = isOtpRequestThreadingEnabled();
+        boolean useThreading = ItineraryUtils.isOtpRequestThreadingEnabled();
 
         Map<DayOfWeek, ItineraryCheckStatus> legResponses = useThreading
             ? getLegResponses(trip.itinerary, otpRequests)
@@ -312,10 +310,6 @@ public class ItineraryExistence extends Model {
                 otpRequest -> CompletableFuture.supplyAsync(
                     () -> getItineraryChecker(otpRequest, itinerary, getLegFinder), executor))
                 );
-    }
-
-    private static boolean isOtpRequestThreadingEnabled() {
-        return OTP_REQUESTS_THREADING_ENABLED.equalsIgnoreCase("true");
     }
 
     private static ItineraryCheckStatus getItineraryChecker(OtpRequest request, Itinerary itinerary, Function<LocalDate, LegFinder> getLegFinder) {

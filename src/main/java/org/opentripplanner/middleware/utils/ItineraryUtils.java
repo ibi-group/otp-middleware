@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
@@ -28,6 +29,9 @@ public class ItineraryUtils {
 
     public static final int ITINERARY_CHECK_WINDOW = 7;
     public static final int SERVICE_DAY_START_HOUR = getConfigPropertyAsInt("SERVICE_DAY_START_HOUR", 3);
+    private static final String OTP_REQUESTS_THREADING_ENABLED = getConfigPropertyAsText(
+        "OTP_REQUESTS_THREADING_ENABLED", "true"
+    );
 
     /**
      * Generates itinerary request data for the desired dates, based on the provided query parameters.
@@ -214,5 +218,9 @@ public class ItineraryUtils {
     public static boolean remainingTransitLegs(Itinerary itinerary) {
         Date now = DateTimeUtils.nowAsDate();
         return getTransitLegs(itinerary.legs).stream().anyMatch(leg -> now.before(leg.endTime));
+    }
+
+    public static boolean isOtpRequestThreadingEnabled() {
+        return OTP_REQUESTS_THREADING_ENABLED.equalsIgnoreCase("true");
     }
 }
