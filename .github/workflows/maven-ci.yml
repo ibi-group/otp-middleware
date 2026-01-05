@@ -2,6 +2,9 @@ name: Maven CI
 
 on: [push, pull_request]
 
+permissions:
+  id-token: write   # This is required for requesting AWS login tokens
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -22,12 +25,11 @@ jobs:
         with:
           path: ~/.m2
           key: maven-local-repo
-      - name: Add profile credentials to ~/.aws/credentials
-        run: ./scripts/add-aws-credentials.sh
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_REGION: us-east-1
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5.1.1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_CI_ROLE_ARN }}
       - name: Build with Maven (run unit tests)
         run: mvn --no-transfer-progress package
         env:
@@ -71,8 +73,6 @@ jobs:
           AUTH0_API_CLIENT: ${{ secrets.AUTH0_API_CLIENT }}
           AUTH0_API_SECRET: ${{ secrets.AUTH0_API_SECRET }}
           AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
-          AWS_PROFILE: default
-          AWS_REGION: us-east-1
           BUGSNAG_API_KEY: ${{ secrets.BUGSNAG_API_KEY }}
           BUGSNAG_ORGANIZATION: ${{ secrets.BUGSNAG_ORGANIZATION }}
           BUGSNAG_PROJECT_NOTIFIER_API_KEY: ${{ secrets.BUGSNAG_PROJECT_NOTIFIER_API_KEY }}
@@ -109,12 +109,6 @@ jobs:
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-region: us-east-1
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
