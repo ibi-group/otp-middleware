@@ -278,7 +278,7 @@ The special E2E client settings should be defined in `env.yml`:
 | AUTH0_API_CLIENT | string | Required | test-auth0-client-id | API client id required to authenticate with Auth0. |
 | AUTH0_API_SECRET | string | Required | test-auth0-secret | API secret id required to authenticate with Auth0. |
 | AUTH0_DOMAIN | string | Required | test.auth0.com | Auth0 tenant URL. |
-| AWS_PROFILE | string | Optional | default | AWS profile for credentials |
+| AWS_PROFILE | string | Optional | default | Optional AWS profile for credentials. If AWS_PROFILE is defined, a credentials file must also be present in the ~/.aws folder of the user executing OTP-middleware. |
 | AWS_API_SERVER | string | Optional | aws-api-id.execute-api.us-east-1.amazonaws.com | For generating the swagger document at runtime. Can be null, however that will prevent tools such as swagger-UI from submitting test requests to the API server. |
 | AWS_API_STAGE | string | Optional | stage-name | For generating the swagger document at runtime. Can be null, however that will prevent tools such as swagger-UI from submitting test requests to the API server. |
 | BUGSNAG_API_KEY | string | Required | 123e4567e89b12d3a4564266 | A valid Bugsnag authorization token. |
