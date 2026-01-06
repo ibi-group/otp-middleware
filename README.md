@@ -211,11 +211,9 @@ Refer to your cloud service for whitelisting IP addresses.
 
 ### Connected Data Platform
 
-#### AWS S3 Policy configuration
-An IAM access management S3 policy is required in order for an IAM user to write/delete objects on the Connected Data 
-Platform S3 bucket. 
+#### AWS Permissions
 
-The following permissions are required:
+The following permissions are required on the S3 bucket used by Connected Data Platform:
 1) ListBucket
 2) GetObject
 3) DeleteObject
@@ -223,7 +221,7 @@ The following permissions are required:
 5) PutObjectAcl
 
 The following snippet is an example policy which can be used/modified to allow access to the CDP S3 bucket:
-```bash
+```json
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -246,6 +244,31 @@ The following snippet is an example policy which can be used/modified to allow a
 }
 ```
 
+The following permissions are required to manage API keys in ApiGateway:
+1) GET
+2) PUT
+3) POST
+4) DELETE
+
+The following snippet is an example policy which can be used/modified to allow API key management:
+```json
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "VisualEditor0",
+			"Effect": "Allow",
+			"Action": [
+				"apigateway:DELETE",
+				"apigateway:PUT",
+				"apigateway:POST",
+				"apigateway:GET"
+			],
+			"Resource": "*"
+		}
+	]
+}
+```
 
 ## Testing
 
@@ -271,6 +294,60 @@ The special E2E client settings should be defined in `env.yml`:
 | AUTH0_CLIENT_SECRET | N/A | Special E2E application client secret. |
 
 **Note:** Just to reiterate, these are different from the server application settings and are only needed for E2E testing.
+
+#### AWS
+
+To run E2E tests, we allow GitHub to obtain AWS temporary tokens with the following permissions
+from the ibi-group/otp-middleware repo:
+
+- Permissions for ApiGateway: Same as Same as [Connected Data Platform](#connected-data-platform)
+- Permissions for S3: Same as [Connected Data Platform](#connected-data-platform)
+- Permissions for ECR (Elastic Container Registry) and ECR Public:
+  * GetAuthorizationToken
+  * BatchCheckLayerAvailability
+  * CompleteLayerUpload
+  * InitiateLayerUpload
+  * PutImage
+  * UploadLayerPart
+- Permissions for STS:
+  * GetServiceBearerToken 
+
+Below is an example policy template for the docker container permissions:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "VisualEditor0",
+      "Effect": "Allow",
+      "Action": [
+        "ecr-public:BatchCheckLayerAvailability",
+        "ecr-public:CompleteLayerUpload",
+        "ecr-public:InitiateLayerUpload",
+        "ecr-public:PutImage",
+        "ecr-public:UploadLayerPart",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:CompleteLayerUpload",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:UploadLayerPart"
+      ],
+      "Resource": "your-ecr-repository-arn"
+    },
+    {
+      "Sid": "VisualEditor1",
+      "Effect": "Allow",
+      "Action": [
+        "ecr-public:GetAuthorizationToken",
+        "ecr:GetAuthorizationToken",
+        "sts:GetServiceBearerToken"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
 
 ### env.schema.json values
 | Key | Type | Required | Example | Description |
