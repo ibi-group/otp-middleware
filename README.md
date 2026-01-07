@@ -300,7 +300,7 @@ The special E2E client settings should be defined in `env.yml`:
 To run E2E tests, we allow GitHub to obtain AWS temporary tokens with the following permissions
 from the ibi-group/otp-middleware repo:
 
-- Permissions for ApiGateway: Same as Same as [Connected Data Platform](#connected-data-platform)
+- Permissions for ApiGateway: Same as [Connected Data Platform](#connected-data-platform)
 - Permissions for S3: Same as [Connected Data Platform](#connected-data-platform)
 - Permissions for ECR (Elastic Container Registry) and ECR Public:
   * GetAuthorizationToken
