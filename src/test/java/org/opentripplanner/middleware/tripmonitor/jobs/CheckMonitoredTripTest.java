@@ -16,7 +16,10 @@ import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.response.EncodedPolyline;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
@@ -167,6 +170,63 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         assertTrue(checkMonitoredTrip.notifications.isEmpty());
         assertEquals(TRIP_UPCOMING, checkMonitoredTrip.journeyState.tripStatus);
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
+    }
+
+    @ParameterizedTest
+    @MethodSource("tripEndingPastMidnightCases")
+    void canMonitorTripEndingPastMidNight(
+        String startDate,
+        String startTime,
+        String endDate,
+        String endTime,
+        String targetDate
+    ) throws Exception {
+        MonitoredTrip trip = new MonitoredTrip();
+
+        Itinerary itinerary = new Itinerary();
+        ZonedDateTime start = DateTimeUtils.makeOtpZonedDateTime(startDate, startTime);
+        ZonedDateTime end = DateTimeUtils.makeOtpZonedDateTime(endDate, endTime);
+        itinerary.startTime = Date.from(start.toInstant());
+        itinerary.endTime = Date.from(end.toInstant());
+        Leg walkLeg = new Leg();
+        walkLeg.mode = "WALK";
+        walkLeg.from = new Place();
+        walkLeg.to = new Place();
+        walkLeg.legGeometry = new EncodedPolyline();
+        walkLeg.steps = new ArrayList<>();
+        walkLeg.transitLeg = false;
+        walkLeg.realTime = false;
+        itinerary.legs = List.of(walkLeg);
+        trip.itinerary = itinerary;
+        trip.updateAllDaysOfWeek(true);
+        trip.itineraryExistence = new ItineraryExistence();
+        trip.itineraryExistence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
+        trip.itineraryExistence.thursday = new ItineraryExistence.ItineraryExistenceResult();
+
+        DateTimeUtils.useFixedClockAt(start.minusMinutes(10));
+
+        Persistence.monitoredTrips.create(trip);
+        OtpResponse response = new OtpResponse();
+        response.plan = new TripPlan();
+        response.plan.itineraries = List.of(itinerary);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(trip, () -> response);
+        checkMonitoredTrip.run();
+
+        MonitoredTrip updated = Persistence.monitoredTrips.getById(trip.id);
+        assertEquals(TRIP_UPCOMING, checkMonitoredTrip.journeyState.tripStatus);
+        assertEquals(targetDate, updated.journeyState.targetDate);
+        PersistenceTestUtils.deleteMonitoredTrip(trip);
+    }
+
+    private static Stream<Arguments> tripEndingPastMidnightCases() {
+        return Stream.of(
+            // Wednesday
+            Arguments.of("2025-10-01", "23:50", "2025-10-02", "00:00", "2025-10-01"),
+            // Thursday
+            Arguments.of("2025-10-02", "00:00", "2025-10-02", "00:15", "2025-10-02"),
+            // Overlap
+            Arguments.of("2025-10-01", "23:50", "2025-10-02", "00:15", "2025-10-01")
+        );
     }
 
     @Test
