@@ -644,21 +644,21 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertNotEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
 
         // The current number of departed notifications should not have changed.
-        long updatedDepartedNotificationCount = pollDepartedNotificationCount(rerouteMonitoredTrip);
-        assertEquals(initialDepartedNotificationCount, updatedDepartedNotificationCount);
+        assertEquals(initialDepartedNotificationCount, pollDepartedNotificationCount(rerouteMonitoredTrip));
 
-        rerouteMonitoredTrip.tripTime = "12:31";
-        Itinerary beforeCheck = rerouteMonitoredTrip.journeyState.matchingItinerary;
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(rerouteMonitoredTrip);
+        MonitoredTrip tripAfterRerouting = Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id);
+        tripAfterRerouting.tripTime = "12:31";
+        Itinerary beforeCheck = tripAfterRerouting.journeyState.matchingItinerary;
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(tripAfterRerouting);
         checkMonitoredTrip.run();
-        Itinerary afterCheck = Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id).journeyState.matchingItinerary;
+        Itinerary afterCheck = Persistence.monitoredTrips.getById(tripAfterRerouting.id).journeyState.matchingItinerary;
         assertEquals(beforeCheck.duration, afterCheck.duration);
 
         // Reroute again from a different location.
         trackedJourney.locations.clear();
         trackedJourney.locations.add(reroutingPointPosition);
         reroutedItinerary = ManageTripTracking.rerouteTrip(
-            new TripTrackingData(rerouteMonitoredTrip, trackedJourney, trackedJourney.locations)
+            new TripTrackingData(tripAfterRerouting, trackedJourney, trackedJourney.locations)
         );
         assertEquals(expectedReroutedItinerary.duration, reroutedItinerary.duration);
         updated = Persistence.trackedJourneys.getById(trackedJourney.id);
@@ -690,9 +690,12 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             ZonedDateTime.ofInstant(resetTrip.journeyState.matchingItinerary.startTime.toInstant(), DateTimeUtils.getOtpZoneId()).toLocalDate()
         );
 
-        // Start tracking again from the same last position above. Traveler should be deviated.
-        startTrackingResponse = startTracking(startTrackingPayload, HttpStatus.OK_200);
+        // Start tracking again from a random position. Traveler should be deviated.
+        startTrackingResponse = startTracking(createStartTrackingPayload(), HttpStatus.OK_200);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+
+        // Departed (and other notifications) should have been cleared.
+        assertEquals(0, pollDepartedNotificationCount(rerouteMonitoredTrip));
 
         updateTrackingResponse = updateTracking(
             createUpdateTrackingPayload(trackedJourney.id, List.of(reroutingPointPosition)),
@@ -702,12 +705,10 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     private static long pollDepartedNotificationCount(MonitoredTrip rerouteMonitoredTrip) {
-        long initialDepartedNotificationCount =
-            Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id).journeyState.lastNotifications
-                .stream()
-                .filter(n -> n.type == NotificationType.DEPARTED_NOTIFICATION)
-                .count();
-        return initialDepartedNotificationCount;
+        return Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id).journeyState.lastNotifications
+            .stream()
+            .filter(n -> n.type == NotificationType.DEPARTED_NOTIFICATION)
+            .count();
     }
 
     /** Provides a mock OTP 'plan' rerouted response. */
