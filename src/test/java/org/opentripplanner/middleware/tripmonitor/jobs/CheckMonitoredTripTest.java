@@ -16,7 +16,6 @@ import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
-import org.opentripplanner.middleware.otp.response.EncodedPolyline;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
@@ -192,10 +191,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         walkLeg.mode = "WALK";
         walkLeg.from = new Place();
         walkLeg.to = new Place();
-        walkLeg.legGeometry = new EncodedPolyline();
-        walkLeg.steps = new ArrayList<>();
-        walkLeg.transitLeg = false;
-        walkLeg.realTime = false;
         itinerary.legs = List.of(walkLeg);
         trip.itinerary = itinerary;
         trip.updateAllDaysOfWeek(true);

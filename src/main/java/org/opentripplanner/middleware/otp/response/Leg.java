@@ -167,11 +167,15 @@ public class Leg implements Cloneable {
         Leg cloned = (Leg) super.clone();
         cloned.from = this.from.clone();
         cloned.to = this.to.clone();
-        cloned.steps = new ArrayList<>();
-        for (Step step : this.steps) {
-            cloned.steps.add(step.clone());
+        if (this.steps != null) {
+            cloned.steps = new ArrayList<>();
+            for (Step step : this.steps) {
+                cloned.steps.add(step.clone());
+            }
         }
-        cloned.legGeometry = this.legGeometry.clone();
+        if (this.legGeometry != null) {
+            cloned.legGeometry = this.legGeometry.clone();
+        }
         return cloned;
     }
 }
