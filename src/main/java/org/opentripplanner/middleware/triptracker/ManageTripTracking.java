@@ -16,7 +16,6 @@ import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.SelfLegInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.TripInstruction;
@@ -37,9 +36,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.i18n.Message.TRIP_REROUTED_NOTIFICATION;
 import static org.opentripplanner.middleware.otp.response.Itinerary.getShortestDuration;
@@ -121,8 +118,6 @@ public class ManageTripTracking {
 
             if (create) {
                 Persistence.trackedJourneys.create(trackedJourney);
-                removeLiveTrackingNotifications(tripData);
-                Persistence.monitoredTrips.replace(tripData.trip.id, tripData.trip);
             } else {
                 Persistence.trackedJourneys.updateField(
                     trackedJourney.id,
@@ -172,21 +167,6 @@ public class ManageTripTracking {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
         }
         return null;
-    }
-
-    /**
-     * Remove live tracking notifications from a trip's journey state.
-     */
-    private static void removeLiveTrackingNotifications(TripTrackingData tripData) {
-        List<NotificationType> trackingNotificationTypes = List.of(
-            NotificationType.DEPARTED_NOTIFICATION,
-            NotificationType.ARRIVED_NOTIFICATION,
-            NotificationType.MODE_CHANGE_NOTIFICATION
-        );
-        tripData.trip.journeyState.lastNotifications = tripData.trip.journeyState.lastNotifications
-            .stream()
-            .filter(n -> !trackingNotificationTypes.contains(n.type))
-            .collect(Collectors.toSet());
     }
 
     /**
