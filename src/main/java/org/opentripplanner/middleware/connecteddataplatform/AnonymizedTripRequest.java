@@ -87,7 +87,7 @@ public class AnonymizedTripRequest {
         // Extract all trip summary itineraries, convert to anonymized itineraries and group.
         int tripSummaryId = 1;
         for (TripSummary tripSummary : tripSummaries) {
-            if (!tripSummary.errors.isEmpty()) {
+            if (tripSummary.errors != null && !tripSummary.errors.isEmpty()) {
                 // If trip summary has an error, add it to the anonymized trip request and don't attempt to process the
                 // trip summary itineraries, because there won't be any.
                 this.errors = tripSummary.errors;
