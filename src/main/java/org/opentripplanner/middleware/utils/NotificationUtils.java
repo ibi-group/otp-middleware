@@ -497,7 +497,7 @@ public class NotificationUtils {
         int firstBracketIndex = fromEmail.indexOf('<');
         int lastBracketIndex = fromEmail.indexOf('>');
 
-        // HACK: If the OTP user does not have a name, fall back on email and replace the "@" sign,
+        // If the OTP user does not have a name, fall back on email and replace the "@" sign,
         // so that the user's email does not override the application email in brackets.
         if (firstBracketIndex < 0 || lastBracketIndex < 0) {
             return String.format("%s <%s>", otpUser.getDisplayedName(), fromEmail);
