@@ -165,16 +165,16 @@ public class Leg implements Cloneable {
     @Override
     protected Leg clone() throws CloneNotSupportedException {
         Leg cloned = (Leg) super.clone();
-        cloned.from = this.from.clone();
-        cloned.to = this.to.clone();
-        if (this.steps != null) {
+        cloned.from = from.clone();
+        cloned.to = to.clone();
+        if (steps != null) {
             cloned.steps = new ArrayList<>();
-            for (Step step : this.steps) {
+            for (Step step : steps) {
                 cloned.steps.add(step.clone());
             }
         }
-        if (this.legGeometry != null) {
-            cloned.legGeometry = this.legGeometry.clone();
+        if (legGeometry != null) {
+            cloned.legGeometry = legGeometry.clone();
         }
         return cloned;
     }
