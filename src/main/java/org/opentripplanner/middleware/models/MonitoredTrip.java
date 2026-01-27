@@ -565,12 +565,16 @@ public class MonitoredTrip extends Model {
      * (Itinerary existence is not being checked, assuming that clients prevent monitoring days when a trip doesn't exist.)
      */
     public ZonedDateTime findEarliestTargetDate(ZonedDateTime fromDateTime) {
+        ZonedDateTime itineraryStartTimeToday = makeOtpZonedDateTime(
+            fromDateTime,
+            itinerary.startTime.toInstant()
+        );
         ZonedDateTime itineraryEndTimeToday = makeOtpZonedDateTime(
             fromDateTime,
             itinerary.endTime.toInstant()
         );
 
-        int daysToAdd = fromDateTime.toInstant().isAfter(itineraryEndTimeToday.toInstant()) ? 1 : 0;
+        int daysToAdd = fromDateTime.isAfter(itineraryStartTimeToday) && fromDateTime.isAfter(itineraryEndTimeToday) ? 1 : 0;
 
         ZonedDateTime nextStartDay = makeOtpZonedDateTime(
             fromDateTime.plusDays(daysToAdd),
