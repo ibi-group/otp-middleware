@@ -204,8 +204,8 @@ public class Leg implements Cloneable {
     @Override
     protected Leg clone() throws CloneNotSupportedException {
         Leg cloned = (Leg) super.clone();
-        cloned.from = from.clone();
-        cloned.to = to.clone();
+        if (from != null) cloned.from = from.clone();
+        if (to != null) cloned.to = to.clone();
         if (steps != null) {
             cloned.steps = new ArrayList<>();
             for (Step step : steps) {
