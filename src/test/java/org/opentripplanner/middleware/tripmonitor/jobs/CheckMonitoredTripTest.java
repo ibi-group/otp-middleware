@@ -206,7 +206,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         OtpResponse response = new OtpResponse();
         response.plan = new TripPlan();
         response.plan.itineraries = List.of(itinerary);
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(trip, () -> response);
+        CheckMonitoredTrip checkMonitoredTrip = tripChecker(trip, firstItinerary(response));
         checkMonitoredTrip.run();
 
         MonitoredTrip updated = Persistence.monitoredTrips.getById(trip.id);
