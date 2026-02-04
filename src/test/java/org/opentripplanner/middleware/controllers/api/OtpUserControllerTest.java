@@ -39,6 +39,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Users.createAuth0UserForEmail;
+import static org.opentripplanner.middleware.auth.Auth0Users.getUserByEmail;
+import static org.opentripplanner.middleware.auth.Auth0Users.getAuth0Locale;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeGetRequest;
@@ -292,6 +294,28 @@ public class OtpUserControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(RelatedUser.RelatedUserStatus.INVALID, updatedTripWithCompanionAndObserver.companion.status);
         assertFalse(updatedTripWithCompanionAndObserver.observers.isEmpty());
         assertEquals(RelatedUser.RelatedUserStatus.INVALID, updatedTripWithCompanionAndObserver.observers.get(0).status);
+    }
+
+    @Test
+    void canPassUserMetadataToAuth0() throws Exception {
+        relatedUserFour.preferredLocale = "fr";
+
+        // Confirm the user as currently exists in Auth0 does not contain metadata
+        User auth0UserProfile = getUserByEmail(relatedUserFour.email, false);
+        assertNotNull(auth0UserProfile);
+        assertNull(auth0UserProfile.getUserMetadata());
+
+        makeRequest(
+            String.format("api/secure/user/%s", relatedUserFour.id),
+            JsonUtils.toJson(relatedUserFour),
+            getMockHeaders(relatedUserFour),
+            HttpMethod.PUT
+        );
+
+        // Confirm that the same user now has language metadata set correctly
+        User updatedAuth0UserProfile = getUserByEmail(relatedUserFour.email, false);
+        assertNotNull(updatedAuth0UserProfile);
+        assertEquals(getAuth0Locale(relatedUserFour.preferredLocale), updatedAuth0UserProfile.getUserMetadata().get("lang"));
     }
 
     /**

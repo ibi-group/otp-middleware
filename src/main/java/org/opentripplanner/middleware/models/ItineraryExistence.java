@@ -2,28 +2,48 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.TripPlan;
+import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.opentripplanner.middleware.utils.I18nUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryMatcher;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.i18n.Message.ENUM_SEPARATOR;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK;
+import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK_ON_DAY;
+import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
@@ -33,6 +53,9 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  */
 public class ItineraryExistence extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryExistence.class);
+    private static final String OTP_REQUESTS_THREADING_ENABLED = getConfigPropertyAsText(
+        "OTP_REQUESTS_THREADING_ENABLED", "true"
+    );
 
     /**
      * Initial set of requests on which to base the itinerary existence checks. We do not want these persisted.
@@ -169,27 +192,36 @@ public class ItineraryExistence extends Model {
     /**
      * @return A string containing the days of week (and first date found) for which the trip is not possible.
      */
-    @JsonIgnore
-    @BsonIgnore
-    public String getInvalidDaysOfWeekMessage() {
+    public String getInvalidDaysOfWeekMessage(Locale locale) {
         List<String> invalidDaysOfWeek = new ArrayList<>();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale);
+        String enumSeparator = ENUM_SEPARATOR.get(locale);
+
         for (DayOfWeek dow : DayOfWeek.values()) {
             ItineraryExistenceResult resultForDayOfWeek = getResultForDayOfWeek(dow);
             if (resultForDayOfWeek != null && !resultForDayOfWeek.isValid()) {
-                invalidDaysOfWeek.add(String.format("%s (no trip %s)",
-                    dow.getDisplayName(TextStyle.FULL, Locale.ENGLISH), // TODO: i18n
-                    String.join(", ", resultForDayOfWeek.invalidDates)
+                invalidDaysOfWeek.add(String.format(TRIP_NOT_POSSIBLE_CHECK_ON_DAY.get(locale),
+                    dow.getDisplayName(TextStyle.FULL, locale),
+                    resultForDayOfWeek.invalidDates.stream()
+                        .map(d -> dateFormatter.format(DateTimeFormatter.ISO_LOCAL_DATE.parse(d)))
+                        .collect(Collectors.joining(enumSeparator))
                 ));
             }
         }
-        return String.join(", ", invalidDaysOfWeek);
+        return String.join(enumSeparator, invalidDaysOfWeek);
     }
 
     /**
      * Checks whether the itinerary of a trip matches any of the OTP itineraries from the trip query params.
      */
     public void checkExistence(MonitoredTrip trip) {
-        // TODO: Consider multi-threading?
+
+        long startTime = System.currentTimeMillis();
+
+        Map<DayOfWeek, OtpResponse> otpResponses = isOtpRequestThreadingEnabled()
+            ? getOtpResponses(otpRequests)
+            : Collections.emptyMap();
+
         // Check existence of itinerary in the response for each OTP request.
         int index = 0;
         for (OtpRequest otpRequest : otpRequests) {
@@ -204,8 +236,9 @@ public class ItineraryExistence extends Model {
                 setResultForDayOfWeek(result, dayOfWeek);
             }
 
-            // Send off each plan query to OTP.
-            OtpResponse response = this.otpResponseProvider.apply(otpRequest);
+            OtpResponse response = isOtpRequestThreadingEnabled()
+                ? otpResponses.get(dayOfWeek)
+                : otpResponseProvider.apply(otpRequest);
             if (response == null) {
                 LOG.warn("Itinerary existence check failed on {} for trip {} - OTP response was null.", dayOfWeek , trip.id);
             } else {
@@ -217,9 +250,10 @@ public class ItineraryExistence extends Model {
                         // If a matching itinerary on the same service day as the request date is found,
                         // save the date with the matching itinerary.
                         // (The matching itinerary will replace the original trip.itinerary.)
+                        ItineraryMatcher matcher = new ItineraryMatcher(referenceItinerary, itineraryCandidate);
                         if (
                             ItineraryUtils.occursOnSameServiceDay(itineraryCandidate, otpRequest.dateTime, tripIsArriveBy) &&
-                            ItineraryUtils.itinerariesMatch(referenceItinerary, itineraryCandidate)
+                            matcher.match()
                         ) {
                             result.handleValidDate(otpRequest.dateTime, itineraryCandidate);
                             hasMatchingItinerary = true;
@@ -239,12 +273,80 @@ public class ItineraryExistence extends Model {
             }
         }
         if (!allMonitoredDaysAreValid(trip)) {
+            OtpUser user = Persistence.otpUsers.getById(trip.userId);
+            Locale locale = I18nUtils.getOtpUserLocale(user);
             this.message = String.format(
-                "The trip is not possible on the following days of the week you have selected: %s. Real-time conditions have changed since this trip was planned. Return to the trip planner, plan a new trip, and save the result.",
-                getInvalidDaysOfWeekMessage()
+                TRIP_NOT_POSSIBLE_CHECK.get(locale),
+                getInvalidDaysOfWeekMessage(locale)
             );
             this.error = true;
         }
+
+        long timeToComplete = System.currentTimeMillis() - startTime;
+        LOG.info(
+            "Time to complete itinerary existence checks: {} ms (Threaded: {})",
+            timeToComplete,
+            isOtpRequestThreadingEnabled()
+        );
+    }
+
+    /**
+     * Execute OTP requests and process the responses in a custom executor. Each response is assign to a day of the week.
+     */
+    private Map<DayOfWeek, OtpResponse> getOtpResponses(List<OtpRequest> otpRequestsToProcess) {
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        ConcurrentMap<DayOfWeek, CompletableFuture<OtpResponse>> otpRequestTasks = assignOtpRequestToDayOfWeek(
+            otpRequestsToProcess,
+            executor
+        );
+
+        Map<DayOfWeek, OtpResponse> otpRequestResponses = new EnumMap<>(DayOfWeek.class);
+
+        otpRequestTasks.forEach((dayOfWeek, future) -> {
+            OtpResponse response = null;
+            try {
+                // Wait for completion and assign response.
+                response = future.join();
+            } catch (CancellationException | CompletionException e) {
+                LOG.error("Failed to get OTP response for {}.", dayOfWeek, e);
+            }
+            LOG.debug("OTP response for {}: {}", dayOfWeek, response);
+            otpRequestResponses.put(dayOfWeek, response);
+        });
+
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS)) {
+                LOG.warn(
+                    "OTP requests terminated, time out reached ({} seconds). Shutting down executor.",
+                    OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS
+                );
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            LOG.warn("OTP requests were interrupted! Shutting down executor.", e);
+            executor.shutdownNow();
+        }
+        return otpRequestResponses;
+    }
+
+    /**
+     * Assign an OTP request to a day of the week and start each call async to the OTP server.
+     */
+    private ConcurrentMap<DayOfWeek, CompletableFuture<OtpResponse>> assignOtpRequestToDayOfWeek(
+        List<OtpRequest> otpRequests,
+        ExecutorService executor
+    ) {
+        return otpRequests
+            .stream()
+            .collect(Collectors.toConcurrentMap(
+                otpRequest -> otpRequest.dateTime.getDayOfWeek(),
+                otpRequest -> CompletableFuture.supplyAsync(() -> otpResponseProvider.apply(otpRequest), executor))
+            );
+    }
+
+    private static boolean isOtpRequestThreadingEnabled() {
+        return OTP_REQUESTS_THREADING_ENABLED.equalsIgnoreCase("true");
     }
 
     /** Log instances of itinerary not found. */

@@ -17,6 +17,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.function.Supplier;
 
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 
 /**
@@ -29,11 +30,6 @@ public class OtpDispatcher {
     private static final Logger LOG = LoggerFactory.getLogger(OtpDispatcher.class);
 
     /**
-     * Location of the OTP plan endpoint (e.g. /routers/default/plan).
-     */
-    public static final String OTP_PLAN_ENDPOINT = getConfigPropertyAsText("OTP_PLAN_ENDPOINT", "/routers/default/plan");
-
-    /**
      * Location of the OTP GraphQL endpoint (e.g. /routers/default/index/graphql).
      */
     public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/routers/default/index/graphql");
@@ -42,7 +38,9 @@ public class OtpDispatcher {
      * Match the OTP GraphQL request timeout defined at
      * https://github.com/opentripplanner/OpenTripPlanner/blob/176e5f51923e82f8a4c2aa2a0b8284e1497b4439/src/main/java/org/opentripplanner/apis/gtfs/GtfsGraphQLAPI.java#L54
      */
-    private static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = 30;
+    public static final int OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS = getConfigPropertyAsInt(
+        "OTP_REQUESTS_TERMINATION_TIMEOUT_SECONDS", 30
+    );
 
     /**
      * Provides a response from the OTP server target service based on the query parameters provided.
@@ -68,14 +66,6 @@ public class OtpDispatcher {
     }
 
     /**
-     * Provides a response from the OTP server target service based on the query parameters provided.
-     */
-    public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, String query) {
-        LOG.debug("Original query string: {}", query);
-        return sendOtpRequest(buildOtpUri(version, query, OTP_PLAN_ENDPOINT));
-    }
-
-    /**
      * Provides a response from the OTP server target service based on the input {@link OtpRequest}.
      */
     public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, OtpRequest otpRequest) {
@@ -96,14 +86,6 @@ public class OtpDispatcher {
             HttpUtils.HEADERS_JSON,
             JsonUtils.toJson(query).replace("\\\\n", "\\n").replace("\\\\\"", "\"")
         );
-    }
-
-    /**
-     * Provides a response from the OTP server target service based on the query parameters provided. This is used only
-     * during testing.
-     */
-    public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, String from, String to, String time) {
-        return sendOtpPlanRequest(version, String.format("fromPlace=%s&toPlace=%s&time=%s", from, to, time));
     }
 
     /**
@@ -145,10 +127,6 @@ public class OtpDispatcher {
                 headers,
                 bodyContent);
         return new OtpDispatcherResponse(otpResponse);
-    }
-
-    public static OtpResponse sendOtpRequestWithErrorHandling(String sentParams) {
-        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP2, sentParams));
     }
 
     public static OtpResponse sendOtpRequestWithErrorHandling(OtpRequest otpRequest) {

@@ -1,5 +1,5 @@
 # otp-middleware
-The otp-middleware application proxies requests from OpenTripPlanner UI to API, 
+The otp-middleware application proxies requests from OpenTripPlanner UI to API (v2.x), 
 enhancing [OpenTripPlanner](https://www.opentripplanner.org) (OTP) with user
 storage, real-time trip monitoring, and more!
 
@@ -55,7 +55,7 @@ cp configurations/default/env.yml.tmp configurations/default/env.yml
 # executable jar, or import and run the code in an interactive 
 # development environment. 
 mvn package
-java -jar target/otp-middleware.jar configurations/default/env.yml
+java -jar target/otp-middleware.jar configurations/default/env.yml --endpoints
 ```
 
 It's also possible to run otp-middleware via Docker (see Deployment above)
@@ -93,7 +93,6 @@ The follow parameters are used to interact with an OTP server.
 | Parameter | Description | Example |
 | --- | --- | --- |
 | OTP_API_ROOT | This is the address of the OTP server, including the root path to the OTP API, to which all OTP related requests will be sent to. | http://otp-server.example.com/otp | 
-| OTP_PLAN_ENDPOINT | This defines the plan endpoint part of the requesting URL. If a request is made to this, the assumption is that a plan request has been made and that the response should be processed accordingly. | /plan |
 
 ### Trip Actions
 
@@ -370,6 +369,7 @@ Below is an example policy template for the docker container permissions:
 | CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME | string | Optional | folder-name | Specifies the S3 folder name for the CDP trip history push. |
 | CONNECTED_DATA_PLATFORM_REPORTED_ENTITIES | object | Optional | { "MonitoredTrip": "all", "OtpUser": "all", "TripRequest": "interval" } | Use 'all' to report all full records. Use 'interval' to report full records whose dateCreated is within a reporting interval (e.g. day, hour). For TripRequest, you can use 'all anonymized' or 'interval anonymized' to anonymize records. Omitted entities are ignored. |
 | CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES | integer | Optional | 5 | CDP trip history upload frequency. |
+| CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME | string | Optional | 03:30 | CDP trip history upload start time of day in HH:MM format. |
 | CONNECTED_DATA_PLATFORM_UPLOAD_BLANK_FILES | boolean | Optional | true | Whether to upload files where no records have been written. Defaults to true. |
 | CONSECUTIVE_DEVIATIONS_WINDOW_SECONDS | integer | Optional | 30 | A window used in conjunction with tracking update frequency to define a consecutive deviation threshold. |
 | DEFAULT_USAGE_PLAN_ID | string | Required | 123e45 | AWS API gateway default usage plan used when creating API keys for API users. |
@@ -386,9 +386,9 @@ Below is an example policy template for the docker container permissions:
 | OTP_ADMIN_DASHBOARD_FROM_EMAIL | string | Optional | OTP Admin Dashboard <no-reply@email.com> | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_ADMIN_DASHBOARD_NAME | string | Optional | OTP Admin Dashboard | Config setting for linking to the OTP Admin Dashboard. |
 | OTP_ADMIN_DASHBOARD_URL | string | Optional | https://admin.example.com | Config setting for linking to the OTP Admin Dashboard. |
-| OTP_API_ROOT | string | Required | http://otp-server.example.com/otp | The URL of an operational OTP1 server. |
-| OTP2_API_ROOT | string | Optional | http://otp2-server.example.com/otp | The URL of an operational OTP2 server. |
-| OTP_PLAN_ENDPOINT | string | Optional | /routers/default/plan | The path to the OTP server trip planning endpoint. |
+| OTP_API_ROOT | string | Required | http://otp-server.example.com/otp | The URL of an operational OTP (v2.x) server. |
+| OTP_REQUESTS_THREADING_ENABLED | string | Optional | true | Use multi-threading to handle OTP requests and responses. |
+| OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS | integer | Optional | 30 | The maximum time for making requests to OTP. |
 | OTP_TIMEZONE | string | Required | America/Los_Angeles | The timezone identifier that OTP is using to parse dates and times. OTP will use the timezone identifier that it finds in the first available agency to parse dates and times. |
 | OTP_UI_NAME | string | Optional | Trip Planner | Config setting for linking to the OTP UI (trip planner). |
 | OTP_UI_URL | string | Optional | https://plan.example.com | Config setting for linking to the OTP UI (trip planner). |

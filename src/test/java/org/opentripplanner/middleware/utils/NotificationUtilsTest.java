@@ -167,4 +167,19 @@ class NotificationUtilsTest {
             Arguments.of(emailAlias, user2, user2.name)
         );
     }
+
+    @ParameterizedTest
+    @MethodSource("userInFromEmailCases")
+    void replaceUserNameInFromEmail(String fromEmail, String userEmail, String expected) {
+        OtpUser user = new OtpUser();
+        user.email = userEmail;
+        assertEquals(expected, NotificationUtils.replaceUserNameInFromEmail(fromEmail, user));
+    }
+
+    private static Stream<Arguments> userInFromEmailCases() {
+        return Stream.of(
+            Arguments.of("noreply@example.com", "user.email@example.com", "user.email at example.com <noreply@example.com>"),
+            Arguments.of("Notifier <noreply@example.com>", "user.email@example.com", "user.email at example.com <noreply@example.com>")
+        );
+    }
 }

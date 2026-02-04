@@ -22,16 +22,17 @@ import spark.Service;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_GRAPHQL_ENDPOINT;
-import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_PLAN_ENDPOINT;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 import static spark.Service.ignite;
 
@@ -51,7 +52,7 @@ public class OtpTestUtils {
 
     /** Contains an OTP response with no itinerary found. */
     public static final OtpDispatcherResponse OTP_DISPATCHER_PLAN_ERROR_RESPONSE =
-        initializeMockPlanResponse("otp/response/planErrorResponse.json");
+        initializeMockPlanResponse("otp/response/planErrorResponse-otp2.json");
 
 
     /** OTP2 plan mock response.
@@ -69,6 +70,9 @@ public class OtpTestUtils {
 
     public static final OtpDispatcherResponse REROUTE_PLAN_RESPONSE =
         initializeMockPlanResponse("otp/response/rerouteResponse.json");
+
+    public static final OtpDispatcherResponse OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_QUERIED_AT_MIDNIGHT =
+        initializeMockPlanResponse("otp/response/trip-queried-at-midnight.json");
 
     /**
      * Prevents the mock OTP server from being initialized more than once
@@ -106,7 +110,6 @@ public class OtpTestUtils {
         }
         Service http = ignite().port(8080);
         http.post("/otp" + OTP_GRAPHQL_ENDPOINT, OtpTestUtils::mockOtpPlanResponse);
-        http.get("/otp" + OTP_PLAN_ENDPOINT, OtpTestUtils::mockOtpPlanResponse);
         http.get("/*", (request, response) -> {
             logMessageAndHalt(
                 request,
@@ -177,15 +180,8 @@ public class OtpTestUtils {
     /**
      * Submit plan query to OTP server and return the response.
      */
-    public static OtpDispatcherResponse sendSamplePlanRequest() {
-        // Submit a query to the OTP server.
-        // From P&R to Downtown Orlando
-        return OtpDispatcher.sendOtpPlanRequest(
-            OtpVersion.OTP1,
-            "28.45119,-81.36818",
-            "28.54834,-81.37745",
-            "08:35"
-        );
+    public static OtpDispatcherResponse sendSamplePlanRequest(OtpGraphQLVariables variables) {
+        return OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP2, variables);
     }
 
     /**
@@ -199,7 +195,7 @@ public class OtpTestUtils {
         return params;
     }
 
-    public static List<OtpResponse> createMockOtpResponsesForTripExistence() throws Exception {
+    public static Map<DayOfWeek, OtpResponse> createMockOtpResponsesForTripExistence() throws Exception {
         // Set up monitored days and mock responses for itinerary existence check, ordered by day.
         LocalDate today = DateTimeUtils.nowAsLocalDate();
         List<String> monitoredTripDates = new ArrayList<>();
@@ -244,12 +240,15 @@ public class OtpTestUtils {
     }
 
     public static JourneyState createDefaultJourneyState(Supplier<OtpResponse> otpResponseProvider) {
-        return createDefaultJourneyState(firstItinerary(otpResponseProvider.get()));
+        List<Itinerary> itineraries = otpResponseProvider.get().plan.itineraries;
+        return createDefaultJourneyState(itineraries.isEmpty() ? null : itineraries.get(0));
     }
 
     private static JourneyState createDefaultJourneyState(Itinerary defaultItinerary) {
         JourneyState journeyState = new JourneyState();
-        journeyState.tripStatus = defaultItinerary.isActive()
+        journeyState.tripStatus = defaultItinerary == null
+            ? null
+            : defaultItinerary.isActive()
             ? TripStatus.TRIP_ACTIVE
             : TripStatus.TRIP_UPCOMING;
         journeyState.matchingItinerary = defaultItinerary;

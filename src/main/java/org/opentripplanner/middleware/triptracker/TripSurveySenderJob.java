@@ -7,7 +7,9 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.models.TripSurveyNotification;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
 import org.opentripplanner.middleware.utils.NotificationUtils;
+import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -39,7 +42,7 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
 /**
  * This job will analyze completed trips with deviations and send survey notifications about select trips.
  */
-public class TripSurveySenderJob implements Runnable {
+public class TripSurveySenderJob implements Runnable, RecurringJobScheduler {
     private static final Logger LOG = LoggerFactory.getLogger(TripSurveySenderJob.class);
 
     public static final int CONSECUTIVE_DEVIATIONS_WINDOW_SECONDS
@@ -166,5 +169,15 @@ public class TripSurveySenderJob implements Runnable {
             .stream()
             .filter(j -> j.longestConsecutiveDeviatedPoints >= consecutiveDeviationsThreshold)
             .max(Comparator.comparingInt(j -> j.longestConsecutiveDeviatedPoints));
+    }
+
+    @Override
+    public void scheduleRecurringJob() {
+        Scheduler.scheduleJob(
+            new TripSurveySenderJob(),
+            0,
+            30,
+            TimeUnit.MINUTES
+        );
     }
 }

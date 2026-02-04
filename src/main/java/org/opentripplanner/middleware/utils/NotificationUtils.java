@@ -2,7 +2,9 @@ package org.opentripplanner.middleware.utils;
 
 import com.google.gson.Gson;
 import com.sparkpost.Client;
+import com.sparkpost.exception.SparkPostException;
 import com.sparkpost.model.responses.Response;
+import com.sparkpost.model.responses.ServerErrorResponse;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.rest.verify.v2.service.Verification;
@@ -167,12 +169,17 @@ public class NotificationUtils {
                 jsonBody
             );
             if (httpResponse.status == 200) {
+                LOG.info("Push notification sent to user {}", toUser.id);
                 return "OK";
             } else {
-                LOG.error("Error {} while trying to initiate push notification", httpResponse.status);
+                LOG.error(
+                    "Error {} while trying to initiate push notification to user {}",
+                    httpResponse.status,
+                    toUser.id
+                );
             }
         } catch (Exception e) {
-            LOG.error("Could not initiate push notification", e);
+            LOG.error("Could not initiate push notification to user {}", toUser.id , e);
         }
         return null;
     }
@@ -373,10 +380,17 @@ public class NotificationUtils {
         try {
             Client client = new Client(SPARKPOST_KEY);
             Response response = client.sendMessage(fromEmail, toEmail, subject, text, html);
-            LOG.info("Notification sent to {} status: {}", toEmail, response.getResponseMessage());
+            LOG.info("Email notification sent to {} Status: {}", toEmail, response.getResponseMessage());
             return true;
-            // TODO: Is there a more specific exception we're ok with here?
-        } catch (Exception e) {
+        } catch (SparkPostException e) {
+            LOG.error(
+                "Email notification not sent to {} Status: {}",
+                toEmail,
+                e.getServerErrorResponses()
+                    .getErrors()
+                    .stream()
+                    .map(ServerErrorResponse::getMessage)
+                    .collect(Collectors.joining(" + ")));
             BugsnagReporter.reportErrorToBugsnag(
                 String.format("Could not send notification to %s", toEmail),
                 e
@@ -496,9 +510,14 @@ public class NotificationUtils {
 
         int firstBracketIndex = fromEmail.indexOf('<');
         int lastBracketIndex = fromEmail.indexOf('>');
-        // HACK: If falling back on email, replace the "@" sign so that the user's email does not override the
-        // application email in brackets.
-        return String.format("%s %s", otpUser.getDisplayedName(), fromEmail.substring(firstBracketIndex, lastBracketIndex + 1));
+
+        // If the OTP user does not have a name, fall back on email and replace the "@" sign,
+        // so that the user's email does not override the application email in brackets.
+        if (firstBracketIndex < 0 || lastBracketIndex < 0) {
+            return String.format("%s <%s>", otpUser.getDisplayedName(), fromEmail);
+        } else {
+            return String.format("%s %s", otpUser.getDisplayedName(), fromEmail.substring(firstBracketIndex, lastBracketIndex + 1));
+        }
     }
 
     /**

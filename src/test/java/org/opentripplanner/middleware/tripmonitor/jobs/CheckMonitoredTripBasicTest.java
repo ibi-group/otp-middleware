@@ -5,6 +5,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -120,9 +121,12 @@ public class CheckMonitoredTripBasicTest {
         itinerary.startTime = start;
         itinerary.endTime = Date.from(now.plusSeconds(endOffsetSecs));
 
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.time = DateTimeUtils.makeOtpZonedDateTime(start).format(DateTimeFormatter.ISO_LOCAL_TIME);
+
         MonitoredTrip trip = new MonitoredTrip();
         trip.itinerary = itinerary;
-        trip.tripTime = DateTimeUtils.makeOtpZonedDateTime(start).format(DateTimeFormatter.ISO_LOCAL_TIME);
+        trip.otp2QueryParams = params;
         trip.leadTimeInMinutes = 30;
         return trip;
     }
@@ -134,10 +138,13 @@ public class CheckMonitoredTripBasicTest {
         // 10:25 am on some specified day in April 2025.
         ZonedDateTime fromDateTime = ZonedDateTime.of(2025, 4, fromDay, 10, 25, 0, 0, zoneId);
 
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.time = "09:00";
+
         MonitoredTrip trip = makeMonitoredTripFromNow(300, 600);
         // Set the itinerary start time to 09:00 am, before the 'from' time above, on a different day (e.g. fromDay + 1).
         Instant itineraryStartInstant = fromDateTime.plusDays(1).withHour(9).withMinute(0).toInstant();
-        trip.tripTime = "09:00";
+        trip.otp2QueryParams = params;
         trip.itinerary.startTime = Date.from(itineraryStartInstant);
         trip.itinerary.endTime = Date.from(itineraryStartInstant.plusSeconds(300));
         trip.updateAllDaysOfWeek(false);
@@ -145,8 +152,8 @@ public class CheckMonitoredTripBasicTest {
 
         LocalDate expectedDate = fromDateTime.withDayOfMonth(expectedDay).toLocalDate();
         assertEquals(
-            ZonedDateTime.of(expectedDate, LocalTime.parse(trip.tripTime, DateTimeFormatter.ISO_LOCAL_TIME), zoneId),
-            CheckMonitoredTrip.findEarliestTargetDate(trip, fromDateTime),
+            ZonedDateTime.of(expectedDate, LocalTime.parse(trip.otp2QueryParams.time, DateTimeFormatter.ISO_LOCAL_TIME), zoneId),
+            trip.findEarliestTargetDate(fromDateTime),
             message
         );
     }

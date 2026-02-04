@@ -178,28 +178,43 @@ public class TypedPersistence<T extends Model> {
      * Build a filter for querying Mongo based on userId and from/to dates.
      */
     public static Bson filterByUserAndDateRange(String userId, Date fromDate, Date toDate) {
+        return Filters.and(
+            filterByUserId(userId),
+            filterByDateRange(fromDate, toDate)
+        );
+    }
+
+    /**
+     * Build a filter for querying Mongo documents where dateCreated field matches the specified from/to dates.
+     */
+    public static Bson filterByDateRange(Date fromDate, Date toDate) {
+        return filterByDateRange("dateCreated", fromDate, toDate);
+    }
+
+    /**
+     * Build a filter for querying Mongo documents where the specified date field matches the specified from/to dates.
+     */
+    public static Bson filterByDateRange(String fieldName, Date fromDate, Date toDate) {
         Set<Bson> clauses = new HashSet<>();
-        if (userId == null) {
-            throw new IllegalArgumentException("userId is required to be non-null.");
-        }
-        // user id is required, so as a minimum return all entities for user.
-        clauses.add(eq("userId", userId));
         // Get all entities created since the supplied "from date".
         if (fromDate != null) {
-            clauses.add(gte("dateCreated", fromDate));
+            clauses.add(gte(fieldName, fromDate));
         }
         // Get all entities created until the supplied "to date".
         if (toDate != null) {
-            clauses.add(lte("dateCreated", toDate));
+            clauses.add(lte(fieldName, toDate));
         }
-        return Filters.and(clauses);
+        return clauses.isEmpty() ? Filters.empty() : Filters.and(clauses);
     }
 
     /**
      * Build a filter for querying Mongo based on userId.
      */
     public static Bson filterByUserId(String userId) {
-        return filterByUserAndDateRange(userId, null, null);
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required to be non-null.");
+        }
+        return eq("userId", userId);
     }
 
     /**

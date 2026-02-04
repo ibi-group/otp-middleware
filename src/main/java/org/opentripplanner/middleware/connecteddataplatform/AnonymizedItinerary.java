@@ -41,11 +41,6 @@ public class AnonymizedItinerary {
     public Integer transfers = 0;
 
     /**
-     * How much time is spent on transit, in seconds.
-     */
-    public Long transitTime = 0L;
-
-    /**
      * How much time is spent waiting for transit to arrive, in seconds.
      */
     public Long waitingTime = 0L;

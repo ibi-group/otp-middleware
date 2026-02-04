@@ -2,6 +2,8 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import com.mongodb.BasicDBObject;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
+import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +19,7 @@ import static org.opentripplanner.middleware.controllers.api.ApiController.ID_FI
 /**
  * This job will analyze applicable monitored trips and create further individual tasks to analyze each individual trip.
  */
-public class MonitorAllTripsJob implements Runnable {
+public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
     private static final Logger LOG = LoggerFactory.getLogger(MonitorAllTripsJob.class);
     public static final int ONE_MINUTE_IN_MILLIS = 60000;
 
@@ -131,5 +133,15 @@ public class MonitorAllTripsJob implements Runnable {
             }
         }
         return true;
+    }
+
+    @Override
+    public void scheduleRecurringJob() {
+        Scheduler.scheduleJob(
+            new MonitorAllTripsJob(),
+            0,
+            1,
+            TimeUnit.MINUTES
+        );
     }
 }

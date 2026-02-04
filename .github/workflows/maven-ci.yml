@@ -51,7 +51,6 @@ jobs:
           NOTIFICATION_FROM_PHONE: ${{ secrets.NOTIFICATION_FROM_PHONE }}
           OTP_ADMIN_DASHBOARD_URL: ${{ secrets.OTP_ADMIN_DASHBOARD_URL }}
           OTP_API_ROOT: ${{ secrets.OTP_API_ROOT }}
-          OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
           OTP_TIMEZONE: ${{ secrets.OTP_TIMEZONE }}
           OTP_UI_URL: ${{ secrets.OTP_UI_URL }}
           SPARKPOST_KEY: ${{ secrets.SPARKPOST_KEY }}
@@ -59,7 +58,14 @@ jobs:
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
           TWILIO_VERIFICATION_SERVICE_SID: ${{ secrets.TWILIO_VERIFICATION_SERVICE_SID }}
       - name: Run E2E tests
-        run: mvn --no-transfer-progress test
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          # Retry once after waiting 5 mins if this step fails (e.g. because of a "Rate limit exceeded" or similar error)
+          max_attempts: 2
+          retry_on: error
+          retry_wait_seconds: 300
+          command: mvn --no-transfer-progress test
         env:
           OTP_ADMIN_DASHBOARD_NAME: OTP Admin Dashboard
           OTP_ADMIN_DASHBOARD_FROM_EMAIL: OTP Admin Dashboard <no-reply@email.com>
@@ -79,8 +85,6 @@ jobs:
           NOTIFICATION_FROM_PHONE: ${{ secrets.NOTIFICATION_FROM_PHONE }}
           OTP_ADMIN_DASHBOARD_URL: ${{ secrets.OTP_ADMIN_DASHBOARD_URL }}
           OTP_API_ROOT: ${{ secrets.OTP_API_ROOT }}
-          OTP2_API_ROOT: ${{ secrets.OTP_API_ROOT }}
-          OTP_PLAN_ENDPOINT: ${{ secrets.OTP_PLAN_ENDPOINT }}
           OTP_TIMEZONE: ${{ secrets.OTP_TIMEZONE }}
           OTP_UI_URL: ${{ secrets.OTP_UI_URL }}
           SPARKPOST_KEY: ${{ secrets.SPARKPOST_KEY }}

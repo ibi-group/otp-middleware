@@ -4,8 +4,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import io.leonard.PolylineUtils;
 import org.opentripplanner.middleware.otp.response.Leg;
-import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.otp.response.Stop;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueRidingTransitInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
@@ -56,19 +56,15 @@ public class TravelerLocator {
      * Define the instruction based on the traveler's current position compared to expected and nearest points on the
      * trip.
      */
-    public static TripInstruction getInstruction(
-        TripStatus tripStatus,
-        TravelerPosition travelerPosition,
-        boolean isStartOfTrip
-    ) {
+    public static TripInstruction getInstruction(TripStatus tripStatus, TravelerPosition travelerPosition) {
         if (hasRequiredWalkLeg(travelerPosition)) {
             if (hasRequiredTripStatus(tripStatus)) {
-                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, false);
+                TripInstruction tripInstruction = alignTravelerToTrip(travelerPosition, false);
                 if (tripInstruction != null) return tripInstruction;
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
-                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition);
                 if (tripInstruction != null) return tripInstruction;
             }
         } else if (hasRequiredTransitLeg(travelerPosition)) {
@@ -78,7 +74,7 @@ public class TravelerLocator {
             }
 
             if (tripStatus.equals(TripStatus.DEVIATED)) {
-                TripInstruction tripInstruction = getBackOnTrack(travelerPosition, isStartOfTrip);
+                TripInstruction tripInstruction = getBackOnTrack(travelerPosition);
                 if (tripInstruction != null) return tripInstruction;
             }
         }
@@ -116,11 +112,8 @@ public class TravelerLocator {
      * else suggest the closest street to head towards.
      */
     @Nullable
-    private static TripInstruction getBackOnTrack(
-        TravelerPosition travelerPosition,
-        boolean isStartOfTrip
-    ) {
-        TripInstruction instruction = alignTravelerToTrip(travelerPosition, isStartOfTrip, true);
+    private static TripInstruction getBackOnTrack(TravelerPosition travelerPosition) {
+        TripInstruction instruction = alignTravelerToTrip(travelerPosition, true);
         if (instruction != null && instruction.hasInstruction()) {
             return instruction;
         }
@@ -165,7 +158,6 @@ public class TravelerLocator {
     @Nullable
     public static TripInstruction alignTravelerToTrip(
         TravelerPosition travelerPosition,
-        boolean isStartOfTrip,
         boolean travelerHasDeviated
     ) {
         Locale locale = travelerPosition.locale;
@@ -317,7 +309,7 @@ public class TravelerLocator {
         Leg expectedLeg = travelerPosition.expectedLeg;
         if (expectedLeg == null || !expectedLeg.transitLeg) return false;
 
-        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
+        Stop nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
         int stopsRemaining = stopsUntilEndOfLeg(nextStop, expectedLeg);
         return stopsRemaining == expectedLeg.intermediateStops.size();
     }
@@ -344,10 +336,10 @@ public class TravelerLocator {
             return new GetOffHereTransitInstruction(finalStop, locale);
         }
 
-        Place nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
+        Stop nextStop = snapToWaypoint(travelerPosition, getIntermediateAndLastStop(expectedLeg), true);
         if (nextStop != null) {
             int stopsRemaining = stopsUntilEndOfLeg(nextStop, expectedLeg);
-            double distance = getDistance(travelerPosition.currentPosition, new Coordinates(nextStop));
+            double distance = getDistance(travelerPosition.currentPosition, nextStop.toCoordinates());
             if (stopsRemaining == 1 && distance <= TRIP_INSTRUCTION_UPCOMING_RADIUS && !isPositionPastStep(travelerPosition, nextStop) || stopsRemaining == 0) {
                 return new GetOffNextStopTransitInstruction(finalStop, locale);
             } else if (stopsRemaining <= 3) {
@@ -441,7 +433,6 @@ public class TravelerLocator {
         Coordinates firstCoordinate = legPositions.get(0);
         Coordinates legOrigin = new Coordinates(travelerPosition.expectedLeg.from);
 
-        // HACK:
         // If the first leg position coordinate is identical to the leg origin,
         // it probably means the origin is off the street network, so the first shape coordinate is at pos (1).
         // If the first leg position coordinate differs from the leg origin,
@@ -456,12 +447,17 @@ public class TravelerLocator {
         return Math.min(distanceToFirstShapeCoords, distanceToLegOrigin);
     }
 
+    /**
+     * Get the distance from the traveler's current position to the leg destination from given leg positions.
+     */
     private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
         return getDistanceToEndOfLeg(travelerPosition, travelerPosition.getLegPositions());
     }
 
     /**
      * Get the distance from the traveler's current position to the leg destination from given leg positions.
+     * This method is used in tests when the leg positions are computed using an 'upcoming' threshold
+     * different from the default one.
      */
     public static double getDistanceToEndOfLeg(TravelerPosition travelerPosition, List<Coordinates> legPositions) {
         Coordinates secondToLastCoordinate = legPositions.get(legPositions.size() - 2);
@@ -525,11 +521,11 @@ public class TravelerLocator {
         return pointIndex;
     }
 
-    private static List<Place> getIntermediateAndLastStop(Leg leg) {
-        ArrayList<Place> stops = leg.intermediateStops == null
+    private static List<Stop> getIntermediateAndLastStop(Leg leg) {
+        ArrayList<Stop> stops = leg.intermediateStops == null
             ? new ArrayList<>()
             : new ArrayList<>(leg.intermediateStops);
-        stops.add(leg.to);
+        stops.add(new Stop(leg.to));
         return stops;
     }
 
@@ -679,10 +675,14 @@ public class TravelerLocator {
         return false;
     }
 
-    public static int stopsUntilEndOfLeg(Place stop, Leg leg) {
-        if (stop == leg.to) return 0;
+    public static int stopsUntilEndOfLeg(Stop stop, Leg leg) {
+        if (isTheSameLocation(stop, leg)) return 0;
 
-        List<Place> stops = leg.intermediateStops;
+        List<Stop> stops = leg.intermediateStops;
         return stops.size() - stops.indexOf(stop);
+    }
+
+    private static boolean isTheSameLocation(Stop stop, Leg leg) {
+        return stop.toCoordinates().equals(leg.to.toCoordinates());
     }
 }

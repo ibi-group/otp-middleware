@@ -5,6 +5,8 @@ import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.models.AdminUser;
 import org.opentripplanner.middleware.models.ApiUser;
@@ -14,7 +16,6 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
-import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
@@ -144,7 +145,7 @@ public class PersistenceTestUtils {
      */
     public static TripSummary createTripSummary(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
         OtpResponse planResponse = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getOtp2Response();
-        TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.error, tripRequestId, batchId);
+        TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.plan.routingErrors, tripRequestId, batchId);
         if (createDate != null) {
             tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
         }
@@ -164,7 +165,32 @@ public class PersistenceTestUtils {
      */
     public static TripSummary createTripSummaryWithError(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
         OtpResponse planErrorResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse();
-        TripSummary tripSummary = new TripSummary(null, planErrorResponse.error, tripRequestId, batchId);
+        TripSummary tripSummary = new TripSummary(null, planErrorResponse.plan.routingErrors, tripRequestId, batchId);
+        if (createDate != null) {
+            tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
+        }
+        Persistence.tripSummaries.create(tripSummary);
+        return tripSummary;
+    }
+
+    /**
+     * Create trip summary from given response and including the desired response parts, and store in database.
+     */
+    public static TripSummary createTripSummary(
+        OtpDispatcherResponse dispatcherResponse,
+        String tripRequestId,
+        String batchId,
+        LocalDateTime createDate,
+        boolean usePlan,
+        boolean useErrors
+    ) throws Exception {
+        TripPlan plan = dispatcherResponse.getResponse().plan;
+        TripSummary tripSummary = new TripSummary(
+            usePlan ? plan : null,
+            useErrors ? plan.routingErrors : null,
+            tripRequestId,
+            batchId
+        );
         if (createDate != null) {
             tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
         }
@@ -196,11 +222,10 @@ public class PersistenceTestUtils {
         MonitoredTrip monitoredTrip = new MonitoredTrip();
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "Commute to work";
-        monitoredTrip.tripTime = "07:30";
         monitoredTrip.leadTimeInMinutes = 30;
         monitoredTrip.updateWeekdays(true);
         monitoredTrip.excludeFederalHolidays = true;
-        monitoredTrip.queryParams = "fromPlace=28.54894%2C%20-81.38971%3A%3A28.548944048426772%2C-81.38970606029034&toPlace=28.53989%2C%20-81.37728%3A%3A28.539893820446867%2C-81.37727737426759&date=2020-05-05&time=12%3A04&arriveBy=false&mode=WALK%2CBUS%2CRAIL&showIntermediateStops=true&maxWalkDistance=1207&optimize=QUICK&walkSpeed=1.34&ignoreRealtimeUpdates=true&companies=";
+        monitoredTrip.otp2QueryParams = OtpTestUtils.getSampleQueryParams();
 
         monitoredTrip.itinerary = createItinerary();
 
@@ -218,8 +243,6 @@ public class PersistenceTestUtils {
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "test trip";
         monitoredTrip.leadTimeInMinutes = 240;
-        // set trip time since otpDispatcherResponse doesn't have full query params in URI
-        monitoredTrip.tripTime = "08:35";
         monitoredTrip.updateWeekdays(true);
         monitoredTrip.itineraryExistence = new ItineraryExistence();
         if (journeyState != null) monitoredTrip.journeyState = journeyState;
@@ -239,10 +262,8 @@ public class PersistenceTestUtils {
         itinerary.endTime = new Date();
         itinerary.startTime = new Date();
         itinerary.transfers = 0;
-        itinerary.transitTime = 150;
         itinerary.waitingTime = 2;
         itinerary.walkDistance = 1514.13182088778;
-        itinerary.walkLimitExceeded = false;
 
         Leg leg = new Leg();
         leg.startTime = new Date();
@@ -251,14 +272,12 @@ public class PersistenceTestUtils {
         leg.arrivalDelay = 10;
         leg.realTime = true;
         leg.distance = 1500.0;
-        leg.pathway = true;
         leg.mode = "walk";
 
         Place place = new Place();
         place.lat = 28.5398938204469;
         place.lon = -81.3772773742676;
         place.name = "28.54894, -81.38971";
-        place.orig = "28.54894, -81.38971";
         leg.from = place;
         leg.to = place;
 
