@@ -237,9 +237,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             null
         );
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
-        // For an ongoing trip, assume the journey state has been initialized.
-        monitoredTrip.journeyState.baselineDepartureTimeEpochMillis = itinerary.startTime.getTime();
-        monitoredTrip.journeyState.baselineArrivalTimeEpochMillis = itinerary.endTime.getTime();
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
 
