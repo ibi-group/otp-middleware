@@ -9,6 +9,7 @@ import org.opentripplanner.middleware.bugsnag.jobs.BugsnagEventRequestJob;
 import org.opentripplanner.middleware.models.BugsnagEventRequest;
 import org.opentripplanner.middleware.models.MonitoredComponent;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
@@ -26,7 +27,7 @@ import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigProperty
  * it is important to make sure that no more than ten jobs are scheduled per minute. Any more than this will be rejected
  * by Bugsnag.
  */
-public class BugsnagJobs {
+public class BugsnagJobs implements RecurringJobScheduler {
 
     private static final int BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS =
         getConfigPropertyAsInt("BUGSNAG_EVENT_REQUEST_JOB_DELAY_IN_HOURS", 24);
@@ -160,5 +161,12 @@ public class BugsnagJobs {
 
     public static BugsnagEventRequest getLatestIncompleteRequestForProject(String projectId) {
         return getLatestRequestForProject(projectId, Filters.ne("status", "completed"));
+    }
+
+    @Override
+    public void scheduleRecurringJob() {
+        MonitoredComponent.initializeMonitoredComponentsFromConfig();
+        // Schedule Bugsnag jobs to start retrieving Bugsnag event/error data.
+        BugsnagJobs.initialize();
     }
 }

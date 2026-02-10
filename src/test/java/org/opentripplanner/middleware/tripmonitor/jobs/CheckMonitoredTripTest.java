@@ -10,11 +10,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
@@ -24,7 +28,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.response.Itinerary;
-import org.opentripplanner.middleware.otp.response.LocalizedAlert;
+import org.opentripplanner.middleware.otp.response.Alert;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
@@ -87,6 +91,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         .withHour(0)
         .withMinute(0)
         .withSecond(0);
+    public static final ZonedDateTime TUESDAY_20200609_0800 = TUESDAY_20200609.withHour(8);
+    public static final ZonedDateTime TUESDAY_20200609_0850 = TUESDAY_20200609_0800.withMinute(50);
     private static final ZonedDateTime MONDAY_20200615_0845 = MONDAY_20200608_NOON
         .withDayOfMonth(15)
         .withHour(8)
@@ -118,6 +124,106 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         }
     }
 
+    /** Provides a mock OTP 'plan' response for trip queried at midnight */
+    public OtpResponse mockOtpPlanResponseForTripQueriedAtMidnight() {
+        try {
+            // Setup an OTP mock response in order to trigger some of the monitor checks.
+            return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_QUERIED_AT_MIDNIGHT.getResponse();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    void canUnsnoozeAndMonitorTripAtMidNight() throws Exception {
+        final ZonedDateTime THURS_20251016_0000 = DateTimeUtils.makeOtpZonedDateTime(new Date())
+            .withYear(2025)
+            .withMonth(10)
+            .withDayOfMonth(16)
+            .withHour(0)
+            .withMinute(0)
+            .withSecond(17)
+            .withNano(0);
+        DateTimeUtils.useFixedClockAt(THURS_20251016_0000);
+
+        // Mock OTP response matching test case.
+        OtpResponse mockResponse = mockOtpPlanResponseForTripQueriedAtMidnight();
+
+        MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_QUERIED_AT_MIDNIGHT.clone(),
+            false,
+            null
+        );
+
+        monitoredTrip.leadTimeInMinutes = 30;
+        monitoredTrip.isActive = true;
+        monitoredTrip.snoozed = true;
+
+        Persistence.monitoredTrips.create(monitoredTrip);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, () -> mockResponse);
+        checkMonitoredTrip.run();
+
+        MonitoredTrip updated = Persistence.monitoredTrips.getById(monitoredTrip.id);
+        assertFalse(updated.snoozed);
+        assertTrue(checkMonitoredTrip.notifications.isEmpty());
+        assertEquals(TRIP_UPCOMING, checkMonitoredTrip.journeyState.tripStatus);
+        PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
+    }
+
+    @ParameterizedTest
+    @MethodSource("tripEndingPastMidnightCases")
+    void canMonitorTripEndingPastMidNight(
+        String startDate,
+        String startTime,
+        String endDate,
+        String endTime,
+        String targetDate
+    ) throws Exception {
+        MonitoredTrip trip = new MonitoredTrip();
+
+        Itinerary itinerary = new Itinerary();
+        ZonedDateTime start = DateTimeUtils.makeOtpZonedDateTime(startDate, startTime);
+        ZonedDateTime end = DateTimeUtils.makeOtpZonedDateTime(endDate, endTime);
+        itinerary.startTime = Date.from(start.toInstant());
+        itinerary.endTime = Date.from(end.toInstant());
+        Leg walkLeg = new Leg();
+        walkLeg.mode = "WALK";
+        walkLeg.from = new Place();
+        walkLeg.to = new Place();
+        itinerary.legs = List.of(walkLeg);
+        trip.itinerary = itinerary;
+        trip.updateAllDaysOfWeek(true);
+        trip.itineraryExistence = new ItineraryExistence();
+        trip.itineraryExistence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
+        trip.itineraryExistence.thursday = new ItineraryExistence.ItineraryExistenceResult();
+
+        DateTimeUtils.useFixedClockAt(start.minusMinutes(10));
+
+        Persistence.monitoredTrips.create(trip);
+        OtpResponse response = new OtpResponse();
+        response.plan = new TripPlan();
+        response.plan.itineraries = List.of(itinerary);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(trip, () -> response);
+        checkMonitoredTrip.run();
+
+        MonitoredTrip updated = Persistence.monitoredTrips.getById(trip.id);
+        assertEquals(TRIP_UPCOMING, checkMonitoredTrip.journeyState.tripStatus);
+        assertEquals(targetDate, updated.journeyState.targetDate);
+        PersistenceTestUtils.deleteMonitoredTrip(trip);
+    }
+
+    private static Stream<Arguments> tripEndingPastMidnightCases() {
+        return Stream.of(
+            // Wednesday
+            Arguments.of("2025-10-01", "23:50", "2025-10-02", "00:00", "2025-10-01"),
+            // Thursday
+            Arguments.of("2025-10-02", "00:00", "2025-10-02", "00:15", "2025-10-02"),
+            // Overlap
+            Arguments.of("2025-10-01", "23:50", "2025-10-02", "00:15", "2025-10-01")
+        );
+    }
+
     @Test
     void canMonitorOngoingTrip() throws Exception {
         // Setup an OTP mock response in order to trigger some of the monitor checks.
@@ -131,15 +237,12 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             null
         );
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
-        // For an ongoing trip, assume the journey state has been initialized.
-        monitoredTrip.journeyState.baselineDepartureTimeEpochMillis = itinerary.startTime.getTime();
-        monitoredTrip.journeyState.baselineArrivalTimeEpochMillis = itinerary.endTime.getTime();
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
 
         // Add fake alerts to simulated itinerary.
-        ArrayList<LocalizedAlert> fakeAlerts = new ArrayList<>();
-        fakeAlerts.add(new LocalizedAlert());
+        ArrayList<Alert> fakeAlerts = new ArrayList<>();
+        fakeAlerts.add(new Alert());
         itinerary.legs.get(1).alerts = fakeAlerts;
 
         // mock the current time to be 8:45am on Monday, June 15
@@ -161,13 +264,16 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // TODO refactor with above test.
         // Save an itinerary in the future, and run an itinerary check on it at at time before that itinerary start.
 
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.time = "08:35";
+
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
             OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
             false,
             null
         );
-        monitoredTrip.tripTime = "08:35";
+        monitoredTrip.otp2QueryParams = params;
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
 
@@ -180,7 +286,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         OtpTestUtils.setItineraryDay(mockTuesdayJune9Itinerary, 9);
 
         // Add fake alerts to simulated itinerary.
-        mockTuesdayJune9Itinerary.legs.get(1).alerts = Lists.newArrayList(new LocalizedAlert());
+        mockTuesdayJune9Itinerary.legs.get(1).alerts = Lists.newArrayList(new Alert());
 
         // The trip is set to be monitored Monday to Friday.
         // Mock time to be 7:30am on Tuesday, June 9 before the trip start.
@@ -243,12 +349,14 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         if (notificationType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY || notificationType == NotificationType.DEPARTURE_DELAY) {
             journeyState.baselineDepartureTimeEpochMillis += previousDelayMillis;
+            journeyState.hasRealtimeData = true;
         }
         if (notificationType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY || notificationType == NotificationType.ARRIVAL_DELAY) {
             journeyState.baselineArrivalTimeEpochMillis += previousDelayMillis;
+            journeyState.hasRealtimeData = true;
         }
 
-        CheckMonitoredTrip check = createCheckMonitoredTrip(journeyState, this::mockOtpPlanResponse);
+        CheckMonitoredTrip check = createCheckMonitoredTrip(journeyState, this::mockOtpPlanResponse, true);
 
         if (notificationType == NotificationType.DEPARTURE_AND_ARRIVAL_DELAY || notificationType == NotificationType.DEPARTURE_DELAY) {
             check.matchingItinerary.offsetStart(TimeUnit.MILLISECONDS.convert(minutesLate, TimeUnit.MINUTES));
@@ -361,7 +469,21 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
      */
     private static CheckMonitoredTrip createCheckMonitoredTrip(Supplier<OtpResponse> otpResponseProvider) throws Exception {
-        return createCheckMonitoredTrip(OtpTestUtils.createDefaultJourneyState(otpResponseProvider), otpResponseProvider);
+        return createCheckMonitoredTrip(otpResponseProvider, true);
+    }
+
+    /**
+     * Convenience method for creating a CheckMonitoredTrip instance with the default journey state.
+     */
+    private static CheckMonitoredTrip createCheckMonitoredTrip(
+        Supplier<OtpResponse> otpResponseProvider,
+        boolean hasTolerantItineraryCheck
+    ) throws Exception {
+        return createCheckMonitoredTrip(
+            OtpTestUtils.createDefaultJourneyState(otpResponseProvider),
+            otpResponseProvider,
+            hasTolerantItineraryCheck
+        );
     }
 
     /**
@@ -369,14 +491,18 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
      * created using the default OTP response. Also, creates a new matching itinerary that consists of the first
      * itinerary in the default OTP response.
      */
-    private static CheckMonitoredTrip createCheckMonitoredTrip(JourneyState journeyState, Supplier<OtpResponse> otpResponseProvider) throws Exception {
+    private static CheckMonitoredTrip createCheckMonitoredTrip(
+        JourneyState journeyState,
+        Supplier<OtpResponse> otpResponseProvider,
+        boolean hasTolerantItineraryCheck
+    ) throws Exception {
         MonitoredTrip monitoredTrip = PersistenceTestUtils.createMonitoredTrip(
             user.id,
             OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.clone(),
             false,
             journeyState
         );
-        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, otpResponseProvider);
+        CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip, otpResponseProvider, hasTolerantItineraryCheck);
         checkMonitoredTrip.matchingItinerary = OtpTestUtils.createDefaultItinerary();
         return checkMonitoredTrip;
     }
@@ -647,7 +773,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
         // create a mock monitored trip and CheckMonitorTrip instance
         // Note that the response below gets modified from the original mockOtpPlanResponse.
-        CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
+        CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse, false);
         MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
         Persistence.monitoredTrips.create(mockTrip);
 
@@ -709,6 +835,106 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
+     * Utility method to set delays on a transit itinerary.
+     */
+    void addTransitLegDelay(Itinerary itinerary, int departureDelay, int arrivalDelay, boolean realTime) {
+        Leg walkLeg = itinerary.legs.get(0);
+        Leg transitLeg = itinerary.legs.get(1);
+        Leg finalLeg = itinerary.legs.get(2);
+
+        walkLeg.startTime = Date.from(walkLeg.startTime.toInstant().plusSeconds(departureDelay));
+        walkLeg.endTime = Date.from(walkLeg.endTime.toInstant().plusSeconds(departureDelay));
+
+        transitLeg.realTime = realTime;
+        transitLeg.departureDelay += departureDelay;
+        transitLeg.startTime = Date.from(transitLeg.startTime.toInstant().plusSeconds(departureDelay));
+        transitLeg.arrivalDelay += arrivalDelay;
+        transitLeg.endTime = Date.from(transitLeg.endTime.toInstant().plusSeconds(arrivalDelay));
+
+        finalLeg.startTime = Date.from(finalLeg.startTime.toInstant().plusSeconds(arrivalDelay));
+        finalLeg.endTime = Date.from(finalLeg.endTime.toInstant().plusSeconds(arrivalDelay));
+
+        itinerary.startTime = Date.from(itinerary.startTime.toInstant().plusSeconds(departureDelay));
+        itinerary.endTime = Date.from(itinerary.endTime.toInstant().plusSeconds(arrivalDelay));
+    }
+
+    /**
+     * A trip delay notification should be sent when saving a trip that has delays,
+     * and it is possible to find a matching trip without delays with the trip time in the OTP query params.
+     * Once the trip is over, no notifications should be sent.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void canSendDelayNotifications(boolean isOneTime) throws Exception {
+        OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
+        Itinerary firstMockItinerary = firstItinerary(mockWeekdayResponse);
+        firstMockItinerary.clearAlerts();
+
+        // Create a mock monitored trip and CheckMonitorTrip instance
+        // Note that the response below gets modified from the original mockOtpPlanResponse.
+        CheckMonitoredTrip mockCheckMonitoredTrip = createCheckMonitoredTrip(() -> mockWeekdayResponse);
+        // Override matching itinerary to null to simulate initial save.
+        mockCheckMonitoredTrip.matchingItinerary = null;
+        MonitoredTrip mockTrip = mockCheckMonitoredTrip.trip;
+        // Trigger notifications for 5-minute delays instead of 15.
+        mockTrip.departureVarianceMinutesThreshold = 5;
+        mockTrip.arrivalVarianceMinutesThreshold = 5;
+        if (isOneTime) mockTrip.updateAllDaysOfWeek(false);
+        // Add delays to the original saved trip, different from the mock response.
+        // The delays from the mock response should be used.
+        addTransitLegDelay(mockTrip.itinerary, 600, 720, true);
+
+        Persistence.monitoredTrips.create(mockTrip);
+
+        // create mock itinerary existence for trip for Tuesdays
+        mockTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
+
+        List<DelayCase> cases = List.of(
+            // TODO: fix time separator char
+            // Add some delays for the trip.
+            new DelayCase(300, 420, true, TUESDAY_20200609_0800, 1, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:45 AM)."),
+            // Decrease real-time delays (subtract delays) from the OTP response.
+            new DelayCase(-100, -60, true, TUESDAY_20200609_0800, 1, "⏱ Your trip is now predicted to arrive 6 minutes late (at 9:04 AM)."),
+            // Drop real-time updates (subtract delays) from the OTP response.
+            new DelayCase(-200, -360, false, TUESDAY_20200609_0800, 1, "⏱ Real-time updates for your trip were lost. Monitoring will be based on your originally saved trip."),
+
+            // Add back delays for the trip.
+            new DelayCase(300, 420, true, TUESDAY_20200609_0800, 1, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:45 AM)."),
+            // Drop real-time updates and simulate a time at which the trip is considered over.
+            // No notifications should be sent when the trip is considered over.
+            new DelayCase(
+                -300,
+                -420,
+                false,
+                isOneTime ? TUESDAY_20200609.withHour(10) : TUESDAY_20200609.minusDays(1), 0,
+                null
+            )
+
+        );
+
+        for (DelayCase c : cases) {
+            DateTimeUtils.useFixedClockAt(c.clockTime);
+            addTransitLegDelay(firstMockItinerary, c.departureDelay, c.arrivalDelay, c.isRealTime);
+            // Clear previous notifications to ensure expected notifications are recorded.
+            mockCheckMonitoredTrip.notifications.clear();
+
+            mockCheckMonitoredTrip.run();
+
+            assertEquals(firstMockItinerary, mockCheckMonitoredTrip.matchingItinerary);
+
+            assertEquals(c.expectedNotifications, mockCheckMonitoredTrip.notifications.size());
+
+            if (c.expectedNotifications == 1) {
+                assertEquals(
+                    c.message,
+                    mockCheckMonitoredTrip.notifications.iterator().next().body,
+                    "The notification text should be correct."
+                );
+            }
+        }
+    }
+
+    /**
      * Tests whether the journey state is updated after monitored days are changed.
      */
     @ParameterizedTest
@@ -719,28 +945,36 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         String currentTargetDate,
         String expectedTargetDate,
         TripStatus tripStatus,
-        boolean skipMondayTuesday
+        boolean skipMondayTuesday,
+        boolean itineraryExistsInOtp
     ) throws Exception {
         DateTimeUtils.useFixedClockAt(nowTime);
 
-        // Create an OTP mock to return, with itinerary start on Monday, June 8, 2020.
         OtpResponse mockWeekdayResponse = mockOtpPlanResponse();
-        Itinerary originalItinerary = firstItinerary(mockWeekdayResponse);
-        OtpTestUtils.setItineraryDay(originalItinerary, 8);
+        Date targetItineraryStartTime = null;
 
-        Date originalStartTime = originalItinerary.startTime;
-
-        // Create an OTP mock to return, with itinerary start on Tuesday, June 9, 2020.
-        OtpResponse mockPreviousWeekdayResponse = mockOtpPlanResponse();
-        Itinerary mockPreviousItinerary = firstItinerary(mockPreviousWeekdayResponse);
-        OtpTestUtils.setItineraryDay(mockPreviousItinerary, 9);
-        if (tripStatus == TRIP_ACTIVE) {
-            // If the trip is active, set the trip day to Monday when that case applies.
-            mockPreviousItinerary.offsetTimes(-ONE_DAY_IN_MILLIS);
+        if (itineraryExistsInOtp) {
+            // Create an OTP mock to return for the next target date, with itinerary start on Monday, June 8, 2020.
+            Itinerary firstItinerary = firstItinerary(mockWeekdayResponse);
+            OtpTestUtils.setItineraryDay(firstItinerary, skipMondayTuesday && tripStatus != TRIP_ACTIVE ? 10 : 8);
+            targetItineraryStartTime = firstItinerary.startTime;
+        } else {
+            // If no itineraries exist, empty the response list.
+            mockWeekdayResponse.plan.itineraries = new ArrayList<>();
         }
 
-        // Make sure that the start time on the original trip was not changed inadvertently.
-        assertEquals(originalStartTime, originalItinerary.startTime);
+        // Create an OTP mock to return, with itinerary start on Tuesday, June 9, 2020,
+        // unless the trip is still active in which case we set the trip day to Monday, June 8, 2020.
+        OtpResponse mockPreviousWeekdayResponse = mockOtpPlanResponse();
+        Itinerary mockPreviousItinerary = firstItinerary(mockPreviousWeekdayResponse);
+        OtpTestUtils.setItineraryDay(mockPreviousItinerary, tripStatus == TRIP_ACTIVE ? 8 : 9);
+
+        Itinerary targetItinerary = null;
+        if (itineraryExistsInOtp) {
+            targetItinerary = firstItinerary(mockWeekdayResponse);
+            // Make sure that the start time on the original trip was not changed inadvertently.
+            assertEquals(targetItineraryStartTime, targetItinerary.startTime);
+        }
 
         // Create a mock monitored trip and CheckMonitorTrip instance.
         // Note that the response below includes changes above to the itinerary times.
@@ -780,8 +1014,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // for those cases, the trip occurs within minutes of the mocked system time.
         assertEquals(skipMondayTuesday, mockCheckMonitoredTrip.shouldSkipMonitoredTripCheck());
 
+        assertEquals(
+            tripStatus == TRIP_ACTIVE,
+            mockCheckMonitoredTrip.trip.tripTargetDateIsConsistentWithMatchingItinerary()
+        );
+
         // Execute makeOTPRequestAndUpdateMatchingItinerary method and verify the expected outcome.
-        assertTrue(mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
+        assertEquals(itineraryExistsInOtp, mockCheckMonitoredTrip.checkOtpAndUpdateTripStatus());
 
         // Fetch updated trip from persistence and check the trip status and target date.
         MonitoredTrip updatedTrip = Persistence.monitoredTrips.getById(mockTrip.id);
@@ -791,18 +1030,32 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         }
 
         assertEquals(
-            tripStatus,
+            itineraryExistsInOtp ? tripStatus : NEXT_TRIP_NOT_POSSIBLE,
             updatedTrip.journeyState.tripStatus,
              tripStatus == TRIP_UPCOMING
                  ? "Trip state should remain in future."
-                 : "Active trips will continue to be monitored until they end."
+                 : "Active trips will continue to be monitored until they end. Failed queries on a different target date should result in next trip not possible state."
         );
+
+        assertEquals(!itineraryExistsInOtp, updatedTrip.snoozed);
 
         assertEquals(
             expectedTargetDate,
             updatedTrip.journeyState.targetDate,
             "Trip target date should have been changed according to monitored days."
         );
+
+        assertEquals(
+            targetItinerary == null, updatedTrip.journeyState.matchingItinerary == null
+        );
+
+        if (targetItinerary != null) {
+            assertEquals(
+                targetItinerary.startTime,
+                updatedTrip.journeyState.matchingItinerary.startTime,
+                "A matching itinerary should have been provided."
+            );
+        }
     }
 
     private static Stream<Arguments> casesForChangingMonitoredDays() {
@@ -816,6 +1069,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 "2020-06-08",
                 "2020-06-10",
                 TRIP_UPCOMING,
+                true,
                 true
             ),
             Arguments.of(
@@ -825,6 +1079,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 "2020-06-08",
                 "2020-06-08",
                 TRIP_ACTIVE,
+                true,
                 true
             ),
             Arguments.of(
@@ -833,7 +1088,17 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 "2020-06-09",
                 "2020-06-08",
                 TRIP_UPCOMING,
-                // This trip should not be skipped because it occurs within minutes of the mocked system time.
+                // Trip check should not be skipped because the trip occurs within minutes of the mocked system time.
+                false,
+                true
+            ),
+            Arguments.of(
+                monday0830.withDayOfMonth(8),
+                8,
+                "2020-06-08",
+                "2020-06-10",
+                TRIP_UPCOMING,
+                true,
                 false
             )
         );
@@ -944,9 +1209,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip trip = createPastActiveTrip();
         setRecurringTodayAndTomorrow(trip);
 
-        // Build fake OTP response, using an existing one as template
+        // Build fake OTP response, using an existing one as template.
+        // Set the start time of that itinerary to "tomorrow" because "today"'s trip is over.
         OtpResponse otpResponse = mockOtpPlanResponse();
         Itinerary adjustedItinerary = trip.itinerary.clone();
+        adjustedItinerary.offsetTimes(ONE_DAY_IN_MILLIS);
         otpResponse.plan.itineraries = List.of(adjustedItinerary);
 
         // Note that the response below gets modified from the original mockOtpPlanResponse.
@@ -954,6 +1221,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Trip is advanced to next monitored day because "today"'s trip instance has ended.
         // As a result, trip status is set to upcoming, checkOtpAndUpdateTripStatus is skipped.
         assertTrue(check.shouldSkipMonitoredTripCheck());
+        assertTrue(check.checkOtpAndUpdateTripStatus());
+
         assertEquals(TripStatus.TRIP_UPCOMING, check.journeyState.tripStatus);
         assertEquals(TripStatus.TRIP_UPCOMING, trip.journeyState.tripStatus);
         assertEquals(getShiftedDay(trip.itinerary.startTime, 1), trip.journeyState.targetDate);
@@ -1115,6 +1384,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
             // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should unsnooze at 12:00am (midnight) on
             // Wednesday, June 10, 2020, but it is too early for the trip to be analyzed again.
             Arguments.of(TUESDAY_20200609.withHour(8), wednesday, true),
+            Arguments.of(TUESDAY_20200609_0800, TUESDAY_20200609.withHour(9), false),
+            // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should unsnooze at 12:00am (midnight) on
+            // Wednesday, June 10, 2020, but it is too early for the trip to be analyzed again.
+            Arguments.of(TUESDAY_20200609_0800, wednesday, true),
             // Trip snoozed on Monday, June 8, 2020 (a day before the trip starts), should unsnooze at 12:00am (midnight)
             // on Tuesday, June 9, 2020.
             Arguments.of(MONDAY_20200608_NOON, TUESDAY_20200609, true)
@@ -1160,15 +1433,15 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     private static Stream<Arguments> createUpdateTripWithStaleStateCases() {
-        // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
-        // The initial state for the trip is TRIP_ACTIVE.
+        // Mock OTP trip for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.
+        // The current clock is set so that the next possible trip is as above.
         return Stream.of(
-            Arguments.of(TUESDAY_20200609.withHour(8).withMinute(50), true, TRIP_ACTIVE, TRIP_ACTIVE, "During trip (before 8:58 am), state should remain active."),
-            Arguments.of(TUESDAY_20200609.withHour(8).withMinute(50), true, NEXT_TRIP_NOT_POSSIBLE, TRIP_ACTIVE, "During trip (before 8:58 am), state should be updated to active."),
-            Arguments.of(TUESDAY_20200609.withHour(10), true, TRIP_ACTIVE, TRIP_UPCOMING, "After trip (after 9am), state should change to upcoming (for recurring trip)."),
-            Arguments.of(TUESDAY_20200609.withHour(10), true, NEXT_TRIP_NOT_POSSIBLE, TRIP_UPCOMING, "Stale trip status should be updated to upcoming (for recurring trip)."),
+            Arguments.of(TUESDAY_20200609_0850, true, TRIP_ACTIVE, TRIP_ACTIVE, "During trip (before 8:58 am), state should remain active."),
+            Arguments.of(TUESDAY_20200609_0850, true, NEXT_TRIP_NOT_POSSIBLE, TRIP_ACTIVE, "During trip (before 8:58 am), state should be updated to active."),
+            Arguments.of(MONDAY_20200608_NOON, true, TRIP_ACTIVE, TRIP_UPCOMING, "After trip (after 9am), state should change to upcoming (for recurring trip)."),
+            Arguments.of(MONDAY_20200608_NOON, true, NEXT_TRIP_NOT_POSSIBLE, TRIP_UPCOMING, "Stale trip status should be updated to upcoming (for recurring trip)."),
             Arguments.of(TUESDAY_20200609.withHour(10), false, NEXT_TRIP_NOT_POSSIBLE, PAST_TRIP, "Stale trip status should be updated to past (for one-time trip)."),
-            Arguments.of(TUESDAY_20200609.withHour(8), true, TRIP_ACTIVE, TRIP_UPCOMING, "Shortly before trip starts, state should change to upcoming."),
+            Arguments.of(TUESDAY_20200609_0800, true, TRIP_ACTIVE, TRIP_UPCOMING, "Shortly before trip starts, state should change to upcoming."),
             Arguments.of(TUESDAY_20200609.withHour(4), true, TRIP_ACTIVE, TRIP_UPCOMING, "Long before trip starts, state should change to upcoming."),
             Arguments.of(TUESDAY_20200609.withHour(4), true, NO_LONGER_POSSIBLE, NO_LONGER_POSSIBLE, "Should not attempt to update a trip no longer possible.")
         );
@@ -1218,9 +1491,9 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // (Trips for these tests start on Tuesday, June 9, 2020 at 8:40am and ends at 8:58am.)
         // The initial state for the trip is TRIP_ACTIVE.
         return Stream.of(
-            Arguments.of(TUESDAY_20200609.withHour(8).withMinute(50), true, true),
-            Arguments.of(TUESDAY_20200609.withHour(8).withMinute(50), false, true),
-            Arguments.of(TUESDAY_20200609.withHour(8).withMinute(50), false, false)
+            Arguments.of(TUESDAY_20200609_0850, true, true),
+            Arguments.of(TUESDAY_20200609_0850, false, true),
+            Arguments.of(TUESDAY_20200609_0850, false, false)
         );
     }
 
@@ -1288,9 +1561,13 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 .withMinute(30)
                 .withZoneSameInstant(DateTimeUtils.getOtpZoneId())
         );
+
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.time = "17:30";
+
         monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
         monitoredTrip.itineraryExistence.tuesday = new ItineraryExistence.ItineraryExistenceResult();
-        monitoredTrip.tripTime = "17:30";
+        monitoredTrip.otp2QueryParams = params;
         monitoredTrip.leadTimeInMinutes = 30;
         Persistence.monitoredTrips.create(monitoredTrip);
         LOG.info("Created trip {}", monitoredTrip.id);
@@ -1326,5 +1603,26 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         // Clear the created trip.
         PersistenceTestUtils.deleteMonitoredTrip(monitoredTrip);
+    }
+
+    /**
+     * Supports delay notification tests.
+     */
+    static class DelayCase {
+        public int departureDelay;
+        public int arrivalDelay;
+        public boolean isRealTime;
+        public String message;
+        public ZonedDateTime clockTime;
+        public int expectedNotifications;
+
+        public DelayCase(int depDelay, int arrDelay, boolean realTime, ZonedDateTime time, int notifications, String msg) {
+            departureDelay = depDelay;
+            arrivalDelay = arrDelay;
+            isRealTime = realTime;
+            clockTime = time;
+            expectedNotifications = notifications;
+            message = msg;
+        }
     }
 }

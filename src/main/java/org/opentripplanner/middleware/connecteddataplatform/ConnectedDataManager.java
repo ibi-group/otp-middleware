@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.graphql.TransportMode;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
+import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -47,7 +49,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDa
 /**
  * Responsible for collating, anonymizing and uploading to AWS s3 trip requests and related itineraries.
  */
-public class ConnectedDataManager {
+public class ConnectedDataManager implements RecurringJobScheduler {
 
     public static final String ANON_TRIP_FILE_NAME = "anon-trip-data";
     public static final String ANON_TRIP_ZIP_FILE_NAME = ANON_TRIP_FILE_NAME + ".zip";
@@ -60,6 +62,14 @@ public class ConnectedDataManager {
 
     private static final int CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES =
         getConfigPropertyAsInt("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES", 5);
+
+    // This property needs to be a valid DateTimeFormatter.ISO_LOCAL_TIME specification.
+    // If it's not, this hardcoded default will be used.
+    private static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT =
+        "03:00";
+    public static final String CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME =
+        getConfigPropertyAsText("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME",
+                                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
 
     private static final Logger LOG = LoggerFactory.getLogger(ConnectedDataManager.class);
 
@@ -85,7 +95,7 @@ public class ConnectedDataManager {
     private static final String DATE_CREATED_FIELD = "dateCreated";
     public static final String BATCH_ID_FIELD = "batchId";
 
-    private ConnectedDataManager() {}
+    public ConnectedDataManager() {}
 
     public static boolean canScheduleUploads() {
         if (!isConnectedDataPlatformEnabled()) {
@@ -106,16 +116,42 @@ public class ConnectedDataManager {
         return true;
     }
 
-    public static void scheduleTripHistoryUploadJob() {
+    @Override
+    public void scheduleRecurringJob() {
         if (canScheduleUploads()) {
-            LOG.info("Scheduling trip history upload for every {} minute(s)",
-                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES);
+            LOG.info("Scheduling trip history upload for every {} minute(s) starting at {}",
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
+
+            // There is no initial delay unless we're reporting daily
+            long initialDelayMillis = isReportingDaily()
+                ? getInitialDelayMillis()
+                : 0;
+
             Scheduler.scheduleJob(
                 new TripHistoryUploadJob(),
-                0,
-                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES,
-                TimeUnit.MINUTES);
+                initialDelayMillis,
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_JOB_FREQUENCY_IN_MINUTES * 60000L, // milliseconds
+                TimeUnit.MILLISECONDS);
         }
+    }
+
+    /**
+     * Computes the delay before which the job repeat interval takes effect.
+     */
+    public static long getInitialDelayMillis() {
+        long initialDelayMillis;
+        try {
+            initialDelayMillis = Scheduler.getInitialDelayMillis(
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
+        } catch (DateTimeParseException e) {
+            LOG.error("CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME value \"{}\" is invalid, using default value \"{}\" instead",
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME,
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
+            initialDelayMillis = Scheduler.getInitialDelayMillis(
+                CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME_DEFAULT);
+        }
+        return initialDelayMillis;
     }
 
     /**
@@ -173,16 +209,7 @@ public class ConnectedDataManager {
         boolean anonymize
     ) throws IOException {
         Bson dateFilter = getDateFilter(periodStart, reportingInterval);
-
-        // Get distinct batchId values between two dates. Only select trip requests where a batch id has been provided.
-        DistinctIterable<String> uniqueBatchIds = Persistence.tripRequests.getDistinctFieldValues(
-            BATCH_ID_FIELD,
-            Filters.and(
-                dateFilter,
-                Filters.ne(BATCH_ID_FIELD, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
-            ),
-            String.class
-        );
+        DistinctIterable<String> uniqueBatchIds = getUniqueBatchIds(dateFilter);
 
         // Needed to correctly format the JSON content.
         // (If needed for perf and if settings permit: skip writing file if no records.)
@@ -218,6 +245,21 @@ public class ConnectedDataManager {
         }
         FileUtils.writeToFile(pathAndFileName, true, "]");
         return numTripRequestsWrittenToFile;
+    }
+
+    /**
+     * Get a Mongo iterator of distinct batchId values within the specified date filter.
+     * Only select trip requests where a batch id has been provided.
+     */
+    public static DistinctIterable<String> getUniqueBatchIds(Bson dateFilter) {
+        return Persistence.tripRequests.getDistinctFieldValues(
+            BATCH_ID_FIELD,
+            Filters.and(
+                dateFilter,
+                Filters.ne(BATCH_ID_FIELD, OtpRequestProcessor.BATCH_ID_NOT_PROVIDED)
+            ),
+            String.class
+        );
     }
 
     /**

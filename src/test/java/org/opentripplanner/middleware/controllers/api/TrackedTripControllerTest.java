@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
@@ -56,6 +57,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -158,7 +160,9 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         trip.userId = soloOtpUser.id;
         trip.itinerary = itin;
         // Original itinerary time should be populated.
-        trip.tripTime = DateTimeUtils.convertToLocalDateTime(itin.startTime).toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.time = DateTimeUtils.convertToLocalDateTime(itin.startTime).toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+        trip.otp2QueryParams = params;
         trip.journeyState = new JourneyState();
         trip.journeyState.matchingItinerary = itin;
         // Original target date should be populated but does not really matter.
@@ -170,6 +174,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     @AfterAll
     public static void tearDown() throws Exception {
         assumeTrue(IS_END_TO_END);
+        DateTimeUtils.useSystemDefaultClockAndTimezone();
         restoreDefaultAuthDisabled();
         soloOtpUser = Persistence.otpUsers.getById(soloOtpUser.id);
         if (soloOtpUser != null) soloOtpUser.delete(true);
@@ -290,12 +295,19 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         monitoredTrip = createMonitoredTrip(itinerary);
 
+        // Defaults to itinerary start time, unless specified otherwise.
+        Instant instant = monitoredTrip.itinerary.startTime.toInstant();
+        if (traceData.instant != null) {
+            instant = traceData.instant;
+        }
+
         String jsonPayload = JsonUtils.toJson(
             createTrackPayload(
                 monitoredTrip,
                 traceData.position,
                 traceData.speed,
-                Date.from(Instant.ofEpochMilli(monitoredTrip.itinerary.startTime.getTime() / 1000))
+                // The timestamp has to be in seconds, hence the division by 1000.
+                Date.from(Instant.ofEpochMilli(instant.toEpochMilli() / 1000))
             )
         );
 
@@ -325,6 +337,15 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(trackedJourney.id, trackResponse.journeyId);
     }
 
+    private static WaitForTransitInstruction waitForBusIsntruction(int waitMinutes) {
+        Leg multiItinBusLeg = multiLegItinerary.legs.get(multiLegItinerary.legs.size() - 2);
+        return new WaitForTransitInstruction(
+            multiItinBusLeg,
+            multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(waitMinutes)),
+            Locale.US
+        );
+    }
+
     private static Stream<Arguments> createInstructionAndStatusCases() {
         final int NORTH_WEST_BEARING = 315;
         final int NORTH_EAST_BEARING = 45;
@@ -349,11 +370,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
         Coordinates pointPastEndOfSidewalk = new Coordinates(33.958917, -84.006521);
 
-        WaitForTransitInstruction multiItinWaitForTransitInstruction = new WaitForTransitInstruction(
-            multiItinBusLeg,
-            multiItinBusLeg.getScheduledStartTime().toInstant().minus(Duration.ofMinutes(6)),
-            locale
-        );
+        WaitForTransitInstruction multiItinWaitForTransitInstruction = waitForBusIsntruction(6);
         return Stream.of(
             Arguments.of(
                 "Coords near first step should produce relevant instruction",
@@ -470,6 +487,47 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .withExpectedInstruction("Your destination is in the vicinity.")
             ),
             Arguments.of(
+                "Arriving at bus stop within 2 minutes of bus departure (in 'upcoming' range) should put traveler ahead of, not behind schedule.",
+                multiLegItinerary,
+                new TraceData()
+                    .withPosition(createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING))
+                    .withInstant(multiItinBusLeg.startTime.toInstant().minus(2, ChronoUnit.MINUTES))
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction(waitForBusIsntruction(2))
+            ),
+            Arguments.of(
+                "Arriving ahead of schedule near a bus stop (in 'upcoming' range) at the end of first leg.",
+                multiLegItinerary,
+                new TraceData()
+                    .withPosition(createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING))
+                    .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
+                    .withExpectedInstruction(multiItinWaitForTransitInstruction)
+            ),
+            Arguments.of(
+                "Instructions for destination coordinate of multi-leg trip",
+                multiLegItinerary,
+                new TraceData()
+                    .withPosition(createPoint(multiItinLastLegDestCoords, 1, NORTH_WEST_BEARING))
+                    .withTripStatus(TripStatus.COMPLETED)
+                    .withExpectedInstruction(new OnTrackInstruction(1, ansleyMallPetShopDestinationName, locale))
+            ),
+            Arguments.of(
+                "Arrival instruction when destination is away from sidewalk",
+                arrivingOnBus40,
+                new TraceData()
+                    .withPosition(pointNearEndOfSidewalk)
+                    .withTripStatus(TripStatus.COMPLETED)
+                    .withExpectedInstruction("Your destination is in the vicinity.")
+            ),
+            Arguments.of(
+                "Arrival instruction when destination is away from sidewalk",
+                arrivingOnBus40,
+                new TraceData()
+                    .withPosition(pointPastEndOfSidewalk)
+                    .withTripStatus(TripStatus.COMPLETED)
+                    .withExpectedInstruction("Your destination is in the vicinity.")
+            ),
+            Arguments.of(
                 "Arrival at bus stop instruction when bus stop farther from end-of-leg",
                 walkToBus12,
                 new TraceData()
@@ -504,7 +562,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .withExpectedInstruction("Ride 4 min / 7 stops to Buford Hwy at Steve Dr (Accu-Car Expo)")
             ),
             Arguments.of(
-                "Moving at location where walk leg and end of transit leg overlap, should produce on-board instruction",
+                "Moving at location where walk leg and end of transit leg overlap, should produce instruction to get off",
                 arrivingOnBus40,
                 new TraceData()
                     .withPosition(new Coordinates(33.960570, -84.004603))
@@ -530,6 +588,44 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .withExpectedInstruction("Head to Langley Drive")
             )
         );
+    }
+
+    /**
+     * Handle cases where user is in live tracking, and a saved itinerary becomes not monitorable
+     * e.g. because real-time data is briefly lost from the agency, so OTP cannot find the desired itinerary.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void canGenerateInstructionIfMatchingItineraryUndefined(boolean nullMatchingItinerary) throws Exception {
+        assumeTrue(IS_END_TO_END);
+        final int WEST_BEARING = 270;
+
+        monitoredTrip = createMonitoredTrip(multiLegItinerary);
+        monitoredTrip.journeyState.matchingItinerary = nullMatchingItinerary ? null : multiLegItinerary;
+        monitoredTrip.journeyState.tripStatus = org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
+        Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
+
+        // Defaults to itinerary start time, unless specified otherwise.
+        Leg multiItinFirstLeg = multiLegItinerary.legs.get(0);
+        Coordinates multiItinFirstLegDestCoords = new Coordinates(multiItinFirstLeg.to);
+        Instant instant = monitoredTrip.itinerary.startTime.toInstant();
+        String jsonPayload = JsonUtils.toJson(
+            createTrackPayload(
+                monitoredTrip,
+                createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING),
+                0,
+                // The timestamp has to be in seconds, hence the division by 1000.
+                Date.from(Instant.ofEpochMilli(instant.toEpochMilli() / 1000))
+            )
+        );
+
+        // Make a request to start a journey.
+        var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
+
+        assertEquals(HttpStatus.OK_200, response.status);
+        var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        assertEquals("Unable to monitor trip.", trackResponse.instruction, "Live tracking is not possible if no matching itinerary.");
+        assertEquals(TripStatus.NO_ITINERARY.name(), trackResponse.tripStatus);
     }
 
     @Test
@@ -590,8 +686,9 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals("Provided journey does not exist or has already been completed!", updateTrackingResponse.message);
     }
 
-    @Test
-    void canRerouteTrip() throws Exception {
+    @ParameterizedTest
+    @ValueSource(ints = {-300, 30, 3000})
+    void canRerouteTrip(int offsetSeconds) throws Exception {
         assumeTrue(IS_END_TO_END);
 
         MonitoredTrip rerouteMonitoredTrip = monitoredTrip = createMonitoredTrip(walkToVoterRegCenterItinerary);
@@ -605,6 +702,10 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         var mockOtpResponse = mockOtpReroutedPlanResponse();
         var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().plan.itineraries);
+
+        // Use current time relative to itinerary start (this will affect the computed target date after end tracking).
+        DateTimeUtils.useFixedClockAt(ZonedDateTime.ofInstant(expectedReroutedItinerary.startTime.toInstant().plusSeconds(offsetSeconds), DateTimeUtils.getOtpZoneId()));
+
         ManageTripTracking.otpResponseProviderOverride = mockOtpResponse;
         var deviatedPosition = new TrackingLocation(Instant.now(), 33.94412, -83.98899);
         var reroutingPoint = new Coordinates(expectedReroutedItinerary.legs.get(0).steps.get(2));
@@ -646,8 +747,11 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         // The current number of departed notifications should not have changed.
         assertEquals(initialDepartedNotificationCount, pollDepartedNotificationCount(rerouteMonitoredTrip));
 
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.time = "12:31";
+
         MonitoredTrip tripAfterRerouting = Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id);
-        tripAfterRerouting.tripTime = "12:31";
+        tripAfterRerouting.otp2QueryParams = params;
         Itinerary beforeCheck = tripAfterRerouting.journeyState.matchingItinerary;
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(tripAfterRerouting);
         checkMonitoredTrip.run();
@@ -684,9 +788,10 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             resetTrip.journeyState.matchingItinerary.legs.get(0).from.toCoordinates()
         );
 
-        // Check that matching itinerary time corresponds to "today".
+        // Check that matching itinerary time corresponds to "today" if current time is before trip end,
+        // or "tomorrow" if trip has ended (assuming a recurring trip).
         assertEquals(
-            DateTimeUtils.nowAsZonedDateTime().toLocalDate(),
+            DateTimeUtils.nowAsZonedDateTime().plusDays(expectedReroutedItinerary.hasEnded() ? 1 : 0).toLocalDate(),
             ZonedDateTime.ofInstant(resetTrip.journeyState.matchingItinerary.startTime.toInstant(), DateTimeUtils.getOtpZoneId()).toLocalDate()
         );
 

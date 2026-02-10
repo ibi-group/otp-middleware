@@ -32,24 +32,13 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
         long waitInMinutes = getWaitInMinutes();
         String status = getStatus(waitInMinutes);
 
-        String message = String.format(
+        return String.format(
             "Wait%s for your bus, route %s, scheduled at %s (%s)",
             getReadableMinutes(waitInMinutes),
             routeShortName,
             DateTimeUtils.formatShortDate(Date.from(transitLeg.getScheduledStartTime().toInstant()), locale),
             status
         );
-
-        String logDetails = String.format(
-            ", t=%d, deptime=%d (+%ds)",
-            currentTime.toEpochMilli(),
-            transitLeg.startTime.getTime(),
-            transitLeg.departureDelay
-        );
-
-        LOG.info(message + logDetails);
-
-        return message;
     }
 
     public String getStatus(long waitInMinutes) {

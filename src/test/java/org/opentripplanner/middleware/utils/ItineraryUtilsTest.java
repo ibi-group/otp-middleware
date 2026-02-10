@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryMatcher;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.otp.OtpGraphQLTransportMode;
@@ -15,21 +16,24 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.RideHailingEstimate;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.time.format.DateTimeFormatter;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,8 +47,6 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEp
 
 public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryUtilsTest.class);
-    /** Abbreviated query for the tests */
-    public static final String BASE_QUERY = "?fromPlace=2418%20Dade%20Ave&toPlace=McDonald%27s&date=2020-08-13&time=11%3A23&arriveBy=false";
 
     /** Date and time from the above query. */
     public static final String QUERY_DATE = "2020-08-13";
@@ -53,11 +55,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     public static final List<String> MONITORED_TRIP_DATES = List.of(
         QUERY_DATE, "2020-08-14", "2020-08-15", "2020-08-16", "2020-08-17", "2020-08-18", "2020-08-19"
     );
-
-    // Indexes for the days above: Thursday is 0, ..., Wednesday is 6.
-    private static final int FRIDAY_INDEX = 1;
-    private static final int MONDAY_INDEX = 4;
-    private static final int WEDNESDAY_INDEX = 6;
 
     /** Timestamps (in OTP's timezone) to test whether an itinerary is same-day as QUERY_DATE. */
 
@@ -103,20 +100,20 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     @MethodSource("createCheckAllItinerariesExistTestCases")
     void canCheckAllItinerariesExist(boolean insertInvalidDay, String message) throws Exception {
         MonitoredTrip trip = makeTestTrip();
-        List<OtpResponse> mockOtpResponses = getMockDatedOtpResponses(MONITORED_TRIP_DATES);
+        Map<DayOfWeek, OtpResponse> mockOtpResponses = getMockDatedOtpResponses(MONITORED_TRIP_DATES);
 
         // If needed, insert a mock invalid response for one of the monitored days.
         if (insertInvalidDay) {
-            mockOtpResponses.set(MONDAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
+            mockOtpResponses.put(DayOfWeek.MONDAY, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
         }
         // Return an erroneous response for some days that are not monitored (Wednesday, Friday).
-        mockOtpResponses.set(FRIDAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
-        mockOtpResponses.set(WEDNESDAY_INDEX, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
+        mockOtpResponses.put(DayOfWeek.FRIDAY, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
+        mockOtpResponses.put(DayOfWeek.WEDNESDAY, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
 
         MockOtpResponseProvider mockResponses = new MockOtpResponseProvider(mockOtpResponses);
 
         // Also set trip itinerary to the template itinerary for easy/lazy match.
-        Itinerary expectedItinerary = firstItinerary(mockOtpResponses.get(/* DayOfWeek.THURSDAY */ FRIDAY_INDEX - 1));
+        Itinerary expectedItinerary = firstItinerary(mockOtpResponses.get(DayOfWeek.THURSDAY));
         trip.itinerary = expectedItinerary;
 
         trip.checkItineraryExistence(false, mockResponses::getMockResponse);
@@ -143,15 +140,13 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         //  7 days to 14 (or more) days, this may need to be adjusted.
         for (ItineraryExistence.ItineraryExistenceResult validDay : validDays) {
             assertTrue(validDay.isValid());
-            assertTrue(ItineraryUtils.itinerariesMatch(expectedItinerary, validDay.itineraries.get(0)));
+            ItineraryMatcher matcher = new ItineraryMatcher(expectedItinerary, validDay.itineraries.get(0));
+            assertTrue(matcher.match());
         }
 
         // Days not monitored had an error response, so the check should return invalid for those days.
         assertFalse(existence.wednesday.isValid());
         assertFalse(existence.friday.isValid());
-
-        // Make sure all mocks were used
-        assertTrue(mockResponses.areAllMocksUsed());
     }
 
     private static Stream<Arguments> createCheckAllItinerariesExistTestCases() {
@@ -177,9 +172,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      * Creates a set of mock OTP responses by making copies of #OTP_DISPATCHER_PLAN_RESPONSE,
      * each copy having the itinerary date set to one of the dates from the specified dates list.
      */
-    public static List<OtpResponse> getMockDatedOtpResponses(List<String> dates) throws Exception {
+    public static Map<DayOfWeek, OtpResponse> getMockDatedOtpResponses(List<String> dates) throws Exception {
         // Set mocks to a list of responses with itineraries, ordered by day.
-        List<OtpResponse> mockOtpResponses = new ArrayList<>();
+        Map<DayOfWeek, OtpResponse> mockOtpResponses = new EnumMap<>(DayOfWeek.class);
 
         for (String dateString : dates) {
             LocalDate monitoredDate = LocalDate.parse(dateString, DateTimeUtils.DEFAULT_DATE_FORMATTER);
@@ -192,7 +187,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
                 itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
             }
 
-            mockOtpResponses.add(resp);
+            mockOtpResponses.put(monitoredDate.getDayOfWeek(), resp);
         }
         return mockOtpResponses;
     }
@@ -234,76 +229,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
-     * Check whether certain itineraries match.
-     */
-    @ParameterizedTest
-    @MethodSource("createItineraryComparisonTestCases")
-    void testItineraryMatches(ItineraryMatchTestCase testCase) {
-        Assertions.assertEquals(
-            testCase.shouldMatch,
-            ItineraryUtils.itinerariesMatch(testCase.previousItinerary, testCase.newItinerary),
-            testCase.name
-        );
-    }
-
-    private static List<ItineraryMatchTestCase> createItineraryComparisonTestCases() throws Exception {
-        List<ItineraryMatchTestCase> testCases = new ArrayList<>();
-
-        // should match same data
-        testCases.add(
-            new ItineraryMatchTestCase(
-                "Should be equal with same data",
-                createDefaultItinerary(),
-                true
-            )
-        );
-
-        // should not be equal with a different amount of legs
-        Leg extraBikeLeg = new Leg();
-        extraBikeLeg.mode = "BICYCLE";
-        Itinerary itineraryWithMoreLegs = createDefaultItinerary();
-        itineraryWithMoreLegs.legs.add(extraBikeLeg);
-        testCases.add(
-            new ItineraryMatchTestCase(
-                "should not be equal with a different amount of legs",
-                itineraryWithMoreLegs,
-                false
-            )
-        );
-
-        // should be equal with realtime data on transit leg (same day)
-        Itinerary itineraryWithRealtimeTransit = createDefaultItinerary();
-        Leg transitLeg = itineraryWithRealtimeTransit.legs.get(1);
-        int secondsOfDelay = 120;
-        transitLeg.startTime = new Date(transitLeg.startTime.getTime() + secondsOfDelay * 1000);
-        transitLeg.departureDelay = secondsOfDelay;
-        transitLeg.endTime = new Date(transitLeg.endTime.getTime() + secondsOfDelay * 1000);
-        transitLeg.arrivalDelay = secondsOfDelay;
-        testCases.add(
-            new ItineraryMatchTestCase(
-                "should be equal with realtime data on transit leg (same day)",
-                itineraryWithRealtimeTransit,
-                true
-            )
-        );
-
-        // should be equal with scheduled data on transit leg (future date)
-        Itinerary itineraryOnFutureDate = createDefaultItinerary();
-        Leg transitLeg2 = itineraryOnFutureDate.legs.get(1);
-        transitLeg2.startTime = Date.from(transitLeg2.startTime.toInstant().plus(7, ChronoUnit.DAYS));
-        transitLeg2.endTime = Date.from(transitLeg2.endTime.toInstant().plus(7, ChronoUnit.DAYS));
-        testCases.add(
-            new ItineraryMatchTestCase(
-                "should be equal with scheduled data on transit leg (future date)",
-                itineraryOnFutureDate,
-                true
-            )
-        );
-
-        return testCases;
-    }
-
-    /**
      * Helper method to create a trip with locations, time, and queryParams populated.
      */
     private MonitoredTrip makeTestTrip() {
@@ -317,12 +242,10 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
 
         MonitoredTrip trip = new MonitoredTrip();
         trip.id = "Test trip";
-        trip.queryParams = BASE_QUERY;
         trip.otp2QueryParams = new OtpGraphQLVariables();
         trip.otp2QueryParams.date = QUERY_DATE;
         trip.otp2QueryParams.mobilityProfile = "mobility-profile";
         trip.otp2QueryParams.time = QUERY_TIME;
-        trip.tripTime = QUERY_TIME;
 
         trip.from = targetPlace;
         trip.to = dummyPlace;
@@ -474,10 +397,9 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             boolean isRent = legMode.endsWith("_RENT");
             Leg leg = new Leg();
             leg.mode = modeParts[0];
-            // Field 'rentedbike' includes rented bikes and rented scooters.
-            leg.rentedBike = ("BICYCLE".equals(leg.mode) || "SCOOTER".equals(leg.mode)) && isRent;
-            leg.rentedCar = "CAR".equals(leg.mode) && isRent;
-            leg.hailedCar = "CAR".equals(leg.mode) && legMode.endsWith("_HAIL");
+            // Field 'rentedbike' includes _all_ vehicles e.g. cars, bikes and scooters.
+            leg.rentedBike = ("CAR".equals(leg.mode) || "BICYCLE".equals(leg.mode) || "SCOOTER".equals(leg.mode)) && isRent;
+            leg.rideHailingEstimate = ("CAR".equals(leg.mode) && legMode.endsWith("_HAIL")) ? new RideHailingEstimate() : null;
             leg.transitLeg = "BUS".equals(leg.mode);
             return leg;
         }).collect(Collectors.toList());

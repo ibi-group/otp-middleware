@@ -15,6 +15,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.Step;
+import org.opentripplanner.middleware.otp.response.Stop;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
@@ -47,6 +48,7 @@ import static org.opentripplanner.middleware.triptracker.TravelerLocator.getNext
 import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithinExclusionZone;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
+import static org.opentripplanner.middleware.utils.ConfigUtils.DEFAULT_ENV;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
@@ -60,7 +62,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary adairAvenueToMonroeDriveItinerary;
     private static Itinerary midtownToAnsleyItinerary;
     private static Itinerary midtownWalkItinerary;
-    private static List<Place> midtownToAnsleyIntermediateStops;
+    private static List<Stop> midtownToAnsleyIntermediateStops;
     private static Itinerary firstLegBusTransit;
     private static Itinerary baptistChurchToEastCroganStreetIntinerary;
     private static Itinerary arrivingOnBus40;
@@ -75,7 +77,9 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
     @BeforeAll
     static void setUp() throws IOException {
         // Load default env.yml configuration.
-        ConfigUtils.loadConfig(new String[]{});
+        ConfigUtils.loadConfig(DEFAULT_ENV);
+
+        UsRideGwinnettNotifyBusOperator.IS_TEST = true;
 
         UsRideGwinnettNotifyBusOperator.IS_TEST = true;
 
@@ -234,7 +238,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             .setSpeed(0)
             .build();
         travelerPosition.locale = locale;
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
     }
 
@@ -287,7 +291,6 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 walkLeg,
                 new TraceData()
                     .withPosition(originCoords)
-                    .withStartingTrip()
                     .withExpectedInstruction(new OnTrackInstruction(10, adairAvenueNortheastStep, locale))
             ),
             Arguments.of(
@@ -469,7 +472,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             .setTrackedJourney(new TrackedJourney())
             .build();
         travelerPosition.locale = locale;
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, traceData.isStartOfTrip);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
 
         // If a Gwinnett County bus notification was sent, check that the agency, route, and trip id fields are not null.
@@ -503,7 +506,6 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 new TraceData()
                     .withTripStatus(TripStatus.DEVIATED)
                     .withPosition(createPoint(busStopCoords, 12, NORTH_WEST_BEARING))
-                    .withStartingTrip()
                     .withExpectedInstruction(new DeviatedInstruction(busStopName, locale))
             ),
             Arguments.of(
@@ -512,7 +514,6 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 0,
                 new TraceData()
                     .withPosition(createPoint(busStopCoords, 4, NORTH_WEST_BEARING))
-                    .withStartingTrip()
                     .withExpectedInstruction(
                         new WaitForTransitInstruction(transitAsFirstLeg, transitAsFirstLeg.startTime.toInstant().minus(4, ChronoUnit.MINUTES), locale)
                     )
@@ -523,7 +524,6 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 0,
                 new TraceData()
                     .withPosition(33.916779, -84.226556)
-                    .withStartingTrip()
                     .withExpectedInstruction(new ContinueRidingTransitInstruction())
             ),
             Arguments.of(
@@ -532,7 +532,6 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 0,
                 new TraceData()
                     .withPosition(busStopCoords)
-                    .withStartingTrip()
                     .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
                     .withExpectedInstruction("Wait for your bus, route 20, scheduled at 7:58 AM (That time has passed)")
@@ -601,7 +600,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
             .setSpeed(traceData.speed)
             .build();
         travelerPosition.locale = locale;
-        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition, false);
+        TripInstruction tripInstruction = TravelerLocator.getInstruction(traceData.tripStatus, travelerPosition);
         assertEquals(traceData.expectedInstruction, tripInstruction != null ? tripInstruction.build() : NO_INSTRUCTION, message);
     }
 
@@ -824,7 +823,7 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
     private static Stream<Arguments> createDistanceToStartOfLegCases() {
         return Stream.of(
             // Close to start of routing (outside of origin building) for walk trip to One Justice Square
-            Arguments.of( walkGjacTo1js, new Coordinates(33.951786, -83.992887), true),
+            Arguments.of(walkGjacTo1js, new Coordinates(33.951786, -83.992887), true),
             // Inside of origin building away from start of routing for walk trip to One Justice Square
             Arguments.of(walkGjacTo1js, new Coordinates(33.951563, -83.992954), false)
         );

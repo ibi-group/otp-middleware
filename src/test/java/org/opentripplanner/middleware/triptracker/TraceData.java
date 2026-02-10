@@ -10,7 +10,6 @@ public class TraceData {
     public Coordinates position;
     public int speed;
     public String expectedInstruction;
-    public boolean isStartOfTrip;
     public boolean dismissIntermediateStops;
     public Instant instant;
 
@@ -44,11 +43,6 @@ public class TraceData {
 
     public TraceData withNullIntermediateStops() {
         this.dismissIntermediateStops = true;
-        return this;
-    }
-
-    public TraceData withStartingTrip() {
-        this.isStartOfTrip = true;
         return this;
     }
 

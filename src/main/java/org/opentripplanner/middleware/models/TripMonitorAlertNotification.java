@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.i18n.Message;
-import org.opentripplanner.middleware.otp.response.LocalizedAlert;
+import org.opentripplanner.middleware.otp.response.Alert;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 
 import java.util.HashSet;
@@ -41,15 +41,15 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
     }
 
     public static TripMonitorAlertNotification createAlertNotification(
-        Set<LocalizedAlert> previousAlerts,
-        Set<LocalizedAlert> currentAlerts,
+        Set<Alert> previousAlerts,
+        Set<Alert> currentAlerts,
         Locale locale
     ) {
         // Unseen alerts consists of all new alerts that we did not previously track.
-        HashSet<LocalizedAlert> unseenAlerts = new HashSet<>(currentAlerts);
+        HashSet<Alert> unseenAlerts = new HashSet<>(currentAlerts);
         unseenAlerts.removeAll(previousAlerts);
         // Resolved alerts consists of all previous alerts that no longer exist.
-        HashSet<LocalizedAlert> resolvedAlerts = new HashSet<>(previousAlerts);
+        HashSet<Alert> resolvedAlerts = new HashSet<>(previousAlerts);
         resolvedAlerts.removeAll(currentAlerts);
         // If there is no change in alerts from previous check, no notification should be created.
         if (unseenAlerts.isEmpty() && resolvedAlerts.isEmpty()) {
@@ -93,8 +93,8 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
     }
 
     public static String getSummary(
-        Set<LocalizedAlert> newAlerts,
-        Set<LocalizedAlert> resolvedAlerts,
+        Set<Alert> newAlerts,
+        Set<Alert> resolvedAlerts,
         boolean isAllClear,
         Locale locale
     ) {
@@ -114,7 +114,7 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
     }
 
     /** Formats alert counts (assuming at least one alert). */
-    private static String formatAlertCount(Set<LocalizedAlert> newAlerts, Set<LocalizedAlert> resolvedAlerts, Locale locale) {
+    private static String formatAlertCount(Set<Alert> newAlerts, Set<Alert> resolvedAlerts, Locale locale) {
         boolean hasNewAlerts = !newAlerts.isEmpty();
         boolean hasResolvedAlerts = !resolvedAlerts.isEmpty();
 
@@ -131,7 +131,7 @@ public class TripMonitorAlertNotification extends TripMonitorNotification {
             resolvedAlerts.size()
         );
         if (hasNewAlerts && hasResolvedAlerts) {
-            return String.format(Message.TRIP_ALERT_NEW_AND_RESOLVED.get(locale), newAlertsText, resolvedAlertsText);
+            return String.join(Message.ENUM_SEPARATOR.get(locale), newAlertsText, resolvedAlertsText);
         } else if (hasNewAlerts) {
             return newAlertsText;
         } else if (hasResolvedAlerts) {

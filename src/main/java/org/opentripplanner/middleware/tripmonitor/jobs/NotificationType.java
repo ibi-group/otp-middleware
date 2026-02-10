@@ -15,7 +15,8 @@ public enum NotificationType {
     MODE_CHANGE_NOTIFICATION,
     DEPARTED_NOTIFICATION,
     ARRIVED_NOTIFICATION,
-    DEPARTURE_AND_ARRIVAL_DELAY;
+    DEPARTURE_AND_ARRIVAL_DELAY,
+    REALTIME_UPDATES_LOST;
 
     /**
      * @return true if notification type corresponds to a delay notification, false otherwise.

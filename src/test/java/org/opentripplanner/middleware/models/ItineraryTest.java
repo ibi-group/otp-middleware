@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.RideHailingEstimate;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 
 import java.util.Collections;
@@ -24,7 +25,6 @@ public class ItineraryTest {
     private static Itinerary itineraryWithRentalBikeWithoutTransit;
     private static Itinerary itineraryWithTransitAndRentalBike;
     private static Itinerary itineraryWithTransitAndRentalCar;
-    private static Itinerary itineraryWithTransitAndRentalMicromobility;
     private static Itinerary itineraryWithTransitAndRideHail;
 
     @BeforeAll
@@ -39,18 +39,14 @@ public class ItineraryTest {
 
         Leg rentalCarLeg = new Leg();
         rentalCarLeg.mode = "CAR_RENT";
-        rentalCarLeg.rentedCar = true;
-
-        Leg rentalMicromobilityLeg = new Leg();
-        rentalMicromobilityLeg.mode = "MICROMOBILITY_RENT";
-        rentalMicromobilityLeg.rentedVehicle = true;
+        rentalCarLeg.rentedBike = true;
 
         Leg walkLeg = new Leg();
         walkLeg.mode = "WALK";
 
         Leg rideHailLeg = new Leg();
         rideHailLeg.mode = "CAR_HAIL";
-        rideHailLeg.hailedCar = true;
+        rideHailLeg.rideHailingEstimate = new RideHailingEstimate();
 
         itineraryWithTransitNoRentals = new Itinerary();
         itineraryWithTransitNoRentals.legs = List.of(transitLeg, walkLeg);
@@ -66,9 +62,6 @@ public class ItineraryTest {
 
         itineraryWithTransitAndRentalCar = new Itinerary();
         itineraryWithTransitAndRentalCar.legs = List.of(walkLeg, transitLeg, rentalCarLeg);
-
-        itineraryWithTransitAndRentalMicromobility = new Itinerary();
-        itineraryWithTransitAndRentalMicromobility.legs = List.of(walkLeg, transitLeg, rentalMicromobilityLeg);
 
         itineraryWithTransitAndRideHail = new Itinerary();
         itineraryWithTransitAndRideHail.legs = List.of(walkLeg, transitLeg, rideHailLeg);
@@ -99,7 +92,6 @@ public class ItineraryTest {
             Arguments.of(itineraryWithTransitNoRentals, false, "Itinerary with transit, no rentals/ride hail."),
             Arguments.of(itineraryWithTransitAndRentalBike, true, "Itinerary with transit and rental bike."),
             Arguments.of(itineraryWithTransitAndRentalCar, true, "Itinerary with transit and rental car."),
-            Arguments.of(itineraryWithTransitAndRentalMicromobility, true, "Itinerary with transit and rental micromobility."),
             Arguments.of(itineraryWithTransitAndRideHail, true, "Itinerary with transit and ride hail."),
             Arguments.of(blankItinerary, false, "Blank itinerary.")
         );

@@ -25,7 +25,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -34,6 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.makeOtpZonedDateTime;
 
 /**
  * A monitored trip represents a trip a user would like to receive notification on if affected by a delay and/or route
@@ -55,24 +55,10 @@ public class MonitoredTrip extends Model {
     public String tripName;
 
     /**
-     * The time at which the trip takes place. This will be in the format HH:mm and is extracted (or provided
-     * separately) to the date and time within the query parameters. The reasoning is so that it doesn't have to be
-     * extracted every time the trip requires checking.
-     */
-    @JsonIgnore
-    public String tripTime;
-
-    /**
      * From and to locations for the stored trip.
      */
     public Place from;
     public Place to;
-
-    /**
-     * whether the trip is an arriveBy trip
-     */
-    @JsonIgnore
-    public boolean arriveBy;
 
     /**
      * The number of minutes prior to a trip taking place that the status should be checked.
@@ -130,12 +116,6 @@ public class MonitoredTrip extends Model {
      * CheckMonitoredTrip job.
      */
     public boolean snoozed = false;
-
-    /**
-     * Query params. Query parameters influencing trip.
-     */
-    // TODO: Remove
-    public String queryParams;
 
     /**
      * GraphQL query parameters for OTP.
@@ -215,7 +195,7 @@ public class MonitoredTrip extends Model {
     ) {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
-        itineraryExistence = new ItineraryExistence(queriesByDate, itinerary, arriveBy, otpResponseProvider);
+        itineraryExistence = new ItineraryExistence(queriesByDate, itinerary, otp2QueryParams.arriveBy, otpResponseProvider);
         itineraryExistence.checkExistence(this);
         boolean itineraryExists = itineraryExistence.allMonitoredDaysAreValid(this);
         // If itinerary should be replaced, do so if all checked days are valid.
@@ -287,14 +267,11 @@ public class MonitoredTrip extends Model {
         from = itinerary.legs.get(0).from;
         to = itinerary.legs.get(lastLegIndex).to;
         this.otp2QueryParams = graphQLVariables;
-        this.arriveBy = graphQLVariables.arriveBy;
 
         // Ensure the itinerary we store does not contain any realtime info.
         clearRealtimeInfo();
 
-        // set the trip time by parsing the query params
-        tripTime = graphQLVariables.time;
-        if (tripTime == null) {
+        if (graphQLVariables.time == null) {
             throw new IllegalArgumentException("A monitored trip must have a time set in the query params!");
         }
     }
@@ -413,7 +390,7 @@ public class MonitoredTrip extends Model {
      * Returns the target hour of the day that the trip is either departing at or arriving by
      */
     public int tripTimeHour() {
-        return Integer.valueOf(tripTime.split(":")[0]);
+        return Integer.parseInt(otp2QueryParams.time.split(":")[0]);
     }
 
     /**
@@ -429,7 +406,7 @@ public class MonitoredTrip extends Model {
      * Returns the target minute of the hour that the trip is either departing at or arriving by
      */
     public int tripTimeMinute() {
-        return Integer.valueOf(tripTime.split(":")[1]);
+        return Integer.parseInt(otp2QueryParams.time.split(":")[1]);
     }
 
     /**
@@ -523,7 +500,7 @@ public class MonitoredTrip extends Model {
 
     /**
      * Determines whether this trip was created by primary user.
-     * The primary user is either be the user denoted with userId if there are no companions (there can be observers),
+     * The primary user is either the user denoted with userId if there are no companions (there can be observers),
      * or the user denoted with the `primary` field if that field is populated.
      */
     public boolean ownedByPrimary() {
@@ -545,7 +522,7 @@ public class MonitoredTrip extends Model {
      * Determines whether the trip status is consistent with the matching itinerary.
      */
     public boolean tripStateIsConsistentWithMatchingItinerary() {
-        if (journeyState == null || journeyState.tripStatus == null) return false;
+        if (journeyState == null || journeyState.tripStatus == null || journeyState.matchingItinerary == null) return false;
         Itinerary matchingItinerary = journeyState.matchingItinerary;
         switch (journeyState.tripStatus) {
             case PAST_TRIP:
@@ -565,7 +542,7 @@ public class MonitoredTrip extends Model {
      * Determines whether the trip target date is consistent with the matching itinerary.
      */
     public boolean tripTargetDateIsConsistentWithMatchingItinerary() {
-        if (journeyState == null || journeyState.targetDate == null) return false;
+        if (journeyState == null || journeyState.targetDate == null || journeyState.matchingItinerary == null) return false;
         Itinerary matchingItinerary = journeyState.matchingItinerary;
         return journeyState.targetDate.equals(
             DateTimeUtils.getStringFromDate(
@@ -573,5 +550,54 @@ public class MonitoredTrip extends Model {
                 DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN
             )
         );
+    }
+
+    /**
+     * Calculate target time for the next trip plan request. Find the next possible day the trip is active by
+     * initializing the appropriate target time.
+     */
+    public ZonedDateTime computeTargetZonedDateTime(Itinerary matchingItinerary) {
+        return matchingItinerary.isActive()
+            ? DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime)
+            : findEarliestTargetDate(DateTimeUtils.nowAsZonedDateTime());
+    }
+
+    /**
+     * Find, starting from the given date, the earliest target date for a monitored trip,
+     * using the trip start time and the monitored days.
+     * (Itinerary existence is not being checked, assuming that clients prevent monitoring days when a trip doesn't exist.)
+     */
+    public ZonedDateTime findEarliestTargetDate(ZonedDateTime fromDateTime) {
+        ZonedDateTime itineraryStartTimeToday = makeOtpZonedDateTime(
+            fromDateTime,
+            itinerary.startTime.toInstant()
+        );
+        ZonedDateTime itineraryEndTimeToday = makeOtpZonedDateTime(
+            fromDateTime,
+            itinerary.endTime.toInstant()
+        );
+
+        int daysToAdd = fromDateTime.isAfter(itineraryStartTimeToday) && fromDateTime.isAfter(itineraryEndTimeToday) ? 1 : 0;
+
+        ZonedDateTime nextStartDay = makeOtpZonedDateTime(
+            fromDateTime.plusDays(daysToAdd),
+            itinerary.startTime.toInstant()
+        );
+
+        return findNextMonitoredDay(nextStartDay);
+    }
+
+    /**
+     * Advance the target date/time until a day is found when the trip is active.
+     */
+    private ZonedDateTime findNextMonitoredDay(ZonedDateTime startingDay) {
+        ZonedDateTime nextMonitoredDay = startingDay;
+        if (!isOneTime()) {
+            while (!isActiveOnDate(nextMonitoredDay)) {
+                nextMonitoredDay = nextMonitoredDay.plusDays(1);
+            }
+        }
+
+        return nextMonitoredDay;
     }
 }

@@ -2,7 +2,7 @@ package org.opentripplanner.middleware.models;
 
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.otp.response.PlannerError;
+import org.opentripplanner.middleware.otp.response.RoutingError;
 import org.opentripplanner.middleware.otp.response.TripPlan;
 
 import java.util.Date;
@@ -20,7 +20,7 @@ public class TripSummary extends Model {
 
     public Place toPlace;
 
-    public PlannerError error;
+    public List<RoutingError> errors;
 
     public List<Itinerary> itineraries;
 
@@ -32,14 +32,14 @@ public class TripSummary extends Model {
     public TripSummary() {
     }
 
-    public TripSummary(TripPlan tripPlan, PlannerError error, String tripRequestId, String batchId) {
+    public TripSummary(TripPlan tripPlan, List<RoutingError> errors, String tripRequestId, String batchId) {
         if (tripPlan != null) {
             this.date = tripPlan.date;
             this.fromPlace = tripPlan.from;
             this.toPlace = tripPlan.to;
             this.itineraries = tripPlan.itineraries;
         }
-        this.error = error;
+        this.errors = errors;
         this.tripRequestId = tripRequestId;
         this.batchId = batchId;
     }
@@ -50,7 +50,7 @@ public class TripSummary extends Model {
             "date=" + date +
             ", fromPlace=" + fromPlace +
             ", toPlace=" + toPlace +
-            ", error=" + error +
+            ", error=" + errors +
             ", itineraries=" + itineraries +
             ", tripRequestId='" + tripRequestId + '\'' +
             ", batchId='" + batchId + '\'' +

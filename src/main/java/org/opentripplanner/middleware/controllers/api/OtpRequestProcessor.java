@@ -122,8 +122,7 @@ public class OtpRequestProcessor implements Endpoint {
      * trip history) the response is intercepted and processed. In all cases, the response from OTP (content and HTTP
      * status) is passed back to the requester.
      */
-    private String proxyGet(Request request, spark.Response response) throws JsonProcessingException {
-        OtpUser otpUser = checkUserPermissions(request);
+    private String proxyGet(Request request, spark.Response response) {
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replaceFirst(basePath, "");
         // attempt to get response from OTP server based on requester's query parameters
@@ -132,17 +131,7 @@ public class OtpRequestProcessor implements Endpoint {
             logMessageAndHalt(request, HttpStatus.INTERNAL_SERVER_ERROR_500, "No response from OTP server.");
             return null;
         }
-        // If the request path ends with the plan endpoint (e.g., '/plan' or '/default/plan'), process response.
-        if (otpRequestPath.endsWith(OtpDispatcher.OTP_PLAN_ENDPOINT) && otpUser != null) {
-            if (!handlePlanTripResponse(request, otpDispatcherResponse, otpUser)) {
-                logMessageAndHalt(
-                    request,
-                    HttpStatus.INTERNAL_SERVER_ERROR_500,
-                    "Failed to save trip history."
-                );
-                return null;
-            }
-        }
+
         // provide response to requester as received from OTP server
         response.type(MediaType.APPLICATION_JSON);
         response.status(otpDispatcherResponse.statusCode);
@@ -258,26 +247,6 @@ public class OtpRequestProcessor implements Endpoint {
         return otpUser;
     }
 
-    /**
-     * Process plan response from OTP. Store the response if consent is given. Handle the process and all exceptions
-     * seamlessly so as not to affect the response provided to the requester.
-     *
-     * @return Returns false if there was an error.
-     */
-    private static boolean handlePlanTripResponse(
-            Request request,
-            OtpDispatcherResponse otpDispatcherResponse,
-            OtpUser otpUser
-    ) throws JsonProcessingException {
-        String body = request.body();
-        return handlePlanTripResponse(
-                request.queryParams("batchId"),
-                body.isEmpty() ? new QueryVariables() : getPOJOFromJSON(body, Query.class).variables,
-                otpDispatcherResponse,
-                otpUser
-        );
-    }
-
     private static boolean handlePlanTripResponse(
             String batchId,
             QueryVariables queryVariables,
@@ -306,7 +275,7 @@ public class OtpRequestProcessor implements Endpoint {
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
                 if (tripRequestSaved) {
-                    TripSummary tripSummary = new TripSummary(otpResponse.plan, otpResponse.error, tripRequest.id, batchId);
+                    TripSummary tripSummary = new TripSummary(otpResponse.plan, otpResponse.plan.routingErrors, tripRequest.id, batchId);
                     Persistence.tripSummaries.create(tripSummary);
                 } else {
                     LOG.warn("Unable to save trip request, orphaned trip summary not saved");

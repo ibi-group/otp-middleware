@@ -22,6 +22,7 @@ import spark.Response;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Users.deleteAuth0User;
+import static org.opentripplanner.middleware.auth.Auth0Users.updateAuth0Language;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 /**
@@ -35,7 +36,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     public static final String VERIFICATION_EMAIL_PATH = "/verification-email";
 
     /**
-     * Constructor that child classes can access to setup persistence and API route.
+     * Constructor that child classes can access to set up persistence and API route.
      */
     public AbstractUserController(String apiPrefix, TypedPersistence<U> persistence, String resource) {
         super(apiPrefix, persistence, resource);
@@ -180,6 +181,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         if (user instanceof OtpUser) {
             OtpUser otpUser = (OtpUser) user;
             OtpUser existingOtpUser = (OtpUser) preExistingUser;
+            updateAuth0Language(otpUser, existingOtpUser);
             if (!otpUser.storeTripHistory && existingOtpUser.storeTripHistory) {
                 // If an OTP user no longer wants their trip history stored, remove all history from MongoDB.
                 ConnectedDataManager.removeUsersTripHistory(otpUser.id);
