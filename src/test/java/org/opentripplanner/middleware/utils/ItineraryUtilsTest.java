@@ -17,9 +17,11 @@ import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.RideHailingEstimate;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.tripmonitor.jobs.MockLegResponseProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -105,17 +109,26 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      */
     @ParameterizedTest
     @MethodSource("createCheckAllItinerariesExistTestCases")
-    void canCheckAllItinerariesExist(boolean insertInvalidDay, String message) throws Exception {
+    void canCheckAllItinerariesExist(boolean insertInvalidDay, boolean planFallBack, String message) throws Exception {
         MonitoredTrip trip = makeTestTrip();
-        Map<DayOfWeek, Itinerary> mockItineraries = getMockDatedItineraries(MONITORED_TRIP_DATES);
+        Map<DayOfWeek, OtpResponse> mockOtpResponses = getMockOtpResponseDatedItineraries(MONITORED_TRIP_DATES);
+        Map<DayOfWeek, Itinerary> mockItineraries = getMockLegIdDatedItineraries(MONITORED_TRIP_DATES);
 
         Itinerary noLegsItinerary = new Itinerary();
         noLegsItinerary.legs = new ArrayList<>();
         // If needed, insert a mock invalid response (i.e. itinerary with no legs) for one of the monitored days.
         if (insertInvalidDay) {
+            mockOtpResponses.put(DayOfWeek.MONDAY, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
             mockItineraries.put(DayOfWeek.MONDAY, noLegsItinerary);
         }
+
+        MockOtpResponseProvider mockResponses = new MockOtpResponseProvider(mockOtpResponses);
+
         // Return an erroneous response for some days that are not monitored (Wednesday, Friday).
+        if (!planFallBack) {
+            mockOtpResponses.put(DayOfWeek.FRIDAY, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
+            mockOtpResponses.put(DayOfWeek.WEDNESDAY, OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse());
+        }
         mockItineraries.put(DayOfWeek.FRIDAY, noLegsItinerary);
         mockItineraries.put(DayOfWeek.WEDNESDAY, noLegsItinerary);
 
@@ -125,8 +138,12 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
 
         trip.checkItineraryExistence(
             false,
+            mockResponses::getMockResponse,
             date -> new LegFinder(
-                new MockLegResponseProvider(mockItineraries.get(date.getDayOfWeek()), leg -> LegIdProcessor.computeLegIdForServiceDate(leg, date))::getLegResponse,
+                new MockLegResponseProvider(
+                    mockItineraries.get(date.getDayOfWeek()),
+                    leg -> LegIdProcessor.computeLegIdForServiceDate(leg, date)
+                )::getLegResponse,
                 LegIdProcessor::computeLegIdForServiceDate
             )
         );
@@ -157,15 +174,18 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             assertTrue(matcher.match());
         }
 
-        // Days not monitored had an error response, so the check should return invalid for those days.
-        assertFalse(existence.wednesday.isValid());
-        assertFalse(existence.friday.isValid());
+        if (!planFallBack) {
+            // Days not monitored had an error response, so the check should return invalid for those days.
+            assertFalse(existence.wednesday.isValid());
+            assertFalse(existence.friday.isValid());
+        }
     }
 
     private static Stream<Arguments> createCheckAllItinerariesExistTestCases() {
         return Stream.of(
-            Arguments.of(false, "checkAllDays = false should produce allCheckedDaysAreValid = true."),
-            Arguments.of(true, "checkAllDays = true should produce allCheckedDaysAreValid = false.")
+            Arguments.of(false, false, "checkAllDays = false should produce allCheckedDaysAreValid = true."),
+            Arguments.of(true, false, "checkAllDays = true should produce allCheckedDaysAreValid = false."),
+            Arguments.of(false, true, "Plan fallback. checkAllDays = false should produce allCheckedDaysAreValid = true.")
         );
     }
 
@@ -185,22 +205,45 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
      * Creates a set of mock OTP responses by making copies of #OTP2_DISPATCHER_PLAN_RESPONSE_LEGID,
      * each copy having the itinerary date set to one of the dates from the specified dates list.
      */
-    public static Map<DayOfWeek, Itinerary> getMockDatedItineraries(List<String> dates) throws Exception {
-        // Set mocks to a list of responses with itineraries, ordered by day.
-        Map<DayOfWeek, Itinerary> mockItineraries = new EnumMap<>(DayOfWeek.class);
-
+    private static <T> Map<DayOfWeek, T> getMockDatedObjects(
+        List<String> dates,
+        Function<LocalDate, T> getResponseType,
+        BiConsumer<T, LocalDate> setItineraryDate
+    ) {
+        Map<DayOfWeek, T> mockItineraries = new EnumMap<>(DayOfWeek.class);
         for (String dateString : dates) {
             LocalDate monitoredDate = LocalDate.parse(dateString, DateTimeUtils.DEFAULT_DATE_FORMATTER);
-
-            // Copy the template OTP response itinerary, and change the itinerary date to the monitored date,
-            // in order to pass the same-day itinerary requirement.
-            Itinerary itin = firstItinerary(OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse());
-            itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
-            itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
-
-            mockItineraries.put(monitoredDate.getDayOfWeek(), itin);
+            T response = getResponseType.apply(monitoredDate);
+            setItineraryDate.accept(response, monitoredDate);
+            mockItineraries.put(monitoredDate.getDayOfWeek(), response);
         }
         return mockItineraries;
+    }
+
+    public static Map<DayOfWeek, Itinerary> getMockLegIdDatedItineraries(List<String> dates) throws Exception {
+        OtpResponse otpResponse = OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse();
+        return getMockDatedObjects(
+            dates,
+            monitoredDate -> firstItinerary(otpResponse),
+            (itin, monitoredDate) -> {
+                itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
+                itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
+            }
+        );
+    }
+
+    public static Map<DayOfWeek, OtpResponse> getMockOtpResponseDatedItineraries(List<String> dates) throws Exception {
+        OtpResponse otpResponse = OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse();
+        return getMockDatedObjects(
+            dates,
+            monitoredDate -> otpResponse,
+            (resp, monitoredDate) -> {
+                for (Itinerary itin : resp.plan.itineraries) {
+                    itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
+                    itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
+                }
+            }
+        );
     }
 
     /**

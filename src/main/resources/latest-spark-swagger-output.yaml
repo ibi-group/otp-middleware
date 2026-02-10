@@ -2684,6 +2684,10 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/OtpRequest"
+      referenceItinerary:
+        $ref: "#/definitions/Itinerary"
+      tripIsArriveBy:
+        type: "boolean"
       monday:
         $ref: "#/definitions/ItineraryExistenceResult"
       tuesday:
@@ -2706,6 +2710,8 @@ definitions:
         type: "string"
         format: "date"
       getLegFinder:
+        $ref: "#/definitions/Function"
+      otpResponseProvider:
         $ref: "#/definitions/Function"
   JourneyState:
     type: "object"
