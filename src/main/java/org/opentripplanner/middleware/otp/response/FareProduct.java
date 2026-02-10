@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -17,7 +19,5 @@ public class FareProduct implements Cloneable {
     public String name;
     public RiderCategory riderCategory;
     public Money price;
-    @JsonIgnore
-    @BsonIgnore
-    Collection<FareProduct> dependencies;
+    List<FareDependency> dependencies = new ArrayList<>();
 }

@@ -136,7 +136,7 @@ public class Leg implements Cloneable {
     /**
      * Applicable fare products for this leg.
      */
-    public List<FareProduct> fareProducts = null;
+    public List<FareProductUse> fareProducts = null;
 
     /**
      * Gets the scheduled start time of this itinerary in the OTP timezone.
