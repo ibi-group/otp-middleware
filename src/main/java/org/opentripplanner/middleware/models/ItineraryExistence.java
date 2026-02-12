@@ -34,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.i18n.Message.ENUM_SEPARATOR;
@@ -238,7 +239,7 @@ public class ItineraryExistence extends Model {
 
             ItineraryCheckStatus checkerStatus = legResponses.get(otpRequest.dateTime.toLocalDate().getDayOfWeek());
             Itinerary matchingItineraryForDay = checkerStatus.isFailed()
-                ? checkOtpResponse(otpRequest, dayOfWeek, trip)
+                ? checkOtpResponse(otpResponseProvider, otpRequest, trip.id, referenceItinerary, tripIsArriveBy)
                 : checkerStatus.rebuiltItinerary;
             if (matchingItineraryForDay == null) {
                 LOG.warn(
@@ -274,26 +275,69 @@ public class ItineraryExistence extends Model {
         );
     }
 
+    public static Itinerary checkOtpResponse(
+        Object otpResponseProvider,
+        String tripId,
+        Itinerary referenceItinerary
+    ) {
+        return checkOtpResponse(otpResponseProvider, null, tripId, referenceItinerary, false);
+    }
+
     /**
-     * Checks whether there is a matching itinerary in the OTP response for the given request and day of the week. This
-     * is used in cases where the leg check fails.
+     * Checks whether there is a matching itinerary in the OTP response for the given request. This is used in cases
+     * where the leg check fails.
      */
-    private Itinerary checkOtpResponse(OtpRequest otpRequest, DayOfWeek dayOfWeek, MonitoredTrip trip) {
-        OtpResponse response = otpResponseProvider.apply(otpRequest);
-        if (response == null || response.plan == null || response.plan.itineraries == null) {
-            LOG.warn("Itinerary existence check failed on {} for trip {} - OTP response was null.", dayOfWeek, trip.id);
+    public static Itinerary checkOtpResponse(
+        Object otpResponseProvider,
+        OtpRequest otpRequest,
+        String tripId,
+        Itinerary referenceItinerary,
+        boolean tripIsArriveBy
+    ) {
+        OtpResponse response;
+        if (otpResponseProvider == null) {
             return null;
         }
-
-        for (Itinerary itineraryCandidate : response.plan.itineraries) {
-            ItineraryMatcher matcher = new ItineraryMatcher(referenceItinerary, itineraryCandidate);
-            if (ItineraryUtils.occursOnSameServiceDay(itineraryCandidate, otpRequest.dateTime, tripIsArriveBy)
-                && matcher.match()) {
-                return itineraryCandidate;
-            }
+        if (otpResponseProvider instanceof Function) {
+            response = ((Function<OtpRequest, OtpResponse>) otpResponseProvider).apply(otpRequest);
+        } else if (otpResponseProvider instanceof Supplier) {
+            response = ((Supplier<OtpResponse>) otpResponseProvider).get();
+        } else {
+            throw new IllegalArgumentException("Unsupported otpResponseProvider type.");
         }
 
-        LOG.warn("Itinerary existence check failed on {} for trip {} - No matching itinerary found.", dayOfWeek, trip.id);
+        if (response == null || response.plan == null || response.plan.itineraries == null) {
+            LOG.warn("Itinerary existence check failed for trip {} - OTP response was null.", tripId);
+            return null;
+        }
+        return hasMatchingItinerary(
+            response,
+            referenceItinerary,
+            otpRequest != null ? otpRequest.dateTime : null,
+            tripIsArriveBy,
+            tripId
+        );
+    }
+
+    /**
+     * Checks the OTP response for a match against the reference itinerary.
+     */
+    private static Itinerary hasMatchingItinerary(
+        OtpResponse response,
+        Itinerary referenceItinerary,
+        ZonedDateTime dateTime,
+        boolean tripIsArriveBy,
+        String tripId
+    ) {
+        for (Itinerary candidateItinerary : response.plan.itineraries) {
+            if (
+                (dateTime == null || ItineraryUtils.occursOnSameServiceDay(candidateItinerary, dateTime, tripIsArriveBy))
+                && new ItineraryMatcher(referenceItinerary, candidateItinerary).match()
+            ) {
+                return candidateItinerary;
+            }
+        }
+        LOG.warn("Itinerary existence check failed for trip {} - No matching itinerary found.", tripId);
         return null;
     }
 

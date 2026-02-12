@@ -225,10 +225,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         return getMockDatedObjects(
             dates,
             monitoredDate -> firstItinerary(otpResponse),
-            (itin, monitoredDate) -> {
-                itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
-                itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
-            }
+            ItineraryUtilsTest::setItineraryDate
         );
     }
 
@@ -239,11 +236,15 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             monitoredDate -> otpResponse,
             (resp, monitoredDate) -> {
                 for (Itinerary itin : resp.plan.itineraries) {
-                    itin.startTime = getNewItineraryDate(itin.startTime, monitoredDate);
-                    itin.endTime = getNewItineraryDate(itin.endTime, monitoredDate);
+                    setItineraryDate(itin, monitoredDate);
                 }
             }
         );
+    }
+
+    private static void setItineraryDate(Itinerary itinerary, LocalDate date) {
+        itinerary.startTime = getNewItineraryDate(itinerary.startTime, date);
+        itinerary.endTime = getNewItineraryDate(itinerary.endTime, date);
     }
 
     /**

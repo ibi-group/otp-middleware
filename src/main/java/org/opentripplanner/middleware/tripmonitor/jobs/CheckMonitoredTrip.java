@@ -337,7 +337,7 @@ public class CheckMonitoredTrip implements Runnable {
         ItineraryChecker checker = new ItineraryChecker(trip.itinerary, legFinder, targetZonedDateTime.toLocalDate());
         ItineraryCheckStatus itineraryCheckStatus = checker.checkLegs();
         Itinerary candidateItinerary = itineraryCheckStatus.isFailed()
-            ? checkOtpResponse()
+            ? ItineraryExistence.checkOtpResponse(otpResponseProvider, trip.id, trip.itinerary)
             : itineraryCheckStatus.rebuiltItinerary;
         if (candidateItinerary != null) {
             // Set the matching itinerary. Compute target date and set the baseline journey state.
