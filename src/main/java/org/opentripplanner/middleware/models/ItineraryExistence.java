@@ -58,11 +58,13 @@ public class ItineraryExistence extends Model {
     /**
      * The initial reference itinerary to compare against itinerary match candidates.
      */
+    @JsonIgnore
     private transient Itinerary referenceItinerary;
 
     /**
      * Whether the original trip request time is a departure or arrive by time.
      */
+    @JsonIgnore
     private transient boolean tripIsArriveBy;
 
     public ItineraryExistenceResult monday;

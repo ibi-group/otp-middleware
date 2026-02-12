@@ -1,6 +1,8 @@
 package org.opentripplanner.middleware;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.manusant.ss.SparkSwagger;
+import io.github.manusant.ss.conf.IgnoreSpec;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
@@ -94,6 +96,7 @@ public class OtpMiddlewareMain {
         Service spark = Service.ignite().port(Service.SPARK_DEFAULT_PORT);
         try {
             SparkSwagger.of(spark)
+                .ignores(IgnoreSpec.newBuilder().withIgnoreAnnotated(JsonIgnore.class)::build)
                 // Register API routes.
                 .endpoints(() -> List.of(
                     new AdminUserController(API_PREFIX),
