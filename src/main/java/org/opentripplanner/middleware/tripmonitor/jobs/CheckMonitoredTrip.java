@@ -307,26 +307,30 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Checks whether there is a matching itinerary in the OTP response. This is used in cases where the leg check fails.
+     * Retrieve itinerary from leg query or OTP plan response.
      */
-    private Itinerary checkOtpResponse() {
-        if (otpResponseProvider == null) {
-            return null;
+    private Itinerary getCandidateItinerary() {
+        ItineraryChecker checker = new ItineraryChecker(trip.itinerary, legFinder, targetZonedDateTime.toLocalDate());
+        ItineraryCheckStatus itineraryCheckStatus = checker.checkLegs();
+
+        if (!itineraryCheckStatus.isFailed()) {
+            return itineraryCheckStatus.rebuiltItinerary;
         }
-        OtpResponse response = otpResponseProvider.get();
-        if (response == null || response.plan == null || response.plan.itineraries == null) {
-            LOG.warn("No comparison itinerary found for trip {} - OTP response was null.", trip.id);
-            return null;
+
+        ITINERARY_NOT_FOUND_LOGGER.warn(
+            "No comparison itinerary found for trip {} - {}",
+            trip.id,
+            itineraryCheckStatus.getFailedReason()
+        );
+
+        Itinerary candidateItinerary = ItineraryExistence.checkOtpResponse(otpResponseProvider, trip.id, trip.itinerary);
+        if (candidateItinerary == null) {
+            ITINERARY_NOT_FOUND_LOGGER.warn(
+                "No comparison itinerary found for trip {} - OTP plan response did not contain a matching itinerary.",
+                trip.id
+            );
         }
-        for (Itinerary candidateItinerary : response.plan.itineraries) {
-            ItineraryMatcher matcher = new ItineraryMatcher(trip.itinerary, candidateItinerary);
-            if (matcher.match()) {
-                LOG.info("Found matching itinerary in OTP response!");
-                return candidateItinerary;
-            }
-        }
-        LOG.warn("No comparison itinerary found for trip {} - OTP response was null.", trip.id);
-        return null;
+        return candidateItinerary;
     }
 
     /**
@@ -334,11 +338,7 @@ public class CheckMonitoredTrip implements Runnable {
      * by rebuilding the itinerary using the matched legs.
      */
     private boolean makeOTPRequestAndUpdateMatchingItineraryInternal() {
-        ItineraryChecker checker = new ItineraryChecker(trip.itinerary, legFinder, targetZonedDateTime.toLocalDate());
-        ItineraryCheckStatus itineraryCheckStatus = checker.checkLegs();
-        Itinerary candidateItinerary = itineraryCheckStatus.isFailed()
-            ? ItineraryExistence.checkOtpResponse(otpResponseProvider, trip.id, trip.itinerary)
-            : itineraryCheckStatus.rebuiltItinerary;
+        Itinerary candidateItinerary = getCandidateItinerary();
         if (candidateItinerary != null) {
             // Set the matching itinerary. Compute target date and set the baseline journey state.
             matchingItinerary = candidateItinerary;
@@ -388,13 +388,6 @@ public class CheckMonitoredTrip implements Runnable {
             LOG.info("Trip status set to {}", journeyState.tripStatus);
             return updateMonitoredTrip();
         } else {
-            // If this point is reached, a matching itinerary was not found.
-            ITINERARY_NOT_FOUND_LOGGER.warn(
-                "No comparison itinerary found for trip {} - {}",
-                trip.id,
-                itineraryCheckStatus.getFailedReason()
-            );
-
             boolean setNullItinerary = !shouldPersistMatchingItinerary();
             if (hasReachedMaxItineraryChecks() || setNullItinerary) {
                 // Check whether this trip should no longer ever be checked due to not having matching itineraries on any
