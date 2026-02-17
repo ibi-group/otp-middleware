@@ -49,6 +49,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  */
 public class ItineraryExistence extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryExistence.class);
+    private static final Logger ITINERARY_NOT_FOUND_LOGGER = LoggerFactory.getLogger("itinerary-not-found-logger");
 
     /**
      * Initial set of requests on which to base the itinerary existence checks. We do not want these persisted.
@@ -218,6 +219,41 @@ public class ItineraryExistence extends Model {
     }
 
     /**
+     * Retrieve itinerary from leg query or OTP plan response.
+     */
+    private Itinerary getCandidateItinerary(Map<DayOfWeek, ItineraryCheckStatus> legResponses, OtpRequest otpRequest, MonitoredTrip trip) {
+        ItineraryCheckStatus itineraryCheckStatus = legResponses.get(otpRequest.dateTime.toLocalDate().getDayOfWeek());
+
+        if (!itineraryCheckStatus.isFailed()) {
+            return itineraryCheckStatus.rebuiltItinerary;
+        }
+
+        Itinerary candidateItinerary = checkOtpResponse(otpResponseProvider, otpRequest, trip.id, referenceItinerary, tripIsArriveBy);
+        logItineraryNotFound(trip.id, itineraryCheckStatus, candidateItinerary == null);
+        return candidateItinerary;
+    }
+
+    /**
+     * Log any failed attempts to obtain a matching itinerary from a leg query or OTP plan response.
+     */
+    public static void logItineraryNotFound(String tripId, ItineraryCheckStatus itineraryCheckStatus, boolean planQueryFailed) {
+        if (itineraryCheckStatus.isFailed()) {
+            ITINERARY_NOT_FOUND_LOGGER.warn(
+                "No comparison itinerary found for trip {} - {}",
+                tripId,
+                itineraryCheckStatus.getFailedReason()
+            );
+        }
+
+        if (planQueryFailed) {
+            ITINERARY_NOT_FOUND_LOGGER.warn(
+                "No comparison itinerary found for trip {} - OTP plan response did not contain a matching itinerary.",
+                tripId
+            );
+        }
+    }
+
+    /**
      * Checks whether the itinerary of a trip matches any of the OTP itineraries from the trip query params.
      */
     public void checkExistence(MonitoredTrip trip) {
@@ -239,17 +275,8 @@ public class ItineraryExistence extends Model {
                 setResultForDayOfWeek(result, dayOfWeek);
             }
 
-            ItineraryCheckStatus checkerStatus = legResponses.get(otpRequest.dateTime.toLocalDate().getDayOfWeek());
-            Itinerary matchingItineraryForDay = checkerStatus.isFailed()
-                ? checkOtpResponse(otpResponseProvider, otpRequest, trip.id, referenceItinerary, tripIsArriveBy)
-                : checkerStatus.rebuiltItinerary;
+            Itinerary matchingItineraryForDay = getCandidateItinerary(legResponses, otpRequest, trip);
             if (matchingItineraryForDay == null) {
-                LOG.warn(
-                    "Itinerary existence check failed on {} for trip {} - {}",
-                    dayOfWeek,
-                    trip.id,
-                    checkerStatus.getFailedReason()
-                );
                 // If no match was found for the date, mark day of week as non-existent for the itinerary.
                 result.handleInvalidDate(otpRequest.dateTime);
             } else {

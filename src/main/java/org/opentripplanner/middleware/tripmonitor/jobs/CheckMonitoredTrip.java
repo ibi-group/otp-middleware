@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 import org.opentripplanner.middleware.i18n.Message;
 import org.opentripplanner.middleware.itinerarymatching.ItineraryCheckStatus;
 import org.opentripplanner.middleware.itinerarymatching.ItineraryChecker;
-import org.opentripplanner.middleware.itinerarymatching.ItineraryMatcher;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -60,7 +59,6 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.makeOtpZonedDat
  */
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
-    private static final Logger ITINERARY_NOT_FOUND_LOGGER = LoggerFactory.getLogger("itinerary-not-found-logger");
 
     public boolean IS_TEST = false;
 
@@ -316,20 +314,8 @@ public class CheckMonitoredTrip implements Runnable {
         if (!itineraryCheckStatus.isFailed()) {
             return itineraryCheckStatus.rebuiltItinerary;
         }
-
-        ITINERARY_NOT_FOUND_LOGGER.warn(
-            "No comparison itinerary found for trip {} - {}",
-            trip.id,
-            itineraryCheckStatus.getFailedReason()
-        );
-
         Itinerary candidateItinerary = ItineraryExistence.checkOtpResponse(otpResponseProvider, trip.id, trip.itinerary);
-        if (candidateItinerary == null) {
-            ITINERARY_NOT_FOUND_LOGGER.warn(
-                "No comparison itinerary found for trip {} - OTP plan response did not contain a matching itinerary.",
-                trip.id
-            );
-        }
+        ItineraryExistence.logItineraryNotFound(trip.id, itineraryCheckStatus, candidateItinerary == null);
         return candidateItinerary;
     }
 
