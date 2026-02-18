@@ -34,7 +34,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.i18n.Message.ENUM_SEPARATOR;
@@ -304,37 +303,22 @@ public class ItineraryExistence extends Model {
         );
     }
 
-    public static Itinerary checkOtpResponse(
-        Object otpResponseProvider,
-        String tripId,
-        Itinerary referenceItinerary
-    ) {
-        return checkOtpResponse(otpResponseProvider, null, tripId, referenceItinerary, false);
-    }
-
     /**
      * Checks whether there is a matching itinerary in the OTP response for the given request. This is used in cases
      * where the leg check fails.
      */
     public static Itinerary checkOtpResponse(
-        Object otpResponseProvider,
+        Function<OtpRequest, OtpResponse> otpResponseProvider,
         OtpRequest otpRequest,
         String tripId,
         Itinerary referenceItinerary,
         boolean tripIsArriveBy
     ) {
-        OtpResponse response;
         if (otpResponseProvider == null) {
+            LOG.warn("OTP response provider is null! Cannot check OTP response for itinerary existence for trip {}.", tripId);
             return null;
         }
-        if (otpResponseProvider instanceof Function) {
-            response = ((Function<OtpRequest, OtpResponse>) otpResponseProvider).apply(otpRequest);
-        } else if (otpResponseProvider instanceof Supplier) {
-            response = ((Supplier<OtpResponse>) otpResponseProvider).get();
-        } else {
-            throw new IllegalArgumentException("Unsupported otpResponseProvider type.");
-        }
-
+        OtpResponse response = otpResponseProvider.apply(otpRequest);
         if (response == null || response.plan == null || response.plan.itineraries == null) {
             LOG.warn("Itinerary existence check failed for trip {} - OTP response was null.", tripId);
             return null;

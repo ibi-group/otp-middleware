@@ -19,6 +19,7 @@ import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.LegFinder;
+import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
@@ -120,6 +121,10 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
     /** Provides a mock OTP 'plan' response */
     public static OtpResponse mockOtpPlanResponse() {
+        return mockOtpPlanResponse(null);
+    }
+
+    public static OtpResponse mockOtpPlanResponse(OtpRequest ignored) {
         try {
             // Setup an OTP mock response in order to trigger some of the monitor checks.
             return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse();

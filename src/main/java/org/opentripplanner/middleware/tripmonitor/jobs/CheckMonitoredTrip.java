@@ -12,6 +12,7 @@ import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -44,7 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMATTER;
@@ -120,7 +121,7 @@ public class CheckMonitoredTrip implements Runnable {
     TripMonitorNotification initialReminderNotification;
 
     /** The OTP Response provider */
-    private Supplier<OtpResponse> otpResponseProvider;
+    private Function<OtpRequest, OtpResponse> otpResponseProvider;
 
     /** The helper object for making OTP Leg queries. */
     private LegFinder legFinder;
@@ -141,13 +142,13 @@ public class CheckMonitoredTrip implements Runnable {
         legFinder = new LegFinder();
     }
 
-    public CheckMonitoredTrip(MonitoredTrip trip, Supplier<OtpResponse> otpResponseProvider, LegFinder legFinder) throws CloneNotSupportedException {
+    public CheckMonitoredTrip(MonitoredTrip trip, Function<OtpRequest, OtpResponse> otpResponseProvider, LegFinder legFinder) throws CloneNotSupportedException {
         this(trip, otpResponseProvider, legFinder, false);
     }
 
     public CheckMonitoredTrip(
         MonitoredTrip trip,
-        Supplier<OtpResponse> otpResponseProvider,
+        Function<OtpRequest, OtpResponse> otpResponseProvider,
         LegFinder legFinder,
         boolean hasTolerantItineraryCheck
     ) throws CloneNotSupportedException {
@@ -314,7 +315,7 @@ public class CheckMonitoredTrip implements Runnable {
         if (!itineraryCheckStatus.isFailed()) {
             return itineraryCheckStatus.rebuiltItinerary;
         }
-        Itinerary candidateItinerary = ItineraryExistence.checkOtpResponse(otpResponseProvider, trip.id, trip.itinerary);
+        Itinerary candidateItinerary = ItineraryExistence.checkOtpResponse(otpResponseProvider, null, trip.id, trip.itinerary, false);
         ItineraryExistence.logItineraryNotFound(trip.id, itineraryCheckStatus, candidateItinerary == null);
         return candidateItinerary;
     }
@@ -445,7 +446,7 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /** Default implementation for OtpResponse provider that actually invokes the OTP server. */
-    private OtpResponse getOtpResponse() {
+    private OtpResponse getOtpResponse(OtpRequest ignored) {
         return OtpDispatcher.sendOtpRequestWithErrorHandling(getQueryParamsForTargetZonedDateTime());
     }
 
