@@ -84,10 +84,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
         try {
             boolean hasNotNotified = hasNotSentNotificationForRoute(travelerPosition.trackedJourney, routeId);
             LOG.info("About to notify bus for journey {} trip {} hasNotified={}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId, !hasNotNotified);
-            if (
-                hasNotNotified &&
-                supportsBusOperatorNotification(routeId)
-            ) {
+            if (hasNotNotified && supportsBusOperatorNotification(routeId)) {
                 // Immediately set the notification state to pending, so that subsequent calls don't initiate another
                 // request before this one completes.
                 travelerPosition.trackedJourney.updateNotificationMessage(routeId, "pending");
@@ -107,10 +104,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
         try {
             boolean hasNotCanceled = hasNotCanceledNotificationForRoute(travelerPosition.trackedJourney, routeId);
             LOG.info("About to cancel journey {} trip {} canceled={}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId, !hasNotCanceled);
-            if (
-                isBusLeg(busLeg) && routeId != null &&
-                    hasNotCanceled
-            ) {
+            if (isBusLeg(busLeg) && routeId != null && hasNotCanceled) {
                 Map<String, String> busNotificationRequests = travelerPosition.trackedJourney.busNotificationMessages;
                 if (busNotificationRequests.containsKey(routeId)) {
                     UsRideGwinnettBusOpNotificationMessage body = JsonUtils.getPOJOFromJSON(
