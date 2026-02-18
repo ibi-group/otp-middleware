@@ -329,8 +329,6 @@ public class CheckMonitoredTrip implements Runnable {
                 computeTargetZonedDateTime();
                 resetJourneyState();
 
-                // reset journey state departure/arrival times
-                resetJourneyState();
                 // update the journey state with whether the matching itinerary has realtime data
                 journeyState.hasRealtimeData = matchingItinerary.legs.stream().anyMatch(leg -> leg.realTime);
 
@@ -890,55 +888,6 @@ public class CheckMonitoredTrip implements Runnable {
 
     private boolean isPreviousTripOngoingAtLastCheck() {
         return isPrevMatchingItineraryNotConcludedAtLastCheck() && isPrevMatchingItineraryDayValid();
-    }
-
-    /**
-     * Whether to advance to the next monitored day.
-     */
-    public boolean shouldAdvanceToNextDay() {
-        boolean sameDayAsItinerary = DateTimeUtils.nowAsZonedDateTime().toLocalDate().equals(
-            DateTimeUtils.makeOtpZonedDateTime(matchingItinerary.startTime).toLocalDate()
-        );
-        return
-            !trip.isOneTime() &&
-            !matchingItinerary.isActive() &&
-            !isTrackingOngoing() &&
-            !(sameDayAsItinerary && !matchingItinerary.hasEnded());
-    }
-
-    /**
-     * Find, starting from the given date, the earliest target date for a monitored trip,
-     * using the trip start time and the monitored days.
-     * (Itinerary existence is not being checked, assuming that clients prevent monitoring days when a trip doesn't exist.)
-     */
-    public static ZonedDateTime findEarliestTargetDate(MonitoredTrip trip, ZonedDateTime fromDateTime) {
-        ZonedDateTime itineraryEndTimeToday = makeOtpZonedDateTime(
-            fromDateTime,
-            trip.itinerary.endTime.toInstant()
-        );
-
-        int daysToAdd = fromDateTime.toInstant().isAfter(itineraryEndTimeToday.toInstant()) ? 1 : 0;
-
-        ZonedDateTime nextStartDay = makeOtpZonedDateTime(
-            fromDateTime.plusDays(daysToAdd),
-            trip.itinerary.startTime.toInstant()
-        );
-
-        return findNextMonitoredDay(trip, nextStartDay);
-    }
-
-    /**
-     * Advance the target date/time until a day is found when the trip is active.
-     */
-    private static ZonedDateTime findNextMonitoredDay(MonitoredTrip trip, ZonedDateTime startingDay) {
-        ZonedDateTime nextMonitoredDay = startingDay;
-        if (!trip.isOneTime()) {
-            while (!trip.isActiveOnDate(nextMonitoredDay)) {
-                nextMonitoredDay = nextMonitoredDay.plusDays(1);
-            }
-        }
-
-        return nextMonitoredDay;
     }
 
     /**
