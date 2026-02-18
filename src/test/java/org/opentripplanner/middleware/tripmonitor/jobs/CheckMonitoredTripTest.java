@@ -1380,10 +1380,6 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         ZonedDateTime wednesday = TUESDAY_20200609.withDayOfMonth(10);
         return Stream.of(
             // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should remain snoozed right after trip ends at 9:00am.
-            Arguments.of(TUESDAY_20200609.withHour(8), TUESDAY_20200609.withHour(9), false),
-            // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should unsnooze at 12:00am (midnight) on
-            // Wednesday, June 10, 2020, but it is too early for the trip to be analyzed again.
-            Arguments.of(TUESDAY_20200609.withHour(8), wednesday, true),
             Arguments.of(TUESDAY_20200609_0800, TUESDAY_20200609.withHour(9), false),
             // Trip snoozed at 8:00am on Tuesday, June 9, 2020, should unsnooze at 12:00am (midnight) on
             // Wednesday, June 10, 2020, but it is too early for the trip to be analyzed again.
