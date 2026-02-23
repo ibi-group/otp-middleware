@@ -49,7 +49,7 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.isBusLeg;
 import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
 
 public class ManageTripTracking {
-    private static final Logger LOG = LoggerFactory.getLogger(ManageTripTracking.class);
+    private static final Logger TRACKING_DEBUG_LOG = LoggerFactory.getLogger("gmap-tracking-debug-logger");
 
     public static Supplier<OtpResponse> otpResponseProviderOverride = null;
     private static OtpGraphQLVariables rerouteVariables = null;
@@ -235,7 +235,7 @@ public class ManageTripTracking {
     }
 
     public static void logTracking(Request request, String operation) {
-        LOG.info(
+        TRACKING_DEBUG_LOG.info(
             "{} called by device {} running {} app version {}",
             operation,
             request.headers("device_id"),
