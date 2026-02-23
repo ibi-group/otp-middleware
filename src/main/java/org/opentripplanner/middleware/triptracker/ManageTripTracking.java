@@ -234,14 +234,22 @@ public class ManageTripTracking {
         return null;
     }
 
-    public static void logTracking(Request request, String operation) {
-        TRACKING_DEBUG_LOG.info(
-            "{} called by device {} running {} app version {}",
-            operation,
-            request.headers("device_id"),
-            request.headers("app_platform"),
-            request.headers("app_version")
-        );
+    /**
+     * Log device information if at least one of deviceId, platform, or version is provided (from request headers).
+     */
+    private static void logTracking(Request request, String operation) {
+        var deviceId = request.headers("device_id");
+        var platform = request.headers("app_platform");
+        var version = request.headers("app_version");
+        if (deviceId != null || platform != null || version != null) {
+            TRACKING_DEBUG_LOG.info(
+                "{} called by device {} running {} app version {}",
+                operation,
+                deviceId,
+                platform,
+                version
+            );
+        }
     }
 
     /**
