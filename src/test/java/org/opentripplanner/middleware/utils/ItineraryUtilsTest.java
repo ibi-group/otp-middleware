@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.opentripplanner.middleware.testutils.OtpTestUtils.createDefaultItinerary;
 import static org.opentripplanner.middleware.testutils.OtpTestUtils.firstItinerary;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.otpDateTimeAsEpochMillis;
 
@@ -269,54 +268,6 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         return dates.stream()
             .map(d -> DateTimeUtils.makeOtpZonedDateTime(d, QUERY_TIME))
             .collect(Collectors.toList());
-    }
-
-    private static class ItineraryMatchTestCase {
-        /**
-         * A descriptive name of this test case
-         */
-        public final String name;
-
-        /**
-         * The newer itinerary to compare to.
-         */
-        public final Itinerary newItinerary;
-
-        /**
-         * The previous itinerary which should be perform the baseline comparison from.
-         */
-        public final Itinerary previousItinerary;
-        /**
-         * Whether the given itineraries should match
-         */
-        public final boolean shouldMatch;
-
-        /**
-         * Constructor that uses the default itinerary as the previous itinerary.
-         */
-        public ItineraryMatchTestCase(
-            String name,
-            Itinerary newItinerary,
-            boolean shouldMatch
-        ) throws Exception {
-            this(name, null, newItinerary, shouldMatch);
-        }
-
-        public ItineraryMatchTestCase(
-            String name,
-            Itinerary previousItinerary,
-            Itinerary newItinerary,
-            boolean shouldMatch
-        ) throws Exception {
-            this.name = name;
-            if (previousItinerary != null) {
-                this.previousItinerary = previousItinerary;
-            } else {
-                this.previousItinerary = createDefaultItinerary();
-            }
-            this.newItinerary = newItinerary;
-            this.shouldMatch = shouldMatch;
-        }
     }
 
     @ParameterizedTest
