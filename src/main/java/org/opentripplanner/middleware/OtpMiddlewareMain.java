@@ -10,7 +10,6 @@ import org.opentripplanner.middleware.controllers.api.CDPFilesController;
 import org.opentripplanner.middleware.controllers.api.CDPUserController;
 import org.opentripplanner.middleware.controllers.api.DailyStatsController;
 import org.opentripplanner.middleware.controllers.api.ErrorEventsController;
-import org.opentripplanner.middleware.controllers.api.GetPedxController;
 import org.opentripplanner.middleware.controllers.api.LogController;
 import org.opentripplanner.middleware.controllers.api.MonitoredComponentController;
 import org.opentripplanner.middleware.controllers.api.MonitoredTripController;
@@ -103,7 +102,6 @@ public class OtpMiddlewareMain {
                     new CDPUserController(API_PREFIX),
                     new DailyStatsController(API_PREFIX),
                     new ErrorEventsController(API_PREFIX),
-                    new GetPedxController(API_PREFIX),
                     new LogController(API_PREFIX),
                     new MonitoredComponentController(API_PREFIX),
                     new MonitoredTripController(API_PREFIX),
