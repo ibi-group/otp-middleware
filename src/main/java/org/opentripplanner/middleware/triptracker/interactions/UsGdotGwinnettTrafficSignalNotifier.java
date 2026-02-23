@@ -120,25 +120,4 @@ public class UsGdotGwinnettTrafficSignalNotifier implements Interaction {
         }
         return false;
     }
-
-    /**
-     * Try calling endpoint for one intersection.
-     * @return the HTTP status of the call.
-     */
-    public int testIntersection(String id) {
-        if (host == null || key == null) {
-            LOG.error("Not getting intersection: Host and key are not configured.");
-            return 500;
-        }
-
-        String pathAndQuery = host + "/intersections/" + id;
-        var httpResponse = HttpUtils.httpRequestRawResponse(
-            URI.create(pathAndQuery),
-            30,
-            HttpMethod.GET,
-            getHeaders(),
-            ""
-        );
-        return httpResponse.status;
-    }
 }
