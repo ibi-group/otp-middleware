@@ -213,7 +213,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
         if (messageBody == null) {
             throw new IllegalStateException(
                 String.format(
-                    "A notification must exist before it can be cancelled! Journey %s, Trip %s",
+                    "A notification must exist before it can be canceled! Journey %s, Trip %s",
                     trackedJourney.id,
                     trackedJourney.tripId
                 )
