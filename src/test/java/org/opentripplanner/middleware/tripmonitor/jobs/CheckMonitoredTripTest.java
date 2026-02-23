@@ -19,6 +19,7 @@ import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.LegFinder;
+import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.response.TripPlan;
@@ -119,7 +120,11 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     /** Provides a mock OTP 'plan' response */
-    public OtpResponse mockOtpPlanResponse() {
+    public static OtpResponse mockOtpPlanResponse() {
+        return mockOtpPlanResponse(null);
+    }
+
+    public static OtpResponse mockOtpPlanResponse(OtpRequest ignored) {
         try {
             // Setup an OTP mock response in order to trigger some of the monitor checks.
             return OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.getResponse();
@@ -1156,6 +1161,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         CheckMonitoredTrip check = new CheckMonitoredTrip(
             trip,
+            CheckMonitoredTripTest::mockOtpPlanResponse,
             new LegFinder(
                 new MockLegResponseProvider(adjustedItinerary, ignored -> "bus-leg-updated")::getLegResponse,
                 (leg, ignored) -> "bus-leg-updated"
@@ -1189,6 +1195,27 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         Instant startInstant = startTime.toInstant();
         Date nextDayStart = Date.from(startInstant.plus(dayShift, ChronoUnit.DAYS));
         return DateTimeUtils.makeOtpZonedDateTime(nextDayStart).format(DateTimeFormatter.ISO_LOCAL_DATE);
+    }
+
+    @Test
+    void canMatchOnPlanQueryFallback() throws Exception {
+        MonitoredTrip monitoredTrip = monitoredTripWithLegId();
+        monitoredTrip.itineraryExistence.monday = new ItineraryExistence.ItineraryExistenceResult();
+        Persistence.monitoredTrips.create(monitoredTrip);
+
+        OtpResponse expectedResponse = getMockOtpResponseJune15();
+        OtpResponse unexpectedResponse = getMockOtpResponseJune15();
+        // Remove the transit leg (at index 1) so that the matching itineraries check fails.
+        firstItinerary(unexpectedResponse).legs.remove(1);
+
+        // Mock the current time to be 8:45am on Monday, June 15, 2020.
+        DateTimeUtils.useFixedClockAt(MONDAY_20200615_0845);
+
+        // Match on first attempts.
+        assertCheckMonitoredTrip(monitoredTrip, expectedResponse, true, 0, TRIP_ACTIVE);
+        assertCheckMonitoredTrip(monitoredTrip, expectedResponse, false, 0, TRIP_ACTIVE);
+        // Match using plan query fallback.
+        assertCheckMonitoredTrip(monitoredTrip, unexpectedResponse, false, 0, TRIP_ACTIVE, true);
     }
 
     @Test
@@ -1256,7 +1283,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
-     * Run check on monitored trip and confirm expected state.
+     * Shortcut for method with default mockOtpPlanResponse value of null.
      */
     private void assertCheckMonitoredTrip(
         MonitoredTrip monitoredTrip,
@@ -1265,8 +1292,30 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         int expectedAttempts,
         TripStatus expectedTripStatus
     ) throws CloneNotSupportedException {
+        assertCheckMonitoredTrip(
+            monitoredTrip,
+            mockResponse,
+            hasTolerantItineraryCheck,
+            expectedAttempts,
+            expectedTripStatus,
+            false
+        );
+    }
+
+    /**
+     * Run check on monitored trip and confirm expected state.
+     */
+    private void assertCheckMonitoredTrip(
+        MonitoredTrip monitoredTrip,
+        OtpResponse mockResponse,
+        boolean hasTolerantItineraryCheck,
+        int expectedAttempts,
+        TripStatus expectedTripStatus,
+        boolean mockOtpPlanResponse
+    ) throws CloneNotSupportedException {
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(
             monitoredTrip,
+            mockOtpPlanResponse ? CheckMonitoredTripTest::mockOtpPlanResponse : null,
             new LegFinder(
                 new MockLegResponseProvider(firstItinerary(mockResponse), leg -> LegIdProcessor.computeLegIdForServiceDate(leg, DateTimeUtils.nowAsLocalDate()))::getLegResponse,
                 LegIdProcessor::computeLegIdForServiceDate
@@ -1518,6 +1567,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     ) throws CloneNotSupportedException {
         return new CheckMonitoredTrip(
             monitoredTrip,
+            null,
             new LegFinder(
                 new MockLegResponseProvider(
                     mockItinerary,

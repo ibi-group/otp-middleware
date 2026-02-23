@@ -12,6 +12,7 @@ import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -44,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMATTER;
@@ -58,7 +60,6 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.makeOtpZonedDat
  */
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
-    private static final Logger ITINERARY_NOT_FOUND_LOGGER = LoggerFactory.getLogger("itinerary-not-found-logger");
 
     public boolean IS_TEST = false;
 
@@ -119,6 +120,9 @@ public class CheckMonitoredTrip implements Runnable {
     /** Contains the initial reminder notification, if any is needed for this check. */
     TripMonitorNotification initialReminderNotification;
 
+    /** The OTP Response provider */
+    private Function<OtpRequest, OtpResponse> otpResponseProvider;
+
     /** The helper object for making OTP Leg queries. */
     private LegFinder legFinder;
 
@@ -134,19 +138,22 @@ public class CheckMonitoredTrip implements Runnable {
         previousJourneyState = trip.journeyState;
         journeyState = previousJourneyState.clone();
         previousMatchingItinerary = trip.journeyState.matchingItinerary;
+        otpResponseProvider = this::getOtpResponse;
         legFinder = new LegFinder();
     }
 
-    public CheckMonitoredTrip(MonitoredTrip trip, LegFinder legFinder) throws CloneNotSupportedException {
-        this(trip, legFinder, false);
+    public CheckMonitoredTrip(MonitoredTrip trip, Function<OtpRequest, OtpResponse> otpResponseProvider, LegFinder legFinder) throws CloneNotSupportedException {
+        this(trip, otpResponseProvider, legFinder, false);
     }
 
     public CheckMonitoredTrip(
         MonitoredTrip trip,
+        Function<OtpRequest, OtpResponse> otpResponseProvider,
         LegFinder legFinder,
         boolean hasTolerantItineraryCheck
     ) throws CloneNotSupportedException {
         this(trip, hasTolerantItineraryCheck);
+        this.otpResponseProvider = otpResponseProvider;
         this.legFinder = legFinder;
     }
 
@@ -299,15 +306,29 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
+     * Retrieve itinerary from leg query or OTP plan response.
+     */
+    private Itinerary getCandidateItinerary() {
+        ItineraryChecker checker = new ItineraryChecker(trip.itinerary, legFinder, targetZonedDateTime.toLocalDate());
+        ItineraryCheckStatus itineraryCheckStatus = checker.checkLegs();
+
+        if (!itineraryCheckStatus.isFailed()) {
+            return itineraryCheckStatus.rebuiltItinerary;
+        }
+        Itinerary candidateItinerary = ItineraryExistence.checkOtpResponse(otpResponseProvider, null, trip.id, trip.itinerary, false);
+        ItineraryExistence.logItineraryNotFound(trip.id, itineraryCheckStatus, candidateItinerary == null);
+        return candidateItinerary;
+    }
+
+    /**
      * Find and set the matching itinerary from the OTP leg response
      * by rebuilding the itinerary using the matched legs.
      */
     private boolean makeOTPRequestAndUpdateMatchingItineraryInternal() {
-        ItineraryChecker checker = new ItineraryChecker(trip.itinerary, legFinder, targetZonedDateTime.toLocalDate());
-        ItineraryCheckStatus itineraryCheckStatus = checker.checkLegs();
-        if (!itineraryCheckStatus.isFailed()) {
+        Itinerary candidateItinerary = getCandidateItinerary();
+        if (candidateItinerary != null) {
             // Set the matching itinerary. Compute target date and set the baseline journey state.
-            matchingItinerary = itineraryCheckStatus.rebuiltItinerary;
+            matchingItinerary = candidateItinerary;
             LOG.info("Found matching itinerary!");
             trip.attemptsToGetMatchingItinerary = 0;
             computeTargetZonedDateTime();
@@ -354,13 +375,6 @@ public class CheckMonitoredTrip implements Runnable {
             LOG.info("Trip status set to {}", journeyState.tripStatus);
             return updateMonitoredTrip();
         } else {
-            // If this point is reached, a matching itinerary was not found.
-            ITINERARY_NOT_FOUND_LOGGER.warn(
-                "No comparison itinerary found for trip {} - {}",
-                trip.id,
-                itineraryCheckStatus.getFailedReason()
-            );
-
             boolean setNullItinerary = !shouldPersistMatchingItinerary();
             if (hasReachedMaxItineraryChecks() || setNullItinerary) {
                 // Check whether this trip should no longer ever be checked due to not having matching itineraries on any
@@ -432,7 +446,7 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /** Default implementation for OtpResponse provider that actually invokes the OTP server. */
-    private OtpResponse getOtpResponse() {
+    private OtpResponse getOtpResponse(OtpRequest ignored) {
         return OtpDispatcher.sendOtpRequestWithErrorHandling(getQueryParamsForTargetZonedDateTime());
     }
 

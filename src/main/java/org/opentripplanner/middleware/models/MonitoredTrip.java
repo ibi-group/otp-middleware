@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
@@ -188,11 +189,18 @@ public class MonitoredTrip extends Model {
      */
     public boolean checkItineraryExistence(
         boolean replaceItinerary,
+        Function<OtpRequest, OtpResponse> otpResponseProvider,
         Function<LocalDate, LegFinder> getLegFinder
     ) {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
-        itineraryExistence = new ItineraryExistence(queriesByDate, getLegFinder);
+        itineraryExistence = new ItineraryExistence(
+            queriesByDate,
+            getLegFinder,
+            itinerary,
+            otp2QueryParams.arriveBy,
+            otpResponseProvider
+        );
         itineraryExistence.checkExistence(this);
         boolean itineraryExists = itineraryExistence.allMonitoredDaysAreValid(this);
         // If itinerary should be replaced, do so if all checked days are valid.
@@ -205,7 +213,11 @@ public class MonitoredTrip extends Model {
      * Shorthand for above method using the default otpResponseProvider.
      */
     public boolean checkItineraryExistence(boolean replaceItinerary) {
-        return checkItineraryExistence(replaceItinerary, ignored -> new LegFinder());
+        return checkItineraryExistence(
+            replaceItinerary,
+            null,
+            ignored -> new LegFinder()
+        );
     }
 
     /**

@@ -2707,6 +2707,8 @@ definitions:
         format: "date"
       getLegFinder:
         $ref: "#/definitions/Function"
+      otpResponseProvider:
+        $ref: "#/definitions/Function"
   JourneyState:
     type: "object"
     properties:
@@ -3016,9 +3018,6 @@ definitions:
           - "HAPTIC"
       phoneNumber:
         type: "string"
-      smsConsentDate:
-        type: "string"
-        format: "date"
       preferredLocale:
         type: "string"
       pushDevices:
@@ -3034,8 +3033,6 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/TripSurveyNotification"
-      applicationId:
-        type: "string"
       relatedUsers:
         type: "array"
         items:
