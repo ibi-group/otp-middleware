@@ -2,10 +2,17 @@ package org.opentripplanner.middleware.itinerarymatching;
 
 import jersey.repackaged.com.google.common.collect.Lists;
 import org.opentripplanner.middleware.otp.response.Agency;
+import org.opentripplanner.middleware.otp.response.Currency;
 import org.opentripplanner.middleware.otp.response.EncodedPolyline;
+import org.opentripplanner.middleware.otp.response.FareDependency;
+import org.opentripplanner.middleware.otp.response.FareMedium;
+import org.opentripplanner.middleware.otp.response.FareProduct;
+import org.opentripplanner.middleware.otp.response.FareProductUse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.Money;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.RiderCategory;
 import org.opentripplanner.middleware.otp.response.Route;
 
 import java.time.LocalDateTime;
@@ -107,6 +114,19 @@ public class ItineraryMatchingUtils {
 
         busLeg.route.shortName = "20";
 
+        FareProductUse fareUse1 = new FareProductUse();
+        fareUse1.id = "use1";
+        fareUse1.product = fareProduct("one-way", "ticket", "regular", 1.0F);
+        fareUse1.product.dependencies = List.of(
+            fareDependency("one-way"),
+            fareDependency("two-way")
+        );
+        FareProductUse fareUse2 = new FareProductUse();
+        fareUse2.id = "use2";
+        fareUse2.product = fareProduct("7-days", "card", "regular", 20.0F);
+
+        busLeg.fareProducts = List.of(fareUse1, fareUse2);
+
         return busLeg;
     }
 
@@ -122,5 +142,30 @@ public class ItineraryMatchingUtils {
         walkLeg.steps = List.of();
         walkLeg.legGeometry = new EncodedPolyline();
         return walkLeg;
+    }
+
+    private static FareProduct fareProduct(String id, String medium, String riderCat, float price) {
+        FareProduct product = new FareProduct();
+        product.id = id;
+        product.name = id;
+        product.medium = new FareMedium();
+        product.medium.id = medium;
+        product.medium.name = medium;
+        product.riderCategory = new RiderCategory();
+        product.riderCategory.id = riderCat;
+        product.riderCategory.name = riderCat;
+        product.price = new Money();
+        product.price.amount = price;
+        product.price.currency = new Currency();
+        product.price.currency.code = "USD";
+        product.price.currency.digits = 2;
+
+        return product;
+    }
+
+    private static FareDependency fareDependency(String productId) {
+        FareDependency dependency = new FareDependency();
+        dependency.id = productId;
+        return dependency;
     }
 }

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.otp.response.FareProduct;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -110,12 +111,24 @@ class ItineraryFromLegMatcherTest {
         assertTrue(classicMatcher.match(), classicMatcher.getFailingReason());
 
         // Itinerary should have received the updated legs.
+        Leg secondRebuiltTransitLeg = rebuiltItinerary.legs.get(3);
         assertEquals(liveLeg1, rebuiltItinerary.legs.get(1));
-        assertEquals(liveLeg2, rebuiltItinerary.legs.get(3));
+        assertEquals(liveLeg2, secondRebuiltTransitLeg);
         // All legs should have been shifted
         for (Leg leg : rebuiltItinerary.legs) {
             assertEquals(BASE_TIME.toLocalDate(), LocalDate.ofInstant(leg.startTime.toInstant(), DateTimeUtils.getOtpZoneId()));
         }
+        // Spot check that rebuilt transit legs contain fare data.
+        assertEquals(liveLeg2.fareProducts.size(), secondRebuiltTransitLeg.fareProducts.size());
+        FareProduct leg2Product0 = liveLeg2.fareProducts.get(0).product;
+        FareProduct leg2Product1 = liveLeg2.fareProducts.get(1).product;
+        FareProduct rebuiltLegProduct0 = secondRebuiltTransitLeg.fareProducts.get(0).product;
+        FareProduct rebuiltLegProduct1 = secondRebuiltTransitLeg.fareProducts.get(1).product;
+        assertEquals(leg2Product0.dependencies.size(), rebuiltLegProduct0.dependencies.size());
+        assertEquals(leg2Product0.dependencies.get(1).id, rebuiltLegProduct0.dependencies.get(1).id);
+        assertEquals(leg2Product1.id, rebuiltLegProduct1.id);
+        assertEquals(leg2Product1.price.amount, rebuiltLegProduct1.price.amount);
+
         // Itinerary start, end time should have been updated.
         assertEquals(DateTimeUtils.convertToDate(BASE_TIME.minusMinutes(10)), rebuiltItinerary.startTime);
         assertEquals(DateTimeUtils.convertToDate(BASE_TIME.plusMinutes(55)), rebuiltItinerary.endTime);

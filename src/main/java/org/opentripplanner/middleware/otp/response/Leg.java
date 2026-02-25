@@ -199,6 +199,7 @@ public class Leg implements Cloneable {
         newLeg.interlineWithPreviousLeg = interlineWithPreviousLeg;
         newLeg.mode = mode;
         newLeg.legGeometry = legGeometry;
+        newLeg.fareProducts = fareProducts;
     }
 
     /**
