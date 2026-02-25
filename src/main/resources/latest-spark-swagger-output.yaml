@@ -2508,8 +2508,6 @@ definitions:
         type: "string"
       name:
         type: "string"
-      isDefault:
-        type: "boolean"
   Stop:
     type: "object"
     properties:
