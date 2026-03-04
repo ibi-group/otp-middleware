@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
@@ -68,15 +70,8 @@ public class OtpDispatcher {
     /**
      * Provides a response from the OTP server target service based on the input {@link OtpRequest}.
      */
-    public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, OtpRequest otpRequest) {
-        return sendOtpPlanRequest(version, otpRequest.requestParameters);
-    }
-
-    /**
-     * Provides a response from the OTP server target service based on the input {@link OtpRequest}.
-     */
     public static OtpDispatcherResponse sendOtpPlanRequest(OtpVersion version, OtpGraphQLVariables params) {
-        OtpGraphQLQuery query = new OtpGraphQLQuery();
+        OtpGraphQLQuery<OtpGraphQLVariables> query = new OtpGraphQLQuery<>();
         query.query = GraphQLUtils.getPlanQueryTemplate();
         query.variables = params;
         return sendOtpPostRequest(
@@ -129,10 +124,6 @@ public class OtpDispatcher {
         return new OtpDispatcherResponse(otpResponse);
     }
 
-    public static OtpResponse sendOtpRequestWithErrorHandling(OtpRequest otpRequest) {
-        return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP2, otpRequest));
-    }
-
     public static OtpResponse sendOtpRequestWithErrorHandling(OtpGraphQLVariables params) {
         return handleOtpDispatcherResponse(() -> sendOtpPlanRequest(OtpVersion.OTP2, params));
     }
@@ -167,4 +158,22 @@ public class OtpDispatcher {
         }
     }
 
+    /**
+     * Wait for default timeout, then forcibly cancel any pending requests.
+     */
+    public static void waitForTimeoutThenCancelPendingRequests(ExecutorService executor) {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS)) {
+                LOG.warn(
+                    "OTP requests terminated, time out reached ({} seconds). Shutting down executor.",
+                    OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS
+                );
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            LOG.warn("OTP requests were interrupted! Shutting down executor.", e);
+            executor.shutdownNow();
+        }
+    }
 }

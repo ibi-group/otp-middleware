@@ -10,6 +10,7 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.testutils.OtpTestUtils.createDefaultItinerary;
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.firstItinerary;
 
 class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser primary;
@@ -61,7 +63,7 @@ class LegTransitionNotificationTest extends OtpMiddlewareTestEnvironment {
 
     private static Stream<Arguments> createLegTransitionNotificationTestCases() throws Exception {
         String travelerName = "Obi-Wan";
-        Itinerary itinerary = createDefaultItinerary();
+        Itinerary itinerary = firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse());
         Leg expectedLeg = itinerary.legs.get(1);
         Coordinates expectedLegDestinationCoords = new Coordinates(expectedLeg.to);
         Leg nextLeg = itinerary.legs.get(2);

@@ -7,16 +7,24 @@ import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.otp.OtpRequest;
+import org.slf4j.Logger;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.itinerarymatching.ItineraryFromLegMatcher.getTransitLegs;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
+import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
@@ -26,6 +34,9 @@ public class ItineraryUtils {
 
     public static final int ITINERARY_CHECK_WINDOW = 7;
     public static final int SERVICE_DAY_START_HOUR = getConfigPropertyAsInt("SERVICE_DAY_START_HOUR", 3);
+    private static final String OTP_REQUESTS_THREADING_ENABLED = getConfigPropertyAsText(
+        "OTP_REQUESTS_THREADING_ENABLED", "true"
+    );
 
     /**
      * Generates itinerary request data for the desired dates, based on the provided query parameters.
@@ -204,5 +215,36 @@ public class ItineraryUtils {
             .map(itin -> itin.legs)
             .map(legs -> legs.get(0))
             .orElse(null);
+    }
+
+    /**
+     * Whether there are transit legs that remain to be completed at the current clock time.
+     */
+    public static boolean remainingTransitLegs(Itinerary itinerary) {
+        Date now = DateTimeUtils.nowAsDate();
+        return getTransitLegs(itinerary.legs).stream().anyMatch(leg -> now.before(leg.endTime));
+    }
+
+    public static boolean isOtpRequestThreadingEnabled() {
+        return OTP_REQUESTS_THREADING_ENABLED.equalsIgnoreCase("true");
+    }
+
+    public static <K, V> Map<K, V> collectResponses(
+        Map<K, CompletableFuture<V>> workerMap,
+        Map<K, V> responseMap,
+        Logger logger,
+        String responseType
+    ) {
+        workerMap.forEach((key, future) -> {
+            try {
+                // Wait for completion and assign response.
+                V response = future.join();
+                logger.debug("{} for {}: {}", responseType, key, response);
+                responseMap.put(key, response);
+            } catch (CancellationException | CompletionException e) {
+                logger.error("Failed to get {} for {}.", responseType, key, e);
+            }
+        });
+        return responseMap;
     }
 }

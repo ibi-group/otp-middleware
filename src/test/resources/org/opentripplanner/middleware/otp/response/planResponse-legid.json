@@ -1,0 +1,3035 @@
+{
+  "data": {
+    "plan": {
+      "itineraries": [
+        {
+          "accessibilityScore": null,
+          "duration": 1777,
+          "endTime": 1765472336000,
+          "legs": [
+            {
+              "accessibilityScore": null,
+              "agency": null,
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 737.71,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 564.0,
+              "endTime": 1765471123000,
+              "fareProducts": [],
+              "from": {
+                "lat": 47.6844312,
+                "lon": -122.3084432,
+                "name": "7546 18th Avenue NE, Seattle, WA, USA",
+                "rentalVehicle": null,
+                "stop": null,
+                "vertexType": "NORMAL"
+              },
+              "headsign": null,
+              "id": null,
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": null,
+              "legGeometry": {
+                "length": 54,
+                "points": "uj`bHdjoiVgA@?E?qA?G?K?I?I?qA?C?G?oA?C?O?O?C?mB?C?G?kB?EAO?K?E?mB?E?E?kBC?GCGCCA?I?O?W?A?wC?W?G?E?qD?E?M?M?E?gD?A?AAAA?wEBK@E??C"
+              },
+              "mode": "WALK",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": false,
+              "realtimeState": null,
+              "rentedBike": false,
+              "rideHailingEstimate": null,
+              "route": null,
+              "startTime": 1765470559000,
+              "steps": [
+                {
+                  "absoluteDirection": "NORTH",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 40.58,
+                  "elevationProfile": [],
+                  "lat": 47.6844321,
+                  "lon": -122.3083485,
+                  "relativeDirection": "DEPART",
+                  "stayOn": false,
+                  "streetName": "alley"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 2.14,
+                  "elevationProfile": [],
+                  "lat": 47.684797,
+                  "lon": -122.3083566,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": true,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 312.86,
+                  "elevationProfile": [],
+                  "lat": 47.6847969,
+                  "lon": -122.308328,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "Northeast 77th Street"
+                },
+                {
+                  "absoluteDirection": "NORTH",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 13.32,
+                  "elevationProfile": [],
+                  "lat": 47.6848069,
+                  "lon": -122.30415,
+                  "relativeDirection": "LEFT",
+                  "stayOn": true,
+                  "streetName": "Northeast 77th Street"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 18.51,
+                  "elevationProfile": [],
+                  "lat": 47.6849206,
+                  "lon": -122.3040944,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": false,
+                  "streetName": "sidewalk"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 0.58,
+                  "elevationProfile": [],
+                  "lat": 47.6849207,
+                  "lon": -122.3038472,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "Ravenna Avenue Northeast"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 56.93,
+                  "elevationProfile": [],
+                  "lat": 47.6849207,
+                  "lon": -122.3038395,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "Northeast 77th Street"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 8.95,
+                  "elevationProfile": [],
+                  "lat": 47.684921,
+                  "lon": -122.303079,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "23rd Avenue Northeast"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 5.87,
+                  "elevationProfile": [],
+                  "lat": 47.684921,
+                  "lon": -122.3029594,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [
+                    {
+                      "alertDescriptionText": "Unpaved surface",
+                      "alertHeaderText": "Unpaved surface",
+                      "alertUrl": null,
+                      "effectiveStartDate": null,
+                      "id": "QWxlcnQ6U3RyZWV0Tm90ZToyMzg3OTYyOTI"
+                    }
+                  ],
+                  "area": false,
+                  "distance": 145.66,
+                  "elevationProfile": [],
+                  "lat": 47.684921,
+                  "lon": -122.302881,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "Northeast 77th Street"
+                },
+                {
+                  "absoluteDirection": "NORTH",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 132.34,
+                  "elevationProfile": [],
+                  "lat": 47.6849278,
+                  "lon": -122.3009374,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "25th Avenue Northeast"
+                }
+              ],
+              "stopCalls": [],
+              "to": {
+                "lat": 47.6861153,
+                "lon": -122.300934,
+                "name": "25th Ave NE & NE 80th St",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "23890",
+                  "gtfsId": "kcm:23890",
+                  "id": "U3RvcDprY206MjM4OTA",
+                  "lat": 47.6861153,
+                  "lon": -122.300934
+                },
+                "vertexType": "TRANSIT"
+              },
+              "transitLeg": false,
+              "trip": null
+            },
+            {
+              "accessibilityScore": null,
+              "agency": {
+                "alerts": [],
+                "gtfsId": "kcm:1",
+                "id": "kcm:1",
+                "name": "Metro Transit",
+                "timezone": "America/Los_Angeles",
+                "url": "https://kingcounty.gov/en/dept/metro"
+              },
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 3946.18,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 800.0,
+              "endTime": 1765471923000,
+              "fareProducts": [
+                {
+                  "id": "7d2abaef-e4bf-3424-bebc-08c98c4f6d03",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:176cf049-ab89-474e-a634-12fcb6910925",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:special",
+                      "name": "special"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "60b0e9a3-d949-375f-82e8-e004e400f945",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:3094efa1-0b0a-47b1-b6bb-d317f503251a",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:regular",
+                      "name": "regular"
+                    },
+                    "price": {
+                      "amount": 3.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "432994f4-c223-3c4d-880d-1813bd7096b0",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:52209407-0a22-476b-ae0f-a8cee00e65c4",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:senior",
+                      "name": "senior"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "968b6b23-548d-303f-9475-91e0aa5500ca",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:cash",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Metro Transit Cash Transfer",
+                    "riderCategory": {
+                      "id": "orca:regular",
+                      "name": "regular"
+                    },
+                    "price": {
+                      "amount": 3.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "a864f2c2-2b22-3898-b9d8-fc473c8634f7",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:cash",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Metro Transit Cash Transfer",
+                    "riderCategory": {
+                      "id": "orca:senior",
+                      "name": "senior"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "1cc56d7e-9904-3537-80d4-ca7761573703",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:freeFare",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "Free Fare",
+                    "riderCategory": {
+                      "id": "orca:youth",
+                      "name": "youth"
+                    },
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "dbbee28a-a993-356a-bfe8-7e822d752773",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:freeFare",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Free Fare",
+                    "riderCategory": {
+                      "id": "orca:youth",
+                      "name": "youth"
+                    },
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                }
+              ],
+              "from": {
+                "lat": 47.6861153,
+                "lon": -122.300934,
+                "name": "25th Ave NE & NE 80th St",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "23890",
+                  "gtfsId": "kcm:23890",
+                  "id": "U3RvcDprY206MjM4OTA",
+                  "lat": 47.6861153,
+                  "lon": -122.300934
+                },
+                "vertexType": "TRANSIT"
+              },
+              "headsign": "U-District Station",
+              "id": "rO0ABXdVABhTQ0hFRFVMRURfVFJBTlNJVF9MRUdfVjMADWtjbTo2OTQzMDY3NTkACjIwMjUtMTItMTEAAAATAAAAHAAJa2NtOjIzODkwAAlrY206NzU0MDIAAA==",
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": [
+                {
+                  "lat": 47.6828232,
+                  "locationType": "STOP",
+                  "lon": -122.300858,
+                  "name": "25th Ave NE & NE 75th St",
+                  "stopCode": "23895",
+                  "stopId": "U3RvcDprY206MjM4OTU"
+                },
+                {
+                  "lat": 47.6762733,
+                  "locationType": "STOP",
+                  "lon": -122.300743,
+                  "name": "25th Ave NE & NE 65th St",
+                  "stopCode": "23905",
+                  "stopId": "U3RvcDprY206MjM5MDU"
+                },
+                {
+                  "lat": 47.671875,
+                  "locationType": "STOP",
+                  "lon": -122.300743,
+                  "name": "25th Ave NE & NE 60th St",
+                  "stopCode": "23910",
+                  "stopId": "U3RvcDprY206MjM5MTA"
+                },
+                {
+                  "lat": 47.668293,
+                  "locationType": "STOP",
+                  "lon": -122.30072,
+                  "name": "25th Ave NE & NE 55th St",
+                  "stopCode": "23915",
+                  "stopId": "U3RvcDprY206MjM5MTU"
+                },
+                {
+                  "lat": 47.6657257,
+                  "locationType": "STOP",
+                  "lon": -122.30072,
+                  "name": "25th Ave NE & NE Blakeley St",
+                  "stopCode": "23920",
+                  "stopId": "U3RvcDprY206MjM5MjA"
+                },
+                {
+                  "lat": 47.6629105,
+                  "locationType": "STOP",
+                  "lon": -122.301003,
+                  "name": "25th Ave NE & NE 47th St",
+                  "stopCode": "23925",
+                  "stopId": "U3RvcDprY206MjM5MjU"
+                },
+                {
+                  "lat": 47.6567421,
+                  "locationType": "STOP",
+                  "lon": -122.304886,
+                  "name": "East Stevens Way NE & Pend Oreille Rd",
+                  "stopCode": "75406",
+                  "stopId": "U3RvcDprY206NzU0MDY"
+                },
+                {
+                  "lat": 47.6545029,
+                  "locationType": "STOP",
+                  "lon": -122.30513,
+                  "name": "East Stevens Way NE & Benton Ln",
+                  "stopCode": "75403",
+                  "stopId": "U3RvcDprY206NzU0MDM"
+                }
+              ],
+              "legGeometry": {
+                "length": 106,
+                "points": "eu`bHh{miVzFGxEEnCCj@???~CCjOMhJGfGD??bB?bA?hH?dJCv@???xJAbH?l@???~@?tICP?p@?h@B??D?|Dn@`AHL?L?pDCT?d@B??^???`I?bA?xA?Bf@Fh@|@fBNXXXP?bA?d@DxEnBL?TNPPNPLZL`@fA~E@RAT|@\\PFLBL?JCBA??NEj@M^K`@Gd@I`@Aj@Ab@@b@FRDNDHDFDHFNRNLPLRLD@??PFTDRBZ?n@AX?P@^FVHXLTLRLRLPRPRTXPZP^HR@D"
+              },
+              "mode": "BUS",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": true,
+              "realtimeState": "UPDATED",
+              "rentedBike": null,
+              "rideHailingEstimate": null,
+              "route": {
+                "alerts": [],
+                "color": "FDB71A",
+                "gtfsId": "kcm:100214",
+                "id": "kcm:100214",
+                "longName": null,
+                "shortName": "372",
+                "textColor": null,
+                "type": 3
+              },
+              "startTime": 1765471123000,
+              "steps": [],
+              "stopCalls": [
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                }
+              ],
+              "to": {
+                "lat": 47.6523895,
+                "lon": -122.306305,
+                "name": "Stevens Way & Rainier Vista NE",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "75402",
+                  "gtfsId": "kcm:75402",
+                  "id": "U3RvcDprY206NzU0MDI",
+                  "lat": 47.6523895,
+                  "lon": -122.306305
+                },
+                "vertexType": "TRANSIT"
+              },
+              "transitLeg": true,
+              "trip": {
+                "arrivalStoptime": {
+                  "stop": {
+                    "gtfsId": "kcm:9650",
+                    "id": "U3RvcDprY206OTY1MA"
+                  },
+                  "stopPosition": 35
+                },
+                "departureStoptime": {
+                  "stop": {
+                    "gtfsId": "kcm:76372",
+                    "id": "U3RvcDprY206NzYzNzI"
+                  },
+                  "stopPosition": 1
+                },
+                "gtfsId": "kcm:694306759",
+                "id": "VHJpcDprY206Njk0MzA2NzU5"
+              }
+            },
+            {
+              "accessibilityScore": null,
+              "agency": null,
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 429.22,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 413.0,
+              "endTime": 1765472336000,
+              "fareProducts": [],
+              "from": {
+                "lat": 47.6523895,
+                "lon": -122.306305,
+                "name": "Stevens Way & Rainier Vista NE",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "75402",
+                  "gtfsId": "kcm:75402",
+                  "id": "U3RvcDprY206NzU0MDI",
+                  "lat": 47.6523895,
+                  "lon": -122.306305
+                },
+                "vertexType": "TRANSIT"
+              },
+              "headsign": null,
+              "id": null,
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": null,
+              "legGeometry": {
+                "length": 54,
+                "points": "kbzaHl}niV@ACKCE@ADEBHJI~@m@JKFMBB@@H@PG^ORMPMRSLI@UBSDQHUP[IQIMMSQUCGBELO?C@E@CBEBEE[BAHB?Q@YB]MGA?qAm@GA?Gk@WCAAE?E?E?A"
+              },
+              "mode": "WALK",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": false,
+              "realtimeState": null,
+              "rentedBike": false,
+              "rideHailingEstimate": null,
+              "route": null,
+              "startTime": 1765471923000,
+              "steps": [
+                {
+                  "absoluteDirection": "NORTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 5.27,
+                  "elevationProfile": [],
+                  "lat": 47.6523751,
+                  "lon": -122.3062924,
+                  "relativeDirection": "DEPART",
+                  "stayOn": false,
+                  "streetName": "Northeast Mason Road"
+                },
+                {
+                  "absoluteDirection": "NORTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 2.72,
+                  "elevationProfile": [],
+                  "lat": 47.6523993,
+                  "lon": -122.3062318,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "East Stevens Way Northeast"
+                },
+                {
+                  "absoluteDirection": "SOUTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 1.19,
+                  "elevationProfile": [],
+                  "lat": 47.652414,
+                  "lon": -122.3062028,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": false,
+                  "streetName": "Rainier Vista"
+                },
+                {
+                  "absoluteDirection": "SOUTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 3.9,
+                  "elevationProfile": [],
+                  "lat": 47.652406,
+                  "lon": -122.3061923,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "SOUTHWEST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 4.62,
+                  "elevationProfile": [],
+                  "lat": 47.6523765,
+                  "lon": -122.3061642,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": false,
+                  "streetName": "East Stevens Way Northeast"
+                },
+                {
+                  "absoluteDirection": "SOUTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 61.87,
+                  "elevationProfile": [],
+                  "lat": 47.6523514,
+                  "lon": -122.3062134,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "Northeast Mason Road"
+                },
+                {
+                  "absoluteDirection": "SOUTHWEST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 132.37,
+                  "elevationProfile": [],
+                  "lat": 47.651876,
+                  "lon": -122.3058011,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": false,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "NORTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 43.78,
+                  "elevationProfile": [],
+                  "lat": 47.6509888,
+                  "lon": -122.3048862,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "Burke-Gilman Trail"
+                },
+                {
+                  "absoluteDirection": "SOUTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 44.83,
+                  "elevationProfile": [],
+                  "lat": 47.6512677,
+                  "lon": -122.3044757,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": false,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 16.73,
+                  "elevationProfile": [],
+                  "lat": 47.6510706,
+                  "lon": -122.3041087,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "Northeast Pacific Place"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 11.5,
+                  "elevationProfile": [],
+                  "lat": 47.651066,
+                  "lon": -122.3038856,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "service road"
+                },
+                {
+                  "absoluteDirection": "NORTH",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 62.11,
+                  "elevationProfile": [],
+                  "lat": 47.6510456,
+                  "lon": -122.3037351,
+                  "relativeDirection": "LEFT",
+                  "stayOn": true,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 2.67,
+                  "elevationProfile": [],
+                  "lat": 47.6515706,
+                  "lon": -122.3034519,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": true,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "NORTH",
+                  "alerts": [],
+                  "area": true,
+                  "distance": 35.68,
+                  "elevationProfile": [],
+                  "lat": 47.6515794,
+                  "lon": -122.3034188,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "Jackie Lee and Jim Houston Plaza"
+                }
+              ],
+              "stopCalls": [],
+              "to": {
+                "lat": 47.6518058,
+                "lon": -122.3031926,
+                "name": "3818 Montlake Boulevard NE, Seattle, WA, USA",
+                "rentalVehicle": null,
+                "stop": null,
+                "vertexType": "NORMAL"
+              },
+              "transitLeg": false,
+              "trip": null
+            }
+          ],
+          "startTime": 1765470559000,
+          "transfers": 0,
+          "waitingTime": 0,
+          "walkTime": 977
+        },
+        {
+          "accessibilityScore": null,
+          "duration": 1673,
+          "endTime": 1765472336000,
+          "legs": [
+            {
+              "accessibilityScore": null,
+              "agency": null,
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 337.1,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 285.0,
+              "endTime": 1765470948000,
+              "fareProducts": [],
+              "from": {
+                "lat": 47.6844312,
+                "lon": -122.3084432,
+                "name": "7546 18th Avenue NE, Seattle, WA, USA",
+                "rentalVehicle": null,
+                "stop": null,
+                "vertexType": "NORMAL"
+              },
+              "headsign": null,
+              "id": null,
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": null,
+              "legGeometry": {
+                "length": 23,
+                "points": "uj`bHdjoiVfGEJ??gBP??I?GAA?AAA?}C?A@C@AAC@S@M?EAAAAAC?kB@?"
+              },
+              "mode": "WALK",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": false,
+              "realtimeState": null,
+              "rentedBike": false,
+              "rideHailingEstimate": null,
+              "route": null,
+              "startTime": 1765470663000,
+              "steps": [
+                {
+                  "absoluteDirection": "SOUTH",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 153.68,
+                  "elevationProfile": [],
+                  "lat": 47.6844321,
+                  "lon": -122.3083485,
+                  "relativeDirection": "DEPART",
+                  "stayOn": false,
+                  "streetName": "alley"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 38.98,
+                  "elevationProfile": [],
+                  "lat": 47.6830502,
+                  "lon": -122.3083183,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "Northeast 75th Street"
+                },
+                {
+                  "absoluteDirection": "SOUTH",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 9.65,
+                  "elevationProfile": [],
+                  "lat": 47.68305,
+                  "lon": -122.3077976,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": false,
+                  "streetName": "19th Avenue Northeast"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 3.74,
+                  "elevationProfile": [],
+                  "lat": 47.6829632,
+                  "lon": -122.3077956,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 131.06,
+                  "elevationProfile": [],
+                  "lat": 47.6829609,
+                  "lon": -122.3077458,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "Northeast 75th Street"
+                }
+              ],
+              "stopCalls": [],
+              "to": {
+                "lat": 47.6829796,
+                "lon": -122.306046,
+                "name": "NE 75th St & 20th Ave NE",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "82275",
+                  "gtfsId": "kcm:82275",
+                  "id": "U3RvcDprY206ODIyNzU",
+                  "lat": 47.6829796,
+                  "lon": -122.306046
+                },
+                "vertexType": "TRANSIT"
+              },
+              "transitLeg": false,
+              "trip": null
+            },
+            {
+              "accessibilityScore": null,
+              "agency": {
+                "alerts": [],
+                "gtfsId": "kcm:1",
+                "id": "kcm:1",
+                "name": "Metro Transit",
+                "timezone": "America/Los_Angeles",
+                "url": "https://kingcounty.gov/en/dept/metro"
+              },
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 433.59,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 78.0,
+              "endTime": 1765471026000,
+              "fareProducts": [
+                {
+                  "id": "201640df-32e1-38e6-a1ae-cea8e1b2e0e4",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:4238f2fc-386c-4d86-b47b-d9076e7cc55e",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:regular",
+                      "name": "regular"
+                    },
+                    "price": {
+                      "amount": 3.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "d0c97edc-67ec-30d7-a4e9-51cf019f3628",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:90115fae-d72b-425e-985b-3f09f0f2fc42",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:special",
+                      "name": "special"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "011236c0-443a-3868-b224-9403b5451962",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:cash",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Metro Transit Cash Transfer",
+                    "riderCategory": {
+                      "id": "orca:regular",
+                      "name": "regular"
+                    },
+                    "price": {
+                      "amount": 3.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "3226027d-d651-3d2e-a66a-bc4ae81c676f",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:cash",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Metro Transit Cash Transfer",
+                    "riderCategory": {
+                      "id": "orca:senior",
+                      "name": "senior"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "4f82f1e3-4bea-3c0a-b845-9052ba999076",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:e1fe219e-6251-450c-a20f-2ea1059164bb",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:senior",
+                      "name": "senior"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "2b4f1243-c4cd-3b50-9616-e2f8c7b9e3e6",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:freeFare",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "Free Fare",
+                    "riderCategory": {
+                      "id": "orca:youth",
+                      "name": "youth"
+                    },
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "d32d963b-b6b6-3ae4-9d7c-75cb60374c02",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:freeFare",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Free Fare",
+                    "riderCategory": {
+                      "id": "orca:youth",
+                      "name": "youth"
+                    },
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                }
+              ],
+              "from": {
+                "lat": 47.6829796,
+                "lon": -122.306046,
+                "name": "NE 75th St & 20th Ave NE",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "82275",
+                  "gtfsId": "kcm:82275",
+                  "id": "U3RvcDprY206ODIyNzU",
+                  "lat": 47.6829796,
+                  "lon": -122.306046
+                },
+                "vertexType": "TRANSIT"
+              },
+              "headsign": "University District Sand Point",
+              "id": "rO0ABXdVABhTQ0hFRFVMRURfVFJBTlNJVF9MRUdfVjMADWtjbTo2MzYwMjU2MjkACjIwMjUtMTItMTEAAAAFAAAABgAJa2NtOjgyMjc1AAlrY206ODIyNzYAAA==",
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": [],
+              "legGeometry": {
+                "length": 10,
+                "points": "_b`bHx{niV?mC?cC?gC?wE?uE?gE?QAQ@qA"
+              },
+              "mode": "BUS",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": true,
+              "realtimeState": "UPDATED",
+              "rentedBike": null,
+              "rideHailingEstimate": null,
+              "route": {
+                "alerts": [],
+                "color": "FDB71A",
+                "gtfsId": "kcm:102732",
+                "id": "kcm:102732",
+                "longName": null,
+                "shortName": "79",
+                "textColor": null,
+                "type": 3
+              },
+              "startTime": 1765470948000,
+              "steps": [],
+              "stopCalls": [
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                }
+              ],
+              "to": {
+                "lat": 47.6829796,
+                "lon": -122.300255,
+                "name": "NE 75th St & 25th Ave NE",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "82276",
+                  "gtfsId": "kcm:82276",
+                  "id": "U3RvcDprY206ODIyNzY",
+                  "lat": 47.6829796,
+                  "lon": -122.300255
+                },
+                "vertexType": "TRANSIT"
+              },
+              "transitLeg": true,
+              "trip": {
+                "arrivalStoptime": {
+                  "stop": {
+                    "gtfsId": "kcm:29431",
+                    "id": "U3RvcDprY206Mjk0MzE"
+                  },
+                  "stopPosition": 46
+                },
+                "departureStoptime": {
+                  "stop": {
+                    "gtfsId": "kcm:16419",
+                    "id": "U3RvcDprY206MTY0MTk"
+                  },
+                  "stopPosition": 1
+                },
+                "gtfsId": "kcm:636025629",
+                "id": "VHJpcDprY206NjM2MDI1NjI5"
+              }
+            },
+            {
+              "accessibilityScore": null,
+              "agency": null,
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 65.7,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 73.0,
+              "endTime": 1765471099000,
+              "fareProducts": [],
+              "from": {
+                "lat": 47.6829796,
+                "lon": -122.300255,
+                "name": "NE 75th St & 25th Ave NE",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "82276",
+                  "gtfsId": "kcm:82276",
+                  "id": "U3RvcDprY206ODIyNzY",
+                  "lat": 47.6829796,
+                  "lon": -122.300255
+                },
+                "vertexType": "TRANSIT"
+              },
+              "headsign": null,
+              "id": null,
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": null,
+              "legGeometry": {
+                "length": 16,
+                "points": "qa`bHrwmiV???@?h@?F?LA@@B@@AB?T?Z@@@?X??I"
+              },
+              "mode": "WALK",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": false,
+              "realtimeState": null,
+              "rentedBike": false,
+              "rideHailingEstimate": null,
+              "route": null,
+              "startTime": 1765471026000,
+              "steps": [
+                {
+                  "absoluteDirection": "WEST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 48.42,
+                  "elevationProfile": [],
+                  "lat": 47.6829799,
+                  "lon": -122.300255,
+                  "relativeDirection": "DEPART",
+                  "stayOn": false,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "SOUTHWEST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 17.29,
+                  "elevationProfile": [],
+                  "lat": 47.6829713,
+                  "lon": -122.300892,
+                  "relativeDirection": "SLIGHTLY_LEFT",
+                  "stayOn": false,
+                  "streetName": "25th Avenue Northeast"
+                }
+              ],
+              "stopCalls": [],
+              "to": {
+                "lat": 47.6828232,
+                "lon": -122.300858,
+                "name": "25th Ave NE & NE 75th St",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "23895",
+                  "gtfsId": "kcm:23895",
+                  "id": "U3RvcDprY206MjM4OTU",
+                  "lat": 47.6828232,
+                  "lon": -122.300858
+                },
+                "vertexType": "TRANSIT"
+              },
+              "transitLeg": false,
+              "trip": null
+            },
+            {
+              "accessibilityScore": null,
+              "agency": {
+                "alerts": [],
+                "gtfsId": "kcm:1",
+                "id": "kcm:1",
+                "name": "Metro Transit",
+                "timezone": "America/Los_Angeles",
+                "url": "https://kingcounty.gov/en/dept/metro"
+              },
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 3580.07,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 749.0,
+              "endTime": 1765471923000,
+              "fareProducts": [
+                {
+                  "id": "e03a679c-35d8-31f9-8c1e-7cb6d6b02c73",
+                  "product": {
+                    "__typename": "DependentFareProduct",
+                    "id": "orca:0d493de7-5b9c-4663-a827-dd5521c2fff9",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:senior",
+                      "name": "senior"
+                    },
+                    "dependencies": [
+                      {
+                        "id": "orca:e1fe219e-6251-450c-a20f-2ea1059164bb"
+                      }
+                    ],
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "26d34e90-1a77-3f8e-9e11-b424c0852303",
+                  "product": {
+                    "__typename": "DependentFareProduct",
+                    "id": "orca:0e87d85f-4ca8-40f0-961d-a375ed724e42",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:regular",
+                      "name": "regular"
+                    },
+                    "dependencies": [
+                      {
+                        "id": "orca:4238f2fc-386c-4d86-b47b-d9076e7cc55e"
+                      }
+                    ],
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "201640df-32e1-38e6-a1ae-cea8e1b2e0e4",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:4238f2fc-386c-4d86-b47b-d9076e7cc55e",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:regular",
+                      "name": "regular"
+                    },
+                    "price": {
+                      "amount": 3.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "d0c97edc-67ec-30d7-a4e9-51cf019f3628",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:90115fae-d72b-425e-985b-3f09f0f2fc42",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:special",
+                      "name": "special"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "4f82f1e3-4bea-3c0a-b845-9052ba999076",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:e1fe219e-6251-450c-a20f-2ea1059164bb",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:senior",
+                      "name": "senior"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "28fdb912-bea0-32a4-a0b6-630f8a508b18",
+                  "product": {
+                    "__typename": "DependentFareProduct",
+                    "id": "orca:e8ce1b91-6c47-48b1-9f3f-925c8dd8c4a5",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:special",
+                      "name": "special"
+                    },
+                    "dependencies": [
+                      {
+                        "id": "orca:90115fae-d72b-425e-985b-3f09f0f2fc42"
+                      }
+                    ],
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "121d1aca-90d8-3079-bcd7-b22421d84d96",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:freeFare",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "Free Fare",
+                    "riderCategory": {
+                      "id": "orca:youth",
+                      "name": "youth"
+                    },
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "c7f21f66-e1cb-351c-a732-e202ca007d0d",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:freeFare",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Free Fare",
+                    "riderCategory": {
+                      "id": "orca:youth",
+                      "name": "youth"
+                    },
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                }
+              ],
+              "from": {
+                "lat": 47.6828232,
+                "lon": -122.300858,
+                "name": "25th Ave NE & NE 75th St",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "23895",
+                  "gtfsId": "kcm:23895",
+                  "id": "U3RvcDprY206MjM4OTU",
+                  "lat": 47.6828232,
+                  "lon": -122.300858
+                },
+                "vertexType": "TRANSIT"
+              },
+              "headsign": "U-District Station",
+              "id": "rO0ABXdVABhTQ0hFRFVMRURfVFJBTlNJVF9MRUdfVjMADWtjbTo2OTQzMDY3NTkACjIwMjUtMTItMTEAAAAUAAAAHAAJa2NtOjIzODk1AAlrY206NzU0MDIAAA==",
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": [
+                {
+                  "lat": 47.6762733,
+                  "locationType": "STOP",
+                  "lon": -122.300743,
+                  "name": "25th Ave NE & NE 65th St",
+                  "stopCode": "23905",
+                  "stopId": "U3RvcDprY206MjM5MDU"
+                },
+                {
+                  "lat": 47.671875,
+                  "locationType": "STOP",
+                  "lon": -122.300743,
+                  "name": "25th Ave NE & NE 60th St",
+                  "stopCode": "23910",
+                  "stopId": "U3RvcDprY206MjM5MTA"
+                },
+                {
+                  "lat": 47.668293,
+                  "locationType": "STOP",
+                  "lon": -122.30072,
+                  "name": "25th Ave NE & NE 55th St",
+                  "stopCode": "23915",
+                  "stopId": "U3RvcDprY206MjM5MTU"
+                },
+                {
+                  "lat": 47.6657257,
+                  "locationType": "STOP",
+                  "lon": -122.30072,
+                  "name": "25th Ave NE & NE Blakeley St",
+                  "stopCode": "23920",
+                  "stopId": "U3RvcDprY206MjM5MjA"
+                },
+                {
+                  "lat": 47.6629105,
+                  "locationType": "STOP",
+                  "lon": -122.301003,
+                  "name": "25th Ave NE & NE 47th St",
+                  "stopCode": "23925",
+                  "stopId": "U3RvcDprY206MjM5MjU"
+                },
+                {
+                  "lat": 47.6567421,
+                  "locationType": "STOP",
+                  "lon": -122.304886,
+                  "name": "East Stevens Way NE & Pend Oreille Rd",
+                  "stopCode": "75406",
+                  "stopId": "U3RvcDprY206NzU0MDY"
+                },
+                {
+                  "lat": 47.6545029,
+                  "locationType": "STOP",
+                  "lon": -122.30513,
+                  "name": "East Stevens Way NE & Benton Ln",
+                  "stopCode": "75403",
+                  "stopId": "U3RvcDprY206NzU0MDM"
+                }
+              ],
+              "legGeometry": {
+                "length": 101,
+                "points": "s``bHvzmiV~CCjOMhJGfGD??bB?bA?hH?dJCv@???xJAbH?l@???~@?tICP?p@?h@B??D?|Dn@`AHL?L?pDCT?d@B??^???`I?bA?xA?Bf@Fh@|@fBNXXXP?bA?d@DxEnBL?TNPPNPLZL`@fA~E@RAT|@\\PFLBL?JCBA??NEj@M^K`@Gd@I`@Aj@Ab@@b@FRDNDHDFDHFNRNLPLRLD@??PFTDRBZ?n@AX?P@^FVHXLTLRLRLPRPRTXPZP^HR@D"
+              },
+              "mode": "BUS",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": true,
+              "realtimeState": "UPDATED",
+              "rentedBike": null,
+              "rideHailingEstimate": null,
+              "route": {
+                "alerts": [],
+                "color": "FDB71A",
+                "gtfsId": "kcm:100214",
+                "id": "kcm:100214",
+                "longName": null,
+                "shortName": "372",
+                "textColor": null,
+                "type": 3
+              },
+              "startTime": 1765471174000,
+              "steps": [],
+              "stopCalls": [
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                }
+              ],
+              "to": {
+                "lat": 47.6523895,
+                "lon": -122.306305,
+                "name": "Stevens Way & Rainier Vista NE",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "75402",
+                  "gtfsId": "kcm:75402",
+                  "id": "U3RvcDprY206NzU0MDI",
+                  "lat": 47.6523895,
+                  "lon": -122.306305
+                },
+                "vertexType": "TRANSIT"
+              },
+              "transitLeg": true,
+              "trip": {
+                "arrivalStoptime": {
+                  "stop": {
+                    "gtfsId": "kcm:9650",
+                    "id": "U3RvcDprY206OTY1MA"
+                  },
+                  "stopPosition": 35
+                },
+                "departureStoptime": {
+                  "stop": {
+                    "gtfsId": "kcm:76372",
+                    "id": "U3RvcDprY206NzYzNzI"
+                  },
+                  "stopPosition": 1
+                },
+                "gtfsId": "kcm:694306759",
+                "id": "VHJpcDprY206Njk0MzA2NzU5"
+              }
+            },
+            {
+              "accessibilityScore": null,
+              "agency": null,
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 429.22,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 413.0,
+              "endTime": 1765472336000,
+              "fareProducts": [],
+              "from": {
+                "lat": 47.6523895,
+                "lon": -122.306305,
+                "name": "Stevens Way & Rainier Vista NE",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "75402",
+                  "gtfsId": "kcm:75402",
+                  "id": "U3RvcDprY206NzU0MDI",
+                  "lat": 47.6523895,
+                  "lon": -122.306305
+                },
+                "vertexType": "TRANSIT"
+              },
+              "headsign": null,
+              "id": null,
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": null,
+              "legGeometry": {
+                "length": 54,
+                "points": "kbzaHl}niV@ACKCE@ADEBHJI~@m@JKFMBB@@H@PG^ORMPMRSLI@UBSDQHUP[IQIMMSQUCGBELO?C@E@CBEBEE[BAHB?Q@YB]MGA?qAm@GA?Gk@WCAAE?E?E?A"
+              },
+              "mode": "WALK",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": false,
+              "realtimeState": null,
+              "rentedBike": false,
+              "rideHailingEstimate": null,
+              "route": null,
+              "startTime": 1765471923000,
+              "steps": [
+                {
+                  "absoluteDirection": "NORTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 5.27,
+                  "elevationProfile": [],
+                  "lat": 47.6523751,
+                  "lon": -122.3062924,
+                  "relativeDirection": "DEPART",
+                  "stayOn": false,
+                  "streetName": "Northeast Mason Road"
+                },
+                {
+                  "absoluteDirection": "NORTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 2.72,
+                  "elevationProfile": [],
+                  "lat": 47.6523993,
+                  "lon": -122.3062318,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "East Stevens Way Northeast"
+                },
+                {
+                  "absoluteDirection": "SOUTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 1.19,
+                  "elevationProfile": [],
+                  "lat": 47.652414,
+                  "lon": -122.3062028,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": false,
+                  "streetName": "Rainier Vista"
+                },
+                {
+                  "absoluteDirection": "SOUTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 3.9,
+                  "elevationProfile": [],
+                  "lat": 47.652406,
+                  "lon": -122.3061923,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "SOUTHWEST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 4.62,
+                  "elevationProfile": [],
+                  "lat": 47.6523765,
+                  "lon": -122.3061642,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": false,
+                  "streetName": "East Stevens Way Northeast"
+                },
+                {
+                  "absoluteDirection": "SOUTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 61.87,
+                  "elevationProfile": [],
+                  "lat": 47.6523514,
+                  "lon": -122.3062134,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "Northeast Mason Road"
+                },
+                {
+                  "absoluteDirection": "SOUTHWEST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 132.37,
+                  "elevationProfile": [],
+                  "lat": 47.651876,
+                  "lon": -122.3058011,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": false,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "NORTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 43.78,
+                  "elevationProfile": [],
+                  "lat": 47.6509888,
+                  "lon": -122.3048862,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "Burke-Gilman Trail"
+                },
+                {
+                  "absoluteDirection": "SOUTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 44.83,
+                  "elevationProfile": [],
+                  "lat": 47.6512677,
+                  "lon": -122.3044757,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": false,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 16.73,
+                  "elevationProfile": [],
+                  "lat": 47.6510706,
+                  "lon": -122.3041087,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "Northeast Pacific Place"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 11.5,
+                  "elevationProfile": [],
+                  "lat": 47.651066,
+                  "lon": -122.3038856,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "service road"
+                },
+                {
+                  "absoluteDirection": "NORTH",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 62.11,
+                  "elevationProfile": [],
+                  "lat": 47.6510456,
+                  "lon": -122.3037351,
+                  "relativeDirection": "LEFT",
+                  "stayOn": true,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 2.67,
+                  "elevationProfile": [],
+                  "lat": 47.6515706,
+                  "lon": -122.3034519,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": true,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "NORTH",
+                  "alerts": [],
+                  "area": true,
+                  "distance": 35.68,
+                  "elevationProfile": [],
+                  "lat": 47.6515794,
+                  "lon": -122.3034188,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "Jackie Lee and Jim Houston Plaza"
+                }
+              ],
+              "stopCalls": [],
+              "to": {
+                "lat": 47.6518058,
+                "lon": -122.3031926,
+                "name": "3818 Montlake Boulevard NE, Seattle, WA, USA",
+                "rentalVehicle": null,
+                "stop": null,
+                "vertexType": "NORMAL"
+              },
+              "transitLeg": false,
+              "trip": null
+            }
+          ],
+          "startTime": 1765470663000,
+          "transfers": 1,
+          "waitingTime": 75,
+          "walkTime": 771
+        },
+        {
+          "accessibilityScore": null,
+          "duration": 1347,
+          "endTime": 1765472571000,
+          "legs": [
+            {
+              "accessibilityScore": null,
+              "agency": null,
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 303.71,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 260.0,
+              "endTime": 1765471484000,
+              "fareProducts": [],
+              "from": {
+                "lat": 47.6844312,
+                "lon": -122.3084432,
+                "name": "7546 18th Avenue NE, Seattle, WA, USA",
+                "rentalVehicle": null,
+                "stop": null,
+                "vertexType": "NORMAL"
+              },
+              "headsign": null,
+              "id": null,
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": null,
+              "legGeometry": {
+                "length": 27,
+                "points": "uj`bHdjoiVfGE?C?mAACAE?C@I@OCE@?@C?kA?E?E?gAAA?A?C@AAQ?SAA@A?E?{@@?"
+              },
+              "mode": "WALK",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": false,
+              "realtimeState": null,
+              "rentedBike": false,
+              "rideHailingEstimate": null,
+              "route": null,
+              "startTime": 1765471224000,
+              "steps": [
+                {
+                  "absoluteDirection": "SOUTH",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 146.12,
+                  "elevationProfile": [],
+                  "lat": 47.6844321,
+                  "lon": -122.3083485,
+                  "relativeDirection": "DEPART",
+                  "stayOn": false,
+                  "streetName": "alley"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 2.03,
+                  "elevationProfile": [],
+                  "lat": 47.6831182,
+                  "lon": -122.3083195,
+                  "relativeDirection": "LEFT",
+                  "stayOn": true,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 31.04,
+                  "elevationProfile": [],
+                  "lat": 47.6831182,
+                  "lon": -122.3082924,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "Northeast 75th Street"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 3.67,
+                  "elevationProfile": [],
+                  "lat": 47.6831275,
+                  "lon": -122.3078819,
+                  "relativeDirection": "CONTINUE",
+                  "stayOn": false,
+                  "streetName": "19th Avenue Northeast"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 10.54,
+                  "elevationProfile": [],
+                  "lat": 47.6831354,
+                  "lon": -122.307839,
+                  "relativeDirection": "SLIGHTLY_RIGHT",
+                  "stayOn": false,
+                  "streetName": "path"
+                },
+                {
+                  "absoluteDirection": "NORTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 2.36,
+                  "elevationProfile": [],
+                  "lat": 47.683118,
+                  "lon": -122.3077006,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "Northeast 75th Street"
+                },
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 107.96,
+                  "elevationProfile": [],
+                  "lat": 47.683134,
+                  "lon": -122.3076798,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": true,
+                  "streetName": "Northeast 75th Street"
+                }
+              ],
+              "stopCalls": [],
+              "to": {
+                "lat": 47.6831131,
+                "lon": -122.306267,
+                "name": "NE 75th St & 20th Ave NE",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "82127",
+                  "gtfsId": "kcm:82127",
+                  "id": "U3RvcDprY206ODIxMjc",
+                  "lat": 47.6831131,
+                  "lon": -122.306267
+                },
+                "vertexType": "TRANSIT"
+              },
+              "transitLeg": false,
+              "trip": null
+            },
+            {
+              "accessibilityScore": null,
+              "agency": {
+                "alerts": [],
+                "gtfsId": "kcm:1",
+                "id": "kcm:1",
+                "name": "Metro Transit",
+                "timezone": "America/Los_Angeles",
+                "url": "https://kingcounty.gov/en/dept/metro"
+              },
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 1556.91,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 298.0,
+              "endTime": 1765471782000,
+              "fareProducts": [
+                {
+                  "id": "b3ec1039-64e6-3f8d-8591-2124cad98da0",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:acc50cb7-a4a1-4522-881c-2afbc7022626",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:regular",
+                      "name": "regular"
+                    },
+                    "price": {
+                      "amount": 3.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "a10bb0d9-8242-352a-83ba-e822618a1890",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:c462ee9e-ee86-4b62-bee4-3d9b0cb57259",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:special",
+                      "name": "special"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "b18f4a77-d617-3c46-88f0-1962baab344d",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:cash",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Metro Transit Cash Transfer",
+                    "riderCategory": {
+                      "id": "orca:regular",
+                      "name": "regular"
+                    },
+                    "price": {
+                      "amount": 3.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "d2a83f9e-4719-394b-bc6f-ddaa477915a0",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:cash",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Metro Transit Cash Transfer",
+                    "riderCategory": {
+                      "id": "orca:senior",
+                      "name": "senior"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "2cfe5c14-70da-369a-8b6f-24013346748a",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:f85f1d03-f52b-4d1f-8a41-ef0aab488c19",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:senior",
+                      "name": "senior"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "00e47ae5-7ec3-3717-a742-7ffdafc49e0e",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:freeFare",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "Free Fare",
+                    "riderCategory": {
+                      "id": "orca:youth",
+                      "name": "youth"
+                    },
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "76035500-98f1-3275-858e-037229252063",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:freeFare",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Free Fare",
+                    "riderCategory": {
+                      "id": "orca:youth",
+                      "name": "youth"
+                    },
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                }
+              ],
+              "from": {
+                "lat": 47.6831131,
+                "lon": -122.306267,
+                "name": "NE 75th St & 20th Ave NE",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "82127",
+                  "gtfsId": "kcm:82127",
+                  "id": "U3RvcDprY206ODIxMjc",
+                  "lat": 47.6831131,
+                  "lon": -122.306267
+                },
+                "vertexType": "TRANSIT"
+              },
+              "headsign": "Roosevelt Station Sand Point",
+              "id": "rO0ABXdVABhTQ0hFRFVMRURfVFJBTlNJVF9MRUdfVjMADWtjbTo1NjEzNjkyMzkACjIwMjUtMTItMTEAAAAnAAAAKwAJa2NtOjgyMTI3AAlrY206MzY5NDAAAA==",
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": [
+                {
+                  "lat": 47.682682,
+                  "locationType": "STOP",
+                  "lon": -122.312057,
+                  "name": "15th Ave NE & NE 75th St",
+                  "stopCode": "38350",
+                  "stopId": "U3RvcDprY206MzgzNTA"
+                },
+                {
+                  "lat": 47.6791573,
+                  "locationType": "STOP",
+                  "lon": -122.312096,
+                  "name": "15th Ave NE & NE 70th St",
+                  "stopCode": "38370",
+                  "stopId": "U3RvcDprY206MzgzNzA"
+                },
+                {
+                  "lat": 47.6758652,
+                  "locationType": "STOP",
+                  "lon": -122.313545,
+                  "name": "NE 65th St & 14th Ave NE",
+                  "stopCode": "36931",
+                  "stopId": "U3RvcDprY206MzY5MzE"
+                }
+              ],
+              "legGeometry": {
+                "length": 45,
+                "points": "_b`bHb}niV?tA?D?fB?nB?dB?nB?rB?`B?tE?fE?Lp@KPK??v@a@JE^KdECh@?\\BXLf@ZLHNBRF@?jDAn@???~AC~BAxA?xECnCC?Z?zAAvB?pA??Ad@?zB?nBAtC?`A"
+              },
+              "mode": "BUS",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": true,
+              "realtimeState": "UPDATED",
+              "rentedBike": null,
+              "rideHailingEstimate": null,
+              "route": {
+                "alerts": [],
+                "color": "FDB71A",
+                "gtfsId": "kcm:102732",
+                "id": "kcm:102732",
+                "longName": null,
+                "shortName": "79",
+                "textColor": null,
+                "type": 3
+              },
+              "startTime": 1765471484000,
+              "steps": [],
+              "stopCalls": [
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                }
+              ],
+              "to": {
+                "lat": 47.6758881,
+                "lon": -122.315994,
+                "name": "Roosevelt Station - Bay 2",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "36940",
+                  "gtfsId": "kcm:36940",
+                  "id": "U3RvcDprY206MzY5NDA",
+                  "lat": 47.6758881,
+                  "lon": -122.315994
+                },
+                "vertexType": "TRANSIT"
+              },
+              "transitLeg": true,
+              "trip": {
+                "arrivalStoptime": {
+                  "stop": {
+                    "gtfsId": "kcm:36960",
+                    "id": "U3RvcDprY206MzY5NjA"
+                  },
+                  "stopPosition": 45
+                },
+                "departureStoptime": {
+                  "stop": {
+                    "gtfsId": "kcm:29423",
+                    "id": "U3RvcDprY206Mjk0MjM"
+                  },
+                  "stopPosition": 1
+                },
+                "gtfsId": "kcm:561369239",
+                "id": "VHJpcDprY206NTYxMzY5MjM5"
+              }
+            },
+            {
+              "accessibilityScore": null,
+              "agency": null,
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 39.2,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 33.0,
+              "endTime": 1765471815000,
+              "fareProducts": [],
+              "from": {
+                "lat": 47.6758881,
+                "lon": -122.315994,
+                "name": "Roosevelt Station - Bay 2",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": "36940",
+                  "gtfsId": "kcm:36940",
+                  "id": "U3RvcDprY206MzY5NDA",
+                  "lat": 47.6758881,
+                  "lon": -122.315994
+                },
+                "vertexType": "TRANSIT"
+              },
+              "headsign": null,
+              "id": null,
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": null,
+              "legGeometry": {
+                "length": 9,
+                "points": "gu~aH~ypiVE??i@AAAAO?I@K@Br@"
+              },
+              "mode": "WALK",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": false,
+              "realtimeState": null,
+              "rentedBike": false,
+              "rideHailingEstimate": null,
+              "route": null,
+              "startTime": 1765471782000,
+              "steps": [
+                {
+                  "absoluteDirection": "EAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 15.65,
+                  "elevationProfile": [],
+                  "lat": 47.6759188,
+                  "lon": -122.3159941,
+                  "relativeDirection": "DEPART",
+                  "stayOn": false,
+                  "streetName": "Northeast 65th Street"
+                },
+                {
+                  "absoluteDirection": "NORTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 2.02,
+                  "elevationProfile": [],
+                  "lat": 47.675919,
+                  "lon": -122.315785,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "12th Avenue Northeast"
+                },
+                {
+                  "absoluteDirection": "NORTH",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 21.53,
+                  "elevationProfile": [],
+                  "lat": 47.67593,
+                  "lon": -122.3157664,
+                  "relativeDirection": "LEFT",
+                  "stayOn": true,
+                  "streetName": "12th Avenue Northeast"
+                }
+              ],
+              "stopCalls": [],
+              "to": {
+                "lat": 47.676107,
+                "lon": -122.316041,
+                "name": "Roosevelt",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": null,
+                  "gtfsId": "40:990003",
+                  "id": "U3RvcDo0MDo5OTAwMDM",
+                  "lat": 47.676107,
+                  "lon": -122.316041
+                },
+                "vertexType": "TRANSIT"
+              },
+              "transitLeg": false,
+              "trip": null
+            },
+            {
+              "accessibilityScore": null,
+              "agency": {
+                "alerts": [],
+                "gtfsId": "40:40",
+                "id": "40:40",
+                "name": "Sound Transit",
+                "timezone": "America/Los_Angeles",
+                "url": "https://www.soundtransit.org"
+              },
+              "alerts": [
+                {
+                  "alertDescriptionText": "The 1 Line has arrived in South King County. Link light rail trains are now serving Kent Des Moines, Star Lake, and Federal Way!",
+                  "alertHeaderText": "1 Line trains are now serving Federal Way!",
+                  "alertUrl": "https://www.soundtransit.org/southkinglink",
+                  "effectiveStartDate": 1765047240,
+                  "id": "QWxlcnQ6NDA6MTQyNjU"
+                },
+                {
+                  "alertDescriptionText": "The ONLY vehicles allowed access during the construction will be those using the ADA parking spaces and paratransit bus service. We apologize for any inconvenience this may cause. \r\n\nTo get information about other transit parking lots and garages, please click the link below. \r\n\nThe work schedule is subject to change. For updates, please subscribe to service alerts. Visit the service alerts web page to sign up for alerts and current information on service disruptions.\r\n",
+                  "alertHeaderText": "Starting on September 11 through December 29, the south parking lot at Lynnwood Transit Center will be closed to vehicles. This is to allow for construction of a new trash enclosure.",
+                  "alertUrl": "https://www.soundtransit.org/ride-with-us/parking/parking-locations",
+                  "effectiveStartDate": 1763438460,
+                  "id": "QWxlcnQ6NDA6MTM5ODg"
+                },
+                {
+                  "alertDescriptionText": "The elevator at the Husky Stadium exit serving the street (Montlake Blvd NE), pedestrian bridge, and platform is out of service for the foreseeable future. \r\n\nDuring recent repairs, it was identified that a component in the elevator was damaged. The damaged component is not available for purchase separately, and a completely new machine will need to be ordered. These new machines have a significant lead time and the elevator will be out of service until repairs are complete. \r\n\nSee below for alternate route information.\r\n\nTo ride the 1 Line:\r\n\n1. Take the elevator located directly across from the out of service unit down to the platform.\r\n\nTo exit the station:\r\n\n1. Take the nearby elevator located directly across from the out of service unit up to the street or pedestrian bridge to Montlake Blvd NE.",
+                  "alertHeaderText": "University of Washington Station - Elevator 2 unavailable until further notice due to a mechanical issue. \n",
+                  "alertUrl": null,
+                  "effectiveStartDate": 1758476940,
+                  "id": "QWxlcnQ6NDA6MTI2ODk"
+                },
+                {
+                  "alertDescriptionText": "Expect 12-minute wait times starting at 9 p.m. daily. Regular service will resume each morning at the start of service. \r\n\nSchedule and Platform Use:\r\n\nDec. 8-13: Lynnwood City Center platform - 9 p.m. – start of service \r\n\nThe schedule will extend past Dec. 13, with updates posted at stations and online. \r\n \r\nFor assistance at stations, call or text Security at (206) 398-5268. Subscribe to service alerts at soundtransit.org/alerts for updates. \r\n\n ",
+                  "alertHeaderText": "Starting at 9 p.m. on Monday, Dec. 8, to Saturday, Dec. 13, construction at Pinehurst Station will require 1 Line trains to share a track at Shoreline South/148th Station. Trains will serve the northbound/Lynnwood City Center side of the platform.",
+                  "alertUrl": "https://www.soundtransit.org/1",
+                  "effectiveStartDate": 1765256400,
+                  "id": "QWxlcnQ6NDA6MTQxODY"
+                }
+              ],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 3419.5,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 270.0,
+              "endTime": 1765472310000,
+              "fareProducts": [
+                {
+                  "id": "f8bf7008-82fa-38af-9055-73e8cdc3c43d",
+                  "product": {
+                    "__typename": "DependentFareProduct",
+                    "id": "orca:057823f1-4844-42ed-a96c-4721edc684e4",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:regular",
+                      "name": "regular"
+                    },
+                    "dependencies": [
+                      {
+                        "id": "orca:acc50cb7-a4a1-4522-881c-2afbc7022626"
+                      }
+                    ],
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "3c66f415-a64c-3d58-ab5e-d370ec354c82",
+                  "product": {
+                    "__typename": "DependentFareProduct",
+                    "id": "orca:19c47ec4-c5e7-4e1f-b73f-1ecc8d9d35d2",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:special",
+                      "name": "special"
+                    },
+                    "dependencies": [
+                      {
+                        "id": "orca:c462ee9e-ee86-4b62-bee4-3d9b0cb57259"
+                      }
+                    ],
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "3400aa4a-1809-32f2-83e8-2999dd9ab1c5",
+                  "product": {
+                    "__typename": "DependentFareProduct",
+                    "id": "orca:2c03b1b8-1b0a-40f8-b358-600cf044d81f",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:senior",
+                      "name": "senior"
+                    },
+                    "dependencies": [
+                      {
+                        "id": "orca:f85f1d03-f52b-4d1f-8a41-ef0aab488c19"
+                      }
+                    ],
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "232df2dd-038f-39b4-b4b1-403432418757",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:Sound TransitFare",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Sound Transit Fare",
+                    "riderCategory": {
+                      "id": "orca:regular",
+                      "name": "regular"
+                    },
+                    "price": {
+                      "amount": 3.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "5df5742b-d35f-36b6-aa8b-177c062b9ac4",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:Sound TransitFare",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Sound Transit Fare",
+                    "riderCategory": {
+                      "id": "orca:senior",
+                      "name": "senior"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "b3ec1039-64e6-3f8d-8591-2124cad98da0",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:acc50cb7-a4a1-4522-881c-2afbc7022626",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:regular",
+                      "name": "regular"
+                    },
+                    "price": {
+                      "amount": 3.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "a10bb0d9-8242-352a-83ba-e822618a1890",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:c462ee9e-ee86-4b62-bee4-3d9b0cb57259",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:special",
+                      "name": "special"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "2cfe5c14-70da-369a-8b6f-24013346748a",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:f85f1d03-f52b-4d1f-8a41-ef0aab488c19",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "ORCA Fare",
+                    "riderCategory": {
+                      "id": "orca:senior",
+                      "name": "senior"
+                    },
+                    "price": {
+                      "amount": 1.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "91c44d61-7875-3f3e-b05e-91bbec13baa1",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:freeFare",
+                    "medium": {
+                      "id": "orca:electronic",
+                      "name": "electronic"
+                    },
+                    "name": "Free Fare",
+                    "riderCategory": {
+                      "id": "orca:youth",
+                      "name": "youth"
+                    },
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "ebe08dd9-c992-300b-9f29-6796c3c363d3",
+                  "product": {
+                    "__typename": "DefaultFareProduct",
+                    "id": "orca:freeFare",
+                    "medium": {
+                      "id": "orca:cash",
+                      "name": "cash"
+                    },
+                    "name": "Free Fare",
+                    "riderCategory": {
+                      "id": "orca:youth",
+                      "name": "youth"
+                    },
+                    "price": {
+                      "amount": 0.0,
+                      "currency": {
+                        "code": "USD",
+                        "digits": 2
+                      }
+                    }
+                  }
+                }
+              ],
+              "from": {
+                "lat": 47.676107,
+                "lon": -122.316041,
+                "name": "Roosevelt",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": null,
+                  "gtfsId": "40:990003",
+                  "id": "U3RvcDo0MDo5OTAwMDM",
+                  "lat": 47.676107,
+                  "lon": -122.316041
+                },
+                "vertexType": "TRANSIT"
+              },
+              "headsign": "Federal Way Downtown",
+              "id": "rO0ABXeIABhTQ0hFRFVMRURfVFJBTlNJVF9MRUdfVjMAQTQwOkxMUl8yMDI1LTEyLTA3X09jdDE0X0xpbmtfRmFsbDIwMjVfRldMRV92Ml9XZWVrZGF5XzEwMDQ3OV8yMDM4AAoyMDI1LTEyLTExAAAABQAAAAcACTQwOjk5MDAwMwAINDA6OTk2MDQAAA==",
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": [
+                {
+                  "lat": 47.659875,
+                  "locationType": "STOP",
+                  "lon": -122.314194,
+                  "name": "U District",
+                  "stopCode": null,
+                  "stopId": "U3RvcDo0MDo5OTAwMDE"
+                }
+              ],
+              "legGeometry": {
+                "length": 76,
+                "points": "sv~aHlzpiVhBAnAEf@Cfy@yHxBO|AK~AG~AE~AE~AA~A?jMH??xA@X?VCVCVEVIVITKTMTOTQRQRURUPWPYNYN[L]L]J_@H_@H_@Fa@Fg@Fk@hAqNH_AFq@Ho@Jo@Lo@Lm@Lm@Nk@Pk@Ri@Ri@Rg@Te@Ve@Vc@Xa@Xa@X_@Z]Z[\\Y\\W\\W^S^S^Q^M`@M`@K`@G`@Gh@Et@CvSS@?"
+              },
+              "mode": "TRAM",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": false,
+              "realtimeState": "SCHEDULED",
+              "rentedBike": null,
+              "rideHailingEstimate": null,
+              "route": {
+                "alerts": [
+                  {
+                    "alertDescriptionText": "The 1 Line has arrived in South King County. Link light rail trains are now serving Kent Des Moines, Star Lake, and Federal Way!",
+                    "alertHeaderText": "1 Line trains are now serving Federal Way!",
+                    "alertUrl": "https://www.soundtransit.org/southkinglink",
+                    "effectiveStartDate": 1765047240,
+                    "id": "QWxlcnQ6NDA6MTQyNjU"
+                  },
+                  {
+                    "alertDescriptionText": "The ONLY vehicles allowed access during the construction will be those using the ADA parking spaces and paratransit bus service. We apologize for any inconvenience this may cause. \r\n\nTo get information about other transit parking lots and garages, please click the link below. \r\n\nThe work schedule is subject to change. For updates, please subscribe to service alerts. Visit the service alerts web page to sign up for alerts and current information on service disruptions.\r\n",
+                    "alertHeaderText": "Starting on September 11 through December 29, the south parking lot at Lynnwood Transit Center will be closed to vehicles. This is to allow for construction of a new trash enclosure.",
+                    "alertUrl": "https://www.soundtransit.org/ride-with-us/parking/parking-locations",
+                    "effectiveStartDate": 1763438460,
+                    "id": "QWxlcnQ6NDA6MTM5ODg"
+                  },
+                  {
+                    "alertDescriptionText": "Expect 12-minute wait times starting at 9 p.m. daily. Regular service will resume each morning at the start of service. \r\n\nSchedule and Platform Use:\r\n\nDec. 8-13: Lynnwood City Center platform - 9 p.m. – start of service \r\n\nThe schedule will extend past Dec. 13, with updates posted at stations and online. \r\n \r\nFor assistance at stations, call or text Security at (206) 398-5268. Subscribe to service alerts at soundtransit.org/alerts for updates. \r\n\n ",
+                    "alertHeaderText": "Starting at 9 p.m. on Monday, Dec. 8, to Saturday, Dec. 13, construction at Pinehurst Station will require 1 Line trains to share a track at Shoreline South/148th Station. Trains will serve the northbound/Lynnwood City Center side of the platform.",
+                    "alertUrl": "https://www.soundtransit.org/1",
+                    "effectiveStartDate": 1765256400,
+                    "id": "QWxlcnQ6NDA6MTQxODY"
+                  },
+                  {
+                    "alertDescriptionText": "Sound Transit is upgrading signaling equipment in downtown Seattle stations to improve system reliability.\r\n \r\n1 Line trains will arrive every 15 minutes between Lynnwood City Center and Capitol Hill stations, and every 10-15 minutes between Stadium and Federal Way Downtown stations.\r\n\n1 Line Shuttle buses will arrive at closed stations every 10-15 minutes. Below are shuttle stops for affected stations:\r\n\nCapitol Hill\r\n- to Federal Way: Broadway & E Denny Way - Bay 4\r\n\nWestlake\r\n- to Lynnwood: 3rd Ave & Pine St\r\n- to Federal Way: Pine St & 5th Ave\r\n\nSymphony\r\n- to Lynnwood: 3rd Ave & Union St\r\n- to Federal Way: 3rd Ave & Union St\r\n\nPioneer Square\r\n- to Lynnwood: 3rd Ave & James St\r\n- to Federal Way: 3rd Ave & James St\r\n\nInternational District/Chinatown\r\n- to Lynnwood: 4th Ave S & S Jackson St\r\n- to Federal Way: 5th Ave S & S Weller St\r\n\nStadium\r\n- to Lynnwood: SODO Busway & S Royal Brougham Way",
+                    "alertHeaderText": "From 11 p.m. on Friday, Dec. 12, to 10 a.m. on Saturday, Dec. 13, 1 Line Shuttle buses will replace trains between Capitol Hill and Stadium stations.",
+                    "alertUrl": "https://www.soundtransit.org/1LineAlternatives",
+                    "effectiveStartDate": 1765609200,
+                    "id": "QWxlcnQ6NDA6MTQzMjc"
+                  }
+                ],
+                "color": "28813F",
+                "gtfsId": "40:100479",
+                "id": "40:100479",
+                "longName": "Lynnwood - Angle Lake",
+                "shortName": "1 Line",
+                "textColor": "FFFFFF",
+                "type": 0
+              },
+              "startTime": 1765472040000,
+              "steps": [],
+              "stopCalls": [
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                },
+                {
+                  "stopLocation": {
+                    "__typename": "Stop"
+                  }
+                }
+              ],
+              "to": {
+                "lat": 47.649349,
+                "lon": -122.303795,
+                "name": "Univ of Washington",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": null,
+                  "gtfsId": "40:99604",
+                  "id": "U3RvcDo0MDo5OTYwNA",
+                  "lat": 47.649349,
+                  "lon": -122.303795
+                },
+                "vertexType": "TRANSIT"
+              },
+              "transitLeg": true,
+              "trip": {
+                "arrivalStoptime": {
+                  "stop": {
+                    "gtfsId": "40:S07-T1",
+                    "id": "U3RvcDo0MDpTMDctVDE"
+                  },
+                  "stopPosition": 26
+                },
+                "departureStoptime": {
+                  "stop": {
+                    "gtfsId": "40:N23-T2",
+                    "id": "U3RvcDo0MDpOMjMtVDI"
+                  },
+                  "stopPosition": 1
+                },
+                "gtfsId": "40:LLR_2025-12-07_Oct14_Link_Fall2025_FWLE_v2_Weekday_100479_2038",
+                "id": "VHJpcDo0MDpMTFJfMjAyNS0xMi0wN19PY3QxNF9MaW5rX0ZhbGwyMDI1X0ZXTEVfdjJfV2Vla2RheV8xMDA0NzlfMjAzOA"
+              }
+            },
+            {
+              "accessibilityScore": null,
+              "agency": null,
+              "alerts": [],
+              "arrivalDelay": 0,
+              "departureDelay": 0,
+              "distance": 328.27,
+              "dropOffBookingInfo": null,
+              "dropoffType": "SCHEDULED",
+              "duration": 261.0,
+              "endTime": 1765472571000,
+              "fareProducts": [],
+              "from": {
+                "lat": 47.649349,
+                "lon": -122.303795,
+                "name": "Univ of Washington",
+                "rentalVehicle": null,
+                "stop": {
+                  "alerts": [],
+                  "code": null,
+                  "gtfsId": "40:99604",
+                  "id": "U3RvcDo0MDo5OTYwNA",
+                  "lat": 47.649349,
+                  "lon": -122.303795
+                },
+                "vertexType": "TRANSIT"
+              },
+              "headsign": null,
+              "id": null,
+              "interlineWithPreviousLeg": false,
+              "intermediateStops": null,
+              "legGeometry": {
+                "length": 33,
+                "points": "koyaHvmniVEFq@eAEWGFEBA@IBGDIBQDSDSBS@Q?SASCSEQISIQKOMOOOOMSKSCGaACABEAQE?DGx@"
+              },
+              "mode": "WALK",
+              "pickupBookingInfo": null,
+              "pickupType": "SCHEDULED",
+              "realTime": false,
+              "realtimeState": null,
+              "rentedBike": false,
+              "rideHailingEstimate": null,
+              "route": null,
+              "startTime": 1765472310000,
+              "steps": [
+                {
+                  "absoluteDirection": "NORTHEAST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 47.17,
+                  "elevationProfile": [],
+                  "lat": 47.6493742,
+                  "lon": -122.3038341,
+                  "relativeDirection": "DEPART",
+                  "stayOn": false,
+                  "streetName": "parking aisle"
+                },
+                {
+                  "absoluteDirection": "NORTHWEST",
+                  "alerts": [],
+                  "area": false,
+                  "distance": 204.34,
+                  "elevationProfile": [],
+                  "lat": 47.6496525,
+                  "lon": -122.3033698,
+                  "relativeDirection": "LEFT",
+                  "stayOn": true,
+                  "streetName": "service road"
+                },
+                {
+                  "absoluteDirection": "NORTH",
+                  "alerts": [],
+                  "area": true,
+                  "distance": 36.28,
+                  "elevationProfile": [],
+                  "lat": 47.6513292,
+                  "lon": -122.3029077,
+                  "relativeDirection": "LEFT",
+                  "stayOn": false,
+                  "streetName": "The Ron Crockett Family Northwest Plaza"
+                },
+                {
+                  "absoluteDirection": "WEST",
+                  "alerts": [],
+                  "area": true,
+                  "distance": 2.1,
+                  "elevationProfile": [],
+                  "lat": 47.651655,
+                  "lon": -122.302881,
+                  "relativeDirection": "LEFT",
+                  "stayOn": true,
+                  "streetName": "The Ron Crockett Family Northwest Plaza"
+                },
+                {
+                  "absoluteDirection": "NORTH",
+                  "alerts": [],
+                  "area": true,
+                  "distance": 38.38,
+                  "elevationProfile": [],
+                  "lat": 47.6516603,
+                  "lon": -122.3029079,
+                  "relativeDirection": "RIGHT",
+                  "stayOn": false,
+                  "streetName": "Jackie Lee and Jim Houston Plaza"
+                }
+              ],
+              "stopCalls": [],
+              "to": {
+                "lat": 47.6518058,
+                "lon": -122.3031926,
+                "name": "3818 Montlake Boulevard NE, Seattle, WA, USA",
+                "rentalVehicle": null,
+                "stop": null,
+                "vertexType": "NORMAL"
+              },
+              "transitLeg": false,
+              "trip": null
+            }
+          ],
+          "startTime": 1765471224000,
+          "transfers": 1,
+          "waitingTime": 225,
+          "walkTime": 554
+        }
+      ],
+      "routingErrors": []
+    }
+  }
+}

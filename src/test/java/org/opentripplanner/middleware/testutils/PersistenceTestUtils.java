@@ -26,6 +26,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.firstItinerary;
+
 /**
  * Utility class to aid with creating and storing objects in Mongo.
  */
@@ -144,7 +146,7 @@ public class PersistenceTestUtils {
      * Create trip summary from static plan response file and store in database.
      */
     public static TripSummary createTripSummary(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
-        OtpResponse planResponse = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getOtp2Response();
+        OtpResponse planResponse = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
         TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.plan.routingErrors, tripRequestId, batchId);
         if (createDate != null) {
             tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
@@ -239,7 +241,7 @@ public class PersistenceTestUtils {
         boolean persist,
         JourneyState journeyState
     ) throws Exception {
-        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.getSampleQueryParams(), otpDispatcherResponse);
+        MonitoredTrip monitoredTrip = new MonitoredTrip(OtpTestUtils.getSampleQueryParams(), firstItinerary(otpDispatcherResponse.getResponse()));
         monitoredTrip.userId = userId;
         monitoredTrip.tripName = "test trip";
         monitoredTrip.leadTimeInMinutes = 240;

@@ -2501,20 +2501,9 @@ definitions:
         type: "string"
       name:
         type: "string"
-  Trip:
+  RiderCategory:
     type: "object"
     properties:
-      gtfsId:
-        type: "string"
-      id:
-        type: "string"
-      blockId:
-        type: "string"
-  Agency:
-    type: "object"
-    properties:
-      gtfsId:
-        type: "string"
       id:
         type: "string"
       name:
@@ -2554,13 +2543,6 @@ definitions:
         - "DEPARTURE_AND_ARRIVAL_DELAY"
         - "REALTIME_UPDATES_LOST"
       body:
-        type: "string"
-  OtpGraphQLRoutesAndTrips:
-    type: "object"
-    properties:
-      routes:
-        type: "string"
-      trips:
         type: "string"
   EncodedPolyline:
     type: "object"
@@ -2607,160 +2589,22 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/Itinerary"
-  Leg:
+  Money:
     type: "object"
     properties:
-      startTime:
+      amount:
+        type: "number"
+        format: "float"
+      currency:
+        $ref: "#/definitions/Currency"
+  Currency:
+    type: "object"
+    properties:
+      code:
         type: "string"
-        format: "date"
-      endTime:
-        type: "string"
-        format: "date"
-      departureDelay:
+      digits:
         type: "integer"
         format: "int32"
-      arrivalDelay:
-        type: "integer"
-        format: "int32"
-      realTime:
-        type: "boolean"
-      distance:
-        type: "number"
-        format: "double"
-      mode:
-        type: "string"
-      interlineWithPreviousLeg:
-        type: "boolean"
-      from:
-        $ref: "#/definitions/Place"
-      to:
-        $ref: "#/definitions/Place"
-      legGeometry:
-        $ref: "#/definitions/EncodedPolyline"
-      rentedBike:
-        type: "boolean"
-      rideHailingEstimate:
-        $ref: "#/definitions/RideHailingEstimate"
-      transitLeg:
-        type: "boolean"
-      duration:
-        type: "number"
-        format: "double"
-      intermediateStops:
-        type: "array"
-        items:
-          $ref: "#/definitions/Stop"
-      steps:
-        type: "array"
-        items:
-          $ref: "#/definitions/Step"
-      alerts:
-        type: "array"
-        items:
-          $ref: "#/definitions/Alert"
-      headsign:
-        type: "string"
-      agency:
-        $ref: "#/definitions/Agency"
-      route:
-        $ref: "#/definitions/Route"
-      trip:
-        $ref: "#/definitions/Trip"
-  OtpRequest:
-    type: "object"
-    properties:
-      dateTime:
-        $ref: "#/definitions/ZonedDateTime"
-      requestParameters:
-        $ref: "#/definitions/OtpGraphQLVariables"
-  ItineraryExistence:
-    type: "object"
-    properties:
-      otpRequests:
-        type: "array"
-        items:
-          $ref: "#/definitions/OtpRequest"
-      referenceItinerary:
-        $ref: "#/definitions/Itinerary"
-      monday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      tuesday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      wednesday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      thursday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      friday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      saturday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      sunday:
-        $ref: "#/definitions/ItineraryExistenceResult"
-      message:
-        type: "string"
-      error:
-        type: "boolean"
-      tripIsArriveBy:
-        type: "boolean"
-      timestamp:
-        type: "string"
-        format: "date"
-      otpResponseProvider:
-        $ref: "#/definitions/Function"
-  JourneyState:
-    type: "object"
-    properties:
-      baselineArrivalTimeEpochMillis:
-        type: "integer"
-        format: "int64"
-      baselineDepartureTimeEpochMillis:
-        type: "integer"
-        format: "int64"
-      scheduledArrivalTimeEpochMillis:
-        type: "integer"
-        format: "int64"
-      scheduledDepartureTimeEpochMillis:
-        type: "integer"
-        format: "int64"
-      lastCheckedEpochMillis:
-        type: "integer"
-        format: "int64"
-      lastNotifications:
-        type: "array"
-        items:
-          $ref: "#/definitions/TripMonitorNotification"
-      lastNotificationTimeMillis:
-        type: "integer"
-        format: "int64"
-      matchingItinerary:
-        $ref: "#/definitions/Itinerary"
-      targetDate:
-        type: "string"
-      tripStatus:
-        type: "string"
-        enum:
-        - "NO_LONGER_POSSIBLE"
-        - "NEXT_TRIP_NOT_POSSIBLE"
-        - "TRIP_UPCOMING"
-        - "TRIP_ACTIVE"
-        - "PAST_TRIP"
-      hasRealtimeData:
-        type: "boolean"
-  RelatedUser:
-    type: "object"
-    properties:
-      email:
-        type: "string"
-      status:
-        type: "string"
-        enum:
-        - "PENDING"
-        - "CONFIRMED"
-        - "INVALID"
-      acceptKey:
-        type: "string"
-      nickname:
-        type: "string"
   Itinerary:
     type: "object"
     properties:
@@ -2795,28 +2639,9 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/Leg"
-  RideHailingEstimate:
+  FareDependency:
     type: "object"
     properties:
-      arrival:
-        type: "string"
-      productName:
-        type: "string"
-  Alert:
-    type: "object"
-    properties:
-      alertHeaderText:
-        type: "string"
-      alertDescriptionText:
-        type: "string"
-      alertUrl:
-        type: "string"
-      effectiveStartDate:
-        type: "string"
-        format: "date"
-      effectiveEndDate:
-        type: "string"
-        format: "date"
       id:
         type: "string"
   OtpGraphQLVariables:
@@ -2872,19 +2697,6 @@ definitions:
         type: "string"
       name:
         type: "string"
-  Place:
-    type: "object"
-    properties:
-      name:
-        type: "string"
-      lon:
-        type: "number"
-        format: "double"
-      lat:
-        type: "number"
-        format: "double"
-      stop:
-        $ref: "#/definitions/Stop"
   Route:
     type: "object"
     properties:
@@ -2968,6 +2780,259 @@ definitions:
       attemptsToGetMatchingItinerary:
         type: "integer"
         format: "int32"
+  Trip:
+    type: "object"
+    properties:
+      gtfsId:
+        type: "string"
+      id:
+        type: "string"
+      blockId:
+        type: "string"
+  FareMedium:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      name:
+        type: "string"
+  Agency:
+    type: "object"
+    properties:
+      gtfsId:
+        type: "string"
+      id:
+        type: "string"
+      name:
+        type: "string"
+  OtpGraphQLRoutesAndTrips:
+    type: "object"
+    properties:
+      routes:
+        type: "string"
+      trips:
+        type: "string"
+  FareProductUse:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      product:
+        $ref: "#/definitions/FareProduct"
+  Leg:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      serviceDate:
+        type: "string"
+      startTime:
+        type: "string"
+        format: "date"
+      endTime:
+        type: "string"
+        format: "date"
+      departureDelay:
+        type: "integer"
+        format: "int32"
+      arrivalDelay:
+        type: "integer"
+        format: "int32"
+      realTime:
+        type: "boolean"
+      distance:
+        type: "number"
+        format: "double"
+      mode:
+        type: "string"
+      interlineWithPreviousLeg:
+        type: "boolean"
+      from:
+        $ref: "#/definitions/Place"
+      to:
+        $ref: "#/definitions/Place"
+      legGeometry:
+        $ref: "#/definitions/EncodedPolyline"
+      rentedBike:
+        type: "boolean"
+      rideHailingEstimate:
+        $ref: "#/definitions/RideHailingEstimate"
+      transitLeg:
+        type: "boolean"
+      duration:
+        type: "number"
+        format: "double"
+      intermediateStops:
+        type: "array"
+        items:
+          $ref: "#/definitions/Stop"
+      steps:
+        type: "array"
+        items:
+          $ref: "#/definitions/Step"
+      alerts:
+        type: "array"
+        items:
+          $ref: "#/definitions/Alert"
+      headsign:
+        type: "string"
+      agency:
+        $ref: "#/definitions/Agency"
+      route:
+        $ref: "#/definitions/Route"
+      trip:
+        $ref: "#/definitions/Trip"
+      fareProducts:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareProductUse"
+  FareProduct:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      medium:
+        $ref: "#/definitions/FareMedium"
+      name:
+        type: "string"
+      riderCategory:
+        $ref: "#/definitions/RiderCategory"
+      price:
+        $ref: "#/definitions/Money"
+      dependencies:
+        type: "array"
+        items:
+          $ref: "#/definitions/FareDependency"
+  OtpRequest:
+    type: "object"
+    properties:
+      dateTime:
+        $ref: "#/definitions/ZonedDateTime"
+      requestParameters:
+        $ref: "#/definitions/OtpGraphQLVariables"
+  ItineraryExistence:
+    type: "object"
+    properties:
+      otpRequests:
+        type: "array"
+        items:
+          $ref: "#/definitions/OtpRequest"
+      monday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      tuesday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      wednesday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      thursday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      friday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      saturday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      sunday:
+        $ref: "#/definitions/ItineraryExistenceResult"
+      message:
+        type: "string"
+      error:
+        type: "boolean"
+      timestamp:
+        type: "string"
+        format: "date"
+      getLegFinder:
+        $ref: "#/definitions/Function"
+      otpResponseProvider:
+        $ref: "#/definitions/Function"
+  JourneyState:
+    type: "object"
+    properties:
+      baselineArrivalTimeEpochMillis:
+        type: "integer"
+        format: "int64"
+      baselineDepartureTimeEpochMillis:
+        type: "integer"
+        format: "int64"
+      scheduledArrivalTimeEpochMillis:
+        type: "integer"
+        format: "int64"
+      scheduledDepartureTimeEpochMillis:
+        type: "integer"
+        format: "int64"
+      lastCheckedEpochMillis:
+        type: "integer"
+        format: "int64"
+      lastNotifications:
+        type: "array"
+        items:
+          $ref: "#/definitions/TripMonitorNotification"
+      lastNotificationTimeMillis:
+        type: "integer"
+        format: "int64"
+      matchingItinerary:
+        $ref: "#/definitions/Itinerary"
+      targetDate:
+        type: "string"
+      tripStatus:
+        type: "string"
+        enum:
+        - "NO_LONGER_POSSIBLE"
+        - "NEXT_TRIP_NOT_POSSIBLE"
+        - "TRIP_UPCOMING"
+        - "TRIP_ACTIVE"
+        - "PAST_TRIP"
+      hasRealtimeData:
+        type: "boolean"
+  RelatedUser:
+    type: "object"
+    properties:
+      email:
+        type: "string"
+      status:
+        type: "string"
+        enum:
+        - "PENDING"
+        - "CONFIRMED"
+        - "INVALID"
+      acceptKey:
+        type: "string"
+      nickname:
+        type: "string"
+  RideHailingEstimate:
+    type: "object"
+    properties:
+      arrival:
+        type: "string"
+      productName:
+        type: "string"
+  Alert:
+    type: "object"
+    properties:
+      alertHeaderText:
+        type: "string"
+      alertDescriptionText:
+        type: "string"
+      alertUrl:
+        type: "string"
+      effectiveStartDate:
+        type: "string"
+        format: "date"
+      effectiveEndDate:
+        type: "string"
+        format: "date"
+      id:
+        type: "string"
+  Place:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      lon:
+        type: "number"
+        format: "double"
+      lat:
+        type: "number"
+        format: "double"
+      stop:
+        $ref: "#/definitions/Stop"
   VerificationResult:
     type: "object"
     properties:
@@ -3016,9 +3081,6 @@ definitions:
           - "HAPTIC"
       phoneNumber:
         type: "string"
-      smsConsentDate:
-        type: "string"
-        format: "date"
       preferredLocale:
         type: "string"
       pushDevices:
@@ -3034,8 +3096,6 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/TripSurveyNotification"
-      applicationId:
-        type: "string"
       relatedUsers:
         type: "array"
         items:
