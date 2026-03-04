@@ -2508,8 +2508,6 @@ definitions:
         type: "string"
       name:
         type: "string"
-      isDefault:
-        type: "boolean"
   Stop:
     type: "object"
     properties:
@@ -2824,6 +2822,10 @@ definitions:
   Leg:
     type: "object"
     properties:
+      id:
+        type: "string"
+      serviceDate:
+        type: "string"
       startTime:
         type: "string"
         format: "date"
@@ -2915,8 +2917,6 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/OtpRequest"
-      referenceItinerary:
-        $ref: "#/definitions/Itinerary"
       monday:
         $ref: "#/definitions/ItineraryExistenceResult"
       tuesday:
@@ -2935,11 +2935,11 @@ definitions:
         type: "string"
       error:
         type: "boolean"
-      tripIsArriveBy:
-        type: "boolean"
       timestamp:
         type: "string"
         format: "date"
+      getLegFinder:
+        $ref: "#/definitions/Function"
       otpResponseProvider:
         $ref: "#/definitions/Function"
   JourneyState:
@@ -3081,9 +3081,6 @@ definitions:
           - "HAPTIC"
       phoneNumber:
         type: "string"
-      smsConsentDate:
-        type: "string"
-        format: "date"
       preferredLocale:
         type: "string"
       pushDevices:
@@ -3099,8 +3096,6 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/TripSurveyNotification"
-      applicationId:
-        type: "string"
       relatedUsers:
         type: "array"
         items:

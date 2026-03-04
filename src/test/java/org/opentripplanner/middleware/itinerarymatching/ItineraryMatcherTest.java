@@ -5,9 +5,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,9 +57,8 @@ class ItineraryMatcherTest {
         Itinerary itineraryWithRealtimeTransit = createDefaultItinerary();
         Leg transitLeg = itineraryWithRealtimeTransit.legs.get(1);
         int secondsOfDelay = 120;
-        transitLeg.startTime = new Date(transitLeg.startTime.getTime() + secondsOfDelay * 1000);
+        transitLeg.offsetTimes(Duration.ofSeconds(secondsOfDelay).toMillis());
         transitLeg.departureDelay = secondsOfDelay;
-        transitLeg.endTime = new Date(transitLeg.endTime.getTime() + secondsOfDelay * 1000);
         transitLeg.arrivalDelay = secondsOfDelay;
         testCases.add(
             new ItineraryMatchTestCase(
@@ -73,8 +72,7 @@ class ItineraryMatcherTest {
         // should be equal with scheduled data on transit leg (future date)
         Itinerary itineraryOnFutureDate = createDefaultItinerary();
         Leg transitLeg2 = itineraryOnFutureDate.legs.get(1);
-        transitLeg2.startTime = Date.from(transitLeg2.startTime.toInstant().plus(7, ChronoUnit.DAYS));
-        transitLeg2.endTime = Date.from(transitLeg2.endTime.toInstant().plus(7, ChronoUnit.DAYS));
+        transitLeg2.offsetTimes(Duration.of(7, ChronoUnit.DAYS).toMillis());
         testCases.add(
             new ItineraryMatchTestCase(
                 "should be equal with scheduled data on transit leg (future date)",

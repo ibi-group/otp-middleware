@@ -390,6 +390,7 @@ Below is an example policy template for the docker container permissions:
 | OTP_REQUESTS_THREADING_ENABLED | string | Optional | true | Use multi-threading to handle OTP requests and responses. |
 | OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS | integer | Optional | 30 | The maximum time for making requests to OTP. |
 | OTP_TIMEZONE | string | Required | America/Los_Angeles | The timezone identifier that OTP is using to parse dates and times. OTP will use the timezone identifier that it finds in the first available agency to parse dates and times. |
+| OTP_TRANSFER_SLACK_SECONDS | integer | Optional | 0 | Extra time added by OTP between two transit legs to ensure transfers can be made, accounting for small timing variations that happen in reality. |
 | OTP_UI_NAME | string | Optional | Trip Planner | Config setting for linking to the OTP UI (trip planner). |
 | OTP_UI_URL | string | Optional | https://plan.example.com | Config setting for linking to the OTP UI (trip planner). |
 | PLAN_QUERY_RESOURCE_URI | string | Optional | https://plan.resource.com | Resource location of bespoke plan query. |

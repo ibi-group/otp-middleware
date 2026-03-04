@@ -1,18 +1,13 @@
 package org.opentripplanner.middleware.testutils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
-import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponseGraphQLWrapper;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtils;
-import org.opentripplanner.middleware.utils.ItineraryUtilsTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -22,13 +17,9 @@ import spark.Service;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -67,6 +58,9 @@ public class OtpTestUtils {
      */
     public static final OtpDispatcherResponse OTP2_DISPATCHER_PLAN_RESPONSE =
         initializeMockPlanResponse("otp/response/planResponse-otp2.json");
+
+    public static final OtpDispatcherResponse OTP2_DISPATCHER_PLAN_RESPONSE_LEGID =
+        initializeMockPlanResponse("otp/response/planResponse-legid.json");
 
     public static final OtpDispatcherResponse REROUTE_PLAN_RESPONSE =
         initializeMockPlanResponse("otp/response/rerouteResponse.json");
@@ -178,13 +172,6 @@ public class OtpTestUtils {
     }
 
     /**
-     * Submit plan query to OTP server and return the response.
-     */
-    public static OtpDispatcherResponse sendSamplePlanRequest(OtpGraphQLVariables variables) {
-        return OtpDispatcher.sendOtpPlanRequest(OtpVersion.OTP2, variables);
-    }
-
-    /**
      * Sample GraphQL params for testing.
      */
     public static OtpGraphQLVariables getSampleQueryParams() {
@@ -193,16 +180,6 @@ public class OtpTestUtils {
         params.toPlace = "28.54834,-81.37745";
         params.time = "08:35";
         return params;
-    }
-
-    public static Map<DayOfWeek, OtpResponse> createMockOtpResponsesForTripExistence() throws Exception {
-        // Set up monitored days and mock responses for itinerary existence check, ordered by day.
-        LocalDate today = DateTimeUtils.nowAsLocalDate();
-        List<String> monitoredTripDates = new ArrayList<>();
-        for (int i = 0; i < ItineraryUtils.ITINERARY_CHECK_WINDOW; i++) {
-            monitoredTripDates.add(DateTimeUtils.DEFAULT_DATE_FORMATTER.format(today.plusDays(i)));
-        }
-        return ItineraryUtilsTest.getMockDatedOtpResponses(monitoredTripDates);
     }
 
     /**
@@ -216,27 +193,16 @@ public class OtpTestUtils {
         );
     }
 
-    /**
-     * Offsets all times in the given itinerary so that the itinerary starts at the same time
-     * but on the specified day of month.
-     */
-    public static void setItineraryDay(Itinerary mockItinerary, int dayOfMonth) {
-        updateBaseItineraryTime(
-            mockItinerary,
-            DateTimeUtils.makeOtpZonedDateTime(mockItinerary.startTime).withDayOfMonth(dayOfMonth)
-        );
-    }
-
     public static Itinerary firstItinerary(OtpResponse response) {
         return response.plan.itineraries.get(0);
     }
 
     public static Itinerary createDefaultItinerary() throws Exception {
-        return firstItinerary(OTP2_DISPATCHER_PLAN_RESPONSE.clone().getResponse());
+        return firstItinerary(OTP2_DISPATCHER_PLAN_RESPONSE_LEGID.clone().getResponse());
     }
 
     public static JourneyState createDefaultJourneyState() throws Exception {
-        return  createDefaultJourneyState(createDefaultItinerary());
+        return createDefaultJourneyState(createDefaultItinerary());
     }
 
     public static JourneyState createDefaultJourneyState(Supplier<OtpResponse> otpResponseProvider) {
@@ -244,7 +210,7 @@ public class OtpTestUtils {
         return createDefaultJourneyState(itineraries.isEmpty() ? null : itineraries.get(0));
     }
 
-    private static JourneyState createDefaultJourneyState(Itinerary defaultItinerary) {
+    public static JourneyState createDefaultJourneyState(Itinerary defaultItinerary) {
         JourneyState journeyState = new JourneyState();
         journeyState.tripStatus = defaultItinerary == null
             ? null
